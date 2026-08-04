@@ -1,0 +1,1369 @@
+2021-12-16 08:43:59,PID 25409: LabelConvertDict Mapping:
+5G                                  :                                  5G
+6G                                  :                                  6G
+AIIB                                :                                AIIB
+AKRS                                :                                AKRS
+APEC                                :                                APEC
+ASEAN Affairs                       :                       ASEAN Affairs
+AUKUS                               :                               AUKUS
+Academia                            :                            Academia
+Academic Exchange                   :                   Academic Exchange
+Academic Research                   :                   Academic Research
+Additive Manufacturing              :              Additive Manufacturing
+Administration Reform               :               Administration Reform
+Administration SM                   :                   Administration SM
+Aerospace                           :                           Aerospace
+Afghanistan Affairs                 :                 Afghanistan Affairs
+Africa Affairs                      :                      Africa Affairs
+African Swine Fever                 :                 African Swine Fever
+Agriculture And Fisheries           :           Agriculture And Fisheries
+Aircraft                            :                            Aircraft
+Ant Group                           :                           Ant Group
+Anti-Terrorism                      :                      Anti-Terrorism
+Arms Trade                          :                          Arms Trade
+Artificial Intelligence             :             Artificial Intelligence
+Asia Affairs                        :                        Asia Affairs
+Asia-Pacific Affairs                :                Asia-Pacific Affairs
+Asia-Pacific Economics              :              Asia-Pacific Economics
+Asia-Pacific Security               :               Asia-Pacific Security
+Astrophysics                        :                        Astrophysics
+Augmented Reality                   :                   Augmented Reality
+Aviation Safety                     :                     Aviation Safety
+BCIM Economic Corridor              :              BCIM Economic Corridor
+BR Affairs                          :                          BR Affairs
+BR Diplomacy                        :                        BR Diplomacy
+BR Economics                        :                        BR Economics
+BR Politics                         :                         BR Politics
+BRICS                               :                               BRICS
+BTH Coordinated Development         :         BTH Coordinated Development
+Binhai New Area                     :                     Binhai New Area
+Bioenergy                           :                           Bioenergy
+Biology                             :                             Biology
+Biotechnology                       :                       Biotechnology
+Boao Forum                          :                          Boao Forum
+Bohai Economic Rim                  :                  Bohai Economic Rim
+Business Management                 :                 Business Management
+CAFTA                               :                               CAFTA
+CELAC Affairs                       :                       CELAC Affairs
+CICA                                :                                CICA
+CLEC                                :                                CLEC
+CMEC                                :                                CMEC
+CN Administration                   :                   CN Administration
+CN Affairs                          :                          CN Affairs
+CN City Development                 :                 CN City Development
+CN Civil Affairs                    :                    CN Civil Affairs
+CN Culture And History              :              CN Culture And History
+CN Debt-Trap Diplomacy              :              CN Debt-Trap Diplomacy
+CN Diplomacy                        :                        CN Diplomacy
+CN Economic Inequality              :              CN Economic Inequality
+CN Economics                        :                        CN Economics
+CN FTZ                              :                              CN FTZ
+CN FTZ-Fujian                       :                       CN FTZ-Fujian
+CN FTZ-Guangdong                    :                    CN FTZ-Guangdong
+CN FTZ-Hainan                       :                       CN FTZ-Hainan
+CN FTZ-Liaoning                     :                     CN FTZ-Liaoning
+CN FTZ-Shandong                     :                     CN FTZ-Shandong
+CN FTZ-Shanghai                     :                     CN FTZ-Shanghai
+CN FTZ-Tianjin                      :                      CN FTZ-Tianjin
+CN Finance                          :                          CN Finance
+CN Human Resource                   :                   CN Human Resource
+CN Income And Consumption           :           CN Income And Consumption
+CN Industrial Development           :           CN Industrial Development
+CN Industrial Investment            :            CN Industrial Investment
+CN MediaW                           :                           CN MediaW
+CN Military                         :                         CN Military
+CN Military Administration          :          CN Military Administration
+CN Military Defense Operation       :       CN Military Defense Operation
+CN Military Diplomacy               :               CN Military Diplomacy
+CN Military Family                  :                  CN Military Family
+CN Military Operation               :               CN Military Operation
+CN Military Power                   :                   CN Military Power
+CN Military Recruitment             :             CN Military Recruitment
+CN National Defense Operation       :       CN National Defense Operation
+CN Petitioning                      :                      CN Petitioning
+CN Policy For TW                    :                    CN Policy For TW
+CN Politics                         :                         CN Politics
+CN Poverty Reduction                :                CN Poverty Reduction
+CN Public Diplomacy                 :                 CN Public Diplomacy
+CN Rural Development                :                CN Rural Development
+CN Sports Diplomacy                 :                 CN Sports Diplomacy
+CN Strategy                         :                         CN Strategy
+CN Technology                       :                       CN Technology
+CN Technology Company               :               CN Technology Company
+CN Technology Project               :               CN Technology Project
+CN Trade                            :                            CN Trade
+CN-AFR Cooperation                  :                  CN-AFR Cooperation
+CN-ARStates Cooperation             :             CN-ARStates Cooperation
+CN-ASEAN Cooperation                :                CN-ASEAN Cooperation
+CN-AU Relations                     :                     CN-AU Relations
+CN-BR Relations                     :                     CN-BR Relations
+CN-CELAC Relations                  :                  CN-CELAC Relations
+CN-EURO BIT                         :                         CN-EURO BIT
+CN-EURO Cooperation                 :                 CN-EURO Cooperation
+CN-EURO Relations                   :                   CN-EURO Relations
+CN-FR Cooperation                   :                   CN-FR Cooperation
+CN-FR Relations                     :                     CN-FR Relations
+CN-IND Boundary                     :                     CN-IND Boundary
+CN-IND Relations                    :                    CN-IND Relations
+CN-IND Trade                        :                        CN-IND Trade
+CN-INS Relations                    :                    CN-INS Relations
+CN-JP Relations                     :                     CN-JP Relations
+CN-JP Trade                         :                         CN-JP Trade
+CN-JP-KOR FTA                       :                       CN-JP-KOR FTA
+CN-KH Relations                     :                     CN-KH Relations
+CN-KOR Relations                    :                    CN-KOR Relations
+CN-KOR Trade                        :                        CN-KOR Trade
+CN-LA Relations                     :                     CN-LA Relations
+CN-MNG Relations                    :                    CN-MNG Relations
+CN-NK Relations                     :                     CN-NK Relations
+CN-NP Relations                     :                     CN-NP Relations
+CN-NZ Relations                     :                     CN-NZ Relations
+CN-PH Relations                     :                     CN-PH Relations
+CN-PK Relations                     :                     CN-PK Relations
+CN-RU Relations                     :                     CN-RU Relations
+CN-UK Relations                     :                     CN-UK Relations
+CN-US BIT                           :                           CN-US BIT
+CN-US Confrontation                 :                 CN-US Confrontation
+CN-US Relations                     :                     CN-US Relations
+CN-US Tech War                      :                      CN-US Tech War
+CN-US Trade                         :                         CN-US Trade
+CN-US Trade Disputes                :                CN-US Trade Disputes
+CN-VN Relations                     :                     CN-VN Relations
+COVID-19                            :                            COVID-19
+COVID-19 IPC                        :                        COVID-19 IPC
+CPC Affairs                         :                         CPC Affairs
+CPC Meeting                         :                         CPC Meeting
+CPC Propaganda                      :                      CPC Propaganda
+CPEC                                :                                CPEC
+CPTPP                               :                               CPTPP
+CR Express                          :                          CR Express
+CSKFTA                              :                              CSKFTA
+Carbon Capture And Storage          :          Carbon Capture And Storage
+Carbon Neutrality                   :                   Carbon Neutrality
+Central Asia Affairs                :                Central Asia Affairs
+Chemistry                           :                           Chemistry
+Chengdu-Chongqing Economic Circle   :   Chengdu-Chongqing Economic Circle
+Children Rights                     :                     Children Rights
+Climate And Resource Security       :       Climate And Resource Security
+Climatology                         :                         Climatology
+Commerce                            :                            Commerce
+Compact With Africa                 :                 Compact With Africa
+Confucius Institute                 :                 Confucius Institute
+Constellation                       :                       Constellation
+Construction Industry               :               Construction Industry
+Contract For Purchase And Sales     :     Contract For Purchase And Sales
+Coronavirus Diplomacy               :               Coronavirus Diplomacy
+Cross-Strait Relations              :              Cross-Strait Relations
+Customs Document                    :                    Customs Document
+Cybersecurity                       :                       Cybersecurity
+DE-AFR Relations                    :                    DE-AFR Relations
+Data Science                        :                        Data Science
+Diaoyutai Affairs                   :                   Diaoyutai Affairs
+Digital Currency                    :                    Digital Currency
+Digital RMB                         :                         Digital RMB
+Diplomacy                           :                           Diplomacy
+Disaster Management                 :                 Disaster Management
+Disclaimers                         :                         Disclaimers
+ED-Automated Email Disclaimer       :       ED-Automated Email Disclaimer
+ED-Confidentiality Disclaimer       :       ED-Confidentiality Disclaimer
+ED-Contracts Disclaimer             :             ED-Contracts Disclaimer
+ED-Copyright Disclaimer             :             ED-Copyright Disclaimer
+ED-Disclaimers For Mailing Lists And Newsletters : ED-Disclaimers For Mailing Lists And Newsletters
+ED-Employees Liability Disclaimer   :   ED-Employees Liability Disclaimer
+ED-Enquiries Disclaimer             :             ED-Enquiries Disclaimer
+ED-Environmental Disclaimer         :         ED-Environmental Disclaimer
+ED-Full Content Email Disclaimer    :    ED-Full Content Email Disclaimer
+ED-GDPR Disclaimer                  :                  ED-GDPR Disclaimer
+ED-HIPAA Disclaimer                 :                 ED-HIPAA Disclaimer
+ED-Interception And Monitoring Disclaimer : ED-Interception And Monitoring Disclaimer
+ED-Legal Requirements Disclaimer    :    ED-Legal Requirements Disclaimer
+ED-Negligence Disclaimer            :            ED-Negligence Disclaimer
+ED-Personal Opinion Disclaimer      :      ED-Personal Opinion Disclaimer
+ED-Virus Or Security Disclaimer     :     ED-Virus Or Security Disclaimer
+EURO-CELAC Cooperation              :              EURO-CELAC Cooperation
+East Asia Affairs                   :                   East Asia Affairs
+Ecology                             :                             Ecology
+Education                           :                           Education
+Education And Academia              :              Education And Academia
+Email Disclaimer                    :                    Email Disclaimer
+Email Header                        :                        Email Header
+Email Header-Email Address          :          Email Header-Email Address
+Energy Consumption And Efficiency   :   Energy Consumption And Efficiency
+Energy Security                     :                     Energy Security
+Energy Technology                   :                   Energy Technology
+Engineering                         :                         Engineering
+Environmental Monitoring Infrastructure : Environmental Monitoring Infrastructure
+Environmental Protection            :            Environmental Protection
+Europe Affairs                      :                      Europe Affairs
+Europe Economics                    :                    Europe Economics
+Exhibition                          :                          Exhibition
+FTA                                 :                                 FTA
+FTAAP                               :                               FTAAP
+FTP                                 :                                 FTP
+FTZ                                 :                                 FTZ
+False Decoding                      :                      False Decoding
+False Decoding-Hex Code             :             False Decoding-Hex Code
+False Decoding-PDF Binary           :           False Decoding-PDF Binary
+Falun Gong                          :                          Falun Gong
+Farmer Development                  :                  Farmer Development
+Fashion                             :                             Fashion
+Finance Disclaimer                  :                  Finance Disclaimer
+Financial Industry                  :                  Financial Industry
+Financial Statements                :                Financial Statements
+Fire News                           :                           Fire News
+Food Security                       :                       Food Security
+Foreign AdminReport                 :                 Foreign AdminReport
+Foreign Think                       :                       Foreign Think
+Formal Education                    :                    Formal Education
+G20                                 :                                 G20
+G7                                  :                                  G7
+Game                                :                                Game
+General Notifications               :               General Notifications
+Genomics                            :                            Genomics
+Geographic Areas                    :                    Geographic Areas
+Geopolitics                         :                         Geopolitics
+Geoscience                          :                          Geoscience
+Global Governance                   :                   Global Governance
+Global Law                          :                          Global Law
+Greater Bay Area                    :                    Greater Bay Area
+Greater Mekong Subregion            :            Greater Mekong Subregion
+Green Economy                       :                       Green Economy
+Green Finance                       :                       Green Finance
+HK Affairs                          :                          HK Affairs
+HK Economics                        :                        HK Economics
+HK Finance                          :                          HK Finance
+HK National Security Law            :            HK National Security Law
+HK Politics                         :                         HK Politics
+HK Trade                            :                            HK Trade
+Health Silk Road                    :                    Health Silk Road
+High Performance Computing          :          High Performance Computing
+Hospitality Industry                :                Hospitality Industry
+Hotel Affairs                       :                       Hotel Affairs
+Hotel Information                   :                   Hotel Information
+Household                           :                           Household
+Huawei Affairs                      :                      Huawei Affairs
+Huawei Email Address                :                Huawei Email Address
+Human Rights                        :                        Human Rights
+IND Affairs                         :                         IND Affairs
+IND Diplomacy                       :                       IND Diplomacy
+IND Military                        :                        IND Military
+IND Strategy                        :                        IND Strategy
+IND-PK Boundary                     :                     IND-PK Boundary
+IND-PK Relations                    :                    IND-PK Relations
+IR Affairs                          :                          IR Affairs
+ISM-Ecommerce Order                 :                 ISM-Ecommerce Order
+ISM-OA System Message               :               ISM-OA System Message
+ISM-Security Verification Code      :      ISM-Security Verification Code
+ISM-Social Platform-FB              :              ISM-Social Platform-FB
+ISM-Social Platform-LinkedIn        :        ISM-Social Platform-LinkedIn
+ISM-Undelivered Mail                :                ISM-Undelivered Mail
+Indo-Pacific Framework              :              Indo-Pacific Framework
+Information Infrastructure          :          Information Infrastructure
+Information System Message          :          Information System Message
+Information Technology              :              Information Technology
+Informative                         :                         Informative
+Infrastructure                      :                      Infrastructure
+Intellectual Property               :               Intellectual Property
+Interior Affairs                    :                    Interior Affairs
+International Economics             :             International Economics
+International Finance               :               International Finance
+International Relations             :             International Relations
+International Trade                 :                 International Trade
+Internet Of Things                  :                  Internet Of Things
+JP Affairs                          :                          JP Affairs
+JP Diplomacy                        :                        JP Diplomacy
+JP Economics                        :                        JP Economics
+JP Finance                          :                          JP Finance
+JP Military                         :                         JP Military
+JP Politics                         :                         JP Politics
+JP Strategy                         :                         JP Strategy
+JP-EURO EPA                         :                         JP-EURO EPA
+JP-KOR Relations                    :                    JP-KOR Relations
+JP-RU Relations                     :                     JP-RU Relations
+JP-UK Relations                     :                     JP-UK Relations
+JP-US Relations                     :                     JP-US Relations
+Jiangbei New Area                   :                   Jiangbei New Area
+Jiaodong Economic Circle            :            Jiaodong Economic Circle
+Judiciary                           :                           Judiciary
+KOR Affairs                         :                         KOR Affairs
+KOR Diplomacy                       :                       KOR Diplomacy
+KOR Politics                        :                        KOR Politics
+L-M Cooperation                     :                     L-M Cooperation
+Laser Physics And Technology        :        Laser Physics And Technology
+Logistics Industry                  :                  Logistics Industry
+Lottery                             :                             Lottery
+Manufacturing                       :                       Manufacturing
+Maritime Silk Road                  :                  Maritime Silk Road
+Materials Science                   :                   Materials Science
+Mathematics                         :                         Mathematics
+Medicine                            :                            Medicine
+Middle East Affairs                 :                 Middle East Affairs
+Military                            :                            Military
+Military Diplomacy                  :                  Military Diplomacy
+Military Exchanges                  :                  Military Exchanges
+Military Technology                 :                 Military Technology
+Military-Civil Fusion               :               Military-Civil Fusion
+NGO                                 :                                 NGO
+NK Affairs                          :                          NK Affairs
+NK Diplomacy                        :                        NK Diplomacy
+NK Military                         :                         NK Military
+NK Nuclear Weapons                  :                  NK Nuclear Weapons
+Nanotechnology                      :                      Nanotechnology
+Navigation Tags                     :                     Navigation Tags
+Navigational Warning                :                Navigational Warning
+Navigational Warning-Beacon And Buoy : Navigational Warning-Beacon And Buoy
+Navigational Warning-Cable Maintenance : Navigational Warning-Cable Maintenance
+Navigational Warning-Dredging       :       Navigational Warning-Dredging
+Navigational Warning-End Number Notice : Navigational Warning-End Number Notice
+Navigational Warning-Equipment Test : Navigational Warning-Equipment Test
+Navigational Warning-Event And Rescue : Navigational Warning-Event And Rescue
+Navigational Warning-Fairway        :        Navigational Warning-Fairway
+Navigational Warning-Hoisting       :       Navigational Warning-Hoisting
+Navigational Warning-LNG Carrier    :    Navigational Warning-LNG Carrier
+Navigational Warning-Marine Salvage : Navigational Warning-Marine Salvage
+Navigational Warning-Maritime Research : Navigational Warning-Maritime Research
+Navigational Warning-Military       :       Navigational Warning-Military
+Navigational Warning-Non Traditional Security : Navigational Warning-Non Traditional Security
+Navigational Warning-Obstacle Avoidance : Navigational Warning-Obstacle Avoidance
+Navigational Warning-Occasional Affairs : Navigational Warning-Occasional Affairs
+Navigational Warning-Petroleum Development : Navigational Warning-Petroleum Development
+Navigational Warning-Routine Affairs : Navigational Warning-Routine Affairs
+Navigational Warning-Sea Trial      :      Navigational Warning-Sea Trial
+Navigational Warning-Sports         :         Navigational Warning-Sports
+Navigational Warning-Submarine Work : Navigational Warning-Submarine Work
+Navigational Warning-Towing         :         Navigational Warning-Towing
+Navigational Warning-Traditional Security : Navigational Warning-Traditional Security
+Navigational Warning-Traffic Control : Navigational Warning-Traffic Control
+New Type Of Major-Power Relationship : New Type Of Major-Power Relationship
+New-Type Urbanization               :               New-Type Urbanization
+Northeast CN Affairs                :                Northeast CN Affairs
+Novel                               :                               Novel
+Novel-Natural Science               :               Novel-Natural Science
+Novel-Romance                       :                       Novel-Romance
+Nuclear Power                       :                       Nuclear Power
+Nuclear Weapons                     :                     Nuclear Weapons
+OECD                                :                                OECD
+Oceanography                        :                        Oceanography
+Oil Supply And Demand               :               Oil Supply And Demand
+One Belt One Road                   :                   One Belt One Road
+Optics                              :                              Optics
+PK Affairs                          :                          PK Affairs
+PRC Document                        :                        PRC Document
+PRC-Boundary                        :                        PRC-Boundary
+PRC-Law                             :                             PRC-Law
+PRC-Meeting                         :                         PRC-Meeting
+PRC-OffDoc                          :                          PRC-OffDoc
+PRC-Think                           :                           PRC-Think
+PRC-WReport                         :                         PRC-WReport
+Pacific Alliance                    :                    Pacific Alliance
+Paris Agreement                     :                     Paris Agreement
+Particle Physics                    :                    Particle Physics
+Physics                             :                             Physics
+Plant Biology                       :                       Plant Biology
+Polar Affairs                       :                       Polar Affairs
+Polar Silk Road                     :                     Polar Silk Road
+Pollution                           :                           Pollution
+Population                          :                          Population
+Poverty Reduction                   :                   Poverty Reduction
+Propaganda                          :                          Propaganda
+Public Governance                   :                   Public Governance
+Public Health                       :                       Public Health
+QUAD                                :                                QUAD
+Quantum Information Technology      :      Quantum Information Technology
+Quantum Technology                  :                  Quantum Technology
+RCEP                                :                                RCEP
+RMB                                 :                                 RMB
+RU Affairs                          :                          RU Affairs
+RU Military                         :                         RU Military
+RU Strategy                         :                         RU Strategy
+Rare-Earth Ore                      :                      Rare-Earth Ore
+Real Estate Industry                :                Real Estate Industry
+Real Estate Object                  :                  Real Estate Object
+Rebalancing                         :                         Rebalancing
+Recruitment                         :                         Recruitment
+Recruitment Application             :             Recruitment Application
+Recruitment Platform Message        :        Recruitment Platform Message
+Report Form                         :                         Report Form
+Report Form-Administration          :          Report Form-Administration
+Report Form-Technology Company      :      Report Form-Technology Company
+Report Form-Uncertainty             :             Report Form-Uncertainty
+Report Form-Unwanted                :                Report Form-Unwanted
+Robot                               :                               Robot
+SAFTZ                               :                               SAFTZ
+SCO                                 :                                 SCO
+Science And Technology              :              Science And Technology
+Scrap                               :                               Scrap
+Script Code                         :                         Script Code
+Security In Space                   :                   Security In Space
+Semiconductor                       :                       Semiconductor
+Ship Movement Report                :                Ship Movement Report
+Shipbuilding Industry               :               Shipbuilding Industry
+Short Message                       :                       Short Message
+Showbiz                             :                             Showbiz
+Skill Training                      :                      Skill Training
+Smart Manufacturing                 :                 Smart Manufacturing
+Social Insurance                    :                    Social Insurance
+Social Security                     :                     Social Security
+Society News                        :                        Society News
+South Asia Affairs                  :                  South Asia Affairs
+South Sea                           :                           South Sea
+Southeast Asia Affairs              :              Southeast Asia Affairs
+Spam                                :                                Spam
+Spam-Advertisement                  :                  Spam-Advertisement
+Spam-Advertisement-Sale             :             Spam-Advertisement-Sale
+Spam-Advertisement-Sale-Finance     :     Spam-Advertisement-Sale-Finance
+Spam-Advertisement-Training Course  :  Spam-Advertisement-Training Course
+Spam-Phishing Attack                :                Spam-Phishing Attack
+Spam-Porn                           :                           Spam-Porn
+Spam-Porn-Hot Actress               :               Spam-Porn-Hot Actress
+Spam-Porn-OnePonDo                  :                  Spam-Porn-OnePonDo
+Spam-Porn-Tokyo Hot                 :                 Spam-Porn-Tokyo Hot
+Spam-Receipt Affairs                :                Spam-Receipt Affairs
+Sports                              :                              Sports
+Straits Forum                       :                       Straits Forum
+Strategic Partnership               :               Strategic Partnership
+Strategy And Security               :               Strategy And Security
+TFTA                                :                                TFTA
+TPP                                 :                                 TPP
+TTIP                                :                                TTIP
+TW Affairs                          :                          TW Affairs
+TW Diplomacy                        :                        TW Diplomacy
+TW Law                              :                              TW Law
+TW Politics                         :                         TW Politics
+TW-EURO Cooperation                 :                 TW-EURO Cooperation
+TW-JP Relations                     :                     TW-JP Relations
+TW-US Relations                     :                     TW-US Relations
+Tax                                 :                                 Tax
+Telecommunication                   :                   Telecommunication
+Tesla PDI Report                    :                    Tesla PDI Report
+The Americas Affairs                :                The Americas Affairs
+Tibet Affairs                       :                       Tibet Affairs
+Tourism Industry                    :                    Tourism Industry
+Tourist Attraction                  :                  Tourist Attraction
+Transportation                      :                      Transportation
+UN Affairs                          :                          UN Affairs
+UN Projects                         :                         UN Projects
+US Affairs                          :                          US Affairs
+US Diplomacy                        :                        US Diplomacy
+US Ecnomics                         :                         US Ecnomics
+US Economics                        :                        US Economics
+US Finance                          :                          US Finance
+US Military                         :                         US Military
+US Politics                         :                         US Politics
+US Strategy                         :                         US Strategy
+US Technology                       :                       US Technology
+US Trade                            :                            US Trade
+US-ASEAN Relations                  :                  US-ASEAN Relations
+US-CN Strategic Security Dialogue   :   US-CN Strategic Security Dialogue
+US-IR Relations                     :                     US-IR Relations
+US-JP Relations                     :                     US-JP Relations
+US-KOR Relations                    :                    US-KOR Relations
+US-NK Relations                     :                     US-NK Relations
+US-RU Relations                     :                     US-RU Relations
+USMCA                               :                               USMCA
+Uncertainty                         :                         Uncertainty
+Uncertainty-Private Delivery        :        Uncertainty-Private Delivery
+Uncertainty-Private Insurance Affairs : Uncertainty-Private Insurance Affairs
+Uncertainty-Receipt                 :                 Uncertainty-Receipt
+Uncertainty-Regular Construction Report : Uncertainty-Regular Construction Report
+UncertaintyAddScoreOne              :              UncertaintyAddScoreOne
+UncertaintyAddScoreTwo              :              UncertaintyAddScoreTwo
+United Front                        :                        United Front
+United Front In Taiwan              :              United Front In Taiwan
+Unmanned Aerial Vehicle             :             Unmanned Aerial Vehicle
+Uranium Mining And Extraction       :       Uranium Mining And Extraction
+WTO Affairs                         :                         WTO Affairs
+Water Resource                      :                      Water Resource
+Water-Energy-Food Nexus             :             Water-Energy-Food Nexus
+Weather News                        :                        Weather News
+West Asia Affairs                   :                   West Asia Affairs
+Women Rights                        :                        Women Rights
+Xinjiang Affairs                    :                    Xinjiang Affairs
+Xiongan New Area                    :                    Xiongan New Area
+YD Integrated Development           :           YD Integrated Development
+共有482個標籤。
+5G
+6G
+AIIB
+AKRS
+APEC
+ASEAN Affairs
+AUKUS
+Academia
+Academic Exchange
+Academic Research
+Additive Manufacturing
+Administration Reform
+Administration SM
+Aerospace
+Afghanistan Affairs
+Africa Affairs
+African Swine Fever
+Agriculture And Fisheries
+Aircraft
+Ant Group
+Anti-Terrorism
+Arms Trade
+Artificial Intelligence
+Asia Affairs
+Asia-Pacific Affairs
+Asia-Pacific Economics
+Asia-Pacific Security
+Astrophysics
+Augmented Reality
+Aviation Safety
+BCIM Economic Corridor
+BR Affairs
+BR Diplomacy
+BR Economics
+BR Politics
+BRICS
+BTH Coordinated Development
+Binhai New Area
+Bioenergy
+Biology
+Biotechnology
+Boao Forum
+Bohai Economic Rim
+Business Management
+CAFTA
+CELAC Affairs
+CICA
+CLEC
+CMEC
+CN Administration
+CN Affairs
+CN City Development
+CN Civil Affairs
+CN Culture And History
+CN Debt-Trap Diplomacy
+CN Diplomacy
+CN Economic Inequality
+CN Economics
+CN FTZ
+CN FTZ-Fujian
+CN FTZ-Guangdong
+CN FTZ-Hainan
+CN FTZ-Liaoning
+CN FTZ-Shandong
+CN FTZ-Shanghai
+CN FTZ-Tianjin
+CN Finance
+CN Human Resource
+CN Income And Consumption
+CN Industrial Development
+CN Industrial Investment
+CN MediaW
+CN Military
+CN Military Administration
+CN Military Defense Operation
+CN Military Diplomacy
+CN Military Family
+CN Military Operation
+CN Military Power
+CN Military Recruitment
+CN National Defense Operation
+CN Petitioning
+CN Policy For TW
+CN Politics
+CN Poverty Reduction
+CN Public Diplomacy
+CN Rural Development
+CN Sports Diplomacy
+CN Strategy
+CN Technology
+CN Technology Company
+CN Technology Project
+CN Trade
+CN-AFR Cooperation
+CN-ARStates Cooperation
+CN-ASEAN Cooperation
+CN-AU Relations
+CN-BR Relations
+CN-CELAC Relations
+CN-EURO BIT
+CN-EURO Cooperation
+CN-EURO Relations
+CN-FR Cooperation
+CN-FR Relations
+CN-IND Boundary
+CN-IND Relations
+CN-IND Trade
+CN-INS Relations
+CN-JP Relations
+CN-JP Trade
+CN-JP-KOR FTA
+CN-KH Relations
+CN-KOR Relations
+CN-KOR Trade
+CN-LA Relations
+CN-MNG Relations
+CN-NK Relations
+CN-NP Relations
+CN-NZ Relations
+CN-PH Relations
+CN-PK Relations
+CN-RU Relations
+CN-UK Relations
+CN-US BIT
+CN-US Confrontation
+CN-US Relations
+CN-US Tech War
+CN-US Trade
+CN-US Trade Disputes
+CN-VN Relations
+COVID-19
+COVID-19 IPC
+CPC Affairs
+CPC Meeting
+CPC Propaganda
+CPEC
+CPTPP
+CR Express
+CSKFTA
+Carbon Capture And Storage
+Carbon Neutrality
+Central Asia Affairs
+Chemistry
+Chengdu-Chongqing Economic Circle
+Children Rights
+Climate And Resource Security
+Climatology
+Commerce
+Compact With Africa
+Confucius Institute
+Constellation
+Construction Industry
+Contract For Purchase And Sales
+Coronavirus Diplomacy
+Cross-Strait Relations
+Customs Document
+Cybersecurity
+DE-AFR Relations
+Data Science
+Diaoyutai Affairs
+Digital Currency
+Digital RMB
+Diplomacy
+Disaster Management
+Disclaimers
+ED-Automated Email Disclaimer
+ED-Confidentiality Disclaimer
+ED-Contracts Disclaimer
+ED-Copyright Disclaimer
+ED-Disclaimers For Mailing Lists And Newsletters
+ED-Employees Liability Disclaimer
+ED-Enquiries Disclaimer
+ED-Environmental Disclaimer
+ED-Full Content Email Disclaimer
+ED-GDPR Disclaimer
+ED-HIPAA Disclaimer
+ED-Interception And Monitoring Disclaimer
+ED-Legal Requirements Disclaimer
+ED-Negligence Disclaimer
+ED-Personal Opinion Disclaimer
+ED-Virus Or Security Disclaimer
+EURO-CELAC Cooperation
+East Asia Affairs
+Ecology
+Education
+Education And Academia
+Email Disclaimer
+Email Header
+Email Header-Email Address
+Energy Consumption And Efficiency
+Energy Security
+Energy Technology
+Engineering
+Environmental Monitoring Infrastructure
+Environmental Protection
+Europe Affairs
+Europe Economics
+Exhibition
+FTA
+FTAAP
+FTP
+FTZ
+False Decoding
+False Decoding-Hex Code
+False Decoding-PDF Binary
+Falun Gong
+Farmer Development
+Fashion
+Finance Disclaimer
+Financial Industry
+Financial Statements
+Fire News
+Food Security
+Foreign AdminReport
+Foreign Think
+Formal Education
+G20
+G7
+Game
+General Notifications
+Genomics
+Geographic Areas
+Geopolitics
+Geoscience
+Global Governance
+Global Law
+Greater Bay Area
+Greater Mekong Subregion
+Green Economy
+Green Finance
+HK Affairs
+HK Economics
+HK Finance
+HK National Security Law
+HK Politics
+HK Trade
+Health Silk Road
+High Performance Computing
+Hospitality Industry
+Hotel Affairs
+Hotel Information
+Household
+Huawei Affairs
+Huawei Email Address
+Human Rights
+IND Affairs
+IND Diplomacy
+IND Military
+IND Strategy
+IND-PK Boundary
+IND-PK Relations
+IR Affairs
+ISM-Ecommerce Order
+ISM-OA System Message
+ISM-Security Verification Code
+ISM-Social Platform-FB
+ISM-Social Platform-LinkedIn
+ISM-Undelivered Mail
+Indo-Pacific Framework
+Information Infrastructure
+Information System Message
+Information Technology
+Informative
+Infrastructure
+Intellectual Property
+Interior Affairs
+International Economics
+International Finance
+International Relations
+International Trade
+Internet Of Things
+JP Affairs
+JP Diplomacy
+JP Economics
+JP Finance
+JP Military
+JP Politics
+JP Strategy
+JP-EURO EPA
+JP-KOR Relations
+JP-RU Relations
+JP-UK Relations
+JP-US Relations
+Jiangbei New Area
+Jiaodong Economic Circle
+Judiciary
+KOR Affairs
+KOR Diplomacy
+KOR Politics
+L-M Cooperation
+Laser Physics And Technology
+Logistics Industry
+Lottery
+Manufacturing
+Maritime Silk Road
+Materials Science
+Mathematics
+Medicine
+Middle East Affairs
+Military
+Military Diplomacy
+Military Exchanges
+Military Technology
+Military-Civil Fusion
+NGO
+NK Affairs
+NK Diplomacy
+NK Military
+NK Nuclear Weapons
+Nanotechnology
+Navigation Tags
+Navigational Warning
+Navigational Warning-Beacon And Buoy
+Navigational Warning-Cable Maintenance
+Navigational Warning-Dredging
+Navigational Warning-End Number Notice
+Navigational Warning-Equipment Test
+Navigational Warning-Event And Rescue
+Navigational Warning-Fairway
+Navigational Warning-Hoisting
+Navigational Warning-LNG Carrier
+Navigational Warning-Marine Salvage
+Navigational Warning-Maritime Research
+Navigational Warning-Military
+Navigational Warning-Non Traditional Security
+Navigational Warning-Obstacle Avoidance
+Navigational Warning-Occasional Affairs
+Navigational Warning-Petroleum Development
+Navigational Warning-Routine Affairs
+Navigational Warning-Sea Trial
+Navigational Warning-Sports
+Navigational Warning-Submarine Work
+Navigational Warning-Towing
+Navigational Warning-Traditional Security
+Navigational Warning-Traffic Control
+New Type Of Major-Power Relationship
+New-Type Urbanization
+Northeast CN Affairs
+Novel
+Novel-Natural Science
+Novel-Romance
+Nuclear Power
+Nuclear Weapons
+OECD
+Oceanography
+Oil Supply And Demand
+One Belt One Road
+Optics
+PK Affairs
+PRC Document
+PRC-Boundary
+PRC-Law
+PRC-Meeting
+PRC-OffDoc
+PRC-Think
+PRC-WReport
+Pacific Alliance
+Paris Agreement
+Particle Physics
+Physics
+Plant Biology
+Polar Affairs
+Polar Silk Road
+Pollution
+Population
+Poverty Reduction
+Propaganda
+Public Governance
+Public Health
+QUAD
+Quantum Information Technology
+Quantum Technology
+RCEP
+RMB
+RU Affairs
+RU Military
+RU Strategy
+Rare-Earth Ore
+Real Estate Industry
+Real Estate Object
+Rebalancing
+Recruitment
+Recruitment Application
+Recruitment Platform Message
+Report Form
+Report Form-Administration
+Report Form-Technology Company
+Report Form-Uncertainty
+Report Form-Unwanted
+Robot
+SAFTZ
+SCO
+Science And Technology
+Scrap
+Script Code
+Security In Space
+Semiconductor
+Ship Movement Report
+Shipbuilding Industry
+Short Message
+Showbiz
+Skill Training
+Smart Manufacturing
+Social Insurance
+Social Security
+Society News
+South Asia Affairs
+South Sea
+Southeast Asia Affairs
+Spam
+Spam-Advertisement
+Spam-Advertisement-Sale
+Spam-Advertisement-Sale-Finance
+Spam-Advertisement-Training Course
+Spam-Phishing Attack
+Spam-Porn
+Spam-Porn-Hot Actress
+Spam-Porn-OnePonDo
+Spam-Porn-Tokyo Hot
+Spam-Receipt Affairs
+Sports
+Straits Forum
+Strategic Partnership
+Strategy And Security
+TFTA
+TPP
+TTIP
+TW Affairs
+TW Diplomacy
+TW Law
+TW Politics
+TW-EURO Cooperation
+TW-JP Relations
+TW-US Relations
+Tax
+Telecommunication
+Tesla PDI Report
+The Americas Affairs
+Tibet Affairs
+Tourism Industry
+Tourist Attraction
+Transportation
+UN Affairs
+UN Projects
+US Affairs
+US Diplomacy
+US Ecnomics
+US Economics
+US Finance
+US Military
+US Politics
+US Strategy
+US Technology
+US Trade
+US-ASEAN Relations
+US-CN Strategic Security Dialogue
+US-IR Relations
+US-JP Relations
+US-KOR Relations
+US-NK Relations
+US-RU Relations
+USMCA
+Uncertainty
+Uncertainty-Private Delivery
+Uncertainty-Private Insurance Affairs
+Uncertainty-Receipt
+Uncertainty-Regular Construction Report
+UncertaintyAddScoreOne
+UncertaintyAddScoreTwo
+United Front
+United Front In Taiwan
+Unmanned Aerial Vehicle
+Uranium Mining And Extraction
+WTO Affairs
+Water Resource
+Water-Energy-Food Nexus
+Weather News
+West Asia Affairs
+Women Rights
+Xinjiang Affairs
+Xiongan New Area
+YD Integrated Development
+==================================================
+出現的類別標籤數量分布為
+Sports                                              585168
+Showbiz                                             330173
+Society News                                        245765
+Falun Gong                                          158902
+PRC-OffDoc                                          151274
+CN-AFR Cooperation                                  112555
+Household                                           105895
+Game                                                 91059
+Scrap                                                76798
+PRC-Think                                            68143
+Lottery                                              37798
+Fashion                                              37476
+Novel-Romance                                        33576
+Education                                            30164
+Foreign Think                                        29918
+CN Industrial Development                            28984
+PRC-Law                                              24824
+Novel-Natural Science                                21281
+One Belt One Road                                    17554
+Middle East Affairs                                  16673
+CN Economics                                         16533
+Artificial Intelligence                              16255
+PRC-WReport                                          14476
+United Front                                         13885
+PRC-Meeting                                          12244
+Constellation                                        12022
+Agriculture And Fisheries                             9968
+CN-US Relations                                       8885
+Africa Affairs                                        8879
+TW Law                                                8164
+CN Finance                                            7997
+CN Diplomacy                                          7761
+South Sea                                             7666
+COVID-19                                              7331
+Informative                                           7224
+HK Politics                                           6597
+APEC                                                  6057
+International Finance                                 5994
+L-M Cooperation                                       5937
+CN Income And Consumption                             4613
+CN Industrial Investment                              3519
+Exhibition                                            3485
+Environmental Protection                              3362
+Polar Affairs                                         3217
+International Relations                               3044
+Skill Training                                        2951
+Energy Security                                       2919
+COVID-19 IPC                                          2882
+CN Culture And History                                2752
+Smart Manufacturing                                   2710
+Recruitment                                           2699
+Science And Technology                                2664
+Cybersecurity                                         2631
+CN Policy For TW                                      2581
+G20                                                   2571
+CN Military Operation                                 2519
+Cross-Strait Relations                                2464
+UN Projects                                           2395
+US Strategy                                           2291
+Real Estate Industry                                  2104
+Customs Document                                      1903
+CN Military Administration                            1892
+Energy Technology                                     1877
+Indo-Pacific Framework                                1859
+CN Rural Development                                  1846
+Europe Affairs                                        1812
+CN Military Diplomacy                                 1677
+CN-EURO Cooperation                                   1637
+Strategy And Security                                 1626
+International Economics                               1596
+Green Finance                                         1574
+YD Integrated Development                             1490
+5G                                                    1464
+CN Poverty Reduction                                  1428
+Global Law                                            1387
+CN City Development                                   1373
+Asia-Pacific Security                                 1362
+ASEAN Affairs                                         1352
+CN Petitioning                                        1313
+Information Technology                                1305
+CN MediaW                                             1290
+Academic Exchange                                     1262
+Carbon Neutrality                                     1260
+CN-RU Relations                                       1164
+CN Public Diplomacy                                   1164
+CN Military Recruitment                               1161
+Foreign AdminReport                                   1148
+HK Affairs                                            1128
+CN Strategy                                           1118
+CN-JP Relations                                       1105
+Global Governance                                     1073
+Water Resource                                        1046
+Confucius Institute                                   1021
+CN-IND Relations                                       997
+CN-ASEAN Cooperation                                   982
+CN Technology Project                                  976
+IR Affairs                                             933
+HK National Security Law                               931
+CPEC                                                   927
+New Type Of Major-Power Relationship                   898
+CICA                                                   882
+Energy Consumption And Efficiency                      823
+CN-US Tech War                                         821
+Population                                             815
+CN-EURO BIT                                            797
+CN-INS Relations                                       794
+CN-CELAC Relations                                     790
+Medicine                                               785
+CN FTZ-Shanghai                                        782
+Food Security                                          756
+BRICS                                                  737
+FTA                                                    715
+CN-IND Boundary                                        694
+Paris Agreement                                        682
+SCO                                                    679
+Nuclear Power                                          672
+Navigational Warning-Petroleum Development             614
+CN-UK Relations                                        614
+CPC Affairs                                            606
+Maritime Silk Road                                     605
+TW-US Relations                                        593
+Navigational Warning-Beacon And Buoy                   580
+Navigational Warning-Towing                            566
+RMB                                                    564
+New-Type Urbanization                                  531
+Judiciary                                              521
+Navigational Warning-Fairway                           513
+Information Infrastructure                             486
+Biology                                                483
+Coronavirus Diplomacy                                  479
+Aerospace                                              477
+Navigational Warning-Military                          465
+Transportation                                         460
+CN Trade                                               457
+Laser Physics And Technology                           449
+Construction Industry                                  431
+Unmanned Aerial Vehicle                                414
+CN-US Trade Disputes                                   409
+Navigational Warning-LNG Carrier                       407
+Semiconductor                                          403
+Polar Silk Road                                        392
+Rare-Earth Ore                                         389
+Diaoyutai Affairs                                      377
+CN Military Power                                      369
+RU Military                                            367
+TPP                                                    362
+Quantum Information Technology                         357
+BTH Coordinated Development                            357
+CN Military                                            353
+Financial Industry                                     349
+RCEP                                                   348
+Northeast CN Affairs                                   345
+Afghanistan Affairs                                    342
+Xinjiang Affairs                                       336
+Greater Bay Area                                       334
+Genomics                                               330
+CN Administration                                      325
+CN FTZ                                                 320
+TW Politics                                            312
+CN FTZ-Hainan                                          311
+JP Military                                            300
+CN-AU Relations                                        299
+Oil Supply And Demand                                  290
+Tourism Industry                                       288
+Security In Space                                      284
+Health Silk Road                                       281
+AUKUS                                                  272
+TW Diplomacy                                           270
+Disaster Management                                    270
+US Politics                                            268
+US-IR Relations                                        263
+Real Estate Object                                     260
+Rebalancing                                            253
+Navigational Warning-Sea Trial                         238
+JP Politics                                            233
+Asia-Pacific Economics                                 232
+Navigational Warning-Event And Rescue                  230
+Biotechnology                                          227
+US-CN Strategic Security Dialogue                      225
+Materials Science                                      224
+Geopolitics                                            224
+PRC-Boundary                                           223
+QUAD                                                   221
+US Economics                                           221
+FTAAP                                                  221
+Oceanography                                           220
+CN-LA Relations                                        214
+CN FTZ-Guangdong                                       210
+Pollution                                              209
+Digital RMB                                            208
+Women Rights                                           208
+Nuclear Weapons                                        206
+CN FTZ-Fujian                                          202
+Central Asia Affairs                                   201
+NK Nuclear Weapons                                     198
+Boao Forum                                             190
+CN FTZ-Tianjin                                         183
+US-JP Relations                                        181
+Particle Physics                                       180
+Europe Economics                                       174
+Asia Affairs                                           174
+Navigational Warning-Submarine Work                    161
+CN-PH Relations                                        161
+CN-KH Relations                                        156
+TTIP                                                   155
+US Diplomacy                                           154
+Navigational Warning-Maritime Research                 153
+Anti-Terrorism                                         153
+Intellectual Property                                  148
+Logistics Industry                                     146
+JP Diplomacy                                           145
+Arms Trade                                             143
+Military Technology                                    143
+CN-US Trade                                            142
+Military-Civil Fusion                                  140
+CN Debt-Trap Diplomacy                                 135
+Robot                                                  133
+Geoscience                                             127
+Greater Mekong Subregion                               127
+CN-ARStates Cooperation                                123
+JP-US Relations                                        119
+JP-RU Relations                                        117
+Astrophysics                                           115
+US Ecnomics                                            110
+High Performance Computing                             108
+JP Strategy                                            108
+CN Economic Inequality                                 107
+CN-JP-KOR FTA                                          105
+Carbon Capture And Storage                             104
+JP-KOR Relations                                       104
+Xiongan New Area                                       103
+CN-NZ Relations                                        101
+Plant Biology                                           99
+CN-US Confrontation                                     99
+CN Technology Company                                   99
+WTO Affairs                                             97
+Southeast Asia Affairs                                  93
+Military Diplomacy                                      90
+Environmental Monitoring Infrastructure                 88
+Quantum Technology                                      88
+Farmer Development                                      88
+RU Strategy                                             88
+CN-VN Relations                                         87
+Climatology                                             87
+East Asia Affairs                                       84
+Compact With Africa                                     84
+JP Economics                                            81
+Nanotechnology                                          81
+CELAC Affairs                                           79
+Water-Energy-Food Nexus                                 79
+CN-FR Relations                                         76
+Children Rights                                         76
+Tibet Affairs                                           74
+CN Politics                                             73
+Hospitality Industry                                    73
+Navigation Tags                                         72
+JP Affairs                                              71
+JP-UK Relations                                         70
+Social Insurance                                        69
+Manufacturing                                           68
+TW-JP Relations                                         68
+Navigational Warning-Traffic Control                    68
+NK Affairs                                              67
+Pacific Alliance                                        63
+CPTPP                                                   63
+Jiangbei New Area                                       62
+CN Civil Affairs                                        62
+CN-BR Relations                                         60
+US Military                                             60
+KOR Politics                                            58
+Bioenergy                                               58
+IND Strategy                                            56
+CN-NP Relations                                         55
+Navigational Warning-Cable Maintenance                  55
+Navigational Warning-Hoisting                           55
+TW-EURO Cooperation                                     54
+OECD                                                    54
+BR Economics                                            53
+CSKFTA                                                  53
+Aviation Safety                                         51
+Navigational Warning-Obstacle Avoidance                 50
+CPC Propaganda                                          49
+TW Affairs                                              48
+Data Science                                            46
+CN-MNG Relations                                        46
+RU Affairs                                              44
+Chemistry                                               44
+Additive Manufacturing                                  43
+CN-IND Trade                                            42
+Binhai New Area                                         40
+USMCA                                                   38
+G7                                                      38
+US-ASEAN Relations                                      37
+Ant Group                                               36
+PK Affairs                                              36
+Tax                                                     36
+Green Economy                                           35
+Engineering                                             35
+HK Economics                                            35
+FTP                                                     34
+Social Security                                         30
+US Finance                                              30
+Navigational Warning-Marine Salvage                     29
+BCIM Economic Corridor                                  28
+Optics                                                  28
+Hotel Information                                       28
+CN-PK Relations                                         28
+Digital Currency                                        28
+Chengdu-Chongqing Economic Circle                       27
+US Trade                                                24
+BR Politics                                             24
+HK Finance                                              24
+Weather News                                            23
+EURO-CELAC Cooperation                                  22
+Mathematics                                             22
+JP-EURO EPA                                             22
+The Americas Affairs                                    21
+AIIB                                                    20
+Interior Affairs                                        20
+JP Finance                                              19
+Physics                                                 18
+Bohai Economic Rim                                      18
+Navigational Warning-Sports                             17
+CN-US BIT                                               17
+Email Header-Email Address                              16
+CMEC                                                    15
+CN-KOR Relations                                        15
+Public Health                                           15
+ED-Full Content Email Disclaimer                        15
+CLEC                                                    14
+ED-Confidentiality Disclaimer                           14
+CN Technology                                           13
+Uranium Mining And Extraction                           13
+CN FTZ-Liaoning                                         13
+Shipbuilding Industry                                   13
+SAFTZ                                                   13
+Ecology                                                 12
+Business Management                                     12
+Navigational Warning-Dredging                           11
+CR Express                                              11
+Augmented Reality                                       11
+IND-PK Boundary                                         10
+ED-Disclaimers For Mailing Lists And Newsletters        10
+CAFTA                                                    9
+Asia-Pacific Affairs                                     9
+Navigational Warning-Equipment Test                      8
+UN Affairs                                               8
+ED-Virus Or Security Disclaimer                          7
+IND Military                                             7
+Tourist Attraction                                       6
+ED-Environmental Disclaimer                              6
+Fire News                                                6
+Internet Of Things                                       5
+CN Sports Diplomacy                                      5
+CN-NK Relations                                          5
+NGO                                                      5
+6G                                                       5
+ED-Employees Liability Disclaimer                        5
+HK Trade                                                 4
+US-NK Relations                                          4
+General Notifications                                    4
+US-KOR Relations                                         4
+US-RU Relations                                          4
+CN FTZ-Shandong                                          4
+African Swine Fever                                      4
+ED-Contracts Disclaimer                                  3
+ED-Negligence Disclaimer                                 3
+ED-Legal Requirements Disclaimer                         3
+Huawei Affairs                                           2
+ED-Automated Email Disclaimer                            2
+TFTA                                                     2
+ED-GDPR Disclaimer                                       2
+ED-Personal Opinion Disclaimer                           1
+ED-Copyright Disclaimer                                  1
+ED-HIPAA Disclaimer                                      1
+ED-Enquiries Disclaimer                                  1
+ED-Interception And Monitoring Disclaimer                1
+--------------------------------------------------
+共有377個標籤
+具多標籤的樣本數量統計結果為
+{}
+There are totally 2551691 samples converted, cf dataset/dataset_total_with_filename.tsv or dataset/dataset_total_with_filename.sql3 for filename.
+==================================================
+2021-12-16 08:50:33,PID 25409: 
+Generating train set,
+
+2021-12-16 08:50:38,PID 25409: For train set, there are totally 1786183 samples.
+
+2021-12-16 08:50:38,PID 25409: 
+Generating validation set,
+
+2021-12-16 08:50:39,PID 25409: For validation set, there are totally 510339 samples.
+
+2021-12-16 08:50:39,PID 25409: 
+Generating test set,
+
+2021-12-16 08:50:40,PID 25409: For test set, there are totally 255169+0=255169 samples.
+
+2021-12-16 08:51:19,PID 26061: For dataset/train.tsv, there are not null bytes in your input file
+2021-12-16 08:51:21,PID 26063: For dataset/test.tsv, there are not null bytes in your input file
+2021-12-16 08:51:48,PID 26062: For dataset/dev.tsv, there are not null bytes in your input file

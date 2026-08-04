@@ -1,0 +1,236 @@
+Informative,Confucius Institute,202007010101
+Informative,Exhibition,202007010101
+Informative,Foreign AdminReport,202007010101
+Informative,Foreign Think,202007010101
+Informative,Global Law,202007010101
+Informative,PRC Document,202007010101
+Informative,South Sea,202007010101
+PRC Document,PRC-OffDoc,202007010101
+PRC Document,PRC-WReport,202007010101
+#PRC Document,PRC-Meeting,202007010101
+PRC Document,PRC-Law,202007010101
+PRC Document,PRC-Think,202007010101
+Scrap,TW Law,202007010101
+Scrap,Falun Gong,202007010101
+Strategic Partnership,L-M Cooperation,202106221649
+Strategic Partnership,APEC,202106221649
+Informative,Water Resource,202106221649
+Informative,Strategic Partnership,202106221649
+CN-US Relations,Rebalancing,202106292046
+US Strategy,Rebalancing,202106292046
+US Strategy,Indo-Pacific Framework,202106292046
+CN Diplomacy,CN-AU Relations,202106292046
+CN Diplomacy,CN-US Relations,202106292046
+CN Diplomacy,CN-JP Relations,202106292046
+CN Diplomacy,CN-PH Relations,202106292046
+CN Diplomacy,CN-RU Relations,202106292046
+US Diplomacy,CN-US Relations,202106292046
+CN Diplomacy,CN-AFR Cooperation,202106292046
+Informative,PRC-Training,202106292046
+CN Diplomacy,United Front,202106292046
+CN Diplomacy,One Belt One Road,202106292046
+Africa Affairs,CN-AFR Cooperation,202107281857
+US Strategy,Rebalancing,202108040101
+US Strategy,QUAD,202108040101
+CN Diplomacy,CN-CELAC Relations,202108040101
+Informative,Energy Security,202108040101
+Informative,Environmental Protection,202108040101
+One Belt One Road,CPEC,202108040101
+FTA,RCEP,202108040101
+CN Diplomacy,CN-KOR Relations,202108040101
+CN Diplomacy,SCO,202108041030
+Informative,Strategy And Security,202108041030
+Informative,International Economics,202108041030
+International Economics,CN Economics,202108041030
+Informative,Geopolitics,202108041048
+Informative,Geographic Areas,202108041048
+Geographic Areas,Asia Affairs,202108041030
+Asia Affairs,Southeast Asia Affairs,202108041030
+Southeast Asia Affairs,ASEAN Affairs,202108041030
+Asia Affairs,HK Affairs,202108041030
+Asia Affairs,Xinjiang Affairs,202108041030
+Asia Affairs,NK Affairs,202108041030
+Asia Affairs,Middle East Affairs,202108041030
+Geographic Areas,Europe Affairs,202108041030
+Geographic Areas,Africa Affairs,202108041030
+CN Diplomacy,CN-EURO Cooperation,202108041030
+CN Diplomacy,CN-ASEAN Cooperation,202108041030
+Strategy And Security,Asia-Pacific Security,202108041030
+Strategy And Security,Cybersecurity,202108041030
+CN Diplomacy,CN-FR Cooperation,202108041030
+Informative,International Relations,202108041030
+East Asia Affairs,JP Affairs,202108041030
+JP Affairs,JP Diplomacy,202108041030
+JP Affairs,JP Military,202108041030
+One Belt One Road,CPEC,202108051141
+CN Diplomacy,CN-UK Relations,202108051141
+CN Diplomacy,CN-NP Relations,202108051141
+Strategic Partnership,G20,202108051141
+Strategic Partnership,CN-AFR Cooperation,202108051141
+Strategic Partnership,One Belt One Road,202108051141
+Strategic Partnership,Indo-Pacific Framework,202108051141
+Strategic Partnership,QUAD,202108051141
+US Diplomacy,US-JP Relations,202108051141
+Polar Affairs,Polar Silk Road,202108051141
+One Belt One Road,Polar Silk Road,202108051141
+One Belt One Road,Health Silk Road,202108051141
+CN-US Relations,CN-US Tech War,202108051141
+CN-US Relations,CN-US Trade,202108051141
+CN Diplomacy,CN-IND Cooperation,202108041030
+CN Diplomacy,CN-INS Cooperation,202108041030
+Informative,UN Projects,202108040101
+Strategic Partnership,OECD,202108051141
+Asia Affairs,Central Asia Affairs,202108051141
+Asia Affairs,West Asia Affairs,202108051141
+West Asia Affairs,Afghanistan Affairs,202108051141
+CN Strategy,CN Military,202108090010
+CN Strategy,CN Economics,202108090010
+CN Strategy,CN Diplomacy,202108090010
+CN Strategy,CN MediaW,202108090010
+CN Strategy,CN Policy For TW,202108090010
+CN Diplomacy,CN-LA Relations,202108090010
+CN Economics,CN Finance,202108091508
+CN Social Security,CN Poverty Reduction,202108091508
+Public Health,COVID-19,202108091508
+CN Education,CN Academia,202108091508
+CPC Affairs,CPC Propaganda,202108091508
+CPC Affairs,CPC Meeting,202108091508
+CN Administration,PRC-Meeting,202108091508
+Social Security,Poverty Reduction,202108091508
+CN Administration,Administration Reform,202108091508
+CN Economics,CN Industrial Development,202108091508
+Informative,Military,202108111334
+Military,CN Military,202108111334
+Military,JP Military,202108111334
+Military,US Military,202108111334
+US Strategy,US Military,202108111334
+CN Military,CN Military Administration,202108111334
+Military,Military Exchanges,202108111334
+CN Military,CN Military Recruitment,202108111334
+CN Military,CN Military Power,202108111334
+CN Military,CN Military Defense Operation,202108111334
+CN Military,CN Military Diplomacy,202108111334
+CN Military,CN Military Family,202108111334
+International Economics,International Finance,202108041030
+International Finance,Green Finance,202108041030
+International Relations,Strategic Partnership,202108121124
+International Relations,Cross-Strait relations,202108121124
+TW Affairs,Cross-Strait relations,202108121124
+Cross-Strait Relations,CN Policy For TW,202108121124
+International Relations,CN-US Relations,202108121124
+FTA,FTZ,202108121124
+CN Diplomacy,CN-KH Relations,202108121124
+International Economics,US Economics,202108121124
+US Strategy,US Economics,202108121124
+CN Military,CN Military Diplomacy,202108131411
+CN Military,CN Military Family,202108131411
+CN Military,CN Military Operation,202108131411
+Informative,Report Form,202108131411
+Report Form,Report Form-Uncertainty,202108131411
+Report Form,Report Form-Administration,202108131411
+Report Form,Report Form-Technology Company,202108131411
+Scrap,Report Form-Unwanted,202108131411
+Scrap,Novel-Natural Science,202108131411
+CN Industrial Development,CN Human Resource,202108091508
+Military,IND Military,202108152306
+Strategic Partnership,CICA,202108152316
+Asia-Pacific Security,CICA,202108152316
+Strategy And Security,Nuclear Weapons,202108152316
+Scrap,Customs Document,202108161041
+CN Economics,CN Economic Inequality,202108171127
+CN Economic Inequality,CN Poverty Reduction,202108171127
+CN Economics, CN Income,202108171127
+Informative,Science And Technology,202108171127
+CN Technology,CN Technology Company,202108171127
+CN Technology,CN Technology Project,202108171127
+CN-ASEAN Cooperation,L-M Cooperation,202108181007
+CN Diplomacy,CN-VN Relations,202108181012
+CN Diplomacy,CN-MNG Relations,202108181012
+Informative,NGO,202108181012
+FTA,TPP,202108181012
+TW Diplomacy,TW-EURO Cooperation,202108181012
+Informative,Public Governance,202108181012
+CN Politics,CN Petitioning,202108181012
+Public Governance,Global Governance,202108181012
+Strategy And Security,Global Governance,202108181012
+Informative,Intellectual Property,202108182025
+JP Affairs,JP Economics,202108182025
+JP Affairs,JP Strategy,202108182025
+JP Diplomacy,JP-RU Relations,202108182025
+Short Message,Administration SM,202108191015
+Science And Technology,Quantum Technology,202108191015
+Quantum Technology,Quantum Information Technology,202108191015
+Science And Technology,Information Technology,202108191015
+Information Technology,Quantum Information Technology,202108191015
+Information Technology,Information Infrastructure,202108191015
+TW Affairs,TW Politics,202108191015
+CN Diplomacy,CN City Diplomacy,202108191015
+Scrap,Recruitment,202108191015
+International Economics,BRICS,202108041030
+Strategy And Security,Anti-Terrorism,202108041030
+TW Affairs,TW Diplomacy,202108181012
+Middle East Affairs,IR Affairs,202108230010
+CN Diplomacy,CN-ARStates Cooperation,202108230010
+CN Military,CN Military-Civil Fusion,202108231501
+CN Diplomacy,CN City Diplomacy,202108231501
+Science And Technology,Energy Technology,202108231501
+Science And Technology,Medicine,202108231511
+Asia-Pacific Security,PRC-Boundary,202106221649
+TW Diplomacy,TW-US Relations,202108232122
+TW Diplomacy,TW-JP Relations,202108232122
+JP Diplomacy,JP-UK Relations,202108232122
+TW Affairs,Diaoyutai Affairs,202108232122
+Information Technology,Artificial Intelligence,202108091508
+CN Economics,CN City Development,202108091508
+Scrap,CN Culture And History,202108091508
+Artificial Intelligence,Robot,202108091508
+Scrap,Business Management,202108091508
+Science And Technology,Biology,202108231511
+CN Economics,CN Trade,202108231511
+CN Trade,CN-US Trade,202108231511
+Informative,Interior Affairs,202108231501
+Interior Affairs,Agriculture And Fisheries,202108231501
+Interior Affairs,CN Administration,202108231501
+Interior Affairs,Public Health,202108240942
+East Asia Affairs,TW Affairs,202108240942
+Asia Affairs,East Asia Affairs,202108240942
+CN Affairs,CN Politics,202108240942
+East Asia Affairs,CN Affairs,202108240942
+CN Affairs,CN Administration,202108240942
+CN Affairs,CN Education,202108240942
+CN Affairs,CN Social Security,202108240942
+CN Affairs,CN Strategy,202108240942
+CN Affairs,CN Technology,202108240942
+CN Affairs,CPC Affairs,202108240942
+Interior Affairs,CN Petitioning,202108240942
+One Belt One Road,CR Express,202108240942
+CN Industrial Development,CN Industrial Investment,202108240942
+Informative,Transportation,202108240942
+Transportation,CR Express,202108240942
+Science And Technology,5G,202108240942
+One Belt One Road,Maritime Silk Road,202108240942
+CN Diplomacy,CN-PK Relations,202108240942
+CN City Development,New-Type Urbanization,202108240942
+New-Type Urbanization,BTH Coordinated Development,202108240942
+New-Type Urbanization,YD Integrated Development,202108240942
+New-Type Urbanization,Greater Bay Area,202108240942
+New-Type Urbanization,Xiongan New Area,202108240942
+New-Type Urbanization,Jiangbei New Area,202108240942
+HK Affairs,Greater Bay Area,202108240942
+International Finance,AIIB,202108240942
+CN Affairs,Tibet Affairs,202108251518
+CN Affairs,Northeast CN Affairs,202108251518
+Environmental Protection,Carbon Neutrality,202108251518
+CN Finance,RMB,202108251518
+International Economics,International Trade,202108251518
+International Trade,FTA,202108251518
+Science And Technology,Smart Manufacturing,202108251518
+Geographic Areas,US Affairs,202108251518
+US Affairs,US Strategy,202108251518
+US Affairs,US Politics,202108251518
+US Strategy,US Diplomacy,202108251518
+US Strategy,US Technology,202108091508
+Geographic Areas,Polar Affairs,202108251518
+CN Diplomacy,Confucius Institute,202108251518
+Strategy And Security,Food Security,202107281857
+Strategy And Security,Social Security,202108091508

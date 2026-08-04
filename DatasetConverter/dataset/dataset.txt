@@ -1,0 +1,3040 @@
+2023-02-11 18:09:47,PID 9016: LabelConvertDict Mapping:
+Identity Map
+共有1514個標籤。
+1992 Consensus
+5G
+6G
+AIDS
+AIDS IPC In Africa
+AIDS IPC In ET
+AIIB
+AKRS
+APEC
+APR
+ARP-AI For Acoustics
+ASEAN Affairs
+AUKUS
+Academia
+Academic Conference
+Academic Exchange
+Academic Research
+Academic Workshop
+Academic Workshop-Math Workshop
+Acoustics Research Paper
+Acquisition Of Twitter By Musk
+Additive Manufacturing
+Additive Manufacturing For Aerospace
+Additive Manufacturing For Medicine
+Administration Information Infrastructure
+Administration Reform
+Administration SM
+Aerospace
+Afghanistan Affairs
+Africa Affairs
+Africa Debt
+Africa Economics
+Africa Finance
+Africa Governance
+African Swine Fever
+Agricultural Biotechnology
+Agriculture And Fisheries
+Agriculture And Food Security
+Air Freight Industry
+Air Quality Forecast
+Aircraft
+Ant Group
+Anti-Fraud Warning
+Anti-Phishing Warning
+Anti-Terrorism
+Anti-Terrorism-BIFF
+Archaeology
+Arms Trade
+Artificial Intelligence
+Artificial Intelligence Application
+Artificial Intelligence Application-Key AI Application
+Artificial Intelligence Application-Non-Key AI Application
+Artificial Intelligence For Autonomous Car
+Artificial Intelligence For COVID-19
+Artificial Intelligence For Medicine
+Artificial Intelligence For Smart Manufacturing
+Artificial Intelligence Research Paper
+Asia Affairs
+Asia-Pacific Affairs
+Asia-Pacific Economics
+Asia-Pacific Security
+Astrophysics
+Atmospheric Optics Research Paper
+Augmented Reality
+Authorization Document
+Automobile Racing
+Automotive Industry
+Autonomous Car Industry
+Autopilot
+Avian Influenza
+Avian Influenza IPC
+Aviation Safety
+BCG Vaccine Clinical Report
+BCIM Economic Corridor
+BD Affairs
+BD Politics
+BD-Acknowledgements
+BD-Bibliography
+BD-Colophon
+BD-Keywords
+BD-Preface
+BD-Table Of Contents
+BD-Title Page
+BDB-Acoustics
+BDB-Artificial Intelligence
+BDB-Business Management
+BDB-CN Equity Research Report
+BDB-Diplomacy
+BDB-Economic History
+BDB-Economics
+BDB-Energy
+BDB-Graph Theory
+BDB-History
+BDB-Math
+BDB-Medical Ultrasonics
+BDB-Medicine
+BDB-Optics Research Paper
+BDB-Psychology
+BDB-Psychology Of Emotion
+BDB-Science And Technology
+BDP-Economic History
+BDP-History
+BF Affairs
+BF Diplomacy
+BF Economics
+BF Politics
+BF Security
+BJ-TW Financial Cooperation Forum
+BR Affairs
+BR Diplomacy
+BR Economics
+BR Election
+BR Politics
+BR Presidential Election
+BRICS
+BRP-Electric-Vehicle Battery
+BTH Coordinated Development
+BW Affairs
+BW Diplomacy
+BW Economics
+BW Politics
+BW Security
+BY Affairs
+BY Diplomacy
+BY Economics
+BY Politics
+BY Security
+Backdoor Software
+Backdoor Software From CN GOV
+Battery Research Paper
+Battery Technology
+Bidding Proposal
+Binhai New Area
+Bioenergy
+Biology
+Biology Research Paper
+Biotechnology
+Boao Forum
+Bohai Economic Rim
+Bond Credit Rating
+Book Design
+Budget Management Integrated System
+Business Management
+CA-Waste Management
+CAFTA
+CD Affairs
+CD Economics
+CD Security
+CELAC Affairs
+CERP-Automotive Industry
+CERP-CN Military Aircraft Industry
+CERP-CN Military Unmanned Aerial Vehicle Industry
+CERP-Coal Mining Industry
+CERP-Energy Industry
+CERP-Insurance Industry
+CERP-Investment Rating Criteria
+CERP-Key Industry
+CERP-Key Technology Company
+CERP-Key Technology Industry
+CERP-Logistics Industry
+CERP-Medical Industry
+CERP-Military Aircraft Industry
+CERP-Military Industry
+CERP-Military Unmanned Aerial Vehicle Industry
+CERP-Mining Industry
+CERP-Non-Key Industry
+CERP-Non-Key Technology Company
+CERP-Non-Key Technology Industry
+CERP-Packaging Material Industry
+CERP-Real Estate Industry
+CERP-Semiconductor Industry
+CERP-Wind Power Industry
+CF Affairs
+CF Security
+CF-Human Rights
+CFI-SM-Acknowledge
+CFI-SM-Household SM
+CFI-SM-Regulations Propaganda SM
+CFI-SM-Safety Propaganda SM
+CFI-SM-Weather News SM
+CFI-Weather News SM
+CI Affairs
+CI Diplomacy
+CI Economics
+CI Politics
+CI Security
+CICA
+CLEC
+CM Affairs
+CM Diplomacy
+CM Economics
+CM Politics
+CM Security
+CMEC
+CN Administration
+CN Affairs
+CN Budget Management
+CN City Development
+CN Cognitive Warfare In TW
+CN Company Development
+CN Company Management Right
+CN Consumption Promotion Policy
+CN Culture
+CN Culture And History
+CN Debt-Trap Diplomacy
+CN Digital Economy
+CN Diplomacy
+CN Diplomatic Relations
+CN Economic History
+CN Economic Inequality
+CN Economics
+CN Equity Research Report
+CN FTZ
+CN FTZ-Fujian
+CN FTZ-Guangdong
+CN FTZ-Hainan
+CN FTZ-Liaoning
+CN FTZ-Shandong
+CN FTZ-Shanghai
+CN FTZ-Tianjin
+CN Finance
+CN Foreign Policy
+CN History
+CN Hospitality Industry Development
+CN Human Resource
+CN Income And Consumption
+CN Industrial Development
+CN Industrial Investment
+CN MediaW
+CN Military
+CN Military Administration
+CN Military Defense Operation
+CN Military Diplomacy
+CN Military Family
+CN Military Operation
+CN Military Power
+CN Military Recruitment
+CN Military Technology
+CN Military Unification
+CN Military Unmanned Aerial Vehicle
+CN Military Unmanned Aerial Vehicle Technology
+CN Military-Civil Fusion
+CN National Defense Operation
+CN Petitioning
+CN Poaching From TW
+CN Policy For TW
+CN Politics
+CN Poverty Reduction
+CN Public Diplomacy
+CN Rural Development
+CN Social Science
+CN Social Science Project
+CN Sports Diplomacy
+CN Stock Market
+CN Strategy
+CN TPF TW-Agriculture Technology
+CN Talent Poaching From TW
+CN Talent Poaching From TW-Tech Talent
+CN Technology
+CN Technology Company
+CN Technology Company Development
+CN Technology Company Management Right
+CN Technology Company Recruitment
+CN Technology Company Recruitment Plan
+CN Technology Company Revenue
+CN Technology Poaching From TW
+CN Technology Project
+CN Tourism Industry
+CN Tourism Promotion
+CN Trade
+CN-AFR Cooperation
+CN-AFR Relations
+CN-ARStates Cooperation
+CN-ARStates Relations
+CN-ASEAN Cooperation
+CN-ASEAN Economic Cooperation
+CN-ASEAN Economic Relations
+CN-ASEAN Investment
+CN-ASEAN Relations
+CN-ASEAN Trade
+CN-AU Confrontation
+CN-AU Relations
+CN-BF Cooperation
+CN-BF Relations
+CN-BN Investment
+CN-BN Trade
+CN-BR Cooperation
+CN-BR Relations
+CN-BW Cooperation
+CN-BW Relations
+CN-BY Cooperation
+CN-BY Relations
+CN-CELAC Cooperation
+CN-CELAC Relations
+CN-CI Cooperation
+CN-CI Relations
+CN-CM Cooperation
+CN-CM Relations
+CN-EAsia Relations
+CN-ECO Cooperation
+CN-EG Cooperation
+CN-EG Relations
+CN-EURO BIT
+CN-EURO Cooperation
+CN-EURO Relations
+CN-FR Cooperation
+CN-FR Relations
+CN-GH Cooperation
+CN-GH Relations
+CN-Human Rights
+CN-Human Rights Abuses
+CN-ID Investment
+CN-ID Relations
+CN-ID Trade
+CN-IND Boundary
+CN-IND Confrontation
+CN-IND Relations
+CN-IND Trade
+CN-JP Relations
+CN-JP Trade
+CN-JP-KOR FTA
+CN-KH Cooperation
+CN-KH Investment
+CN-KH Relations
+CN-KH Trade
+CN-KOR Relations
+CN-KOR Trade
+CN-LA Cooperation
+CN-LA Investment
+CN-LA Relations
+CN-LA Trade
+CN-MM Cooperation
+CN-MM Investment
+CN-MM Relations
+CN-MM Trade
+CN-MNG Relations
+CN-MY Investment
+CN-MY Trade
+CN-NK Relations
+CN-NP Relations
+CN-NZ Relations
+CN-Occident Relations
+CN-PH Cooperation
+CN-PH Investment
+CN-PH Relations
+CN-PH Trade
+CN-PK Relations
+CN-Particular ASEAN Member Relations
+CN-RU Relations
+CN-SA Cooperation
+CN-SA Cooperation Joint Statement
+CN-SA Relations
+CN-SG Investment
+CN-SG Trade
+CN-TH Investment
+CN-TH Trade
+CN-UK Relations
+CN-US BIT
+CN-US Confrontation
+CN-US Cooperation
+CN-US Economic Cooperation
+CN-US Economic Relations
+CN-US Investment
+CN-US Relations
+CN-US Tech War
+CN-US Trade
+CN-US Trade Disputes
+CN-VN Cooperation
+CN-VN Investment
+CN-VN Relations
+CN-VN Trade
+CN–BY Industrial Park Great Stone
+COVID-19
+COVID-19 Economic Stimulus And Relief
+COVID-19 Effect On Economic
+COVID-19 IPC
+COVID-19 IPC For Community
+COVID-19 IPC For Community-Government Activity
+COVID-19 IPC For Community-Inspirational Story
+COVID-19 IPC In Air Freight Industry
+COVID-19 IPC In Commercial Fishing Industry
+COVID-19 IPC In Logistics Industry
+COVID-19 IPC In Maritime Industry
+COVID-19 IPC In Tourism Industry
+COVID-19 IPC-Activity
+COVID-19 IPC-Activity Regulation
+COVID-19 IPC-Footprint Survey
+COVID-19 IPC-Isolation And Quarantine
+COVID-19 IPC-Isolation And Quarantine Policy
+COVID-19 IPC-Isolation And Quarantine Survey
+COVID-19 IPC-Learning Activity
+COVID-19 IPC-Learning Activity Regulation
+COVID-19 IPC-Online Learning
+COVID-19 Vaccine
+COVID-19 Vaccine Clinical Report
+CPC Affairs
+CPC Meeting
+CPC Party Development
+CPC Party Development-Inspirational Story
+CPC Personnel Change
+CPC Politician Affairs
+CPC Propaganda
+CPC United Front Work Organization Toward TW
+CPEC
+CPTPP
+CR Express
+CSKFTA
+CY Affairs
+CY Security
+CY-Human Rights
+Call For Conference Papers
+Call For Journal Papers
+Call For Papers
+Carbon Capture And Storage
+Carbon Neutrality
+Carbon Neutrality Budget
+Carbon Neutrality In Maritime Industry
+Central Asia Affairs
+ChemSHERPA
+ChemSHERPA Data
+Chemical Safety
+Chemical Substance Control
+Chemistry
+Chengdu-Chongqing Economic Circle
+Children Rights
+Cholera
+Climate And Resource Security
+Climate Change
+Climate Change Action
+Climate Security
+Climatology
+Clinical Infrastructure
+Clinical Report
+Coal Supply And Demand
+Commerce
+Commercial Fishing Industry
+Common Sense
+Community Affairs
+Community Of Common Destiny For Mankind
+Community Public Service
+Compact With Africa
+Company Audit
+Confucius Institute
+Constellation
+Construction Industry
+Construction Safety Instruction
+Contact Information-Embassy
+Contact Information-SOS
+Contest
+Contract
+Contract For Purchase And Sales
+Coronavirus Diplomacy
+Corporate Credit Rating
+Credit Rating
+Crime News
+Critical Infectious Disease
+Cross-Strait Direct Shipping
+Cross-Strait Economic Relations
+Cross-Strait Relations
+Cross-Strait Trade
+Cross-Strait Trade-Semiconductor
+Cuisine Introduction
+Cultural Heritage
+Culture
+Culture And History
+Customer Services
+Customer Services-Refund
+Customer Services-Technical Support
+Customer Services-Technical Support-QLC
+Customs Document
+Cybersecurity
+Cybersecurity Exhibition
+DE-AFR Relations
+DM-Anti-Drought
+DM-Disaster Report
+DM-Earthquake Management
+DM-Flood Control
+DMDR-CN Disaster Report
+Data Science
+Diaoyutai Affairs
+Digital Currency
+Digital RMB
+Diplomacy
+Disaster Management
+Disclaimers
+Drug Analysis Report
+ECO
+ED-Automated Email Disclaimer
+ED-Confidentiality Disclaimer
+ED-Contracts Disclaimer
+ED-Copyright Disclaimer
+ED-Disclaimers For Mailing Lists And Newsletters
+ED-Employees Liability Disclaimer
+ED-Enquiries Disclaimer
+ED-Environmental Disclaimer
+ED-Full Content Email Disclaimer
+ED-GDPR Disclaimer
+ED-HIPAA Disclaimer
+ED-Interception And Monitoring Disclaimer
+ED-Legal Requirements Disclaimer
+ED-Negligence Disclaimer
+ED-Personal Opinion Disclaimer
+ED-Virus Or Security Disclaimer
+EG Affairs
+EG Diplomacy
+EG Economics
+EG Politics
+EG Security
+ERP-Comparative Advantage
+ET Affairs
+ET Debt
+ET Diplomacy
+ET Economics
+ET Finance
+ET Security
+EU REACH
+EU REACH SVHC
+EURO Stock Market
+EURO-AFR Cooperation
+EURO-AFR Economic Cooperation
+EURO-CELAC Cooperation
+Earth Monitoring Infrastructure
+East Asia Affairs
+East Europe Affairs
+Ebolavirus
+Ecology
+Economic History
+Economic Sanctions
+Economics Research Paper
+Editorial
+Editorial-Anti-CPC
+Education
+Education And Academia
+Educational Improvement
+Efficient Energy Use
+Electric-Vehicle
+Electric-Vehicle Battery
+Email Address-Embassy
+Email Disclaimer
+Email Header
+Email Header-Email Address
+Embassy Personnel Change
+Emergency Assistance
+Emergency Food Assistance
+Energy
+Energy Consumption And Efficiency
+Energy Research Paper
+Energy Security
+Energy Technology
+Energy-Efficient Product Procurement
+Engineering
+Entomology
+Entomology Research Paper
+Entrepreneurship
+Environmental Biotechnology
+Environmental Monitoring Infrastructure
+Environmental Protection
+Europe Affairs
+Europe Economics
+Europe Finance
+Exchange Program
+Exhibition
+Export Controls
+Export Of CN Military Unmanned Aerial Vehicle
+FOCAC Round Table Meeting
+FOCAC-Conference Of CN And AFR Entrepreneurs
+FOCAC-Summit Of FOCAC
+FS-Company Financial Statements
+FTA
+FTAAP
+FTP
+FTZ
+Facilities Agreement
+Facilities Management Proposal
+False Decoding
+False Decoding-Broken Data Stream
+False Decoding-PDF Binary
+False Decoding-PDF Text Extraction Failure
+False Decoding-Word Text Extraction Failure
+Falun Gong
+Farmer Development
+Farmland Planning
+Fashion
+Feng Shui
+Fenqing
+Fenqing-Anti-CPC
+Fenqing-Anti-DPP
+Fenqing-Anti-KMT
+Fenqing-Anti-Mao
+Fenqing-Anti-US
+Fenqing-Taiwan Independence Movement
+Finance Disclaimer
+Finance Lease Contract
+Finance Research Paper
+Financial Contract
+Financial Industry
+Financial Statements
+Fire News
+Fire Safety Guidelines
+Food Safety
+Food Security
+Foreign AdminReport
+Foreign Think
+Formal Education
+Formal Science
+Forum On CN-AFR Cooperation
+Forums Between CN And TW
+Fossil Fuel
+Fossil Fuel Supply And Demand
+Fund Management Report
+Furniture Affairs
+Furniture Exhibition
+Furniture Industry
+Furniture Objects
+G20
+G7
+G77
+GH Affairs
+GH Diplomacy
+GH Economics
+GH Politics
+GH Security
+GMP
+Gambling
+Game
+Game-MMOG
+General Membership Meeting
+General Membership Meeting Notice
+General Notifications
+Genetic Engineering
+Genomics
+Geographic Areas
+Geopolitics
+Geoscience
+Geoscience Research Paper
+Global Gold Price
+Global Governance
+Global Law
+Government Real Estate Policy
+Greater Bay Area
+Greater Mekong Subregion
+Green Economy
+Green Energy
+Green Energy Supply And Demand
+Green Energy Technology
+Green Finance
+Grey Zone Conflicts
+Guinness World Records
+HITCON
+HK Affairs
+HK Autonomy Act
+HK Democracy Supporter
+HK Democracy Supporter In Showbiz
+HK Economics
+HK Election
+HK Finance
+HK GOV Action Supporting HK NSL
+HK History
+HK Maritime Industry
+HK National Security Law
+HK National Security Law-Law Enforcement Status
+HK National Security Law-Legal Analysis
+HK National Security Law-Legislative Process
+HK National Security Law-Political Prisoner
+HK Native Action About HK NSL
+HK Native Action Against HK NSL
+HK Native Action Supporting HK NSL
+HK Politics
+HK Stock Market
+HK Trade
+Health Silk Road
+Health Technology
+Hepatology
+High Performance Computing
+History
+Horse Racing
+Horse Racing Lottery
+Hotel Affairs
+Hotel Information
+Household
+Huawei 5G Affairs
+Huawei Affairs
+Huawei Email Address
+Human Resources Audit
+Human Rights
+Hydrogen Energy
+Hydrogen Energy Research Paper
+Hydrogen Energy Supply And Demand
+Hydrogen Energy Technology
+Hydrogen Storage Research Paper
+IL Affairs
+IL Diplomacy
+IL-PS Confrontation
+IL-PS Military Confrontation
+IL-PS Relations
+IL-SY Confrontation
+IL-SY Military Confrontation
+IL-SY Relations
+IND Affairs
+IND Diplomacy
+IND Economics
+IND Finance
+IND Military
+IND Strategy
+IND-PK Boundary
+IND-PK Confrontation
+IND-PK Military Confrontation
+IND-PK Relations
+IP-Patent Affairs
+IP-Patent Application
+IP-Patent Disputes
+IQ Affairs
+IQ Diplomacy
+IQ Security
+IR Affairs
+IR Diplomacy
+IR Military
+IR Nuclear Weapons
+ISM-Ecommerce Order
+ISM-Ecommerce Order-AliExpress
+ISM-OA System Message
+ISM-Security Verification Code
+ISM-Social Platform
+ISM-Social Platform-FB
+ISM-Social Platform-LinkedIn
+ISM-Social Platform-Twitter
+ISM-Subscription Notifications
+ISM-Undelivered Mail Notification Header
+ISM-Warning Message
+ISM-Warning Message-Web
+Impact Of HK NSL
+Impact Of HK NSL On Cross-Strait Relations
+Impact Of HK NSL On HK Economics
+Impact Of HK NSL On HK Emigration Wave
+Impact Of HK NSL On HK Finance
+Impact Of HK NSL On HK Politics
+Impact Of HK NSL On HK Politics-Ordinary People Story
+Impact Of HK NSL On HK Tourism Industry
+Incentive Stock Option
+Incentive Stock Option Analysis
+Indian Rupee
+Indo-Pacific Framework
+Industrial Biotechnology
+Industrial Development
+Infectious Disease
+Influenza
+Influenza IPC
+Influenza Vaccine
+Information Infrastructure
+Information Journal Introduction
+Information Research Paper
+Information Security
+Information System Message
+Information Technology
+Informative
+Infrastructure
+Intellectual Property
+Interior Affairs
+International Action About HK NSL
+International Action About Xinjiang Internment Camps
+International Action Against HK NSL
+International Action Against Xinjiang Internment Camps
+International Action Supporting HK NSL
+International Action Supporting Xinjiang Internment Camps
+International Economics
+International Finance
+International Financial Indicators
+International Relations
+International Stock Market
+International Technology Company Action Against HK NSL
+International Trade
+Internet Forum
+Internet Forum-Logistics
+Internet Forum-Profile
+Internet Of Things
+Internet Of Things Cybersecurity
+Interview
+Interview-CN Affairs
+Interview-CN Economics
+Islamic State
+Island Southeast Asia Affairs
+Israeli-Palestinian Conflict
+JP Affairs
+JP Diplomacy
+JP Diplomacy For Indo-Pacific Framework
+JP Economic History
+JP Economics
+JP Finance
+JP Military
+JP Politics
+JP Stock Market
+JP Strategy
+JP-EURO EPA
+JP-KOR Relations
+JP-RU Relations
+JP-UK Relations
+Jiangbei New Area
+Jiaodong Economic Circle
+Journal Introduction
+Judiciary
+KOR Affairs
+KOR Diplomacy
+KOR Economics
+KOR Finance
+KOR Politics
+Keyword Filter
+Keyword Neg Filter
+Keyword Neg Filter-Valueless Report
+L-M Cooperation
+LA-Company Law
+LA-Labour Law
+LA-Medical Regulations
+LA-Real Estate Regulations
+LA-Stock Regulations
+LAMR-LDT
+LB Affairs
+LB Security
+LK Affairs
+LK Economics
+Lankan Economic Crisis
+Laser Physics And Technology
+Laser Physics Research Paper
+Leadership Humor Research Paper
+Leadership Research Paper
+Legal Analysis
+Limited Partnership Agreement
+Logic
+Logistics Industry
+Lottery
+MA Affairs
+MA Security
+ML Affairs
+ML Security
+ML-Human Rights
+MM Affairs
+MM Diplomacy
+MM Economics
+MM Politics
+MM Security
+MRP-AI For Medical Ultrasonics
+MRP-COVID-19
+MRP-Hepatology
+MRP-Hepatology-Liver Cancer
+MRP-Hepatology-Liver Damage
+MRP-Hepatology-Liver Failure
+MRP-Hepatology-Liver Fibrosis And Cirrhosis
+MRP-Hepatology-Viral Hepatitis
+MRP-Medical Ultrasonics
+MRP-Oncology
+MRT Route Map
+Mainland Southeast Asia Affairs
+Management Fee Details
+Manufacturing
+Manufacturing Process Optimization
+Mao Zedong Studies
+Maritime Industry
+Maritime Safety
+Maritime Silk Road
+Maritime-Ports And Logistics
+Maritime-Ship Operations
+Mark Six
+Market Maker
+Materials Science
+Math-Algebras
+Math-Geometry‎
+Math-Graph Theory
+Math-Mathematical Analysis‎
+Math-Statistics
+Mathematics
+Measles
+Measles IPC
+Measles Vaccine
+Medical Common Sense
+Medical Optics Research Paper
+Medicine
+Medicine Research Paper
+Meeting Affairs
+Meeting Affairs-VTC Information
+Memorandum Of Cooperation
+Microsoft Exchange ICS
+Middle East Affairs
+Military
+Military AI
+Military Diplomacy
+Military Exchanges
+Military Robot
+Military Technology
+Military Unmanned Aerial Vehicle
+Military Unmanned Aerial Vehicle Technology
+Military-Civil Fusion
+Military-Veteran Affairs
+NGO
+NK Affairs
+NK Diplomacy
+NK Military
+NK Nuclear Weapons
+NKF-Valueless Report
+NKF-Valueless Report Title
+Nanotechnology
+Nature Conservation
+Navigation Tags
+Navigation Tags-Date
+Navigation Tags-Districts
+Navigation Tags-Languages
+Navigation Tags-Person Names
+Navigation Tags-Regions
+Navigational Warning
+Navigational Warning-Beacon And Buoy
+Navigational Warning-Cable Maintenance
+Navigational Warning-Distribution Of Fishing Boats
+Navigational Warning-Dredging
+Navigational Warning-End Number Notice
+Navigational Warning-Equipment Test
+Navigational Warning-Event And Rescue
+Navigational Warning-Fairway
+Navigational Warning-Hoisting
+Navigational Warning-LNG Carrier
+Navigational Warning-Marine Salvage
+Navigational Warning-Maritime Research
+Navigational Warning-Military
+Navigational Warning-Military-CFISM
+Navigational Warning-Non Traditional Security
+Navigational Warning-Obstacle Avoidance
+Navigational Warning-Occasional Affairs
+Navigational Warning-Petroleum Development
+Navigational Warning-Routine Affairs
+Navigational Warning-Sea Trial
+Navigational Warning-Sports
+Navigational Warning-Submarine Work
+Navigational Warning-Towing
+Navigational Warning-Traditional Security
+Navigational Warning-Traffic Control
+Network Traffic Analysis
+New Type Of Major-Power Relationship
+New-Type Urbanization
+Non-Critical Infectious Disease
+Northeast CN Affairs
+Novel
+Novel-Adventure Stories
+Novel-Cultural Life
+Novel-Detective And Mystery Stories
+Novel-Fantasy Fiction
+Novel-Natural Science
+Novel-Romance
+Novel-War Stories
+Nuclear Power
+Nuclear Weapons
+Numismatic
+OECD
+Oceanography
+Odd Facts
+Oil And Gas Pipelines
+Oil Supply And Demand
+Olympic Games
+Oncology
+One Belt One Road
+One China Principle
+Optics
+Optics Research Paper
+PDF Format Description
+PE Affairs
+PE Diplomacy
+PE Economics
+PE Election
+PE Politics
+PE Presidential Election
+PH Affairs
+PH Diplomacy
+PH Economics
+PH Politics
+PH Security
+PK Affairs
+PKF-Interesting Report
+PKF-Interesting Report Title
+PLA Air Force
+PLA Ground Force
+PLA Navy
+PLA Organization
+PLA Rocket Force
+PLA Strategic Support Force
+PRC Document
+PRC-Boundary
+PRC-Law
+PRC-Law-Company
+PRC-Law-EHS Law
+PRC-Law-EHS Law Release Notice
+PRC-Law-Education
+PRC-Law-HK National Security Law
+PRC-Law-Law Release Notice
+PRC-Law-Lawyer Regulation
+PRC-Meeting
+PRC-OffDoc
+PRC-Think
+PRC-WReport
+PS Affairs
+PS Diplomacy
+Pacific Alliance
+Package Delivery Charges
+Paris Agreement
+Particle Physics
+Peer Review Process For Journal Papers
+Petroleum Technology Research Paper
+Pharmaceutics
+Pharmacogenomics
+Pharmacology
+Pharmacy
+Photo Contest
+Physics
+Physics Research Paper
+Plant Biology
+PlayStation
+Polar Affairs
+Polar Silk Road
+Pollution
+Popular Biology
+Popular Science
+Population
+Poverty Reduction
+Propaganda
+Psychology
+Psychology Of Emotion
+Psychology Of Lying
+Public Governance
+Public Health
+Public Health Crisis
+Public Health Infrastructure
+Purchase Order
+Purchase Order Of Community
+Purchase Order Of TCB
+QUAD
+Quantum Information Technology
+Quantum Technology
+RCEP
+RMB
+RMB Internationalization
+RORO For Military
+RS Affairs
+RS Security
+RU Affairs
+RU Diplomacy
+RU Economics
+RU Industrial Development
+RU Industrial Investment
+RU Military
+RU Nuclear Weapons
+RU Strategy
+RU-UA Confrontation
+RU-UA MC-Energy Insecurity
+RU-UA MC-Food Insecurity
+RU-UA MC-Humanitarian Crisis
+RU-UA MC-Humanitarian Crisis-Personal Story
+RU-UA MC-Military Aid To UK
+RU-UA MC-RU Nuclear Threat
+RU-UA MC-Russian Drones Attack
+RU-UA Military Confrontation
+RU-UA Relations
+Ransomware
+Rare-Earth Ore
+Rare-Earth Ore Supply And Demand
+Real Estate Industry
+Real Estate Object
+Real Estate Valuation
+Real Estate Valuation Report
+Rebalancing
+Recipes
+Recruitment Application
+Recruitment Application Report
+Recruitment Application Tip
+Recruitment Platform Message
+Regulation Of Genetic Engineering
+Renewable Energy
+Renewable Energy Supply And Demand
+Renewable Energy Technology
+Report Form
+Report Form-Administration
+Report Form-City Comparison Form
+Report Form-Economic Index
+Report Form-Power Index
+Report Form-Technology Company
+Report Form-Uncertainty
+Report Form-Unwanted
+Research Paper
+Research Paper Format
+Resource Security
+Robot
+Routes Guide
+Routine Maritime Safety Propaganda
+Routine Propaganda
+Routine Regulations Propaganda
+Routine SM In Commercial Fishing Industry
+Routine Safety Propaganda
+SA Affairs
+SA Diplomacy
+SA Economics
+SA Security
+SAC-Consulting Company
+SAC-Consulting Company Project
+SAC-Detective Agency
+SAC-Equity Research Company
+SAC-Information Company
+SAC-Information Security Company
+SAC-Logistics Company
+SAC-Restaurant
+SAC-Security Company
+SAC-Telecommunication Company
+SAFTZ
+SAMP-Breast Augmentation
+SAMP-Dental Care
+SAMP-Facial Plastic Surgery
+SAMP-Nutrients And Drugs
+SAMP-Plastic Surgery
+SAS-Cargo Container Shipping
+SAS-Fashion
+SAS-Package Shipping
+SAS-Scientific Instruments
+SAS-Shipping Service
+SASB-Author Introduction
+SASB-Equity Research Report
+SASB-History
+SASB-Numismatic
+SASB-Politics
+SASC-Second Hand Cars
+SASF-Accessory
+SASF-Accessory-Bracelet
+SASF-Accessory-Earrings
+SASF-Accessory-Glasses
+SASF-Accessory-Glasses-Sunglasses
+SASF-Accessory-Keychain
+SASF-Accessory-Necklace
+SASF-Accessory-Ring
+SASF-Accessory-Tie
+SASF-Apparel
+SASF-Apparel-Belt
+SASF-Apparel-Clothing
+SASF-Apparel-Clothing-Dress
+SASF-Apparel-Clothing-Pajama
+SASF-Apparel-Clothing-Pant
+SASF-Apparel-Clothing-Skirt
+SASF-Apparel-Clothing-Top
+SASF-Apparel-Clothing-Underwear
+SASF-Apparel-Shoes
+SASF-Apparel-Socks
+SASF-Apparel-Swimsuit
+SASF-Apparel-Swimsuit-Bikini
+SASF-Apparel-Swimsuit-One Piece
+SASF-Apparel-Swimsuit-Rash Guard
+SASF-Apparel-Swimsuit-Swim Trunk
+SASF-Bag
+SASF-Bag-Backpack
+SASF-Bag-Belt Bag
+SASF-Bag-Pouch
+SASF-Bag-Tote
+SASF-Bag-Wallet
+SASF-Headwear
+SASF-Headwear-Hair Accessory
+SASF-Headwear-Hat
+SASF-Headwear-Visor
+SASFin-Investment Fund
+SASO-3C Products
+SASO-Books
+SASO-Fashion
+SASO-Sporting Equipment
+SAST-Building Blocks
+SASTO-Flight Tickets
+SAT-Information Security
+SCO
+SD Affairs
+SD Security
+SMR-Container Ship
+SMR-Container Ship-Evergreen
+SMR-Container Ship-MSK
+SMR-Container Ship-Wan Hai
+SMR-Container Ship-Yang Ming
+SMR-RORO
+SS Affairs
+SS Security
+SY Affairs
+SY Diplomacy
+Safety Of Oil And Gas Pipelines
+Science And Technology
+Scrap
+Script Code
+Script Code-HTML Code
+Script Code-Linux Code
+Security In Space
+Seismology
+Seismology Research Paper
+Semiconductor
+Semiconductor Industry
+Semiconductor Industry Developement
+Shareholders Meeting
+Shareholders Meeting Notice
+Shareholders Meeting Resolution
+Ship Movement Report
+Shipbuilding Industry
+Short Message
+Showbiz
+Skill Training
+Smart Manufacturing
+Social Insurance
+Social Insurance Fund
+Social Science
+Social Security
+Social Welfare
+Society News
+South Asia Affairs
+South Sea
+South-South Cooperation
+Southeast Asia Affairs
+Southeast Europe Affairs
+Spam
+Spam-Abnormally Repeated Email Header
+Spam-Advertisement
+Spam-Advertisement-Company
+Spam-Advertisement-Escort
+Spam-Advertisement-FB
+Spam-Advertisement-Financial Fraud
+Spam-Advertisement-Media
+Spam-Advertisement-Medicinal Product
+Spam-Advertisement-Member Recruitment
+Spam-Advertisement-Podcast
+Spam-Advertisement-Sale
+Spam-Advertisement-Sale-Apps
+Spam-Advertisement-Sale-Autonomous Drive Cars
+Spam-Advertisement-Sale-Books
+Spam-Advertisement-Sale-Cars
+Spam-Advertisement-Sale-Coins
+Spam-Advertisement-Sale-Finance
+Spam-Advertisement-Sale-Foods
+Spam-Advertisement-Sale-Insurance Product
+Spam-Advertisement-Sale-Market Expo
+Spam-Advertisement-Sale-Nutritional Supplements
+Spam-Advertisement-Sale-Online Gambling
+Spam-Advertisement-Sale-Online Shopping
+Spam-Advertisement-Sale-Tickets Order
+Spam-Advertisement-Sale-Toys
+Spam-Advertisement-TV Program
+Spam-Advertisement-Training Course
+Spam-Fraudulent Call For Papers
+Spam-Phishing Attack
+Spam-Porn
+Spam-Porn-Hot Actress
+Spam-Porn-OnePonDo
+Spam-Porn-Tokyo Hot
+Spam-Receipt Affairs
+Sport Contest
+Sport Psychology
+Sports
+Sports Lottery
+Stock Market Research Paper
+Stock Option Incentive Plan
+Stock Trading
+Stock Trading System
+Straits Forum
+Strategic Partnership
+Strategy And Security
+Student Exchange Program
+Student Exchange Program Application
+Suan Ming
+TFTA
+TH Affairs
+TH Diplomacy
+TH Economics
+TH Politics
+TH Security
+TMKF-Negative Keyword Filter
+TMKF-Positive Keyword Filter
+TMKF-Uncertain Keyword Filter
+TPP
+TTIP
+TW Affairs
+TW Diplomacy
+TW Economic Infrastructure
+TW Economic Infrastructure-Transportation
+TW Economics
+TW Election
+TW Finance
+TW GOV Action Against HK NSL
+TW In APR
+TW Law
+TW Military Unmanned Aerial Vehicle
+TW Military Unmanned Aerial Vehicle Technology
+TW Politics
+TW Stock Market
+TW To Join International Organization
+TW To Join WHA
+TW-EURO Cooperation
+TW-JP Relations
+TW-US Relations
+Taiwan In APR
+Tax
+Technology Company Action Against HK NSL
+Telecommunication
+Telecommunication Technical Documentation
+Tender Document
+Tenders And Bids
+Tesla PDI Report
+The Americas Affairs
+The Americas Economics
+Tibet Affairs
+Timestamp
+Tourism Industry
+Tourist Attraction
+Tourist Attraction-Klook
+Tourist Attraction-Tripadvisor
+Training Method Keyword Filter
+Transportation
+Travel Flight
+Travel Flight-Flight Booking
+Travel Flight-Flight Booking Order
+Travel Preparation
+Travel Ride
+Travel Transportation
+Trip Plan
+UA Affairs
+UA Diplomacy
+UA Economics
+UA Politics
+UA-Women Rights
+UI-Author Introduction
+UI-Institution Introduction
+UIII-Education Institution Introduction
+UIII-Technology Company Introduction
+UIL-Administration Institution List
+UIL-Company List
+UIL-Education Institution List
+UIL-Education Institution List Of Article Authors
+UK Affairs
+UK Diplomacy
+UK Economic History
+UK Economics
+UK Election
+UK Industrial Development
+UK Industrial Investment
+UK Politics
+UK Prime Minister Election
+UK-AFR Economic Cooperation
+UK-AFR Economic Relations
+UK-AFR Relations
+UKF-Uncertain Report
+UKF-Uncertain Report Title
+ULM-Chemistry
+ULM-Information
+ULM-Math
+ULM-Pharmacology
+ULM-Science And Technology
+UN Action Against HK NSL
+UN Action Against Xinjiang Internment Camps
+UN Affairs
+UN Institution
+UN Institution-OCHA
+UN Projects
+UN Projects-Umoja
+UN Projects-United Nations Peacekeeping
+UNEH-UUID
+UNP-MINURSO
+UNP-MINUSCA
+UNP-MINUSMA
+UNP-MONUSCO
+UNP-UNAMID
+UNP-UNDOF
+UNP-UNFICYP
+UNP-UNIFIL
+UNP-UNISFA
+UNP-UNMIK
+UNP-UNMISS
+UNP-UNMOGIP
+UNP-UNTSO
+UPL-List Of Sales People
+UPL-List Of Staffs Of Company
+UPL-List Of Staffs Of Publisher
+UPL-Technician Checklist
+URL-City List
+URP-AI For Ultrasonics
+US Affairs
+US Diplomacy
+US Economic History
+US Economics
+US Election
+US Finance
+US Finance Company
+US Finance Company Development
+US Finance Company Management Right
+US Finance Company Recruitment
+US Finance Company Recruitment Plan
+US Finance Company Revenue
+US Finance Project
+US Framework Against CN
+US GOV Action Against HK NSL
+US GOV Action Against Xinjiang Internment Camps
+US Industrial Development
+US Intelligence System
+US Military
+US Politics
+US Presidential Election
+US Presidential Election 2020
+US Public Diplomacy
+US Restrictions On Huawei
+US Restrictions On Huawei 5G
+US Stock Market
+US Strategy
+US Strategy Against CN
+US Technology
+US Technology Company
+US Technology Company Development
+US Technology Company Management Right
+US Technology Company Recruitment
+US Technology Company Recruitment Plan
+US Technology Company Revenue
+US Technology Project
+US Trade
+US-ASEAN Relations
+US-CN Strategic Security Dialogue
+US-IND Relations
+US-IR Relations
+US-JP Alliance
+US-JP Relations
+US-KOR Cooperation
+US-KOR Relations
+US-NK Relations
+US-RU Confrontation
+US-RU Relations
+USMCA
+Ultrasonics Research Paper
+Uncertainty
+Uncertainty-Article Author List
+Uncertainty-Book List
+Uncertainty-Cells Of Figure
+Uncertainty-Company Business
+Uncertainty-Contact Information
+Uncertainty-Course List
+Uncertainty-Date List
+Uncertainty-Education Materials
+Uncertainty-Education Transcript
+Uncertainty-Employee Regular Work Report
+Uncertainty-Flight Operation Document
+Uncertainty-HCB-Management Analysis
+Uncertainty-HCB-Management Analysis Report
+Uncertainty-Hospitality Company Business
+Uncertainty-Individual Stock Index List
+Uncertainty-Institution List
+Uncertainty-Introduction
+Uncertainty-LDDAP-ADA
+Uncertainty-LDDAP-ADA-PAG
+Uncertainty-Learning Materials
+Uncertainty-Lists
+Uncertainty-NonText Encoding
+Uncertainty-NonText Encoding-Base64
+Uncertainty-NonText Encoding-Hex Code
+Uncertainty-Personnel List
+Uncertainty-Private Delivery
+Uncertainty-Private Insurance Affairs
+Uncertainty-RMR-Power Plant
+Uncertainty-RMR-Waste Management
+Uncertainty-Receipt
+Uncertainty-Receipt-Chartered
+Uncertainty-Receipt-Credit Card
+Uncertainty-Receipt-Highway Toll Receipt
+Uncertainty-Receipt-Hinet
+Uncertainty-Region List
+Uncertainty-Regular Construction Report
+Uncertainty-Regular Maintenance Report
+Uncertainty-Regular Marketing Report
+Uncertainty-Regular Production Report
+Uncertainty-Regular Report
+Uncertainty-Regular Shipment Report
+Uncertainty-Shipment Advice
+Uncertainty-TCB-Semiconductor
+Uncertainty-Technology Company Business
+Uncertainty-Technology Company Business Report
+Uncertainty-Unidentified Digits
+Unemployment Benefits
+Uniform Invoice Lottery
+Unimportant Recruitment
+Unimportant Recruitment Notice
+Unimportant Recruitment Plan
+United Front
+United Front In Taiwan
+Unmanned Aerial Vehicle
+Uranium Mining And Extraction
+Uyghur Human Rights Policy Act Of 2020
+Video Game
+Virtual Reality
+WEF
+WTO Affairs
+Water Resource
+Water-Energy-Food Nexus
+Weather News
+Web Elements
+Web Link
+Web Link-URL Encoding
+West Asia Affairs
+West Europe Affairs
+Wiki Categories
+Winning Lottery Numbers
+Women Rights
+X-Ray Optics Research Paper
+Xbox
+Xinjiang Affairs
+Xinjiang Economics
+Xinjiang Human Rights
+Xinjiang Human Rights Abuses
+Xinjiang Industrial Development
+Xinjiang Internment Camps
+Xinjiang Tourism Industry
+Xinjiang Tourism Promotion
+Xiongan New Area
+YD Integrated Development
+ZW Affairs
+ZW Diplomacy
+ZW Economics
+ZW Politics
+ZW Security
+Zombie Network
+
+There are totally 0 samples converted, cf dataset_20230211180943_TF15Bert_pt8050\dataset_total_with_filename.tsv or dataset_20230211180943_TF15Bert_pt8050\dataset_total_with_filename.sql3 for filename.
+==================================================
+2023-02-11 18:09:49,PID 9016: LabelConvertDict Mapping:
+Identity Map
+共有1514個標籤。
+1992 Consensus
+5G
+6G
+AIDS
+AIDS IPC In Africa
+AIDS IPC In ET
+AIIB
+AKRS
+APEC
+APR
+ARP-AI For Acoustics
+ASEAN Affairs
+AUKUS
+Academia
+Academic Conference
+Academic Exchange
+Academic Research
+Academic Workshop
+Academic Workshop-Math Workshop
+Acoustics Research Paper
+Acquisition Of Twitter By Musk
+Additive Manufacturing
+Additive Manufacturing For Aerospace
+Additive Manufacturing For Medicine
+Administration Information Infrastructure
+Administration Reform
+Administration SM
+Aerospace
+Afghanistan Affairs
+Africa Affairs
+Africa Debt
+Africa Economics
+Africa Finance
+Africa Governance
+African Swine Fever
+Agricultural Biotechnology
+Agriculture And Fisheries
+Agriculture And Food Security
+Air Freight Industry
+Air Quality Forecast
+Aircraft
+Ant Group
+Anti-Fraud Warning
+Anti-Phishing Warning
+Anti-Terrorism
+Anti-Terrorism-BIFF
+Archaeology
+Arms Trade
+Artificial Intelligence
+Artificial Intelligence Application
+Artificial Intelligence Application-Key AI Application
+Artificial Intelligence Application-Non-Key AI Application
+Artificial Intelligence For Autonomous Car
+Artificial Intelligence For COVID-19
+Artificial Intelligence For Medicine
+Artificial Intelligence For Smart Manufacturing
+Artificial Intelligence Research Paper
+Asia Affairs
+Asia-Pacific Affairs
+Asia-Pacific Economics
+Asia-Pacific Security
+Astrophysics
+Atmospheric Optics Research Paper
+Augmented Reality
+Authorization Document
+Automobile Racing
+Automotive Industry
+Autonomous Car Industry
+Autopilot
+Avian Influenza
+Avian Influenza IPC
+Aviation Safety
+BCG Vaccine Clinical Report
+BCIM Economic Corridor
+BD Affairs
+BD Politics
+BD-Acknowledgements
+BD-Bibliography
+BD-Colophon
+BD-Keywords
+BD-Preface
+BD-Table Of Contents
+BD-Title Page
+BDB-Acoustics
+BDB-Artificial Intelligence
+BDB-Business Management
+BDB-CN Equity Research Report
+BDB-Diplomacy
+BDB-Economic History
+BDB-Economics
+BDB-Energy
+BDB-Graph Theory
+BDB-History
+BDB-Math
+BDB-Medical Ultrasonics
+BDB-Medicine
+BDB-Optics Research Paper
+BDB-Psychology
+BDB-Psychology Of Emotion
+BDB-Science And Technology
+BDP-Economic History
+BDP-History
+BF Affairs
+BF Diplomacy
+BF Economics
+BF Politics
+BF Security
+BJ-TW Financial Cooperation Forum
+BR Affairs
+BR Diplomacy
+BR Economics
+BR Election
+BR Politics
+BR Presidential Election
+BRICS
+BRP-Electric-Vehicle Battery
+BTH Coordinated Development
+BW Affairs
+BW Diplomacy
+BW Economics
+BW Politics
+BW Security
+BY Affairs
+BY Diplomacy
+BY Economics
+BY Politics
+BY Security
+Backdoor Software
+Backdoor Software From CN GOV
+Battery Research Paper
+Battery Technology
+Bidding Proposal
+Binhai New Area
+Bioenergy
+Biology
+Biology Research Paper
+Biotechnology
+Boao Forum
+Bohai Economic Rim
+Bond Credit Rating
+Book Design
+Budget Management Integrated System
+Business Management
+CA-Waste Management
+CAFTA
+CD Affairs
+CD Economics
+CD Security
+CELAC Affairs
+CERP-Automotive Industry
+CERP-CN Military Aircraft Industry
+CERP-CN Military Unmanned Aerial Vehicle Industry
+CERP-Coal Mining Industry
+CERP-Energy Industry
+CERP-Insurance Industry
+CERP-Investment Rating Criteria
+CERP-Key Industry
+CERP-Key Technology Company
+CERP-Key Technology Industry
+CERP-Logistics Industry
+CERP-Medical Industry
+CERP-Military Aircraft Industry
+CERP-Military Industry
+CERP-Military Unmanned Aerial Vehicle Industry
+CERP-Mining Industry
+CERP-Non-Key Industry
+CERP-Non-Key Technology Company
+CERP-Non-Key Technology Industry
+CERP-Packaging Material Industry
+CERP-Real Estate Industry
+CERP-Semiconductor Industry
+CERP-Wind Power Industry
+CF Affairs
+CF Security
+CF-Human Rights
+CFI-SM-Acknowledge
+CFI-SM-Household SM
+CFI-SM-Regulations Propaganda SM
+CFI-SM-Safety Propaganda SM
+CFI-SM-Weather News SM
+CFI-Weather News SM
+CI Affairs
+CI Diplomacy
+CI Economics
+CI Politics
+CI Security
+CICA
+CLEC
+CM Affairs
+CM Diplomacy
+CM Economics
+CM Politics
+CM Security
+CMEC
+CN Administration
+CN Affairs
+CN Budget Management
+CN City Development
+CN Cognitive Warfare In TW
+CN Company Development
+CN Company Management Right
+CN Consumption Promotion Policy
+CN Culture
+CN Culture And History
+CN Debt-Trap Diplomacy
+CN Digital Economy
+CN Diplomacy
+CN Diplomatic Relations
+CN Economic History
+CN Economic Inequality
+CN Economics
+CN Equity Research Report
+CN FTZ
+CN FTZ-Fujian
+CN FTZ-Guangdong
+CN FTZ-Hainan
+CN FTZ-Liaoning
+CN FTZ-Shandong
+CN FTZ-Shanghai
+CN FTZ-Tianjin
+CN Finance
+CN Foreign Policy
+CN History
+CN Hospitality Industry Development
+CN Human Resource
+CN Income And Consumption
+CN Industrial Development
+CN Industrial Investment
+CN MediaW
+CN Military
+CN Military Administration
+CN Military Defense Operation
+CN Military Diplomacy
+CN Military Family
+CN Military Operation
+CN Military Power
+CN Military Recruitment
+CN Military Technology
+CN Military Unification
+CN Military Unmanned Aerial Vehicle
+CN Military Unmanned Aerial Vehicle Technology
+CN Military-Civil Fusion
+CN National Defense Operation
+CN Petitioning
+CN Poaching From TW
+CN Policy For TW
+CN Politics
+CN Poverty Reduction
+CN Public Diplomacy
+CN Rural Development
+CN Social Science
+CN Social Science Project
+CN Sports Diplomacy
+CN Stock Market
+CN Strategy
+CN TPF TW-Agriculture Technology
+CN Talent Poaching From TW
+CN Talent Poaching From TW-Tech Talent
+CN Technology
+CN Technology Company
+CN Technology Company Development
+CN Technology Company Management Right
+CN Technology Company Recruitment
+CN Technology Company Recruitment Plan
+CN Technology Company Revenue
+CN Technology Poaching From TW
+CN Technology Project
+CN Tourism Industry
+CN Tourism Promotion
+CN Trade
+CN-AFR Cooperation
+CN-AFR Relations
+CN-ARStates Cooperation
+CN-ARStates Relations
+CN-ASEAN Cooperation
+CN-ASEAN Economic Cooperation
+CN-ASEAN Economic Relations
+CN-ASEAN Investment
+CN-ASEAN Relations
+CN-ASEAN Trade
+CN-AU Confrontation
+CN-AU Relations
+CN-BF Cooperation
+CN-BF Relations
+CN-BN Investment
+CN-BN Trade
+CN-BR Cooperation
+CN-BR Relations
+CN-BW Cooperation
+CN-BW Relations
+CN-BY Cooperation
+CN-BY Relations
+CN-CELAC Cooperation
+CN-CELAC Relations
+CN-CI Cooperation
+CN-CI Relations
+CN-CM Cooperation
+CN-CM Relations
+CN-EAsia Relations
+CN-ECO Cooperation
+CN-EG Cooperation
+CN-EG Relations
+CN-EURO BIT
+CN-EURO Cooperation
+CN-EURO Relations
+CN-FR Cooperation
+CN-FR Relations
+CN-GH Cooperation
+CN-GH Relations
+CN-Human Rights
+CN-Human Rights Abuses
+CN-ID Investment
+CN-ID Relations
+CN-ID Trade
+CN-IND Boundary
+CN-IND Confrontation
+CN-IND Relations
+CN-IND Trade
+CN-JP Relations
+CN-JP Trade
+CN-JP-KOR FTA
+CN-KH Cooperation
+CN-KH Investment
+CN-KH Relations
+CN-KH Trade
+CN-KOR Relations
+CN-KOR Trade
+CN-LA Cooperation
+CN-LA Investment
+CN-LA Relations
+CN-LA Trade
+CN-MM Cooperation
+CN-MM Investment
+CN-MM Relations
+CN-MM Trade
+CN-MNG Relations
+CN-MY Investment
+CN-MY Trade
+CN-NK Relations
+CN-NP Relations
+CN-NZ Relations
+CN-Occident Relations
+CN-PH Cooperation
+CN-PH Investment
+CN-PH Relations
+CN-PH Trade
+CN-PK Relations
+CN-Particular ASEAN Member Relations
+CN-RU Relations
+CN-SA Cooperation
+CN-SA Cooperation Joint Statement
+CN-SA Relations
+CN-SG Investment
+CN-SG Trade
+CN-TH Investment
+CN-TH Trade
+CN-UK Relations
+CN-US BIT
+CN-US Confrontation
+CN-US Cooperation
+CN-US Economic Cooperation
+CN-US Economic Relations
+CN-US Investment
+CN-US Relations
+CN-US Tech War
+CN-US Trade
+CN-US Trade Disputes
+CN-VN Cooperation
+CN-VN Investment
+CN-VN Relations
+CN-VN Trade
+CN–BY Industrial Park Great Stone
+COVID-19
+COVID-19 Economic Stimulus And Relief
+COVID-19 Effect On Economic
+COVID-19 IPC
+COVID-19 IPC For Community
+COVID-19 IPC For Community-Government Activity
+COVID-19 IPC For Community-Inspirational Story
+COVID-19 IPC In Air Freight Industry
+COVID-19 IPC In Commercial Fishing Industry
+COVID-19 IPC In Logistics Industry
+COVID-19 IPC In Maritime Industry
+COVID-19 IPC In Tourism Industry
+COVID-19 IPC-Activity
+COVID-19 IPC-Activity Regulation
+COVID-19 IPC-Footprint Survey
+COVID-19 IPC-Isolation And Quarantine
+COVID-19 IPC-Isolation And Quarantine Policy
+COVID-19 IPC-Isolation And Quarantine Survey
+COVID-19 IPC-Learning Activity
+COVID-19 IPC-Learning Activity Regulation
+COVID-19 IPC-Online Learning
+COVID-19 Vaccine
+COVID-19 Vaccine Clinical Report
+CPC Affairs
+CPC Meeting
+CPC Party Development
+CPC Party Development-Inspirational Story
+CPC Personnel Change
+CPC Politician Affairs
+CPC Propaganda
+CPC United Front Work Organization Toward TW
+CPEC
+CPTPP
+CR Express
+CSKFTA
+CY Affairs
+CY Security
+CY-Human Rights
+Call For Conference Papers
+Call For Journal Papers
+Call For Papers
+Carbon Capture And Storage
+Carbon Neutrality
+Carbon Neutrality Budget
+Carbon Neutrality In Maritime Industry
+Central Asia Affairs
+ChemSHERPA
+ChemSHERPA Data
+Chemical Safety
+Chemical Substance Control
+Chemistry
+Chengdu-Chongqing Economic Circle
+Children Rights
+Cholera
+Climate And Resource Security
+Climate Change
+Climate Change Action
+Climate Security
+Climatology
+Clinical Infrastructure
+Clinical Report
+Coal Supply And Demand
+Commerce
+Commercial Fishing Industry
+Common Sense
+Community Affairs
+Community Of Common Destiny For Mankind
+Community Public Service
+Compact With Africa
+Company Audit
+Confucius Institute
+Constellation
+Construction Industry
+Construction Safety Instruction
+Contact Information-Embassy
+Contact Information-SOS
+Contest
+Contract
+Contract For Purchase And Sales
+Coronavirus Diplomacy
+Corporate Credit Rating
+Credit Rating
+Crime News
+Critical Infectious Disease
+Cross-Strait Direct Shipping
+Cross-Strait Economic Relations
+Cross-Strait Relations
+Cross-Strait Trade
+Cross-Strait Trade-Semiconductor
+Cuisine Introduction
+Cultural Heritage
+Culture
+Culture And History
+Customer Services
+Customer Services-Refund
+Customer Services-Technical Support
+Customer Services-Technical Support-QLC
+Customs Document
+Cybersecurity
+Cybersecurity Exhibition
+DE-AFR Relations
+DM-Anti-Drought
+DM-Disaster Report
+DM-Earthquake Management
+DM-Flood Control
+DMDR-CN Disaster Report
+Data Science
+Diaoyutai Affairs
+Digital Currency
+Digital RMB
+Diplomacy
+Disaster Management
+Disclaimers
+Drug Analysis Report
+ECO
+ED-Automated Email Disclaimer
+ED-Confidentiality Disclaimer
+ED-Contracts Disclaimer
+ED-Copyright Disclaimer
+ED-Disclaimers For Mailing Lists And Newsletters
+ED-Employees Liability Disclaimer
+ED-Enquiries Disclaimer
+ED-Environmental Disclaimer
+ED-Full Content Email Disclaimer
+ED-GDPR Disclaimer
+ED-HIPAA Disclaimer
+ED-Interception And Monitoring Disclaimer
+ED-Legal Requirements Disclaimer
+ED-Negligence Disclaimer
+ED-Personal Opinion Disclaimer
+ED-Virus Or Security Disclaimer
+EG Affairs
+EG Diplomacy
+EG Economics
+EG Politics
+EG Security
+ERP-Comparative Advantage
+ET Affairs
+ET Debt
+ET Diplomacy
+ET Economics
+ET Finance
+ET Security
+EU REACH
+EU REACH SVHC
+EURO Stock Market
+EURO-AFR Cooperation
+EURO-AFR Economic Cooperation
+EURO-CELAC Cooperation
+Earth Monitoring Infrastructure
+East Asia Affairs
+East Europe Affairs
+Ebolavirus
+Ecology
+Economic History
+Economic Sanctions
+Economics Research Paper
+Editorial
+Editorial-Anti-CPC
+Education
+Education And Academia
+Educational Improvement
+Efficient Energy Use
+Electric-Vehicle
+Electric-Vehicle Battery
+Email Address-Embassy
+Email Disclaimer
+Email Header
+Email Header-Email Address
+Embassy Personnel Change
+Emergency Assistance
+Emergency Food Assistance
+Energy
+Energy Consumption And Efficiency
+Energy Research Paper
+Energy Security
+Energy Technology
+Energy-Efficient Product Procurement
+Engineering
+Entomology
+Entomology Research Paper
+Entrepreneurship
+Environmental Biotechnology
+Environmental Monitoring Infrastructure
+Environmental Protection
+Europe Affairs
+Europe Economics
+Europe Finance
+Exchange Program
+Exhibition
+Export Controls
+Export Of CN Military Unmanned Aerial Vehicle
+FOCAC Round Table Meeting
+FOCAC-Conference Of CN And AFR Entrepreneurs
+FOCAC-Summit Of FOCAC
+FS-Company Financial Statements
+FTA
+FTAAP
+FTP
+FTZ
+Facilities Agreement
+Facilities Management Proposal
+False Decoding
+False Decoding-Broken Data Stream
+False Decoding-PDF Binary
+False Decoding-PDF Text Extraction Failure
+False Decoding-Word Text Extraction Failure
+Falun Gong
+Farmer Development
+Farmland Planning
+Fashion
+Feng Shui
+Fenqing
+Fenqing-Anti-CPC
+Fenqing-Anti-DPP
+Fenqing-Anti-KMT
+Fenqing-Anti-Mao
+Fenqing-Anti-US
+Fenqing-Taiwan Independence Movement
+Finance Disclaimer
+Finance Lease Contract
+Finance Research Paper
+Financial Contract
+Financial Industry
+Financial Statements
+Fire News
+Fire Safety Guidelines
+Food Safety
+Food Security
+Foreign AdminReport
+Foreign Think
+Formal Education
+Formal Science
+Forum On CN-AFR Cooperation
+Forums Between CN And TW
+Fossil Fuel
+Fossil Fuel Supply And Demand
+Fund Management Report
+Furniture Affairs
+Furniture Exhibition
+Furniture Industry
+Furniture Objects
+G20
+G7
+G77
+GH Affairs
+GH Diplomacy
+GH Economics
+GH Politics
+GH Security
+GMP
+Gambling
+Game
+Game-MMOG
+General Membership Meeting
+General Membership Meeting Notice
+General Notifications
+Genetic Engineering
+Genomics
+Geographic Areas
+Geopolitics
+Geoscience
+Geoscience Research Paper
+Global Gold Price
+Global Governance
+Global Law
+Government Real Estate Policy
+Greater Bay Area
+Greater Mekong Subregion
+Green Economy
+Green Energy
+Green Energy Supply And Demand
+Green Energy Technology
+Green Finance
+Grey Zone Conflicts
+Guinness World Records
+HITCON
+HK Affairs
+HK Autonomy Act
+HK Democracy Supporter
+HK Democracy Supporter In Showbiz
+HK Economics
+HK Election
+HK Finance
+HK GOV Action Supporting HK NSL
+HK History
+HK Maritime Industry
+HK National Security Law
+HK National Security Law-Law Enforcement Status
+HK National Security Law-Legal Analysis
+HK National Security Law-Legislative Process
+HK National Security Law-Political Prisoner
+HK Native Action About HK NSL
+HK Native Action Against HK NSL
+HK Native Action Supporting HK NSL
+HK Politics
+HK Stock Market
+HK Trade
+Health Silk Road
+Health Technology
+Hepatology
+High Performance Computing
+History
+Horse Racing
+Horse Racing Lottery
+Hotel Affairs
+Hotel Information
+Household
+Huawei 5G Affairs
+Huawei Affairs
+Huawei Email Address
+Human Resources Audit
+Human Rights
+Hydrogen Energy
+Hydrogen Energy Research Paper
+Hydrogen Energy Supply And Demand
+Hydrogen Energy Technology
+Hydrogen Storage Research Paper
+IL Affairs
+IL Diplomacy
+IL-PS Confrontation
+IL-PS Military Confrontation
+IL-PS Relations
+IL-SY Confrontation
+IL-SY Military Confrontation
+IL-SY Relations
+IND Affairs
+IND Diplomacy
+IND Economics
+IND Finance
+IND Military
+IND Strategy
+IND-PK Boundary
+IND-PK Confrontation
+IND-PK Military Confrontation
+IND-PK Relations
+IP-Patent Affairs
+IP-Patent Application
+IP-Patent Disputes
+IQ Affairs
+IQ Diplomacy
+IQ Security
+IR Affairs
+IR Diplomacy
+IR Military
+IR Nuclear Weapons
+ISM-Ecommerce Order
+ISM-Ecommerce Order-AliExpress
+ISM-OA System Message
+ISM-Security Verification Code
+ISM-Social Platform
+ISM-Social Platform-FB
+ISM-Social Platform-LinkedIn
+ISM-Social Platform-Twitter
+ISM-Subscription Notifications
+ISM-Undelivered Mail Notification Header
+ISM-Warning Message
+ISM-Warning Message-Web
+Impact Of HK NSL
+Impact Of HK NSL On Cross-Strait Relations
+Impact Of HK NSL On HK Economics
+Impact Of HK NSL On HK Emigration Wave
+Impact Of HK NSL On HK Finance
+Impact Of HK NSL On HK Politics
+Impact Of HK NSL On HK Politics-Ordinary People Story
+Impact Of HK NSL On HK Tourism Industry
+Incentive Stock Option
+Incentive Stock Option Analysis
+Indian Rupee
+Indo-Pacific Framework
+Industrial Biotechnology
+Industrial Development
+Infectious Disease
+Influenza
+Influenza IPC
+Influenza Vaccine
+Information Infrastructure
+Information Journal Introduction
+Information Research Paper
+Information Security
+Information System Message
+Information Technology
+Informative
+Infrastructure
+Intellectual Property
+Interior Affairs
+International Action About HK NSL
+International Action About Xinjiang Internment Camps
+International Action Against HK NSL
+International Action Against Xinjiang Internment Camps
+International Action Supporting HK NSL
+International Action Supporting Xinjiang Internment Camps
+International Economics
+International Finance
+International Financial Indicators
+International Relations
+International Stock Market
+International Technology Company Action Against HK NSL
+International Trade
+Internet Forum
+Internet Forum-Logistics
+Internet Forum-Profile
+Internet Of Things
+Internet Of Things Cybersecurity
+Interview
+Interview-CN Affairs
+Interview-CN Economics
+Islamic State
+Island Southeast Asia Affairs
+Israeli-Palestinian Conflict
+JP Affairs
+JP Diplomacy
+JP Diplomacy For Indo-Pacific Framework
+JP Economic History
+JP Economics
+JP Finance
+JP Military
+JP Politics
+JP Stock Market
+JP Strategy
+JP-EURO EPA
+JP-KOR Relations
+JP-RU Relations
+JP-UK Relations
+Jiangbei New Area
+Jiaodong Economic Circle
+Journal Introduction
+Judiciary
+KOR Affairs
+KOR Diplomacy
+KOR Economics
+KOR Finance
+KOR Politics
+Keyword Filter
+Keyword Neg Filter
+Keyword Neg Filter-Valueless Report
+L-M Cooperation
+LA-Company Law
+LA-Labour Law
+LA-Medical Regulations
+LA-Real Estate Regulations
+LA-Stock Regulations
+LAMR-LDT
+LB Affairs
+LB Security
+LK Affairs
+LK Economics
+Lankan Economic Crisis
+Laser Physics And Technology
+Laser Physics Research Paper
+Leadership Humor Research Paper
+Leadership Research Paper
+Legal Analysis
+Limited Partnership Agreement
+Logic
+Logistics Industry
+Lottery
+MA Affairs
+MA Security
+ML Affairs
+ML Security
+ML-Human Rights
+MM Affairs
+MM Diplomacy
+MM Economics
+MM Politics
+MM Security
+MRP-AI For Medical Ultrasonics
+MRP-COVID-19
+MRP-Hepatology
+MRP-Hepatology-Liver Cancer
+MRP-Hepatology-Liver Damage
+MRP-Hepatology-Liver Failure
+MRP-Hepatology-Liver Fibrosis And Cirrhosis
+MRP-Hepatology-Viral Hepatitis
+MRP-Medical Ultrasonics
+MRP-Oncology
+MRT Route Map
+Mainland Southeast Asia Affairs
+Management Fee Details
+Manufacturing
+Manufacturing Process Optimization
+Mao Zedong Studies
+Maritime Industry
+Maritime Safety
+Maritime Silk Road
+Maritime-Ports And Logistics
+Maritime-Ship Operations
+Mark Six
+Market Maker
+Materials Science
+Math-Algebras
+Math-Geometry‎
+Math-Graph Theory
+Math-Mathematical Analysis‎
+Math-Statistics
+Mathematics
+Measles
+Measles IPC
+Measles Vaccine
+Medical Common Sense
+Medical Optics Research Paper
+Medicine
+Medicine Research Paper
+Meeting Affairs
+Meeting Affairs-VTC Information
+Memorandum Of Cooperation
+Microsoft Exchange ICS
+Middle East Affairs
+Military
+Military AI
+Military Diplomacy
+Military Exchanges
+Military Robot
+Military Technology
+Military Unmanned Aerial Vehicle
+Military Unmanned Aerial Vehicle Technology
+Military-Civil Fusion
+Military-Veteran Affairs
+NGO
+NK Affairs
+NK Diplomacy
+NK Military
+NK Nuclear Weapons
+NKF-Valueless Report
+NKF-Valueless Report Title
+Nanotechnology
+Nature Conservation
+Navigation Tags
+Navigation Tags-Date
+Navigation Tags-Districts
+Navigation Tags-Languages
+Navigation Tags-Person Names
+Navigation Tags-Regions
+Navigational Warning
+Navigational Warning-Beacon And Buoy
+Navigational Warning-Cable Maintenance
+Navigational Warning-Distribution Of Fishing Boats
+Navigational Warning-Dredging
+Navigational Warning-End Number Notice
+Navigational Warning-Equipment Test
+Navigational Warning-Event And Rescue
+Navigational Warning-Fairway
+Navigational Warning-Hoisting
+Navigational Warning-LNG Carrier
+Navigational Warning-Marine Salvage
+Navigational Warning-Maritime Research
+Navigational Warning-Military
+Navigational Warning-Military-CFISM
+Navigational Warning-Non Traditional Security
+Navigational Warning-Obstacle Avoidance
+Navigational Warning-Occasional Affairs
+Navigational Warning-Petroleum Development
+Navigational Warning-Routine Affairs
+Navigational Warning-Sea Trial
+Navigational Warning-Sports
+Navigational Warning-Submarine Work
+Navigational Warning-Towing
+Navigational Warning-Traditional Security
+Navigational Warning-Traffic Control
+Network Traffic Analysis
+New Type Of Major-Power Relationship
+New-Type Urbanization
+Non-Critical Infectious Disease
+Northeast CN Affairs
+Novel
+Novel-Adventure Stories
+Novel-Cultural Life
+Novel-Detective And Mystery Stories
+Novel-Fantasy Fiction
+Novel-Natural Science
+Novel-Romance
+Novel-War Stories
+Nuclear Power
+Nuclear Weapons
+Numismatic
+OECD
+Oceanography
+Odd Facts
+Oil And Gas Pipelines
+Oil Supply And Demand
+Olympic Games
+Oncology
+One Belt One Road
+One China Principle
+Optics
+Optics Research Paper
+PDF Format Description
+PE Affairs
+PE Diplomacy
+PE Economics
+PE Election
+PE Politics
+PE Presidential Election
+PH Affairs
+PH Diplomacy
+PH Economics
+PH Politics
+PH Security
+PK Affairs
+PKF-Interesting Report
+PKF-Interesting Report Title
+PLA Air Force
+PLA Ground Force
+PLA Navy
+PLA Organization
+PLA Rocket Force
+PLA Strategic Support Force
+PRC Document
+PRC-Boundary
+PRC-Law
+PRC-Law-Company
+PRC-Law-EHS Law
+PRC-Law-EHS Law Release Notice
+PRC-Law-Education
+PRC-Law-HK National Security Law
+PRC-Law-Law Release Notice
+PRC-Law-Lawyer Regulation
+PRC-Meeting
+PRC-OffDoc
+PRC-Think
+PRC-WReport
+PS Affairs
+PS Diplomacy
+Pacific Alliance
+Package Delivery Charges
+Paris Agreement
+Particle Physics
+Peer Review Process For Journal Papers
+Petroleum Technology Research Paper
+Pharmaceutics
+Pharmacogenomics
+Pharmacology
+Pharmacy
+Photo Contest
+Physics
+Physics Research Paper
+Plant Biology
+PlayStation
+Polar Affairs
+Polar Silk Road
+Pollution
+Popular Biology
+Popular Science
+Population
+Poverty Reduction
+Propaganda
+Psychology
+Psychology Of Emotion
+Psychology Of Lying
+Public Governance
+Public Health
+Public Health Crisis
+Public Health Infrastructure
+Purchase Order
+Purchase Order Of Community
+Purchase Order Of TCB
+QUAD
+Quantum Information Technology
+Quantum Technology
+RCEP
+RMB
+RMB Internationalization
+RORO For Military
+RS Affairs
+RS Security
+RU Affairs
+RU Diplomacy
+RU Economics
+RU Industrial Development
+RU Industrial Investment
+RU Military
+RU Nuclear Weapons
+RU Strategy
+RU-UA Confrontation
+RU-UA MC-Energy Insecurity
+RU-UA MC-Food Insecurity
+RU-UA MC-Humanitarian Crisis
+RU-UA MC-Humanitarian Crisis-Personal Story
+RU-UA MC-Military Aid To UK
+RU-UA MC-RU Nuclear Threat
+RU-UA MC-Russian Drones Attack
+RU-UA Military Confrontation
+RU-UA Relations
+Ransomware
+Rare-Earth Ore
+Rare-Earth Ore Supply And Demand
+Real Estate Industry
+Real Estate Object
+Real Estate Valuation
+Real Estate Valuation Report
+Rebalancing
+Recipes
+Recruitment Application
+Recruitment Application Report
+Recruitment Application Tip
+Recruitment Platform Message
+Regulation Of Genetic Engineering
+Renewable Energy
+Renewable Energy Supply And Demand
+Renewable Energy Technology
+Report Form
+Report Form-Administration
+Report Form-City Comparison Form
+Report Form-Economic Index
+Report Form-Power Index
+Report Form-Technology Company
+Report Form-Uncertainty
+Report Form-Unwanted
+Research Paper
+Research Paper Format
+Resource Security
+Robot
+Routes Guide
+Routine Maritime Safety Propaganda
+Routine Propaganda
+Routine Regulations Propaganda
+Routine SM In Commercial Fishing Industry
+Routine Safety Propaganda
+SA Affairs
+SA Diplomacy
+SA Economics
+SA Security
+SAC-Consulting Company
+SAC-Consulting Company Project
+SAC-Detective Agency
+SAC-Equity Research Company
+SAC-Information Company
+SAC-Information Security Company
+SAC-Logistics Company
+SAC-Restaurant
+SAC-Security Company
+SAC-Telecommunication Company
+SAFTZ
+SAMP-Breast Augmentation
+SAMP-Dental Care
+SAMP-Facial Plastic Surgery
+SAMP-Nutrients And Drugs
+SAMP-Plastic Surgery
+SAS-Cargo Container Shipping
+SAS-Fashion
+SAS-Package Shipping
+SAS-Scientific Instruments
+SAS-Shipping Service
+SASB-Author Introduction
+SASB-Equity Research Report
+SASB-History
+SASB-Numismatic
+SASB-Politics
+SASC-Second Hand Cars
+SASF-Accessory
+SASF-Accessory-Bracelet
+SASF-Accessory-Earrings
+SASF-Accessory-Glasses
+SASF-Accessory-Glasses-Sunglasses
+SASF-Accessory-Keychain
+SASF-Accessory-Necklace
+SASF-Accessory-Ring
+SASF-Accessory-Tie
+SASF-Apparel
+SASF-Apparel-Belt
+SASF-Apparel-Clothing
+SASF-Apparel-Clothing-Dress
+SASF-Apparel-Clothing-Pajama
+SASF-Apparel-Clothing-Pant
+SASF-Apparel-Clothing-Skirt
+SASF-Apparel-Clothing-Top
+SASF-Apparel-Clothing-Underwear
+SASF-Apparel-Shoes
+SASF-Apparel-Socks
+SASF-Apparel-Swimsuit
+SASF-Apparel-Swimsuit-Bikini
+SASF-Apparel-Swimsuit-One Piece
+SASF-Apparel-Swimsuit-Rash Guard
+SASF-Apparel-Swimsuit-Swim Trunk
+SASF-Bag
+SASF-Bag-Backpack
+SASF-Bag-Belt Bag
+SASF-Bag-Pouch
+SASF-Bag-Tote
+SASF-Bag-Wallet
+SASF-Headwear
+SASF-Headwear-Hair Accessory
+SASF-Headwear-Hat
+SASF-Headwear-Visor
+SASFin-Investment Fund
+SASO-3C Products
+SASO-Books
+SASO-Fashion
+SASO-Sporting Equipment
+SAST-Building Blocks
+SASTO-Flight Tickets
+SAT-Information Security
+SCO
+SD Affairs
+SD Security
+SMR-Container Ship
+SMR-Container Ship-Evergreen
+SMR-Container Ship-MSK
+SMR-Container Ship-Wan Hai
+SMR-Container Ship-Yang Ming
+SMR-RORO
+SS Affairs
+SS Security
+SY Affairs
+SY Diplomacy
+Safety Of Oil And Gas Pipelines
+Science And Technology
+Scrap
+Script Code
+Script Code-HTML Code
+Script Code-Linux Code
+Security In Space
+Seismology
+Seismology Research Paper
+Semiconductor
+Semiconductor Industry
+Semiconductor Industry Developement
+Shareholders Meeting
+Shareholders Meeting Notice
+Shareholders Meeting Resolution
+Ship Movement Report
+Shipbuilding Industry
+Short Message
+Showbiz
+Skill Training
+Smart Manufacturing
+Social Insurance
+Social Insurance Fund
+Social Science
+Social Security
+Social Welfare
+Society News
+South Asia Affairs
+South Sea
+South-South Cooperation
+Southeast Asia Affairs
+Southeast Europe Affairs
+Spam
+Spam-Abnormally Repeated Email Header
+Spam-Advertisement
+Spam-Advertisement-Company
+Spam-Advertisement-Escort
+Spam-Advertisement-FB
+Spam-Advertisement-Financial Fraud
+Spam-Advertisement-Media
+Spam-Advertisement-Medicinal Product
+Spam-Advertisement-Member Recruitment
+Spam-Advertisement-Podcast
+Spam-Advertisement-Sale
+Spam-Advertisement-Sale-Apps
+Spam-Advertisement-Sale-Autonomous Drive Cars
+Spam-Advertisement-Sale-Books
+Spam-Advertisement-Sale-Cars
+Spam-Advertisement-Sale-Coins
+Spam-Advertisement-Sale-Finance
+Spam-Advertisement-Sale-Foods
+Spam-Advertisement-Sale-Insurance Product
+Spam-Advertisement-Sale-Market Expo
+Spam-Advertisement-Sale-Nutritional Supplements
+Spam-Advertisement-Sale-Online Gambling
+Spam-Advertisement-Sale-Online Shopping
+Spam-Advertisement-Sale-Tickets Order
+Spam-Advertisement-Sale-Toys
+Spam-Advertisement-TV Program
+Spam-Advertisement-Training Course
+Spam-Fraudulent Call For Papers
+Spam-Phishing Attack
+Spam-Porn
+Spam-Porn-Hot Actress
+Spam-Porn-OnePonDo
+Spam-Porn-Tokyo Hot
+Spam-Receipt Affairs
+Sport Contest
+Sport Psychology
+Sports
+Sports Lottery
+Stock Market Research Paper
+Stock Option Incentive Plan
+Stock Trading
+Stock Trading System
+Straits Forum
+Strategic Partnership
+Strategy And Security
+Student Exchange Program
+Student Exchange Program Application
+Suan Ming
+TFTA
+TH Affairs
+TH Diplomacy
+TH Economics
+TH Politics
+TH Security
+TMKF-Negative Keyword Filter
+TMKF-Positive Keyword Filter
+TMKF-Uncertain Keyword Filter
+TPP
+TTIP
+TW Affairs
+TW Diplomacy
+TW Economic Infrastructure
+TW Economic Infrastructure-Transportation
+TW Economics
+TW Election
+TW Finance
+TW GOV Action Against HK NSL
+TW In APR
+TW Law
+TW Military Unmanned Aerial Vehicle
+TW Military Unmanned Aerial Vehicle Technology
+TW Politics
+TW Stock Market
+TW To Join International Organization
+TW To Join WHA
+TW-EURO Cooperation
+TW-JP Relations
+TW-US Relations
+Taiwan In APR
+Tax
+Technology Company Action Against HK NSL
+Telecommunication
+Telecommunication Technical Documentation
+Tender Document
+Tenders And Bids
+Tesla PDI Report
+The Americas Affairs
+The Americas Economics
+Tibet Affairs
+Timestamp
+Tourism Industry
+Tourist Attraction
+Tourist Attraction-Klook
+Tourist Attraction-Tripadvisor
+Training Method Keyword Filter
+Transportation
+Travel Flight
+Travel Flight-Flight Booking
+Travel Flight-Flight Booking Order
+Travel Preparation
+Travel Ride
+Travel Transportation
+Trip Plan
+UA Affairs
+UA Diplomacy
+UA Economics
+UA Politics
+UA-Women Rights
+UI-Author Introduction
+UI-Institution Introduction
+UIII-Education Institution Introduction
+UIII-Technology Company Introduction
+UIL-Administration Institution List
+UIL-Company List
+UIL-Education Institution List
+UIL-Education Institution List Of Article Authors
+UK Affairs
+UK Diplomacy
+UK Economic History
+UK Economics
+UK Election
+UK Industrial Development
+UK Industrial Investment
+UK Politics
+UK Prime Minister Election
+UK-AFR Economic Cooperation
+UK-AFR Economic Relations
+UK-AFR Relations
+UKF-Uncertain Report
+UKF-Uncertain Report Title
+ULM-Chemistry
+ULM-Information
+ULM-Math
+ULM-Pharmacology
+ULM-Science And Technology
+UN Action Against HK NSL
+UN Action Against Xinjiang Internment Camps
+UN Affairs
+UN Institution
+UN Institution-OCHA
+UN Projects
+UN Projects-Umoja
+UN Projects-United Nations Peacekeeping
+UNEH-UUID
+UNP-MINURSO
+UNP-MINUSCA
+UNP-MINUSMA
+UNP-MONUSCO
+UNP-UNAMID
+UNP-UNDOF
+UNP-UNFICYP
+UNP-UNIFIL
+UNP-UNISFA
+UNP-UNMIK
+UNP-UNMISS
+UNP-UNMOGIP
+UNP-UNTSO
+UPL-List Of Sales People
+UPL-List Of Staffs Of Company
+UPL-List Of Staffs Of Publisher
+UPL-Technician Checklist
+URL-City List
+URP-AI For Ultrasonics
+US Affairs
+US Diplomacy
+US Economic History
+US Economics
+US Election
+US Finance
+US Finance Company
+US Finance Company Development
+US Finance Company Management Right
+US Finance Company Recruitment
+US Finance Company Recruitment Plan
+US Finance Company Revenue
+US Finance Project
+US Framework Against CN
+US GOV Action Against HK NSL
+US GOV Action Against Xinjiang Internment Camps
+US Industrial Development
+US Intelligence System
+US Military
+US Politics
+US Presidential Election
+US Presidential Election 2020
+US Public Diplomacy
+US Restrictions On Huawei
+US Restrictions On Huawei 5G
+US Stock Market
+US Strategy
+US Strategy Against CN
+US Technology
+US Technology Company
+US Technology Company Development
+US Technology Company Management Right
+US Technology Company Recruitment
+US Technology Company Recruitment Plan
+US Technology Company Revenue
+US Technology Project
+US Trade
+US-ASEAN Relations
+US-CN Strategic Security Dialogue
+US-IND Relations
+US-IR Relations
+US-JP Alliance
+US-JP Relations
+US-KOR Cooperation
+US-KOR Relations
+US-NK Relations
+US-RU Confrontation
+US-RU Relations
+USMCA
+Ultrasonics Research Paper
+Uncertainty
+Uncertainty-Article Author List
+Uncertainty-Book List
+Uncertainty-Cells Of Figure
+Uncertainty-Company Business
+Uncertainty-Contact Information
+Uncertainty-Course List
+Uncertainty-Date List
+Uncertainty-Education Materials
+Uncertainty-Education Transcript
+Uncertainty-Employee Regular Work Report
+Uncertainty-Flight Operation Document
+Uncertainty-HCB-Management Analysis
+Uncertainty-HCB-Management Analysis Report
+Uncertainty-Hospitality Company Business
+Uncertainty-Individual Stock Index List
+Uncertainty-Institution List
+Uncertainty-Introduction
+Uncertainty-LDDAP-ADA
+Uncertainty-LDDAP-ADA-PAG
+Uncertainty-Learning Materials
+Uncertainty-Lists
+Uncertainty-NonText Encoding
+Uncertainty-NonText Encoding-Base64
+Uncertainty-NonText Encoding-Hex Code
+Uncertainty-Personnel List
+Uncertainty-Private Delivery
+Uncertainty-Private Insurance Affairs
+Uncertainty-RMR-Power Plant
+Uncertainty-RMR-Waste Management
+Uncertainty-Receipt
+Uncertainty-Receipt-Chartered
+Uncertainty-Receipt-Credit Card
+Uncertainty-Receipt-Highway Toll Receipt
+Uncertainty-Receipt-Hinet
+Uncertainty-Region List
+Uncertainty-Regular Construction Report
+Uncertainty-Regular Maintenance Report
+Uncertainty-Regular Marketing Report
+Uncertainty-Regular Production Report
+Uncertainty-Regular Report
+Uncertainty-Regular Shipment Report
+Uncertainty-Shipment Advice
+Uncertainty-TCB-Semiconductor
+Uncertainty-Technology Company Business
+Uncertainty-Technology Company Business Report
+Uncertainty-Unidentified Digits
+Unemployment Benefits
+Uniform Invoice Lottery
+Unimportant Recruitment
+Unimportant Recruitment Notice
+Unimportant Recruitment Plan
+United Front
+United Front In Taiwan
+Unmanned Aerial Vehicle
+Uranium Mining And Extraction
+Uyghur Human Rights Policy Act Of 2020
+Video Game
+Virtual Reality
+WEF
+WTO Affairs
+Water Resource
+Water-Energy-Food Nexus
+Weather News
+Web Elements
+Web Link
+Web Link-URL Encoding
+West Asia Affairs
+West Europe Affairs
+Wiki Categories
+Winning Lottery Numbers
+Women Rights
+X-Ray Optics Research Paper
+Xbox
+Xinjiang Affairs
+Xinjiang Economics
+Xinjiang Human Rights
+Xinjiang Human Rights Abuses
+Xinjiang Industrial Development
+Xinjiang Internment Camps
+Xinjiang Tourism Industry
+Xinjiang Tourism Promotion
+Xiongan New Area
+YD Integrated Development
+ZW Affairs
+ZW Diplomacy
+ZW Economics
+ZW Politics
+ZW Security
+Zombie Network
+
+There are totally 67 samples converted, cf dataset_20230211180943_TF15Bert_pt8050\dataset_total_with_filename_FixedTest.tsv or dataset_20230211180943_TF15Bert_pt8050\dataset_total_with_filename_FixedTest.sql3 for filename.
+==================================================

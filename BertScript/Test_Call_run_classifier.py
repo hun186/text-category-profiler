@@ -1,0 +1,11 @@
+import os
+#os.system(r'%windir%\System32\cmd.exe "/K" d:\ProgramData\Anaconda3\Scripts\activate.bat d:\ProgramData\Anaconda3\envs\TF1.5')
+os.system("cd d:\ProgramData\Anaconda3\Scripts")
+os.system("dir")
+#os.system("cd d:\ProgramData\Anaconda3\Scripts")
+os.system("pause")
+#os.system(r'call d:\ProgramData\Anaconda3\Scripts\activate.bat d:\ProgramData\Anaconda3\envs\TF1.5')
+os.system("call activate TF1.5")
+os.system("pause")
+os.system("run_classifier_script_256_test_for_Vis.bat")
+os.system("pause")

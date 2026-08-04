@@ -1,0 +1,557 @@
+
+Microsoft Word - Koda_BWN_HS Tracked Changes.docx
+ 
+ 
+ 
+ 
+China’s Bluewater Navy Series 
+ 
+China’s Blue Water Navy Strategy and its 
+Implications 
+ 
+March 2017 
+ 
+ 
+ 
+ 
+VADM Yoji Koda, JMSDF (Ret.) 
+ 
+ 
+ 
+ 
+China’s Bluewater Navy Series | China’s Blue Water Navy Strategy and its Implications 
+ 
+ 
+ 
+ 
+ 
+1 
+1 
+ABOUT THE AUTHOR 
+Retired Vice Admiral Yoji Koda is a fellow at the Fairbank Center for Chinese Studies at Harvard 
+University. Before retiring in 2008, Koda served in the Japan Maritime Self-Defense Force (JMSDF) 
+for more than 36 years. 
+ 
+The views expressed in this report are personal and the author’s alone. They are solely responsible 
+for any errors in fact, analysis, or omission. 
+ 
+ABOUT THE SERIES 
+As part of our study, “Beyond the San Hai: The Challenge of China’s Bluewater Navy,” CNAS 
+commissioned a series of essays from Japanese experts exploring the implications of China’s 
+bluewater navy capabilities. These papers were crucial to our analysis and have done much to shape 
+the study’s findings. 
+ 
+ACKNOWLEDGEMENTS 
+This project is made possible due to the generous support of the Government of Japan. 
+ 
+ABOUT THE ASIA-PACIFIC SECURITY PROGRAM 
+The Asia-Pacific Security program seeks to inform the exercise of U.S. leadership in Asia by 
+analyzing how the United States can rebalance its priorities; shape a rules-based regional 
+order; modernize traditional alliances; build the capacity of new partners; and strengthen 
+multilateral institutions. From exploring rising maritime tensions in the region to crafting 
+ways to renew key alliances and partnerships to articulating strategies to extend and enhance 
+America’s influence, the program leverages the diverse experience and background of its team, deep 
+relationships in the region and in Washington, and CNAS’ convening power to shape and elevate 
+the conversation on U.S. policy across a changing Asia. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+China’s Bluewater Navy Series | China’s Blue Water Navy Strategy and its Implications 
+ 
+ 
+ 
+ 
+ 
+2 
+2 
+PREFACE 
+ 
+In recent years, China has been challenging existing and established international maritime norms, 
+represented by the United Nations Convention on the Law of the Sea (UNCLOS), customary 
+international law, and international standards for conduct at sea. It has done so by making extensive, 
+unilateral territorial and maritime claims and through heavy-handed maneuvers in its surrounding 
+waters, especially in the South China Sea (SCS) and the East China Sea (ECS). 
+ 
+China’s recent willingness to take extraordinarily strong unilateral step to exercise its influence in 
+maritime affairs is fundamentally related to its national objectives. In general, these seem to be: (1) 
+preserving the Chinese Communist Party’s untrammeled authority; (2) protecting China’s national 
+sovereignty and territorial integrity; (3) promoting social welfare and people’s quality of life; (4) 
+building and maintaining a strategic nuclear posture that is comparable with that of the United 
+States; and (5) constructing its own global expeditionary capabilities, which have been a U.S. 
+monopoly for decades. 
+ 
+It is clear that all national objectives except (1) are related to both maritime/naval power and to 
+U.S.-China relations. For example, in order for China to establish objective (2), it needs to construct 
+a defense-in-depth/layered-defense posture in its surrounding waters. To realize this posture, China 
+plans to control as many maritime features in its near seas as possible for national defense purposes, 
+at any cost. However, this policy inevitably introduces serious friction with neighboring coastal 
+nations. In addition to this, when realizing this objective, China often challenges established 
+international norms and generates complicated dilemmas for the international community. In this 
+regard, and due to overwhelming capability gaps between the PLA and those nations it is challenging, 
+U.S. forces in the region have been the only practical deterrent to China’s attempts to use military 
+force to establish its national objectives. In case of regional crisis or war, to say nothing of a head-on 
+military clash between superior U.S. forces and the PLA, it is clear that, in order to defend its 
+homeland and protect its national interests China needs to prevent U.S. forces’ intervention by all 
+means. For this reason, China developed its strategy to blunt U.S. intervention and, eventually, to 
+keep the United States out of the region at any time and at any cost. These are the reasons why 
+China is so assertive over maritime issues. These are also the fundamental security principles 
+underlying China’s A2/AD strategy, which will be discussed in next chapter. 
+ 
+Similarly, national objective (3) is closely connected with the universal right of free use of seas and 
+safety/security of Sea Lines of Communication (SLOCs) of any nation. However, China prefers to 
+narrow and limit these fundamental principles in this regard, generating strong disagreements 
+between China and other seafaring nations including Japan and the United States. National objective 
+(4) is similar to the maritime strategic nuclear rivalry and confrontation between American and the 
+former Soviet Union. China confronts U.S. forces permanently based in its surroundings precincts. 
+For this reason, China will surely and naturally compete against robust U.S. Navy forces. National 
+objective (5) relates to the U.S. global-reach capability, which has been supported by both customary 
+international law and the global expeditionary monopoly enjoyed by the U.S. Navy. In order for 
+China, a late comer with strong determination to be a new great power, to establish objective (5), it 
+must confront regional and global maritime orders dominated by the U.S. Navy in almost all cases. 
+ 
+China’s Bluewater Navy Series | China’s Blue Water Navy Strategy and its Implications 
+ 
+ 
+ 
+ 
+ 
+3 
+3 
+As examined above, there are many disagreements on the fundamental principles of maritime affairs 
+between the two nations and the navies. In this point of view, it is right to estimate that China, 
+which thinks today’s international norms have been largely controlled by the United States and 
+unfavorable to China’s maritime policy, is challenging the norms. Thus, China tries to weaken U.S. 
+global influence and the Navy that supports it at any cost, and will do so into the future. 
+ 
+China’s approach to solving international problems seems to comprise dynamic combinations of 
+four interlinked stratagems: (1) acting in full compliance with the rules, when they are favorable to 
+China; (2) attempting to advance unique and self-serving interpretations of established international 
+rules, when there is room for wider interpretation to support China’s position; (3) claiming full 
+disagreement with or ignorance of the rules, when it is totally unfavorable to China; and finally, (4) 
+maneuvering to create new rule that would supersede existing regimes when precedents are weak or 
+nonexistent. 
+ 
+Depending on the nature of the problem, China will try to selectively apply one or more of above 
+elements that would be best suited to achieve its strategic objectives and preserve its national 
+interests. These Chinese political tactics tend to confuse the international community -- including 
+Japan and the United States – thus complicating quick and forthright responses. 
+ 
+The recent, more assertive strategies require China to have reach and influence far beyond its shores. 
+The People’s Liberation Army Navy (PLAN), which has made significant progress and expansion in 
+both quality and quality during a two-decade force buildup, is one of the major players in supporting 
+China’s assertive maritime claims. Having said this, however, it is also true that the PLAN has many 
+problems that make it still inferior to both the U.S. Navy (USN) alone, and to the allied combination 
+of the U.S. Navy and the Japan Maritime Self Defense Force (JMSDF). It is also true that 
+geopolitical constraints on China also impede the PLAN’s operation outside the semi-enclosed 
+waters of the East and South China Seas. 
+ 
+So, a key question naturally arises: can the PLAN, which has grown into a local giant, really be a 
+“blue water navy” that will extend China’s influence in the region by operating continuously outside 
+the SCS and ECS -- i.e., in the Pacific Ocean and/or the Indian Ocean? What are the obstacles that 
+could impede sustained PLAN out-of-area operations? 
+ 
+This article will argue that the main impediment to China’s military rise is the control of major 
+maritime choke-points in its adjacent seas—choke-points that are vulnerable to interdiction by a 
+number of other nations, most importantly the United States. Thus, China’s efforts to raise the costs 
+of U.S. and allied military action within “first island chain” are not only aimed at problems such as 
+the reunification of Taiwan, but at enabling a springboard for China’s expansion into the broader 
+maritime and air commons. This article will outline that strategy, discuss the PLA’s efforts to build 
+its capabilities and address weaknesses that could undermine the strategy, and finally conclude that 
+Washington and its allies, especially Tokyo, can limit China’s blue water ambitions only by retaining 
+control of strategic chokepoints. 
+ 
+ 
+ 
+China’s Bluewater Navy Series | China’s Blue Water Navy Strategy and its Implications 
+ 
+ 
+ 
+ 
+ 
+4 
+4 
+CHINA’S POLICY AND STRATEGY TO KEEP THE UNITED STATES OUT OF THE INDO-ASIA-
+PACIFIC (A2/AD) 
+ 
+Though developed by western naval thinkers, the concept of Anti-Access and Area Denial (A2/AD) 
+has served as a good general theory for how an inferior can cope with a superior in the era of long-
+range precision weapons. In terms of today’s security environment in the Indo-Asia-Pacific region, it 
+is absolutely clear that the former is China and the latter is the United States.1 
+ 
+A2/AD is China’s strategy to establish its national objectives without directly engaging superior U.S. 
+forces in the region. For China, which will still be inferior to USA in the 2020s and possibly into the 
+2030s, the largest challenges to its national objectives are the United States and its forces in the 
+region, which are critically enabled by the Japan-U.S. alliance. So, China developed a policy and 
+strategy to keep U.S. forces out of the area by demonstrating or just suggesting the PLA’s capability 
+to destroy the main U.S. power projection assets, aircraft carriers (CVN), in waters far from China’s 
+mainland. In addition to new systems such as its anti-ship ballistic missile (ASBM), China will deploy 
+its submarines and shore-based aircraft equipped with anti-ship cruise missiles. 
+ 
+Even so, due to clear power differences between the two forces, China would very likely lose an all-
+out, head-on military clash with U.S. forces. Hence, China introduced new “asymmetric” combat 
+capabilities that will neutralize the PLA’s inferiority to U.S. forces, and can counter conventional 
+high-end warfare operations. 
+ 
+U.S. forces fully depend on conventional high-end capabilities to conduct their most advanced 
+warfighting and combat operations around the world. Other than the world's best strategic and 
+tactical strike capabilities of U.S. forces, these high-end warfare capabilities include the ability to: 
+operate in space; use digital networks; fight in cyberspace; utilize radar and underwater systems; 
+manage radio communications; collect photo imagery; and conduct effective Command, Control, 
+Communications, Computers, Intelligence, Surveillance, and Reconnaissance (C4ISR) -- all of which 
+make the U.S. military the world’s premier fighting forces. 
+ 
+China's asymmetric warfare capabilities may be described as being aimed at the "nerve networks" 
+that connect the brain (headquarters) and muscles (front-line fighting forces) of the U.S. military 
+Therefore, if these nerve networks, or even a part of them, were destroyed or disabled, the negative 
+impacts on U.S. forces, even with the brain and muscles still alive, would be substantial and 
+distracting enough to largely degrade their fighting capabilities. Thus, U.S. forces would lose their 
+advantages over the PLA, and could become a sitting duck for easy finishing, even by inferior PLA 
+forces. Even if the United States still prevailed, it would do so at much higher cost than in 
+symmetric force-on-force combat. 
+ 
+ 
+1 At the same time, however, since A2/AD is a general concept to explain the policy and strategy of an inferior toward a 
+superior, there are also several other cases in today’s international security situation where this concept could be applied. 
+For example, some strategic thinkers have already used the term to explain U.S.-Russia security competition, especially in 
+Europe and the Middle East. So, in this context, we have to be careful enough when we use the terminology, and I will 
+use the A2/AD concept specific to China’s policy and strategy against the United States in this article. 
+ 
+China’s Bluewater Navy Series | China’s Blue Water Navy Strategy and its Implications 
+ 
+ 
+ 
+ 
+ 
+5 
+5 
+It makes sense for China and the PLA to achieve their objectives without engaging in all-out combat 
+operations against U.S. forces, which could inflict intolerable and unsustainable damages to China’s 
+territory and it’s military. The key to doing so is to demonstrate the A2/AD concept successfully 
+enough that Washington perceives it to have potentially decisive advantages. Such a perception 
+could weaken America’s resolve to maintain U.S. forces’ forward presence and to conduct 
+interventions in the region. In this regard, the real targets of the A2/AD strategy are the "hearts and 
+minds" of American leaders and people. 
+ 
+PRESENT STATE OF THE PLA 
+ 
+As the result of a series of reform measures in 2016, the PLA was divided into five main service 
+branches: the Ground Force (PLAGF), the Navy (PLAN), the Air Force (PLAAF), the Rocket 
+Force (PLARF), and the Strategic Support Force (PLASSF). There are still striking mission and 
+cultural contrasts between the three traditional service branches: the PLAGF, PLAF, and PLAN. 
+ 
+Other than the Taiwan scenario, which has occupied the central part of PLA planning and force 
+modernization since 1949, the PLAGF and PLAAF have both primarily been land-border and 
+territorial airspace defense forces focused on neighboring nations, such as: India, Russia, Vietnam, 
+North Korea, and several others.2 Of course, this does not mean that these two forces are tasked to 
+only conduct exclusively defensive operations. Rather, they are tasked with defending China by 
+marshaling offensive capability sufficient to attack and annihilate its adversary. 
+ 
+In addition to this, PLAAF has historically been both an air-defense force against an adversary’s air 
+force and a support force to PLAGF ground operations. However, since the mid-1990s, PLAAF has 
+started expanding its geographical area of operations beyond Chinese territorial airspace, to areas 
+located over distant waters from its coast. This is a clear synchronization with China’s expansion of 
+maritime maneuvers into surrounding waters. 
+ 
+In addition to its other responsibilities, the PLAAF’s bomber force and its attack fighter force are 
+now also tasked to attack enemy naval forces in distant sea areas. Three artificial islands, with 
+airfields capable of handling fighters and bombers, have recently been built in the Spratly Islands; 
+they will provide the first opportunity for PLAAF to fly over SCS areas very far from mainland 
+China to conduct surveillance and possible air defense/attack operations against U.S. and other 
+regional forces. If this new posture of the PLA in the SCS, i.e., militarization of the Spratlys, is 
+brought to full fruition, it will become an extremely worrisome operational environment where, for 
+example, a USN Carrier Strike Group (CVSG) operating in the SCS will have to contend with a 
+high-level threat from the air. 
+ 
+Nevertheless, at present the PLAGF and PLAAF can mainly conduct robust operations only in and 
+around China’s home territory. They lack a full-scale expeditionary capability like that of the United 
+States, with which U.S. Forces are able to utilize worldwide and dispersed networks of military bases 
+and various support infrastructures provided by many allied and friendly nations. 
+ 
+ 
+2 These two services are both large in size: 1.6 million personnel in the PLAGF, and 400,000 in the PLAAF. 
+China’s Bluewater Navy Series | China’s Blue Water Navy Strategy and its Implications 
+ 
+ 
+ 
+ 
+ 
+6 
+6 
+Since the mid-1990s, the PLAN, which was once a tiny coastal defense force and a fully subordinate 
+element to the PLAGF, has become a major player among the services, not least because of its role 
+in fully supporting and realizing China’s A2/AD strategy. Indications are that this will remain the 
+case. In contrast to the PLAGF and PLAAF, the PLAN seems to have been aiming to transform 
+itself from a "brown-water" coastal navy to a true "blue-water" open-ocean navy with expeditionary 
+capabilities and the ability to operate on the high seas in the Pacific and Indian Oceans. The Chinese 
+government’s prioritization of the PLAN in resource allocation over the past 15-20 years has yielded 
+some significant successes in this regard. 
+ 
+The main impediment to the PLAN becoming a real blue-water navy may instead be political: 
+because it lacks strong alliances, China has few functioning military bases that have full support 
+capability provided by hosting allied or friendly nations. In this regard, there are clear and substantial 
+differences between the access to international military bases and infrastructure that U.S. forces 
+enjoy today and the limited ports and airports in friendly nations that PLA can use. China, seemingly 
+understood this reality, just started construction of a huge dedicated PLAN base for unlimited use in 
+Djibouti. 
+ 
+PLAN'S STRENGTH BY 2030 
+ 
+The PLAN has been growing rapidly during the last twenty years, and has become the second largest 
+navy in the world, supported by decades of Chinese economic growth and strong government 
+resource allocations. Even though the China's economy will gradually slow down, this encouraging 
+trend for the PLAN is estimated to last for at least ten more years. 
+ 
+The followings is an estimate of what PLAN's strength will be by 2030: 
+ 
+(1) PLAN Force Strength in 2030s 
+ 
+Submarine Force 
+SSBN: 2 Jin and 4 (New, Type-096) 
+Total: 6 
+ 
+SSN: 2 (Shang) and 10 (New, Type-095) 
+Total: 12 
+ 
+SS: 16 (Yuan) and 20-30 (New, Type-039C) 
+Total: 36-46 
+ 
+Aircraft Carier (CV) Force 
+CV: 1 Renovated-prototype (Liaoning) and 2 (New with ski jump flight deck) 
+Total: 3 
+ 
+Surface Force 
+DDG: 2 (Luzhou), 6 (Luyang-II), 30 (Luyang-III) and 4 (New, Type-55) 
+FFG: 2 (Jiangkai-I) and 50 (Jiangkai-II) 
+DDG/FFG Force Total: 40 DDG + 52 FFG 
+China’s Bluewater Navy Series | China’s Blue Water Navy Strategy and its Implications 
+ 
+ 
+ 
+ 
+ 
+7 
+7 
+Mobile Logistic Supply Ship Force 
+AOE: 8 (Fuchi) and 4 (New) 
+Total: 12 AOE 
+ 
+Amphibious Force 
+LPD/LHD: 6 (LPD-Yuzhao) and 3 (New, LHD-Type-81) 
+LPD/LHD Force Total: 6 LPD + 3 LHD 
+ 
+Naval Aviation 
+Medium Bomber Force: 60 
+2016: 30 H-6G 
+ 
+Land-based Tactical Attack Fighter (F/A): 300 Next Generation 
+2016: 300 JH-7, J-10, J-11, J-15 
+ 
+Carrier-based Tactical Attack Fighter (F/A): 60 (2 CAG, 30 per CAG) 
+2016: 24 Su-33, 6 J-15 
+ 
+MPA/EW/AWACS: 80 (For two Fleets; 40 in East Sea Fleet and 40 in South Sea Fleet) 
+2016: 9 Y-8 MPA, 7 Y-8 ELINT, 10 Y-8 AEW 
+ 
+Helicopter Force: 100 ASW (Shipboard) and 100 (Land Based ASW Operations) 
+10 Carrier-based AEW (5 per CAG) 
+2016: 25 Z-9C, 19 Ka-28, 10 Ka-31 
+ 
+(2) Major Operational Units: Three Fleets – Good enough to support China’s foreign and 
+security policy? 
+ 
+Currently, PLAN forces are formed into three fleets: (1) the North Sea Fleet (NSF) responsible for 
+operations in the Yellow Sea; (2) the East Sea Fleet (ESF) responsible for operations in the ECS, 
+around the Southwestern Islands of Japan and in the Western Pacific, including Taiwan and the 
+Bashi Strait; and (3) the South Sea Fleet (SSF) responsible for operations in the SCS. 
+ 
+However, as the scope and tempo of China’s maritime activities and maneuvers get more active and 
+assertive than in the past, the PLAN’s area of responsibility (AOR) will also get larger and expand 
+into surrounding waters beyond its traditional sailing areas nearer to the mainland. 
+ 
+One significant recent trend is an increase in the PLAN’s out-of-area operations beyond its 
+traditional AOR: the Yellow Sea, ECS, and SCS, and they can provide us with some hints about 
+PLAN’s new deployment strategy and operational concepts, as well as its revised naval doctrine. 
+ 
+During the last several years, PLAN units have started conducting operations in the aforementioned 
+waters beyond each fleet’s traditional AOR, e.g. the high seas in of the Western Pacific and Indian 
+Oceans. In addition to these, the PLAN’s anti-piracy deployments to the Gulf of Aden have become 
+an uninterrupted annual operation since 2008, and China also occasionally sends a flotilla of PLAN 
+forces further into the Mediterranean Sea and even Black Seas. Similarly, during the past few years, 
+China’s Bluewater Navy Series | China’s Blue Water Navy Strategy and its Implications 
+ 
+ 
+ 
+ 
+ 
+8 
+8 
+PLAN has started increasing, albeit gradually, its presence in the Indian Ocean, where a numbers of 
+friendly island nations exist, and in the coastal waters of East African nations that are both major 
+sources of natural resource imports and future potential markets. 
+ 
+In the Asia and Pacific region, PLAN units have increased presence operations, both in mid-Pacific 
+waters, home to the fourteen Pacific Islands nations, and in waters west of South America. Relations 
+between China and some South American nations are developing along trajectories similar to those 
+between China and some African nations mentioned above. 
+ 
+A second new line of effort is the PLA’s effort to increase joint operations capabilities among its 
+five newly-established service branches. Key points of emphasis are building coordination between 
+the PLAN and PLAAF, as well as among the three geo-separated PLAN fleets. Jointness will enable 
+key military capabilities against U.S. forward-deployed forces and operations in the region. 
+ 
+The PLA has been actively conducting various joint exercises to realize this second objective. PLAN 
+units from the East and South Sea fleets conduct almost daily integrated multi-fleet operations in 
+various Western Pacific waters. In most of the exercises, PLAN units are joined by PLAAF units 
+that cross Japan’s Southwestern Islands (Ryukyu) chain through one of several strategic choke points. 
+The PLAN and the PLAAF have increased the frequency of operations that pass through the 
+Ryukyus on the way to the open Western Pacific or the SCS. 
+ 
+Related to the above, the PLA has started sending some joint navy-air force units into Sea of Japan 
+through Tsushima Strait, another strategic chokepoint since the days of the Cold War, to increase 
+China's force presence around Japan and to enhance a cooperative posture with Russian military 
+counterparts. 
+ 
+Significantly, during late December 2016 and early January 2017, the PLAN deployed its Liaoning 
+carrier group (CVG) to the ECS and SCS from its base at Qingdao. The CVG transited the ECS, 
+went through one of the gaps in Japan’s Southwestern Islands’ chain, and proceeded into the 
+Western Pacific. From there, the CVG turned west into the Bashi Strait and steamed into the SCS. 
+After visiting the newly completed Sanya naval base on Hainan Island, the CVG sailed out again into 
+the SCS, and conducted several training exercises there. Then, the group transited through the 
+Taiwan Strait, and returned back to Qingdao. It is reported that the CVG conducted intense carrier 
+air operations and various maritime warfare exercises during this relatively short deployment. 
+ 
+These recent open-ocean transits and exercises provide striking contrast with past PLAN maritime 
+operations. Recent training deployments have been more significant from a military perspective than 
+those in the past. 
+ 
+The PLA, especially the navy and air force, have in fact started developing new operational 
+capabilities that will support China’s A2/AD strategy in its adjacent waters and skies. The primary 
+objectives of China and the PLA are to stop and reduce U.S. forces’ forward presence in peace time, 
+and their intervention during crisis or wartime, by demonstrating that the PLA’s robust and 
+sophisticated joint operational capabilities could match those of the combined Japan-U.S. alliance. 
+ 
+China’s Bluewater Navy Series | China’s Blue Water Navy Strategy and its Implications 
+ 
+ 
+ 
+ 
+ 
+9 
+9 
+In this regard, China naturally aims to cut and/or weaken the United States’ ties with its Asian allies. 
+For instance, the Japan-U.S. alliance is an indispensable enabler of U.S. forces’ operations in the 
+region. More frequent and confident Chinese deployments in areas surrounding Japan have an 
+intended psychological effect on Japanese planners worried about U.S. reliability. In addition to the 
+deterrent effect, in the event of actual hostilities, it is desirable for the PLA to engage and destroy 
+U.S. forces in waters as far away as possible. “Blue-water” out-of-area capabilities and postures can 
+serve all of these goals, broadcasting increased PLA sophistication and providing some defense-in-
+depth. For China and the PLA, these factors provide critical impetus for the PLAN to continue 
+growing into a real and functioning blue-water navy. 
+ 
+PLAN AS A BLUE-WATER NAVY 
+ 
+As described just above, for the PLAN to fully support China’s strategic objectives, which are the 
+core aim of A2/AD strategy, the PLAN must possess substantial operational capabilities in distant 
+open waters, extending to the Western Pacific and Indian Oceans. 
+ 
+From a force structure and operational capabilities point of view, the PLAN seems to have certain 
+characteristics to help it become a real blue-water navy. However, at the same time, it needs to 
+reorganize the operational requirements for its three fleets to establish two different and competing 
+missions: (1) to protect China’s national interests in each fleet’s AOR, and (2) be able to conduct 
+out-of-area operations to counter U.S. forces operating further afield in the region. 
+ 
+The typical characteristic of the first operational requirement is, by nature, a defensive one; and that 
+of the second requirement is more oriented toward the offensive, i.e., to deter and strike USN forces. 
+These two totally different operational requirements could be described as "water and oil." In this 
+context, the PLAN may need to establish two new operational units, one being a dedicated and 
+custom-made flotilla to operate in the Indian Ocean and further-away Western waters in Europe; 
+and the second being CVGs that operate independently from the three “defensive” PLAN fleets, 
+but can be used either for out-of-area power projection or in support of the fleets. 
+ 
+Another subject to be considered seriously is the geographic reality that constrains and mitigates the 
+PLAN’s ambition to be a true blue-water navy. Unlike Japan and the United States, whose major 
+naval bases are fully open to the Pacific Ocean, all of the PLAN’s bases are either in the ECS, 
+Yellow Sea, or SCS. This means all PLAN forces are contained in waters that are semi-enclosed by a 
+series of islands chains, as well as that of archipelagic nations located around the SCS. For the 
+PLAN and PLAAF to operate outside of China’s immediate littoral, their units have to pass through 
+some choke points to and from outer open waters and airspace. This complicates the PLA’s goals to 
+have a real blue-water navy, and for its air forces to freely operate in airspace over the Western 
+Pacific and Indian Ocean. 
+ 
+For the PLAN, peacetime exit and entry operations through these various choke-points are not 
+impeded by any other navy or nation, and this situation will not change in the future. However, 
+deployments of the PLAN’s units in contingency and/or wartime could become extremely difficult 
+and troublesome. There are several choke-points that surround the PLAN’s AOR, e.g., in Japan’s 
+Southwestern Islands chain, between Taiwan and the Philippines, within territorial waters of the 
+Philippines and Indonesia, and the Strait of Malacca. For China, all of these choke-points are 
+China’s Bluewater Navy Series | China’s Blue Water Navy Strategy and its Implications 
+ 
+ 
+ 
+ 
+ 
+10 
+10 
+controlled by other nations, and in general, those nations are relatively friendlier to both the 
+Washington and Tokyo than to Beijing. 
+ 
+A point of concern is that, in a contingency and/or war in which the United States and China are 
+involved, neutral nations may try to control these choke-points, even if solely to preserve neutrality. 
+The PLAN cannot count on the luxury of free passage and transit of its operational units through 
+the choke-points. Therefore, choke-point interdiction operations of U.S. allies could cause great 
+difficulties for China. For example, a U.S.-allied nation like Japan can physically block the choke-
+points in its Southwestern Islands chain by deploying JSDF units, thereby not allowing PLAN units’ 
+transits out to the open oceans to fight USN forces. In this context, China and the PLAN probably 
+cannot avoid military clashes between PLA and JSDF over choke-points. 
+ 
+In addition to this, the JSDF will block and control the Bashi Strait, and Australian forces may block 
+and control the outer waters of choke-points in high-seas areas near to the Philippines and 
+Indonesian archipelagos. U.S. forces will also block the choke-points controlled by neutral nations to 
+prevent PLAN units from exiting into the high-seas to attack the USN. 
+ 
+So for China and PLAN, the geographic characteristics of its home waters could be their most 
+difficult obstacles to becoming a real blue-water navy. Of course, China has many options to solve 
+or reduce this problem, but it is true that China will have to pay large costs for any solution. 
+ 
+Last but not least, China’s relative political isolation may prevent the PLAN from being a real blue-
+water navy. In order for any military, especially a navy, to operate its forces in areas far from its 
+homeland, proximate overseas bases are indispensable. In this context, what has helped to make U.S. 
+forces a global power is the large numbers of overseas bases that are provided by various alliance 
+networks. This framework has been a real enabler for U.S. forces' global operational reach. China 
+may be trying to begin remedying this deficit, for example with the planned construction of a PLA 
+base in Djibouti. But, this type of attempt is overwhelmingly small and weak when compared to the 
+United States’ alliance network. 
+ 
+SUMMARY 
+ 
+The PLAN has been growing rapidly and has a large potential to become a real blue-water navy. 
+However, it is also clear that China and PLAN will have to solve many problems in order to 
+establish their objective to be a blue-water navy. 
+ 
+Therefore, Japan and the United States will need to prepare ourselves to counter China’s strategy by 
+precise coordination to focus on the PLAN’s most difficult and unavoidable impeding factor, which 
+is: the semi-enclosed nature of the East and South China Seas. A key question for Tokyo and 
+Washington is how to assure wartime control of these waters’ many strategic chokepoints? In other 
+words, in order for Japanese and U.S forces to maintain an advantageous position over the PLA, the 
+two military forces have to retain the capability to keep big wild birds (PLAN and PLAAF) in their 
+naturally given cages (ECS and SCS). Both Japan and the United States need to develop this 
+capability at the earliest opportunity to deter China’s adventurism. 
+ 

@@ -1,0 +1,1869 @@
+ 
+Social-ecological drivers of metropolitan residents’ comfort living with wildlife
+Frontiers in Conservation Science
+OPEN ACCESS
+EDITED BY
+Dı́dac Santos-Fita,
+Autonomous University of Barcelona, Spain
+REVIEWED BY
+Nathalia Montserrat Castillo,
+El Colegio de la Frontera Sur, Mexico
+Shylock Muyengwa,
+Center for Impact Evaluation and Research
+Design, Zimbabwe
+Bibiana Vilá,
+Camelidos y Ambiente. CONICET,
+Argentina
+*CORRESPONDENCE
+Jeffrey D. Haight
+jdhaight@asu.edu
+RECEIVED 26 June 2023
+ACCEPTED 13 October 2023
+PUBLISHED 02 November 2023
+CITATION
+Haight JD, Larson KL, Clark JAG, Lewis JS
+and Hall SJ (2023) Social-ecological
+drivers of metropolitan residents’
+comfort living with wildlife.
+Front. Conserv. Sci. 4:1248238.
+doi: 10.3389/fcosc.2023.1248238
+COPYRIGHT
+© 2023 Haight, Larson, Clark, Lewis and Hall.
+This is an open-access article distributed
+under the terms of the Creative Commons
+Attribution License (CC BY). The use,
+distribution or reproduction in other
+forums is permitted, provided the original
+author(s) and the copyright owner(s) are
+credited and that the original publication in
+this journal is cited, in accordance with
+accepted academic practice. No use,
+distribution or reproduction is permitted
+which does not comply with these terms.
+TYPE Original Research
+PUBLISHED 02 November 2023
+DOI 10.3389/fcosc.2023.1248238
+Social-ecological drivers of
+metropolitan residents’ comfort
+living with wildlife
+Jeffrey D. Haight1*, Kelli L. Larson2, Jeffrey A. G. Clark3,
+Jesse S. Lewis4 and Sharon J. Hall1
+1School of Life Sciences, Arizona State University, Tempe, AZ, United States, 2School of Geographical
+Sciences and Urban Planning and School of Sustainability, Arizona State University, Tempe, AZ, United
+States, 3Natural Areas Conservancy, New York, NY, United States, 4College of Integrative Sciences and
+Arts, Arizona State University, Mesa, AZ, United States
+Introduction: Human-wildlife coexistence in cities depends on how residents
+perceive and interact with wildlife in their neighborhoods. An individual’s
+attitudes toward and responses to wildlife are primarily shaped by their
+subjective cognitive judgments, including multi-faceted environmental values
+and perceptions of risks or safety. However, experiences with wildlife could also
+positively or negatively affect an individual’s environmental attitudes, including
+their comfort living near wildlife. Previous work on human-wildlife coexistence
+has commonly focused on rural environments and on conflicts with individual
+problem species, while positive interactions with diverse wildlife communities
+have been understudied.
+Methods: Given this research gap, we surveyed wildlife attitudes of residents
+across twelve neighborhoods in the Phoenix Metropolitan Area, AZ to ask: how
+do the environments in which residents live, as well as their values, identities, and
+personal characteristics, explain the degree to which they are comfortable living
+near different wildlife groups (coyotes, foxes, and rabbits)?
+Results:We found that residents who were more comfortable living near wildlife
+commonly held pro-wildlife value orientations, reflecting the expectation that
+attitudes toward wildlife are primarily driven be an individual’s value-based
+judgements. However, attitudes were further influenced by sociodemographic
+factors (e.g., pet ownership, gender identity), as well as environmental factors
+that influence the presence of and familiarity with wildlife. Specifically, residents
+living closer to desert parks and preserves were more likely to have positive
+attitudes toward both coyotes and foxes, species generally regarded by residents
+as riskier to humans and domestic animals.
+Discussion: By improving understanding of people’s attitudes toward urban
+wildlife, these results can help managers effectively evaluate the potential for
+human-wildlife coexistence through strategies to mitigate risk and facilitate
+stewardship.
+KEYWORDS
+coexistence, attitudes, human-wildlife interactions, urban ecology, conservation,
+coyotes, foxes, rabbits 2
+frontiersin.org01
+https://www.frontiersin.org/articles/10.3389/fcosc.2023.1248238/full
+https://www.frontiersin.org/articles/10.3389/fcosc.2023.1248238/full
+https://www.frontiersin.org/articles/10.3389/fcosc.2023.1248238/full
+https://www.frontiersin.org/journals/conservation-science
+https://www.frontiersin.org
+http://crossmark.crossref.org/dialog/?doi=10.3389/fcosc.2023.1248238&domain=pdf&date_stamp=2023-11-02
+mailto:jdhaight@asu.edu
+https://doi.org/10.3389/fcosc.2023.1248238
+http://creativecommons.org/licenses/by/4.0/
+http://creativecommons.org/licenses/by/4.0/
+https://www.frontiersin.org/journals/conservation-science#editorial-board
+https://www.frontiersin.org/journals/conservation-science#editorial-board
+https://doi.org/10.3389/fcosc.2023.1248238
+https://www.frontiersin.org/journals/conservation-science
+Haight et al. 10.3389/fcosc.2023.1248238
+1 Introduction
+With a growing majority of humanity living within cities and
+towns, metropolitan areas have emerged as critical environments
+for investigating and managing human interactions with nature.
+The expansion of human development into natural environments
+has placed humans and wildlife into increasing degrees of co-
+occurrence and contact, particularly in suburban and exurban
+neighborhoods where the activities of people and wildlife tend to
+overlap most frequently (DeStefano and DeGraaf, 2003; McKinney,
+2008; Magle et al., 2016). The outcomes of these human-wildlife
+encounters and other nature experiences are highly variable across
+urbanizing landscapes, where spatially heterogeneous social and
+environmental processes strongly shape people’s environmental
+attitudes (Soga et al., 2016; Soulsbury and White, 2019), including
+their support for biodiversity conservation and their comfort living
+among different wildlife species. People’s varying wildlife attitudes
+help predict the positive and negative impacts of wildlife
+interactions (Kansky et al., 2016; Larson et al., 2023), as well as
+people’s changing behaviors toward wildlife (Manfredo, 2008a;
+Larson et al., 2023). As such, understanding wildlife attitudes, and
+how those attitudes are shaped by both human and environmental
+dynamics, is important for predicting the potential for human-
+wildlife conflict and co-existence within urbanizing environments
+(Parris et al., 2018; Apfelbeck et al., 2020; Bhatia, 2021).
+Although research exploring human-wildlife interactions has
+rapidly expanded in recent years, studies of coexistence have been
+limited by the emphasis placed on conflicts with certain problematic
+species (e.g., carnivores), over positive interactions with diverse
+wildlife communities. Additionally, although the distributions of
+wildlife within cities have been extensively studied (Magle et al.,
+2012; McIntyre, 2014; Norton et al., 2016), the ecological and social
+factors that shape the outcomes of human-wildlife interactions
+remain relatively understudied within heterogeneous urbanized
+contexts, as compared to relatively rural landscapes (Hudenko
+et al., 2010; Reidinger and Miller, 2013; Soulsbury and White,
+2015). Beyond conflicts, interactions can positively affect the well-
+being of both human and wildlife, with the characteristics and
+behaviors of people and wildlife species shaping people’s
+perceptions of and attitudes towards wildlife (Dıáz et al., 2018;
+Avolio et al., 2021; Bhatia, 2021). Since variation in attitudes may be
+particularly pronounced across socially and ecologically
+heterogenous urbanized landscape (Soulsbury and White, 2019),
+research is needed to quantify variation in and drivers of
+metropolitan residents’ attitudes toward particular wildlife groups,
+which can signal the potential for coexistence based on varying
+levels of tolerance, acceptance, and appreciation.
+In this study, we examined an array of social-ecological
+influences on metropolitan residents’ comfort living near three
+groups of native mammalian wildlife – coyotes (Canis latrans),
+foxes (including gray fox, Urocyon cinereoargenteus and kit fox,
+Vulpes macrotis), and rabbits (including desert cottontail rabbit,
+Sylvilagus audubonii , and black-tailed jackrabbit, Lepus
+californicus). Specifically in diverse neighborhoods of the Phoenix
+Metropolitan Area, Arizona, USA (Larson et al., 2022), we combine
+Frontiers in Conservation Science 02
+social survey data and location-based environmental features to
+answer the question: how do ideological, environmental, and
+sociodemographic factors differently affect residents’ varied
+comfort levels living near three wildlife groups? We generally
+expected that comfort around each wildlife group would be most
+strongly associated with ideological factors, including individuals’
+wildlife value orientations and attachment to the local desert
+environment (Manfredo, 2008b; Manfredo, 2008c; Chan et al.,
+2016). We further expected that comfort would be mediated by
+environmental and sociodemographic factors that influence either
+the frequency with which residents are likely to interact with these
+three wildlife groups or the ways in which residents perceive the
+risks associated with wildlife.
+2 Literature review
+While attitudes affect human-wildlife coexistence, the ultimate
+interactions between people and wildlife are shaped by a
+combination of personal, environmental, and social factors, along
+with the characteristics of specific wildlife. As detailed below, the
+relative influence of exposure to nature on attitudes toward diverse
+urban wildlife is poorly understood.
+2.1 Conceptualizing coexistence
+with mammals
+The concept of coexistence has recently emerged in the
+literature as a more holistic means of framing human-wildlife
+interactions in terms of both its positive and negative aspects
+(Bhatia, 2021; Pooley, 2021). Reflecting a trend away from a focus
+on conflict as the primary aspect of coexistence, Pooley et al. define
+human-wildlife coexistence as “a sustainable though dynamic state
+in which humans and wildlife co-adapt to sharing landscapes,
+where human interactions with wildlife are effectively governed to
+ensure wildlife populations persist in socially legitimate ways that
+ensure tolerable risk levels.” (Pooley et al., 2021, pg. 784).
+Conceptualizations of coexistence vary from this general
+definition depending on how the research context relates to the
+concepts of conflict, tolerance, acceptance, and stewardship
+(Glikman et al., 2021), with these concepts often organized along
+a continuum of negative to positive interactions (Dietsch et al.,
+2019; Larson et al., 2023). An individual’s ‘comfort living near
+wildlife’, as a relational measure of attitudes toward sharing space
+with wildlife, can signify where that individual sits along the
+conflict-stewardship continuum (Chan et al., 2016; Larson et al.,
+2023). However, various scholars acknowledge the simultaneous
+presence of, or potential for, both negative interactions (e.g.,
+tolerance or acceptance of conflicts involving threats or
+nuisances) and positive interactions (i.e., appreciation of wildlife
+and habitat stewardship) as inherent in coexistence Bhatia, 2021;
+Hill, 2021).
+Research has shown that factors supporting coexistence depend
+partly upon the characteristics of the wildlife that shape those
+frontiersin.org
+https://doi.org/10.3389/fcosc.2023.1248238
+https://www.frontiersin.org/journals/conservation-science
+https://www.frontiersin.org
+Haight et al. 10.3389/fcosc.2023.1248238
+interactions (Hudenko et al., 2010). Discomfort around wildlife
+perceived as more hazardous to people (e.g. large carnivores,
+venomous animals) can signify the potential for conflict and the
+need to reduce risks to tolerable levels (Reidinger and Miller, 2013;
+Hadidian, 2015; Carter and Linnell, 2016; Bateman et al., 2021; Hill,
+2021). Furthermore, levels of risk tolerance and acceptance vary
+substantially among people, with differences serving as fundamental
+sources of human-human conflict over how best to manage
+coexistence (Peterson et al., 2010; Lute and Gore, 2019; Hill,
+2021). Much of the current literature on human-wildlife
+coexistence has focused on large mammalian carnivores in more
+rural environments (Soulsbury and White, 2019; Larson et al.,
+2023). Research has centered on fear as the primary emotive
+response (Jacobs and Vaske, 2019) and on cognitive beliefs about
+risks and impacts on people (Soulsbury and White, 2015; Bhatia,
+2021). However, relatively few studies have directly addressed how
+attitudes toward wildlife depend upon the actual co-occurrence of
+humans and different wildlife species (i.e., their shared use of a
+space at a given point in time), the levels of which are expected to
+vary greatly across spatially heterogeneous urban environments
+(Soulsbury and White, 2019).
+Conversely, comfort living near wildlife can also indicate the
+potential for positive forms of human-wildlife coexistence
+(adoration, appreciation, and stewardship), rather than risk
+tolerance (Bhatia, 2021; Larson et al., 2023). Yet studies directly
+measuring such positive outcomes of human-wildlife interactions
+have been limited, especially within relatively urbanized settings
+where positive encounters with wildlife may have the greatest
+benefit for residents lacking frequent nature experiences
+(Soulsbury and White, 2015; Soga et al., 2016). Within urbanized
+environments, fewer large mammal species and residents’ lack of
+dependence on livelihoods directly impacted by wildlife (e.g.,
+subsistence agriculture, hunting, livestock ranching) may result in
+fewer negative interactions and concerns from interacting with
+wildlife across more urbanized landscapes (Bateman and Fleming,
+2012). Consequently, interactions with wildlife within metropolitan
+regions may have the potential to be more positive than in more
+rural settings, potentially producing greater benefits to residents’
+mental and spiritual well-being (Methorst et al., 2020; Larson et al.,
+2023). As such, previous research has suggested that managing for
+coexistence with diverse wildlife communities will require the
+simultaneous consideration of multiple types of coexistence
+(Glikman et al., 2021), especially within urbanized contexts.
+2.2 Ideological factors in coexistence
+Previous research has shown that an individual’s wildlife
+attitudes – defined as positive or negative judgments toward
+wildlife – are primarily shaped by subjective cognitive and
+affective judgments, including different peoples’ approaches to
+evaluating nature and its contributions to human well-being
+(Dunlap et al., 2000; Pascual et al., 2017; Dıáz et al., 2018; Pascual
+et al., 2023). In particular, attitudes toward wildlife are typically
+reflective of an individual’s wildlife value orientations, which
+include people’s basic beliefs (also known as worldviews)
+Frontiers in Conservation Science 03
+regarding how people should interact with wildlife (Fulton et al.,
+1996; Manfredo, 2008c). Mutualistic dimensions of wildlife value
+orientations incorporate individuals’ basic beliefs regarding wildlife
+protection and coexistence, signaling the potential for positive
+attitudes toward wildlife presence and persistence and reflecting
+appreciation-oriented concepts of human-wildlife coexistence (Teel
+and Manfredo, 2010; Chan et al., 2016; Glikman et al., 2021). In
+contrast, utilitarian dimensions of wildlife value orientations
+involve beliefs in human domination over and benefits from
+wildlife, reflecting anthropocentric worldviews that may drive
+distinct attitudes toward human-wildlife coexistence (Teel and
+Manfredo, 2010; Kaltenborn and Linnell, 2022). Although these
+domination-oriented wildlife values have been traditionally
+widespread across North America, their prevalence has also
+gradually decreased in recent decades, aligned with broader
+sociocultural shifts toward biocentric mutualism often linked with
+increasingly urban livelihoods (Manfredo et al., 2016; Dietsch et al.,
+2019; Manfredo et al., 2020).
+Perceptions of human-wildlife interactions and attitudes toward
+wildlife are further a function of individuals’ affective judgements
+about those wildlife and their environment, including place identity
+and emotional dispositions toward different types of animals
+(Williams and Vaske, 2003; Manfredo, 2008b; Jacobs and Vaske,
+2019). Understanding people’s place identities, or emotional
+attachments, is fundamental to interpreting how their attitudes
+toward their environments form (Williams and Vaske, 2003).
+Previous research has shown that wildlife themselves can help
+create and reinforce emotional attachments to place, particularly
+when wildlife-based experiences align with individuals’ pro-wildlife
+dispositions (Anderson and Fulton, 2008; Folmer et al., 2013). The
+place-dependent outcomes of human-nature interactions can
+subsequently affect human attitudes and behaviors, with both
+functional and emotional place attachments being positively
+linked with support for civic conservation actions and concern
+for recreational impacts on wildlife (Payton et al., 2005; Eder and
+Arnberger, 2012). However, such studies of associations among
+place attachment and wildlife attitudes are limited, with very few
+considering how urbanization may alter place identity and its
+related environmental attitudes (Andrade et al., 2019; Warren
+et al., 2019).
+2.3 Environmental factors in coexistence
+The characteristics of a person’s surrounding natural
+environment can influence their comfort living around wildlife,
+particularly by shaping the degree to which that person is exposed
+to nature and the likelihood with which they have personal
+experience with wildlife (Soulsbury and White, 2019).
+Fundamentally, differences in both natural and anthropogenic
+environmental conditions across urbanized landscapes drive the
+distributions of wildlife populations and communities over space
+and time (Magle et al., 2012; McIntyre, 2014; Aronson et al., 2016),
+with the conservation of wildlife habitats and provisioning of
+resources directly increasing the frequency with which people
+encounter wildlife in cities (DeStefano and DeGraaf, 2003; Fuller
+frontiersin.org
+https://doi.org/10.3389/fcosc.2023.1248238
+https://www.frontiersin.org/journals/conservation-science
+https://www.frontiersin.org
+Haight et al. 10.3389/fcosc.2023.1248238
+et al., 2010). For instance, the human supplementation of food
+resources – whether direct (e.g., placement of bird feeders Ryan and
+Partan, 2014; Cox and Gaston, 2016)) or indirect (e.g., through
+landscape and waste management practices; (Yirga et al., 2015;
+Brown et al., 2022) – can concentrate wildlife movements within
+areas of high human use, magnifying the potential for human-
+wildlife interactions (Soulsbury and White, 2019).
+The direct and indirect effects of environmental characteristics
+on wildlife attitudes can vary considerably, depending on how
+they influence the frequency of human-wildlife interactions, the
+positive or negative nature of the interactions, and the type of
+wildlife species involved (Kansky and Knight, 2014). For instance,
+increased encounters with wildlife that present moderate-to-low
+risks to human well-being (e.g., coyotes, foxes, and other mid-
+sized carnivores) may make residents more familiar with the
+hazards associated with those species (Soulsbury and White,
+2019; Nardi et al., 2020), thereby reducing perceived risks and
+encouraging co-existence (Slovic, 1987; Zaradic et al., 2009).
+However, positive effects of wildlife exposure on attitudes may
+be most readily observed for species that are seen as benign and
+desirable (e.g., rabbits and other small herbivores), but not
+detected for wildlife that pose more direct threats to human
+well-being (e.g., venomous snakes and larger carnivores;
+Dickman, 2010; Bateman and Fleming, 2012; Reidinger and
+Miller, 2013; Kansky and Knight, 2014). For instance, attitudes
+toward coyotes, as a widespread, medium-sized carnivore found
+across North American cities, can vary greatly as a result of
+people’s experiences, which range from positive encounters that
+elicit appreciation coyotes and encounters with negative outcomes
+such as loss of pets and rare attacks on people (Gehrt and Riley,
+2010; Alexander and Quinn, 2011; Poessel et al., 2017). The role of
+environmental characteristics in shaping attitudes toward human-
+wildlife coexistence within urban environments, especially relative
+to attitudinal and sociodemographic factors, remains unclear.
+2.4 Sociodemographic factors
+in coexistence
+Lastly, attitudes toward wildlife are partially dependent upon an
+individual’s personal and social characteristics, especially those
+associated with emotional responses to wildlife and vulnerability
+to environmental risks (Kansky and Knight, 2014; Pooley, 2021).
+For one, the safety of pets and other domestic animals (e.g.,
+livestock) is a commonly cited risk associated with wildlife, with
+an individual’s ownership of pets having the potential to decrease
+tolerance of carnivores (Hudenko et al., 2010; Poessel et al., 2013).
+However, pet ownership has more often been found to be associated
+with positive attitudes toward wildlife tolerance and stewardship
+(Bjerke et al., 2003; Shuttlewood et al., 2016; Greenspan et al., 2021),
+reflecting people’s biophilic dispositions toward both wild and
+domestic animals (Kellert, 1985; Larson et al., 2023).
+Furthermore, difference in attitudes associated with wildlife and
+other sources of environmental risk are often aligned with
+individual’s personal identities, particularly gender (Davidson and
+Frontiers in Conservation Science 04
+Freudenburg, 1996). For instance, previous research has indicated
+that people identifying as female may express greater safety
+concerns due to the presence of dangerous wildlife species (Zinn
+and Pierce, 2002). Conversely, women have also indicated positive
+attitudes toward wildlife more consistent with mutualistic and
+protectionist ideologies (Kellert and Berry, 1987), further
+indicating that gender identity is a key sociodemographic factor
+to consider in the examination of attitudes related to human-
+wildlife coexistence.
+The formation of varying attitudes toward wildlife may be
+mediated by additional personal and social characteristics and
+identities that are associated with people’s environmental
+worldviews and attitudes (e.g. ethnicity, class; Grove and Burch,
+1997; Larson et al., 2016; Andrade et al., 2019). Subsequently,
+differences in ecological worldviews among ethnic or social
+groups have been documented as having varying relations with
+environmental risks (Larson et al., 2011; Larson et al., 2016). For
+instance, mutualistic worldviews rooted in Hispanic cultural
+traditions have been found to be fundamental factors in
+understanding opposition to lethal wildlife control in Tucson,
+Arizona, USA (Dietsch et al., 2012; Chase et al., 2016; Dietsch
+et al., 2019).
+Income and education, as measures of affluence and knowledge,
+respectively, are widely recognized as driving access to experiences
+with wildlife and natural environments (Nilon, 2014; Andrade et al.,
+2019). Greater access to positive nature experiences is subsequently
+associated with decreasing peoples’ perceived exposure to
+environmental risks and increasing benefits from nature (Van
+Velsor and Nilon, 2006; Andrade et al., 2019; Larson et al., 2023).
+The cultural contexts within which people interact with wildlife and
+for attitudes toward human wildlife coexistence are further shaped
+by factors such as race, ethnicity, gender, and age (Van Velsor and
+Nilon, 2006; Nilon, 2014; Pooley, 2021). Examination of attitudes
+toward wildlife needs to account for social-demographic variation
+in how interactions with wildlife are perceived.
+2.5 Hypotheses
+Based on current understanding of factors contributing to
+human-wildlife coexistence, we hypothesized that attitudes
+toward different wildlife species groups would be variably
+associated with ideological, environmental, and social factors.
+Specifically, we predicted that residents living in places where
+wildlife are more likely to be present are expected to be associated
+with either (a) increased familiarity with those species, and
+therefore, increased comfort; or (b) increased perceived risk from
+wildlife due to proximity and, therefore, reduced comfort.
+Furthermore, we expected that these potential associations
+between attitudes and environmental factors would be strongest
+for those wildlife that are generally perceived as more hazardous to
+people or domestic animals (i.e. coyotes and foxes). Conversely, we
+predicted that attitudes toward less hazardous wildlife (i.e. rabbits)
+would be most clearly associated with attitudinal factors and certain
+sociodemographic factors, such as pet ownership.
+frontiersin.org
+https://doi.org/10.3389/fcosc.2023.1248238
+https://www.frontiersin.org/journals/conservation-science
+https://www.frontiersin.org
+Haight et al. 10.3389/fcosc.2023.1248238
+3 Methods
+3.1 Study system
+The Phoenix-Mesa-Scottsdale metropolitan area (i.e., metro
+Phoenix) is located within the Sonoran Desert of the
+southwestern USA. Situated in central Arizona, metro Phoenix is
+the fourth most rapidly growing metropolitan area in the USA, with
+a current population of roughly 4.8 million. A significant portion
+(32%) of the population is Hispanic/Latino (32%; U.S. Census
+Bureau, 2021). Historical patterns of urbanization within metro
+Phoenix have had widespread impacts on both social and ecological
+processes contributing to human-wildlife coexistence. Specifically,
+the sprawling outward growth of cities has surrounded and isolated
+remnants of desert within a matrix of human development and
+agriculture, putting certain residents in closer proximity to the
+desert parks and preserves (Andrade et al., 2019). For instance,
+previous research in the region has shown that how close residents
+live to these desert parks tend to be wealthier, have more positive
+attitudes toward the desert, and experience higher wildlife diversity
+and greater ecosystem services (Andrade et al., 2019; Warren et al.,
+2019; Brown, 2020).
+The region’s hot, semi-arid desert environment features natural
+vegetation communities that are predominantly composed of
+shrubland species, including palo verde (Parkinsonia spp.),
+mesquite (Prosopis spp.), creosote bush (Larrea tridentata),
+brittlebush (Encelia farinosa), and saguaro (Carnegiea gigantea).
+In contrast, the urban and suburban areas of the region are
+relatively lush, with higher levels of vegetation productivity and
+cover traditionally maintained by an extensive irrigation canal
+system (Buyantuyev and Wu, 2009; Larson et al., 2009). The
+region also hosts relatively high regional diversity of mammals,
+birds, reptiles, and amphibians within urban, suburban, and natural
+environments (Bateman et al., 2015; Jenkins et al., 2015; Banville
+et al., 2017), with the neighborhoods of metro Phoenix utilized by a
+variety of iconic desert wildlife species, such as coyotes, desert
+cottontail rabbit, javelina (Pecari tajacu), jackrabbits (Lepus sp.),
+gray fox, kit fox, roadrunners (Geococcyx californianus),
+rattlesnakes (Crotalus spp.) and Gambel’s quail (Callipepla
+gambelii). Patterns of development and local vegetation and
+habitat management within and near neighborhoods affect the
+spatially distribution of wildlife species across residential
+landscapes, as well as the frequency with which those species
+interact with people and the need to manage human-wildlife
+coexistence (Bateman et al., 2021).
+3.2 Study species
+We focused this study on three local mammals – rabbits, foxes,
+and coyotes – whose varying size and behavior result in a range of
+positive and negative relationships with metropolitan residents,
+their domestic animals, and their livelihoods (Rea, 1998; Kays and
+Wilson, 2009; Curtis and Hadidian, 2010; Reidinger and Miller,
+2013). Two species of rabbits are known to commonly occur in
+Frontiers in Conservation Science 05
+natural and urbanized areas of metro Phoenix: the desert cottontail
+rabbit and the black-tailed jackrabbit. Although human interactions
+of rabbits generally range between positive and benign within their
+native ranges (Long et al., 2020), negative attitudes toward co-
+existence with rabbits can result from their damage to crops and
+residential landscaping and potential spread of zoonotic diseases
+(Reidinger and Miller, 2013; Abu Baker et al., 2015; Simes et al.,
+2015), especially among individuals with agricultural and
+subsistence lifestyles. Although two species of foxes occur in
+metro Phoenix, only the gray fox is frequently observed in
+suburban and urban neighborhoods, while the kit fox typically
+occurs in undeveloped, flat desert areas. Interactions with and
+perceptions of foxes are generally expected to be more negative
+than those rabbits, as foxes can present real and perceived threats to
+the safety of domestic animals, including small pets and chickens,
+even though threats to humans are minimal (Macdonald, 1984;
+Hudenko et al., 2010; Soulsbury and White, 2015; Nardi et al.,
+2020). The coyote is widely distributed throughout the study area
+but is encountered most frequently in the region’s desert parks and
+their surrounding neighborhoods. Due to their larger size and
+opportunistic behaviors, coyotes are regarded as presenting a
+greater danger to domestic animals than foxes, while also
+potentially threatening the safety of people, though attacks on
+humans are rare (Curtis and Hadidian, 2010; Soulsbury and
+White, 2015; Poessel et al., 2017; Nardi et al., 2020).
+3.3 Sampling design and implementation
+In 2021, we surveyed residents of twelve neighborhoods within
+this study area as part of the Phoenix Area Social Survey (Larson
+et al., 2022), which is a long-term study of the Central-Arizona
+Long-Term Ecological Research (CAP LTER) program (Figure 1).
+The twelve neighborhoods, delineated by Census Block Groups,
+were purposively selected to capture variation in sociodemographic
+characteristics (e.g. income level, ethnicity) and represent a range of
+local environments (e.g. levels of urbanization, proximity to natural
+areas). The survey was sent to 1,549 addresses between May and
+July 2021, with 496 addresses representing households surveyed in a
+previous (2017) iteration of the survey. An additional 1,053
+addresses from the 12 neighborhoods were randomly provided by
+the Marking Systems Group, which comes from the U.S. Postal
+Service’s Delivery Sequence Files.
+University of Northern Iowa’s Center for Social and Behavior
+Research administered the survey via a six-wave mailing, including
+an advance letter with a link to the online version of the survey,
+three full questionnaire packets with self-addressed return
+envelopes, and two reminder postcards sent in-between and after
+mailings (Larson et al., 2022). A $5 cash pre-incentive was included
+in the first questionnaire packet, regardless of response, and
+respondents were sent an additional $25 post-response incentive.
+The cover letters and postcards informed individuals in Spanish
+that they could request a Spanish version of the survey via a phone
+number and email. The third mailed questionnaire included both
+an English and Spanish version for all households with Hispanic
+frontiersin.org
+https://doi.org/10.3389/fcosc.2023.1248238
+https://www.frontiersin.org/journals/conservation-science
+https://www.frontiersin.org
+Haight et al. 10.3389/fcosc.2023.1248238
+surnames (n = 245). Out of the 1375 successfully delivered surveys,
+a total of 509 eligible residents participated in the survey, with an
+overall response rate of 35.6%.
+3.4 Sample demographics
+Survey respondents and neighborhoods varied in terms of the
+sociodemographic characteristics of interest in this study (Table 1).
+For all sociodemographic questions in the survey, respondents were
+provided with a refuse/prefer not to answer option. Most survey
+respondents identified their gender as female (62.9%), followed by
+male (36.7%) and non-binary (0.4%). 63% of respondents reported
+that they owned either a cat or dog at home. We measured income
+on an 11-point interval scale by asking respondents to select the
+median combined income of all household members from a
+provided list of $20,000 increments, from $20,000 and under (1)
+Frontiers in Conservation Science 06
+to more than $200,000 (11). Similarly, we evaluated level of
+education by asking respondents to select the highest level of
+school they have had the chance to complete, which we then
+quantified on a 7-point interval scale ranging from the
+completion of grades 1-8 to the attainment of a graduate or
+professional degree. Measured as such, the median respondent
+had a household income of approximately $100,000 and at least a
+community college or vocational school education, with 62% of
+respondents having completed a bachelor’s degree or higher. The
+average respondent age was 54 years old, which we measured by
+subtracting the respondent-provided birth year from the year in
+which the survey was conducted (2021). Regarding race/ethnicity,
+68% of respondents identified as White/Anglo, 20% as Hispanic/
+Latino, 6% as Black/African American, 5% as Asian or Asian
+American, 1% as Native American or American Indian, and 3%
+as “other”, with multiple responses being provided as an option
+(Larson et al., 2022).
+TABLE 1 Summary statistics of sociodemographic characteristics of metropolitan residents surveyed across twelve neighborhoods in the Phoenix
+Metropolitan Area, Arizona, USA.
+Explanatory Variable Mean SD Range Valid N
+Gender (female or non-binary) 62.70% N/A 0-100 (% respondents) 499
+Pet ownership 62.58 N/A 0-100 (% respondents) 489
+Income 5.87 3.34 1-11 483
+Education 5.31 1.59 1-7 497
+Age 54.28 17.38 18-100 491
+Black Identity 6.10% N/A 0-100 (% respondents) 495
+Latino Identity 20.40% N/A 0-100 (% respondents) 495
+White Identity 68.90% N/A 0-100 (% respondents) 495
+fro
+See text for description of variables.
+Mean, standard deviation (SD), range of possible response values, and number of respondents (Valid N) shown. N/A, not applicable.
+FIGURE 1
+Summary of levels of comfort living near three wildlife groups – coyotes, foxes, and rabbits – as reported by metropolitan residents surveyed across
+twelve neighborhoods in the Phoenix Metropolitan Area, Arizona, USA.
+ntiersin.org
+https://doi.org/10.3389/fcosc.2023.1248238
+https://www.frontiersin.org/journals/conservation-science
+https://www.frontiersin.org
+Haight et al. 10.3389/fcosc.2023.1248238
+3.5 Data and variables
+3.5.1 Dependent variables: comfort living
+near wildlife
+We measured our dependent variables representing residents’
+attitudes toward wildlife on five-point ordinal scale. Specifically, the
+survey read: “Below is a list of wildlife that live in the greater
+Phoenix area. Please tell us how comfortable or uncomfortable you
+would feel seeing the following wildlife in and around where you
+live.” Participants were provided with a list of common names for
+wildlife species and species groups, including “Coyotes”, “Foxes”,
+and “Rabbits” and verbatim response options included: very
+uncomfortable (1), somewhat uncomfortable (2), neither
+uncomfortable nor comfortable (3), somewhat comfortable (4)
+and very comfortable (5). For consistency in terminology, we
+refer to these reported comfort levels as “comfort living near”
+each type of wildlife. Survey responses reflected individuals’
+general attitudes about “Coyotes”, “Foxes”, and “Rabbits”, which
+are widely known groups of animals in the region. The explanatory
+variables in our models include survey data (i.e., for ideological and
+sociodemographic variables) and geospatial data reflecting
+environmental variables.
+3.5.2 Ideological explanatory variables
+Our models included two value-based ideological variables to
+reflect 1) wildlife value orientations (i.e., emphasizing utilitarian
+benefits and domination versus protection and mutualism) and 2)
+desert identity (i.e., as a measure of place attachment). First, we
+measured wildlife value orientations using nine survey items
+adapted from previous research (Fulton et al., 1996; Manfredo,
+2009; Teel and Manfredo, 2010; Manfredo et al., 2016; Vaske et al.,
+2023) that assess different dimensions of basic beliefs about people’s
+relationships with wildlife (see Table 2). Respondents were asked to
+rate their level of agreement with a series of statements, with
+responses ranging from strongly disagree (1) to strongly agree (5)
+with neutral (3) in the middle. The first three survey items measured
+value orientations related to respondents’ residential wildlife
+experiences (i.e. their appreciation of wildlife in their local
+environments; Fulton et al., 1996). The remaining six items,
+modified from Manfredo et al. (2009), assessed respondents’
+beliefs regarding human domination of wildlife (i.e. utilitarian
+uses such as hunting, and lethal population control) and
+mutualistic beliefs (i.e. values promoting wildlife protection and
+positive coexistence). We combined these wildlife value orientation
+scales by inverting responses to the three domination items (items
+4-6 in Table 2) – so that higher numbers reflected pro-wildlife
+values – and then averaging all nine items, creating a reliable
+composite scale of pro-wildlife value orientation (Cronbach’s
+alpha = 0.77).
+Second, we measured desert-based place identity (i.e., desert
+identity) using a standardized survey scale adapted from Williams
+and Vaske (2003). As a measure of place attachment, respondents
+were asked to rate their level of agreement with five statements
+about their relationship to the region’s desert parks (Table 3).
+Survey-provided response options ranged from strongly disagree
+Frontiers in Conservation Science 07
+(1) to strongly agree (5) with neutral (3) in the middle. We then
+averaged all five items into a reliable composite scale for desert
+identity (Cronbach’s alpha = 0.96).
+TABLE 2 Summary statistics of wildlife value orientations reported by
+metropolitan residents surveyed across twelve neighborhoods in the
+Phoenix Metropolitan Area, Arizona, USA.
+Explanatory Variable Mean SD
+Valid
+N
+Pro-Wildlife Value Orientation (Cronbach’s alpha
+= 0.77)
+3.92 1.11 497
+I notice the birds and wildlife around me most
+days.
+4.26 1.03 498
+The wildlife I see in and around where I live are
+important to me.
+4.07 1.09 499
+Having wildlife around my home is important to
+me.
+4.01 1.12 499
+It is acceptable for people to kill wildlife if they
+think it poses a threat.*
+2.68 1.32 498
+Wildlife are on earth primarily for people to
+use.*
+1.82 1.00 498
+The needs of humans should take priority over
+protecting wildlife.*
+2.48 1.27 496
+I want to protect wildlife. 4.26 0.88 493
+I care about wildlife as much as I do other
+people.
+3.43 1.27 495
+We should strive for a world where humans and
+wildlife can live side by side.
+4.23 0.99 497
+front
+The statements for each survey item reflect verbatim wording on the survey, adapted from
+Fulton et al., 1996 and Manfredo, 2009. ‘*’ indicates values that were reverse-coded prior to
+averaging all nine scale items into the single index of ‘Pro-Wildlife Value Orientation’.
+Average value for each response, standard deviation SD, and number of respondents for each
+response shown.
+TABLE 3 Summary statistics of desert identity reported by metropolitan
+residents surveyed across twelve neighborhoods in the Phoenix
+Metropolitan Area, Arizona, USA.
+Explanatory Variable Mean SD
+Valid
+N
+Desert identity index (Cronbach’s alpha = 0.96) 3.59 1.07 502
+I feel the desert parks in the Valley are a part of
+me.
+3.82 1.06 504
+The desert parks in the Valley are very special
+to me.
+3.50 1.12 503
+I identify strongly with desert parks in the
+Valley.
+3.53 1.17 502
+I am very attached to the desert parks in the
+Valley.
+3.76 1.13 503
+The desert parks in the Valley mean a lot to
+me.
+3.64 1.11 503
+The statements for each scale item reflect verbatim wording on the survey, adapted from the
+standardized statements of Williams and Vaske (2003). Average value for each response,
+standard deviation (SD), and number of respondents for each response shown.
+iersin.org
+https://doi.org/10.3389/fcosc.2023.1248238
+https://www.frontiersin.org/journals/conservation-science
+https://www.frontiersin.org
+Haight et al. 10.3389/fcosc.2023.1248238
+3.5.3 Environmental explanatory variables
+We assessed the local environmental conditions experienced by
+each survey respondent based on environmental variables
+associated with wildlife presence and residents’ access to nature-
+based experiences, specifically urbanization, vegetation, and
+distance to desert parks. We measured urbanization as the mean
+percent impervious surface coverage within 1 km of each
+respondent using data from the 2019 National Land Cover
+Database (Dewitz, 2021). We quantified vegetation using the
+mean value of Normalized Difference in Vegetation Index
+(NDVI) within 1 km of each resident, based on 2018 MODIS
+imagery (de Albuquerque, 2020). We used a 1-km buffer around
+each respondent since it is a comparable scale to a 10-minute
+walkshed for people (Rigolon, 2016; Larson et al., 2022), as well as a
+typical scale used in analyses of wildlife distributions (McGarigal
+et al., 2016). We measured the distance to desert parks as the log-
+transformed Euclidean distance to the nearest park or preserve with
+predominant natural desert vegetation, which we derived from park
+boundary data from the Trust for Public Lands (Brown et al., 2021).
+Finally, to quantify the degree to residents directly experience desert
+parks, we asked survey respondents. Specifically, respondents were
+asked the question “Thinking about the past year or so, how often
+have you typically visited the following types of areas?” and
+provided with a list of areas including “Desert parks or open
+spaces in the Valley”. Response options ranged from “Never” (1)
+to “At least once a week or more” (5).
+3.5.4 Sociodemographic explanatory variables
+Finally, we used data collected in the 2021 PASS to quantify
+sociodemographic variables selected for their anticipated roles in
+mediating the outcomes of human-environment interactions.
+Specifically, we predicted that the variables pet ownership and
+gender may have risk-related effects on comfort living with all
+three species, since previous research has indicated that pet owners
+tend to have increased tolerance of wildlife and that men may
+express lesser safety concerns associated with wildlife (Zinn and
+Pierce, 2002; Shuttlewood et al., 2016). We coded pet ownership as a
+binary variable, classifying pet ownerships as 1 and people without
+pets as 0. For purposes of analysis, we also considered respondent
+self-reported gender as a binary variable, coded as 0 for male and 1
+for female or non-binary, with the latter groups having been
+combined for the purpose of statistical analysis due to their
+historically similar socialization as relatively marginalized
+gender identities.
+Additionally, we included the demographic variables of income,
+education, age, race, and ethnicity largely as control variables in the
+analysis. For ethnicity, we coded the variable for Latino identity to
+reflect whether (1) or not (0) respondents self-identified as either
+“Mexican, Mexican-American, Chicano, Hispanic, or Latino”.
+Likewise, we coded binary variables of black identity and white
+identity based on whether respondents self-identified as “Black/
+African American” or “White/Anglo”, respectively. For age,
+education, and income, the variables included the continuous and
+ordinal measures described above.
+Frontiers in Conservation Science 08
+3.6 Statistical analyses
+We evaluated the influence of ideological, environmental, and
+sociodemographic variables on comfort around each wildlife species
+using generalized linear mixed models (GLMM), which we fit in the
+R programming language 4.0.1 using the glmmTMB package
+(Brooks et al., 2017; R Core Team, 2020). First, we tested for
+correlations between each pair of explanatory variables,
+confirming a lack of bivariate collinearity (r< 0.5), and then
+standardized all continuous explanatory variables and. Secondly,
+we fit three multivariate GLMMs for each species that included
+subsets of explanatory variables (i.e., ideological only,
+environmental only, sociodemographic only) as fixed effects and
+the neighborhood as a random effect (intercept). Inclusion of the
+neighborhood random intercept enabled us to account for among-
+neighborhood variation in attitudes associated with other potential
+explanatory factors not already incorporated into the model, such as
+varying number of responses per neighborhood. Thirdly, we fit a
+global model for each species, with each including all explanatory
+variables as fixed effects (Eq. 1; Figure 1). We then used the Akaike
+Information Criterion (AIC) to compared the relative support of
+each partial model to that of the global model for each species, with
+the lowest model AIC indicating the best model with the highest
+relative quality (Burnham and Anderson, 2002). Finally, we used
+the R package ‘performance’ (Lüdecke et al., 2021) and the Variable
+Importance Factor (VIF) to verify low multi-collinearity (VIF< 5)
+among explanatory variables included within the global models
+(Supplementary Table 1).
+Comfort   e  WVO + DesertIdentity + Urbanization
++ Vegetation + DistanceToDesertParks + Income
++ Education + Age + PetOwnership + Gender
++ BlackIdentity + LatinoIdentity +WhiteIdentity
++ (1 ∣Neighborhood) Eq: 1
+4 Results
+4.1 Variation in comfort living near wildlife
+Respondents’ reported comfort living near coyotes, foxes and
+rabbits varied among the three species and among neighborhoods.
+On average, respondents felt neutral-to-slightly comfortable near
+coyotes (mean = 3.13), slightly more comfortable living near foxes
+(mean = 3.30), and quite comfortable living near rabbits (mean =
+4.42; Figure 1). 46.1% of respondents reported some level of comfort
+living near coyotes, as compared to the 48.3% of respondents
+comfortable around foxes and 82.9% comfortable around rabbits.
+Conversely, 38.3% of respondents reported being uncomfortable
+living near coyotes, 31.8% with foxes, and 5.6% with rabbits. 15.6%
+of respondents reported neutral attitudes toward coyotes, 19.9%
+were neutral toward foxes, and 11.5% were neutral toward rabbits.
+frontiersin.org
+https://doi.org/10.3389/fcosc.2023.1248238
+https://www.frontiersin.org/journals/conservation-science
+https://www.frontiersin.org
+Haight et al. 10.3389/fcosc.2023.1248238
+Mean reported comfort living near each species also varied
+among neighborhoods, ranging between 2.24 and 3.92 for coyotes,
+2.50 and 3.89 for foxes, and 3.60 and 4.78 for rabbits. Comfort living
+near coyotes and foxes was generally highest in higher-income
+neighborhoods closer to desert parks (Figure 2). Comfort also
+tended to be lower neighborhoods with more residents identifying
+as Hispanic/Latino and in neighborhoods where wildlife value
+orientations were generally lower (i.e., more anti-wildlife).
+Frontiers in Conservation Science 09
+4.2 Factors associated with comfort living
+near wildlife
+The relative associations of ideological, environmental, and
+sociodemographic factors with residents’ reported comfort varied
+among the global models for each wildlife species, which were more
+supported (lower AIC) than all partial models (Table 4). Overall, the
+explanatory variables best explained residents’ comfort levels living
+B
+C
+D
+A
+FIGURE 2
+Average levels of comfort living near (A) coyotes, (B), foxes, and (C) rabbits, as reported within (D) twelve neighborhoods in the Phoenix Metropolitan
+Area, Arizona, USA. Midlines indicate neighborhood-mean comfort level, while upper and lower ends of the boxes depict one standard deviation
+above and below the mean (approximating a 68% confidence interval). We present average comfort in relation to each neighborhood’s median
+household income, from the 2020 US Census. Neighborhoods are depicted by their broad level of urbanization (based on mean percentage of
+impervious surface cover), with Fringe neighborhoods being located along the edge of the metropolitan area and having<20% impervious surface,
+Suburban neighborhoods being moderately urbanized (20%-50% impervious surface), Core neighborhoods representing areas nearer the urban core
+with relatively high urbanization (>50% impervious surface).
+frontiersin.org
+https://doi.org/10.3389/fcosc.2023.1248238
+https://www.frontiersin.org/journals/conservation-science
+https://www.frontiersin.org
+Haight et al. 10.3389/fcosc.2023.1248238
+around coyotes and foxes (conditional R2 of 0.23 and 0.25,
+respectively) compared to rabbits (0.19). Pro-wildlife value
+orientation was the variable most positively associated with
+greater comfort living with all three wildlife groups – i.e. residents
+who were more comfortable living near wildlife tended to hold
+beliefs that were more mutualistic and less domination-oriented
+(Tables 5-7; Supplementary Figure 1). Higher-income respondents
+were more comfortable living near coyotes (Figure 2A). Women
+were significantly less comfortable living near coyotes and foxes
+compared to men, but gender was insignificant for rabbits.
+Meanwhile, older residents were less comfortable with foxes and
+rabbits than younger residents, yet age was insignificant for coyotes.
+White residents and those who live nearer to desert parks reported
+Frontiers in Conservation Science 10
+greater comfort living near foxes, as compared to non-white
+residents and those living further from desert parks (Figure 2A,
+B). Comfort near rabbits was positively associated with pet
+ownership. Lastly, we did not detect a significant relationship
+between comfort living near any species and either desert
+identity, urbanization, or vegetation within the global models.
+Although the most supported model for each species was the
+global model, certain variables not found to have statistically
+significant effects (at the p< 0.05 level) in the global model
+showed substantial relationships in the partial model containing
+that variable, and vice versa (Table 8). For instance, comfort living
+near foxes was positively associated with pet ownership within the
+sociodemographic-only partial model (p = 0.006) and negatively
+TABLE 5 Multivariate generalized linear mixed model results for comfort
+living near coyotes, showing beta estimates (standardized effect sizes)
+with significance levels indicated using p-values and 95% confidence
+intervals (CI).
+Fixed Effect Beta Estimate p-value 95% CI
+Intercept 3.29 <0.001 2.90, 3.69
+Ideological
+Wildlife Value Orientation 0.40 <0.001 0.28, 0.52
+Desert Identity -0.04 0.58 -0.18, 0.09
+Environmental
+Urbanization -0.11 0.08 -0.23, 0.00
+Vegetation -0.08 0.31 -0.22, 0.05
+Distance to Desert Parks -0.17 0.06 -0.33, 0.02
+Desert Park Visitation 0.07 0.32 -0.06, 0.20
+Sociodemographic
+Income 0.23 <0.01 0.09, 0.38
+Education -0.07 0.28 -0.20, 0.06
+Age 0.02 0.81 -0.11, 0.14
+Pet Ownership 0.08 0.50 -0.16, 0.32
+Gender -0.39 <0.01 -0.63, -0.16
+Black Identity -0.50 0.08 -1.05, 0.06
+Latino Identity -0.04 0.85 -0.35, 0.30
+White Identity 0.08 0.42 -0.29, 0.47
+Boldface emphasizes relationships with a significance level of p< 0.01. Conditional R2 = 0.23.
+Neighborhood random effect variance = 0.02 (standard deviation = 0.14).
+TABLE 6 Multivariate generalized linear mixed model results for comfort
+living near foxes, showing beta estimates (standardized effect sizes) with
+significance levels indicated using p-values and 95% confidence intervals
+(CI).
+Fixed Effect Beta Estimate p-value 95% CI
+Intercept 3.17 <0.001 2.78, 3.56
+Ideological
+Wildlife Value Orientation 0.41 <0.001 0.29, 0.53
+Desert Identity -0.02 0.77 -0.15, 0.11
+Environmental
+Urbanization -0.11 0.06 -0.22, 0.00
+Vegetation -0.01 0.92 -0.13, 0.12
+Distance to Desert Parks -0.19 0.01 -0.33, -0.05
+Desert Park Visitation 0.00 0.94 -0.13, 0.12
+Sociodemographic
+Income 0.08 0.26 -0.06, 0.23
+Education -0.12 0.08 -0.24, 0.01
+Age -0.17 0.01 -0.29, -0.04
+Pet Ownership 0.22 0.07 -0.02, 0.45
+Gender -0.45 <0.001 -0.68, -0.22
+Black Identity -0.40 0.15 -0.95, 0.14
+Latino Identity -0.17 0.43 -0.59, 0.25
+White Identity 0.45 0.02 0.08, 0.83
+fro
+Boldface emphasizes relationships with a significance level of p< 0.01. Conditional R2 = 0.25.
+Neighborhood random effect variance = 0.00 (standard deviation = 0.00).
+TABLE 4 Summary of model selection results for mixed-effects models of comfort living near three wildlife species.
+Model K Coyote Foxes Rabbits
+Global 17 1535.88 1519.70 1309.79
+Ideological only 5 1660.25 1653.52 1395.31
+Environmental only 7 1672.08 1679.71 1413.43
+Sociodemographics only 11 1590.32 1575.19 1319.83
+Values depict the number of parameters (K) and Akaike Information Criterion (AIC) for each global or partial model. Lower AIC values indicate higher relative quality (i.e., better fit), with the
+value of the best-fit model for each species indicated in boldface.
+ntiersin.org
+https://doi.org/10.3389/fcosc.2023.1248238
+https://www.frontiersin.org/journals/conservation-science
+https://www.frontiersin.org
+Haight et al. 10.3389/fcosc.2023.1248238
+associated with urbanization within the environmental-only partial
+model (p = 0.045), whereas neither relationship was statistically
+significant in the global model (although p< 0.1 for both variables;
+Table 7). Conversely, comfort living near foxes was lower among
+older respondents in the global model (p = 0.001), but not in the
+partial sociodemographic-only model (p = 0.090). In the partial
+models, comfort living near coyotes was significantly greater among
+respondents living closer to desert parks (p = 0.004, vs. p = 0.315 in
+the global model) and respondents who visited desert parks more
+frequently (p = 0.037, vs. p = 0.059 in the global model).
+5 Discussion
+Overall, residents of Metropolitan Phoenix, Arizona, USA are
+somewhat comfortable living near mammals, which bodes well for
+coexistence. Yet the degree to which residents tolerate and accept
+the presence of coyotes, foxes, and rabbits in and around their
+neighborhoods depends upon various combinations of personal,
+social, and environmental characteristics. In our study, the data
+supported our hypotheses that comfort living near wildlife was most
+strongly associated with an individual’s value-based judgements.
+Residents with more mutualistic, pro-wildlife value orientations
+were more likely to express greater comfort living near coyotes,
+Frontiers in Conservation Science 11
+foxes, and, to a lesser degree, rabbits. These varying levels of
+ideologically-based comfort may indicate different points along
+the conflict-coexistence continuum (Dietsch et al., 2019; Glikman
+et al., 2021; Larson et al., 2023), where discomfort could signify the
+potential for conflict whereas moderate comfort might signal
+tolerance, and high levels of comfort even opportunities for
+wildlife acceptance and stewardship (Manfredo et al., 2016;
+Bhatia, 2021).
+By showing that values are the primary predictor of comfort,
+our results indicate that people’s ideological beliefs may present a
+key challenge to influencing attitudes, given that value-based beliefs
+tend to be static and resistant to change in general and as a result of
+outreach efforts (Manfredo, 2008c; Heberlein, 2012). However,
+given recent generational shifts toward mutualism, especially in
+metropolitan areas, changing wildlife value orientations may
+forecast growing potential for wildlife appreciation and
+stewardship in urbanizing regions (Teel and Manfredo, 2010;
+Manfredo et al., 2016; Dietsch et al., 2019; Manfredo et al., 2020).
+These results further emphasize that the management of human-
+wildlife coexistence will be most effective when centered on
+navigating the diverse ways in which humans value nature
+(Heberlein, 2012), including the cultural beliefs and societal
+practices that shape their perceptions of interactions with wildlife
+(Dıáz et al., 2018; IPBES, 2022; Pascual et al., 2023). Finally, comfort
+levels were further mediated by residents’ local environmental
+context and sociodemographic characteristics, and by the traits of
+the wildlife involved, highlighting how consideration of the
+diversity of the human experience is fundamental to promoting
+pro-coexistence attitudes and behaviors using relational strategies
+that are effectively tailored to particular places, people, and
+wildlife taxa.
+5.1 Roles of environment
+and sociodemographics
+Although residents’ comfort living near wildlife may be strongly
+grounded in their wildlife values, differences in comfort also reflect
+people’s potential experiences with wildlife and natural
+environments more broadly. For instance, within our global
+model, living closer to the region’s desert preserves was associated
+with higher comfort living near foxes, a carnivore that may threaten
+pets and other domestic animals (Curtis and Hadidian, 2010; Nardi
+et al., 2020). Additionally, partial (environmental variables only)
+model results of comfort living near coyotes indicated that
+proximity to desert preserves may have a positive relationship
+with attitudes toward even riskier species (Hudenko et al., 2010;
+Poessel et al., 2013), though the absence of this relationship in the
+global model suggests that adjacency to natural areas may be
+associated with other personal or social drivers of attitudes
+toward coyotes. These results support the hypothesis that living
+in environments where wildlife are more likely to be present and
+interact with people can lead to residents becoming more familiar
+with wildlife and developing attitudes more consistent with
+tolerance and acceptance (Soulsbury and White, 2019; Glikman
+et al., 2021).
+TABLE 7 Multivariate generalized linear mixed model results for comfort
+living near rabbits, showing beta estimates (standardized effect sizes)
+with significance levels indicated using p-values and 95% confidence
+intervals (CI).
+Fixed Effect Beta Estimate p-value 95% CI
+Intercept 4.24 <0.001 3.92, 4.54
+Ideological
+Wildlife Value Orientation 0.22 <0.001 0.12, 0.31
+Desert Identity 0.01 0.92 -0.10, 0.11
+Environmental
+Urbanization -0.08 0.14 -0.17, 0.03
+Vegetation 0.00 0.97 -0.12, 0.11
+Distance to Desert Parks 0.05 0.50 -0.09, 0.18
+Desert Park Visitation 0.01 0.88 -0.09, 0.10
+Sociodemographic
+Income 0.10 0.11 -0.01, 0.22
+Education -0.03 0.51 -0.14, 0.06
+Age -0.17 0.001 -0.26, -0.06
+Pet Ownership 0.22 0.02 0.04, 0.41
+Gender -0.12 0.19 -0.30, 0.07
+Black Identity -0.20 0.36 -0.62, 0.25
+Latino Identity -0.29 0.09 -0.61, 0.06
+White Identity 0.25 0.10 -0.04, 0.55
+Boldface emphasizes relationships with a significance level of p< 0.01. Conditional R2 = 0.19.
+Neighborhood random effect variance = 0.03 (standard deviation = 0.17).
+frontiersin.org
+https://doi.org/10.3389/fcosc.2023.1248238
+https://www.frontiersin.org/journals/conservation-science
+https://www.frontiersin.org
+Haight et al. 10.3389/fcosc.2023.1248238
+Differences in comfort living near wildlife may also be mediated
+by certain sociodemographic characteristics, particularly those
+associated with two types of concerns that are often involved in
+conflict: that is, for the well-being of people and their households
+and for the protection and well-being of wildlife (Macdonald, 2023).
+For instance, our global and partial model results for rabbits – a
+relatively benign group of wildlife – indicated even greater comfort
+among pet owners, suggesting the potential for appreciation of
+wildlife and care for their well-being. However, harm to pets is a
+major form of human-wildlife interaction and potential conflict
+within metropolitan regions (Curtis and Hadidian, 2010; Reidinger
+and Miller, 2013; Nardi et al., 2020). As such, only our partial
+(sociodemographic) model for fox indicated that pet owners were
+more comfortable living near foxes, signaling relative tolerance of
+urban-adapted foxes among people who might be negatively
+impacted due to concerns about their pets. The increased comfort
+of pet owners near wildlife may reflect emotional dispositions in
+favor of animals more broadly, whether innate (biophilic),
+conditioned (through experiences), or the confluence of both
+(Bjerke et al., 2003; Slagle and Bruskotter, 2019). Despite
+residents’ expressed concerns about predators harming pets
+(Soulsbury and White, 2015; Larson et al., 2023), which is often
+cited as a predominant form of human-wildlife conflict in
+urbanized areas, our results show that positive, biophilic
+predispositions may overcome concerns and therefore foster
+Frontiers in Conservation Science 12
+tolerance, or even acceptance or appreciation, of concerning
+wildlife that pose a threat (Bjerke et al., 2003; Albert et al., 2018),
+However, the degrees to which people are willing to coexist with
+certain wildlife over others and the pathways by which pets mediate
+human-wildlife interactions may be muddled by distinct groups of
+people responding in divergent ways (e.g., pet owners who wish to
+avoid or deter predators due to threats versus those who accept
+threats and use other strategies to keep their pets safe).
+Generally, attitudes toward wildlife are potentially confounded
+by complex personal and social factors that require further research,
+including complex value sets, as well as aesthetic preferences for
+(Gunnthorsdottir, 2001; De Pinho et al., 2014) and cultural
+associations with (Prokop et al., 2011; Jacques-Coper et al., 2019;
+Thekaekara et al., 2021) certain wildlife. Our results specifically
+show that personal factors that are associated with people’s variable
+tolerance of wildlife risks and damages, such as age, socioeconomic
+status, and gender identity, may further influence the outcomes of
+human-wildlife interactions and people’s resulting wildlife attitudes
+and behaviors (Zinn and Pierce, 2002; Soulsbury and White, 2019).
+For instance, we found that men in our study generally reported
+greater comfort living near foxes and coyotes, consistent with
+previous studies indicating generally lower wildlife risk aversion
+(Kellert and Berry, 1987; Zinn and Pierce, 2002). However, further
+research is needed to better understand how perceptions of human-
+wildlife encounters (i.e., positive, neutral, or negative; acceptable or
+TABLE 8 Summary of model results across all global and partial models for all three dependent variables (i.e., comfort living near coyotes, foxes, and
+rabbits).
+Explanatory Variables
+Coyotes
+(R2 = 0.23)
+Foxes
+(R2 = 0.25)
+Rabbits
+(R2 = 0.19)
+Ideological (R2 = 0.17) (R2 = 0.16) (R2 = 0.09)
+Wildlife Value Orientation Both (+) Both (+) Both (+)
+Desert Identity Neither Neither Neither
+Environmental (R2 = 0.11) (R2 = 0.09) (R2 = 0.07)
+Urbanization Neither Partial only (-) Neither
+Vegetation Neither Neither Neither
+Distance to Desert Parks Partial only (-) Both (-) Neither
+Desert Park Visitation Partial only (+) Neither Neither
+Socio-demographic (R2 = 0.13) (R2 = 0.15) (R2 = 0.12)
+Income Both (+) Neither Neither
+Education Neither Neither Neither
+Age Neither Global Only (-) Both (-)
+Pet Ownership Neither Partial only (+) Both (+)
+Gender Partial only (-) Both (-) Neither
+Black Identity Neither Neither Neither
+Latino Identity Neither Neither Neither
+White Identity Neither Both (+) Neither
+Text indicates whether each explanatory variable was significantly associated with the dependent variables in only the global model containing all variables, only the partial model including that
+variable, or both or neither. Parentheticals after each significant effect indicate the directionality of the relationship between that variable and comfort around wildlife. R2 values indicate the
+proportion of variance explained by the combination of fixed and random effects in each global or partial model (bolded and un-bolded, respectively).
+frontiersin.org
+https://doi.org/10.3389/fcosc.2023.1248238
+https://www.frontiersin.org/journals/conservation-science
+https://www.frontiersin.org
+Haight et al. 10.3389/fcosc.2023.1248238
+acceptable) affect their wildlife attitudes through people’s prior
+expectations, emotional dispositions, and perceptions of risks
+(Jacobs and Vaske, 2019; Slagle and Bruskotter, 2019).
+5.2 Roles of species traits
+The nature of encounters between people and wildlife depends
+on the varied characteristics of wildlife species, particularly as they
+pertain to hazards to and benefits for human well-being. The
+potential for attitudes representing wildlife tolerance and
+acceptance to vary among individuals as a function of their values
+and experiences may be greatest for species that have been more
+historically stigmatized (George et al., 2016), including larger
+mammalian carnivores and venomous snakes (Bateman and
+Fleming, 2012; Bateman et al., 2021). This concept was supported
+by our findings that residents living closer to desert parks were
+generally more comfortable living near coyotes and foxes, but not
+necessarily rabbits. Since greater experiences with nature and
+exposure to associated risks have been linked to lower risk
+perceptions and positive wildlife attitudes (Slovic, 1987; Zaradic
+et al., 2009), increasing people’s familiarity with potentially
+threatening wildlife and their behaviors may help to gradually
+build tolerance and acceptance of these species (Carter and
+Linnell, 2016). Thus, improving access to positive nature-based
+experiences – particularly among youth, whose environmental
+values are generally more dynamic (Manfredo, 2008c; Soga et al.,
+2016) – is vital to enhancing the long-term growth in potential
+for coexistence.
+Attitudes toward less-feared wildlife, such as rabbits, whose
+presence typically elicits more positive affective and cognitive
+responses of joy and appreciation (Kellert, 1985; Kellert, 1993;
+George et al., 2016; Jacobs and Vaske, 2019), appear less
+associated with environmental experiences and more closely
+associated with people’s sociodemographic characteristics. For
+instance, our results indicated that variation in comfort living
+near rabbits (which was generally high to begin with) was not
+associated with residents’ proximity to desert parks or as strongly
+influenced by wildlife value orientations. However, even relatively
+benign wildlife can exhibit traits and behaviors that directly impact
+people’s livelihoods and lifestyles, shaping attitudes toward those
+species in subtler, less certain ways (Hudenko et al., 2010). For
+example, comfort living with rabbits may be lower within areas of
+greater agricultural activity and in more extensively landscaped
+neighborhoods, where concerns over potential damage to plants
+valued by people may decrease tolerance of rabbit presence (Abu
+Baker et al., 2015; Simes et al., 2015). In such cases, coexistence
+might be more effectively facilitated through approaches that move
+beyond the ecological factors that shape nature-based experiences
+and toward approaches that more strongly consider the human
+drivers of wildlife attitudes, including how different people’s
+perceptions of the same wildlife may vary according to those
+people’s diverse lifestyles and livelihoods that influence the
+frequency and positivity of human-wildlife encounters.
+Frontiers in Conservation Science 13
+5.3 Limitations and future research
+To build a deeper understanding of the human and
+environmental factors that shape wildlife attitudes, future research
+could test relationships in different social-ecological contexts,
+including other species, other human populations, and other
+places. As it was not our intention to obtain a representative,
+generalizable sample in this study, we have focused our
+interpretation on local relationships with the explanatory
+variables within this study neighborhoods. Although we were
+limited by available data to a select few species and
+environmental variables, our survey methods coupled with
+geospatial data enabled us to detect substantial patterns of
+residents’ attitudes in relation to the environmental and
+sociodemographic characteristics of neighborhoods. However, we
+were unable to determine causal relationships such as the direct
+impacts of wildlife encounters on residents’ attitudes. Exploration of
+causality requires follow-up studies that incorporate qualitative and
+experiential research methods to examine people’s interactions with
+wildlife and how they have shaped their tolerance, acceptance, and
+stewardship (Soulsbury and White, 2019). In such future studies of
+coexistence, it is vital to consider both attitudes and behaviors
+toward wildlife, since even though attitudes can signal the potential
+cognitive outcomes of human-wildlife interactions, behavioral
+responses to those interactions (including both mutually
+beneficial and detrimental practices) often diverge from attitudes
+(Larson et al., 2023).
+Our results additionally emphasize how the diversity of human
+interactions with wildlife is rooted in culturally and emotionally
+informed perceptions of wildlife characteristics. As survey-based
+methodologies do not effectively capture various cultural
+dimensions of relationships with wildlife (IPBES, 2022), future
+studies would benefit from the greater use of ethnographic
+approaches to examine cultural beliefs and shared experiences
+that shape wildlife values and attitudes (Prokop et al., 2011;
+Jacques-Coper et al., 2019; Thekaekara et al., 2021). Finally, the
+roles of species’ ecological and phenotypic traits as drivers of
+people’s emotional and cognitive responses to wildlife (and the
+risks those wildlife potentially pose) are a key topic of future study
+(Jacobs and Vaske, 2019), one that requires examining more
+taxonomically and functionally diverse wildlife taxa that have
+various relationships with people.
+5.4 Implications for coexistence
+Different levels of comfort living near wildlife can signal
+alternative strategies for promoting human-wildlife coexistence, as
+comfort considers both positive and negative responses to wildlife
+and associated predictors of those responses, especially people’s
+wildlife values. Our results indicated that the ability to expand
+wildlife acceptance and stewardship will be closely tied to shifts in
+wildlife value orientations away from domination and toward
+mutualism across the U.S. (Manfredo et al., 2020), which may
+frontiersin.org
+https://doi.org/10.3389/fcosc.2023.1248238
+https://www.frontiersin.org/journals/conservation-science
+https://www.frontiersin.org
+Haight et al. 10.3389/fcosc.2023.1248238
+also be a major source for future human-human conflict due to the
+potential for disagreements over how best to manage wildlife
+populations and their coexistence with people in heterogeneous
+urbanizing regions (Lute and Gore, 2019). As such, we recommend
+that wildlife management practices continue to move beyond the
+prediction and mitigation of human-wildlife conflicts and toward
+the addressing human-human conflicts and the promotion of
+environmental stewardship, all while considering the diverse
+manners in which people value their interactions with wildlife
+(Lute and Gore, 2019; Bhatia, 2021; IPBES, 2022; Pascual et al.,
+2023). For instance, greater understanding of how wildlife attitudes,
+including comfort, may facilitate the incorporation of coexistence
+into multi-scale conservation planning efforts within landscapes
+increasingly dominated by human activity (Parris et al., 2018;
+Marchini et al., 2019; Apfelbeck et al., 2020; Kay et al., 2022). The
+success of these conservation efforts and the identification of
+stakeholders fall along the conflict-to-coexistence continuum
+depend upon human and wildlife behaviors rooted in complex
+social, ecological, and place-based relationships (Dietsch et al., 2019;
+Carter and Linnell, 2023).
+6 Conclusion
+Metropolitan residents express a great degree of comfort living
+near mammals, possibly indicating broad wildlife acceptance and
+tolerance, and thus, the potential for human-wildlife coexistence.
+Not only did we show that the ability to enhance coexistence is tied
+to broader cultural trends, due to the strongly ideological
+foundation of wildlife comfort, our results highlighted how the
+influences of sociodemographic, environmental, and species
+characteristics on attitudes suggest additional place-based and
+individualized opportunities to enhance wildlife tolerance,
+acceptance, and stewardship. With wildlife attitudes serving as
+significant indicators of behavioral intent regarding people’s
+willingness to coexist, further exploration of wildlife attitudes and
+their drivers remains vital to the success of conservation efforts in
+an urbanizing world.
+Data availability statement
+Datasets analyzed in this study are currently in an embargo
+period while being analyzed and published by the investigators.
+People interested in the data should contact the lead author Jeffrey
+Haight (jdhaight@asu.edu) and 2021 Phoenix Area Social Survey
+Director Kelli Larson (Kelli.Larson@asu.edu). The data will be
+made publicly available by 2025 via the Central Arizona-Phoenix
+Long-Term Ecological Research program.
+Frontiers in Conservation Science 14
+Ethics statement
+The studies involving humans were approved by Arizona State
+University Institutional Review Board. The studies were conducted
+in accordance with the local legislation and institutional
+requirements. The participants provided their written informed
+consent to participate in this study.
+Author contributions
+The manuscript was primarily conceptualized and written by
+JH (first author) and KL (senior author). JC prepared the data for
+analysis. JH and JC conducted the statistical analyses. SH and JL
+provided funding for the work, and all authors reviewed the
+manuscript, aided in interpretation of results, and contributed
+revisions. All authors contributed to the article and approved the
+submitted version.
+Funding
+This material is based upon work supported by the National
+Science Foundation under grant number DEB-1832016, Central
+Arizona-Phoenix Long-Term Ecological Research Program
+(CAP LTER).
+Conflict of interest
+The authors declare that the research was conducted in the
+absence of any commercial or financial relationships that could be
+construed as a potential conflict of interest.
+Publisher’s note
+All claims expressed in this article are solely those of the authors
+and do not necessarily represent those of their affiliated organizations,
+or those of the publisher, the editors and the reviewers. Any product
+that may be evaluated in this article, or claim that may be made by its
+manufacturer, is not guaranteed or endorsed by the publisher.
+Supplementary material
+The Supplementary Material for this article can be found online at:
+https://www.frontiersin.org/articles/10.3389/fcosc.2023.1248238/
+full#supplementary-material
+frontiersin.org
+mailto:jdhaight@asu.edu
+mailto:Kelli.Larson@asu.edu
+https://www.frontiersin.org/articles/10.3389/fcosc.2023.1248238/full#supplementary-material
+https://www.frontiersin.org/articles/10.3389/fcosc.2023.1248238/full#supplementary-material
+https://doi.org/10.3389/fcosc.2023.1248238
+https://www.frontiersin.org/journals/conservation-science
+https://www.frontiersin.org
+Haight et al. 10.3389/fcosc.2023.1248238
+References
+Abu Baker, M. A., Emerson, S. E., and Brown, J. S. (2015). Foraging and habitat use of
+eastern cottontails (Sylvilagus floridanus) in an urban landscape. Urban Ecosyst. 18,
+977–987. doi: 10.1007/s11252-015-0463-7
+Albert, C., Luque, G. M., and Courchamp, F. (2018). The twenty most charismatic
+species. PloS One 13, e0199149. doi: 10.1371/journal.pone.0199149
+Alexander, S. M., and Quinn, M. S. (2011). Coyote (Canis latrans) interactions with
+humans and pets reported in the Canadian print media, (1995–2010). Hum.
+Dimensions Wildlife 16, 345–359. doi: 10.1080/10871209.2011.599050
+Anderson, D. H., and Fulton, D. C. (2008). Experience preferences as mediators of
+the wildlife related recreation participation: place attachment relationship. Hum.
+Dimensions Wildlife 13, 73–88. doi: 10.1080/10871200701669971
+Andrade, R., Larson, K. L., Hondula, D. M., and Franklin, J. (2019). Social–spatial
+analyses of attitudes toward the desert in a Southwestern U.S. City. Ann. Am. Assoc.
+Geographers 109, 1845–1864. doi: 10.1080/24694452.2019.1580498
+Apfelbeck, B., Snep, R. P. H., Hauck, T. E., Ferguson, J., Holy, M., Jakoby, C., et al.
+(2020). Designing wildlife-inclusive cities that support human-animal co-existence.
+Landscape Urban Plann. 200, 103817–103817. doi: 10.1016/j.landurbplan.2020.103817
+Aronson, M. F. J., Nilon, C. H., Lepczyk, C. A., Parker, T. S., Warren, P. S., Cilliers, S.
+S., et al. (2016). Hierarchical filters determine community assembly of urban species
+pools. Ecology 97, 2952–2963. doi: 10.1002/ecy.1535
+Avolio, M. L., Swan, C., Pataki, D. E., and Jenerette, G. D. (2021). Incorporating
+human behaviors into theories of urban community assembly and species coexistence.
+Oikos 130, 1849–1864. doi: 10.1111/oik.08400
+Banville, M. J., Bateman, H. L., Earl, S. R., and Warren, P. S. (2017). Decadal declines
+in bird abundance and diversity in urban riparian zones. Landscape Urban Plann. 159,
+48–61. doi: 10.1016/j.landurbplan.2016.09.026
+Bateman, H. L., Brown, J. A., Larson, K. L., Andrade, R., and Hughes, B. (2021).
+Unwanted residential wildlife: Evaluating social-ecological patterns for snake removals.
+Global Ecol. Conserv. 27, e01601. doi: 10.1016/j.gecco.2021.e01601
+Bateman, H. L., Stromberg, J. C., Banville, M. J., Makings, E., Scott, B. D., Suchy, A.,
+et al. (2015). Novel water sources restore plant and animal communities along an urban
+river. Ecohydrology 8, 792–811. doi: 10.1002/eco.1560
+Bateman, P. W., and Fleming, P. A. (2012). Big city life: Carnivores in urban
+environments. J. Zool. 287, 1–23. doi: 10.1111/j.1469-7998.2011.00887.x
+Bhatia, S. (2021). More than just no conflict: examining the two sides of the
+coexistence coin. Front. Conserv. Sci. 2. doi: 10.3389/fcosc.2021.688307
+Bjerke, T., Østdahl, T., and Kleiven, J. (2003). Attitudes and activities related to urban
+wildlife: Pet owners and non-owners. Anthrozoös 16, 252–262. doi: 10.2752/
+089279303786992125
+Brooks, M. E., Kristensen, K., Benthem, K. J., Magnusson, A., Berg, C. W., Nielsen,
+A., et al. (2017). glmmTMB balances speed and flexibility among packages for zero-
+inflated generalized linear mixed modeling. R J. 9, 378–400. doi: 10.32614/RJ-2017-066
+Brown, J. A. (2020). Influences of environmental and social factors on perceived bio-
+cultural services and disservices. Front. Ecol. Evol. 8, 15. doi: 10.3389/fevo.2020.569730
+Brown, J., Larson, K., Lerman, S., Childers, D., Andrade, R., Bateman, H., et al.
+(2021). Urban Ecological Infrastructure (UEI) in the greater Phoenix, Arizona
+metropolitan area and surrounding Sonoran desert region, (2010-2017). doi: 10.6073/
+pasta/1e54516f04c7ef0b5c304a6f73552240
+Brown, J. A., Lerman, S. B., Basile, A. J., Bateman, H. L., Deviche, P., Warren, P. S.,
+et al. (2022). No fry zones: How restaurant distribution and abundance influence avian
+communities in the Phoenix, AZ metropolitan area. PloS One 17, e0269334.
+doi: 10.1371/journal.pone.0269334
+Burnham, K. P., and Anderson, D. R. (2002). Model selection and multimodel
+inference: a practical information-theoretic approach. 2nd ed (New York, New York,
+USA: Springer Verlag).
+Buyantuyev, A., and Wu, J. (2009). Urbanization alters spatiotemporal patterns of
+ecosystem primary production: A case study of the Phoenix metropolitan region, USA.
+J. Arid Environments 73, 512–520. doi: 10.1016/j.jaridenv.2008.12.015
+Carter, N. H., and Linnell, J. D. C. (2016). Co-adaptation is key to coexisting with
+large carnivores. Trends Ecol. Evol. 31, 575–578. doi: 10.1016/j.tree.2016.05.006
+Carter, N. H., and Linnell, J. D. C. (2023). Building a resilient coexistence with
+wildlife in a more crowded world. PNAS Nexus 2, pgad030. doi: 10.1093/pnasnexus/
+pgad030
+Chan, K. M. A., Balvanera, P., Benessaiah, K., Chapman, M., Dıáz, S., Gómez-
+Baggethun, E., et al. (2016). Why protect nature? Rethinking values and the
+environment. Proc. Natl. Acad. Sci. U.S.A. 113, 1462–1465. doi: 10.1073/
+pnas.1525002113
+Chase, L. D., Teel, T. L., Thornton-Chase, M. R., and Manfredo, M. J. (2016). A
+comparison of quantitative and qualitative methods to measure wildlife value
+orientations among diverse audiences: A case study of Latinos in the American
+Southwest. Soc. Natural Resour. 29, 572–587. doi: 10.1080/08941920.2015.1086455
+Cox, D. T. C., and Gaston, K. J. (2016). Urban bird feeding: connecting people with
+nature. PloS One 11, e0158717. doi: 10.1371/journal.pone.0158717
+Frontiers in Conservation Science 15
+Curtis, P. D., and Hadidian, J. (2010). “Responding to human-carnivore conflicts in
+urban areas,” in Urban carnivores: ecology, conflict, and conservation. Eds. S. D. Gehrt,
+S. P. D. Riley and B. L. Cypher (Baltimore, Maryland, USA: The John Hopkins
+University Press).
+Davidson, D. J., and Freudenburg, W. R. (1996). Gender and environmental risk
+concerns: A review and analysis of available research. Environ. Behav. 28, 302–339.
+doi: 10.1177/0013916596283003
+de Albuquerque, F. S. (2020). Annual seasonality trends of Normalized Difference
+Vegetation Index (NDVI), Maricopa County, Arizona 2001-2018. doi: 10.6073/PASTA/
+664E1CBE61BAB095E8D7DA15D757C9B9
+De Pinho, J. R., Grilo, C., Boone, R. B., Galvin, K. A., and Snodgrass, J. G. (2014).
+Influence of aesthetic appreciation of wildlife species on attitudes towards their
+conservation in Kenyan agropastoralist communities. PloS One 9, e88842.
+doi: 10.1371/journal.pone.0088842
+DeStefano, S., and DeGraaf, R. M. (2003). Exploring the ecology of suburban wildlife.
+Front. Ecol. Environ. 1, 95–101. doi: 10.1890/1540-9295(2003)001[0095:ETEOSW]
+2.0.CO;2
+Dewitz, J. (2021). National land cover database (NLCD) 2019 products. doi: 10.5066/
+P9KZCM54
+Dıáz, S., Pascual, U., Stenseke, M., Martıń-López, B., Watson, R. T., Molnár, Z., et al.
+(2018). Assessing nature’s contributions to people. Science 359, 270–272. doi: 10.1126/
+science.aap8826
+Dickman, A. J. (2010). Complexities of conflict: The importance of considering social
+factors for effectively resolving human-wildlife conflict. Anim. Conserv. 13, 458–466.
+doi: 10.1111/j.1469-1795.2010.00368.x
+Dietsch, A. M., Manfredo, M. J., Sullivan, L., Bruskotter, J. T., and Teel, T. L. (2019).
+“A multilevel systems view of values can inform a move towards human-wildlife
+coexistence,” in Human-wildlife interactions: turning conflict into coexistence
+Conservation biology. Eds. B. Frank, J. A. Glikman and S. Marchini (Cambridge,
+United Kingdom ; New York, NY: Cambridge University Press).
+Dietsch, A. M., Teel, T. L., Manfredo, M. J., and Chase, L. D. (2012). State report for
+Arizona from the research project entitled understanding people in places (Fort Collins,
+CO, USA: Project Report for the Arizona Game and Fish Department. Colorado State
+University).
+Dunlap, R. E., Van Liere, K. D., Mertig, A. G., and Jones, R. E. (2000). New trends in
+measuring environmental attitudes: measuring endorsement of the new ecological
+paradigm: A revised NEP scale. J. Soc. Issues 56, 425–442. doi: 10.1111/0022-
+4537.00176
+Eder, R., and Arnberger, A. (2012). The influence of place attachment and experience
+use history on perceived depreciative visitor behavior and crowding in an urban
+national park. Environ. Manage. 50, 566–580. doi: 10.1007/s00267-012-9912-8
+Folmer, A., Haartsen, T., and Huigen, P. P. P. (2013). The role of wildlife in
+emotional attachment to a nature-based tourism destination. J. Ecotourism 12, 131–
+145. doi: 10.1080/14724049.2013.864297
+Fuller, T. K., DeStefano, S., and Warren, P. S. (2010). “Carnivore behavior and
+ecology, and relationship to urbanization,” in Urban carnivores: ecology, conflict, and
+conservation. Eds. S. D. Gehrt, S. P. D. Riley and B. L. Cypher (Baltimore, Maryland,
+USA: The John Hopkins University Press).
+Fulton, D., Survey, U. S. G., Fish, M. C., and Manfredo, M. J. (1996). Wildlife value
+orientations : A conceptual and measurement approach. Hum. Dimensions Wildlife 1,
+4–47. doi: 10.1080/10871209609359060
+Gehrt, S. D., and Riley, S. P. D. (2010). “Coyotes (Canis latrans),” in Urban
+carnivores: ecology, conflict, and conservation. Eds. S. D. Gehrt, S. P. D. Riley and B.
+L. Cypher (Baltimore, Maryland, USA: The John Hopkins University Press), 79–95.
+George, K. A., Slagle, K. M., Wilson, R. S., Moeller, S. J., and Bruskotter, J. T. (2016).
+Changes in attitudes toward animals in the United States from 1978 to 2014. Biol.
+Conserv. 201, 237–242. doi: 10.1016/j.biocon.2016.07.013
+Glikman, J. A., Frank, B., Ruppert, K. A., Knox, J., Sponarski, C. C., Metcalf, E. C.,
+et al. (2021). Coexisting with different human-wildlife coexistence perspectives. Front.
+Conserv. Sci. 2. doi: 10.3389/fcosc.2021.703174
+Greenspan, E., Larue, M. A., and Nielsen, C. K. (2021). Attitudes of social media
+users toward mountain lions in North America. Wildlife Soc. Bull. 45, 121–129.
+doi: 10.1002/wsb.1162
+Grove, J. M., and Burch, W. R. (1997). A social ecology approach and applications of
+urban ecosystem and landscape analyses: a case study of Baltimore, Maryland. Urban
+Ecosyst. 1, 259–275. doi: 10.1023/A:1018591931544
+Gunnthorsdottir, A. (2001). Physical attractiveness of an animal species as a decision
+factor for its preservation. Anthrozoös 14, 204–215. doi: 10.2752/089279301786999355
+Hadidian, J. (2015). Wildlife in U.S. Cities: managing unwanted animals. Animals 5,
+1092–1113. doi: 10.3390/ani5040401
+Heberlein, T. A. (2012). Navigating environmental attitudes. Conserv. Biol. 26, 583–
+585. doi: 10.1111/j.1523-1739.2012.01892.x
+Hill, C. M. (2021). Conflict is integral to human-wildlife coexistence. Front. Conserv.
+Sci. 2. doi: 10.3389/fcosc.2021.734314
+frontiersin.org
+https://doi.org/10.1007/s11252-015-0463-7
+https://doi.org/10.1371/journal.pone.0199149
+https://doi.org/10.1080/10871209.2011.599050
+https://doi.org/10.1080/10871200701669971
+https://doi.org/10.1080/24694452.2019.1580498
+https://doi.org/10.1016/j.landurbplan.2020.103817
+https://doi.org/10.1002/ecy.1535
+https://doi.org/10.1111/oik.08400
+https://doi.org/10.1016/j.landurbplan.2016.09.026
+https://doi.org/10.1016/j.gecco.2021.e01601
+https://doi.org/10.1002/eco.1560
+https://doi.org/10.1111/j.1469-7998.2011.00887.x
+https://doi.org/10.3389/fcosc.2021.688307
+https://doi.org/10.2752/089279303786992125
+https://doi.org/10.2752/089279303786992125
+https://doi.org/10.32614/RJ-2017-066
+https://doi.org/10.3389/fevo.2020.569730
+https://doi.org/10.6073/pasta/1e54516f04c7ef0b5c304a6f73552240
+https://doi.org/10.6073/pasta/1e54516f04c7ef0b5c304a6f73552240
+https://doi.org/10.1371/journal.pone.0269334
+https://doi.org/10.1016/j.jaridenv.2008.12.015
+https://doi.org/10.1016/j.tree.2016.05.006
+https://doi.org/10.1093/pnasnexus/pgad030
+https://doi.org/10.1093/pnasnexus/pgad030
+https://doi.org/10.1073/pnas.1525002113
+https://doi.org/10.1073/pnas.1525002113
+https://doi.org/10.1080/08941920.2015.1086455
+https://doi.org/10.1371/journal.pone.0158717
+https://doi.org/10.1177/0013916596283003
+https://doi.org/10.6073/PASTA/664E1CBE61BAB095E8D7DA15D757C9B9
+https://doi.org/10.6073/PASTA/664E1CBE61BAB095E8D7DA15D757C9B9
+https://doi.org/10.1371/journal.pone.0088842
+https://doi.org/10.1890/1540-9295(2003)001[0095:ETEOSW]2.0.CO;2
+https://doi.org/10.1890/1540-9295(2003)001[0095:ETEOSW]2.0.CO;2
+https://doi.org/10.5066/P9KZCM54
+https://doi.org/10.5066/P9KZCM54
+https://doi.org/10.1126/science.aap8826
+https://doi.org/10.1126/science.aap8826
+https://doi.org/10.1111/j.1469-1795.2010.00368.x
+https://doi.org/10.1111/0022-4537.00176
+https://doi.org/10.1111/0022-4537.00176
+https://doi.org/10.1007/s00267-012-9912-8
+https://doi.org/10.1080/14724049.2013.864297
+https://doi.org/10.1080/10871209609359060
+https://doi.org/10.1016/j.biocon.2016.07.013
+https://doi.org/10.3389/fcosc.2021.703174
+https://doi.org/10.1002/wsb.1162
+https://doi.org/10.1023/A:1018591931544
+https://doi.org/10.2752/089279301786999355
+https://doi.org/10.3390/ani5040401
+https://doi.org/10.1111/j.1523-1739.2012.01892.x
+https://doi.org/10.3389/fcosc.2021.734314
+https://doi.org/10.3389/fcosc.2023.1248238
+https://www.frontiersin.org/journals/conservation-science
+https://www.frontiersin.org
+Haight et al. 10.3389/fcosc.2023.1248238
+Hudenko, H., Siemer, W., and Decker, D. (2010). “Urban carnivore conservation and
+management: the human dimension,” in Urban carnivores: ecology, conflict, and
+conservation. Eds. S. D. Gehrt, S. P. D. Riley and B. L. Cypher (Baltimore: The Johns
+Hopkins University Press), 20–33.
+IPBES (2022). Methodological assessment of the diverse values and valuation of
+nature of the Intergovernmental Science-Policy Platform on Biodiversity and
+Ecosystem Services. Balvanera, P.Pascual, U.Baptiste, B.González-Jiménez, D. (eds.).
+IPBES secretariat, Bonn, Germany. Zenodo. doi: 10.5281/ZENODO.6522522
+Jacobs, M., and Vaske, J. J. (2019). “Understanding emotions as opportunities for and
+barriers to coexistence with wildlife,” in Human-wildlife interactions: turning conflict
+into coexistence Conservation biology. Eds. B. Frank, J. A. Glikman and S. Marchini
+(Cambridge, United Kingdom ; New York, NY: Cambridge University Press).
+Jacques-Coper, A., Cubillos, G., and Ibarra, J. T. (2019). The Andean Condor as bird,
+authority, and devil: an empirical assessment of the biocultural keystone species
+concept in the high Andes of Chile. E&S 24, art35. doi: 10.5751/ES-10939-240235
+Jenkins, C. N., Van Houtan, K. S., Pimm, S. L., and Sexton, J. O. (2015). US protected
+lands mismatch biodiversity priorities. Proc. Natl. Acad. Sci. 112, 5081–5086.
+doi: 10.1073/pnas.1418034112
+Kaltenborn, B. P., and Linnell, J. D. C. (2022). The coexistence potential of different
+wildlife conservation frameworks in a historical perspective. Front. Conserv. Sci. 2.
+doi: 10.3389/fcosc.2021.711480
+Kansky, R., Kidd, M., and Knight, A. T. (2016). A wildlife tolerance model and case
+study for understanding human wildlife conflicts. Biol. Conserv. 201, 137–145.
+doi: 10.1016/j.biocon.2016.07.002
+Kansky, R., and Knight, A. T. (2014). Key factors driving attitudes towards large
+mammals in conflict with humans. Biol. Conserv. 179, 93–105. doi: 10.1016/
+j.biocon.2014.09.008
+Kay, C. A. M., Rohnke, A. T., Sander, H. A., Stankowich, T., Fidino, M., Murray, M.
+H., et al. (2022). Barriers to building wildlife-inclusive cities: Insights from the
+deliberations of urban ecologists, urban planners and landscape designers. People
+Nat. 4, 62–70. doi: 10.1002/pan3.10283
+Kays, R. W., and Wilson, D. E. (2009). Mammals of North America (Princeton, NJ,
+USA: Princeton University Press).
+Kellert, S. R. (1985). “American attitudes toward and knowledge of animals: an
+update,” in Advances in animal welfare science 1984. Eds. M. W. Fox and L. D. Mickley
+(Dordrecht: Springer Netherlands). doi: 10.1007/978-94-009-4998-0_11
+Kellert, S. R. (1993). The biological basis for human values of nature. biophilia
+hypothesis 42, 69. doi: 10.1046/j.1523-1739.1993.740845.x
+Kellert, S. R., and Berry, J. K. (1987). Attitudes, knowledge, and behaviors toward
+wildlife as affected by gender.Wildlife Soc. Bull. 15, 363–371. Available at: https://www.
+jstor.org/stable/3782542
+Larson, K. L., Brown, J. A., Andrade, R., Avilez, D., Davitt, A., and Siefert, J. (2022).
+The phoenix area social survey V: analyzing neighborhood social-ecological dynamics &
+Change over time (Central Arizona-Phoenix Long Term Ecological Research Program).
+Available at: https://sustainability-innovation.asu.edu/caplter/wp-content/uploads/
+sites/9/2021/12/PASS2021report_final.pdf
+Larson, K. L., Casagrande, D., Harlan, S. L., and Yabiku, S. T. (2009). Residents’ Yard
+choices and rationales in a desert city: social priorities, ecological impacts, and decision
+tradeoffs. Environ. Manage. 44, 921–937. doi: 10.1007/s00267-009-9353-1
+Larson, K. L., Ibes, D. C., and White, D. D. (2011). Gendered perspectives about
+water risks and policy strategies: A tripartite conceptual approach. Environ. Behav. 43,
+415–438. doi: 10.1177/0013916510365253
+Larson, K. L., Rosales Chavez, J.-B., Brown, J. A., Morales-Guerrero, J., and Avilez, D.
+(2023). Human–wildlife interactions and coexistence in an urban desert environment.
+Sustainability 15, 3307. doi: 10.3390/su15043307
+Larson, K. L., Stotts, R., Wutich, A., Brewis, A., and White, D. (2016). Cross-cultural
+perceptions of water risks and solutions across select sites. Soc. Natural Resour. 29,
+1049–1064. doi: 10.1080/08941920.2015.1122132
+Long, R. B., Krumlauf, K., and Young, A. M. (2020). Characterizing trends in human-
+wildlife conflicts in the American Midwest using wildlife rehabilitation records. PloS
+One 15, e0238805. doi: 10.1371/journal.pone.0238805
+Lüdecke, D., Ben-Shachar, M., Patil, I., Waggoner, P., and Makowski, D. (2021).
+performance: an R package for assessment, comparison and testing of statistical
+models. JOSS 6, 3139. doi: 10.21105/joss.03139
+Lute, M. L., and Gore, M. L. (2019). “Broadening the aperture on coexistence with
+wildlife through lenses of identity, risk and morals,” in Human-wildlife interactions:
+turning conflict into coexistence Conservation biology. Eds. B. Frank, J. A. Glikman and
+S. Marchini (Cambridge, United Kingdom: New York, NY: Cambridge University
+Press).
+Macdonald, D. (1984). “A questionnaire survey of farmers’ opinions and actions
+towards wildlife on farmlands,” in Agriculture and the environment, ed. D. Jenkins
+(Cambridge: Institute of Terrestrial Ecology/NERC) 171–177. Available at: https://
+nora.nerc.ac.uk/id/eprint/5980/.
+Macdonald, D. W. (2023). Mitigating human impacts on wild animal welfare.
+Animals 13, 2906. doi: 10.3390/ani13182906
+Magle, S. B., Hunt, V. M., Vernon, M., and Crooks, K. R. (2012). Urban wildlife
+research: Past, present, and future. Biol. Conserv. 155, 23–32. doi: 10.1016/
+j.biocon.2012.06.018
+Frontiers in Conservation Science 16
+Magle, S. B., Lehrer, E. W., and Fidino, M. (2016). Urban mesopredator distribution:
+Examining the relative effects of landscape and socioeconomic factors. Anim. Conserv.
+19, 163–175. doi: 10.1111/acv.12231
+Manfredo, M. J. (2008a). “Attitudes and the study of human dimensions of wildlife,” in
+Who cares about wildlife?: social science concepts for exploring human-wildlife relationships
+and conservation issues (New York, NY: Springer US). doi: 10.1007/978-0-387-77040-6
+Manfredo, M. J. (2008b). “Understanding the feeling component of human–wildlife
+interactions,” inWho cares about wildlife?: social science concepts for exploring human-
+wildlife relationships and conservation issues (New York, NY: Springer US), 49–73.
+doi: 10.1007/978-0-387-77040-6_3
+Manfredo, M. J. (2008c). “Values, ideology, and value orientations,” in Who cares about
+wildlife?: social science concepts for exploring human-wildlife relationships and conservation
+issues (New York, NY: Springer US), 141–166. doi: 10.1007/978-0-387-77040-6_6
+Manfredo, M. J. (2009). Linking society and environment : A multilevel model of
+shifting wildlife value orientations in the western United States. Soc. Sci. Q. 90, 407–427.
+doi: 10.1111/j.1540-6237.2009.00624.x
+Manfredo, M. J., Teel, T. L., and Dietsch, A. M. (2016). Implications of human value shift
+and persistence for biodiversity conservation. Conserv. Biol. 30, 287–296. doi: 10.1111/
+cobi.12619
+Manfredo, M. J., Teel, T. L., Don Carlos, A. W., Sullivan, L., Bright, A. D., Dietsch, A.
+M., et al. (2020). The changing sociocultural context of wildlife conservation. Conserv.
+Biol. 34, 1549–1559. doi: 10.1111/cobi.13493
+Marchini, S., Ferraz, K. M. P. M. B., Zimmermann, A., Guimarães-Luiz, T., Morato,
+R., Correa, P. L. P., et al. (2019). “Planning for coexistence in a complex human-
+dominated world,” in Human-wildlife interactions: turning conflict into coexistence
+Conservation biology. Eds. B. Frank, J. A. Glikman and S. Marchini (Cambridge, United
+Kingdom ; New York, NY: Cambridge University Press).
+McGarigal, K., Wan, H. Y., Zeller, K. A., Timm, B. C., and Cushman, S. A. (2016).
+Multi-scale habitat selection modeling: a review and outlook. Landscape Ecol. 31, 1161–
+1175. doi: 10.1007/s10980-016-0374-x
+McIntyre, N. E. (2014). “Wildlife responses to urbanization,” in Urban wildlife
+conservation: theory and practice. Eds. R. A. McCleery, C. E. Moorman and M. N.
+Peterson (Boston, MA: Springer US). doi: 10.1007/978-1-4899-7500-3
+McKinney, M. L. (2008). Effects of urbanization on species richness: A review of
+plants and animals. Urban Ecosyst. 11, 161–176. doi: 10.1007/s11252-007-0045-4
+Methorst, J., Arbieu, U., Bonn, A., Böhning-Gaese, K., and Müller, T. (2020). Non-
+material contributions of wildlife to human well-being: a systematic review. Environ.
+Res. Lett. 15, 093005. doi: 10.1088/1748-9326/ab9927
+Nardi, A., Shaw, B., Brossard, D., and Drake, D. (2020). Public attitudes toward
+urban foxes and coyotes: the roles of perceived risks and benefits, political ideology,
+ecological worldview, and attention to local news about urban wildlife. Hum.
+Dimensions Wildlife 25, 405–420. doi: 10.1080/10871209.2020.1748768
+Nilon, C. (2014). “The urban system: social drivers,” in Urban wildlife conservation
+(Springer), 91–102. (New York, NY, USA)
+Norton, B. A., Evans, K. L., and Warren, P. H. (2016). Urban biodiversity and
+landscape ecology: patterns, processes and planning. Curr. Landscape Ecol. Rep. 1, 178–
+192. doi: 10.1007/s40823-016-0018-5
+Parris, K. M., Amati, M., Bekessy, S. A., Dagenais, D., Fryd, O., Hahs, A. K., et al.
+(2018). The seven lamps of planning for biodiversity in the city. Cities 83, 44–53.
+doi: 10.1016/j.cities.2018.06.007
+Pascual, U., Balvanera, P., Anderson, C. B., Chaplin-Kramer, R., Christie, M.,
+González-Jiménez, D., et al. (2023). Diverse values of nature for sustainability.
+Nature 620, 813–823. doi: 10.1038/s41586-023-06406-9
+Pascual, U., Balvanera, P., Dıáz, S., Pataki, G., Roth, E., Stenseke, M., et al. (2017).
+Valuing nature’s contributions to people: the IPBES approach. Curr. Opin. Environ.
+Sustainability 26–27, 7–16. doi: 10.1016/j.cosust.2016.12.006
+Payton, M. A., Fulton, D. C., and Anderson, D. H. (2005). Influence of place
+attachment and trust on civic action: A study at sherburne national wildlife refuge. Soc.
+Natural Resour. 18, 511–528. doi: 10.1080/08941920590947940
+Peterson, M. N., Birckhead, J. L., Leong, K., Peterson, M. J., and Peterson, T. R.
+(2010). Rearticulating the myth of human-wildlife conflict. Conserv. Lett. 3, 74–82.
+doi: 10.1111/j.1755-263X.2010.00099.x
+Poessel, S. A., Breck, S. W., Teel, T. L., Shwiff, S., Crooks, K. R., and Angeloni, L.
+(2013). Patterns of human-coyote conflicts in the Denver Metropolitan Area. J. Wildlife
+Manage. 77, 297–305. doi: 10.1002/jwmg.454
+Poessel, S. A., Gese, E. M., and Young, J. K. (2017). Environmental factors influencing
+the occurrence of coyotes and conflicts in urban areas. Landscape Urban Plann. 157,
+259–269. doi: 10.1016/j.landurbplan.2016.05.022
+Pooley, S. (2021). Coexistence for whom? Front. Conserv. Sci. 2. doi: 10.3389/
+fcosc.2021.726991
+Pooley, S., Bhatia, S., and Vasava, A. (2021). Rethinking the study of human–wildlife
+coexistence. Conserv. Biol. 35, 784–793. doi: 10.1111/cobi.13653
+Prokop, P., Usak, M., and Erdogan, M. (2011). Good predators in bad stories: cross-
+cultural comparison of children’s attitudes towards wolves. J. Baltic Sci. Educ. 10, 229–
+242. Available at: https://oaji.net/articles/2014/987-1410547670.pdf.
+R Core Team (2020) R: A language and environment for statistical computing.
+Available at: https://www.r-project.org/.
+frontiersin.org
+https://doi.org/10.5281/ZENODO.6522522
+https://doi.org/10.5751/ES-10939-240235
+https://doi.org/10.1073/pnas.1418034112
+https://doi.org/10.3389/fcosc.2021.711480
+https://doi.org/10.1016/j.biocon.2016.07.002
+https://doi.org/10.1016/j.biocon.2014.09.008
+https://doi.org/10.1016/j.biocon.2014.09.008
+https://doi.org/10.1002/pan3.10283
+https://doi.org/10.1007/978-94-009-4998-0_11
+https://doi.org/10.1046/j.1523-1739.1993.740845.x
+https://www.jstor.org/stable/3782542
+https://www.jstor.org/stable/3782542
+https://sustainability-innovation.asu.edu/caplter/wp-content/uploads/sites/9/2021/12/PASS2021report_final.pdf
+https://sustainability-innovation.asu.edu/caplter/wp-content/uploads/sites/9/2021/12/PASS2021report_final.pdf
+https://doi.org/10.1007/s00267-009-9353-1
+https://doi.org/10.1177/0013916510365253
+https://doi.org/10.3390/su15043307
+https://doi.org/10.1080/08941920.2015.1122132
+https://doi.org/10.1371/journal.pone.0238805
+https://doi.org/10.21105/joss.03139
+https://nora.nerc.ac.uk/id/eprint/5980/
+https://nora.nerc.ac.uk/id/eprint/5980/
+https://doi.org/10.3390/ani13182906
+https://doi.org/10.1016/j.biocon.2012.06.018
+https://doi.org/10.1016/j.biocon.2012.06.018
+https://doi.org/10.1111/acv.12231
+https://doi.org/10.1007/978-0-387-77040-6
+https://doi.org/10.1007/978-0-387-77040-6_3
+https://doi.org/10.1007/978-0-387-77040-6_6
+https://doi.org/10.1111/j.1540-6237.2009.00624.x
+https://doi.org/10.1111/cobi.12619
+https://doi.org/10.1111/cobi.12619
+https://doi.org/10.1111/cobi.13493
+https://doi.org/10.1007/s10980-016-0374-x
+https://doi.org/10.1007/978-1-4899-7500-3
+https://doi.org/10.1007/s11252-007-0045-4
+https://doi.org/10.1088/1748-9326/ab9927
+https://doi.org/10.1080/10871209.2020.1748768
+https://doi.org/10.1007/s40823-016-0018-5
+https://doi.org/10.1016/j.cities.2018.06.007
+https://doi.org/10.1038/s41586-023-06406-9
+https://doi.org/10.1016/j.cosust.2016.12.006
+https://doi.org/10.1080/08941920590947940
+https://doi.org/10.1111/j.1755-263X.2010.00099.x
+https://doi.org/10.1002/jwmg.454
+https://doi.org/10.1016/j.landurbplan.2016.05.022
+https://doi.org/10.3389/fcosc.2021.726991
+https://doi.org/10.3389/fcosc.2021.726991
+https://doi.org/10.1111/cobi.13653
+https://oaji.net/articles/2014/987-1410547670.pdf
+https://www.r-project.org/
+https://doi.org/10.3389/fcosc.2023.1248238
+https://www.frontiersin.org/journals/conservation-science
+https://www.frontiersin.org
+Haight et al. 10.3389/fcosc.2023.1248238
+Rea, A. M. (1998). Folk mammalogy of the Northern Pimans (Tucson, AZ, USA:
+University of Arizona Press).
+Reidinger, R. F., and Miller, J. E. (2013). Wildlife damage management: prevention,
+problem-solving and conflict resolution (Baltimore, Maryland: John Hopkins University
+Press).
+Rigolon, A. (2016). A complex landscape of inequity in access to urban parks: A literature
+review. Landscape Urban Plann. 153, 160–169. doi: 10.1016/j.landurbplan.2016.05.017
+Ryan, A. M., and Partan, S. R. (2014). “Urban wildlife behavior,” in Urban wildlife
+conservation: theory and practice. Eds. R. A. McCleery, C. E. Moorman and M. N.
+Peterson (Boston, MA: Springer US). doi: 10.1007/978-1-4899-7500-3
+Shuttlewood, C. Z., Greenwell, P. J., and Montrose, V. T. (2016). Pet ownership,
+attitude toward pets, and support for wildlife management strategies.Hum. Dimensions
+Wildlife 21, 180–188. doi: 10.1080/10871209.2016.1116029
+Simes, M. T., Longshore, K. M., Nussear, K. E., Beatty, G. L., Brown, D. E., and Esque,
+T. C. (2015). Black-tailed and white-tailed jackrabbits in the American west: history,
+ecology, ecological significance, and survey methods.Western North Am. Nat. 75, 491–
+519. doi: 10.3398/064.075.0406
+Slagle, K., and Bruskotter, J. T. (2019). “Tolerance for wildlife: A psychological
+perspective,” in Human-wildlife interactions: turning conflict into coexistence
+Conservation biology. Eds. B. Frank, J. A. Glikman and S. Marchini (Cambridge,
+United Kingdom ; New York, NY: Cambridge University Press).
+Slovic, P. (1987). Perception of risk. Science 236, 7. doi: 10.1126/science.3563507
+Soga, M., Gaston, K. J., Koyanagi, T. F., Kurisu, K., and Hanaki, K. (2016). Urban
+residents’ perceptions of neighbourhood nature: Does the extinction of experience
+matter? Biol. Conserv. 203, 143–150. doi: 10.1016/j.biocon.2016.09.020
+Soulsbury, C. D., and White, P. C. L. (2015). Human-wildlife interactions in urban
+areas: A review of conflicts, benefits and opportunities. Wildlife Res. 42, 541–553.
+doi: 10.1071/WR14229
+Soulsbury, C. D., and White, P. C. L. (2019). “A framework for assessing and
+quantifying human-wildlife interactions in urban areas,” in Human-wildlife
+Frontiers in Conservation Science 17
+interactions: turning conflict into coexistence Conservation biology. Eds. B. Frank, J.
+A. Glikman and S. Marchini (Cambridge, United Kingdom ; New York, NY:
+Cambridge University Press).
+Teel, T. L., and Manfredo, M. J. (2010). Understanding the diversity of public interests in
+wildlife conservation. Conserv. Biol. 24, 128–139. doi: 10.1111/j.1523-1739.2009.01374.x
+Thekaekara, T., Bhagwat, S. A., and Thornton, T. F. (2021). Coexistence and culture:
+understanding human diversity and tolerance in human-elephant interactions. Front.
+Conserv. Sci. 2. doi: 10.3389/fcosc.2021.735929
+U.S. Census Bureau (2021) 2017-2021 American Community Survey 5-year estimates,
+Phoenix-Mesa-Scottsdale AZ Metro Area, Total Population. Available at: https://data.
+census.gov (Accessed January 6, 2023).
+Van Velsor, S. W., and Nilon, C. H. (2006). A qualitative investigation of the urban
+African-American and Latino adolescent experience with wildlife∗. Hum. Dimensions
+Wildlife 11, 359–370. doi: 10.1080/10871200600894944
+Vaske, J. J., Don Carlos, A. W., Manfredo, M. J., and Teel, T. L. (2023). Evaluating
+alternative survey methodologies in human dimensions of wildlife research. Hum.
+Dimensions Wildlife 28, 320–334. doi: 10.1080/10871209.2022.2057622
+Warren, P. S., Lerman, S. B., Andrade, R., Larson, K. L., and Bateman, H. L. (2019).
+The more things change: species losses detected in Phoenix despite stability in bird–
+socioeconomic relationships. Ecosphere 10, e02624. doi: 10.1002/ecs2.2624
+Williams, D. R., and Vaske, J. J. (2003). The measurement of place attachment:
+validity and generalizability of a psychometric approach. For. Sci. 49, 11. doi: 10.1093/
+forestscience/49.6.830
+Yirga, G., Leirs, H., De Iongh, H. H., Asmelash, T., Gebrehiwot, K., Deckers, J., et al.
+(2015). Spotted hyena (Crocuta crocuta) concentrate around urban waste dumps across
+Tigray, northern Ethiopia. Wildl. Res. 42, 563. doi: 10.1071/WR14228
+Zaradic, P. A., Pergams, O. R. W., and Kareiva, P. (2009). The impact of nature experience
+on willingness to support conservation. PloS One 4, e7367. doi: 10.1371/journal.pone.0007367
+Zinn, H. Z., and Pierce, C. L. (2002). Values, gender, and concern about potentially
+dangerous wildlife. Environ. Behav. 34, 239–256. doi: 10.1177/0013916502034002005
+frontiersin.org
+https://doi.org/10.1016/j.landurbplan.2016.05.017
+https://doi.org/10.1007/978-1-4899-7500-3
+https://doi.org/10.1080/10871209.2016.1116029
+https://doi.org/10.3398/064.075.0406
+https://doi.org/10.1126/science.3563507
+https://doi.org/10.1016/j.biocon.2016.09.020
+https://doi.org/10.1071/WR14229
+https://doi.org/10.1111/j.1523-1739.2009.01374.x
+https://doi.org/10.3389/fcosc.2021.735929
+https://data.census.gov
+https://data.census.gov
+https://doi.org/10.1080/10871200600894944
+https://doi.org/10.1080/10871209.2022.2057622
+https://doi.org/10.1002/ecs2.2624
+https://doi.org/10.1093/forestscience/49.6.830
+https://doi.org/10.1093/forestscience/49.6.830
+https://doi.org/10.1071/WR14228
+https://doi.org/10.1371/journal.pone.0007367
+https://doi.org/10.1177/0013916502034002005
+https://doi.org/10.3389/fcosc.2023.1248238
+https://www.frontiersin.org/journals/conservation-science
+https://www.frontiersin.org
+ Social-ecological drivers of metropolitan residents’ comfort living with wildlife
+ 1 Introduction
+ 2 Literature review
+ 2.1 Conceptualizing coexistence with mammals
+ 2.2 Ideological factors in coexistence
+ 2.3 Environmental factors in coexistence
+ 2.4 Sociodemographic factors in coexistence
+ 2.5 Hypotheses
+ 3 Methods
+ 3.1 Study system
+ 3.2 Study species
+ 3.3 Sampling design and implementation
+ 3.4 Sample demographics
+ 3.5 Data and variables
+ 3.5.1 Dependent variables: comfort living near wildlife
+ 3.5.2 Ideological explanatory variables
+ 3.5.3 Environmental explanatory variables
+ 3.5.4 Sociodemographic explanatory variables
+ 3.6 Statistical analyses
+ 4 Results
+ 4.1 Variation in comfort living near wildlife
+ 4.2 Factors associated with comfort living near wildlife
+ 5 Discussion
+ 5.1 Roles of environment and sociodemographics
+ 5.2 Roles of species traits
+ 5.3 Limitations and future research
+ 5.4 Implications for coexistence
+ 6 Conclusion
+ Data availability statement
+ Ethics statement
+ Author contributions
+ Funding
+ Supplementary material
+ References

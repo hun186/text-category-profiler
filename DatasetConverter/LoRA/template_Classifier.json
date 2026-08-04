@@ -1,0 +1,52 @@
+[
+   {
+        "instruction": "請問以下文本類別為何？",
+        "input": "$text",
+        "output": "$label"
+    },
+   {
+        "instruction": "請問以下文本類別是什麼？",
+        "input": "$text",
+        "output": "$label"
+    },
+   {
+        "instruction": "請問以下文本歸屬類別為何？",
+        "input": "$text",
+        "output": "$label"
+    },
+   {
+        "instruction": "請問以下文本歸屬類別是什麼？",
+        "input": "$text",
+        "output": "$label"
+    },
+   {
+        "instruction": "請問以下文本類別歸類是什麼？",
+        "input": "$text",
+        "output": "$label"
+    },
+   {
+        "instruction": "請問以下文本屬於哪個類別？",
+        "input": "$text",
+        "output": "$label"
+    },
+   {
+        "instruction": "針對下列文本，進行分類。",
+        "input": "$text",
+        "output": "$label"
+    },
+   {
+        "instruction": "分類下列文本。",
+        "input": "$text",
+        "output": "$label"
+    },
+   {
+        "instruction": "What is the class for the following text?",
+        "input": "$text",
+        "output": "$label"
+    },
+   {
+        "instruction": "Classify the following text.",
+        "input": "$text",
+        "output": "$label"
+    }
+]

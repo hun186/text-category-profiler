@@ -1,0 +1,7 @@
+2022-12-21 16:46:17,PID 32300: When apply WeiTechFormatOutputer to D:\shared\TopicClassification\AIpool\zhpool\input\SelectedSubBye_1777, the file does NOT exist. ABORT!
+2022-12-21 16:46:17,PID 32300: When apply WeiTechFormatOutputer to D:\shared\TopicClassification\AIpool\zhpool\input\布魯克林籃網.txt, the file does NOT exist. ABORT!
+2022-12-21 16:46:17,PID 32972: When apply WeiTechFormatOutputer to D:\shared\TopicClassification\AIpool\zhpool\input\SubBye_413, the file does NOT exist. ABORT!
+2022-12-21 16:46:17,PID 32972: When apply WeiTechFormatOutputer to D:\shared\TopicClassification\AIpool\zhpool\input\الأزمة الأوكرانية_ وكالات الأمم المتحدة تدعم الأفواج المتزايدة من اللاجئين.txt, the file does NOT exist. ABORT!
+2022-12-21 16:46:17,PID 32972: When apply WeiTechFormatOutputer to D:\shared\TopicClassification\AIpool\zhpool\input\SubBye_1043, the file does NOT exist. ABORT!
+2022-12-21 16:46:17,PID 38344: When apply WeiTechFormatOutputer to D:\shared\TopicClassification\AIpool\zhpool\input\SubBye_3047, the file does NOT exist. ABORT!
+2022-12-21 16:46:17,PID 32972: When apply WeiTechFormatOutputer to D:\shared\TopicClassification\AIpool\zhpool\input\SubBye_304, the file does NOT exist. ABORT!

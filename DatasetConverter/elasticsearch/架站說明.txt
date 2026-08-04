@@ -1,0 +1,43 @@
+
+架localhost站
+於elasticsearch.yml下方增加下面兩個設定
+xpack.security.enrollment.enabled: true
+xpack.security.enabled: true
+
+elasticsearch-8.5.2\bin\elasticsearch.bat
+elasticsearch-8.5.2\bin\elasticsearch-service install
+elasticsearch-8.5.2\bin\elasticsearch-service start
+
+
+
+
+
+重設elastic密碼及取得密碼
+elasticsearch-reset-password -u elastic
+
+H:Rhhl35kvMf6Xm0U*PTAH
+C:=lJg5OAxH_Oivzo1ZB-1
+
+確認elastic已架
+http://localhost:9200
+
+架設kibana
+kibana-8.5.2\bin\kibana.bat
+
+功能入口頁面
+http://localhost:5601/app/integrations/browse
+
+
+
+elasticsearch-create-enrollment-token.bat --scope kibana
+eyJ2ZXIiOiI4LjUuMiIsImFkciI6WyIxMC4xMTIuMC45NDo5MjAwIl0sImZnciI6IjU4NDM4YTlmODBhNzliOGVmMzU0YjU3MTViN2VjNTk2MGRiMjM1OGFlMTBkNDNhYWY5Mjk3MGViN2M4M2RkNWQiLCJrZXkiOiJlanJ6OElRQnR5RFhCQmlXVHplTjpWOFc5REFTMlI3ZWNqN3F2RWFmMk5BIn0=
+
+
+取得kibana認證code
+\kibana-8.5.2-windows-x86_64\kibana-8.5.2\bin\kibana-verification-code.bat
+
+
+使用curl新增資料
+curl -H "Content-Type: application/json" -XPOST "http://localhost:9200/indexname/typename/optionalUniqueId" -d "{ \"field\" : \"value\"}"
+
+curl -XPOST http://localhost:9200/sptest -H "Content-Type: application/json" -d @data.json --insecure

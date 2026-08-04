@@ -1,0 +1,628 @@
+2022-12-15 16:30:39,PID 20828: When transffering 2047 to samples, the following error occurs:
+list indices must be integers or slices, not str
+
+2022-12-15 16:30:39,PID 20828: When transffering 304 to samples, the following error occurs:
+list indices must be integers or slices, not str
+
+2022-12-15 16:30:39,PID 20828: When transffering 3047 to samples, the following error occurs:
+list indices must be integers or slices, not str
+
+2022-12-15 16:30:40,PID 2076: When transffering 1047 to samples, the following error occurs:
+list indices must be integers or slices, not str
+
+2022-12-15 16:44:32,PID 1412: When transffering 304 to samples, the following error occurs:
+list indices must be integers or slices, not str
+
+2022-12-15 16:44:33,PID 1412: When transffering 3047 to samples, the following error occurs:
+list indices must be integers or slices, not str
+
+2022-12-15 16:44:33,PID 10928: When transffering 1047 to samples, the following error occurs:
+list indices must be integers or slices, not str
+
+2022-12-15 16:44:34,PID 6112: When transffering 2047 to samples, the following error occurs:
+list indices must be integers or slices, not str
+
+2022-12-15 16:49:58,PID 14012: When transffering 2047 to samples, the following error occurs:
+list indices must be integers or slices, not str
+
+2022-12-15 16:49:58,PID 14012: When transffering 1047 to samples, the following error occurs:
+list indices must be integers or slices, not str
+
+2022-12-15 16:49:58,PID 14012: When transffering 304 to samples, the following error occurs:
+list indices must be integers or slices, not str
+
+2022-12-15 16:49:58,PID 13708: When transffering 3047 to samples, the following error occurs:
+list indices must be integers or slices, not str
+
+2022-12-15 17:01:51,PID 16604: When transffering 2047 to samples, the following error occurs:
+list indices must be integers or slices, not str
+
+2022-12-15 17:01:51,PID 16604: When transffering 3047 to samples, the following error occurs:
+list indices must be integers or slices, not str
+
+2022-12-15 17:01:51,PID 10864: When transffering 304 to samples, the following error occurs:
+list indices must be integers or slices, not str
+
+2022-12-15 17:01:51,PID 16604: When transffering 1047 to samples, the following error occurs:
+list indices must be integers or slices, not str
+
+2022-12-15 17:08:11,PID 18188: When transffering 3047 to samples, the following error occurs:
+list indices must be integers or slices, not str
+
+2022-12-15 17:08:11,PID 1660: When transffering 304 to samples, the following error occurs:
+list indices must be integers or slices, not str
+
+2022-12-15 17:08:12,PID 18332: When transffering 1047 to samples, the following error occurs:
+list indices must be integers or slices, not str
+
+2022-12-15 17:08:12,PID 17908: When transffering 2047 to samples, the following error occurs:
+list indices must be integers or slices, not str
+
+2022-12-15 18:03:57,PID 11640: When transffering 3047 to samples, the following error occurs:
+local variable 'textList' referenced before assignment
+
+2022-12-15 18:03:58,PID 11640: When transffering 43 to samples, the following error occurs:
+local variable 'textList' referenced before assignment
+
+2022-12-15 18:03:59,PID 17112: When transffering 1047 to samples, the following error occurs:
+local variable 'textList' referenced before assignment
+
+2022-12-15 18:03:59,PID 11640: When transffering 304 to samples, the following error occurs:
+local variable 'textList' referenced before assignment
+
+2022-12-15 18:04:01,PID 3232: When transffering 2047 to samples, the following error occurs:
+local variable 'textList' referenced before assignment
+
+2022-12-15 18:04:01,PID 14252: When transffering 1043 to samples, the following error occurs:
+local variable 'textList' referenced before assignment
+
+2022-12-15 18:06:22,PID 5164: When transffering 2047 to samples, the following error occurs:
+local variable 'textList' referenced before assignment
+
+2022-12-15 18:06:23,PID 21232: When transffering 43 to samples, the following error occurs:
+local variable 'textList' referenced before assignment
+
+2022-12-15 18:06:23,PID 8868: When transffering 1043 to samples, the following error occurs:
+local variable 'textList' referenced before assignment
+
+2022-12-15 18:06:23,PID 5164: When transffering 304 to samples, the following error occurs:
+local variable 'textList' referenced before assignment
+
+2022-12-15 18:06:23,PID 20484: When transffering 1047 to samples, the following error occurs:
+local variable 'textList' referenced before assignment
+
+2022-12-15 18:06:23,PID 7936: When transffering 3047 to samples, the following error occurs:
+local variable 'textList' referenced before assignment
+
+2022-12-15 18:19:16,PID 18552: When transffering 1043 to samples, the following error occurs:
+name 'isTarget' is not defined
+
+2022-12-15 18:19:17,PID 18380: When transffering 3047 to samples, the following error occurs:
+name 'isTarget' is not defined
+
+2022-12-15 18:19:17,PID 22180: When transffering 1047 to samples, the following error occurs:
+name 'isTarget' is not defined
+
+2022-12-15 18:19:17,PID 20380: When transffering 304 to samples, the following error occurs:
+name 'isTarget' is not defined
+
+2022-12-15 18:19:17,PID 21772: When transffering 2047 to samples, the following error occurs:
+name 'isTarget' is not defined
+
+2022-12-15 18:19:17,PID 11244: When transffering 43 to samples, the following error occurs:
+name 'isTarget' is not defined
+
+2022-12-15 18:23:22,PID 23532: When transffering 1043 to samples, the following error occurs:
+textSegsToSamples() takes 3 positional arguments but 4 were given
+
+2022-12-15 18:23:22,PID 23532: When transffering 1047 to samples, the following error occurs:
+textSegsToSamples() takes 3 positional arguments but 4 were given
+
+2022-12-15 18:23:22,PID 19772: When transffering 43 to samples, the following error occurs:
+textSegsToSamples() takes 3 positional arguments but 4 were given
+
+2022-12-15 18:23:22,PID 23532: When transffering 2047 to samples, the following error occurs:
+textSegsToSamples() takes 3 positional arguments but 4 were given
+
+2022-12-15 18:23:22,PID 19772: When transffering 3047 to samples, the following error occurs:
+textSegsToSamples() takes 3 positional arguments but 4 were given
+
+2022-12-15 18:23:22,PID 11972: When transffering 304 to samples, the following error occurs:
+textSegsToSamples() takes 3 positional arguments but 4 were given
+
+2022-12-16 08:52:58,PID 18128: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[Sports]/布魯克林籃網.txt to samples, the following error occurs:
+'SampleReader' object has no attribute 'Src'
+
+2022-12-16 08:52:58,PID 18128: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/الأزمة الأوكرانية_ وكالات الأمم المتحدة تدعم الأفواج المتزايدة من اللاجئين.txt to samples, the following error occurs:
+'SampleReader' object has no attribute 'Src'
+
+2022-12-16 08:52:58,PID 18128: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/الاختباء في قبو لمدة شهر_ قصة شاهدة عيان شهدت أهوال العدوان الروسي على ماريوبول.txt to samples, the following error occurs:
+'SampleReader' object has no attribute 'Src'
+
+2022-12-16 08:52:58,PID 2928: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/93 دولة في الجمعية العامة تصوت لصالح تعليق عضوية روسيا في مجلس حقوق الإنسان.txt to samples, the following error occurs:
+'SampleReader' object has no attribute 'Src'
+
+2022-12-16 08:52:58,PID 18128: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/اجتماع مجلس حقوق الإنسان يلقي الضوء على الفظائع المرتكبة في أوكرانيا.txt to samples, the following error occurs:
+'SampleReader' object has no attribute 'Src'
+
+2022-12-16 09:05:09,PID 17940: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/93 دولة في الجمعية العامة تصوت لصالح تعليق عضوية روسيا في مجلس حقوق الإنسان.txt to samples, the following error occurs:
+'Vis_ESFileNameMode'
+
+2022-12-16 09:05:09,PID 4248: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/الاختباء في قبو لمدة شهر_ قصة شاهدة عيان شهدت أهوال العدوان الروسي على ماريوبول.txt to samples, the following error occurs:
+'Vis_ESFileNameMode'
+
+2022-12-16 09:05:09,PID 17940: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[Sports]/布魯克林籃網.txt to samples, the following error occurs:
+'Vis_ESFileNameMode'
+
+2022-12-16 09:05:09,PID 4248: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/الأزمة الأوكرانية_ وكالات الأمم المتحدة تدعم الأفواج المتزايدة من اللاجئين.txt to samples, the following error occurs:
+'Vis_ESFileNameMode'
+
+2022-12-16 09:05:09,PID 17940: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/اجتماع مجلس حقوق الإنسان يلقي الضوء على الفظائع المرتكبة في أوكرانيا.txt to samples, the following error occurs:
+'Vis_ESFileNameMode'
+
+2022-12-16 09:08:17,PID 14368: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[Sports]/布魯克林籃網.txt to samples, the following error occurs:
+'Vis_ESFileNameMode'
+
+2022-12-16 09:08:17,PID 16644: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/الأزمة الأوكرانية_ وكالات الأمم المتحدة تدعم الأفواج المتزايدة من اللاجئين.txt to samples, the following error occurs:
+'Vis_ESFileNameMode'
+
+2022-12-16 09:08:17,PID 18708: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/اجتماع مجلس حقوق الإنسان يلقي الضوء على الفظائع المرتكبة في أوكرانيا.txt to samples, the following error occurs:
+'Vis_ESFileNameMode'
+
+2022-12-16 09:08:17,PID 14368: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/الاختباء في قبو لمدة شهر_ قصة شاهدة عيان شهدت أهوال العدوان الروسي على ماريوبول.txt to samples, the following error occurs:
+'Vis_ESFileNameMode'
+
+2022-12-16 09:08:17,PID 16644: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/93 دولة في الجمعية العامة تصوت لصالح تعليق عضوية روسيا في مجلس حقوق الإنسان.txt to samples, the following error occurs:
+'Vis_ESFileNameMode'
+
+2022-12-16 09:09:37,PID 20060: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[Sports]/布魯克林籃網.txt to samples, the following error occurs:
+'Vis_ESFileNameMode'
+
+2022-12-16 09:09:37,PID 20060: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/اجتماع مجلس حقوق الإنسان يلقي الضوء على الفظائع المرتكبة في أوكرانيا.txt to samples, the following error occurs:
+'Vis_ESFileNameMode'
+
+2022-12-16 09:09:37,PID 11848: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/الأزمة الأوكرانية_ وكالات الأمم المتحدة تدعم الأفواج المتزايدة من اللاجئين.txt to samples, the following error occurs:
+'Vis_ESFileNameMode'
+
+2022-12-16 09:09:37,PID 20060: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/الاختباء في قبو لمدة شهر_ قصة شاهدة عيان شهدت أهوال العدوان الروسي على ماريوبول.txt to samples, the following error occurs:
+'Vis_ESFileNameMode'
+
+2022-12-16 09:09:37,PID 18724: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/93 دولة في الجمعية العامة تصوت لصالح تعليق عضوية روسيا في مجلس حقوق الإنسان.txt to samples, the following error occurs:
+'Vis_ESFileNameMode'
+
+2022-12-16 09:31:03,PID 7428: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/الأزمة الأوكرانية_ وكالات الأمم المتحدة تدعم الأفواج المتزايدة من اللاجئين.txt to samples, the following error occurs:
+name 'esRetMeta' is not defined
+
+2022-12-16 09:31:03,PID 7428: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[Sports]/布魯克林籃網.txt to samples, the following error occurs:
+name 'esRetMeta' is not defined
+
+2022-12-16 09:31:03,PID 7428: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/93 دولة في الجمعية العامة تصوت لصالح تعليق عضوية روسيا في مجلس حقوق الإنسان.txt to samples, the following error occurs:
+name 'esRetMeta' is not defined
+
+2022-12-16 09:31:03,PID 7428: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/اجتماع مجلس حقوق الإنسان يلقي الضوء على الفظائع المرتكبة في أوكرانيا.txt to samples, the following error occurs:
+name 'esRetMeta' is not defined
+
+2022-12-16 09:31:03,PID 7428: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/الاختباء في قبو لمدة شهر_ قصة شاهدة عيان شهدت أهوال العدوان الروسي على ماريوبول.txt to samples, the following error occurs:
+name 'esRetMeta' is not defined
+
+2022-12-16 09:31:08,PID 7684: When transffering 1043 to samples, the following error occurs:
+name 'esRetMeta' is not defined
+
+2022-12-16 09:31:08,PID 15960: When transffering 3047 to samples, the following error occurs:
+name 'esRetMeta' is not defined
+
+2022-12-16 09:31:09,PID 15960: When transffering 1047 to samples, the following error occurs:
+name 'esRetMeta' is not defined
+
+2022-12-16 09:31:09,PID 7684: When transffering 304 to samples, the following error occurs:
+name 'esRetMeta' is not defined
+
+2022-12-16 09:31:09,PID 21900: When transffering 2047 to samples, the following error occurs:
+name 'esRetMeta' is not defined
+
+2022-12-16 09:31:09,PID 22204: When transffering 43 to samples, the following error occurs:
+name 'esRetMeta' is not defined
+
+2022-12-16 09:55:58,PID 8308: When transffering Target/1047 to samples, the following error occurs:
+name 'esRetMeta' is not defined
+
+2022-12-16 09:55:58,PID 17488: When transffering Target/43 to samples, the following error occurs:
+name 'esRetMeta' is not defined
+
+2022-12-16 09:55:58,PID 6268: When transffering Target/1043 to samples, the following error occurs:
+name 'esRetMeta' is not defined
+
+2022-12-16 10:18:09,PID 11200: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/الاختباء في قبو لمدة شهر_ قصة شاهدة عيان شهدت أهوال العدوان الروسي على ماريوبول.txt to samples, the following error occurs:
+local variable 'segInLabel' referenced before assignment
+
+2022-12-16 10:18:09,PID 11200: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/93 دولة في الجمعية العامة تصوت لصالح تعليق عضوية روسيا في مجلس حقوق الإنسان.txt to samples, the following error occurs:
+local variable 'segInLabel' referenced before assignment
+
+2022-12-16 10:18:09,PID 11200: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/الأزمة الأوكرانية_ وكالات الأمم المتحدة تدعم الأفواج المتزايدة من اللاجئين.txt to samples, the following error occurs:
+local variable 'segInLabel' referenced before assignment
+
+2022-12-16 10:18:10,PID 11200: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/اجتماع مجلس حقوق الإنسان يلقي الضوء على الفظائع المرتكبة في أوكرانيا.txt to samples, the following error occurs:
+local variable 'segInLabel' referenced before assignment
+
+2022-12-16 10:18:10,PID 11200: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[Sports]/布魯克林籃網.txt to samples, the following error occurs:
+local variable 'segInLabel' referenced before assignment
+
+2022-12-16 10:18:22,PID 17100: When transffering 43 to samples, the following error occurs:
+local variable 'segInLabel' referenced before assignment
+
+2022-12-16 10:18:22,PID 15084: When transffering 413 to samples, the following error occurs:
+local variable 'segInLabel' referenced before assignment
+
+2022-12-16 10:18:22,PID 17100: When transffering 304 to samples, the following error occurs:
+local variable 'segInLabel' referenced before assignment
+
+2022-12-16 10:18:22,PID 4892: When transffering 1047 to samples, the following error occurs:
+local variable 'segInLabel' referenced before assignment
+
+2022-12-16 10:18:22,PID 12316: When transffering 1043 to samples, the following error occurs:
+local variable 'segInLabel' referenced before assignment
+
+2022-12-16 10:18:22,PID 15996: When transffering 3047 to samples, the following error occurs:
+local variable 'segInLabel' referenced before assignment
+
+2022-12-16 10:18:22,PID 13508: When transffering 2047 to samples, the following error occurs:
+local variable 'segInLabel' referenced before assignment
+
+2022-12-16 10:26:36,PID 16744: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[Sports]/布魯克林籃網.txt to samples, the following error occurs:
+local variable 'segInLabel' referenced before assignment
+
+2022-12-16 10:26:36,PID 4260: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/الأزمة الأوكرانية_ وكالات الأمم المتحدة تدعم الأفواج المتزايدة من اللاجئين.txt to samples, the following error occurs:
+local variable 'segInLabel' referenced before assignment
+
+2022-12-16 10:26:36,PID 19156: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/اجتماع مجلس حقوق الإنسان يلقي الضوء على الفظائع المرتكبة في أوكرانيا.txt to samples, the following error occurs:
+local variable 'segInLabel' referenced before assignment
+
+2022-12-16 10:26:36,PID 16744: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/الاختباء في قبو لمدة شهر_ قصة شاهدة عيان شهدت أهوال العدوان الروسي على ماريوبول.txt to samples, the following error occurs:
+local variable 'segInLabel' referenced before assignment
+
+2022-12-16 10:26:36,PID 4260: When transffering ../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/93 دولة في الجمعية العامة تصوت لصالح تعليق عضوية روسيا في مجلس حقوق الإنسان.txt to samples, the following error occurs:
+local variable 'segInLabel' referenced before assignment
+
+2022-12-16 10:26:49,PID 5980: When transffering 1043 to samples, the following error occurs:
+local variable 'segInLabel' referenced before assignment
+
+2022-12-16 10:26:49,PID 20980: When transffering 413 to samples, the following error occurs:
+local variable 'segInLabel' referenced before assignment
+
+2022-12-16 10:26:49,PID 5980: When transffering 3047 to samples, the following error occurs:
+local variable 'segInLabel' referenced before assignment
+
+2022-12-16 10:26:50,PID 17840: When transffering 304 to samples, the following error occurs:
+local variable 'segInLabel' referenced before assignment
+
+2022-12-16 10:26:50,PID 11944: When transffering 1047 to samples, the following error occurs:
+local variable 'segInLabel' referenced before assignment
+
+2022-12-16 10:26:50,PID 19672: When transffering 43 to samples, the following error occurs:
+local variable 'segInLabel' referenced before assignment
+
+2022-12-16 10:26:50,PID 2272: When transffering 2047 to samples, the following error occurs:
+local variable 'segInLabel' referenced before assignment
+
+2022-12-16 10:54:14,PID 8868: When transffering NonTarget/../FixedTest/FixedTest_8054/Using/20221209/#T#[Sports]/布魯克林籃網.txt to samples, the following error occurs:
+
+
+2022-12-16 10:54:14,PID 8868: When transffering NonTarget/../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/اجتماع مجلس حقوق الإنسان يلقي الضوء على الفظائع المرتكبة في أوكرانيا.txt to samples, the following error occurs:
+
+
+2022-12-16 10:54:14,PID 8868: When transffering NonTarget/../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/93 دولة في الجمعية العامة تصوت لصالح تعليق عضوية روسيا في مجلس حقوق الإنسان.txt to samples, the following error occurs:
+
+
+2022-12-16 10:54:14,PID 8868: When transffering NonTarget/../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/الأزمة الأوكرانية_ وكالات الأمم المتحدة تدعم الأفواج المتزايدة من اللاجئين.txt to samples, the following error occurs:
+
+
+2022-12-16 10:54:14,PID 8868: When transffering NonTarget/../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/الاختباء في قبو لمدة شهر_ قصة شاهدة عيان شهدت أهوال العدوان الروسي على ماريوبول.txt to samples, the following error occurs:
+
+
+2022-12-16 10:54:23,PID 11328: When transffering 2022-12-03T17:00:01.292Z/NonTarget/304 to samples, the following error occurs:
+
+
+2022-12-16 10:54:23,PID 11328: When transffering 2022-12-03T17:00:01.292Z/NonTarget/2047 to samples, the following error occurs:
+
+
+2022-12-16 10:54:23,PID 11328: When transffering 2022-12-03T17:00:01.292Z/Target/1047 to samples, the following error occurs:
+
+
+2022-12-16 10:54:23,PID 11328: When transffering 2022-12-04T17:00:01.292Z/Target/413 to samples, the following error occurs:
+
+
+2022-12-16 10:54:24,PID 20108: When transffering 2022-12-03T17:00:01.292Z/Target/1043 to samples, the following error occurs:
+
+
+2022-12-16 10:54:24,PID 9620: When transffering 2022-12-04T17:00:01.292Z/Target/43 to samples, the following error occurs:
+
+
+
+
+
+2022-12-16 11:14:20,PID 2432: When transffering NonTarget/../FixedTest/FixedTest_8054/Using/20221209/#T#[RU-UA Military Confrontation]/الأزمة الأوكرانية_ وكالات الأمم المتحدة تدعم الأفواج المتزايدة من اللاجئين.txt to samples, the following error occurs:
+name 'time' is not defined
+
+2022-12-16 11:14:20,PID 9996: When transffering NonTarget/../FixedTest/FixedTest_8054/Using/20221209/#T#[Sports]/布魯克林籃網.txt to samples, the following error occurs:
+name 'time' is not defined
+
+2022-12-16 11:14:24,PID 7424: When transffering 2022-12-04T17:00:01.292Z/Target/413 to samples, the following error occurs:
+name 'time' is not defined
+
+2022-12-16 11:14:24,PID 7424: When transffering 2022-12-03T17:00:01.292Z/NonTarget/3047 to samples, the following error occurs:
+name 'time' is not defined
+
+2022-12-16 11:14:24,PID 7424: When transffering 2022-12-03T17:00:01.292Z/NonTarget/2047 to samples, the following error occurs:
+name 'time' is not defined
+
+2022-12-16 11:14:24,PID 24352: When transffering 2022-12-03T16:00:01.292Z/Target/777 to samples, the following error occurs:
+name 'time' is not defined
+
+2022-12-16 11:14:24,PID 10728: When transffering 2022-12-03T17:00:01.292Z/NonTarget/304 to samples, the following error occurs:
+name 'time' is not defined
+
+2022-12-16 11:14:24,PID 9128: When transffering 2022-12-03T17:00:01.292Z/Target/1047 to samples, the following error occurs:
+name 'time' is not defined
+
+2022-12-16 11:14:24,PID 7580: When transffering 2022-12-03T17:00:01.292Z/Target/1043 to samples, the following error occurs:
+name 'time' is not defined
+
+2022-12-16 11:14:24,PID 24144: When transffering 2022-12-04T17:00:01.292Z/Target/43 to samples, the following error occurs:
+name 'time' is not defined
+
+2022-12-16 11:22:53,PID 24120: When transffering 2047 to samples, the following error occurs:
+local variable 'sample' referenced before assignment
+
+2022-12-16 11:22:53,PID 23656: When transffering 1043 to samples, the following error occurs:
+local variable 'sample' referenced before assignment
+
+2022-12-16 11:22:53,PID 24120: When transffering 777 to samples, the following error occurs:
+local variable 'sample' referenced before assignment
+
+2022-12-16 11:22:53,PID 23656: When transffering 413 to samples, the following error occurs:
+local variable 'sample' referenced before assignment
+
+2022-12-16 11:22:53,PID 10944: When transffering 3047 to samples, the following error occurs:
+local variable 'sample' referenced before assignment
+
+2022-12-16 11:22:53,PID 14420: When transffering 1047 to samples, the following error occurs:
+local variable 'sample' referenced before assignment
+
+2022-12-16 11:22:53,PID 11972: When transffering 43 to samples, the following error occurs:
+local variable 'sample' referenced before assignment
+
+2022-12-16 11:22:54,PID 16444: When transffering 304 to samples, the following error occurs:
+local variable 'sample' referenced before assignment
+
+2022-12-16 11:29:04,PID 22800: When transffering 304 to samples, the following error occurs:
+local variable 'sample' referenced before assignment
+
+2022-12-16 11:29:04,PID 22800: When transffering 1047 to samples, the following error occurs:
+local variable 'sample' referenced before assignment
+
+2022-12-16 11:29:04,PID 22800: When transffering 2047 to samples, the following error occurs:
+local variable 'sample' referenced before assignment
+
+2022-12-16 11:29:04,PID 22800: When transffering 1043 to samples, the following error occurs:
+local variable 'sample' referenced before assignment
+
+2022-12-16 11:29:04,PID 22800: When transffering 3047 to samples, the following error occurs:
+local variable 'sample' referenced before assignment
+
+2022-12-16 11:29:04,PID 22800: When transffering 413 to samples, the following error occurs:
+local variable 'sample' referenced before assignment
+
+2022-12-16 11:29:05,PID 22800: When transffering 777 to samples, the following error occurs:
+local variable 'sample' referenced before assignment
+
+2022-12-16 11:29:05,PID 22800: When transffering 43 to samples, the following error occurs:
+local variable 'sample' referenced before assignment
+
+2022-12-16 13:33:49,PID 6072: When transffering 2022-12-04T17:00:01.292Z/Target/SubBye_413 to samples, the following error occurs:
+name 'esRetMeta' is not defined
+
+2022-12-16 13:33:49,PID 18372: When transffering 2022-12-03T17:00:01.292Z/NonTarget/_2047 to samples, the following error occurs:
+name 'esRetMeta' is not defined
+
+2022-12-16 13:33:49,PID 572: When transffering 2022-12-03T17:00:01.292Z/NonTarget/SubBye_3047 to samples, the following error occurs:
+name 'esRetMeta' is not defined
+
+2022-12-16 13:33:49,PID 19428: When transffering 2022-12-03T16:00:01.292Z/Target/SubBye_777 to samples, the following error occurs:
+name 'esRetMeta' is not defined
+
+2022-12-16 13:33:49,PID 2524: When transffering 2022-12-03T17:00:01.292Z/Target/SubBye_1047 to samples, the following error occurs:
+name 'esRetMeta' is not defined
+
+2022-12-16 13:33:49,PID 1596: When transffering 2022-12-03T17:00:01.292Z/Target/SubBye_1043 to samples, the following error occurs:
+name 'esRetMeta' is not defined
+
+2022-12-16 13:33:49,PID 18372: When transffering 2022-12-03T17:00:01.292Z/NonTarget/SubBye_304 to samples, the following error occurs:
+name 'esRetMeta' is not defined
+
+2022-12-16 13:33:49,PID 6072: When transffering 2022-12-04T17:00:01.292Z/Target/SubBye_43 to samples, the following error occurs:
+name 'esRetMeta' is not defined
+
+2022-12-16 13:44:42,PID 12052: When transffering Target/SubBye_43 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 13:44:42,PID 22580: When transffering NonTarget/SubBye_304 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 13:44:42,PID 22580: When transffering Target/SubBye_413 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 13:44:42,PID 12052: When transffering NonTarget/SubBye_3047 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 13:44:42,PID 21548: When transffering NonTarget/_2047 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 13:44:42,PID 24552: When transffering Target/SubBye_1047 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 13:44:42,PID 7336: When transffering Target/SubBye_777 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 13:44:42,PID 16316: When transffering Target/SubBye_1043 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:34:58,PID 4052: When transffering Target/SubBye_1047 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:34:59,PID 4052: When transffering NonTarget/_2047 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:34:59,PID 4052: When transffering NonTarget/SubBye_304 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:34:59,PID 4052: When transffering Target/SubBye_777 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:34:59,PID 24440: When transffering Target/SubBye_413 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:34:59,PID 24260: When transffering Target/SelectedSubBye_1777 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:34:59,PID 23896: When transffering NonTarget/SubBye_3047 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:35:00,PID 4052: When transffering Target/SubBye_43 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:35:00,PID 7760: When transffering Target/SubBye_1043 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:43:22,PID 7700: When transffering Target/SelectedSubBye_1777 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:43:22,PID 15764: When transffering Target/SubBye_777 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:43:23,PID 7700: When transffering Target/SubBye_1047 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:43:23,PID 15764: When transffering Target/SubBye_1043 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:43:23,PID 1656: When transffering NonTarget/SubBye_304 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:43:23,PID 7700: When transffering Target/SubBye_43 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:43:23,PID 9348: When transffering Target/SubBye_413 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:43:23,PID 13996: When transffering NonTarget/_2047 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:43:23,PID 19980: When transffering NonTarget/SubBye_3047 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:44:40,PID 15764: When transffering NonTarget/SubBye_304 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:44:40,PID 24244: When transffering Target/SelectedSubBye_1777 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:44:40,PID 9856: When transffering NonTarget/SubBye_3047 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:44:40,PID 17964: When transffering Target/SubBye_413 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:44:40,PID 22868: When transffering Target/SubBye_1047 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:44:40,PID 15764: When transffering Target/SubBye_1043 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:44:40,PID 24244: When transffering Target/SubBye_777 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:44:40,PID 15156: When transffering NonTarget/_2047 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:46:58,PID 12300: When transffering Target/SelectedSubBye_1777 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:46:59,PID 12300: When transffering NonTarget/SubBye_3047 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:46:59,PID 12300: When transffering Target/SubBye_1047 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:46:59,PID 4552: When transffering Target/SubBye_43 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:46:59,PID 12300: When transffering Target/SubBye_777 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:46:59,PID 4552: When transffering NonTarget/_2047 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:47:00,PID 12300: When transffering NonTarget/SubBye_304 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:47:00,PID 4552: When transffering Target/SubBye_1043 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-16 14:47:00,PID 18936: When transffering Target/SubBye_413 to samples, the following error occurs:
+name 'datetime' is not defined
+
+2022-12-26 16:25:37,PID 48388: When transffering NonTarget/_2047 to samples, the following error occurs:
+unconverted data remains: .292Z
+
+2022-12-26 16:25:37,PID 47180: When transffering Target/棒棒好_11777 to samples, the following error occurs:
+unconverted data remains: .292Z
+
+2022-12-26 16:25:37,PID 28944: When transffering NonTarget/SubBye_3047 to samples, the following error occurs:
+unconverted data remains: .292Z
+
+2022-12-26 16:25:37,PID 48388: When transffering Target/SubBye_413 to samples, the following error occurs:
+unconverted data remains: .292Z
+
+2022-12-26 16:25:37,PID 35596: When transffering Target/SubBye_1043 to samples, the following error occurs:
+unconverted data remains: .292Z
+
+2022-12-26 16:25:37,PID 47180: When transffering Target/SubBye_1047 to samples, the following error occurs:
+unconverted data remains: .292Z
+
+2022-12-26 16:25:37,PID 28944: When transffering Target/SelectedSubBye_1777 to samples, the following error occurs:
+unconverted data remains: .292Z
+
+2022-12-26 16:25:37,PID 48388: When transffering Target/SubBye_777 to samples, the following error occurs:
+unconverted data remains: .292Z
+
+2022-12-26 16:25:37,PID 50780: When transffering NonTarget/SubBye_304 to samples, the following error occurs:
+unconverted data remains: .292Z
+
+2022-12-26 16:28:15,PID 44536: When transffering NonTarget/SubBye_3047 to samples, the following error occurs:
+unconverted data remains: .292Z
+
+2022-12-26 16:28:15,PID 51020: When transffering Target/SubBye_1047 to samples, the following error occurs:
+unconverted data remains: .292Z
+
+2022-12-26 16:28:15,PID 22324: When transffering Target/SubBye_1043 to samples, the following error occurs:
+unconverted data remains: .292Z
+
+2022-12-26 16:28:15,PID 44536: When transffering Target/SelectedSubBye_1777 to samples, the following error occurs:
+unconverted data remains: .292Z
+
+2022-12-26 16:28:15,PID 43404: When transffering Target/SubBye_43 to samples, the following error occurs:
+unconverted data remains: .292Z
+
+
+2022-12-26 16:28:15,PID 47168: When transffering Target/SubBye_413 to samples, the following error occurs:
+unconverted data remains: .292Z
+
+2022-12-26 16:28:15,PID 51020: When transffering NonTarget/SubBye_304 to samples, the following error occurs:
+unconverted data remains: .292Z
+
+2022-12-26 16:28:15,PID 44536: When transffering NonTarget/_2047 to samples, the following error occurs:
+unconverted data remains: .292Z
+
+2022-12-26 16:28:15,PID 22324: When transffering Target/棒棒好_11777 to samples, the following error occurs:
+unconverted data remains: .292Z
+

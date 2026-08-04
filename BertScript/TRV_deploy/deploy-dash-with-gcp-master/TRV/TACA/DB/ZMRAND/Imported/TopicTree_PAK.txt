@@ -1,0 +1,32 @@
+Informative,Cross-Strait Relations,,202109140904
+Cross-Strait Relations,Cross-Strait Trade,202109140904
+Cross-Strait Relations,Cross-Strait Personnel,202109140904
+Informative,Propaganda,202109140904
+Informative,Military,202109140904
+Informative,Diplomacy,202109140904
+Informative,Economics,202109140904
+Informative,Commerce,202109140904
+Informative,Science And Technology,202109140904
+Informative,Aerospace,202109140904
+Informative,Energy,202109140904
+Informative,Natural Resources,202109140904
+Informative,Public Health,202109140904
+Informative,Agriculture And Food Security,202109140904
+Informative,Transportation,202109140904
+Informative,Culture And Tourism,202109140904
+Informative,Climatology And Meteorology,202109140904
+Informative,Judiciary,202109140904
+Informative,Civil Affairs,202109140904
+Informative,Education,202109140904
+Informative,Customs And Immigration,202109140904
+Informative,Boao Forum,202109140904
+Informative,APEC,202109140904
+#UncertaintyAddScoreOne,Uncertainty,202112061743
+#UncertaintyAddScoreTwo,UncertaintyAddScoreOne,202112061743
+Uncertainty,Delivery Notification,202109140904
+Uncertainty,Payment And Account,202109140904
+Uncertainty,Invoice And Receipt,202109140904
+Uncertainty,Hotel Affairs,202109140904
+Uncertainty,Call For Papers,202109140904
+Uncertainty,Exhibition,202109140904
+Scrap,Falun Gong,202109140904

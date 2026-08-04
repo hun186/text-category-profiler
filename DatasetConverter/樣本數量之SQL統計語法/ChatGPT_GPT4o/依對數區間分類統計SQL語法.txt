@@ -1,0 +1,67 @@
+WITH Ranges AS (
+  SELECT
+    [Loaded Samples Count],
+    "index",
+    CASE
+      WHEN [Loaded Samples Count] < 1 THEN '0-1'
+      ELSE CAST(CAST(POWER(10, FLOOR(LOG10([Loaded Samples Count]))) AS INT) AS TEXT) || '-' || 
+           CAST(CAST(POWER(10, FLOOR(LOG10([Loaded Samples Count])) + 1) - 1 AS INT) AS TEXT)
+    END AS value_range
+  FROM sampleCount_Main
+),
+Counts AS (
+  SELECT
+    value_range,
+    "index",
+    [Loaded Samples Count],
+    COUNT(*) AS count
+  FROM Ranges
+  GROUP BY value_range, "index", [Loaded Samples Count]
+),
+TopCategories AS (
+  SELECT
+    value_range,
+    "index",
+    [Loaded Samples Count],
+    ROW_NUMBER() OVER (PARTITION BY value_range ORDER BY [Loaded Samples Count] DESC, count DESC) AS rank
+  FROM Counts
+),
+TopCategoriesFiltered AS (
+  SELECT
+    value_range,
+    MAX(CASE WHEN rank = 1 THEN "index" || ' (' || [Loaded Samples Count] || ')' ELSE NULL END) AS top1,
+    MAX(CASE WHEN rank = 2 THEN "index" || ' (' || [Loaded Samples Count] || ')' ELSE NULL END) AS top2,
+    MAX(CASE WHEN rank = 3 THEN "index" || ' (' || [Loaded Samples Count] || ')' ELSE NULL END) AS top3,
+    MAX(CASE WHEN rank = 4 THEN "index" || ' (' || [Loaded Samples Count] || ')' ELSE NULL END) AS top4,
+    MAX(CASE WHEN rank = 5 THEN "index" || ' (' || [Loaded Samples Count] || ')' ELSE NULL END) AS top5,
+    MAX(CASE WHEN rank = 6 THEN "index" || ' (' || [Loaded Samples Count] || ')' ELSE NULL END) AS top6,
+    MAX(CASE WHEN rank = 7 THEN "index" || ' (' || [Loaded Samples Count] || ')' ELSE NULL END) AS top7,
+    MAX(CASE WHEN rank = 8 THEN "index" || ' (' || [Loaded Samples Count] || ')' ELSE NULL END) AS top8,
+    MAX(CASE WHEN rank = 9 THEN "index" || ' (' || [Loaded Samples Count] || ')' ELSE NULL END) AS top9,
+    MAX(CASE WHEN rank = 10 THEN "index" || ' (' || [Loaded Samples Count] || ')' ELSE NULL END) AS top10
+  FROM TopCategories
+  WHERE rank <= 10
+  GROUP BY value_range
+)
+SELECT
+  R.value_range,
+  COUNT(*) AS count,
+  TC.top1,
+  TC.top2,
+  TC.top3,
+  TC.top4,
+  TC.top5,
+  TC.top6,
+  TC.top7,
+  TC.top8,
+  TC.top9,
+  TC.top10
+FROM
+  Ranges R
+LEFT JOIN
+  TopCategoriesFiltered TC
+ON R.value_range = TC.value_range
+GROUP BY
+  R.value_range
+ORDER BY
+  MIN([Loaded Samples Count]);

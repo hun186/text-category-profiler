@@ -1,0 +1,15 @@
+{"_source":{
+	"uuid":"abefe-135",
+	"rawInfo":{
+		"content":"ConByeBye",
+		"langCode":"C"},
+	"communication":{
+		"subject":"SubBye",
+	},
+	"itc":{
+		"rawTypeCode":"05"
+		},
+	"itcDT":"2022-12-08T17:00:01.292Z"
+ },
+ "_timestamp":"2022-12-08T17:00:01.292Z"
+}

@@ -1,0 +1,15 @@
+字串比對及分群
+
+cdifflib (C implementation of parts of difflib)
+https://pypi.org/project/cdifflib/
+1.安裝Microsoft Visual C++ Builder Tools
+2.以64位元為例，將C:\Program Files (x86)\Windows Kits\8.1\bin\x64下的rc.exe及rcdll.dll copy到
+D:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64目錄下。
+3.將D:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64加入"使用者環境變數"的Path中。
+4.以系統管理者身份執行VS2015 x64 Native Tools Command Prompt，於Prompt內呼叫Anaconda Prompt (Anaconda3)，如執行:%windir%\System32\cmd.exe "/K" d:\ProgramData\Anaconda3\Scripts\activate.bat d:\ProgramData\Anaconda3
+5.連線環境可直接執行pip install cdifflib，如於離線環境，解壓cdifflib-1.2.5.tar.gz，於解壓目錄內執行python setup.py install。
+
+string-grouper 0.6.1
+https://pypi.org/project/string-grouper/
+6.接續前步驟，連線環境可直接執行pip install cdifflib，如於離線環境，執行
+pip install --no-index --find-links=file:./AnacondaPythonModuleOffline/string-grouper string-grouper

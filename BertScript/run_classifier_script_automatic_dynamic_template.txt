@@ -1,0 +1,10 @@
+python BertScript/run_classifier.py   ^
+--vocab_file=BertScript/chinese_rbtl3_L-3_H-1024_A-16/vocab.txt ^
+--task_name=topic ^
+--do_eval=False   ^
+--bert_config_file=BertScript/chinese_rbtl3_L-3_H-1024_A-16/bert_config_rbtl3.json ^
+--init_checkpoint=BertScript/chinese_rbtl3_L-3_H-1024_A-16/bert_model.ckpt ^
+--max_seq_length=256   ^
+--train_batch_size=24   ^
+--learning_rate=2e-5   ^
+--num_train_epochs=3.0   ^

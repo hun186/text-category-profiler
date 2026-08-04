@@ -1,0 +1,19 @@
+  Max number of Unique Value設定作用說明：
+
+  假設domain: A、B、C、D
+
+  Case:
+
+  ABAABBCCC
+  =>
+  A:3
+  B:3
+  C:3
+  => Min = 3 = Max
+  => Min-Max Ratio = 1:均勻？
+
+　考慮 Max number of Unique Value = 4
+  如果有一種以上的值未出現，則unique value的數量會小於4，
+  新增功能，以列出所有符合此情況之Pos
+
+  

@@ -1,0 +1,2167 @@
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\《明慧周刊》（第九一六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一四期）  .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二八期 .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六零七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六零三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六零九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六零二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六零八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六零六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六零四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\《明慧周刊》（第九一六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\《明慧周刊》（第九一六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\《明慧周刊》（第九一六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\《明慧周刊》（第九一六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一四期）  .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\《明慧周刊》（第九一六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\《明慧周刊》（第九一六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一四期）  .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二八期 .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\《明慧周刊》（第九一六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一四期）  .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二八期 .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\《明慧周刊》（第九一六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一四期）  .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二八期 .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六零七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六零三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六零九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六零二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六零八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六零六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六零四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\《明慧周刊》（第九一六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一四期）  .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二八期 .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六零七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六零三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六零九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六零二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六零八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六零六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六零四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\《明慧周刊》（第九一六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一四期）  .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七一零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七七零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七三零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七九零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七二零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七五零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七八零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七六零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七四零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第七零零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九一零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九七零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九三零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九九零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二八期 .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九二零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九五零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九八零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九六零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四一期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四七期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四六期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九四零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零五期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第九零零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八一零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八七零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八三零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八九零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八二零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八五零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八九期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八八零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八六零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四八期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八四零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第八零零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六七零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六三零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六九零期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六二零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六五零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六八零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四一期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四三期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四二期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四五期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四四期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六四零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六零七期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六零三期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六零九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六零二期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六零八期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六零六期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六零四期）.txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一九期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六六零期） .txt
+Loaded file ..\FixedTest\Falun Gong\明慧周刊\明慧周刊（第六一九期） .txt
+Loaded file ..\FixedTest\Falun Gong\9評共產黨.txt

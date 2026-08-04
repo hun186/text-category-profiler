@@ -1,0 +1,4 @@
+.dash-tooltip .dash-table-tooltip {
+max-width: 600px !important;
+min-width: 300px !important;
+}

@@ -1,0 +1,47 @@
+Informative,5G,201301010001
+Informative,Artificial Intelligence,201301010001
+Informative,CN MediaW,201301010001
+Informative,CN's TW Policy,201301010001
+Informative,COVID-19,201301010001
+Informative,Confucius Institute,201301010001
+Informative,Exhibition,201301010001
+Informative,Foreign AdminReport,201301010001
+Informative,Foreign Think,201301010001
+Informative,Global Law,201301010001
+Informative,PRC Document,201301010001
+Informative,Smart Manufacturing,201301010001
+Informative,South Sea,201301010001
+PRC Document,PRC-OffDoc,201301010001
+PRC Document,PRC-WReport,201301010001
+PRC Document,PRC-Meeting,201301010001
+PRC Document,PRC-Law,201301010001
+PRC Document,PRC-Think,201301010001
+scrap,TW Law,201301010001
+scrap,Falun Gong,201301010001
+Informative,Partnership Strategy,202106221649
+Partnership Strategy,L-M Cooperation,202106221649
+Partnership Strategy,APEC,202106221649
+Partnership Strategy,PRC-Boundary,202106221649
+Informative,Polar Affair,202106221649
+Informative,Water Resource,202106221649
+Informative,US Strategy,202106221649
+Informative,Partnership Strategy,202106221649
+#Partnership Strategy,PRC-Boundary,202106292046
+CN-US Relations,Rebalancing,202106292046
+US Strategy,Rebalancing,202106292046
+US Strategy,Indo-Pacific Framework,202106292046
+Informative,CN Diplomacy,202106292046
+CN Diplomacy,CN-AU Relations,202106292046
+CN Diplomacy,CN-US Relations,202106292046
+CN Diplomacy,CN-JP Relations,202106292046
+CN Diplomacy,CN-PH Relations,202106292046
+CN Diplomacy,CN-RU Relations,202106292046
+Informative,HK Issue,202106292046
+US Diplomacy,CN-US Relations,202106292046
+CN Diplomacy,CN-AFR Cooperation,202106292046
+Informative,Xinjiang Issue,202106292046
+Informative,NK Issue,202106292046
+Informative,PRC-Training,202106292046
+CN Diplomacy,United Front,202106292046
+CN Diplomacy,One Belt One Road,202106292046
+CN Diplomacy,L-M Cooperation,202106221649

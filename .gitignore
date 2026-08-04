@@ -1,0 +1,61 @@
+# 訓練與測試語料
+FixedTest/
+**/Not_Using/
+data/
+datasets/
+corpus/
+WorkPool*/
+
+# 模型與訓練成果
+models/
+checkpoints/
+runs/
+outputs/
+logs/
+cache/
+
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+*.npy
+*.npz
+*.pkl
+*.joblib
+
+# 本機下載模型與訓練輸出
+/BertScript/output_*/
+/BertScript/xlm-roberta-base/
+
+# 預訓練模型與訓練輸出
+/BertScript/multi_cased_L-12_H-768_A-12/
+/BertScript/xlm-roberta-base/
+/BertScript/output_*/
+
+# 下載的第三方 Elasticsearch、JDK 與執行檔
+/DatasetConverter/elasticsearch/Programs/
+
+# 大型下載資料集及產出
+/BertScript/data_set_Toxic Comment Classification Challenge/
+/DatasetConverter/EXTConverter/Output/EmbassyPages/
+/DatasetConverter/elasticsearch/tweet.json
+/DatasetConverter/elasticsearch/tweet_ESv1.json
+
+# 教學影片
+/BertScript/教學影片/
+
+# 大型封裝及資料庫
+*.zip
+*.7z
+*.tar
+*.gz
+*.db
+*.sqlite
+*.sql3
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/

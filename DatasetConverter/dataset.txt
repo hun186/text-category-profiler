@@ -1,0 +1,23 @@
+COVID-19
+Informative
+PRC-OffDoc
+Scrap
+出現的類別標籤數量分布為
+Scrap          45883
+Informative    19781
+PRC-OffDoc      4241
+COVID-19         102
+Name: OutLabel, dtype: int64
+--------------------------------------------------
+具多標籤的樣本數量統計結果為
+{}
+There are totally 70007 samples converted, cf dataset_total_with_filename.tsv or dataset_total_with_filename.sql3 for filename.
+====================================================================================================
+Generating train set,
+For train set, there are totally 49004 samples.
+==================================================
+Generating validation set,
+For validation set, there are totally 14003 samples.
+==================================================
+Generating test set,
+For test set, there are totally 7000 samples.

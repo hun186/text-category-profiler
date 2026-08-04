@@ -1,0 +1,45 @@
+WITH intervals AS (
+    SELECT 
+        CAST(POWER(10, FLOOR(LOG10(`Loaded Samples Count`))) AS INTEGER) AS interval_start,
+        CAST(POWER(10, FLOOR(LOG10(`Loaded Samples Count`)) + 1) - 1 AS INTEGER) AS interval_end,
+        `index`,
+        `Loaded Samples Count`
+    FROM 
+        sampleCount_Main
+    WHERE 
+        `Loaded Samples Count` > 0
+),
+top_categories AS (
+    SELECT 
+        interval_start,
+        interval_end,
+        `index`,
+        `Loaded Samples Count`,
+        ROW_NUMBER() OVER (PARTITION BY interval_start ORDER BY `Loaded Samples Count` DESC) AS rank
+    FROM 
+        intervals
+    GROUP BY 
+        interval_start, `index`, `Loaded Samples Count`
+)
+SELECT 
+    i.interval_start,
+    i.interval_end,
+    COUNT(DISTINCT i.`index`) AS count,
+    MAX(CASE WHEN t.rank = 1 THEN t.`index` || ' (' || t.`Loaded Samples Count` || ')' END) AS top_category_1,
+    MAX(CASE WHEN t.rank = 2 THEN t.`index` || ' (' || t.`Loaded Samples Count` || ')' END) AS top_category_2,
+    MAX(CASE WHEN t.rank = 3 THEN t.`index` || ' (' || t.`Loaded Samples Count` || ')' END) AS top_category_3,
+    MAX(CASE WHEN t.rank = 4 THEN t.`index` || ' (' || t.`Loaded Samples Count` || ')' END) AS top_category_4,
+    MAX(CASE WHEN t.rank = 5 THEN t.`index` || ' (' || t.`Loaded Samples Count` || ')' END) AS top_category_5,
+    MAX(CASE WHEN t.rank = 6 THEN t.`index` || ' (' || t.`Loaded Samples Count` || ')' END) AS top_category_6,
+    MAX(CASE WHEN t.rank = 7 THEN t.`index` || ' (' || t.`Loaded Samples Count` || ')' END) AS top_category_7,
+    MAX(CASE WHEN t.rank = 8 THEN t.`index` || ' (' || t.`Loaded Samples Count` || ')' END) AS top_category_8,
+    MAX(CASE WHEN t.rank = 9 THEN t.`index` || ' (' || t.`Loaded Samples Count` || ')' END) AS top_category_9,
+    MAX(CASE WHEN t.rank = 10 THEN t.`index` || ' (' || t.`Loaded Samples Count` || ')' END) AS top_category_10
+FROM 
+    intervals i
+LEFT JOIN 
+    top_categories t ON i.interval_start = t.interval_start
+GROUP BY 
+    i.interval_start, i.interval_end
+ORDER BY 
+    i.interval_start DESC;

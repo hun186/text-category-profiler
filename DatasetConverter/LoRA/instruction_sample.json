@@ -1,0 +1,2105 @@
+[{
+    "instruction": "分類下列文本。",
+    "input": "101_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "158_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "181_Gold woven hoop earrings Item BI800 or 4 payments of $2.38 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Brass, titanium posts. Length: 21.5mm. Import. Online exclusive. Item BI800.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "160_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "36_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "39_Girls' pearl bracelet Item E3334 2 Reviews Limited-time price! or 4 payments of $2.38 with Color:Warm Ivory Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Acrylic, zinc, semiprecious stone, flash gold plating. Online exclusive. Import. This item is not a toy and is not intended for use by children under three years of age. Item E3334.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "48_Beaded drop statement earrings Item BI784 or 4 payments of $4.38 with Color:Iridescent Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated brass, seed beads. Length: 65mm. Import. Item BI784.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "93_Interlocking drop earrings Item BI776 2 Reviews or 4 payments of $3.63 with Color:Black Size:One Size One Size Quantity:123456789 222 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated recycled zinc, poly, acrylic, titanium posts. This style is made with recycled materials. Length: 51mm. Import. Item BI776. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "35_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "Beaded bracelets set-of-three Item BI781 or 4 payments of $3.63 with Color:Warm Multi Size:One Size One Size Quantity:123456789 195 people looked at this item in the last day Add to Bag Find in Store Product Details Recycled acrylic bead, elastic cord, gold-plated zinc. This style is made with recycled materials. Diameter: 2 1/2\". Import. Item BI781. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本歸屬類別為何？",
+    "input": "151_Girls' pearl bracelet Item E3334 2 Reviews Limited-time price! or 4 payments of $2.38 with Color:Warm Ivory Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Acrylic, zinc, semiprecious stone, flash gold plating. Online exclusive. Import. This item is not a toy and is not intended for use by children under three years of age. Item E3334.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "194_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "149_Girls' pearl bracelet set Item BH855 Limited-time price! or 4 payments of $3.63 with Color:Rainbow Pearl Multi Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Acrylic, freshwater pearl, cubic zirconia. This item is not a toy and is not intended for use by children under three years of age. Import. Item BH855.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "186_material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "40_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "44_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "169_recycled materials. Length: 2 1/4\". Import. Item BI778. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled \n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "100_Mixed mini hoop earrings set Item BI786 or 4 payments of $3.63 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated recycled zinc, gold-plated brass, titanium posts. This style is made with recycled materials. Lengths: .5\", .23\", .62\". Import. Item BI786. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "71_4\", .41:, .30\". Import. Online exclusive. Item BI774.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "73_Beaded hoop earrings Item BI782 2 Reviews or 4 payments of $3.63 with Color:Electric Red Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated steel, acrylic beads. Length: 1 1/2\". Import. Select colors only available online. Item BI782.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "143_Beaded bracelets set-of-three Item BI781 or 4 payments of $3.63 with Color:Warm Multi Size:One Size One Size Quantity:123456789 195 people looked at this item in the last day Add to Bag Find in Store Product Details Recycled acrylic bead, elastic cord, gold-plated zinc. This style is made with recycled materials. Diameter: 2 1/2\". Import. Item BI781. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "103_Girls' pearl bracelet Item E3334 2 Reviews Limited-time price! or 4 payments of $2.38 with Color:Warm Ivory Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Acrylic, zinc, semiprecious stone, flash gold plating. Online exclusive. Import. This item is not a toy and is not intended for use by children under three years of age. Item E3334.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "125_Paper-clip link bracelet Item AX197 9 Reviews or 4 payments of $3.63 with Color:Silver Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, cubic zirconia. Length: 6 3/4\" with 1\" extender chain for adjustable length. Import. Item AX197.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "63_Crystal buds ear jackets Item AR808 11 Reviews or 4 payments of $3.13 with Color:Crystal Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, glass, steel, cubic zirconia. Import. Item AR808.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "111_Open-circle resin earrings Item BI783 or 4 payments of $3.63 with Color:Neon Azure Size:One Size One Size Quantity:123456789 164 people looked at this item in the last day Add to Bag Find in Store Product Details Gold-plated brass, resin, titanium posts. Length: 40mm. Import. Item BI783.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "12_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "25_recycled materials. Length: 2 1/4\". Import. Item BI778. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled \n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "48_Beaded bracelets set-of-three Item BI781 or 4 payments of $3.63 with Color:Warm Multi Size:One Size One Size Quantity:123456789 191 people looked at this item in the last day Add to Bag Find in Store Product Details Recycled acrylic bead, elastic cord, gold-plated zinc. This style is made with recycled materials. Diameter: 2 1/2\". Import. Item BI781. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "88_Interlocking drop earrings Item BI776 2 Reviews or 4 payments of $3.63 with Color:Metallic Mixed Multi Size:One Size One Size Quantity:123456789 267 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated recycled zinc, poly, acrylic, titanium posts. This style is made with recycled materials. Length: 51mm. Import. Item BI776. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "71_Girls' pearl bracelet Item E3334 2 Reviews Limited-time price! or 4 payments of $2.38 with Color:Warm Ivory Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Acrylic, zinc, semiprecious stone, flash gold plating. Online exclusive. Import. This item is not a toy and is not intended for use by children under three years of age. Item E3334.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "111_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "135_Girls' pearl bracelet Item E3334 2 Reviews Limited-time price! or 4 payments of $2.38 with Color:Warm Ivory Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Acrylic, zinc, semiprecious stone, flash gold plating. Online exclusive. Import. This item is not a toy and is not intended for use by children under three years of age. Item E3334.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "169_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "167_Pearl hoop earrings Item BD741 3 Reviews backordered items are not eligible for Color:Pearl Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, acrylic pearl, titanium posts. Length: 18mm. Import. Item BD741.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "147_Resin drop statement earrings Item BJ801 or 4 payments of $3.13 with Color:Spicy Guava Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated brass, resin, titanium posts. Length: 50mm. Import. Item BJ801.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "56_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "155_Paper-clip link bracelet Item AX197 9 Reviews or 4 payments of $3.63 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, cubic zirconia. Length: 6 3/4\" with 1\" extender chain for adjustable length. Import. Item AX197.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "85_Beaded hoop earrings Item BI782 2 Reviews or 4 payments of $3.63 with Color:Multi Bead Size:One Size One Size Quantity:123456789 152 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated steel, acrylic beads. Length: 1 1/2\". Import. Select colors only available online. Item BI782.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "158_Resin drop statement earrings Item BJ801 or 4 payments of $3.13 with Color:Island Turquoise Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated brass, resin, titanium posts. Length: 50mm. Import. Item BJ801.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "54_Beaded drop statement earrings Item BI784 or 4 payments of $4.38 with Color:Neon Fuchsia Size:One Size One Size Quantity:123456789 152 people looked at this item in the last day Add to Bag Find in Store Product Details Gold-plated brass, seed beads. Length: 65mm. Import. Item BI784.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "163_Tiny beads stretch bracelets set-of-six Item AX510 12 Reviews or 4 payments of $4.88 with Color:Silver Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated brass, beads, zinc, cubic zirconia. Length: 2 1/4\". Import. Item AX510.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "190_Resin drop statement earrings Item BJ801 or 4 payments of $3.13 with Color:Spicy Guava Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated brass, resin, titanium posts. Length: 50mm. Import. Item BJ801.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "Hoop earrings set-of three Item BI789 or 4 payments of $5.88 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated recycled zinc, titanium posts. This style is made with recycled materials. Lengths: .6\", .8\", 1\". Import. Item BI789. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "8_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "96_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本歸屬類別為何？",
+    "input": "165_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本歸屬類別為何？",
+    "input": "92_Stud earrings set Item BI788 or 4 payments of $4.88 with Color:Gold Size:One Size One Size Quantity:123456789 183 people looked at this item in the last day Add to Bag Find in Store Product Details Gold-plated zinc, glass, titanium posts. Lengths: .39\", .23\", .39\", .34\", .31\", .29\", .31\", .40\". Import. Item BI788.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "83_Simple hoop earrings Item BB988 4 Reviews or 4 payments of $3.13 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, steel. Length: 40mm. Import. Select colors only available online. Item BB988.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "94_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "133_Girls' pearl bracelet set Item BH855 Limited-time price! or 4 payments of $3.63 with Color:Rainbow Pearl Multi Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Acrylic, freshwater pearl, cubic zirconia. This item is not a toy and is not intended for use by children under three years of age. Import. Item BH855.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本歸屬類別為何？",
+    "input": "Crystal bow and pearl drop statement earrings Item BE343 6 Reviews backordered items are not eligible for Color:Classic Red Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, gold-plated brass, poly, acrylic pearl, glass stones, titanium posts, cubic zirconia. Length: 38mm. Import. Item BE343.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "106_Crystal buds ear jackets Item AR808 11 Reviews or 4 payments of $3.13 with Color:Crystal Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, glass, steel, cubic zirconia. Import. Item AR808.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別為何？",
+    "input": "176_Beaded bracelets set-of-three Item BI781 or 4 payments of $3.63 with Color:Warm Multi Size:One Size One Size Quantity:123456789 191 people looked at this item in the last day Add to Bag Find in Store Product Details Recycled acrylic bead, elastic cord, gold-plated zinc. This style is made with recycled materials. Diameter: 2 1/2\". Import. Item BI781. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "105_recycled materials. Length: 2 1/4\". Import. Item BI778. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled \n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "Twist hoop earrings Item BI821 or 4 payments of $3.63 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated recycled zinc, titanium posts. This style is made with recycled materials. Length: .8\". Import. Item BI821. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "174_Interlocking drop earrings Item BI776 2 Reviews or 4 payments of $3.63 with Color:Metallic Mixed Multi Size:One Size One Size Quantity:123456789 267 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated recycled zinc, poly, acrylic, titanium posts. This style is made with recycled materials. Length: 51mm. Import. Item BI776. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "58_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "182_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "119_Beaded drop statement earrings Item BI784 or 4 payments of $4.38 with Color:Multi Bead Size:One Size One Size Quantity:123456789 221 people looked at this item in the last day Add to Bag Find in Store Product Details Gold-plated brass, seed beads. Length: 65mm. Import. Item BI784.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "94_Beaded bracelets set-of-five Item BG982 3 Reviews or 4 payments of $4.88 with Color:Cool Multi Size:One Size One Size Quantity:123456789 227 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, brass, acrylic beads. Length: 2 1/4\". Import. Item BG982.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本歸屬類別為何？",
+    "input": "116_Beaded bracelets set-of-five Item BG982 3 Reviews or 4 payments of $4.88 with Color:Neon Multi Size:One Size One Size Quantity:123456789 203 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, brass, acrylic beads. Length: 2 1/4\". Import. Item BG982.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "146_Raffia wrapped drop earrings Item BI255 2 Reviews or 4 payments of $4.88 with Color:Raffia Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, wood, imitation raffia, titanium posts. Length: 2 1/2\". Import. Select colors only available online. Item BI255.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "196_Cubic zirconia stud earrings Item BI820 2 Reviews or 4 payments of $3.13 with Color:Crystal Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated recycled brass, titanium posts, cubic zirconia. This style is made with recycled materials. Length: .28\". Import. Item BI820.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "22_Gold rope bracelet Item BI819 or 4 payments of $3.13 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated zinc, steel, cubic zirconia. Length: 7\" with a 1\" extender chain for adjustable length. Import. Item BI819.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "104_Resin drop statement earrings Item BJ801 or 4 payments of $3.13 with Color:Spicy Guava Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated brass, resin, titanium posts. Length: 50mm. Import. Item BJ801.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "Paper-clip link bracelet Item AX197 9 Reviews or 4 payments of $3.63 with Color:Silver Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, cubic zirconia. Length: 6 3/4\" with 1\" extender chain for adjustable length. Import. Item AX197.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本歸屬類別為何？",
+    "input": "Interlocking drop earrings Item BI776 2 Reviews or 4 payments of $3.63 with Color:Black Size:One Size One Size Quantity:123456789 222 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated recycled zinc, poly, acrylic, titanium posts. This style is made with recycled materials. Length: 51mm. Import. Item BI776. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "69_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "Gold woven hoop earrings Item BI800 or 4 payments of $2.38 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Brass, titanium posts. Length: 21.5mm. Import. Online exclusive. Item BI800.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "62_Beaded bracelets set-of-five Item BG982 3 Reviews or 4 payments of $4.88 with Color:Cool Multi Size:One Size One Size Quantity:123456789 227 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, brass, acrylic beads. Length: 2 1/4\". Import. Item BG982.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "Beaded hoop earrings Item BI782 2 Reviews or 4 payments of $3.63 with Color:Electric Red Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated steel, acrylic beads. Length: 1 1/2\". Import. Select colors only available online. Item BI782.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "183_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "191_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "170_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "187_Paper-clip link bracelet Item AX197 9 Reviews or 4 payments of $3.63 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, cubic zirconia. Length: 6 3/4\" with 1\" extender chain for adjustable length. Import. Item AX197.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "147_Tiny beads stretch bracelets set-of-six Item AX510 12 Reviews or 4 payments of $4.88 with Color:Silver Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated brass, beads, zinc, cubic zirconia. Length: 2 1/4\". Import. Item AX510.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "91_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "153_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "Cubic zirconia stud earrings Item BI820 2 Reviews or 4 payments of $3.13 with Color:Crystal Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated recycled brass, titanium posts, cubic zirconia. This style is made with recycled materials. Length: .28\". Import. Item BI820.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "64_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "71_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "185_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "190_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "189_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本歸屬類別為何？",
+    "input": "65_Beaded bracelets set-of-five Item BG982 3 Reviews or 4 payments of $4.88 with Color:White Gold Size:One Size One Size Quantity:123456789 195 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, brass, acrylic beads. Length: 2 1/4\". Import. Item BG982.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "80_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "89_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "146_Gold bracelets with rhinestones set-of-five Item BI779 or 4 payments of $7.38 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated brass, steel, glass stone, cubic zirconia. Length: 7\" with a 1\" extender chain for adjustable length. Import. Item BI779.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "Tiny beads stretch bracelets set-of-six Item AX510 12 Reviews or 4 payments of $4.88 with Color:Silver Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated brass, beads, zinc, cubic zirconia. Length: 2 1/4\". Import. Item AX510.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "128_Beaded hoop earrings Item BI782 2 Reviews or 4 payments of $3.63 with Color:Multi Bead Size:One Size One Size Quantity:123456789 152 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated steel, acrylic beads. Length: 1 1/2\". Import. Select colors only available online. Item BI782.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "54_Gold rope bracelet Item BI819 or 4 payments of $3.13 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated zinc, steel, cubic zirconia. Length: 7\" with a 1\" extender chain for adjustable length. Import. Item BI819.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "104_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "143_Mixed mini hoop earrings set Item BI786 or 4 payments of $3.63 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated recycled zinc, gold-plated brass, titanium posts. This style is made with recycled materials. Lengths: .5\", .23\", .62\". Import. Item BI786. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "199_Girls' pearl bracelet Item E3334 2 Reviews Limited-time price! or 4 payments of $2.38 with Color:Warm Ivory Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Acrylic, zinc, semiprecious stone, flash gold plating. Online exclusive. Import. This item is not a toy and is not intended for use by children under three years of age. Item E3334.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "178_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "161_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "182_Multibeaded circle statement earrings Item BI810 4 Reviews or 4 payments of $4.88 with Color:Pink Blue Bead Size:One Size One Size Quantity:123456789 310 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, gold-plated brass, glass seed beads, titanium posts. Length: 51mm. Import. Select colors only available online. Item BI810.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "107_Pearl earrings set-of-three Item BI807 or 4 payments of $3.63 with Color:Pearl Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated brass, glass pearl, acrylic pearl, titanium posts. Lengths: .12\", .31\", .5\". Import. Item BI807.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "55_Girls' pearl bracelet Item E3334 2 Reviews Limited-time price! or 4 payments of $2.38 with Color:Warm Ivory Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Acrylic, zinc, semiprecious stone, flash gold plating. Online exclusive. Import. This item is not a toy and is not intended for use by children under three years of age. Item E3334.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "68_Open-circle resin earrings Item BI783 or 4 payments of $3.63 with Color:Neon Azure Size:One Size One Size Quantity:123456789 164 people looked at this item in the last day Add to Bag Find in Store Product Details Gold-plated brass, resin, titanium posts. Length: 40mm. Import. Item BI783.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "172_Girls' pearl earrings Item L3483 8 Reviews Limited-time price! or 4 payments of $2.38 with Color:Warm Ivory Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Acrylic/titanium. Import. Item L3483.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "114_Gold bracelets with rhinestones set-of-five Item BI779 or 4 payments of $7.38 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated brass, steel, glass stone, cubic zirconia. Length: 7\" with a 1\" extender chain for adjustable length. Import. Item BI779.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "61_Paper-clip link bracelet Item AX197 9 Reviews or 4 payments of $3.63 with Color:Silver Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, cubic zirconia. Length: 6 3/4\" with 1\" extender chain for adjustable length. Import. Item AX197.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "109_Simple hoop earrings Item BB988 4 Reviews or 4 payments of $3.13 with Color:Silver Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, steel. Length: 40mm. Import. Select colors only available online. Item BB988.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "74_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "86_Girls' pearl earrings Item L3483 8 Reviews Limited-time price! or 4 payments of $2.38 with Color:Warm Ivory Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Acrylic/titanium. Import. Item L3483.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "127_Beaded bracelets set-of-three Item BI781 or 4 payments of $3.63 with Color:Warm Multi Size:One Size One Size Quantity:123456789 195 people looked at this item in the last day Add to Bag Find in Store Product Details Recycled acrylic bead, elastic cord, gold-plated zinc. This style is made with recycled materials. Diameter: 2 1/2\". Import. Item BI781. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "1_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "Interlocking drop earrings Item BI776 2 Reviews or 4 payments of $3.63 with Color:Metallic Mixed Multi Size:One Size One Size Quantity:123456789 267 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated recycled zinc, poly, acrylic, titanium posts. This style is made with recycled materials. Length: 51mm. Import. Item BI776. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "64_Pearl earrings set-of-three Item BI807 or 4 payments of $3.63 with Color:Pearl Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated brass, glass pearl, acrylic pearl, titanium posts. Lengths: .12\", .31\", .5\". Import. Item BI807.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "159_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "141_Beaded cocktail statement earrings Item BI791 or 4 payments of $4.88 with Color:Beaded Cocktail Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Brass, glass seed bead, plastic, velvet. Length: 22mm. Import. Online exclusive. Item BI791.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "189_Raffia wrapped drop earrings Item BI255 2 Reviews or 4 payments of $4.88 with Color:Raffia Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, wood, imitation raffia, titanium posts. Length: 2 1/2\". Import. Select colors only available online. Item BI255.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "22_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "91_Paper-clip link bracelet Item AX197 9 Reviews or 4 payments of $3.63 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, cubic zirconia. Length: 6 3/4\" with 1\" extender chain for adjustable length. Import. Item AX197.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "108_Crystal bow and pearl drop statement earrings Item BE343 6 Reviews backordered items are not eligible for Color:Classic Red Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, gold-plated brass, poly, acrylic pearl, glass stones, titanium posts, cubic zirconia. Length: 38mm. Import. Item BE343.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "43_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "110_Cubic zirconia stud earrings Item BI820 2 Reviews or 4 payments of $3.13 with Color:Crystal Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated recycled brass, titanium posts, cubic zirconia. This style is made with recycled materials. Length: .28\". Import. Item BI820.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "102_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "Glimmer circle stud earrings Item L9936 11 Reviews or 4 payments of $3.13 with Color:Crystal Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Zinc, glass stone, cubic zirconia. Length: 3/4\". Import. Online exclusive. Item L9936.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "198_Gold rope bracelet Item BI819 or 4 payments of $3.13 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated zinc, steel, cubic zirconia. Length: 7\" with a 1\" extender chain for adjustable length. Import. Item BI819.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "96_Beaded bracelets set-of-three Item BI781 or 4 payments of $3.63 with Color:Warm Multi Size:One Size One Size Quantity:123456789 191 people looked at this item in the last day Add to Bag Find in Store Product Details Recycled acrylic bead, elastic cord, gold-plated zinc. This style is made with recycled materials. Diameter: 2 1/2\". Import. Item BI781. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "142_Beaded bracelets set-of-five Item BG982 3 Reviews or 4 payments of $4.88 with Color:Cool Multi Size:One Size One Size Quantity:123456789 227 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, brass, acrylic beads. Length: 2 1/4\". Import. Item BG982.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "98_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "158_Beaded bracelets set-of-five Item BG982 3 Reviews or 4 payments of $4.88 with Color:Cool Multi Size:One Size One Size Quantity:123456789 227 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, brass, acrylic beads. Length: 2 1/4\". Import. Item BG982.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "172_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "118_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "84_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "130_Gold bracelets with rhinestones set-of-five Item BI779 or 4 payments of $7.38 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated brass, steel, glass stone, cubic zirconia. Length: 7\" with a 1\" extender chain for adjustable length. Import. Item BI779.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "Pearl hoop earrings Item BD741 3 Reviews backordered items are not eligible for Color:Pearl Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, acrylic pearl, titanium posts. Length: 18mm. Import. Item BD741.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "44_Beaded drop statement earrings Item BI784 or 4 payments of $4.38 with Color:Multi Bead Size:One Size One Size Quantity:123456789 219 people looked at this item in the last day Add to Bag Find in Store Product Details Gold-plated brass, seed beads. Length: 65mm. Import. Item BI784.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別為何？",
+    "input": "119_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "65_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "89_Gold elephant stud earrings Item BI806 1 Review or 4 payments of $2.38 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated recycled zinc, cubic zirconia, titanium posts. This style is made with recycled materials. Length: 9.8mm. Import. Item BI806. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "35_Tiny beads stretch bracelets set-of-six Item AX510 12 Reviews or 4 payments of $4.88 with Color:Silver Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated brass, beads, zinc, cubic zirconia. Length: 2 1/4\". Import. Item AX510.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "27_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "164_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "Open-circle resin earrings Item BI783 or 4 payments of $3.63 with Color:Brilliant Plum Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated brass, resin, titanium posts. Length: 40mm. Import. Item BI783.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "53_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "186_Mixed mini hoop earrings set Item BI786 or 4 payments of $3.63 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated recycled zinc, gold-plated brass, titanium posts. This style is made with recycled materials. Lengths: .5\", .23\", .62\". Import. Item BI786. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "116_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本歸屬類別為何？",
+    "input": "3_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "139_Paper-clip link bracelet Item AX197 9 Reviews or 4 payments of $3.63 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, cubic zirconia. Length: 6 3/4\" with 1\" extender chain for adjustable length. Import. Item AX197.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "194_Gold bracelets with rhinestones set-of-five Item BI779 or 4 payments of $7.38 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated brass, steel, glass stone, cubic zirconia. Length: 7\" with a 1\" extender chain for adjustable length. Import. Item BI779.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "134_Beaded drop statement earrings Item BI784 or 4 payments of $4.38 with Color:Iridescent Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated brass, seed beads. Length: 65mm. Import. Item BI784.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "51_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "32_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "57_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "168_Gold beaded bracelets set-of-six Item BI778 or 4 payments of $6.13 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated CCB, rhodium, recycled zinc, elastic, cubic zirconia. This style is made with \n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本歸屬類別為何？",
+    "input": "105_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "29_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "50_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "25_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "128_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "9_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "57_recycled materials. Length: 2 1/4\". Import. Item BI778. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled \n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "19_Tiny beads stretch bracelets set-of-six Item AX510 12 Reviews or 4 payments of $4.88 with Color:Silver Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated brass, beads, zinc, cubic zirconia. Length: 2 1/4\". Import. Item AX510.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本歸屬類別為何？",
+    "input": "199_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "135_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "163_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "159_Beaded hoop earrings Item BI782 2 Reviews or 4 payments of $3.63 with Color:Electric Red Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated steel, acrylic beads. Length: 1 1/2\". Import. Select colors only available online. Item BI782.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "46_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "153_recycled materials. Length: 2 1/4\". Import. Item BI778. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled \n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "62_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "Simple hoop earrings Item BB988 4 Reviews or 4 payments of $3.13 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, steel. Length: 40mm. Import. Select colors only available online. Item BB988.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "150_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "198_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "82_Gold bracelets with rhinestones set-of-five Item BI779 or 4 payments of $7.38 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated brass, steel, glass stone, cubic zirconia. Length: 7\" with a 1\" extender chain for adjustable length. Import. Item BI779.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "118_Illusion earrings Item BK566 4 Reviews or 4 payments of $3.63 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated brass, titanium posts. Length: 45mm. Import. Item BK566.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "166_Gold rope bracelet Item BI819 or 4 payments of $3.13 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated zinc, steel, cubic zirconia. Length: 7\" with a 1\" extender chain for adjustable length. Import. Item BI819.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本歸屬類別為何？",
+    "input": "Raffia wrapped drop earrings Item BI255 2 Reviews or 4 payments of $4.88 with Color:Raffia Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, wood, imitation raffia, titanium posts. Length: 2 1/2\". Import. Select colors only available online. Item BI255.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "Illusion earrings Item BK566 4 Reviews or 4 payments of $3.63 with Color:Silver Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated brass, titanium posts. Length: 45mm. Import. Item BK566.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "81_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "107_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "120_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "154_material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "113_Beaded bracelets set-of-five Item BG982 3 Reviews or 4 payments of $4.88 with Color:White Gold Size:One Size One Size Quantity:123456789 195 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, brass, acrylic beads. Length: 2 1/4\". Import. Item BG982.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "134_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "152_Simple hoop earrings Item BB988 4 Reviews or 4 payments of $3.13 with Color:Silver Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, steel. Length: 40mm. Import. Select colors only available online. Item BB988.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "Tortoise hoop earrings Item K6878 55 Reviews or 4 payments of $2.38 with Color:Tortoise Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Acetate, titanium posts. Diameter: 1 1/2\". Import. Item K6878.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "188_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "120_Gold beaded bracelets set-of-six Item BI778 or 4 payments of $6.13 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated CCB, rhodium, recycled zinc, elastic, cubic zirconia. This style is made with \n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "147_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "53_Girls' pearl bracelet set Item BH855 Limited-time price! or 4 payments of $3.63 with Color:Rainbow Pearl Multi Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Acrylic, freshwater pearl, cubic zirconia. This item is not a toy and is not intended for use by children under three years of age. Import. Item BH855.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "118_Gold rope bracelet Item BI819 or 4 payments of $3.13 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated zinc, steel, cubic zirconia. Length: 7\" with a 1\" extender chain for adjustable length. Import. Item BI819.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "162_Beaded drop statement earrings Item BI784 or 4 payments of $4.38 with Color:Multi Bead Size:One Size One Size Quantity:123456789 221 people looked at this item in the last day Add to Bag Find in Store Product Details Gold-plated brass, seed beads. Length: 65mm. Import. Item BI784.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別為何？",
+    "input": "Multibeaded circle statement earrings Item BI810 4 Reviews or 4 payments of $4.88 with Color:Pink Blue Bead Size:One Size One Size Quantity:123456789 310 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, gold-plated brass, glass seed beads, titanium posts. Length: 51mm. Import. Select colors only available online. Item BI810.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "106_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "155_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "99_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "72_Resin drop statement earrings Item BJ801 or 4 payments of $3.13 with Color:Island Turquoise Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated brass, resin, titanium posts. Length: 50mm. Import. Item BJ801.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "Gold bracelets set with beads Item BI777 or 4 payments of $3.63 with Color:Gold Blue Purple Size:One Size One Size Quantity:123456789 162 people looked at this item in the last day Add to Bag Find in Store Product Details Gold-plated brass, gold-plated CCB, glass stone, acrylic, glass beads, cubic zirconia. Length: 2 1/4\". Import. Online exclusive. Item BI777.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "180_Raffia fan earrings Item BI254 12 Reviews or 4 payments of $4.88 with Color:Fresh Bouquet Size:One Size One Size Quantity:123456789 583 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, glass seed beads, imitation raffia, titanium posts. Length: 60mm. Import. Item BI254.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "160_Beaded bracelets set-of-three Item BI781 or 4 payments of $3.63 with Color:Warm Multi Size:One Size One Size Quantity:123456789 191 people looked at this item in the last day Add to Bag Find in Store Product Details Recycled acrylic bead, elastic cord, gold-plated zinc. This style is made with recycled materials. Diameter: 2 1/2\". Import. Item BI781. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "72_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "178_Stud earrings set Item BI788 or 4 payments of $4.88 with Color:Gold Size:One Size One Size Quantity:123456789 183 people looked at this item in the last day Add to Bag Find in Store Product Details Gold-plated zinc, glass, titanium posts. Lengths: .39\", .23\", .39\", .34\", .31\", .29\", .31\", .40\". Import. Item BI788.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "157_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "142_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "18_Gold bracelets with rhinestones set-of-five Item BI779 or 4 payments of $7.38 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated brass, steel, glass stone, cubic zirconia. Length: 7\" with a 1\" extender chain for adjustable length. Import. Item BI779.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "42_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "18_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "157_Paper-clip link bracelet Item AX197 9 Reviews or 4 payments of $3.63 with Color:Silver Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, cubic zirconia. Length: 6 3/4\" with 1\" extender chain for adjustable length. Import. Item AX197.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "165_Glimmer circle stud earrings Item L9936 11 Reviews or 4 payments of $3.13 with Color:Crystal Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Zinc, glass stone, cubic zirconia. Length: 3/4\". Import. Online exclusive. Item L9936.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "149_Crystal buds ear jackets Item AR808 11 Reviews or 4 payments of $3.13 with Color:Crystal Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, glass, steel, cubic zirconia. Import. Item AR808.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "189_Paper-clip link bracelet Item AX197 9 Reviews or 4 payments of $3.63 with Color:Silver Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, cubic zirconia. Length: 6 3/4\" with 1\" extender chain for adjustable length. Import. Item AX197.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "177_Beaded bracelets set-of-five Item BG982 3 Reviews or 4 payments of $4.88 with Color:White Gold Size:One Size One Size Quantity:123456789 195 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, brass, acrylic beads. Length: 2 1/4\". Import. Item BG982.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "Beaded cocktail statement earrings Item BI791 or 4 payments of $4.88 with Color:Beaded Cocktail Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Brass, glass seed bead, plastic, velvet. Length: 22mm. Import. Online exclusive. Item BI791.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "80_Beaded bracelets set-of-three Item BI781 or 4 payments of $3.63 with Color:Warm Multi Size:One Size One Size Quantity:123456789 191 people looked at this item in the last day Add to Bag Find in Store Product Details Recycled acrylic bead, elastic cord, gold-plated zinc. This style is made with recycled materials. Diameter: 2 1/2\". Import. Item BI781. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "73_recycled materials. Length: 2 1/4\". Import. Item BI778. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled \n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "167_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "107_Paper-clip link bracelet Item AX197 9 Reviews or 4 payments of $3.63 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, cubic zirconia. Length: 6 3/4\" with 1\" extender chain for adjustable length. Import. Item AX197.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "167_Girls' pearl bracelet Item E3334 2 Reviews Limited-time price! or 4 payments of $2.38 with Color:Warm Ivory Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Acrylic, zinc, semiprecious stone, flash gold plating. Online exclusive. Import. This item is not a toy and is not intended for use by children under three years of age. Item E3334.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "153_Cubic zirconia stud earrings Item BI820 2 Reviews or 4 payments of $3.13 with Color:Crystal Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated recycled brass, titanium posts, cubic zirconia. This style is made with recycled materials. Length: .28\". Import. Item BI820.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "Stud earrings set Item BI788 or 4 payments of $4.88 with Color:Gold Size:One Size One Size Quantity:123456789 183 people looked at this item in the last day Add to Bag Find in Store Product Details Gold-plated zinc, glass, titanium posts. Lengths: .39\", .23\", .39\", .34\", .31\", .29\", .31\", .40\". Import. Item BI788.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "49_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "83_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "148_Beaded bracelets set-of-five Item BG982 3 Reviews or 4 payments of $4.88 with Color:Neon Multi Size:One Size One Size Quantity:123456789 203 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, brass, acrylic beads. Length: 2 1/4\". Import. Item BG982.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "113_Rhinestone stud earrings set Item BI774 or 4 payments of $4.88 with Color:Crystal Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated zinc, plastic, glass, titanium posts. Lengths: .23\", .39\", .46\", .32\", .52\", .4\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "164_Interlocking drop earrings Item BI776 2 Reviews or 4 payments of $3.63 with Color:Black Size:One Size One Size Quantity:123456789 219 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated recycled zinc, poly, acrylic, titanium posts. This style is made with recycled materials. Length: 51mm. Import. Item BI776. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "130_Beaded drop statement earrings Item BI784 or 4 payments of $4.38 with Color:Multi Bead Size:One Size One Size Quantity:123456789 219 people looked at this item in the last day Add to Bag Find in Store Product Details Gold-plated brass, seed beads. Length: 65mm. Import. Item BI784.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "112_Tortoise hoop earrings Item K6878 55 Reviews or 4 payments of $2.38 with Color:Tortoise Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Acetate, titanium posts. Diameter: 1 1/2\". Import. Item K6878.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別為何？",
+    "input": "46_Beaded bracelets set-of-five Item BG982 3 Reviews or 4 payments of $4.88 with Color:Cool Multi Size:One Size One Size Quantity:123456789 227 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, brass, acrylic beads. Length: 2 1/4\". Import. Item BG982.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "7_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "181_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "59_Wrapped rattan statement earrings Item BK750 1 Review or 4 payments of $3.63 with Color:Stripes And Rattan Size:One Size One Size Quantity:123 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, rattan. Length: 1.6\". Import. Item BK750.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "17_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "Beaded bracelets set-of-five Item BG982 3 Reviews or 4 payments of $4.88 with Color:Cool Multi Size:One Size One Size Quantity:123456789 227 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, brass, acrylic beads. Length: 2 1/4\". Import. Item BG982.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "137_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "63_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "51_Raffia fan earrings Item BI254 12 Reviews or 4 payments of $4.88 with Color:Fresh Bouquet Size:One Size One Size Quantity:123456789 583 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, glass seed beads, imitation raffia, titanium posts. Length: 60mm. Import. Item BI254.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "141_Paper-clip link bracelet Item AX197 9 Reviews or 4 payments of $3.63 with Color:Silver Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, cubic zirconia. Length: 6 3/4\" with 1\" extender chain for adjustable length. Import. Item AX197.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "57_Mixed mini hoop earrings set Item BI786 or 4 payments of $3.63 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated recycled zinc, gold-plated brass, titanium posts. This style is made with recycled materials. Lengths: .5\", .23\", .62\". Import. Item BI786. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "62_Hoop earrings set-of three Item BI789 or 4 payments of $5.88 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated recycled zinc, titanium posts. This style is made with recycled materials. Lengths: .6\", .8\", 1\". Import. Item BI789. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "31_Beaded bracelets set-of-three Item BI781 or 4 payments of $3.63 with Color:Warm Multi Size:One Size One Size Quantity:123456789 195 people looked at this item in the last day Add to Bag Find in Store Product Details Recycled acrylic bead, elastic cord, gold-plated zinc. This style is made with recycled materials. Diameter: 2 1/2\". Import. Item BI781. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "Raffia fan earrings Item BI254 12 Reviews or 4 payments of $4.88 with Color:Fresh Bouquet Size:One Size One Size Quantity:123456789 583 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, glass seed beads, imitation raffia, titanium posts. Length: 60mm. Import. Item BI254.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "175_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "156_Rhinestone stud earrings set Item BI774 or 4 payments of $4.88 with Color:Crystal Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated zinc, plastic, glass, titanium posts. Lengths: .23\", .39\", .46\", .32\", .52\", .4\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "20_Beaded bracelets set-of-five Item BG982 3 Reviews or 4 payments of $4.88 with Color:Neon Multi Size:One Size One Size Quantity:123456789 203 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, brass, acrylic beads. Length: 2 1/4\". Import. Item BG982.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "68_Beaded bracelets set-of-five Item BG982 3 Reviews or 4 payments of $4.88 with Color:Neon Multi Size:One Size One Size Quantity:123456789 203 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, brass, acrylic beads. Length: 2 1/4\". Import. Item BG982.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "191_Beaded bracelets set-of-three Item BI781 or 4 payments of $3.63 with Color:Warm Multi Size:One Size One Size Quantity:123456789 195 people looked at this item in the last day Add to Bag Find in Store Product Details Recycled acrylic bead, elastic cord, gold-plated zinc. This style is made with recycled materials. Diameter: 2 1/2\". Import. Item BI781. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本歸屬類別為何？",
+    "input": "171_Paper-clip link bracelet Item AX197 9 Reviews or 4 payments of $3.63 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, cubic zirconia. Length: 6 3/4\" with 1\" extender chain for adjustable length. Import. Item AX197.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "47_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "176_Interlocking drop earrings Item BI776 2 Reviews or 4 payments of $3.63 with Color:Pink Ombre Size:One Size One Size Quantity:123456789 218 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated recycled zinc, poly, acrylic, titanium posts. This style is made with recycled materials. Length: 51mm. Import. Item BI776. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別為何？",
+    "input": "112_Beaded bracelets set-of-three Item BI781 or 4 payments of $3.63 with Color:Warm Multi Size:One Size One Size Quantity:123456789 191 people looked at this item in the last day Add to Bag Find in Store Product Details Recycled acrylic bead, elastic cord, gold-plated zinc. This style is made with recycled materials. Diameter: 2 1/2\". Import. Item BI781. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "Gold bracelets with rhinestones set-of-five Item BI779 or 4 payments of $7.38 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated brass, steel, glass stone, cubic zirconia. Length: 7\" with a 1\" extender chain for adjustable length. Import. Item BI779.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "Illusion earrings Item BK566 4 Reviews or 4 payments of $3.63 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated brass, titanium posts. Length: 45mm. Import. Item BK566.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "193_Beaded bracelets set-of-five Item BG982 3 Reviews or 4 payments of $4.88 with Color:White Gold Size:One Size One Size Quantity:123456789 195 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, brass, acrylic beads. Length: 2 1/4\". Import. Item BG982.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "154_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "93_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "92_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "138_material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "48_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "81_Beaded bracelets set-of-five Item BG982 3 Reviews or 4 payments of $4.88 with Color:White Gold Size:One Size One Size Quantity:123456789 195 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, brass, acrylic beads. Length: 2 1/4\". Import. Item BG982.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "23_Girls' pearl bracelet Item E3334 2 Reviews Limited-time price! or 4 payments of $2.38 with Color:Warm Ivory Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Acrylic, zinc, semiprecious stone, flash gold plating. Online exclusive. Import. This item is not a toy and is not intended for use by children under three years of age. Item E3334.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "152_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "66_Simple hoop earrings Item BB988 4 Reviews or 4 payments of $3.13 with Color:Silver Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, steel. Length: 40mm. Import. Select colors only available online. Item BB988.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "6_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "126_Simple hoop earrings Item BB988 4 Reviews or 4 payments of $3.13 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, steel. Length: 40mm. Import. Select colors only available online. Item BB988.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "Resin drop statement earrings Item BJ801 or 4 payments of $3.13 with Color:Island Turquoise Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated brass, resin, titanium posts. Length: 50mm. Import. Item BJ801.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "Resin drop statement earrings Item BJ801 or 4 payments of $3.13 with Color:Spicy Guava Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated brass, resin, titanium posts. Length: 50mm. Import. Item BJ801.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "166_Open-circle resin earrings Item BI783 or 4 payments of $3.63 with Color:Neon Azure Size:One Size One Size Quantity:123456789 174 people looked at this item in the last day Add to Bag Find in Store Product Details Gold-plated brass, resin, titanium posts. Length: 40mm. Import. Item BI783.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "103_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "24_Gold beaded bracelets set-of-six Item BI778 or 4 payments of $6.13 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated CCB, rhodium, recycled zinc, elastic, cubic zirconia. This style is made with \n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "136_Gold beaded bracelets set-of-six Item BI778 or 4 payments of $6.13 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated CCB, rhodium, recycled zinc, elastic, cubic zirconia. This style is made with \n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "179_Tiny beads stretch bracelets set-of-six Item AX510 12 Reviews or 4 payments of $4.88 with Color:Silver Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated brass, beads, zinc, cubic zirconia. Length: 2 1/4\". Import. Item AX510.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "100_Beaded bracelets set-of-five Item BG982 3 Reviews or 4 payments of $4.88 with Color:Neon Multi Size:One Size One Size Quantity:123456789 203 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, brass, acrylic beads. Length: 2 1/4\". Import. Item BG982.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "168_Beaded \"cheers \" statement earrings Item BE340 backordered items are not eligible for Color:Beaded Cheers Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Brass, seed bead, stones, fabric, titanium posts, cubic zirconia. Length: 66mm. Import. Item BE340.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "92_Gold bracelets set with beads Item BI777 or 4 payments of $3.63 with Color:Gold Blue Purple Size:One Size One Size Quantity:123456789 162 people looked at this item in the last day Add to Bag Find in Store Product Details Gold-plated brass, gold-plated CCB, glass stone, acrylic, glass beads, cubic zirconia. Length: 2 1/4\". Import. Online exclusive. Item BI777.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "14_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "Gold elephant stud earrings Item BI806 1 Review or 4 payments of $2.38 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated recycled zinc, cubic zirconia, titanium posts. This style is made with recycled materials. Length: 9.8mm. Import. Item BI806. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "168_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "66_Gold bracelets with rhinestones set-of-five Item BI779 or 4 payments of $7.38 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated brass, steel, glass stone, cubic zirconia. Length: 7\" with a 1\" extender chain for adjustable length. Import. Item BI779.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "Interlocking drop earrings Item BI776 2 Reviews or 4 payments of $3.63 with Color:Pink Ombre Size:One Size One Size Quantity:123456789 218 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated recycled zinc, poly, acrylic, titanium posts. This style is made with recycled materials. Length: 51mm. Import. Item BI776. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "Girls' pearl earrings Item L3483 8 Reviews Limited-time price! or 4 payments of $2.38 with Color:Warm Ivory Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Acrylic/titanium. Import. Item L3483.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別為何？",
+    "input": "Rhinestone stud earrings set Item BI774 or 4 payments of $4.88 with Color:Crystal Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated zinc, plastic, glass, titanium posts. Lengths: .23\", .39\", .46\", .32\", .52\", .4\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "78_Beaded bracelets set-of-five Item BG982 3 Reviews or 4 payments of $4.88 with Color:Cool Multi Size:One Size One Size Quantity:123456789 227 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, brass, acrylic beads. Length: 2 1/4\". Import. Item BG982.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "170_material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "70_Gold rope bracelet Item BI819 or 4 payments of $3.13 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated zinc, steel, cubic zirconia. Length: 7\" with a 1\" extender chain for adjustable length. Import. Item BI819.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "36_Beaded bracelets set-of-five Item BG982 3 Reviews or 4 payments of $4.88 with Color:Neon Multi Size:One Size One Size Quantity:123456789 203 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, brass, acrylic beads. Length: 2 1/4\". Import. Item BG982.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本歸屬類別為何？",
+    "input": "75_Illusion earrings Item BK566 4 Reviews or 4 payments of $3.63 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated brass, titanium posts. Length: 45mm. Import. Item BK566.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "66_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "184_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本歸屬類別為何？",
+    "input": "56_Ribbon-wrapped hoop earrings Item BE344 5 Reviews backordered items are not eligible for Color:Autumn Pine Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated brass, poly ribbon, titanium posts. Diameter: 50mm. Import. Item BE344.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別為何？",
+    "input": "38_Gold rope bracelet Item BI819 or 4 payments of $3.13 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated zinc, steel, cubic zirconia. Length: 7\" with a 1\" extender chain for adjustable length. Import. Item BI819.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本歸屬類別為何？",
+    "input": "175_Gold elephant stud earrings Item BI806 1 Review or 4 payments of $2.38 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated recycled zinc, cubic zirconia, titanium posts. This style is made with recycled materials. Length: 9.8mm. Import. Item BI806. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "101_Twist hoop earrings Item BI821 or 4 payments of $3.63 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated recycled zinc, titanium posts. This style is made with recycled materials. Length: .8\". Import. Item BI821. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "46_Gold elephant stud earrings Item BI806 1 Review or 4 payments of $2.38 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated recycled zinc, cubic zirconia, titanium posts. This style is made with recycled materials. Length: 9.8mm. Import. Item BI806. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "Beaded drop statement earrings Item BI784 or 4 payments of $4.38 with Color:Iridescent Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated brass, seed beads. Length: 65mm. Import. Item BI784.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "80_Open-circle resin earrings Item BI783 or 4 payments of $3.63 with Color:Neon Azure Size:One Size One Size Quantity:123456789 174 people looked at this item in the last day Add to Bag Find in Store Product Details Gold-plated brass, resin, titanium posts. Length: 40mm. Import. Item BI783.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "97_Beaded bracelets set-of-five Item BG982 3 Reviews or 4 payments of $4.88 with Color:White Gold Size:One Size One Size Quantity:123456789 195 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, brass, acrylic beads. Length: 2 1/4\". Import. Item BG982.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "182_Gold rope bracelet Item BI819 or 4 payments of $3.13 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated zinc, steel, cubic zirconia. Length: 7\" with a 1\" extender chain for adjustable length. Import. Item BI819.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "169_Simple hoop earrings Item BB988 4 Reviews or 4 payments of $3.13 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, steel. Length: 40mm. Import. Select colors only available online. Item BB988.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "Gold beaded bracelets set-of-six Item BI778 or 4 payments of $6.13 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated CCB, rhodium, recycled zinc, elastic, cubic zirconia. This style is made with \n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "180_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "198_Tortoise hoop earrings Item K6878 55 Reviews or 4 payments of $2.38 with Color:Tortoise Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Acetate, titanium posts. Diameter: 1 1/2\". Import. Item K6878.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別為何？",
+    "input": "45_Interlocking drop earrings Item BI776 2 Reviews or 4 payments of $3.63 with Color:Metallic Mixed Multi Size:One Size One Size Quantity:123456789 267 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated recycled zinc, poly, acrylic, titanium posts. This style is made with recycled materials. Length: 51mm. Import. Item BI776. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "21_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "72_Gold beaded bracelets set-of-six Item BI778 or 4 payments of $6.13 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated CCB, rhodium, recycled zinc, elastic, cubic zirconia. This style is made with \n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "19_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本歸屬類別為何？",
+    "input": "137_recycled materials. Length: 2 1/4\". Import. Item BI778. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled \n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "144_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "195_Simple hoop earrings Item BB988 4 Reviews or 4 payments of $3.13 with Color:Silver Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, steel. Length: 40mm. Import. Select colors only available online. Item BB988.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "Simple hoop earrings Item BB988 4 Reviews or 4 payments of $3.13 with Color:Silver Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, steel. Length: 40mm. Import. Select colors only available online. Item BB988.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "29_Paper-clip link bracelet Item AX197 9 Reviews or 4 payments of $3.63 with Color:Silver Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, cubic zirconia. Length: 6 3/4\" with 1\" extender chain for adjustable length. Import. Item AX197.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "150_Pearl earrings set-of-three Item BI807 or 4 payments of $3.63 with Color:Pearl Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated brass, glass pearl, acrylic pearl, titanium posts. Lengths: .12\", .31\", .5\". Import. Item BI807.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "75_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "49_Beaded bracelets set-of-five Item BG982 3 Reviews or 4 payments of $4.88 with Color:White Gold Size:One Size One Size Quantity:123456789 195 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, brass, acrylic beads. Length: 2 1/4\". Import. Item BG982.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "181_Girls' pearl bracelet set Item BH855 Limited-time price! or 4 payments of $3.63 with Color:Rainbow Pearl Multi Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Acrylic, freshwater pearl, cubic zirconia. This item is not a toy and is not intended for use by children under three years of age. Import. Item BH855.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "4_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "129_Beaded bracelets set-of-five Item BG982 3 Reviews or 4 payments of $4.88 with Color:White Gold Size:One Size One Size Quantity:123456789 195 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, brass, acrylic beads. Length: 2 1/4\". Import. Item BG982.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "109_Paper-clip link bracelet Item AX197 9 Reviews or 4 payments of $3.63 with Color:Silver Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, cubic zirconia. Length: 6 3/4\" with 1\" extender chain for adjustable length. Import. Item AX197.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "196_Beaded bracelets set-of-five Item BG982 3 Reviews or 4 payments of $4.88 with Color:Neon Multi Size:One Size One Size Quantity:123456789 203 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, brass, acrylic beads. Length: 2 1/4\". Import. Item BG982.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "11_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "54_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "151_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "188_Wrapped rattan statement earrings Item BK750 1 Review or 4 payments of $3.63 with Color:Stripes And Rattan Size:One Size One Size Quantity:123 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, rattan. Length: 1.6\". Import. Item BK750.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "115_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "174_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "187_Twist hoop earrings Item BI821 or 4 payments of $3.63 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated recycled zinc, titanium posts. This style is made with recycled materials. Length: .8\". Import. Item BI821. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "117_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "124_Pearl hoop earrings Item BD741 3 Reviews backordered items are not eligible for Color:Pearl Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, acrylic pearl, titanium posts. Length: 18mm. Import. Item BD741.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "39_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "77_Paper-clip link bracelet Item AX197 9 Reviews or 4 payments of $3.63 with Color:Silver Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, cubic zirconia. Length: 6 3/4\" with 1\" extender chain for adjustable length. Import. Item AX197.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "45_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "73_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本歸屬類別為何？",
+    "input": "Wrapped rattan statement earrings Item BK750 1 Review or 4 payments of $3.63 with Color:Stripes And Rattan Size:One Size One Size Quantity:123 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, rattan. Length: 1.6\". Import. Item BK750.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "49_Stud earrings set Item BI788 or 4 payments of $4.88 with Color:Gold Size:One Size One Size Quantity:123456789 183 people looked at this item in the last day Add to Bag Find in Store Product Details Gold-plated zinc, glass, titanium posts. Lengths: .39\", .23\", .39\", .34\", .31\", .29\", .31\", .40\". Import. Item BI788.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "110_Beaded bracelets set-of-five Item BG982 3 Reviews or 4 payments of $4.88 with Color:Cool Multi Size:One Size One Size Quantity:123456789 227 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, brass, acrylic beads. Length: 2 1/4\". Import. Item BG982.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "51_Tiny beads stretch bracelets set-of-six Item AX510 12 Reviews or 4 payments of $4.88 with Color:Silver Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated brass, beads, zinc, cubic zirconia. Length: 2 1/4\". Import. Item AX510.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "176_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "55_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "83_Tiny beads stretch bracelets set-of-six Item AX510 12 Reviews or 4 payments of $4.88 with Color:Silver Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated brass, beads, zinc, cubic zirconia. Length: 2 1/4\". Import. Item AX510.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "115_Tiny beads stretch bracelets set-of-six Item AX510 12 Reviews or 4 payments of $4.88 with Color:Silver Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated brass, beads, zinc, cubic zirconia. Length: 2 1/4\". Import. Item AX510.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "140_Gold bracelets set with beads Item BI777 or 4 payments of $3.63 with Color:Gold Blue Purple Size:One Size One Size Quantity:123456789 162 people looked at this item in the last day Add to Bag Find in Store Product Details Gold-plated brass, gold-plated CCB, glass stone, acrylic, glass beads, cubic zirconia. Length: 2 1/4\". Import. Online exclusive. Item BI777.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "Pearl earrings set-of-three Item BI807 or 4 payments of $3.63 with Color:Pearl Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated brass, glass pearl, acrylic pearl, titanium posts. Lengths: .12\", .31\", .5\". Import. Item BI807.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "104_Gold beaded bracelets set-of-six Item BI778 or 4 payments of $6.13 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated CCB, rhodium, recycled zinc, elastic, cubic zirconia. This style is made with \n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "Gold rope bracelet Item BI819 or 4 payments of $3.13 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated zinc, steel, cubic zirconia. Length: 7\" with a 1\" extender chain for adjustable length. Import. Item BI819.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "87_Girls' pearl bracelet Item E3334 2 Reviews Limited-time price! or 4 payments of $2.38 with Color:Warm Ivory Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Acrylic, zinc, semiprecious stone, flash gold plating. Online exclusive. Import. This item is not a toy and is not intended for use by children under three years of age. Item E3334.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "138_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "129_Girls' pearl earrings Item L3483 8 Reviews Limited-time price! or 4 payments of $2.38 with Color:Warm Ivory Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Acrylic/titanium. Import. Item L3483.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "95_Gold woven hoop earrings Item BI800 or 4 payments of $2.38 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Brass, titanium posts. Length: 21.5mm. Import. Online exclusive. Item BI800.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "33_Beaded bracelets set-of-five Item BG982 3 Reviews or 4 payments of $4.88 with Color:White Gold Size:One Size One Size Quantity:123456789 195 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, brass, acrylic beads. Length: 2 1/4\". Import. Item BG982.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "192_Crystal buds ear jackets Item AR808 11 Reviews or 4 payments of $3.13 with Color:Crystal Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, glass, steel, cubic zirconia. Import. Item AR808.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "33_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "120_Illusion earrings Item BK566 4 Reviews or 4 payments of $3.63 with Color:Silver Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated brass, titanium posts. Length: 45mm. Import. Item BK566.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "34_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "41_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "145_Beaded bracelets set-of-five Item BG982 3 Reviews or 4 payments of $4.88 with Color:White Gold Size:One Size One Size Quantity:123456789 195 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, brass, acrylic beads. Length: 2 1/4\". Import. Item BG982.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "Crystal buds ear jackets Item AR808 11 Reviews or 4 payments of $3.13 with Color:Crystal Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, glass, steel, cubic zirconia. Import. Item AR808.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "70_Rhinestone stud earrings set Item BI774 or 4 payments of $4.88 with Color:Crystal Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated zinc, plastic, glass, titanium posts. Lengths: .23\", .39\", .46\", .32\", .52\", .4\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "Open-circle resin earrings Item BI783 or 4 payments of $3.63 with Color:Neon Azure Size:One Size One Size Quantity:123456789 174 people looked at this item in the last day Add to Bag Find in Store Product Details Gold-plated brass, resin, titanium posts. Length: 40mm. Import. Item BI783.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "121_Interlocking drop earrings Item BI776 2 Reviews or 4 payments of $3.63 with Color:Black Size:One Size One Size Quantity:123456789 219 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated recycled zinc, poly, acrylic, titanium posts. This style is made with recycled materials. Length: 51mm. Import. Item BI776. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "106_material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "135_Stud earrings set Item BI788 or 4 payments of $4.88 with Color:Gold Size:One Size One Size Quantity:123456789 183 people looked at this item in the last day Add to Bag Find in Store Product Details Gold-plated zinc, glass, titanium posts. Lengths: .39\", .23\", .39\", .34\", .31\", .29\", .31\", .40\". Import. Item BI788.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "152_Gold beaded bracelets set-of-six Item BI778 or 4 payments of $6.13 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated CCB, rhodium, recycled zinc, elastic, cubic zirconia. This style is made with \n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "127_Beaded hoop earrings Item BI782 2 Reviews or 4 payments of $3.63 with Color:Multi Bead Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated steel, acrylic beads. Length: 1 1/2\". Import. Select colors only available online. Item BI782.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "24_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "4\", .41:, .30\". Import. Online exclusive. Item BI774.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "53_Multibeaded circle statement earrings Item BI810 4 Reviews or 4 payments of $4.88 with Color:Pink Blue Bead Size:One Size One Size Quantity:123456789 310 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, gold-plated brass, glass seed beads, titanium posts. Length: 51mm. Import. Select colors only available online. Item BI810.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "184_Gold beaded bracelets set-of-six Item BI778 or 4 payments of $6.13 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated CCB, rhodium, recycled zinc, elastic, cubic zirconia. This style is made with \n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "108_Gold bracelets set with beads Item BI777 or 4 payments of $3.63 with Color:Gold Blue Purple Size:One Size One Size Quantity:123456789 162 people looked at this item in the last day Add to Bag Find in Store Product Details Gold-plated brass, gold-plated CCB, glass stone, acrylic, glass beads, cubic zirconia. Length: 2 1/4\". Import. Online exclusive. Item BI777.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "114_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "161_Beaded bracelets set-of-five Item BG982 3 Reviews or 4 payments of $4.88 with Color:White Gold Size:One Size One Size Quantity:123456789 195 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, brass, acrylic beads. Length: 2 1/4\". Import. Item BG982.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "67_Cubic zirconia stud earrings Item BI820 2 Reviews or 4 payments of $3.13 with Color:Crystal Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated recycled brass, titanium posts, cubic zirconia. This style is made with recycled materials. Length: .28\". Import. Item BI820.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "Girls' pearl bracelet Item E3334 2 Reviews Limited-time price! or 4 payments of $2.38 with Color:Warm Ivory Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Acrylic, zinc, semiprecious stone, flash gold plating. Online exclusive. Import. This item is not a toy and is not intended for use by children under three years of age. Item E3334.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "140_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "85_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "197_Open-circle resin earrings Item BI783 or 4 payments of $3.63 with Color:Neon Azure Size:One Size One Size Quantity:123456789 164 people looked at this item in the last day Add to Bag Find in Store Product Details Gold-plated brass, resin, titanium posts. Length: 40mm. Import. Item BI783.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "143_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "132_Beaded bracelets set-of-five Item BG982 3 Reviews or 4 payments of $4.88 with Color:Neon Multi Size:One Size One Size Quantity:123456789 203 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, brass, acrylic beads. Length: 2 1/4\". Import. Item BG982.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "Interlocking drop earrings Item BI776 2 Reviews or 4 payments of $3.63 with Color:Black Size:One Size One Size Quantity:123456789 219 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated recycled zinc, poly, acrylic, titanium posts. This style is made with recycled materials. Length: 51mm. Import. Item BI776. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "90_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "97_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "177_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "117_Open-circle resin earrings Item BI783 or 4 payments of $3.63 with Color:Brilliant Plum Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated brass, resin, titanium posts. Length: 40mm. Import. Item BI783.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別為何？",
+    "input": "52_Gold woven hoop earrings Item BI800 or 4 payments of $2.38 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Brass, titanium posts. Length: 21.5mm. Import. Online exclusive. Item BI800.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "192_Beaded bracelets set-of-three Item BI781 or 4 payments of $3.63 with Color:Warm Multi Size:One Size One Size Quantity:123456789 191 people looked at this item in the last day Add to Bag Find in Store Product Details Recycled acrylic bead, elastic cord, gold-plated zinc. This style is made with recycled materials. Diameter: 2 1/2\". Import. Item BI781. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "69_Girls' pearl bracelet set Item BH855 Limited-time price! or 4 payments of $3.63 with Color:Rainbow Pearl Multi Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Acrylic, freshwater pearl, cubic zirconia. This item is not a toy and is not intended for use by children under three years of age. Import. Item BH855.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "60_Raffia wrapped drop earrings Item BI255 2 Reviews or 4 payments of $4.88 with Color:Raffia Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, wood, imitation raffia, titanium posts. Length: 2 1/2\". Import. Select colors only available online. Item BI255.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "110_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本歸屬類別為何？",
+    "input": "Beaded drop statement earrings Item BI784 or 4 payments of $4.38 with Color:Multi Bead Size:One Size One Size Quantity:123456789 221 people looked at this item in the last day Add to Bag Find in Store Product Details Gold-plated brass, seed beads. Length: 65mm. Import. Item BI784.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "77_Illusion earrings Item BK566 4 Reviews or 4 payments of $3.63 with Color:Silver Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated brass, titanium posts. Length: 45mm. Import. Item BK566.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "122_Glimmer circle stud earrings Item L9936 11 Reviews or 4 payments of $3.13 with Color:Crystal Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Zinc, glass stone, cubic zirconia. Length: 3/4\". Import. Online exclusive. Item L9936.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "115_Resin drop statement earrings Item BJ801 or 4 payments of $3.13 with Color:Island Turquoise Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated brass, resin, titanium posts. Length: 50mm. Import. Item BJ801.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "162_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "150_Gold rope bracelet Item BI819 or 4 payments of $3.13 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated zinc, steel, cubic zirconia. Length: 7\" with a 1\" extender chain for adjustable length. Import. Item BI819.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "172_Gold bracelets set with beads Item BI777 or 4 payments of $3.63 with Color:Gold Blue Purple Size:One Size One Size Quantity:123456789 162 people looked at this item in the last day Add to Bag Find in Store Product Details Gold-plated brass, gold-plated CCB, glass stone, acrylic, glass beads, cubic zirconia. Length: 2 1/4\". Import. Online exclusive. Item BI777.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "144_Beaded bracelets set-of-three Item BI781 or 4 payments of $3.63 with Color:Warm Multi Size:One Size One Size Quantity:123456789 191 people looked at this item in the last day Add to Bag Find in Store Product Details Recycled acrylic bead, elastic cord, gold-plated zinc. This style is made with recycled materials. Diameter: 2 1/2\". Import. Item BI781. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "88_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "90_Interlocking drop earrings Item BI776 2 Reviews or 4 payments of $3.63 with Color:Pink Ombre Size:One Size One Size Quantity:123456789 218 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated recycled zinc, poly, acrylic, titanium posts. This style is made with recycled materials. Length: 51mm. Import. Item BI776. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "103_Raffia wrapped drop earrings Item BI255 2 Reviews or 4 payments of $4.88 with Color:Raffia Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, wood, imitation raffia, titanium posts. Length: 2 1/2\". Import. Select colors only available online. Item BI255.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "123_Paper-clip link bracelet Item AX197 9 Reviews or 4 payments of $3.63 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Brass, cubic zirconia. Length: 6 3/4\" with 1\" extender chain for adjustable length. Import. Item AX197.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "82_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "162_Gold bracelets with rhinestones set-of-five Item BI779 or 4 payments of $7.38 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated brass, steel, glass stone, cubic zirconia. Length: 7\" with a 1\" extender chain for adjustable length. Import. Item BI779.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "40_Gold beaded bracelets set-of-six Item BI778 or 4 payments of $6.13 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated CCB, rhodium, recycled zinc, elastic, cubic zirconia. This style is made with \n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "21_Girls' pearl bracelet set Item BH855 Limited-time price! or 4 payments of $3.63 with Color:Rainbow Pearl Multi Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Acrylic, freshwater pearl, cubic zirconia. This item is not a toy and is not intended for use by children under three years of age. Import. Item BH855.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "139_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "13_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "60_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "173_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "recycled materials. Length: 2 1/4\". Import. Item BI778. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled \n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "102_Gold rope bracelet Item BI819 or 4 payments of $3.13 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated zinc, steel, cubic zirconia. Length: 7\" with a 1\" extender chain for adjustable length. Import. Item BI819.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "Ribbon-wrapped hoop earrings Item BE344 5 Reviews backordered items are not eligible for Color:Autumn Pine Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated brass, poly ribbon, titanium posts. Diameter: 50mm. Import. Item BE344.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "123_Open-circle resin earrings Item BI783 or 4 payments of $3.63 with Color:Neon Azure Size:One Size One Size Quantity:123456789 174 people looked at this item in the last day Add to Bag Find in Store Product Details Gold-plated brass, resin, titanium posts. Length: 40mm. Import. Item BI783.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "137_Raffia fan earrings Item BI254 12 Reviews or 4 payments of $4.88 with Color:Fresh Bouquet Size:One Size One Size Quantity:123456789 583 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, glass seed beads, imitation raffia, titanium posts. Length: 60mm. Import. Item BI254.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "64_Beaded bracelets set-of-three Item BI781 or 4 payments of $3.63 with Color:Warm Multi Size:One Size One Size Quantity:123456789 191 people looked at this item in the last day Add to Bag Find in Store Product Details Recycled acrylic bead, elastic cord, gold-plated zinc. This style is made with recycled materials. Diameter: 2 1/2\". Import. Item BI781. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "121_recycled materials. Length: 2 1/4\". Import. Item BI778. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled \n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本歸屬類別是什麼？",
+    "input": "123_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "144_Twist hoop earrings Item BI821 or 4 payments of $3.63 with Color:Gold Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated recycled zinc, titanium posts. This style is made with recycled materials. Length: .8\". Import. Item BI821. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "122_material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "Classify the following text.",
+    "input": "Beaded hoop earrings Item BI782 2 Reviews or 4 payments of $3.63 with Color:Multi Bead Size:One Size One Size Quantity:123456789 152 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated steel, acrylic beads. Length: 1 1/2\". Import. Select colors only available online. Item BI782.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "What is the class for the following text?",
+    "input": "84_Beaded bracelets set-of-five Item BG982 3 Reviews or 4 payments of $4.88 with Color:Neon Multi Size:One Size One Size Quantity:123456789 203 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, brass, acrylic beads. Length: 2 1/4\". Import. Item BG982.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "針對下列文本，進行分類。",
+    "input": "192_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別歸類是什麼？",
+    "input": "186_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "193_Pearl earrings set-of-three Item BI807 or 4 payments of $3.63 with Color:Pearl Size:One Size One Size Quantity:123456789 Add to Bag Find in Store Product Details Gold-plated brass, glass pearl, acrylic pearl, titanium posts. Lengths: .12\", .31\", .5\". Import. Item BI807.\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "請問以下文本類別是什麼？",
+    "input": "70_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "17_Beaded bracelets set-of-five Item BG982 3 Reviews or 4 payments of $4.88 with Color:White Gold Size:One Size One Size Quantity:123456789 195 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated zinc, brass, acrylic beads. Length: 2 1/4\". Import. Item BG982.\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "90_material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Bracelet"
+},
+{
+    "instruction": "請問以下文本類別為何？",
+    "input": "136_Interlocking drop earrings Item BI776 2 Reviews or 4 payments of $3.63 with Color:Black Size:One Size One Size Quantity:123456789 222 people looked at this item in the last day Add to Bag Find in Store Size & Fit Overall Fit Based on user reviews Product Details Gold-plated recycled zinc, poly, acrylic, titanium posts. This style is made with recycled materials. Length: 51mm. Import. Item BI776. Our Fabrics, Re-imagined Sustainable This item contains a sustainable material, like organic cotton, recycled polyester, or with certifications like Fair Trade. Recycled This item contains a recycled material, such as recycled polyester or nylon. Learn More Shop All Re-imagined\n",
+    "output": "SASF-Accessory-Earrings"
+},
+{
+    "instruction": "分類下列文本。",
+    "input": "76_olaolaola\n",
+    "output": "Scrap"
+},
+{
+    "instruction": "請問以下文本屬於哪個類別？",
+    "input": "154_Open-circle resin earrings Item BI783 or 4 payments of $3.63 with Color:Neon Azure Size:One Size One Size Quantity:123456789 164 people looked at this item in the last day Add to Bag Find in Store Product Details Gold-plated brass, resin, titanium posts. Length: 40mm. Import. Item BI783.\n",
+    "output": "SASF-Accessory-Earrings"
+}]

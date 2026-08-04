@@ -1,0 +1,9 @@
+.dash-tooltip .dash-table-tooltip {
+font-size: 14px;
+max-width: 1200px !important;
+min-width: 700px !important;
+}
+
+.dash-filter--case {
+display: none !important;
+}
