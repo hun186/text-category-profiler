@@ -55,3 +55,9 @@
 - 重要範圍：`PythonModule/utils/TCF_utils.py`、`DatasetConverter/DataConverter.py`、`ClassesTree/ClassesTree_utils.py`、`.codex/architecture.md`、`.codex/contracts.md`。
 - 驗證：`python -m py_compile ...`；以最小 TopicTree fixture 搭配 stubbed heavy dependencies 驗證 `LoadTree(..., TreeSourceDir=...)` 與 missing-file 錯誤。
 - 未驗證／限制：未執行完整 `TCFMain.py` 流程，因目前環境缺少 pandas/psutil 等 runtime dependency，且完整流程需真實資料與模型。
+
+### 2026-08-05 — Default in-repo topic tree data lookup
+
+- 目標：讓未傳 `--TopicTreeDir` 的主流程可自動找到使用者放在 `ClassesTree/data` 的 `TopicTree.csv` 與 `TopicTree_AK4.csv`。
+- 結果：`ClassesTree.GetTreeFilePath()` 在 legacy `../TACA` fallback 前先檢查 `ClassesTree/data`，仍保留顯式 `--TopicTreeDir` 的高優先權與失敗訊息。
+- 驗證：`python -m py_compile ...`、AST-isolated `GetTreeFilePath()` lookup 檢查、`git diff --check`。
