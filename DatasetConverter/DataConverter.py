@@ -1098,8 +1098,11 @@ def setArguments(DCkwargs):
 
 def loadLabels(args,DCkwargs=dict()):
     #讀取分類樹樹狀關係資料庫，並建立分類樹類別關係（邊）清單及分數表，並複製備份記錄到BertDatasetSubDir下。
+    TreeBaseFNList = [x.strip() for x in args.TopicTreeFiles.split(",") if x.strip()]
     tpcTree,InfoScoreTable = SetTreeFiles(
-        OutputPath = os.path.join(args.BertDatasetSubDir,"OnlyForRecord"))
+        TreeBaseFNList=TreeBaseFNList,
+        OutputPath = os.path.join(args.BertDatasetSubDir,"OnlyForRecord"),
+        TreeSourceDir=args.TopicTreeDir)
     
     #取得標籤清單。
     '''

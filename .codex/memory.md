@@ -47,3 +47,11 @@
 - 已失效的猜測、一次性 typo、無後續價值的失敗命令。
 - 尚未接受的改善靈感。
 - 秘密、個資、真實連線資料或敏感 payload。
+
+### 2026-08-05 — Topic tree boundary refactor
+
+- 目標：支援將分類 taxonomy CSV 從 legacy `../TACA` 隱含位置切出，改由本專案顯式指定來源目錄。
+- 結果：新增 `--TopicTreeDir` 與 `--TopicTreeFiles` CLI；DatasetConverter 會把參數傳給 `ClassesTree` 載入與備份 tree CSV；指定 `--TopicTreeDir` 時找不到檔案會直接失敗並提示專案邊界設定。
+- 重要範圍：`PythonModule/utils/TCF_utils.py`、`DatasetConverter/DataConverter.py`、`ClassesTree/ClassesTree_utils.py`、`.codex/architecture.md`、`.codex/contracts.md`。
+- 驗證：`python -m py_compile ...`；以最小 TopicTree fixture 搭配 stubbed heavy dependencies 驗證 `LoadTree(..., TreeSourceDir=...)` 與 missing-file 錯誤。
+- 未驗證／限制：未執行完整 `TCFMain.py` 流程，因目前環境缺少 pandas/psutil 等 runtime dependency，且完整流程需真實資料與模型。

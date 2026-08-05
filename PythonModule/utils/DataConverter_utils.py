@@ -260,6 +260,8 @@ class RANDLoader:
         return df
 
 def CheckDatasetFiles(BertDatasetSubDir="./"):
+    if BertDatasetSubDir is None:
+        raise ValueError("BertDatasetSubDir is None; dataset directory was not created or could not be found.")
     res = {}
     for setType in ["train","test","dev"]:
         FullPath = os.path.join(BertDatasetSubDir,f"{setType}.tsv")

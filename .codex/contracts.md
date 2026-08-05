@@ -12,6 +12,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | `CONTRACT-CLI-001` | CLI | Text classification flow args | `PythonModule/utils/TCF_utils.py` | `TCFMain.py`, DatasetConverter, BertScript | `ClassfierOptionParser()` | Draft / currently used |
 | `CONTRACT-FILE-001` | File handoff | Classifier dataset directory | `DatasetConverter/` | `BertScript/RunClassfier.py`, `TCFMain.py` | Stage scripts and filename checks | Draft / currently used |
+| `CONTRACT-FILE-003` | File input | Topic tree taxonomy CSV files | `ClassesTree/` / project data owner | `DatasetConverter/DataConverter.py`, tree viewers | `--TopicTreeDir`, `--TopicTreeFiles`, `ClassesTree/ClassesTree_utils.py` | Draft / currently used |
 | `CONTRACT-FILE-002` | File handoff | Prediction/result analysis artifacts | `BertScript/RunClassfier.py`, `CombineTestResult.py` | `Test_result_Vis.py`, work pool output | Stage scripts and backup filename patterns | Draft / currently used |
 | `CONTRACT-CLI-002` | CLI / external service | Elasticsearch text ingestion tool | `PythonModule/utils/ES_ingest_txt_to_es.py` | Operators / data import jobs | argparse in script | Optional / unverified in root flow |
 
@@ -31,7 +32,7 @@
 - 權威定義：`PythonModule/utils/TCF_utils.py` 的 `ClassfierOptionParser()`。
 - Producer／Owner：共用 utils parser。
 - Consumer：`TCFMain.py`、`DatasetConverter/DataConverter.py`、`BertScript/RunClassfier.py`、`BertScript/CombineTestResult.py`、`BertScript/Test_result_Vis.py` 等 stage scripts。
-- 輸入：`--train/-tr`、`--test/-ts`、`--task`、`--WorkPoolROOT/-WPRoot`、`--BertDatasetSubDir/-BertDataDir`、`--modelDir/-mdlDir`、`--FixedTestPATH/-FTPath`、WeiTech work pool 相關參數、model type 與視覺化參數等。
+- 輸入：`--train/-tr`、`--test/-ts`、`--task`、`--WorkPoolROOT/-WPRoot`、`--BertDatasetSubDir/-BertDataDir`、`--TopicTreeDir/-TopicTreeDir`、`--TopicTreeFiles/-TopicTreeFiles`、`--modelDir/-mdlDir`、`--FixedTestPATH/-FTPath`、WeiTech work pool 相關參數、model type 與視覺化參數等。
 - 輸出：argparse namespace；`args.train == False and args.test == False` 時 parser 會將 `args.test` 設為 `True`。
 - 驗證與約束：修改 parser 後需檢查所有 `convert_to_args_str(args)` consumer 與手動附加參數。
 - 錯誤／exit code／失敗語意：argparse 會處理未知／不合法參數；stage script 其他錯誤語意待確認。
@@ -83,6 +84,21 @@
 - 版本與相容性：待確認。
 - 安全與敏感資訊：不要記錄真實 ES host、credentials 或 documents。
 - 契約測試：待確認。
+
+### `CONTRACT-FILE-003` Topic tree taxonomy CSV files
+
+- 類型：File input / taxonomy metadata
+- 狀態：Draft
+- 權威定義：`PythonModule/utils/TCF_utils.py` 的 `--TopicTreeDir`、`--TopicTreeFiles`，以及 `ClassesTree/ClassesTree_utils.py` 的 `SetTreeFiles()`／`LoadTree()`。
+- Producer／Owner：分類專案的 taxonomy/data owner；TACA 可作為外部編修或視覺化工具，不應是唯一隱含位置。
+- Consumer：`DatasetConverter/DataConverter.py` 載入 labels 與 info score；`ClassesTree` viewer／analysis 工具載入 topic tree。
+- 輸入：預設檔名為 `TopicTree.csv,TopicTree_AK4.csv`；每列至少需有母節點、子節點、加入日期等三欄，程式使用前兩欄作為 edge。
+- 邊界規則：主流程應優先傳入 `--TopicTreeDir <dir>`，讓 taxonomy CSV 位於本 repo 或明確資料掛載區；未傳入時仍保留 legacy `./TACA/...`、Windows Documents TACA、`../TACA/...` 搜尋以相容舊環境。
+- 輸出／備份：DatasetConverter 會將使用到的 tree CSV 複製到 dataset 的 `OnlyForRecord/`，作為當次分類結果可追溯紀錄。
+- 錯誤／失敗語意：指定 `--TopicTreeDir` 但找不到檔案時必須直接失敗並列出檢查路徑，不應靜默跳回 `../TACA`。
+- 版本與相容性：目前無 schema version；新增或移除 tree CSV 檔名需透過 `--TopicTreeFiles` 顯式傳遞並同步相關 viewer。
+- 安全與敏感資訊：taxonomy label 通常非憑證，但仍可能透露內部分類策略；提交或輸出前需確認可分享範圍。
+- 契約測試：可用最小 CSV fixture 測 `LoadTree(..., TreeSourceDir=...)`；完整流程 fixture 待建立。
 
 ## Deprecated／Migration
 

@@ -43,7 +43,8 @@ def CountDegree(edges=[],allow_multiple_edge=True):
 def SetTreeFiles(
         TreeBaseFNList = ["TopicTree.csv","TopicTree_AK4.csv"],
         OutputPath="",
-        OnlyLettersDigitsLabels=False
+        OnlyLettersDigitsLabels=False,
+        TreeSourceDir=""
         ):
     '''
     Parameters
@@ -67,54 +68,70 @@ def SetTreeFiles(
         print("There is no input BertDatasetSubDir! Abort the function SetTreeFile in ClassesTree_utils.")
         return
     #讀取分類樹樹狀關係資料庫，並建立分類樹類別關係（邊）清單。
-    tpcTree = LoadTree(TreeBaseFNList)
+    tpcTree = LoadTree(TreeBaseFNList, TreeSourceDir=TreeSourceDir)
     #計算分數表InfoScoreTable
     InfoScoreTable = BuildInfoScoreTable(
             tpcTree = tpcTree,
             OnlyLettersDigitsLabels=OnlyLettersDigitsLabels,
             OutputPath = OutputPath)
     #複製分類樹資料庫。
-    CopyTreeFiles(TreeBaseFNList=TreeBaseFNList,desDir=OutputPath)
+    CopyTreeFiles(TreeBaseFNList=TreeBaseFNList,desDir=OutputPath,TreeSourceDir=TreeSourceDir)
     print(f"SetTreeFiles ({TreeBaseFNList},InfoScoreTable) in {OutputPath}.")
     return tpcTree,InfoScoreTable
 
     
-def GetTreeFilePath(TreeBaseFN = "TopicTree.csv"):
+def GetTreeFilePath(TreeBaseFN = "TopicTree.csv", TreeSourceDir=""):
+    if os.path.isfile(TreeBaseFN):
+        return TreeBaseFN
+
+    checked_paths = []
+    if TreeSourceDir != "":
+        src = os.path.join(TreeSourceDir, TreeBaseFN)
+        checked_paths.append(src)
+        if os.path.isfile(src):
+            return src
+        raise FileNotFoundError(
+            f"Topic tree file '{TreeBaseFN}' was not found in TopicTreeDir '{TreeSourceDir}'. "
+            f"Please copy taxonomy CSV files into this project boundary or pass the correct --TopicTreeDir. "
+            f"Checked: {checked_paths}"
+        )
+
     TACAParPaths = []
     TACAParPaths.extend(glob.glob("./"))
     TACAParPaths.extend(glob.glob("C:/Users/*/Documents/*/python codes"))
     TACAParPaths.extend(glob.glob("C:/Users/*/Documents"))
-    
-    
+
     for DirPath in TACAParPaths:
         src = os.path.join(DirPath,"TACA","DB","ZMRAND","Imported",TreeBaseFN)
+        checked_paths.append(src)
         if os.path.isfile(src):
-            TreeFile = src
-            return TreeFile
-            break
-    
-    DBTreeFile = os.path.join(
-        "C:/Users/*/Documents/TACA/DB/ZMRAND/Imported",TreeBaseFN)
-    if os.path.isfile(DBTreeFile) == True:
-        TreeFile = DBTreeFile
-    else:
-        TreeFile = os.path.join(
-            "../TACA/DB/ZMRAND/Imported",TreeBaseFN)
-    return TreeFile
+            return src
 
-def CopyTreeFiles(TreeBaseFNList,desDir):
+    fallback = os.path.join("../TACA/DB/ZMRAND/Imported",TreeBaseFN)
+    checked_paths.append(fallback)
+    if os.path.isfile(fallback):
+        return fallback
+
+    raise FileNotFoundError(
+        f"Topic tree file '{TreeBaseFN}' was not found. "
+        f"For project-boundary separation, prefer placing taxonomy CSV files in this repository "
+        f"and passing --TopicTreeDir <dir>. Legacy ../TACA fallback was checked but unavailable. "
+        f"Checked: {checked_paths}"
+    )
+
+def CopyTreeFiles(TreeBaseFNList,desDir,TreeSourceDir=""):
     for file in TreeBaseFNList:
-        des = os.path.join(desDir,file)
-        MKDIRandCopy(GetTreeFilePath(file), des)
+        des = os.path.join(desDir,os.path.basename(file))
+        MKDIRandCopy(GetTreeFilePath(file, TreeSourceDir=TreeSourceDir), des)
 
-def LoadTree(FNList, OnlyLettersDigitsLabels = False):
+def LoadTree(FNList, OnlyLettersDigitsLabels = False, TreeSourceDir=""):
     result = []
     if isinstance(FNList,str):
         FNList = [FNList]
     InfoScoreTable = dict()
     for file in FNList:
         if not os.path.isfile(file):
-            file = GetTreeFilePath(TreeBaseFN = file)
+            file = GetTreeFilePath(TreeBaseFN=file, TreeSourceDir=TreeSourceDir)
         with open(file,'rt',encoding='utf-8') as f:
             for line in f:
                 terms = line.split("#")[0].strip().split(",")

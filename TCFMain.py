@@ -18,9 +18,20 @@ import platform
 #import csv
 import time
 import json
+import subprocess
 
 #import plotly.io as pio; pio.renderers.default='notebook'
 #from zhconv import convert
+
+
+def run_stage_command(CMD, stage_name):
+    completed = subprocess.run(CMD, shell=True, check=False)
+    if completed.returncode != 0:
+        raise RuntimeError(
+            f"{stage_name} failed with exit code {completed.returncode}. "
+            f"Abort following stages. Command: {CMD}"
+        )
+    return completed
 
 import shutil
 #import GPUtil
@@ -85,7 +96,7 @@ def DataConvert(args,exeTimeDict=dict()):
     print("="*50,"\n")
     print("DataConverterCMD in TCFMain:\n",CMD)
     print("="*50,"\n")
-    os.system(CMD)
+    run_stage_command(CMD, "DataConverter")
     
     BertDatasetSubDir,outputDir = datasetDirOutputDirPickers(
         args=args,rdy_for_stage="RunClassfier").proc()
@@ -107,7 +118,7 @@ def RunClassfier(args,exeTimeDict=dict()):
     print("="*50,"\n")
     print("RunClassfierCMD in TCFMain:\n",CMD)
     print("="*50,"\n")
-    os.system(CMD)
+    run_stage_command(CMD, "RunClassfier")
     if args.train == True:
         print("Start to train model in the background.")
         exit_program()
@@ -126,7 +137,7 @@ def CombineTestResult(args,exeTimeDict=dict()):
     print("="*50,"\n")
     print("CombineTestResultCMD in TCFMain:\n",CMD)
     print("="*50,"\n")
-    os.system(CMD)
+    run_stage_command(CMD, "CombineTestResult")
 
     print("+"*50)
     print("Finished running CombineTestResult.py")
@@ -140,14 +151,14 @@ def TestResultVis(args,exeTimeDict=dict()):
     print("="*50,"\n")
     print("TestResultVisCMD in TCFMain:\n",CMD)
     print("="*50,"\n")
-    os.system(CMD)
+    run_stage_command(CMD, "Test_result_Vis")
     for arg in [(args.WeiTechFormatInputPATH,"WTFInpPath"),
                 (args.WeiTechFormatOutputPATH,"WTFOptPath"),
                 (args.WeiTechFormatSepWorkPool,"WTFSepWorkPool"),]:
         if arg[0] != "":
             CMD += f" -{arg[1]} {arg[0]}"
 
-    os.system(CMD)
+    run_stage_command(CMD, "Test_result_Vis with WeiTech options")
     if args.TRVWebHost == False:
         BertDatasetSubDir,outputDir = datasetDirOutputDirPickers(
             args=args,rdy_for_stage="Spike").proc()

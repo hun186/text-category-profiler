@@ -35,6 +35,7 @@
 - `PackageImport.py` 會把 `PythonModule` 等路徑加入 `sys.path`；修改共用 utilities 可能影響所有 stage。
 - Dataset handoff 依賴目錄命名狀態（例如 `_is_running_DataConverter`、`_rdy_for_RunClassfier`）與檔名（例如 `train.tsv`、`test.tsv`、SQLite DB）。
 - 禁止在未更新 contracts/workflows 前改名 stage handoff 檔案、目錄狀態 suffix 或主要 CLI option。
+- 分類 taxonomy CSV 是本專案的 label/tree metadata；TACA 可作為相鄰的拓撲視覺化／編修工具，但主流程應優先透過明確 `--TopicTreeDir` 讀取本專案邊界內的 CSV，避免硬依賴 `../TACA`。
 
 ## 核心資料模型與狀態
 
@@ -44,7 +45,7 @@
 | WorkPool dataset dir | stage 間 handoff 的工作目錄 | `TCFMain.py` / DatasetConverter / RunClassfier | 會被 rename、搬移、備份或清理 | `datasetDirOutputDirPickers`, `TaskConnector`, stage scripts |
 | TSV dataset | BERT classifier input | `DatasetConverter/` | 每次資料轉換產出 | `DataConverter.py`, BERT scripts |
 | SQLite dataset/result DB | 樣本、固定測試與結果合併資料 | DatasetConverter / BertScript | 中間與交付產物 | SQL queries and filenames in scripts |
-| Label/topic tree | 分類 label 與樹狀結構 | DatasetConverter / ClassesTree | input metadata and record files | `TopicAnalysis_LabelList*.txt`, `TopicTree*` |
+| Label/topic tree | 分類 label 與樹狀結構 | DatasetConverter / ClassesTree | input metadata and record files；新流程可用 `--TopicTreeDir` 將 taxonomy CSV 留在本專案邊界內，未指定時才走 legacy TACA 搜尋 | `TopicAnalysis_LabelList*.txt`, `TopicTree*` |
 
 ## 不變條件
 
