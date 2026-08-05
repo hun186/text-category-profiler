@@ -515,7 +515,6 @@ def ShowElapsedTime(start_time=None):
         print("It has been passed for {:.4f} seconds".format(elapsed_time))
         return elapsed_time
     else:
-        print("While running ShowElapsedTime, the start_time is not input!")
         return None
     
     
@@ -580,7 +579,6 @@ def UniqueList(InputList):
     return result
 def ListDiff(List1,List2):#Output:List1-List2
     s = set(List2)
-    print("List1[0:15], List2[0:15]",list(List1)[0:15], list(List1)[0:15])
     return [x for x in List1 if x not in s]
 
 def ListCap(List1,List2):#Output:List1 intersect List2
@@ -883,8 +881,7 @@ class FileHashDictBuilder:
         self.nBytes = nBytes
         self.hashalg = hashalg
     def show(self,):
-        print("="*50)
-        print("for FileHashDictBuilder, fileList[0:3]:", self.fileList[0:3])
+        print(f"FileHashDictBuilder files={len(self.fileList)}, preview={self.fileList[0:3]}")
     def run(self):
         hashDict = {}
         ndup = 0

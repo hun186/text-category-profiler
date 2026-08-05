@@ -35,8 +35,9 @@ from utils.utilities import IsVersionValid
 from utils.utilities import getLineOfMaxLen
 from utils.DB_utils import ensure_schema
 from utils.DB_utils import createIndex
-from utils.log_display import dataframe_summary
-from utils.log_display import section
+from utils.log_display import key_values
+from utils.log_display import summarize_sequence
+from utils.log_display import warning
 
 try:
     import xlsxwriter
@@ -175,7 +176,7 @@ def dfListToXLS(dfList, OutputFN="dfListToXLSOutput.xlsx", excelindex=False,
             worksheet = writer.sheets[sheet_name]  # pull worksheet object
             #worksheet.set_column('A:XFD', None, my_format)
             if AutoAdjustColWidth == True:
-                print(f"設定{sheet_name}最佳欄寬，最大寬度為{MaxColWidth}")
+                key_values("Excel column width", [("sheet", sheet_name), ("max width", MaxColWidth)], icon="·")
                 #worksheet = writer.sheets[sheet_name]  # pull worksheet object
                 for idx, col in enumerate(df):  # loop through all columns
                     #series = df[col]
@@ -230,7 +231,7 @@ def dfListToXLS(dfList, OutputFN="dfListToXLSOutput.xlsx", excelindex=False,
 def dfToTSV(df, OutputFN, tsvIndex=False,header=False, TSVTextAdapter=False):
     #df.dropna(how="all", inplace=True, axis=1)
     #df.dropna(how="any", inplace=True, axis=1)
-    nProcess = multicoreJob().ComputeNProcess()
+    nProcess = multicoreJob().ComputeNProcess(log=False)
     if TSVTextAdapter == True:
         df = multicoreJob(
             nProcess=nProcess).parallelize_dataframe(
@@ -391,7 +392,6 @@ def dfToSQL(SQLname,df,SavingDfColumns=[],
     #sqlIndexCols = [term[0] for term in list(cnx.execute(getIndex))]
     #print("sqlIndexCols",sqlIndexCols)
     for col in IndexCols:
-        print(f"in dfToSQL of df_utils, col (in IndexCols) is {col}")
         createIndex(SQLname,table=table,IndexCol=col,connection=cnx,MPLOGGER=MPLOGGER)
     #for col in UniqueIndexCols:
         #createIndex(col,connection=cnx,uniqueIndex=True,MPLOGGER=MPLOGGER)
@@ -527,11 +527,16 @@ class dfOutputer:
         self.MaxColWidth = MaxColWidth
         self.CellMaxNRow = CellMaxNRow
     def show(self):
-        print("OMFN is {}".format(self.OMFN))
+        key_values("DataFrame output job", [("output", self.OMFN)], icon="·")
     
     def run(self):
-        section("DataFrame output", detail=f"OMFN: {self.OMFN}", icon="💾")
-        dataframe_summary(self.df, label="Output preview")
+        shape = getattr(self.df, "shape", None)
+        columns = list(getattr(self.df, "columns", []))
+        key_values("💾 DataFrame output", [
+            ("output", self.OMFN),
+            ("shape", shape),
+            ("columns", summarize_sequence(columns, limit=8)),
+        ], icon="·")
         DirName = os.path.dirname(self.OMFN)
         if DirName != "":
             MKDIR(DirName)
@@ -686,17 +691,12 @@ def DictRowsListToDF(
         start_time = time.time()
     #去除空列
     rows_list = list(filter((None).__ne__, rows_list))
-    print("="*50)
-    print("finished remove empty list of Row_List")
-    ShowElapsedTime(start_time)
     random.shuffle(rows_list)
-    print("="*50)
-    print("Finished shuffling Row_List.")
-    ShowElapsedTime(start_time)    
-    print("="*50)
-    print("The first 3 of rows_list:")
-    for x in rows_list[0:3]:
-        print(str(x)+"\n")
+    key_values("Rows to DataFrame", [
+        ("rows", len(rows_list)),
+        ("shuffle", True),
+        ("elapsed seconds", f"{time.time() - start_time:.4f}"),
+    ], icon="·")
     df = pd.DataFrame(rows_list)
     if len(Cols) > 0:
         df.columns = Cols
@@ -706,17 +706,18 @@ def DictRowsListToDF(
         #如果未設定重複移除的參照行時，則所有行相等才移除重覆列。
         if RemoveDumpBasedOnCols == []:
             RemoveDumpBasedOnCols = df.columns
-        #去除重複樣本，當(Out)Label與text都相同時，則去除。    
+        #去除重複樣本，當(Out)Label與text都相同時，則去除。
         #df = df[~df.duplicated(['OutLabel','text'])]
         df = df[~df.duplicated(RemoveDumpBasedOnCols)]
-        print(f"Finished remove duplicated according to {RemoveDumpBasedOnCols}")
-        print(f"There are {len(df)-oriLen} removed.")
-        ShowElapsedTime(start_time)
-        print("df af remov dup", df)
-        print("df.columns af remov dup", df.columns)
-    
+        key_values("Duplicate rows", [
+            ("based on", list(RemoveDumpBasedOnCols)),
+            ("original rows", oriLen),
+            ("removed rows", oriLen - len(df)),
+            ("remaining rows", len(df)),
+        ], icon="·")
+
     if df.shape[0] == 0:
-        print("WARNING!! Dataframe df is empy!! ABORT!")
+        warning("DataFrame is empty; downstream dataset output will contain zero samples.")
         #raise Exception
     #移除數值流水號Index
     if RemoveOrderIndex == True:
@@ -916,7 +917,7 @@ class KaggleDatasetExtractor:
         self.header = header
         self.nrows = nrows
     def show(self):
-        print("OMFN is {}".format(self.OMFN))
+        key_values("DataFrame output job", [("output", self.OMFN)], icon="·")
     def DetectFileType(self):
         Ext = getFNExtFromFullPath(self.filename).lower()
         if Ext in ["csv","tsv"]:

@@ -49,6 +49,25 @@ class LogDisplayTests(unittest.TestCase):
         self.assertIn("--TRVPort", output)
         self.assertIn("8050", output)
 
+    def test_print_command_groups_multiple_args_on_each_line(self):
+        output = self.capture(
+            log_display.print_command,
+            "python DatasetConverter/DataConverter.py "
+            "--debugMode False --TRVPort 8050 --public False --train False "
+            "--test True --ExecutionTime 20260805195938 --WorkPoolROOT WorkPool",
+            label="DataConverter command",
+        )
+        self.assertIn("--debugMode False --TRVPort 8050", output)
+        self.assertLess(output.count("\n"), 8)
+
+
+    def test_print_once_suppresses_duplicate_messages(self):
+        key = "test-print-once-duplicate-key"
+        first = self.capture(log_display.print_once, "hello once", key=key)
+        second = self.capture(log_display.print_once, "hello once", key=key)
+        self.assertEqual(first, "hello once\n")
+        self.assertEqual(second, "")
+
     def test_dataframe_summary_accepts_dataframe_like_objects(self):
         class FrameLike:
             shape = (3, 2)

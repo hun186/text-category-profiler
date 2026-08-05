@@ -26,9 +26,21 @@ from utils.DB_utils import sqlite3Query
 from utils.log_display import info
 from utils.log_display import key_values
 from utils.log_display import print_command
+from utils.log_display import section
 from utils.log_display import stage_banner
 from utils.log_display import stage_done
+from utils.log_display import summarize_sequence
 from utils.log_display import warning
+
+
+def _display_model_command(command, log_path, background=False):
+    section("RunClassfier model command", icon="🚀")
+    key_values("Command output", [
+        ("log file", log_path),
+        ("stderr", "redirected to log"),
+        ("background", background),
+    ])
+    print_command(command, label="Model command")
 
 
 #def CopyModelRelatedFiles(BertDatasetSubDir, outputDir):
@@ -109,12 +121,13 @@ if __name__ == '__main__':
         "_rdy_for_RunClassfier","_is_running_RunClassfier")
     #NewBertDatasetSubDir += BertDatasetSubDir + "_is_running_DataConverter"
     os.rename(BertDatasetSubDir,NewBertDatasetSubDir)
-    stage_banner("RunClassfier", detail=f"WorkDir: {NewBertDatasetSubDir}")
+    stage_banner("RunClassfier")
+    key_values("RunClassfier workspace", [("WorkDir", NewBertDatasetSubDir)], icon="·")
     MES = f"RunClassfier started. WorkDir is {NewBertDatasetSubDir}."
     BertDatasetSubDir = NewBertDatasetSubDir
     #MPLOGGER = MPlogger(logSubDir=f"{BertDatasetSubDir}/logs")
     MPLOGGER_TCFMain = MPlogger(logSubDir=f"{NewBertDatasetSubDir}/logs",logFile="TCFMain.log")
-    MPLOGGER_TCFMain.logW(MES)
+    MPLOGGER_TCFMain.logW(MES, printOnScreen=False)
     #用來儲存dataset_total_.*檔案位於BertDatasetSubDir下的子目錄。
     datasetDBDir = args.datasetDataBaseSubDir
 
@@ -170,10 +183,10 @@ if __name__ == '__main__':
                 nDict[setsrc] = sqlite3Query(
                     sql3file, query = query,ListForm = True)[0]
             else:
-                print(f"sql3file does not exist, skip to query number of dataset {setsrc} and set to 0")
+                warning(f"Dataset count source missing for {setsrc}; set count to 0. ({sql3file})")
                 nDict[setsrc] = 0
         except Exception as e:
-            print(f"When query {sql3file} for the number of {setsrc}, the following error occurs:{e}\n the returned result is set as 0.")
+            warning(f"Dataset count query failed for {setsrc}; set count to 0. ({sql3file}: {e})")
             nDict[setsrc] = 0
     nDict["test"] -= nDict["fixed_test"]
     nTotalTest = nDict["test"]+nDict["fixed_test"]+nDict["Elasticsearch"]
@@ -203,7 +216,7 @@ if __name__ == '__main__':
 
     testResFile = get_testResFile_Name(
         args.ModelType,BertDatasetSubDir=BertDatasetSubDir,outputDir=outputDir)
-    key_values("Prediction output files", [("testResFile", testResFile)], icon="·")
+    key_values("Prediction output files", [("testResFile", summarize_sequence(testResFile, limit=3))], icon="·")
     #如果訓練模式關閉，且測試模式開啓，使用輸入目錄或進行智慧式選定模型目錄。
     if args.test == True:
         if args.modelDir != "":
@@ -232,7 +245,7 @@ if __name__ == '__main__':
 
         testResFile = get_testResFile_Name(
             args.ModelType,BertDatasetSubDir=BertDatasetSubDir,outputDir=outputDir)
-        key_values("Prediction output files after retry", [("testResFile", testResFile)], icon="·")
+        key_values("Prediction output files after retry", [("testResFile", summarize_sequence(testResFile, limit=3))], icon="·")
         #將模型相關標籤檔由outputDir複製到BertDatasetSubDir，續供CombineTestResult使用。
         #print("rdy to CopyModelRelatedFiles from outputDir to BertDatasetSubDir, wait for 100 secs")
         #time.sleep(100)
@@ -286,10 +299,15 @@ if __name__ == '__main__':
         #else:
             #BatCMD +=  "2>&1 | tee RunClassfier.log \n\n"
         #如果是訓練模式，因枆時甚長，無需計算各階段時間，則採背景作業。
-        BatCMD +=  f"> {BertDatasetSubDir}/logs/RunClassfier.log 2>&1 & \n\n" if args.train == True else f"> {BertDatasetSubDir}/logs/RunClassfier.log \n\n"
+        run_log = os.path.join(BertDatasetSubDir, "logs", "RunClassfier.log")
+        BatCMD += f'> "{run_log}" 2>&1'
+        if args.train == True:
+            BatCMD += " &"
+        BatCMD += " \n\n"
         open(BatFile,'wt',encoding='utf-8').write(BatCMD)
-        MES = "\n {}\n BatCMD:\n{}\n".format("="*50, BatCMD)
-        MPLOGGER_TCFMain.logW(MES,logFile="TCFMain.log")
+        MES = f"RunClassfier command is written to {run_log}"
+        MPLOGGER_TCFMain.logW(MES, logFile="TCFMain.log", printOnScreen=False)
+        _display_model_command(BatCMD, run_log, background=args.train == True)
         ClearOldTestResFile(BertDatasetSubDir=BertDatasetSubDir,outputDir=outputDir,testResFile=testResFile)
 
 
@@ -314,26 +332,26 @@ if __name__ == '__main__':
             BatCMD += " -ts True"
         BatCMD += f" -mdlDir {outputDir} -BertDataDir {BertDatasetSubDir} -mdlType {args.ModelType} -ZeroShot {args.ActiveHTCZeroshot} "
         #BatCMD += "> RunClassfier.log 2>&1 & \n\n" #背景作業
-        BatCMD += f"> {BertDatasetSubDir}/logs/RunClassfier.log "
+        run_log = os.path.join(BertDatasetSubDir, "logs", "RunClassfier.log")
+        BatCMD += f'> "{run_log}" 2>&1'
         #如果是訓練模式，因枆時甚長，無需計算各階段時間，則採背景作業。
         if args.train == True:
-            BatCMD += "2>&1 &"
+            BatCMD += " &"
         BatCMD += " \n\n"
-        MES = "\n {}\n BatCMD:\n{}\n".format("="*50, BatCMD)
-        MPLOGGER_TCFMain.logW(MES,logFile="TCFMain.log")
+        MES = f"RunClassfier command is written to {run_log}"
+        MPLOGGER_TCFMain.logW(MES, logFile="TCFMain.log", printOnScreen=False)
+        _display_model_command(BatCMD, run_log, background=args.train == True)
         ClearOldTestResFile(BertDatasetSubDir=BertDatasetSubDir,outputDir=outputDir,testResFile=testResFile)
         try:
-            print("-"*50,"\n")
-            print(f"Check {os.path.join(BertDatasetSubDir,'logs','RunClassfier.log')} for logs of RunClassfier.py")
             os.system(BatCMD)
         except Exception as e:
-            print(e)
+            warning(f"RunClassfier command failed: {e}")
         #raise Exception
         #if TestAfterConvert == True:
             #os.system(f"python TextClassification_XLM_Pred.py -mdlDir {outputDir}")
         WatchedTimeBound = 6000
 
-    print("RC Line 262, testResFile",testResFile)
+    key_values("Prediction result files", [("testResFile", summarize_sequence(testResFile, limit=3))])
 
     #WatchedTimeBound = 6000
     #如果是TF15Bert，將預測完的輸出結果移至資料集目錄。
@@ -376,7 +394,8 @@ if __name__ == '__main__':
             time.sleep(2)
         stage_done("RunClassfier")
         MES = f"RunClassfier is finished. Rename {BertDatasetSubDir} as {NewBertDatasetSubDir}"
+        key_values("RunClassfier handoff", [("from", BertDatasetSubDir), ("to", NewBertDatasetSubDir)])
     MPLOGGER_TCFMain = MPlogger(logSubDir=f"{NewBertDatasetSubDir}/logs",logFile="TCFMain.log")
-    MPLOGGER_TCFMain.logW(MES)
+    MPLOGGER_TCFMain.logW(MES, printOnScreen=False)
     #print("finish runngi RunCF, wait for 100 secs")
     #time.sleep(100)
