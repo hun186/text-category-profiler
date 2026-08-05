@@ -28,6 +28,22 @@
 - 驗證：`python -m py_compile BertScript/TextClassification_transformers.py`、`git diff --check`。
 - 未驗證／限制：未執行完整訓練流程，因需模型、依賴與工作池資料；py_compile 顯示既有 regex escape SyntaxWarning。
 
+
+### 2026-08-05 — PytorchMMBERT model type and configurable transformer max length
+
+- 目標：讓 Hugging Face transformer 分類流程可用本機 `mmBERT-base` 作為新 base model，並把 tokenizer truncation 長度抽成參數但維持預設 `180`。
+- 結果：新增 `PytorchMMBERT` 對應 `mmBERT-base`，同步 PyTorch checkpoint/result path 分支、RunClassfier 指令傳遞與 DataConverter tokenizer fallback；新增 `-MaxSeqLen/--MaxSeqLength`。
+- 驗證：`python -m unittest discover -s tests`、`python -m py_compile PythonModule/utils/TCF_utils.py BertScript/TextClassification_transformers.py DatasetConverter/sampleHandler.py DatasetConverter/DataConverter.py BertScript/RunClassfier.py`、`git diff --check`。
+- 未驗證／限制：未執行完整 mmBERT 訓練，因需本機模型、依賴、GPU 與工作池資料。
+
+
+### 2026-08-05 — DataConverter max length logging and elapsed timer fallback
+
+- 目標：修正 FixedTest conversion 呼叫未傳 `start_time` 時的 elapsed time TypeError，並在轉換階段顯示 `MaxSeqLength`。
+- 結果：`BuildSamplesDfFromPaths` 會在 `start_time is None` 時自行初始化時間；設定摘要與 tokenizer model directory log 都會顯示 `MaxSeqLength`。
+- 驗證：`python -m unittest discover -s tests`、`python -m py_compile DatasetConverter/DataConverter.py PythonModule/utils/log_display.py`、`git diff --check`。
+- 未驗證／限制：容器缺少 `numpy`，無法用 runtime snippet 匯入 `utils.TCF_utils` 驗證 argparse 實際輸出；未執行完整 DataConverter，因會讀寫工作池資料。
+
 ## Open Handoffs
 
 - 需要使用者確認可安全執行的最小 fixture 與依賴安裝方式後，才能把 workflows 中的 smoke test 從待確認改成 canonical command。

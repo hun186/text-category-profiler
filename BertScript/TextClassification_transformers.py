@@ -32,25 +32,28 @@ from utils.MP_utils import MPlogger
 from utils.MP_utils import multicoreJob
 from utils.TCF_utils import ClassfierOptionParser
 from utils.TCF_utils import datasetDirOutputDirPickers
+from utils.TCF_utils import get_base_model_checkpoint
 from utils.DB_utils import sqlite3Query
 from utils.TextClassfier_utils import getTopicLabelList
 
 
 class classifierJob:
     def __init__(self,testSet,finetuned_checkpoint,
-                 device=0,batch_size=8,return_all_scores=False):
+                 device=0,batch_size=8,return_all_scores=False,
+                 max_length=180):
         self.testSet = testSet
         self.finetuned_checkpoint = finetuned_checkpoint
         self.device = device
         self.batch_size = batch_size
         self.return_all_scores = return_all_scores
+        self.max_length = max_length
     def show(self):
         print(f"The length of testSet is {len(self.testSet)}")
     def proc(self):
         classifier = pipeline("text-classification", 
                               model=self.finetuned_checkpoint,
                               tokenizer=self.finetuned_checkpoint, 
-                              truncation=True,max_length=180, 
+                              truncation=True,max_length=self.max_length,
                               device=self.device,
                               batch_size=self.batch_size,
                               return_all_scores=self.return_all_scores
@@ -111,7 +114,7 @@ def LoadSamples(
     return samples
 
 def tokenize_text(text):
-    return tokenizer(text, truncation=True, max_length=180)
+    return tokenizer(text, truncation=True, max_length=args.MaxSeqLength)
 
 def compute_metrics(pred):
     labels = pred.label_ids
@@ -164,7 +167,7 @@ def trainModel():
     #batch_size = 6
     #print("batch_size",batch_size)
     num_labels = len(label_names)
-    model = AutoModelForSequenceClassification.from_pretrained(model_checkpoint, num_labels=num_labels, label2id=label2id, id2label=id2label)
+    model = AutoModelForSequenceClassification.from_pretrained(model_checkpoint, num_labels=num_labels, label2id=label2id, id2label=id2label, trust_remote_code=True)
     model_name = model_checkpoint.split("/")[-1]
         
     num_train_epochs = 3
@@ -265,7 +268,8 @@ def PredictSamples(ActiveHTCZeroshot=False):
         finetuned_checkpoint=finetuned_checkpoint,
         device = device,
         batch_size = batch_size,
-        return_all_scores=return_all_scores
+        return_all_scores=return_all_scores,
+        max_length=args.MaxSeqLength
         ) for testSetCK in SplitList(testSet, nChunks=nProcess)]
     #如果開啓平行化執行classifierJob，但未關閉ShuffleJobs，
     #輸出切片分類結果會因不明原因順序錯亂。
@@ -331,10 +335,7 @@ if __name__=='__main__':
     args = ClassfierOptionParser()
     
     #model_checkpoint = "./xlm-roberta-base"
-    if args.ModelType == "PytorchXLM":
-        model_checkpoint = "xlm-roberta-base"
-    elif args.ModelType == "PytorchRBTL3":
-        model_checkpoint = "chinese_rbtl3_L-3_H-1024_A-16_Pytorch"
+    model_checkpoint = get_base_model_checkpoint(args.ModelType)
         
     for model_ckptDir in ["./","./BertScript/"]:
         #for model_checkpoint in ["./xlm-roberta-base","./BertScript/xlm-roberta-base"]:
@@ -342,7 +343,7 @@ if __name__=='__main__':
         print("="*50)
         print("model_ckptPath",model_ckptPath)
         try:
-            tokenizer = AutoTokenizer.from_pretrained(model_ckptPath)
+            tokenizer = AutoTokenizer.from_pretrained(model_ckptPath, trust_remote_code=True)
             #如果成功載入tokenizer的話，回存取獲的完整模型正確路徑到model_checkpoint。
             model_checkpoint = model_ckptPath
             print("final model_checkpoint",model_checkpoint)
