@@ -96,6 +96,16 @@ def GetTreeFilePath(TreeBaseFN = "TopicTree.csv", TreeSourceDir=""):
             f"Checked: {checked_paths}"
         )
 
+    default_source_dirs = [
+        os.path.join(os.path.dirname(__file__), "data"),
+        os.path.join("ClassesTree", "data"),
+    ]
+    for DirPath in default_source_dirs:
+        src = os.path.join(DirPath, TreeBaseFN)
+        checked_paths.append(src)
+        if os.path.isfile(src):
+            return src
+
     TACAParPaths = []
     TACAParPaths.extend(glob.glob("./"))
     TACAParPaths.extend(glob.glob("C:/Users/*/Documents/*/python codes"))
