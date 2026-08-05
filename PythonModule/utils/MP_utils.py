@@ -113,7 +113,7 @@ class MPlogger:
         if logSubDir == None:
             logSubDir = self.logSubDir
         logFile = os.path.join(logSubDir,logFile)
-        MKDIR(logSubDir)
+        MKDIR(os.path.dirname(logFile))
         if os.path.isfile(logFile):
             try:
                 if Path(logFile).stat().st_size > 1024*1024*300:
