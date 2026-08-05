@@ -92,8 +92,8 @@ sampleMethod = {
 #FixedTestFileBound = 6000
 #InforScoreSumLowerBound = -999999999
 
-DataAugmentationGoal = 200
-#DataAugmentationGoal = 0
+#DataAugmentationGoal = 200
+DataAugmentationGoal = 3
 RemoveDumpSamples = True
 RemoveDumpArticle_FT = False
 #if RemoveDumpArticle_FT == False:
