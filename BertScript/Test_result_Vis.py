@@ -65,6 +65,12 @@ from utils.df_utils import compare_dfs
 from utils.MP_utils import multicoreJob
 from utils.MP_utils import MPlogger
 from utils.MP_utils import CommandExecutor
+from utils.log_display import info
+from utils.log_display import key_values
+from utils.log_display import section
+from utils.log_display import stage_banner
+from utils.log_display import stage_done
+from utils.log_display import summarize_sequence
 from utils.utilities import timeNow
 from utils.utilities import OSWALK
 from utils.utilities import MKDIR
@@ -3472,8 +3478,8 @@ if __name__=='__main__':
         "_rdy_for_TestResultVis","_is_running_TestResultVis")
     #NewBertDatasetSubDir += BertDatasetSubDir + "_is_running_DataConverter"
     os.rename(BertDatasetSubDir,NewBertDatasetSubDir)    
-    MES = "-"*50+"\n"
-    MES += f"TestResultVis started. WorkDir is {NewBertDatasetSubDir}."
+    stage_banner("TestResultVis", detail=f"WorkDir: {NewBertDatasetSubDir}")
+    MES = f"TestResultVis started. WorkDir is {NewBertDatasetSubDir}."
     BertDatasetSubDir = NewBertDatasetSubDir
     MPLOGGER = MPlogger(logSubDir=f"{BertDatasetSubDir}/logs")
     MPLOGGER.logW(MES)
@@ -3677,13 +3683,13 @@ if __name__=='__main__':
     elif os.path.isfile("BertScript/證券報告.xlsx"):
         InputXLS = "BertScript/證券報告.xlsx"
     ColPosDict = {'TaskNO':0,'Mission':2,'Expiry Date':4,'Topics':6,'Key Word':7}
-    print("Start to load MissionDataArray")
+    section("Load mission settings", icon="🎯")
     MissionDataArray = LoadMissionData(
         #InputXLS="訂飲料.xlsx",
         InputXLS=InputXLS,
         skiprows = [0],index_col = None,header=0,
         ColPosDict=ColPosDict)
-    print("Finished to load MissionDataArray")
+    key_values("Mission settings", [("missions", len(MissionDataArray))], icon="·")
     #MissionDataArray [{'TaskNO':'R3', 'Mission': '研析中國現有經濟政策對工業產業發展影響。', 'Expiry Date': 20220123, 'Key Word': '中國經濟', 'Topics': "['CN Economics']"}]
     for mission in MissionDataArray:
         try:
@@ -3714,8 +3720,7 @@ if __name__=='__main__':
         
         
     #print("MissionDataArray",MissionDataArray)
-    print("BinMissionDict",BinMissionDict)
-    print("BinMissionDict.keys()",BinMissionDict.keys())
+    key_values("Active mission bins", [("count", len(BinMissionDict)), ("keys", summarize_sequence(BinMissionDict.keys(), limit=12))], icon="·")
     #raise Exception
     
     KeyWordDataArray = [{"Key Word":"一路"},]
@@ -4043,8 +4048,8 @@ if __name__=='__main__':
     NewBertDatasetSubDir = BertDatasetSubDir.replace(
         "_is_running_TestResultVis","_rdy_for_Spike")
     os.rename(BertDatasetSubDir,NewBertDatasetSubDir)    
-    MES = "-"*50+"\n"
-    MES += f"TestResultVis is finished. Rename {BertDatasetSubDir} as {NewBertDatasetSubDir}"
+    stage_done("TestResultVis")
+    MES = f"TestResultVis is finished. Rename {BertDatasetSubDir} as {NewBertDatasetSubDir}"
     MPLOGGER = MPlogger(logSubDir=f"{NewBertDatasetSubDir}/logs")
     MPLOGGER.logW(MES)
     #os.system("pause")

@@ -23,6 +23,12 @@ from utils.conformer import HybridConformer
 from utils.utilities import WaitUntilFileIsStable
 from utils.MP_utils import MPlogger
 from utils.DB_utils import sqlite3Query
+from utils.log_display import info
+from utils.log_display import key_values
+from utils.log_display import print_command
+from utils.log_display import stage_banner
+from utils.log_display import stage_done
+from utils.log_display import warning
 
 
 #def CopyModelRelatedFiles(BertDatasetSubDir, outputDir):
@@ -49,7 +55,7 @@ def CopyModelRelatedFiles(
         #或test時，反向copy等兩種可能，為了避免錯誤覆蓋，如果檔案存在則不copy
         #TopicAnalysis_LabelList for CombineTestResult
         for file in [
-                "TopicAnalysis_LabelList.txt", 
+                "TopicAnalysis_LabelList.txt",
                 #"TopicAnalysis_LabelList_Including_NonOccuring.txt",
                 ]:
             src = os.path.join(srcDir,file)
@@ -85,35 +91,33 @@ def CopyModelRelatedFiles(
 
 if __name__ == '__main__':
     setproctitle.setproctitle(f'CZJRunClassfier')
-    print("="*50)
     #print("start to run RunCF, wait for 100 secs")
     #time.sleep(100)
     #print(os.getcwd().split(os.path.sep)[-1])
     if os.getcwd().split(os.path.sep)[-1] in [
             "DatasetConverter","BertScript"]:
         os.chdir("../")
-        print(f"Change working directory to {os.getcwd()}")
+        info(f"Change working directory to {os.getcwd()}", icon="📁")
     args = ClassfierOptionParser()
     BertDatasetSubDir,outputDir = datasetDirOutputDirPickers(
         args=args,rdy_for_stage="RunClassfier").proc()
     if BertDatasetSubDir == None:
-        MES = "-"*50+"\n"
-        MES += f"In {args.WorkPoolROOT}, There is no BertDatasetSubDir ready for RunClassfier! ABORT!"
+        MES = f"In {args.WorkPoolROOT}, There is no BertDatasetSubDir ready for RunClassfier! ABORT!"
         MPlogger().logW(MES)
         raise Exception
     NewBertDatasetSubDir = BertDatasetSubDir.replace(
         "_rdy_for_RunClassfier","_is_running_RunClassfier")
     #NewBertDatasetSubDir += BertDatasetSubDir + "_is_running_DataConverter"
-    os.rename(BertDatasetSubDir,NewBertDatasetSubDir)    
-    MES = "-"*50+"\n"
-    MES += f"RunClassfier started. WorkDir is {NewBertDatasetSubDir}."
+    os.rename(BertDatasetSubDir,NewBertDatasetSubDir)
+    stage_banner("RunClassfier", detail=f"WorkDir: {NewBertDatasetSubDir}")
+    MES = f"RunClassfier started. WorkDir is {NewBertDatasetSubDir}."
     BertDatasetSubDir = NewBertDatasetSubDir
     #MPLOGGER = MPlogger(logSubDir=f"{BertDatasetSubDir}/logs")
     MPLOGGER_TCFMain = MPlogger(logSubDir=f"{NewBertDatasetSubDir}/logs",logFile="TCFMain.log")
     MPLOGGER_TCFMain.logW(MES)
     #用來儲存dataset_total_.*檔案位於BertDatasetSubDir下的子目錄。
     datasetDBDir = args.datasetDataBaseSubDir
-    
+
 #%%檢查AI運算資源
     #如果有GPU的話，確認是否有足夠的free GPU memory，如果沒有的話，
     #進入監看狀態，等有足夠free VRAM，再進行AI推論。
@@ -130,7 +134,7 @@ if __name__ == '__main__':
         #BertDatasetSubDir = os.path.join(
             #BertClassfierPath,f"dataset_{execTime}_{args.ModelType}_pt{args.TRVPort}")
         BertDatasetSubDir = datasetSubDir
-    
+
     if args.BertDatasetSubDirExt != "":
         BertDatasetSubDir += "_"+args.BertDatasetSubDirExt
 
@@ -176,8 +180,8 @@ if __name__ == '__main__':
     #print("finish query nDict, wait for 100 secs")
     #time.sleep(100)
     #nTotalTest = 16
-    
-    
+
+
     #os.chdir(BertClassfierPath)
     if args.train == True:
         OccuringLabelList = WriteOccurringLabelList(BertDatasetSubDir)
@@ -185,12 +189,12 @@ if __name__ == '__main__':
             MES = f"{'-'*50}\n These is only one occuring label {OccuringLabelList} for the training set! This will result RuntimeError: Found dtype Long but expected Float! ABORT! Check your training set."
             MPLOGGER_TCFMain.logW(MES)
             raise Exception
-                    
-        
+
+
         outputDir = f"{BertClassfierPath}/output_{args.ExecutionTime}_{args.ModelType}"
         MKDIR(outputDir)
         #BatCMD += ("--init_checkpoint=./chinese_rbtl3_L-3_H-1024_A-16/bert_model.ckpt"+LineBreaker)
-        
+
         #將模型相關標籤檔由BertDatasetSubDir複製到outputDir
         CopyModelRelatedFiles(
             #BertDatasetSubDir=BertDatasetSubDir,outputDir=outputDir)
@@ -199,7 +203,7 @@ if __name__ == '__main__':
 
     testResFile = get_testResFile_Name(
         args.ModelType,BertDatasetSubDir=BertDatasetSubDir,outputDir=outputDir)
-    print("after get test,testResFile",testResFile)    
+    key_values("Prediction output files", [("testResFile", testResFile)], icon="·")
     #如果訓練模式關閉，且測試模式開啓，使用輸入目錄或進行智慧式選定模型目錄。
     if args.test == True:
         if args.modelDir != "":
@@ -214,7 +218,7 @@ if __name__ == '__main__':
                 #modelType = args.ModelType,
                 testResFile=testResFile).proc()
 
-   
+
 
         #print("outputDir",outputDir)
         #print("BertDatasetSubDir",BertDatasetSubDir)
@@ -228,7 +232,7 @@ if __name__ == '__main__':
 
         testResFile = get_testResFile_Name(
             args.ModelType,BertDatasetSubDir=BertDatasetSubDir,outputDir=outputDir)
-        print("after retry get test,testResFile",testResFile)
+        key_values("Prediction output files after retry", [("testResFile", testResFile)], icon="·")
         #將模型相關標籤檔由outputDir複製到BertDatasetSubDir，續供CombineTestResult使用。
         #print("rdy to CopyModelRelatedFiles from outputDir to BertDatasetSubDir, wait for 100 secs")
         #time.sleep(100)
@@ -236,19 +240,19 @@ if __name__ == '__main__':
             srcDir=outputDir,desDir=BertDatasetSubDir,onlyLabelFile=True)
         #print("finished CopyModelRelatedFiles from outputDir to BertDatasetSubDir, wait for 100 secs")
         #time.sleep(100)
-        
+
 
     #使用TF1.5 Bert模型(roberta)
     if args.ModelType == "TF15Bert":
         WindowsAnacondaPath = 'd:/ProgramData/Anaconda3'
         WindowsAnacondaPromptCMD = os.path.join(
             WindowsAnacondaPath,'Scripts/activate.bat')
-        
+
         if "windows" in platform.system().lower():
             LineBreaker = " ^\n"
         else:
             LineBreaker = " \\\n"
-            
+
         BatFile = os.path.join(
             BertClassfierPath, "run_classifier_script_automatic_dynamic.bat")
         BatFileTemplateFile = os.path.join(
@@ -259,12 +263,12 @@ if __name__ == '__main__':
             BatCMD = "call activate TF1.5\n\n" + BatCMD
         else:
             BatCMD = BatCMD.replace("^\n","\\\n")
-    
+
         if args.train == True:
             BatCMD += ("--do_train=True"+LineBreaker)
             #BatCMD += "--output_dir={} {}".format(
                 #f"./output_{execTime}/", LineBreaker)
-            
+
         else:
             #BatCMD = BatCMD.replace("--do_train=True", "--do_train=False")
             BatCMD += ("--do_train=False"+LineBreaker)
@@ -276,7 +280,7 @@ if __name__ == '__main__':
         BatCMD += (f"--keep_checkpoint_max={args.keep_checkpoint_max}"+LineBreaker)
         BatCMD += "--data_dir={} {}".format(
             f"{BertDatasetSubDir}/", LineBreaker)
-    
+
         #if "windows" in platform.system().lower():
             #BatCMD +=  "> RunClassfier.log 2>&1 & \n\n"
         #else:
@@ -297,7 +301,7 @@ if __name__ == '__main__':
             BatFile = "."+os.path.sep+BatFile
         os.system(BatFile)
         #假設每秒至少推論60個樣本，且至少設為20秒給推論。
-        #runclassifier.py的write example速度則假設每秒至少600個        
+        #runclassifier.py的write example速度則假設每秒至少600個
         WatchedTimeBound = max(nTotalTest//60,20)+(nTotalTest)//500
 
 
@@ -328,7 +332,7 @@ if __name__ == '__main__':
         #if TestAfterConvert == True:
             #os.system(f"python TextClassification_XLM_Pred.py -mdlDir {outputDir}")
         WatchedTimeBound = 6000
-    
+
     print("RC Line 262, testResFile",testResFile)
 
     #WatchedTimeBound = 6000
@@ -348,7 +352,7 @@ if __name__ == '__main__':
                 des = os.path.join(
                     BertDatasetSubDir, getFNFromFullPath(filename))
                 shutil.move(filename,des)
-        
+
 
         #還原使用的output模型目錄名稱，以釋放此目錄使用權。
         if args.ModelType in ["TF15Bert"]:
@@ -370,8 +374,8 @@ if __name__ == '__main__':
             os.rename(BertDatasetSubDir,NewBertDatasetSubDir)
             nTryRename += 1
             time.sleep(2)
-        MES = "-"*50+"\n"
-        MES += f"RunClassfier is finished. Rename {BertDatasetSubDir} as {NewBertDatasetSubDir}"
+        stage_done("RunClassfier")
+        MES = f"RunClassfier is finished. Rename {BertDatasetSubDir} as {NewBertDatasetSubDir}"
     MPLOGGER_TCFMain = MPlogger(logSubDir=f"{NewBertDatasetSubDir}/logs",logFile="TCFMain.log")
     MPLOGGER_TCFMain.logW(MES)
     #print("finish runngi RunCF, wait for 100 secs")

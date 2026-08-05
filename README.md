@@ -6,15 +6,25 @@
 
 - 階段：待確認；目前程式與樣本顯示為內部資料處理與模型實驗工作區。
 - 已具備：資料集轉換、BERTScript 分類流程、分類結果合併、Dash/Plotly 視覺化相關腳本、Class tree 工具與共用 Python utilities。
-- 主要限制：根目錄沒有已確認的 package manifest、lockfile 或 CI；模型、資料集、工作池與部分外部路徑需由使用者提供。
+- 主要限制：根目錄已提供 `requirements.txt` 與輕量測試，但尚無 lockfile 或 CI；模型、資料集、工作池與部分外部路徑需由使用者提供。
 
 ## 快速開始
 
 ### 前置需求
 
-- Python runtime：版本待確認；程式使用 Python 腳本與 `argparse`，並在 `BertScript/requirements.txt` 宣告 TensorFlow `>= 1.11.0`。
-- 依賴安裝：待確認；根目錄沒有已確認的 requirements／lockfile。
-- 本機資料與模型：多數流程依賴 `WorkPool`、資料集目錄、模型目錄或固定測試資料路徑。
+- Python runtime：建議 Python 3.8+；多程序工具會依 Python 版本載入對應 `istarmap` patch。
+- 依賴安裝：根目錄提供 `requirements.txt` 作為目前已盤點的共用 runtime/test 需求；GPU/CUDA 相關套件仍需依主機調整。
+- 本機資料與模型：多數完整流程依賴 `WorkPool`、資料集目錄、模型目錄或固定測試資料路徑。
+
+### 安裝
+
+建議先建立虛擬環境，再安裝根目錄需求：
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+> 注意：`tensorflow`、`torch`、`bitsandbytes` 等 ML 套件可能需要依作業系統、Python 版本、CUDA/GPU 驅動改用主機相容版本；若只執行文件或輕量功能測試，不一定需要完整模型 runtime。
 
 ### 執行
 
@@ -28,7 +38,19 @@ python TCFMain.py --WeiTechworkIDPath <path-to-work-id-root> --WeiTechWorkPoolPA
 
 ### 驗證
 
-目前沒有已確認的自動化測試命令。對純文件變更，最小檢查為確認 Markdown 與專案記憶文件一致；對程式變更，需先查證相關腳本能否在目前資料與依賴環境中安全執行。
+目前已提供不依賴資料集、模型或 GPU 的輕量功能測試，優先用來保護 console display helper 與 repository 說明檔的基本契約：
+
+```bash
+python -m unittest discover -s tests
+```
+
+程式語法檢查可針對修改過的模組執行：
+
+```bash
+python -m py_compile <changed-python-files>
+```
+
+完整 `python TCFMain.py ...` 流程仍需本機資料、模型與工作池，會讀寫產物；未確認測試 fixture 前不要當作無副作用驗證。
 
 ## Repository 結構
 
@@ -40,6 +62,7 @@ python TCFMain.py --WeiTechworkIDPath <path-to-work-id-root> --WeiTechWorkPoolPA
 | `BertScript/` | BERT／XLM 分類、訓練／推論、結果合併與 Dash/Plotly 視覺化腳本；包含部分第三方 BERT/Dash 範例內容。 |
 | `ClassesTree/` | 類別樹、標籤工具與視覺化實驗。 |
 | `PythonModule/utils/` | 共用工具函式，透過 `PackageImport.py` 加入 `sys.path` 後供其他模組匯入。 |
+| `tests/` | 輕量功能測試；避免依賴資料集、模型、GPU 或工作池副作用。 |
 | `TCF_Params/` | 流程預設參數與入口設定。 |
 | `.codex/` | Codex 專案記憶、工作流、架構、契約與初始化狀態文件。 |
 
@@ -61,5 +84,5 @@ python TCFMain.py --WeiTechworkIDPath <path-to-work-id-root> --WeiTechWorkPoolPA
 ## 已知限制
 
 - 根 README 先前描述 FastAPI／Elasticsearch RAG 代理人，但目前根目錄盤點未找到對應 `api/`、`agent/`、FastAPI manifest 或 RAG runtime；本 README 已改為反映目前可由程式碼查證的文字分類工作區。
-- 根目錄沒有已確認的安裝、lint、type check、build 或 test 命令。
+- 根目錄已有 `requirements.txt` 與輕量 `unittest` 測試；但完整依賴版本仍需在目標主機依 Python/CUDA/模型條件確認。
 - 多數 runnable 腳本可能讀寫本機資料、工作池或模型產物；未確認資料邊界前不要當作無副作用測試執行。

@@ -27,6 +27,7 @@ import subprocess
 def run_stage_command(CMD, stage_name):
     completed = subprocess.run(CMD, shell=True, check=False)
     if completed.returncode != 0:
+        stage_failed(stage_name, completed.returncode, CMD)
         raise RuntimeError(
             f"{stage_name} failed with exit code {completed.returncode}. "
             f"Abort following stages. Command: {CMD}"
@@ -57,6 +58,13 @@ from utils.MP_utils import MPlogger
 from utils.utilities import ShowElapsedTime
 from utils.utilities import exit_program
 from utils.utilities import chownPath
+from utils.log_display import info
+from utils.log_display import print_args_summary
+from utils.log_display import print_command
+from utils.log_display import stage_banner
+from utils.log_display import stage_done
+from utils.log_display import stage_failed
+from utils.log_display import warning
 
 #from utils.Tika_pdf_to_txt import ExtractTxt
 
@@ -67,7 +75,8 @@ os.environ['PATH']=os.environ['PATH'].replace(";.;",r";\.;")
 
 def DataConvert(args,exeTimeDict=dict()):
     stage_start_time = time.time()
-    print(args)
+    stage_banner("DataConverter", detail="整理輸入資料並產生 train/dev/test handoff 檔案")
+    print_args_summary(args)
     #如果有設定WeiTechworkIDPath和WeiTechWorkPoolPATH，則抓取workID，
     #並續於DataConverter將該workID相關dataset_total_with_filename_FixedTest.sql3和test3.sql3拷貝到WorkPool
     #print("start to find WeiTechworkIDPath")
@@ -77,7 +86,7 @@ def DataConvert(args,exeTimeDict=dict()):
         workIDList.sort()
         workIDList.reverse()
         if len(workIDList) == 0:
-            print(f"WeiTechworkIDPath is set as {args.WeiTechworkIDPath}, but there is no WTwork To Run. Abort!")
+            warning(f"WeiTechworkIDPath is set as {args.WeiTechworkIDPath}, but there is no WTwork To Run. Abort!")
             raise Exception
         for workID in workIDList:
             if workID in os.listdir(args.WeiTechWorkPoolPATH):
@@ -88,14 +97,12 @@ def DataConvert(args,exeTimeDict=dict()):
                 shutil.move(Src,Des)
                 break
         MES = f"Found workID {args.WeiTechworkID} in {args.WeiTechworkIDPath}, we will start to apply this task."
-        print(MES)
+        info(MES, icon="📌")
     
     CMD = "python DatasetConverter/DataConverter.py"
     CMD += convert_to_args_str(args)
     ShowElapsedTime(exeTimeDict["start"])
-    print("="*50,"\n")
-    print("DataConverterCMD in TCFMain:\n",CMD)
-    print("="*50,"\n")
+    print_command(CMD, label="DataConverter command")
     run_stage_command(CMD, "DataConverter")
     
     BertDatasetSubDir,outputDir = datasetDirOutputDirPickers(
@@ -103,54 +110,51 @@ def DataConvert(args,exeTimeDict=dict()):
     #檢查train.tsv、test.tsv、dev.tsv狀態，如果都沒有的話，有可能代表無資料成功轉換，中止程式。
     #print("In DCStage, BertDatasetSubDir",BertDatasetSubDir)
     if any(CheckDatasetFiles(BertDatasetSubDir).values()) == False:
-        MES = "There is no train.tsv,dev.tsv,test.tsv found in {BertDatasetSubDir}. It might be something wrong."
-        print(MES)
+        MES = f"There is no train.tsv,dev.tsv,test.tsv found in {BertDatasetSubDir}. It might be something wrong."
+        warning(MES)
         raise Exception
     exeTimeDict["DataConverter"] = f"{time.time()-stage_start_time:.2f}"
+    stage_done("DataConverter", time.time()-stage_start_time)
 
 def RunClassfier(args,exeTimeDict=dict()):
     stage_start_time = time.time()
-    print(args)
+    stage_banner("RunClassfier", detail="執行模型訓練或推論")
+    print_args_summary(args)
     CMD = f"python {BertClassfierPath}/RunClassfier.py"
     CMD += convert_to_args_str(args)
     #stage_start_time = time.time()
     ShowElapsedTime(exeTimeDict["start"])
-    print("="*50,"\n")
-    print("RunClassfierCMD in TCFMain:\n",CMD)
-    print("="*50,"\n")
+    print_command(CMD, label="RunClassfier command")
     run_stage_command(CMD, "RunClassfier")
     if args.train == True:
-        print("Start to train model in the background.")
+        info("Start to train model in the background.", icon="🚀")
         exit_program()
     exeTimeDict["RunClassfier"] = f"{time.time()-stage_start_time:.2f}"
+    stage_done("RunClassfier", time.time()-stage_start_time)
 
 def CombineTestResult(args,exeTimeDict=dict()):
     stage_start_time = time.time()
     #if args.test == True:
-    print("+"*50)
+    stage_banner("CombineTestResult", detail="合併預測結果與原始文本索引")
     #print("Start to run count_test_accuracy.py")
-    print("Start to run CombineTestResult.py")
-    print(args)
+    print_args_summary(args)
     CMD = f"python {BertClassfierPath}/CombineTestResult.py"
     CMD += convert_to_args_str(args)
     ShowElapsedTime(exeTimeDict["start"])
-    print("="*50,"\n")
-    print("CombineTestResultCMD in TCFMain:\n",CMD)
-    print("="*50,"\n")
+    print_command(CMD, label="CombineTestResult command")
     run_stage_command(CMD, "CombineTestResult")
 
-    print("+"*50)
-    print("Finished running CombineTestResult.py")
     exeTimeDict["Combine AI Result and TextPieces"] = f"{time.time()-stage_start_time:.2f}"
+    stage_done("CombineTestResult", time.time()-stage_start_time)
 
 def TestResultVis(args,exeTimeDict=dict()):
     CMD = f"python {BertClassfierPath}/Test_result_Vis.py"
     CMD += convert_to_args_str(args)
     stage_start_time = time.time()
+    stage_banner("Test_result_Vis", detail="產生結果分析與視覺化網頁資料")
+    print_args_summary(args)
     ShowElapsedTime(exeTimeDict["start"])
-    print("="*50,"\n")
-    print("TestResultVisCMD in TCFMain:\n",CMD)
-    print("="*50,"\n")
+    print_command(CMD, label="TestResultVis command")
     run_stage_command(CMD, "Test_result_Vis")
     for arg in [(args.WeiTechFormatInputPATH,"WTFInpPath"),
                 (args.WeiTechFormatOutputPATH,"WTFOptPath"),
@@ -167,7 +171,7 @@ def TestResultVis(args,exeTimeDict=dict()):
                 BertDatasetSubDir,"nDict.json"),encoding='utf-8'))
         except Exception as e:
             MES = f"When load nDict.json, the following error occurs:{e}"
-            print(MES)
+            warning(MES)
             nDict = None
         exeTimeDict["Compute Article Summary"] = f"{time.time()-stage_start_time:.2f}"
         MES = f"Each stage time cost for {BertDatasetSubDir} with pieces count {nDict} is \n {exeTimeDict}"
@@ -180,8 +184,9 @@ def BackupAndClean(args):
     BertDatasetSubDir,outputDir = datasetDirOutputDirPickers(
         args=args,rdy_for_stage="Spike").proc()
     if args.RemoveBertDataDir == True:
-        print("args.RemoveBertDataDir is True, Running BackupAIPredictResultAndDelTempFile")
-        print("BertDatasetSubDir",BertDatasetSubDir)
+        stage_banner("BackupAndClean", detail="備份預測結果並清理暫存資料")
+        info("args.RemoveBertDataDir is True, Running BackupAIPredictResultAndDelTempFile", icon="🧹")
+        info(f"BertDatasetSubDir: {BertDatasetSubDir}", icon="📁")
         BackupAIPredictResultAndDelTempFile(
             WorkPoolROOT=WorkPoolROOT,BertDatasetSubDir=BertDatasetSubDir)
 
@@ -241,4 +246,4 @@ if __name__ == '__main__':
     if args.test == True:
         ArticleAnalysis(args,exeTimeDict=exeTimeDict)
 
-    print("exeTimeDict",exeTimeDict)
+    info(f"各階段耗時摘要: {exeTimeDict}", icon="⏱️")

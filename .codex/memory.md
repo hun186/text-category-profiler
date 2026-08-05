@@ -89,3 +89,25 @@
 - 結果：`DatasetGenerator.run()` 在切 train/dev/test 前呼叫 `EnsureTrainCoversLabels()`；當 train slot 足以覆蓋所有目前資料中的 label 時，會將每個 label 的第一筆樣本優先放進 train 前段，降低後續 `TopicAnalysis_LabelList.txt` 與 dev/test label 不一致的風險。若 label 數超過 train slot，會警告無法保證覆蓋。
 - 驗證：`python -m py_compile DatasetConverter/DataConverter.py`、`git diff --check`。
 - 未驗證／限制：本容器缺少 pandas，無法執行 DataFrame helper 的 isolated runtime smoke test；未執行完整 `TCFMain.py -tr y`。
+
+### 2026-08-05 — Main pipeline console readability pass 1
+
+- 目標：降低 `TCFMain.py -ts y` 訓練／部署流程中主階段 handoff 訊息的視覺疲勞，同時保留可複製的完整 command 以利除錯。
+- 結果：新增 `utils.log_display` 作為輕量 console display helper；`TCFMain.py` 的 DataConverter、RunClassfier、CombineTestResult、Test_result_Vis 與部分 backup/error 訊息改用階段 banner、摘要化參數、縮排 command、成功／失敗圖示。
+- 驗證：`python -m py_compile TCFMain.py PythonModule/utils/log_display.py`、`PYTHONPATH=PythonModule python - <<'PY' ...` 手動預覽 display helper、`git diff --check`。
+- 未驗證／限制：未執行完整 `python TCFMain.py -ts y`，因流程需使用者本機資料、模型、GPU/CPU 狀態與會產生工作池副作用。
+
+### 2026-08-05 — Stage console readability pass 2
+
+- 目標：延續主流程訊息美化，將最常出現在 `TCFMain.py -ts y` 輸出中的 stage 內部噪音改為較容易掃讀的摘要格式。
+- 結果：`DataConverter`、`RunClassfier`、`CombineTestResult`、`Test_result_Vis` 與共用 `MP_utils`、`TCF_utils`、`df_utils` 開始共用 `utils.log_display`；DataFrame 輸出改為 shape/columns/head 摘要，多程序任務與 dataset/model directory picking 改為分段 key-value 顯示，任務 bins 與 sample counts 改為 compact summary。
+- 驗證：`python -m py_compile ...`、`PYTHONPATH=PythonModule python - <<'PY' ...` 預覽顯示 helper、`git diff --check`。
+- 未驗證／限制：未執行完整 `python TCFMain.py -ts y`，因流程需使用者本機資料、模型、GPU/CPU 狀態與會產生工作池副作用；py_compile 仍顯示既有 regex/path escape SyntaxWarning。
+
+
+### 2026-08-05 — Root requirements, GitHub README, and lightweight tests
+
+- 目標：補上根目錄模組需求、GitHub 專案頁面說明與可無副作用執行的功能測試。
+- 結果：新增 `requirements.txt` 作為目前盤點的共用 runtime/test 依賴；README 改為記載安裝、輕量測試與完整流程資料/模型限制；新增 `tests/` 以 unittest 驗證 `utils.log_display` 與 README/requirements 基本契約。
+- 驗證：`python -m unittest discover -s tests`、`python -m py_compile PythonModule/utils/log_display.py`、`git diff --check`。
+- 未驗證／限制：未執行 `python -m pip install -r requirements.txt`，因會下載/安裝大量 ML dependencies；未執行完整 `TCFMain.py`，因需本機資料、模型與工作池。

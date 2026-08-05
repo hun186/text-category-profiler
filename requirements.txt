@@ -1,0 +1,55 @@
+# Root runtime requirements for text-category-profiler.
+#
+# This project is a script-based research/workflow repository rather than a
+# packaged application.  The list below captures the common dependencies used by
+# the root pipeline, DatasetConverter, ClassesTree, BertScript result analysis,
+# and the lightweight functional tests.  Model-specific backends are listed in a
+# separate optional section because exact CUDA/PyTorch/TensorFlow combinations
+# depend on the host machine.
+
+# Core data processing
+numpy
+pandas
+openpyxl
+xlsxwriter
+
+# CLI / process / system utilities
+colorama
+psutil
+setproctitle
+tqdm
+version-parser
+
+# Text and document helpers
+beautifulsoup4
+html2text
+jieba
+opencc-python-reimplemented
+python-docx
+zhconv
+
+# Visualization and web UI used by Test_result_Vis.py and Dash utilities
+dash
+dash-bootstrap-components
+dash-pivottable
+dash-uploader
+flask
+matplotlib
+networkx
+plotly
+seaborn
+
+# Data stores / external integration helpers
+elasticsearch
+pymongo
+pyodbc
+sqlalchemy
+
+# ML / NLP runtime used by BertScript transformer flows.
+# Install host-appropriate builds when GPU/CUDA constraints are known.
+tensorflow>=1.11.0
+torch
+transformers
+scikit-learn
+sentencepiece
+bitsandbytes

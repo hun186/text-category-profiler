@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | 作業系統 | 待確認；程式含 Windows 與 Linux 分支 | `TCFMain.py`, `TCF_Params/TCFParameters.py` |
 | Runtime 版本 | Python 版本待確認；BertScript 要求 TensorFlow >= 1.11.0 | `BertScript/requirements.txt` |
-| 套件管理器 | 待確認；根目錄無 manifest／lockfile | `rg --files` 盤點 |
+| 套件管理器 | `pip` 可讀取根目錄 `requirements.txt`；尚無 lockfile | `requirements.txt`, `rg --files` 盤點 |
 | 必要本機服務 | 主要流程需要本機資料／模型／工作池；Elasticsearch 只在部分工具中出現 | `TCFMain.py`, `PythonModule/utils/ES_ingest_txt_to_es.py` |
 | 必要環境變數 | 目前無根流程已確認必要環境變數；路徑多由 CLI args 傳入 | `PythonModule/utils/TCF_utils.py` |
 
@@ -16,7 +16,7 @@
 
 | 用途 | 命令 | 工作目錄 | 狀態／最後查證 |
 | --- | --- | --- | --- |
-| 安裝／同步依賴 | 待確認，禁止執行 | repository root | Unverified：根目錄無 manifest／lockfile |
+| 安裝／同步依賴 | `python -m pip install -r requirements.txt` | repository root | Command documented；未在容器執行，因會下載/安裝大量 ML dependencies |
 | 啟動主流程 | `python TCFMain.py --WeiTechworkIDPath <path> --WeiTechWorkPoolPATH <path> -p 8099999 -TRVHost False -task SDSMS_Prediction` | repository root | Command shape verified from `TCFMain.py` comments；會讀寫資料，初始化未執行 |
 | 單獨資料轉換 | `python DatasetConverter/DataConverter.py ...` | repository root | Verified as stage command assembled by `TCFMain.py`；未 smoke test |
 | 單獨分類 | `python BertScript/RunClassfier.py ...` | repository root | Verified as stage command assembled by `TCFMain.py`；未 smoke test |
@@ -25,14 +25,14 @@
 | Format | 待確認，禁止執行 | repository root | Unverified |
 | Lint | 待確認，禁止執行 | repository root | Unverified |
 | Type check | 待確認，禁止執行 | repository root | Unverified |
-| 最小 smoke test | 待確認，禁止執行 | repository root | Unverified：需要 fixture／依賴界線 |
+| 最小 smoke test | `python -m unittest discover -s tests` | repository root | Verified for lightweight tests that do not require model/data/GPU |
 | 完整 test suite | 待確認，禁止執行 | repository root | Unverified：未找到 CI 或 canonical test command |
 
 ## 驗證矩陣
 
 | 變更類型 | 最小必要檢查 | 需要擴大驗證的條件 |
 | --- | --- | --- |
-| 純文件 | `git diff --check`；交叉閱讀 README、AGENTS Quickstart 與 `.codex/*.md` 一致性 | 文件新增可執行命令或改變資料邊界 |
+| 純文件 | `python -m unittest discover -s tests`；`git diff --check`；交叉閱讀 README、AGENTS Quickstart 與 `.codex/*.md` 一致性 | 文件新增可執行命令或改變資料邊界 |
 | CLI parser／參數 | 檢查 `PythonModule/utils/TCF_utils.py` 與 `TCFMain.py` stage command 組裝一致 | 參數影響工作池、模型、輸出路徑或外部服務 |
 | 資料轉換 | 需要已確認 fixture 後執行 DataConverter smoke test；目前待確認 | 會改寫真實資料、SQLite schema 或 handoff 檔名 |
 | 分類器 | 需要已確認模型／fixture 後執行 RunClassfier smoke test；目前待確認 | 影響模型格式、GPU/CPU resource gate 或 output contract |
@@ -50,7 +50,7 @@
 
 | 限制 | 首選驗證 | 安全替代 | 不足之處 |
 | --- | --- | --- | --- |
-| 缺少已確認 fixture／模型／依賴 | 待建立 smoke test 後執行 | 對文件變更執行 `git diff --check` 與人工一致性檢查 | 不能證明 runtime 行為 |
+| 缺少已確認 fixture／模型／依賴 | `python -m unittest discover -s tests` | 對文件變更執行 `git diff --check` 與人工一致性檢查 | 不能證明完整模型/工作池 runtime 行為 |
 | 流程命令可能搬移／刪除工作池資料 | 在隔離 fixture 中執行 | 僅檢查 command assembly 與 contract 文件 | 不能覆蓋 I/O side effects |
 
 ## 完成前檢查

@@ -35,6 +35,8 @@ from utils.utilities import IsVersionValid
 from utils.utilities import getLineOfMaxLen
 from utils.DB_utils import ensure_schema
 from utils.DB_utils import createIndex
+from utils.log_display import dataframe_summary
+from utils.log_display import section
 
 try:
     import xlsxwriter
@@ -528,8 +530,8 @@ class dfOutputer:
         print("OMFN is {}".format(self.OMFN))
     
     def run(self):
-        print("="*50)
-        print(f"Start to run dfOutper with OMFN {self.OMFN} for \n {self.df}")
+        section("DataFrame output", detail=f"OMFN: {self.OMFN}", icon="💾")
+        dataframe_summary(self.df, label="Output preview")
         DirName = os.path.dirname(self.OMFN)
         if DirName != "":
             MKDIR(DirName)
