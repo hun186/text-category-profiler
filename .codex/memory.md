@@ -75,3 +75,17 @@
 - 結果：DataConverter 改以 train+validation+test/fixed-test/ES 的總轉換量判斷是否完全無樣本；只有 `args.test == True` 且 test 總量為 0 時才維持測試模式中止。
 - 驗證：`python -m py_compile DatasetConverter/DataConverter.py`、`git diff --check`。
 - 未驗證／限制：未執行完整 `TCFMain.py -tr y`，因流程需本機完整依賴、模型與工作池資料；py_compile 仍顯示既有 regex/path escape SyntaxWarning。
+
+### 2026-08-05 — RunClassfier train label list materialization
+
+- 目標：修正 `python TCFMain.py -tr y` 進入 `RunClassfier` 後，因 dataset 根目錄缺少 `TopicAnalysis_LabelList.txt` 而在複製模型相關檔案時中止。
+- 結果：`RunClassfier` train mode 現在不再依賴 `DataAugmentationGoal > 100` 才產生 root `TopicAnalysis_LabelList.txt`；每次訓練都從 `train.sql3` 的 `sampleSrc.OutLabel` 產生 occurring-label list，讓 classifier head 與實際訓練類別一致，並在只有 0/1 個訓練 label 時中止。`DataConverter` 仍會在 `OnlyForRecord/TopicAnalysis_LabelList_Including_NonOccuring.txt` 保留完整 taxonomy 參考檔。
+- 驗證：AST-isolated `WriteOccurringLabelList` SQLite smoke test、`python -m py_compile BertScript/RunClassfier.py`、`git diff --check`。
+- 未驗證／限制：未執行完整 `TCFMain.py -tr y`，因本環境沒有使用者本機模型、完整依賴與 Windows 工作池狀態。
+
+### 2026-08-05 — Train split label coverage before classifier handoff
+
+- 目標：把 label-list mismatch 的根因前移到 DataConverter 切分階段處理，避免 DataAugmentationGoal 較小時某 label 被 random split 全部切到 dev/test。
+- 結果：`DatasetGenerator.run()` 在切 train/dev/test 前呼叫 `EnsureTrainCoversLabels()`；當 train slot 足以覆蓋所有目前資料中的 label 時，會將每個 label 的第一筆樣本優先放進 train 前段，降低後續 `TopicAnalysis_LabelList.txt` 與 dev/test label 不一致的風險。若 label 數超過 train slot，會警告無法保證覆蓋。
+- 驗證：`python -m py_compile DatasetConverter/DataConverter.py`、`git diff --check`。
+- 未驗證／限制：本容器缺少 pandas，無法執行 DataFrame helper 的 isolated runtime smoke test；未執行完整 `TCFMain.py -tr y`。

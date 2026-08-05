@@ -733,6 +733,40 @@ def MultiLabCt(MultiLabelCountList):
     return MLdict
         
 
+def EnsureTrainCoversLabels(df, nTrainSet, labelCol="OutLabel"):
+    # 切分 train/dev/test 前，先確保 train set 優先包含每個可覆蓋 label 至少一筆。
+    # 若 DataAugmentationGoal 太小、某 label 樣本太少，純 random shuffle 可能把該 label
+    # 全切到 validation/test，造成後續 classifier label list 與 dev/test 資料不一致。
+    if df.shape[0] == 0 or nTrainSet <= 0 or labelCol not in df.columns:
+        return df
+    LabelList = list(df[labelCol].dropna().unique())
+    if len(LabelList) == 0:
+        return df
+    if len(LabelList) > nTrainSet:
+        print(
+            f"WARNING: There are {len(LabelList)} labels but only {nTrainSet} "
+            "intended train slots; train set cannot cover every label."
+        )
+        return df
+    TrainLabelSet = set(df.iloc[:nTrainSet][labelCol].dropna().unique())
+    MissingLabelList = [label for label in LabelList if label not in TrainLabelSet]
+    if len(MissingLabelList) == 0:
+        return df
+    SelectedIndexList = []
+    for label in LabelList:
+        LabelIndexList = df.index[df[labelCol] == label].tolist()
+        if len(LabelIndexList) > 0:
+            SelectedIndexList.append(LabelIndexList[0])
+    SelectedIndexSet = set(SelectedIndexList)
+    RemainingIndexList = [idx for idx in df.index if idx not in SelectedIndexSet]
+    print(
+        "Reorder dataset rows before split to keep labels in train set. "
+        f"Missing labels before reorder: {MissingLabelList[:20]}"
+    )
+    return pd.concat([df.loc[SelectedIndexList], df.loc[RemainingIndexList]],
+                     ignore_index=True)
+
+
 class DatasetGenerator:
     '''
     將輸入的DataFrame切割為訓練集、驗證集、測試集，另加入固定全文指定做為測試集的資料。回傳各資料集數量字典。
@@ -818,6 +852,7 @@ class DatasetGenerator:
         nTestSet = int(nDataset*TestSetRatio)
         nTrainSet = int(nDataset*TrainSetRatio)
         nValidationSet = nDataset - nTestSet - nTrainSet
+        self.df = EnsureTrainCoversLabels(self.df, nTrainSet)
         nDict = {"train":nTrainSet, "validation":nValidationSet, "test":nTestSet}
         #FNDdict = {"train":"train.tsv", "validation":"dev.tsv", "test":"test.tsv"}
         MFNDdict = {"train":"train", "validation":"dev", "test":"test"}
