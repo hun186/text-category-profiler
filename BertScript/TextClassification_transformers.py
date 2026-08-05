@@ -150,9 +150,16 @@ def trainModel():
         alloc = torch.cuda.memory_allocated(0)
         free = total-alloc
         print("free gpu memory",free)
-        batch_size = int(free/1100000000)
+        batch_size = max(1, int(free/1100000000))
     else:
         batch_size = 12
+    print(
+        "Finished loading/tokenizing datasets. "
+        f"train samples={len(tokenized_dataset['train'])}, "
+        f"validation samples={len(tokenized_dataset['validation'])}. "
+        "The next tqdm progress bar is Hugging Face Trainer training/evaluation, "
+        "not SQLite dataset loading."
+    )
         
     #batch_size = 6
     #print("batch_size",batch_size)
@@ -161,7 +168,14 @@ def trainModel():
     model_name = model_checkpoint.split("/")[-1]
         
     num_train_epochs = 3
-    logging_steps = len(tokenized_dataset["train"]) // (batch_size * num_train_epochs)
+    logging_steps = max(1, len(tokenized_dataset["train"]) // (batch_size * num_train_epochs))
+    train_steps_per_epoch = math.ceil(len(tokenized_dataset["train"]) / batch_size)
+    expected_train_steps = train_steps_per_epoch * num_train_epochs
+    print(
+        f"Training configuration: batch_size={batch_size}, "
+        f"num_train_epochs={num_train_epochs}, "
+        f"expected training steps={expected_train_steps}."
+    )
     
     # 共用參數
     common_args = dict(
@@ -173,6 +187,8 @@ def trainModel():
         num_train_epochs=num_train_epochs,
         weight_decay=0.01,
         logging_steps=logging_steps,
+        per_device_train_batch_size=batch_size,
+        per_device_eval_batch_size=batch_size,
     )
     
     # 嘗試使用 evaluation_strategy，若失敗則 fallback 到 eval_strategy（新版 dev）
@@ -345,8 +361,8 @@ if __name__=='__main__':
     
     if outputDir == "":
         outputDir = "dataset"
-    #args.train = False
-    args.test = True
+    # ClassfierOptionParser() already turns test on when neither train nor test
+    # is requested. Do not force prediction after a train-only RunClassfier call.
     if args.train == True:
         trainModel()
     if args.test == True:
