@@ -4,59 +4,88 @@
 
 ## 契約範圍
 
-依專案實況保留適用項目：
-
-- HTTP／RPC API
-- CLI command、argument、exit code 與 stdout／stderr 格式
-- Python／library public API
-- Database schema、migration 與 query boundary
-- File、dataset、model artifact 或 export format
-- Event、queue message、batch handoff 與 webhook
-- 跨 repository 的輸入／輸出成果
-
-若目前沒有需穩定維持的對外或跨模組介面，明確寫「目前無已確認的穩定契約」，不要為填表捏造 API。
+目前已確認需要維持相容的介面是 CLI arguments、stage handoff 檔案／目錄格式，以及部分外部匯入工具 CLI。未確認有根 HTTP API 或 OpenAPI contract。
 
 ## 契約索引
 
 | ID | 類型 | 名稱 | Producer／Owner | Consumer | 權威定義 | 穩定性 |
 | --- | --- | --- | --- | --- | --- | --- |
-| 待初始化 | 待初始化 | 待初始化 | 待初始化 | 待確認 | `待初始化` | 待確認 |
+| `CONTRACT-CLI-001` | CLI | Text classification flow args | `PythonModule/utils/TCF_utils.py` | `TCFMain.py`, DatasetConverter, BertScript | `ClassfierOptionParser()` | Draft / currently used |
+| `CONTRACT-FILE-001` | File handoff | Classifier dataset directory | `DatasetConverter/` | `BertScript/RunClassfier.py`, `TCFMain.py` | Stage scripts and filename checks | Draft / currently used |
+| `CONTRACT-FILE-002` | File handoff | Prediction/result analysis artifacts | `BertScript/RunClassfier.py`, `CombineTestResult.py` | `Test_result_Vis.py`, work pool output | Stage scripts and backup filename patterns | Draft / currently used |
+| `CONTRACT-CLI-002` | CLI / external service | Elasticsearch text ingestion tool | `PythonModule/utils/ES_ingest_txt_to_es.py` | Operators / data import jobs | argparse in script | Optional / unverified in root flow |
 
 ## 通用相容性規則
 
-- `待初始化：例如欄位新增可向後相容、刪除／改名需版本化。`
-- 錯誤表示與重試語意：`待初始化`
-- 時間、timezone、encoding、locale 與 identifier 規則：`待初始化`
-- 敏感欄位與遮蔽規則：`待初始化`
+- 新增 CLI option 通常可相容；刪除、改名、改 default 或改型別需同步所有 stage command assembly 與 README/workflows。
+- Handoff 檔案新增通常可相容；刪除或改名 `train.tsv`、`dev.tsv`、`test.tsv`、`TopicAnalysis_LabelList.txt`、`dataset_total*` 或 result DB 需先查 consumer。
+- 時間、timezone、encoding、locale 與 identifier 規則：待確認；現有程式多以 UTF-8 讀寫文字線索。
+- 敏感欄位與遮蔽規則：不得在契約範例中放入真實帳密、內部連線字串、個資或敏感 payload。
 
 ## 契約詳細內容
 
-每個重要契約使用穩定 ID，並依實際類型保留必要欄位。
+### `CONTRACT-CLI-001` Text classification flow args
 
-### `待初始化：CONTRACT-001 名稱`
+- 類型：CLI
+- 狀態：Draft
+- 權威定義：`PythonModule/utils/TCF_utils.py` 的 `ClassfierOptionParser()`。
+- Producer／Owner：共用 utils parser。
+- Consumer：`TCFMain.py`、`DatasetConverter/DataConverter.py`、`BertScript/RunClassfier.py`、`BertScript/CombineTestResult.py`、`BertScript/Test_result_Vis.py` 等 stage scripts。
+- 輸入：`--train/-tr`、`--test/-ts`、`--task`、`--WorkPoolROOT/-WPRoot`、`--BertDatasetSubDir/-BertDataDir`、`--modelDir/-mdlDir`、`--FixedTestPATH/-FTPath`、WeiTech work pool 相關參數、model type 與視覺化參數等。
+- 輸出：argparse namespace；`args.train == False and args.test == False` 時 parser 會將 `args.test` 設為 `True`。
+- 驗證與約束：修改 parser 後需檢查所有 `convert_to_args_str(args)` consumer 與手動附加參數。
+- 錯誤／exit code／失敗語意：argparse 會處理未知／不合法參數；stage script 其他錯誤語意待確認。
+- 版本與相容性：無版本化機制；破壞性變更需文件同步與 migration note。
+- 安全與敏感資訊：路徑參數可能包含內部資料位置；不要在文件放真實敏感路徑或內容。
+- 契約測試：待確認；目前沒有 canonical CLI smoke test。
 
-- 類型：`待初始化`
-- 狀態：`Draft | Stable | Deprecated | Removed`
-- 權威定義：`待初始化，例如 schema / code / OpenAPI / parser / test`
-- Producer／Owner：`待初始化`
-- Consumer：`待確認`
-- 輸入：`待初始化`
-- 輸出：`待初始化`
-- 驗證與約束：`待初始化`
-- 錯誤／exit code／失敗語意：`待初始化`
-- 版本與相容性：`待初始化`
-- 安全與敏感資訊：`待初始化`
-- 契約測試：`待初始化`
+### `CONTRACT-FILE-001` Classifier dataset directory
+
+- 類型：File / directory handoff
+- 狀態：Draft
+- 權威定義：`DatasetConverter/DataConverter.py`、`BertScript/RunClassfier.py`、`TCFMain.py` 對檔名與目錄狀態的讀寫。
+- Producer／Owner：DatasetConverter stage。
+- Consumer：RunClassfier stage 與 root flow。
+- 輸入：原始文字資料、固定測試資料、工作池任務與 label/topic metadata。
+- 輸出：至少一個 BERT dataset split（`train.tsv`、`dev.tsv`、`test.tsv`）與 `OnlyForRecord/`、`datasetDB/` 中間資料線索。
+- 驗證與約束：`TCFMain.py` 會檢查 dataset files 是否存在；RunClassfier 會查詢 `test.sql3`、`dataset_total_with_filename_FixedTest.sql3`、`dataset_total_with_filename_ES.sql3`。
+- 錯誤／失敗語意：若找不到 dataset 或必要檔案，stage 可能 raise exception；完整 exit code 待確認。
+- 版本與相容性：無 schema/version marker；改名需同步所有 consumer。
+- 安全與敏感資訊：dataset 可能包含真實文本或個資；不可在測試輸出或 Codex 文件中貼全文。
+- 契約測試：待建立 fixture。
+
+### `CONTRACT-FILE-002` Prediction/result analysis artifacts
+
+- 類型：File / directory handoff
+- 狀態：Draft
+- 權威定義：`BertScript/RunClassfier.py`、`BertScript/CombineTestResult.py`、`BertScript/Test_result_Vis.py`、`TCF_Params/TCFParameters.py` 的 output filename patterns。
+- Producer／Owner：RunClassfier 與 CombineTestResult stages。
+- Consumer：Test_result_Vis、BackupAndClean 與外部工作池 consumer。
+- 輸入：模型預測結果、label list、dataset DB。
+- 輸出：`DFPreambleCols_df_ALL*`、`dataset_total_with_filename_FixedTest.sql3`、`test.sql3`、`test.tsv`，SDSMS 任務另包含 `SDSMS.*` patterns。
+- 驗證與約束：`FinalOfferedOutputFNrePatList` 決定交付／備份檔名；修改需同步外部工作池 consumer。
+- 錯誤／失敗語意：備份／搬移失敗目前多為 print/log；完整 rollback 待確認。
+- 版本與相容性：無明確版本；破壞性檔名變更需 migration plan。
+- 安全與敏感資訊：輸出可能包含原文、預測、分數與內部任務 ID；不得提交真實輸出。
+- 契約測試：待建立 fixture。
+
+### `CONTRACT-CLI-002` Elasticsearch text ingestion tool
+
+- 類型：CLI / external service
+- 狀態：Draft / optional
+- 權威定義：`PythonModule/utils/ES_ingest_txt_to_es.py` argparse。
+- Producer／Owner：ES ingestion utility。
+- Consumer：手動或批次資料匯入操作者。
+- 輸入：`--index/-i`、`--dir/-d`、`--host`、`--batch`、`--lang`、`--user`、`--op`、`--dedup-by-content`。
+- 輸出：Elasticsearch bulk write side effects。
+- 驗證與約束：不得在未隔離 ES instance 前當 smoke test 執行。
+- 錯誤／失敗語意：待確認。
+- 版本與相容性：待確認。
+- 安全與敏感資訊：不要記錄真實 ES host、credentials 或 documents。
+- 契約測試：待確認。
 
 ## Deprecated／Migration
 
 | 舊契約 | 替代契約 | 過渡方式 | 移除條件／日期 |
 | --- | --- | --- | --- |
 | 目前沒有已確認項目 | — | — | — |
-
-## 維護規則
-
-- 介面實作改變時同步更新 current contract 與 contract test。
-- 不以 README 範例取代 schema、parser 或測試等權威定義。
-- 若需要破壞性變更，先記錄 consumer、遷移路徑與相容性決策；必要時新增 `decisions.md` 紀錄。
-- 過時細節不追加日期流水帳；原地更新，並透過 Git 或 decision 追溯原因。

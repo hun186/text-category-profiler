@@ -4,22 +4,27 @@
 
 ## Current Focus
 
-- 初始化狀態：`UNINITIALIZED`
-- 目前工作焦點：`待初始化`
-- 最近確認可工作的路徑：`待初始化`
-- 需要延續的相容性／限制：`待初始化`
-
-Current Focus 最多保留 5～8 個短項目。專案長期身份放 `project.md`，完整架構放 `architecture.md`，不得在此重複整份內容。
+- 初始化狀態：`INITIALIZED`
+- 目前工作焦點：維護 Python 文字分類／資料集轉換／BERTScript 結果分析工作區；不要沿用舊 README 的 FastAPI RAG 假設。
+- 最近確認可工作的路徑：文件與靜態盤點；runtime smoke test 尚未確認。
+- 需要延續的相容性／限制：未確認 fixture、模型、工作池與依賴前，不執行會搬移／刪除／批次寫入資料的流程命令。
+- README 判定：`NEEDS_UPDATE`；原文件有實質內容但描述另一個 FastAPI/Elasticsearch RAG agent，已局部改寫為目前 repo 可查證狀態。
 
 ## Recent Outcomes
 
-目前尚無已記錄成果。初始化完成後，用 `.codex/templates/memory-entry.template.md` 的格式新增；最多保留最近 10 筆有持久參考價值的項目。
+### 2026-08-05 — Codex 指示檔案系統初始化
+
+- 目標：依根目錄 `AGENTS.md` 與 `CODEX_BOOTSTRAP.md` 初始化 Quickstart、`.codex/*.md` 與根 README。
+- 結果：根 Quickstart 與 `.codex/project.md`、`workflows.md`、`architecture.md`、`contracts.md` 已改為 current-state；README 已從錯置的 SRA/RAG 說明改為 Python text classification profiler summary。
+- 重要範圍：Codex 指示文件、README、專案工作流與 contract routing。
+- 驗證：靜態盤點 `rg --files`、閱讀入口／parser／requirements；執行 `git diff --check`。
+- 未驗證／限制：未執行 runtime smoke test，因根目錄無 canonical install/test command，且主流程需真實資料、模型與工作池。
+- 後續：請人工確認 Python 版本、完整依賴、可安全 smoke fixture、資料提交邊界與是否仍需保留舊 SRA/RAG 內容。
 
 ## Open Handoffs
 
-只列已開始但尚未完成、或下一個任務必須知道的交接。單純構想放 `backlog.md`，未證實問題放「待確認」而非假裝已知。
-
-- 目前無已確認項目。
+- 需要使用者確認可安全執行的最小 fixture 與依賴安裝方式後，才能把 workflows 中的 smoke test 從待確認改成 canonical command。
+- 若舊 README 的 SRA/RAG 描述其實屬於本 repo 未盤點到的子專案，需指出位置並更新 project/contracts。
 
 ## Archive Index
 
@@ -42,13 +47,3 @@ Current Focus 最多保留 5～8 個短項目。專案長期身份放 `project.m
 - 已失效的猜測、一次性 typo、無後續價值的失敗命令。
 - 尚未接受的改善靈感。
 - 秘密、個資、真實連線資料或敏感 payload。
-
-## 濃縮規則
-
-符合任一條件時濃縮：超過 10 筆 Recent Outcomes、約 200 行、24 KB，或內容出現明顯重複／失效。
-
-1. 更新 Current Focus 為目前仍有效的摘要。
-2. 近期 5～10 筆留在 active memory。
-3. 將仍有追溯價值的較舊條目移到 `.codex/archive/memory-YYYY-MM.md`；不要複製整份 active memory。
-4. 更新 `.codex/archive/README.md`。
-5. 可由 Git 歷史充分回答且沒有持久價值的細節直接移除。

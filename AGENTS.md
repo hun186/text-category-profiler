@@ -15,11 +15,11 @@
 以下區塊由首次初始化或後續明確的專案級變更維護；一般任務不要重寫其他規則。
 
 <!-- BEGIN CODEX PROJECT QUICKSTART -->
-- 初始化狀態：`UNINITIALIZED`
-- 專案目的：`待初始化`
-- 主要技術：`待初始化`
-- 主要入口：`待初始化`
-- 最快驗證：`待初始化；在確認前禁止猜測或執行`
+- 初始化狀態：`INITIALIZED`
+- 專案目的：Python 文字分類、資料集轉換、BERT／XLM 推論與結果分析工作區。
+- 主要技術：Python 腳本、TensorFlow BERT 相關程式、Dash/Plotly 視覺化、SQLite 中間資料。
+- 主要入口：`TCFMain.py` 串接 `DatasetConverter/DataConverter.py`、`BertScript/RunClassfier.py`、`BertScript/CombineTestResult.py` 與 `BertScript/Test_result_Vis.py`。
+- 最快驗證：純文件變更使用 Markdown／一致性檢查；目前沒有已確認的無副作用程式測試命令。
 <!-- END CODEX PROJECT QUICKSTART -->
 
 若狀態仍為 `UNINITIALIZED`：
