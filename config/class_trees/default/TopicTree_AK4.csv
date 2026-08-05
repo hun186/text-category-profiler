@@ -1,0 +1,7 @@
+#母類別,子類別,日期,關係,備註
+AK4,Informative_AK4,202309011056,contains,
+AK4,Scrap_AK4,202309011056,contains,
+AK4,Uncertainty_AK4,202309011056,contains,
+Informative_AK4,Aloha,202309011056,contains,
+Scrap_AK4,Bosh,202309011056,contains,
+Uncertainty_AK4,SUL,202309011056,contains,
