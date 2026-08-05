@@ -4,6 +4,8 @@ import os
 import psutil
 from utils.progress_utils import draw_progress_bar
 from utils.MP_utils import MPlogger
+from utils.log_display import key_values
+from utils.log_display import warning
 #from utils.utilities import GPU_mem_report  # 你自己已有的版本
 import GPUtil
 
@@ -86,9 +88,14 @@ class HybridConformer:
             
     def proc(self) -> bool:
         self._proc_called = True
+        key_values("Resource check", [
+            ("target", self.ObjectName),
+            ("CPU threshold", f"< {self.cpuUsageThreshold}%"),
+            ("GPU free threshold", f"> {self.gpuMemThresholdMB}MB"),
+        ], icon="·")
         MPlogger().logW(
             f"[{self.ObjectName}] Start CPU+GPU hybrid check: CPU < {self.cpuUsageThreshold}%, GPU > {self.gpuMemThresholdMB}MB",
-            logFile="hybridConformer.log", logSubDir=self.logSubDir)
+            logFile="hybridConformer.log", logSubDir=self.logSubDir, printOnScreen=False)
 
         retry = 0
         printed_start = False
@@ -106,10 +113,15 @@ class HybridConformer:
                 most_free = max(gpu_mem_info, key=lambda x: x[1]) if gpu_mem_info else (0, 0, 0, 0)
             
             if cpu_usage < self.cpuUsageThreshold and has_free_gpu:
-                sys.stdout.write("\n")
+                key_values("Resource check result", [
+                    ("target", self.ObjectName),
+                    ("status", "OK"),
+                    ("CPU", f"{cpu_usage:.1f}%"),
+                    ("GPU free", f"{most_free[1]:.0f}MB"),
+                ], icon="·")
                 MPlogger().logW(
                     f"[{self.ObjectName}] ✅ Resources OK: CPU {cpu_usage:.1f}%, GPU {most_free[1]:.0f}MB Free",
-                    logFile="hybridConformer.log", logSubDir=self.logSubDir)
+                    logFile="hybridConformer.log", logSubDir=self.logSubDir, printOnScreen=False)
                 return True
 
             retry += 1

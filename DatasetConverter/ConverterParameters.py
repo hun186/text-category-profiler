@@ -57,8 +57,8 @@ TreeBinaryTarget = 'PRC Document'
 TreeBinaryTarget = 'Scrap'
 TreeBinaryTarget = None
 UniqueLabel = True
-nProcess = multicoreJob().ComputeNProcess()
-nProcessSPC = multicoreJob().ComputeSPCNProcess()
+nProcess = multicoreJob().ComputeNProcess(log=False)
+nProcessSPC = multicoreJob().ComputeSPCNProcess(log=False)
 UniqueSortedLabels = True #讀取Label清單字串時，是否進行Label Unique
 
 RSTRLabelMode = True

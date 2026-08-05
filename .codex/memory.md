@@ -111,3 +111,81 @@
 - 結果：新增 `requirements.txt` 作為目前盤點的共用 runtime/test 依賴；README 改為記載安裝、輕量測試與完整流程資料/模型限制；新增 `tests/` 以 unittest 驗證 `utils.log_display` 與 README/requirements 基本契約。
 - 驗證：`python -m unittest discover -s tests`、`python -m py_compile PythonModule/utils/log_display.py`、`git diff --check`。
 - 未驗證／限制：未執行 `python -m pip install -r requirements.txt`，因會下載/安裝大量 ML dependencies；未執行完整 `TCFMain.py`，因需本機資料、模型與工作池。
+
+### 2026-08-05 — Compact stage command logging
+
+- 目標：讓 `TCFMain.py` 階段 handoff command 不再每個參數各佔一行，減少 DataConverter/RunClassfier 等長命令輸出佔用空間。
+- 結果：`utils.log_display.print_command()` 改為依終端寬度將多個 shell-quoted 參數合併到同一列，仍用反斜線續行保留可複製執行性；新增 unittest 覆蓋長命令分組。
+- 驗證：`python -m unittest discover -s tests`、`python -m py_compile PythonModule/utils/log_display.py`、`git diff --check`。
+
+### 2026-08-05 — Suppress repeated multiprocessing startup messages
+
+- 目標：避免 multiprocessing spawn/import 導致 `cwd`、Python `istarmap` 選擇、`ROOTPATHList` 與 process count 說明在每個 worker 或重複計算時洗板。
+- 結果：新增 `utils.log_display.print_once()`，預設只在主程序輸出同 key 訊息一次；DataConverter cwd、TCFParameters ROOTPATHList 與 MP_utils Python version banner 改用一次性輸出；`ComputeSPCNProcess()` 不再為取得 basic process 上限重印 basic process 提醒。
+- 驗證：`python -m unittest discover -s tests`、`python -m py_compile PythonModule/utils/log_display.py PythonModule/utils/MP_utils.py TCF_Params/TCFParameters.py DatasetConverter/DataConverter.py`、`git diff --check`。
+
+### 2026-08-05 — Tidy DataConverter topic tree output
+
+- 目標：整理 DataConverter 產生 InfoScoreTable 與 topic tree labels 時過於雜亂的 console 輸出。
+- 結果：`dfOutputer` 改為只輸出 output path、shape、columns 摘要，不再直接印 DataFrame head；移除 `ListDiff()` 的 `List1[0:15]` debug print；topic tree file/label 訊息改為短 key-value 摘要；import-time `ConverterParameters` 與 TSV helper 的 process-count 估算改走 quiet mode，避免在這段輸出中插入 process 提醒。
+- 驗證：`python -m unittest discover -s tests`、`python -m py_compile PythonModule/utils/df_utils.py PythonModule/utils/utilities.py PythonModule/utils/MP_utils.py DatasetConverter/DataConverter.py DatasetConverter/ConverterParameters.py ClassesTree/ClassesTree_utils.py`、`git diff --check`。
+
+### 2026-08-05 — Consolidate duplicate-removal console output
+
+- 目標：整理 DataConverter 產製資料集檔案與移除重複文章時舊式 `print`、分隔線、multicore preview 與 PID log 交錯造成的雜亂輸出。
+- 結果：dataset generation 改用 section/key-value；DataConverter job、file discovery、duplicate-removal start/result 與 tokenizer modelDir 改為摘要；空檔案清單時不再建立 hash worker；single-process multicore job 不再印 queue banner、job preview 與 pretest 訊息；FileHashDictBuilder preview 改為單行。
+- 驗證：`python -m unittest discover -s tests`、`python -m py_compile DatasetConverter/DataConverter.py PythonModule/utils/MP_utils.py PythonModule/utils/utilities.py`、`git diff --check`。
+
+### 2026-08-05 — Consolidate directory picking and sample loading output
+
+- 目標：整理 dataset/model directory picker、LabelConvertDict 與 sample loading 階段的新舊混雜輸出。
+- 結果：directory picker 改為 roots/candidates/selection 三個 key-value 區塊，不再以 PID log 重印選到的 modelDir；LabelConvertDict 只在 console 印 mode/count/converted 摘要，完整 mapping 仍寫入 dataset.txt；sample loading 與 rows-to-DataFrame 改為單一摘要，移除多段 start/finished、elapsed 與 row preview 分隔線。
+- 驗證：`python -m unittest discover -s tests`、`python -m py_compile PythonModule/utils/TCF_utils.py DatasetConverter/DataConverter.py PythonModule/utils/df_utils.py`、`git diff --check`。
+
+### 2026-08-05 — Consolidate empty row-list and DataFrame conversion output
+
+- 目標：整理 Row_List 建構完成、空 row list、DataFrame 去重、空 DataFrame warning 與零樣本結果的舊式分隔線/print 輸出。
+- 結果：空 row list 改為 warning；Src/type columns、dataset conversion result 與 duplicate rows 改為 key-value 摘要；移除空 DataFrame dump、columns dump、row preview 與重複 elapsed；零樣本詳細路徑仍寫入 dataset count file。
+- 驗證：`python -m unittest discover -s tests`、`python -m py_compile DatasetConverter/DataConverter.py PythonModule/utils/df_utils.py`、`git diff --check`。
+
+### 2026-08-05 — Consolidate DataFrame output handoff and SQLite index logs
+
+- 目標：整理 DataFrame output job preview、SQLite index creation、Excel column width 與 dataset generation handoff 中殘留的舊式 print/PID log。
+- 結果：dfOutputer/show、DatasetGenerator/show 與 DataFrame filter job 改為 key-value；SQLite index SQL/debug print 改為只寫 log file 不印 console；Excel 欄寬提示改為 key-value；Generate dataset files 後的 elapsed、FixedTestPATHList、OUTPUTMAIN 改為單一 handoff 摘要。
+- 驗證：`python -m unittest discover -s tests`、`python -m py_compile DatasetConverter/DataConverter.py PythonModule/utils/df_utils.py PythonModule/utils/DB_utils.py`、`git diff --check`。
+
+### 2026-08-05 — Consolidate dataset split generation output
+
+- 目標：整理 Generate dataset files 階段中 train/validation/test set generation、fixed-test/es sample handoff 與 split dedup 的舊式 PID log/分隔線輸出。
+- 結果：新增 Dataset split plan、Generate dataset split、Fixed test samples、Dataset split dedup 與 Dataset split source counts 摘要；移除 `Generating ... set` PID log、fixed-test/es ad-hoc print 與 dedup 分隔線；保留實際 dfOutputer 輸出行為。
+- 驗證：`python -m unittest discover -s tests`、`python -m py_compile DatasetConverter/DataConverter.py`、`git diff --check`。
+
+### 2026-08-05 — Consolidate sample reader preview and elapsed warnings
+
+- 目標：整理 fixed-test sample reader job preview 中 FileName、LabelList[:20]、width/mode 等舊式輸出，並移除缺少 start_time 時的 ShowElapsedTime warning 噪音。
+- 結果：`SampleReader.show()` 改為 Sample reader job key-value 摘要，label preview 縮短並顯示 label count；`ShowElapsedTime(None)` 改為安靜返回 None；DataConverter stage done 不再額外 `print(ShowElapsedTime(...))`。
+- 驗證：`python -m unittest discover -s tests`、`python -m py_compile DatasetConverter/sampleHandler.py PythonModule/utils/utilities.py DatasetConverter/DataConverter.py`、`git diff --check`。
+
+### 2026-08-05 — Consolidate DataFrame parallel and TSV check output
+
+- 目標：整理 fixed-test dataset output 後殘留的 DataFrame parallel apply 中文 print、TSV null-byte PID log 與 exeTimeDict dump。
+- 結果：DataFrame parallel apply 改為 key-value，Windows fallback 改為 warning；TSV null-byte check 改為 console 摘要且詳細訊息只寫 log；DataConverter timing 改為 key-value，不再 print raw exeTimeDict。
+- 驗證：`python -m unittest discover -s tests`、`python -m py_compile PythonModule/utils/MP_utils.py DatasetConverter/DataConverter.py`、`git diff --check`。
+
+### 2026-08-05 — Consolidate RunClassfier startup and resource logs
+
+- 目標：整理 RunClassfier stage startup、CPU/GPU hybrid resource check、missing sql3 count 與 prediction output files 中殘留的 PID log/長路徑輸出。
+- 結果：RunClassfier workspace、resource check/result、missing dataset count source 與 prediction output files 改為 key-value/warning 摘要；RunClassfier started 與 resource OK 詳細訊息改為只寫 log file；prediction file list 使用 summarize_sequence 縮短。
+- 驗證：`python -m unittest discover -s tests`、`python -m py_compile BertScript/RunClassfier.py PythonModule/utils/conformer.py`、`git diff --check`。
+
+### 2026-08-05 — RunClassfier command noise redirected to logs
+
+- 目標：避免 RunClassfier 呼叫 `TextClassification_transformers.py` 時，TensorFlow／bitsandbytes／transformers 的 stderr warning 因子程序與平行化重複輸出而洗板。
+- 結果：RunClassfier 的模型命令現在統一將 stdout/stderr 導入 `logs/RunClassfier.log`；console 只顯示精簡的 command/log path 摘要與 handoff，不再印舊式 `BatCMD` 分隔線、`Check ... log` 或 `RC Line 262` debug 訊息。
+- 驗證：`python -m unittest discover -s tests`、`python -m py_compile BertScript/RunClassfier.py`、`git diff --check`。
+
+### 2026-08-05 — Consolidate CombineTestResult verification logs
+
+- 目標：整理 CombineTestResult 開始、來源查詢、verification dataframe、match count 與 handoff 段落中殘留的 PID log、debug sample text、大型 DataFrame sample 與重複 multiprocessing banner。
+- 結果：CombineTestResult workspace/source DB/source lookup/sort/match/handoff 改為 key-value 摘要；移除固定長文本查詢與 `df_map_result.sample` debug 輸出；process count 採 quiet mode；`print_once()` 透過環境旗標讓 Windows spawn workers 繼承一次性訊息狀態，降低 `MP_utils.py` Python version banner 洗板。
+- 驗證：`python -m unittest discover -s tests`、`python -m py_compile BertScript/CombineTestResult.py PythonModule/utils/log_display.py`、`git diff --check`。

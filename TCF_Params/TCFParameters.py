@@ -7,9 +7,9 @@ import platform
 
 from utils.utilities import timeNow
 from utils.utilities import MKDIR
-from utils.utilities import colored_print
 from utils.MP_utils import multicoreJob
 from utils.TCF_utils import ClassfierOptionParser
+from utils.log_display import print_once
 
 WorkPoolROOT = "WorkPool"
 WorkPoolROOT_ArticleComposition = "WorkPoolROOT_ArticleComposition"
@@ -116,7 +116,7 @@ else:
     ]
     run_mode = "debug"
 
-colored_print(f"Run in {run_mode} Mode, ROOTPATHList is set as {ROOTPATHList}")
+print_once(f"Run in {run_mode} Mode, ROOTPATHList is set as {ROOTPATHList}")
 
 FinalOfferedOutputFNrePatList = [
     "^DFPreambleCols_df_ALL.*",

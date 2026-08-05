@@ -451,7 +451,10 @@ class datasetDirOutputDirPickers:
         outputDirs = [x for x in outputDirs if "using" not in x.lower()]
         outputDirs = sorted(outputDirs, reverse=True)
         #outputDir = outputDirs[0]
-        key_values("Model directory candidates", [("root", self.outputDirsROOT), ("candidates", summarize_sequence(outputDirs, limit=5))], icon="·")
+        key_values("Model directory candidates", [
+            ("root", self.outputDirsROOT),
+            ("latest", summarize_sequence(outputDirs[:3], limit=3)),
+        ], icon="·")
         #time.sleep(10)
         outputDir = ""
         #testResFile.append("UsingMark.txt")
@@ -500,7 +503,8 @@ class datasetDirOutputDirPickers:
     def proc(
             self
             ):
-        section("Pick dataset/model directories", detail=f"dataset root={self.datasetDirsROOT}; model root={self.outputDirsROOT}", icon="🧭")
+        section("Pick dataset/model directories", icon="🧭")
+        key_values("Directory roots", [("dataset root", self.datasetDirsROOT), ("model root", self.outputDirsROOT)], icon="·")
         if self.args["BertDatasetSubDir"] != "":
             datasetDir = self.args["BertDatasetSubDir"]
             #print("The args[BertDatasetSubDir] is", args["BertDatasetSubDir"])
@@ -510,7 +514,6 @@ class datasetDirOutputDirPickers:
                 key_values("Similar directory fallback", [("selected", datasetDir)], icon="·")
         else:
             datasetDir = self.Pick_datasetDir()
-        key_values("Directory selection", [("dataset", datasetDir)], icon="·")
         #raise Exception
         if self.args["modelDir"] != "":
             outputDir = self.args["modelDir"]
@@ -519,8 +522,11 @@ class datasetDirOutputDirPickers:
 
         #print("type(MPLOGGER)",type(self.MPLOGGER))
         #print("MPLOGGER",self.MPLOGGER)
-        MES = f"datasetDirOutputDirPickers pick the model dir {outputDir} for {self.args['ModelType']} mode"
-        self.MPLOGGER.logW(MES)
+        key_values("Directory selection", [
+            ("dataset", datasetDir),
+            ("model", outputDir),
+            ("ModelType", self.args["ModelType"]),
+        ], icon="·")
         return datasetDir,outputDir
 
 def get_testResFile_Name(ModelType, BertDatasetSubDir="",outputDir=""):

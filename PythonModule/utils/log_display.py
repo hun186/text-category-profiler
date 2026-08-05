@@ -5,9 +5,11 @@ terminal.  These helpers keep those details available while making the main
 stage handoff messages easier to scan by humans.
 """
 
+import hashlib
 import os
 import shlex
 import textwrap
+import threading
 
 
 _WIDTH = 88
@@ -21,6 +23,9 @@ def _supports_color():
 
 
 _USE_COLOR = _supports_color()
+
+_PRINT_ONCE_LOCK = threading.Lock()
+_PRINTED_MESSAGES = set()
 
 
 _COLORS = {
@@ -47,6 +52,32 @@ def colorize(text, color):
     if not _USE_COLOR:
         return text
     return f"{_COLORS.get(color, '')}{text}{_COLORS['reset']}"
+
+
+def _is_main_process():
+    """Return True unless this code is clearly running in a multiprocessing child."""
+    try:
+        import multiprocessing as mp
+    except ImportError:
+        return True
+    return mp.current_process().name == "MainProcess"
+
+
+def print_once(message, key=None, skip_child_process=True):
+    """Print a repeated startup/status message once across parent/worker interpreters."""
+    if skip_child_process and not _is_main_process():
+        return False
+    cache_key = key if key is not None else str(message)
+    env_key = "TCF_PRINT_ONCE_" + hashlib.sha1(str(cache_key).encode("utf-8")).hexdigest()
+    if os.environ.get(env_key) == "1":
+        return False
+    with _PRINT_ONCE_LOCK:
+        if cache_key in _PRINTED_MESSAGES:
+            return False
+        _PRINTED_MESSAGES.add(cache_key)
+        os.environ[env_key] = "1"
+    print(message)
+    return True
 
 
 def rule(title=None, char="─", width=_WIDTH):
@@ -99,12 +130,35 @@ def print_args_summary(args):
         print(f"  {chunk}")
 
 
+def _format_command_lines(parts, width=_WIDTH, indent="  "):
+    """Return copyable shell lines with several args per row when possible."""
+    quoted_parts = [shlex.quote(part) for part in parts]
+    if not quoted_parts:
+        return [""]
+
+    lines = []
+    current = quoted_parts[0]
+    max_width = max(width - len(indent) - 2, 20)
+    for part in quoted_parts[1:]:
+        candidate = f"{current} {part}"
+        if len(candidate) <= max_width:
+            current = candidate
+            continue
+        lines.append(current)
+        current = part
+    lines.append(current)
+
+    if len(lines) == 1:
+        return lines
+    return [f"{line} \\" for line in lines[:-1]] + [lines[-1]]
+
+
 def print_command(cmd, label="Command"):
-    """Pretty-print a shell command without hiding the exact executable text."""
+    """Pretty-print a compact, copyable shell command."""
     print(colorize(label, "bold"))
     try:
         parts = shlex.split(cmd)
-        formatted = " \\\n  ".join(shlex.quote(part) for part in parts)
+        formatted = "\n".join(_format_command_lines(parts))
     except ValueError:
         formatted = cmd
     print(textwrap.indent(formatted, "  "))

@@ -22,6 +22,7 @@ from platform import python_version
 import math
 from utils.log_display import info
 from utils.log_display import key_values
+from utils.log_display import print_once
 from utils.log_display import section
 from utils.log_display import warning
 
@@ -62,13 +63,13 @@ def IsVersionValid(
     return Version(str(LBD))<=Version(CKVer)<=Version(str(UBD))
 
 if IsVersionValid(LBD="3.8.0"):
-    info("python version >= 3.8, using istarmap2.py in MP_utils.py", icon="🐍")
+    print_once("🐍 python version >= 3.8, using istarmap2.py in MP_utils.py")
     try:
         import istarmap2 as istarmap # import to apply patch
     except:
         import utils.istarmap2 as istarmap # import to apply patch
 else:
-    info("python version < 3.8, using istarmap.py in MP_utils.py", icon="🐍")
+    print_once("🐍 python version < 3.8, using istarmap.py in MP_utils.py")
     try:
         import istarmap # import to apply patch
     except:
@@ -102,7 +103,7 @@ def MKDIR(DirName):
         return
     fileNameNormalizer.proc(DirName)
     os.makedirs(DirName, exist_ok=True)
-    
+
 class MPlogger:
     def __init__(self, logSubDir="logs",logFile="mp_processing_log.txt"):
         self.logSubDir = logSubDir
@@ -300,7 +301,7 @@ def _mp_init_logging(q):
             pass
     sys.excepthook = _excepthook
 
-    
+
 class multicoreJob:
     '''
     平行化任務執行管理器，將Job.method任務集送入平行化運算隊列；
@@ -339,7 +340,7 @@ class multicoreJob:
         self.log_queue = log_queue   # ★ 存起來，給 Pool initializer 用
         self.mp_debug = mp_debug
         #print("self.log_queue",self.log_queue)
-        
+
     def logW(MES=None, logFile="mp_processing_log.txt"):
         try:
             f = open(logFile, "at", encoding='utf8')
@@ -348,7 +349,7 @@ class multicoreJob:
             f.close()
         except Exception as e:
             print(f"When try to log message {MES}, the following error occurs:\n{e}\n")
-        
+
     '''
     def add_features(df):
         if "The Economist" in df['file'].split("\\"):
@@ -367,18 +368,21 @@ class multicoreJob:
         #func: input:df output:another df
         if rowfunc is not None:
             func = lambda df:df.apply(rowfunc, axis=1)
-        
+
         nProcessCand = math.ceil(len(df)/1000)
         if nProcessCand < self.nProcess:
             df_sp_nProcess = nProcessCand
         else:
             df_sp_nProcess = self.nProcess
-        print(f"呼叫DataFrame平行化函數套用功能 with {func.__name__}，進程數為 {df_sp_nProcess}")
+        key_values("DataFrame parallel apply", [
+            ("function", func.__name__),
+            ("processes", df_sp_nProcess),
+        ], icon="·")
         if "windows" in platform.system().lower():
-            print("windows平台目前使用DataFrame平行化函數功能會有程序異常大量增殖問題，故強制改為單進程執行。")
+            warning("Windows DataFrame parallel apply falls back to single-process mode to avoid process overgrowth.")
         if df_sp_nProcess > 1 and "windows" not in platform.system().lower():
             try:
-                
+
                 df_split = np.array_split(df, df_sp_nProcess)
                 #pool = mp.Pool(df_sp_nProcess)
                 pool = mp.Pool(
@@ -398,37 +402,42 @@ class multicoreJob:
             df = func(df)
         return df
 
-    def ComputeNProcess(self,):
+    def _compute_basic_nprocess(self, log=True):
         nCPU = mp.cpu_count()
         if nCPU > 30:
             #nProcess = int(nCPU*1.3)
             nProcess = int(nCPU*0.5)
         else:
             nProcess = int(nCPU*0.8)
-        
-        MES = f"The basic number of Process is defined to {nProcess}."
-        MPlogger().logW(MES=MES)
-        MES = "進程數設定為{}，請依硬體CPU資源數量，妥善設定進程數量，以免程式崩潰！\
-            如果沒有把握，請將進程數設為1，以策安全。".format(nProcess)
-        MPlogger().logW(MES=MES)
         nProcess = max(nProcess,1)
+
+        if log:
+            MES = f"The basic number of Process is defined to {nProcess}."
+            MPlogger().logW(MES=MES)
+            MES = "進程數設定為{}，請依硬體CPU資源數量，妥善設定進程數量，以免程式崩潰！\
+                如果沒有把握，請將進程數設為1，以策安全。".format(nProcess)
+            MPlogger().logW(MES=MES)
         return nProcess
-    
-    def ComputeSPCNProcess(self,):
+
+    def ComputeNProcess(self, log=True):
+        return self._compute_basic_nprocess(log=log)
+
+    def ComputeSPCNProcess(self, log=True):
         AvaMem = psutil.virtual_memory().available
         nProcessSPC = int(AvaMem/(3*1024*1024*1024))
         nProcessSPC = max(nProcessSPC,1)
-        nProcessSPC = min(nProcessSPC,self.ComputeNProcess())
-        MES = f"The SPC number of Process is defined to {nProcessSPC}."
-        MPlogger().logW(MES=MES)
-        MES = "經考量剩餘記憶體，進程數設定為{}，請依硬體CPU資源數量，妥善設定進程數量，以免程式崩潰！\
-            如果沒有把握，請將進程數設為1，以策安全。".format(nProcessSPC)
-        MPlogger().logW(MES=MES)
+        nProcessSPC = min(nProcessSPC,self._compute_basic_nprocess(log=False))
+        if log:
+            MES = f"The SPC number of Process is defined to {nProcessSPC}."
+            MPlogger().logW(MES=MES)
+            MES = "經考量剩餘記憶體，進程數設定為{}，請依硬體CPU資源數量，妥善設定進程數量，以免程式崩潰！\
+                如果沒有把握，請將進程數設為1，以策安全。".format(nProcessSPC)
+            MPlogger().logW(MES=MES)
 
         return nProcessSPC
-            
+
     def run(self):
-    
+
         DTBJobs = self.DTBJobs
         if _mp_debug_enabled(self.mp_debug):
             import traceback
@@ -450,23 +459,26 @@ class multicoreJob:
         if len(DTBJobs) == 0:
             warning("There is no jobs for multicoreJob to run; return empty list [] immediately.")
             return []
-        
-        section("Multicore job queue", detail=f"jobs={len(DTBJobs)}, preview={min(3,len(DTBJobs))}", icon="⚙️")
 
-        for Job in DTBJobs[0:3]:
-            if "show" not in dir(Job):
-                break
-            section("Job preview", icon="·")
-            Job.show()
         res = []
         if len(DTBJobs) == 1 or self.nProcess ==1:
             self.MulticoreMode = False
-            info("Only one job or nProcess=1; multiprocessing is deactivated.", icon="🧵")
-        
+            key_values("Job execution", [
+                ("jobs", len(DTBJobs)),
+                ("processes", self.nProcess),
+                ("mode", "single-process"),
+            ], icon="·")
+        else:
+            section("Multicore job queue", detail=f"jobs={len(DTBJobs)}, preview={min(3,len(DTBJobs))}", icon="⚙️")
+            for Job in DTBJobs[0:3]:
+                if "show" not in dir(Job):
+                    break
+                section("Job preview", icon="·")
+                Job.show()
+
         #將單一任務執行結果新增至res列表，俟所有任務完成，最後再換成DataFrame，
         #進行存檔或資料視覺化顯示。
         if self.MulticoreMode == False:
-            info("Multiprocessing is inactive now; running jobs in single-process pretest mode.", icon="🧪")
             for Job in DTBJobs:
                 #print("now processing", Job)
                 #Job.show()
@@ -493,30 +505,30 @@ class multicoreJob:
             pool.join()
             '''
             mp_ctx = mp.get_context("spawn") if os.name == "nt" else mp.get_context()
-            
+
             pool = None
-            
+
             try:
                 pool = mp_ctx.Pool(
                     processes=self.nProcess,
                     initializer=_mp_init_logging,
                     initargs=(self.log_queue,),
                 )
-            
+
                 DTBJobsWithMethod = [
                     (job, method)
                     for job in DTBJobs
                 ]
-            
+
                 key_values("Multiprocessing settings", [("jobs", len(DTBJobsWithMethod)), ("processes", self.nProcess), ("safe mode", self.SafeMode)], icon="·")
-            
+
                 if not self.SafeMode:
                     result_iter = pool.istarmap(
                         Launcher,
                         DTBJobsWithMethod,
                         chunksize=1,
                     )
-            
+
                     res = list(
                         tqdm.tqdm(
                             result_iter,
@@ -528,7 +540,7 @@ class multicoreJob:
                         Launcher,
                         DTBJobsWithMethod,
                     )
-            
+
                 pool.close()
                 pool.join()
                 if _mp_debug_enabled(self.mp_debug):
@@ -539,21 +551,21 @@ class multicoreJob:
                         flush=True,
                     )
                 pool = None
-            
+
             except BaseException:
                 if pool is not None:
                     try:
                         pool.terminate()
                     except Exception:
                         pass
-            
+
                     try:
                         pool.join()
                     except Exception:
                         pass
-            
+
                 raise
-    
+
         return res
 
 class CommandExecutor:
@@ -591,7 +603,7 @@ class CommandExecutor:
         """
         if self.thread:
             self.thread.join()
-            
+
 class squ():
     def __init__(self, numL):
         self.numL = numL
@@ -620,7 +632,7 @@ class MPDictTestAnother():
         #self.InputDict[self.num] = self.num
         InputDict[num]=num
         #return self.InputDict
-    
+
 """
 if __name__=='__main__':
 #if False:   
@@ -629,7 +641,7 @@ if __name__=='__main__':
         for sublist in t:
             tempList.extend(sublist)
         return tempList
-        
+
     def SplitList(data, nChunks = 2):
         result = []
         nElemInSubList = int(len(data)/nChunks)
@@ -651,7 +663,7 @@ if __name__=='__main__':
         DTBJobs = [squ(
             numL=testSetCK
             ) for testSetCK in SplitList(testSet, nChunks=nProcess)]
-        
+
         JBSpli = SplitList(testSet, nChunks=nProcess)
         MPresult = multicoreJob(
             DTBJobs, nProcess=nProcess).run()
@@ -668,8 +680,8 @@ if __name__=='__main__':
     print(sum(cp))
     os.system("pause")
 """   
-    
-    
+
+
 def _foo(my_number):
    square = my_number * my_number
    time.sleep(1)
@@ -679,7 +691,7 @@ def _foo(my_number):
 #if __name__ == '__main__':
 if False:
     r = process_map(_foo, range(0, 30), max_workers=3)
-    
+
 if __name__=='__main__':
     A = dict()
     DTBJobs = []
@@ -697,5 +709,4 @@ if __name__=='__main__':
         A.update(SubDict)
     print("af sub update",A)
     os.system("pause")
-   
-    
+

@@ -14,6 +14,7 @@ from utils.utilities import DictSaver
 from utils.utilities import MKDIRandCopy
 from utils.utilities import DictIndentPrint
 from utils.df_utils import dfOutputer
+from utils.log_display import key_values
 from utils.DataConverter_utils_Parameters import ZeroSubtreeRootList
 from utils.DataConverter_utils_Parameters import SPECNodeScoreTable
 #from utils.DataConverter_utils import LabelNormalizer
@@ -76,7 +77,7 @@ def SetTreeFiles(
             OutputPath = OutputPath)
     #複製分類樹資料庫。
     CopyTreeFiles(TreeBaseFNList=TreeBaseFNList,desDir=OutputPath,TreeSourceDir=TreeSourceDir)
-    print(f"SetTreeFiles ({TreeBaseFNList},InfoScoreTable) in {OutputPath}.")
+    key_values("Topic tree files", [("source files", TreeBaseFNList), ("record dir", OutputPath)], icon="·")
     return tpcTree,InfoScoreTable
 
     

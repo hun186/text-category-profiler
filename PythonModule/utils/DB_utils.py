@@ -456,10 +456,9 @@ def createIndex(SQLname,table,IndexCol,IndexName="",
     elif uniqueIndex == True:
         indexType = "UNIQUE INDEX"
     createIndex = f'CREATE {indexType} {IndexName} ON "{table}" ("{IndexCol}");'
-    print("createIndex in createIndex of DB_utils",createIndex)
     if MPLOGGER is not None:
         MES = "Creating index on column {} for table {}".format(IndexCol, table)
-        MPLOGGER.logW(MES)
+        MPLOGGER.logW(MES, printOnScreen=False)
     '''  
     for i in range(10):
         try:

@@ -18,6 +18,8 @@ from utils.utilities import getFNExtFromFullPath
 from utils.utilities import fileNameNormalizer
 from utils.df_utils import dfFromSQLite3
 from utils.MP_utils  import MPlogger
+from utils.log_display import key_values
+from utils.log_display import summarize_sequence
 #from utils.TCF_utils import datasetDirOutputDirPickers
 from utils.TCF_utils import ClassfierOptionParser
 from utils.TextProcessor_utils import textReader
@@ -328,12 +330,14 @@ class SampleReader():
             self.MPLOGGER = MPLOGGER
         
     def show(self,):
-        print("="*50)
-        print("FileName:", self.file)
-        print("預輸入LabelList[:20]:", self.LabelList[:20])
-        print("width:", self.width)
-        print("Mode:", self.Mode)
-        print("ConvertToSpec:", self.ConvertToSpec)
+        key_values("Sample reader job", [
+            ("file", self.file),
+            ("label preview", summarize_sequence(self.LabelList[:5], limit=5)),
+            ("label count", len(self.LabelList)),
+            ("width", self.width),
+            ("Mode", self.Mode),
+            ("ConvertToSpec", self.ConvertToSpec),
+        ], icon="·")
         
     def textSegsToSamples(self,textList,InLabel):
         result = []

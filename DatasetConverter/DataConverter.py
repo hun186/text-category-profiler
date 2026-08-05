@@ -2,10 +2,11 @@ import os
 if os.getcwd().split(os.path.sep)[-1] in [
         "DatasetConverter","BertScript"]:
     os.chdir("../")
-    print(f"Change working directory to {os.getcwd()}")
-print(f"cwd:{os.getcwd()}")
 from PackageImport import PackageImporter
 PackageImporter.proc()
+from utils.log_display import print_once
+
+print_once(f"cwd:{os.getcwd()}", key="DataConverter.cwd")
 
 import setproctitle
 import sys
@@ -266,10 +267,10 @@ class DataConvertJobGenerater():
         self.tokenizationWrap = tokenizationWrap
         if tokenizationWrap == True:
             if modelDir == "":
-                print("tokenizationWrap is True but modelDir is empty, applying datasetDirOutputDirPickers to get the modelDir")
+                info("tokenizationWrap is True but modelDir is empty; resolving modelDir from dataset/output settings.")
                 _,modelDir = datasetDirOutputDirPickers(
                     args=args,rdy_for_stage="DataConverter").proc()
-                print("find modelDir",modelDir)
+                key_values("Tokenizer model directory", [("modelDir", modelDir)], icon="·")
         #print("In DC,modelDir",modelDir)
         #raise Exception
         self.modelDir = modelDir
@@ -298,14 +299,25 @@ class DataConvertJobGenerater():
 
         
     def show(self):
-        print("開始生成資料集轉換任務工作物件。")
-        print("共輸入{}個目錄，前三個為{}".format(
-            len(self.ROOTPATHList),self.ROOTPATHList[:3]))
+        key_values("Dataset converter job", [
+            ("input roots", len(self.ROOTPATHList)),
+            ("root preview", summarize_sequence(self.ROOTPATHList, limit=3)),
+        ], icon="·")
     
     def RemoveDumpArt(self,fiL):
-        MES = "Start to remove duplicated article."
-        MES += "Start to build Hash table for articles."
-        self.MPLOGGER.logW(MES)
+        if len(fiL) == 0:
+            key_values("Duplicate article removal", [
+                ("input files", 0),
+                ("duplicates removed", 0),
+                ("remaining files", 0),
+                ("elapsed seconds", "0.0000"),
+            ], icon="·")
+            return fiL
+        start_time = time.time()
+        key_values("Duplicate article removal", [
+            ("input files", len(fiL)),
+            ("method", "hash first 100MB"),
+        ], icon="·")
         #要用'rt'模型讀取文字檔，進行hash比對，去除重複，故比對時只考慮副檔名為"txt"之檔案。
         #非txt檔則全部保留，不比對內容。
         #fiLTxt = [x for x in fiL if os.path.splitext(x)[1][1:].lower() == "txt"]
@@ -322,15 +334,16 @@ class DataConvertJobGenerater():
             hashDict.update(mydict)
         hashDict = {value : key for (key, value) in hashDict.items()}
         fiL = list(hashDict.values())
-        MES = "Finish unique the articles with hash and return file List."
-        self.MPLOGGER.logW(MES)                       
         return fiL
     
     def BuildFileList(self,FullPathFNrePat):
         fiL = []
         start_time = time.time()
-        print("="*50)
-        print("self.ROOTPATHList",self.ROOTPATHList)
+        key_values("Dataset file discovery", [
+            ("input roots", len(self.ROOTPATHList)),
+            ("root preview", summarize_sequence(self.ROOTPATHList, limit=3)),
+            ("filename pattern", FullPathFNrePat),
+        ], icon="·")
         
         #if self.SQLFile == "":
         #print("In BfileL,FullPathFNrePat",FullPathFNrePat)
@@ -371,17 +384,19 @@ class DataConvertJobGenerater():
         '''        
         if self.RemoveDumpArticle == True:
             nDiff = nOri - len(fiL)
-            MES = f"After remove {nDiff} duplicated article from {nOri},"
-            MES += f" there are still totally {len(fiL)} files left.\n"
-            MES += "Finished removing duplicated article."
-            self.MPLOGGER.logW(MES)
-            #ShowElapsedTime(self.start_time)
-            ShowStepCostTime(start_time, "removing duplicated article.")
+            key_values("Duplicate article removal result", [
+                ("input files", nOri),
+                ("duplicates removed", nDiff),
+                ("remaining files", len(fiL)),
+                ("elapsed seconds", f"{time.time() - start_time:.4f}"),
+            ], icon="·")
 
         else:
-            MES = "RemoveDumpArticle is False, "
-            MES += f"there are still totally {len(fiL)} files.\n"
-            self.MPLOGGER.logW(MES)
+            key_values("Dataset file discovery result", [
+                ("RemoveDumpArticle", False),
+                ("files", len(fiL)),
+                ("elapsed seconds", f"{time.time() - start_time:.4f}"),
+            ], icon="·")
         #如果檔案數過多，大於FixedTestFileBound，則將FixedTest_xxx目錄下
         #的檔案隨機選取一部份留下，FixedTest_xxx下其他檔案略過，以免癱瘓片段推論結果可視化介面。
         if self.FixedTestFileBound!=0 and len(fiL)>self.FixedTestFileBound:
@@ -440,18 +455,23 @@ class DataConvertJobGenerater():
         else:
             for tpc in LabelList:
                 LabelConvertDict[tpc] = tpc
+        nConvertedLabels = sum([LabelConvertDict[x] != x for x in LabelConvertDict.keys()])
         MES="LabelConvertDict Mapping:\n"
-        if sum([LabelConvertDict[x] != x for x in LabelConvertDict.keys()]) == 0:
+        if nConvertedLabels == 0:
             MES += "Identity Map\n"
         else:
             for key in sorted(LabelConvertDict.keys()):
                 MES += "{:<35s} : {:>35s}\n".format(key, LabelConvertDict[key])
                 #print("{:<35s} : {:>35s}".format(key, LabelConvertDict[key]))
-        #print(f"共有{len(LabelConvertDict.keys())}個標籤。")
         MES += f"共有{len(LabelConvertDict.keys())}個標籤。"
+        key_values("Label conversion", [
+            ("mode", "Identity Map" if nConvertedLabels == 0 else "Mapped"),
+            ("label count", len(LabelConvertDict.keys())),
+            ("converted labels", nConvertedLabels),
+        ], icon="·")
         MKDIR(self.datasetSubDir)
         MPlogger(os.path.join(self.datasetSubDir,"OnlyForRecord"),
-                 logFile="dataset.txt").logW(MES=MES)
+                 logFile="dataset.txt").logW(MES=MES, printOnScreen=False)
         with open(os.path.join(
             self.datasetSubDir,"OnlyForRecord","TopicAnalysis_LabelList_Including_NonOccuring.txt"),
             'wt',encoding='utf-8') as f:
@@ -569,26 +589,23 @@ def BuildSamplesDfFromPaths(
     datasetCountOFP = open(datasetCountOFN,mode='at',encoding='utf-8')
     DTBJobs = DCJG.run()
     #將DTBJobs送入多進程執行。
-    print("Start to load samples as a list of list of samples:MPresult.")
-    ShowElapsedTime(start_time)
+    section("Load samples", detail="Build sample jobs and collect MP results", icon="📥")
+    key_values("Sample jobs", [("jobs", len(DTBJobs)), ("processes", nProcess)], icon="·")
     MPresult = multicoreJob(
         DTBJobs, nProcess=nProcess).run()
         #DTBJobs, nProcess=1).run()
-    print("Finshed loading samples as a list of list of samples:MPresult.")
-    print("Start to zip *MPresult as rows_list, MultiLabelCountList.")
-    ShowElapsedTime(start_time)
     if MPresult == []:
         rows_list = []
+        MultiLabelCountList = []
     else:
         rows_list, MultiLabelCountList = zip(*MPresult)
-    print("Finshed loading samples as a list of list of samples.")
-    ShowElapsedTime(start_time)
     rows_list = flattenList(rows_list)
-    print("Finshed join the list of list of samples.")
-    ShowElapsedTime(start_time)
-    print("="*50)
-    print("Finshed Constructing Row_List.")
-    ShowElapsedTime(start_time)
+    key_values("Loaded samples", [
+        ("MP result groups", len(MPresult)),
+        ("rows", len(rows_list)),
+        ("multi-label groups", len(MultiLabelCountList)),
+        ("elapsed seconds", f"{time.time() - start_time:.4f}"),
+    ], icon="·")
     
     '''
     rowlist sample:
@@ -647,8 +664,7 @@ def BuildSamplesDfFromPaths(
                    tsvIndex=True,SQL_table=Count_SQL_table).run()
         ShowElapsedTime(start_time)
     else:
-        print("When loading {}, the resulting row_list is empty".
-              format(ROOTPATHList))
+        warning(f"No sample rows were loaded from {summarize_sequence(ROOTPATHList, limit=3)}.")
 
 
     df = DictRowsListToDF(
@@ -663,19 +679,25 @@ def BuildSamplesDfFromPaths(
     if df.shape[0] != 0:
         df = multicoreJob(nProcess=nProcess).parallelize_dataframe(df, GetDataSRC)
 
-    print("Finished constructing Src and type column.")
-    ShowElapsedTime(start_time)
+    key_values("Source/type columns", [
+        ("rows", df.shape[0]),
+        ("columns", summarize_sequence(list(df.columns), limit=8)),
+        ("elapsed seconds", f"{time.time() - start_time:.4f}"),
+    ], icon="·")
     
     #儲存標籤映射函數。
     for y in sorted(set([DCJG.LabelConvertDict[x] for x in LabelList])):
         datasetCountOFP.write(y+"\n")
 
     #統計輸出樣本數量
-    MES = "\nThere are totally {} samples converted, cf {} or {} for filename.".format(
+    MES = "There are totally {} samples converted, cf {} or {} for filename.".format(
         df.shape[0], OUTPUTMAIN+".tsv", OUTPUTMAIN+".sql3")
-    MES += "\n"+"="*50+"\n"
-    print(MES)
-    datasetCountOFP.write(MES)
+    key_values("Dataset conversion result", [
+        ("samples", df.shape[0]),
+        ("tsv", OUTPUTMAIN+".tsv"),
+        ("sqlite", OUTPUTMAIN+".sql3"),
+    ], icon="·")
+    datasetCountOFP.write(MES + "\n")
     datasetCountOFP.close()
     return df
 
@@ -792,8 +814,7 @@ class DatasetGenerator:
             else:
                 self.MPLOGGER = MPLOGGER
         def show(self):
-            print("df:\n", self.df)
-            print("OUTPUTMAIN", self.OUTPUTMAIN)
+            key_values("DataFrame filter job", [("output", self.OUTPUTMAIN), ("rows", len(self.df))], icon="·")
         def run(self):
             dfOutputer(self.df[['OutLabel','text']],
                        self.OUTPUTMAIN, IndexCols=self.IndexCols).run()
@@ -801,9 +822,13 @@ class DatasetGenerator:
                 CheckResult = "are"
             else:
                 CheckResult = "are not"
+            key_values("TSV null-byte check", [
+                ("file", self.OUTPUTMAIN+".tsv"),
+                ("contains null bytes", CheckResult == "are"),
+            ], icon="·")
             MES = ("For {}, there {} null bytes in your input file").format(
                 self.OUTPUTMAIN+".tsv", CheckResult)
-            self.MPLOGGER.logW(MES=MES)
+            self.MPLOGGER.logW(MES=MES, printOnScreen=False)
 
             
     def __init__(self, df,
@@ -843,11 +868,11 @@ class DatasetGenerator:
 
         
     def show(self):
-        #print("df:\n", self.df)
-        print("FixedTestPATHList", self.FixedTestPATHList)
-        print("logFile", self.logFile)
-        print("OUTPUTMAIN", self.OUTPUTMAIN)
-        print("="*50)
+        key_values("Dataset generator job", [
+            ("FixedTestPATHList", summarize_sequence(self.FixedTestPATHList, limit=4)),
+            ("logFile", self.logFile),
+            ("OUTPUTMAIN", self.OUTPUTMAIN),
+        ], icon="·")
     def run(self):
         self.show()
         #設定訓練集、驗證集及測試集比例。
@@ -865,16 +890,23 @@ class DatasetGenerator:
         MFNDdict = {"train":"train", "validation":"dev", "test":"test"}
     
         Used = 0
+        FT_df = pd.DataFrame()
+        es_df = pd.DataFrame()
         #計算強制做為測試集的txt檔清單。
         FixfiL = []
         for workingPath in self.FixedTestPATHList:
             FixfiL.extend(OSWALK(workingPath, Extension = ["txt","AI2","sql3"]))
         #生成各資料集。
+        key_values("Dataset split plan", [
+            ("train", nTrainSet),
+            ("validation", nValidationSet),
+            ("test", nTestSet),
+            ("fixed test paths", summarize_sequence(self.FixedTestPATHList, limit=4)),
+        ], icon="·")
         DTBJobs = []
         for key in nDict.keys():
             Partdf = self.df.loc[Used:Used+nDict[key],:].copy()
-            MES = f"\nGenerating {key} set,\n"
-            self.MPLOGGER.logW(MES=MES)
+            key_values("Generate dataset split", [("split", key), ("planned rows", nDict[key])], icon="·")
             #Partdf["dataType"].astype("category")
             if key == "test":
                 if len(FixfiL) > 0:
@@ -888,8 +920,10 @@ class DatasetGenerator:
                         DCkwargs = self.DCkwargs)
                 else:
                     FT_df = pd.DataFrame()
-                print("Adding Fixed Test Samples with {} \n".
-                      format(self.FixedTestPATHList))
+                key_values("Fixed test samples", [
+                    ("paths", summarize_sequence(self.FixedTestPATHList, limit=4)),
+                    ("rows", len(FT_df)),
+                ], icon="·")
                 #print("Partdf bf add FT",Partdf)
                 Partdf = pd.concat([Partdf, FT_df], ignore_index=True)
                 #print("Start to output FT_df to MainFN {} \n".
@@ -907,13 +941,14 @@ class DatasetGenerator:
                         #nProcess = self.nProcess,
                         Count_SQL_table = "sampleCount_Elasticsearch",
                         DCkwargs = self.DCkwargs)
-                    print("Adding ES Test Samples with {} \n".
-                          format(self.esJob["indexname"]))
+                    key_values("Elasticsearch test samples", [
+                        ("index", self.esJob["indexname"]),
+                        ("rows", len(es_df)),
+                    ], icon="·")
                 else:
                     es_df = pd.DataFrame()
                 Partdf = pd.concat([Partdf, es_df], ignore_index=True)
-                print("Start to output es_df to MainFN {} \n".
-                      format(self.OUTPUTMAIN_es))
+                key_values("Elasticsearch output", [("output", self.OUTPUTMAIN_es), ("rows", len(es_df))], icon="·")
                 dfOutputer(es_df, self.OUTPUTMAIN_es, IndexCols=self.IndexCols).run()
 
             if Partdf.shape[0] == 0:
@@ -931,31 +966,29 @@ class DatasetGenerator:
             Used += nDict[key]
 
             #輸出各資料集至檔案，MFNDdict[key]為各資料集之輸出主檔名。
-            print("~"*50)
             start_time = time.time()
-            print(f"Start to remove duplicate samples for {key} set.")
+            nBeforeDedup = len(Partdf)
             Partdf = Partdf.drop_duplicates(['OutLabel','text'])
-            print(f"Finished removing duplicate samples for {key} set.")
-            print(f"It cost {time.time()-start_time:.2f} seconds to remove duplicate samples.")
-            print("~*50")
+            key_values("Dataset split dedup", [
+                ("split", key),
+                ("original rows", nBeforeDedup),
+                ("removed rows", nBeforeDedup - len(Partdf)),
+                ("remaining rows", len(Partdf)),
+                ("elapsed seconds", f"{time.time()-start_time:.4f}"),
+            ], icon="·")
             DTBJobs.append(
                 self.Outputer(Partdf,
                               OUTPUTMAIN = os.path.join(self.datasetSubDir, MFNDdict[key]),
                               logFile = self.logFile))
         nDict["fixed_test"] = len(FT_df)
         nDict["Elasticsearch"] = len(es_df)
-        for key in ["train","validation","test"]:
-            if key in ["train","validation"]:
-                nsamples = "{}".format(nDict[key])
-                MES = "For {} set, there are totally {} samples before removing duplicate samples.\n".format(
-                    key,nsamples)
-            elif key in ["test"]:
-                MES = "For test set, there are totally {} samples before removing duplicate samples".format(
-                    nDict["test"]+nDict["fixed_test"]+nDict["Elasticsearch"])
-                MES += f"where {nDict['fixed_test']} samples are from Fixted_Test source and \n"
-                MES += f"{nDict['Elasticsearch']} samples are from Elasticsearch source.\n"
-            self.MPLOGGER.logW(MES=MES)
-            
+        key_values("Dataset split source counts", [
+            ("train before dedup", nDict["train"]),
+            ("validation before dedup", nDict["validation"]),
+            ("test before dedup", nDict["test"] + nDict["fixed_test"] + nDict["Elasticsearch"]),
+            ("fixed_test rows", nDict["fixed_test"]),
+            ("Elasticsearch rows", nDict["Elasticsearch"]),
+        ], icon="·")
 
         #使用多進程儲存train、dev、test資料集。
         #樣本數太多時(如400萬筆)，如啓用狀態條，使用新的istarmap時，在第25行:
@@ -1147,7 +1180,10 @@ def loadLabels(args,DCkwargs=dict()):
         RemoveDumpSamples = False
     
     LabelsToCorrect = ListDiff(LabelList,InfoScoreTable.keys())
-    key_values("Topic tree labels", [("Label count", len(LabelList)), ("InfoScore preview", summarize_sequence(list(InfoScoreTable.keys())[0:10]+list(InfoScoreTable.keys())[-10:], limit=10))], icon="·")
+    key_values("Topic tree labels", [
+        ("Label count", len(LabelList)),
+        ("InfoScore labels", summarize_sequence(list(InfoScoreTable.keys())[:5], limit=5)),
+    ], icon="·")
     if len(LabelsToCorrect) > 0 and set(LabelList) != {"Negative","Positive"}:
         warning(f"The following Labels {LabelsToCorrect} are not in the TopicTree.csv which will lead an KeyError when applying sampleReader".
               format(LabelsToCorrect))
@@ -1238,12 +1274,14 @@ if __name__ == '__main__':
             #time.sleep(30)
         except Exception as e:
             print(e)
-        print("="*50)
-        print(f"start to do {args.WeiTechworkID} in {args.WeiTechWorkPoolPATH}, BertDatasetSubDir is {args.BertDatasetSubDir}")
+        key_values("WeiTech dataset handoff", [
+            ("workID", args.WeiTechworkID),
+            ("work pool", args.WeiTechWorkPoolPATH),
+            ("dataset dir", args.BertDatasetSubDir),
+        ], icon="·")
     #else:
     #依照目錄設定，由txt檔產製資料集檔案。
-    MES = "開始產製資料集檔案。"
-    MPLOGGER_TCFMain.logW(MES)
+    section("Dataset file generation", detail="開始產製資料集檔案。", icon="🧾")
     from DatasetConverter.ConverterParameters import DataAugmentationGoal
     #print(f"{Fore.LIGHTYELLOW_EX}args.BertDatasetSubDir:{args.BertDatasetSubDir}{Fore.RESET}")
     #time.sleep(15)
@@ -1282,7 +1320,11 @@ if __name__ == '__main__':
     multicoreJob(DTBJobs,nProcess=DTBJnProcess).run()
     
     section("Generate dataset files", icon="📦")
-    ShowElapsedTime(exeTimeDict["stage_start_time"])
+    key_values("Dataset generation handoff", [
+        ("elapsed seconds", f"{time.time() - exeTimeDict['stage_start_time']:.4f}"),
+        ("FixedTestPATHList", summarize_sequence(FixedTestPATHList, limit=4)),
+        ("OUTPUTMAIN", OUTPUTMAIN),
+    ], icon="·")
     
     if args.ESDataConfigFile != "":
         #esJob = json.load(open(args.ESDataConfigFile))
@@ -1302,7 +1344,6 @@ if __name__ == '__main__':
     
     elapsed = time.time()-exeTimeDict["stage_start_time"]
     stage_done("DataConverter", elapsed)
-    print(ShowElapsedTime(exeTimeDict["stage_start_time"]))
     key_values("Converted sample counts", sorted(nDict.items()), icon="·")
     nTotalTrainable = nDict["train"]+nDict["validation"]
     nTotalTest = nDict["test"]+nDict["fixed_test"]+nDict["Elasticsearch"]
@@ -1325,6 +1366,6 @@ if __name__ == '__main__':
     #刪除資料集df，釋放記憶體。
     del df
     exeTimeDict["DataConverter"] = f"{time.time()-exeTimeDict['stage_start_time']:.2f}"
-    print("exeTimeDict",exeTimeDict)
+    key_values("DataConverter timing", sorted(exeTimeDict.items()), icon="·")
     TaskConnector(SrcTask="DataConverter",DesTask="RunClassfier",
                   WorkingDir=args.BertDatasetSubDir,logFile="TCFMain.log").proc()

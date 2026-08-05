@@ -38,6 +38,7 @@ from utils.MP_utils import multicoreJob
 from utils.df_utils import dfOutputer
 from utils.df_utils import dfFromSQLite3
 from utils.log_display import key_values
+from utils.log_display import summarize_sequence
 from utils.log_display import stage_banner
 from utils.log_display import stage_done
 from ClassesTree.Label_utils import LabelListLoader
@@ -64,13 +65,13 @@ class TextInfoSearcher:
         for logFile in self.SrcLogFileList:
             #if '\"' in text:
                 #return "Pass"
-            
+
             #if "clear the ground for a new property development project" in text:
                 #print("text 1a:",text)
             if not os.path.isfile(logFile):
                 MES = f"The file {logFile} does NOT exist. Try Next File."
                 self.MPLOGGER.logW(MES, printOnScreen = False)
-                continue                
+                continue
             if Path(logFile).stat().st_size == 0:
                 MES = f"The file {logFile} is empty. Try Next File."
                 self.MPLOGGER.logW(MES, printOnScreen = False)
@@ -82,7 +83,7 @@ class TextInfoSearcher:
             except Exception as e:
                 self.MPLOGGER.logW(e)
                 continue
-                
+
             #如果是空表，跳過。
             if cursor.fetchone()[0] == 0:
                 MES = "The table sampleSrc in file {} is empty. Try Next File.".format(logFile)
@@ -96,7 +97,7 @@ class TextInfoSearcher:
             ColumnsString = ",".join(self.infoNameList)
             query = 'SELECT {} from sampleSrc WHERE text = "{}";'.format(
                 ColumnsString,text)
-            
+
             #if "clear the ground for a new property development project" in query:
                 #print("query:",query)
                 #raise Exception
@@ -204,7 +205,7 @@ def apply_compute(row,**kwargs):
     #print("result to return",result)
     #print("~"*50)
     #import time
-    #time.sleep(20)    
+    #time.sleep(20)
     return result
 
 
@@ -213,7 +214,7 @@ def parallel_apply(df, func, num_of_processes=8,kwargs=dict()):#,factor1=None,fa
     with Pool(num_of_processes) as pool:
         #func = partial(func, factor1=factor1, factor2=factor2)
         func = partial(func, **kwargs)
-        
+
         result = pool.map(func, [row for _, row in df.iterrows()])
     #允許一個執行對象回傳多筆輸出為清單，（即為列擴增），在主程式中進行flat合併。
     #print("result in Line 211 b4 fla",result)
@@ -239,7 +240,7 @@ def SummarizePerformance():
         for subList in SplitList(SPEC_TOPIC_LIST, nChunks=nProcess_STRO)]
     multicoreJob(
         DTBJobs, nProcess=nProcess_STRO,method="proc").run()
-    
+
     RowAttList = ['Type']
     ColAttList = ['pred_Type']
 
@@ -266,7 +267,7 @@ def SummarizePerformance():
         datasetDir,'Confusion Matrix')
     dfOutputer(dfPVT,
                OUTPUTMAIN, IndexCols=["Src"]).run()
-    
+
     cbar = False
     annot = True
     xticklabels = "auto"
@@ -295,7 +296,7 @@ def SummarizePerformance():
     fig.savefig(OuF, dpi = dpi)
     #SaveFigToPNG(fig, OFNM)
     plt.close('all')
-    
+
 if __name__=='__main__':
     setproctitle.setproctitle('CZJCombineTestResult')
     if os.getcwd().split(os.path.sep)[-1] in [
@@ -310,20 +311,21 @@ if __name__=='__main__':
         MES += f"In {args.WorkPoolROOT}, There is no BertDatasetSubDir ready for CombineTestResult! ABORT!"
         MPlogger().logW(MES)
         raise Exception
-        
-    
+
+
     NewBertDatasetSubDir = BertDatasetSubDir.replace(
         "_rdy_for_CombineTestResult","_is_running_CombineTestResult")
     #NewBertDatasetSubDir += BertDatasetSubDir + "_is_running_DataConverter"
-    os.rename(BertDatasetSubDir,NewBertDatasetSubDir)    
+    os.rename(BertDatasetSubDir,NewBertDatasetSubDir)
     stage_banner("CombineTestResult", detail=f"WorkDir: {NewBertDatasetSubDir}")
     MES = f"CombineTestResult started. WorkDir is {NewBertDatasetSubDir}."
     BertDatasetSubDir = NewBertDatasetSubDir
     MPLOGGER = MPlogger(logSubDir=f"{BertDatasetSubDir}/logs")
     MPLOGGER_TCFMain = MPlogger(logSubDir=f"{BertDatasetSubDir}/logs",logFile="TCFMain.log")
-    MPLOGGER_TCFMain.logW(MES)
+    MPLOGGER_TCFMain.logW(MES, printOnScreen=False)
+    key_values("CombineTestResult workspace", [("workdir", NewBertDatasetSubDir)])
     datasetDBDir = args.datasetDataBaseSubDir
-    
+
     datasetDir = BertDatasetSubDir
     '''
     args = ClassfierOptionParser()
@@ -333,7 +335,7 @@ if __name__=='__main__':
         datasetDir = args.BertDatasetSubDir
     '''
     MES = "Analysis test_result of dataset {}".format(datasetDir)
-    MPLOGGER_TCFMain.logW(MES)
+    MPLOGGER_TCFMain.logW(MES, printOnScreen=False)
     '''
     SrcLogFileList = [
         os.path.join(datasetDir,datasetDBDir,"dataset_total_with_filename.sql3"),
@@ -342,23 +344,23 @@ if __name__=='__main__':
         ]
     '''
     #dataset_total_with_filename.sql3,dataset_total_with_filename_ES.sql3,dataset_total_with_filename_FixedTest.sql3
-    SrcLogFileList = OSWALK(os.path.join(datasetDir,datasetDBDir),FNrePat="dataset_total_with_filename.*\.sql3")
+    SrcLogFileList = OSWALK(os.path.join(datasetDir,datasetDBDir),FNrePat=r"dataset_total_with_filename.*\.sql3")
     if len(SrcLogFileList) == 0:
         MES = f"When run CombineTestResult.py, there is no dataset_total_with_filename database found! Check the correctness of the datasetDB file pointer for {os.path.join(datasetDir,datasetDBDir)}."
-    text = "向中央汇报了情况，得到授权，与吉尔尼斯进行联络。 外交无小事，法师不敢怠慢，连忙引着项宁轩和风清如前去王宫。 法师塔外是一片喧嚣的广场之上，广场对面就是王宫大门。已经有不少手持招募令的人在王宫大门口等候。 法师带着项宁轩绕过正门，直接从侧门进了王宫。宫廷侍卫显然是认识这位法师的，问了两句就直接放行。 此时，项宁轩已经知道这位法师名叫罗伊，当初兽人攻破达拉然时，他就流亡到了吉尔尼斯，至今已经有几十年了。在吉尔尼斯还是很有面子的。 像吉尔尼斯这样的小国，没那么大的规矩。罗伊带着项宁轩直接来到国王办公室外，这才被"
-    print("text {} is from {}".format(
-        text,TextInfoSearcher(
-            SrcLogFileList,["file","PartNO"],
-            MPLOGGER = MPlogger(logSubDir=f"{BertDatasetSubDir}/logs",logFile="TextInfoSearcher.log"),
-            ).proc(text)))
-    '''    
+        MPLOGGER_TCFMain.logW(MES)
+    key_values("Result analysis inputs", [
+        ("dataset", datasetDir),
+        ("source db count", len(SrcLogFileList)),
+        ("source db preview", summarize_sequence(SrcLogFileList, limit=3)),
+    ])
+    '''
     nProcess = mp.cpu_count()-1
     nProcess = 10
     '''
-    nProcess = multicoreJob().ComputeNProcess()
-    
+    nProcess = multicoreJob().ComputeNProcess(log=False)
+
     LabelFile = "TopicAnalysis_LabelList.txt"
-    
+
     LabelFile = os.path.join(datasetDir,"TopicAnalysis_LabelList.txt")
     #TypeList = ['体育', '娱乐', '家居', '彩票','房产', '教育', '时尚', '时政','星座',
                 #'游戏', '社会', '科技','股票', '财经']
@@ -366,7 +368,7 @@ if __name__=='__main__':
 
     TypeList = LabelListLoader.proc(LabelFile)
     SPEC_TOPIC_LIST = TypeList
-    
+
     labeltoType = {}
     TypetoLabel = {}
     for i,Type in enumerate(TypeList):
@@ -390,13 +392,13 @@ if __name__=='__main__':
         MES = f"The number of test samples {df_test.shape[0]} is not the same as the number of result probability for test samples {df_result.shape[0]}"
         MES += "\n There might be somehting wrong!"
         MPLOGGER_TCFMain.logW(MES)
-        
-    
+
+
     #create a new dataframe
     if args.ModelType == "TF15Bert":
         df_map_result = pd.DataFrame({'Type': df_test['Type'],
             'text': df_test['text'],
-            'label': df_result.idxmax(axis=1)})                
+            'label': df_result.idxmax(axis=1)})
         df_map_result['pred_Type'] = df_map_result['label'].apply(
             lambda x:labeltoType[x])
     elif args.ModelType in ["PytorchXLM","PytorchRBTL3"]:
@@ -404,11 +406,12 @@ if __name__=='__main__':
             'text': df_test['text']})
         df_map_result['pred_Type'] = df_result
     MES = "Start to query the Src of texts."
-    MPLOGGER_TCFMain.logW(MES)
+    MPLOGGER_TCFMain.logW(MES, printOnScreen=False)
+    key_values("Source lookup", [("processes", nProcess), ("rows", len(df_map_result))])
     #print("Start to query the Src of texts.")
     #df_map_result['Src'] = df_map_result['text'].apply(
         #lambda x:searchSrc(x,SrcLogFile))
-    
+
     '''
     paraResult = parallelize_on_rows(
         df_map_result['text'],
@@ -424,45 +427,43 @@ if __name__=='__main__':
     #time.sleep(20)
     #df_map_result['PartNO'] = parallelize_on_rows(
         #df_map_result['text'],
-        #TextInfoSearcher(SrcLogFileList,"PartNO").proc, num_of_processes=nProcess)    
-    
+        #TextInfoSearcher(SrcLogFileList,"PartNO").proc, num_of_processes=nProcess)
+
     #df_map_result['File'] = parallelize_on_rows(
         #df_map_result['Src'],
         #getFNFromFullPath, num_of_processes=nProcess)
-    
+
     #view sample rows of the newly created dataframe
     df_map_result = df_map_result.reindex(
         columns=['Type','pred_Type', 'text','Src', 'File','PartNO'])
-    
-    
+
+
     MES = "Finished querying the Src of texts."
-    MPLOGGER_TCFMain.logW(MES)
-    print("Start to sorting df_map_result by [Type,pred_Type]")
+    MPLOGGER_TCFMain.logW(MES, printOnScreen=False)
+    key_values("Verification dataframe", [("sort by", ["Type", "pred_Type"]), ("rows", len(df_map_result))])
     df_map_result = df_map_result.sort_values(by=['Type','pred_Type'])
     #df_OutputMain(df_map_result, os.path.join(
         #datasetDir,'test_results_verification'))
     OUTPUTMAIN = os.path.join(datasetDir,'test_results_verification')
     dfOutputer(df_map_result,
                OUTPUTMAIN, IndexCols=["Src", 'File'],dtype={"PartNO":"INTEGER"}).run()
-    
-    print(df_map_result.sample)
+
     Matchdf = pd.DataFrame(
         [df_map_result['Type'] == df_map_result['pred_Type']]).transpose()
     Matchdf.columns = ["match"]
-    print("="*50)
     MatchCount = Matchdf.groupby('match').size()
-    print("MatchCount",MatchCount)
-    try:
-        print("accuracy = {}".format(
-            MatchCount[True]/(MatchCount[True]+MatchCount[False])))
-    except:
-        pass
-    
-    if len(df_map_result) == sum(MatchCount):
-        key_values("Verification status", [("sample count sum", "normal")], icon="·")
-    else:
-        key_values("Verification status", [("sample count sum", "WARNING: strange")], icon="·")
-    
+    match_count = int(MatchCount.get(True, 0))
+    mismatch_count = int(MatchCount.get(False, 0))
+    total_count = match_count + mismatch_count
+    accuracy = f"{match_count / total_count:.4f}" if total_count else "n/a"
+    sample_count_status = "normal" if len(df_map_result) == total_count else "WARNING: strange"
+    key_values("Match summary", [
+        ("matched", match_count),
+        ("mismatched", mismatch_count),
+        ("accuracy", accuracy),
+        ("sample count sum", sample_count_status),
+    ], icon="·")
+
     if args.SummarizePerformance == True:
         SummarizePerformance()
     #將目錄更名，以供下階段功能程式抓取。
@@ -472,6 +473,7 @@ if __name__=='__main__':
     RenameDir(SrcDir=BertDatasetSubDir,DesDir=NewBertDatasetSubDir)
     stage_done("CombineTestResult")
     MES = f"CombineTestResult is finished. Rename {BertDatasetSubDir} as {NewBertDatasetSubDir}"
+    key_values("CombineTestResult handoff", [("from", BertDatasetSubDir), ("to", NewBertDatasetSubDir)])
     MPLOGGER_TCFMain = MPlogger(logSubDir=f"{NewBertDatasetSubDir}/logs")
-    MPLOGGER_TCFMain.logW(MES)
-    
+    MPLOGGER_TCFMain.logW(MES, printOnScreen=False)
+
