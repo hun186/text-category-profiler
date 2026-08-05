@@ -1269,15 +1269,22 @@ if __name__ == '__main__':
     print(ShowElapsedTime(exeTimeDict["stage_start_time"]))
     
     print("nDict",nDict)
+    nTotalTrainable = nDict["train"]+nDict["validation"]
     nTotalTest = nDict["test"]+nDict["fixed_test"]+nDict["Elasticsearch"]
-    if nTotalTest == 0:
+    nTotalConverted = nTotalTrainable+nTotalTest
+    if nTotalConverted == 0:
         MES = "-"*50+"\n"
-        MES += "The total number of all samples is ZERO! Something wrong and BertClassfier won't run!"
+        MES += "The total number of all samples is ZERO! Something wrong and BertClassfier won't run!\n"
         MES += "Make sure that:\n"
-        MES += "1.The port setting is correct and FixedTest_\{port\} data are fine.\n"
+        MES += "1.The port setting is correct and FixedTest_{port} data are fine.\n"
         MES += "2.For ElasticSearch Database, remerber to use -ESCFFile ABC\n"
-        MES += "3.For WTF, remember to set -WTFInpPath \{InputPath\} -WTFOptPath \{OutputPath\} and -WTFSepWorkPool if necessary.\n"
+        MES += "3.For WTF, remember to set -WTFInpPath {InputPath} -WTFOptPath {OutputPath} and -WTFSepWorkPool if necessary.\n"
+        MPLOGGER_TCFMain.logW(MES)
+        raise Exception
+    if args.test == True and nTotalTest == 0:
         MES = "-"*50+"\n"
+        MES += "The total number of test samples is ZERO, but test mode is enabled!\n"
+        MES += "Make sure that FixedTest, Elasticsearch, or dataset test split settings provide test samples.\n"
         MPLOGGER_TCFMain.logW(MES)
         raise Exception
     #刪除資料集df，釋放記憶體。
