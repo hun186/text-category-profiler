@@ -1,8 +1,8 @@
 # 訓練與測試語料
 FixedTest/
 **/Not_Using/
-data/
-datasets/
+#data/
+#datasets/
 corpus/
 WorkPool*/
 
