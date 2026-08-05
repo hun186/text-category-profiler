@@ -1,0 +1,1 @@
+肝缺血再灌注损伤(hepatic ischemia reperfusion injury, HIRI)时，体内NO、eNOS减少，iNOS增多。NO减少时，肝窦收缩微循环障碍；肝脏细胞水肿、坏死、凋亡；亚硝酸盐还原为NO增多。NO涉及HIRI的多个环节。损伤早期，eNOS激活产生NO有保护作用，但eNOS过度表达且其衍生NO生物利用度过高可加重肝损伤；而iNOS晚期因大量产生NO产生保护作用。缺血预处理、缺血后处理以及药物预处理则可通过增强eNOS、降低iNOS活性而增加血清NO并降低丙二醛含量，发挥肝脏围术期保护功能。本文综述了近年来NO与HIRI相关性新研究进展。

@@ -1,0 +1,84 @@
+内源性硫化氢供体S-炔丙基半胱氨酸药理作用研究进展
+Research Progress on Pharmacological Effects of S-Propargyl-Cysteine, the Endogenous Hydrogen Sulfide Donor
+
+1. 引言
+
+硫化氢(H2S)是继一氧化碳(CO)和一氧化氮(NO)之后的第三个内源性生物活性分子。在哺乳动物体内，H2S以半胱氨酸和同型半胱氨酸(homocysteine, Hcy)为底物，由胱硫醚-β-合成酶(cystathionine beta synthase, CBS)、胱硫醚-γ-裂解酶(cystathionine Gamma Lyase, CSE/CTH)和3-巯基丙酮酸硫转移酶(3-mercaptopyruvate sulfurtransferase, 3-MST)等催化合成。众多研究发现H2S在人体内参与调节血管张力、心肌收缩力、神经传递、胰岛素分泌、炎症等 [1]。当H2S的生物学作用在不断被揭示的同时，越来越多的H2S供体也在不断被发现。S-炔丙基半胱氨酸(S-propargyl-cysteine, SPRC)，是将大蒜内含硫活性成分S-烯丙基半胱氨酸(S-allyl-L-cysteine, SAC)的烯丙基修饰改造为炔丙基得到的新型内源性H2S供体，研究发现这种含有硫原子的氨基酸半胱氨酸衍生物，可以调控体内H2S水平，在多个疾病模型中表现出较为显著的治疗作用。同时，SPRC的多种缓控释剂型如纳米长循环脂质体、聚乳酸微球等也在不断被用于疾病模型研究，本文将根据疾病类型对SPRC的药理活性和作用机制进行综述。
+
+2. 心血管疾病
+
+2.1. 心肌梗死
+
+在大鼠急性心肌梗死(myocardial Infarction, MI)模型和缺氧心肌细胞模型中，与对照组相比，SPRC治疗可使心肌梗塞面积减少，血清中乳酸脱氢酶(lactate Dehydrogenase, LDH)、肌酸激酶(creatine Kinase, CK)和丙二醛(malondialdehyde, MDA)水平降低，心脏功能改善，使MI大鼠的CSE活性和血浆H2S浓度增加。同时发现SPRC可以提高缺氧心肌细胞的存活率，使CSE的mRNA和蛋白表达水平上调，而CSE抑制剂DL-炔丙基甘氨酸(DL-propargylglycine, PAG)则可以使SPRC的保护作用消失，证明SPRC是通过CSE/H2S相关通路发挥心脏保护作用 [2]。
+
+2.2. 心肌损伤
+
+在多柔比星(doxorubicin, Dox)诱导的H9C2心肌细胞损伤模型中，SPRC可以提高细胞活力、减少LDH释放、调控糖蛋白130 (gp130)/信号传导与转录激活因子3 (signal transducer and activator of transcription 3, STAT3)下游信号分子蛋白表达、抑制细胞凋亡及氧化应激水平异常、降低线粒体功能紊乱及细胞内钙离子超载。在Dox诱导的小鼠心肌毒性模型中，SPRC可以通过激活gp130/STAT3改善心功能异常及心肌病理损伤，抑制心肌细胞凋亡并调控gp130/STAT3下游抗凋亡蛋白表达。这两种模型均证明了SPRC通过激活gp130介导的STAT3信号通路改善Dox心脏毒性，发挥心肌保护作用 [3]。
+
+在Dox诱导的原代心肌细胞损伤模型中，SPRC通过激活STAT3提高CSE蛋白表达水平，增强STAT3与CSE相互作用，并调控STAT3下游蛋白表达，在Dox诱导的小鼠心力衰竭模型中，SPRC可通过激活STAT3改善心功能异常及心脏病理损伤，抑制心肌细胞坏死凋亡。两者均证明SPRC通过激活STAT3介导的CSE表达改善Dox诱导的心肌凋亡及心力衰竭，为H2S供体治疗心力衰竭提供新的分子基础和治疗策略 [3]。
+
+研究发现SPRC对正常大鼠心肌的收缩没有影响，但可以抑制大鼠心室乳头肌在缺氧/复氧(H/R)之后细胞的凋亡水平以及维持细胞的基本形态，其机制与抑制心室乳头肌在缺氧过程中的收缩有关。同时SPRC可以增强心肌细胞在H/R之后的存活率，改善细胞复氧之后收缩降低的现象，其机制可能为缺氧过程中降低细胞外钙的流入，增加肌浆网对细胞内钙的摄取，降低在复氧初期钙离子的大量释放，从而减轻细胞钙超载达到保护细胞的作用 [4]。
+
+2.3. 心力衰竭
+
+在异丙肾上腺素(ISO)诱导的野生型和CSE基因敲除型小鼠心力衰竭模型以及过氧化氢(H2O2)诱导的H9C2细胞氧化应激模型中发现，内源性H2S缺失会导致小鼠对ISO诱导的心肌损伤更为敏感。SPRC可以通过刺激CSE表达，提高机体内H2S含量，而H2S可通过硫巯基化直接作用于钙离子/钙调素依赖性蛋白激酶II (calcium/calmodulin-Dependent Protein Kinase II, CaMKII)，调节CaMKII活性，抑制心肌细胞凋亡，减少氧化应激损伤，从而发挥抗心衰保护作用。该研究首次证明CaMKII cysteine-6是H2S调控的重要位点，可以通过巯基化修饰抑制CaMKII激活，进而抑制线粒体通透性转换孔(mPTP)异常开放，从而提高线粒体功能发挥心肌保护作用，同时证明H2S可通过沉默信息调节因子1 (sirtuin1, SIRT1)途径对抗氧化应激，发挥心肌保护作用 [5]。
+
+在探究SPRC缓控释剂(CR-SPRC)对大鼠心肌梗死后心力衰竭的保护作用及相关分子机制 [6] [7] 中发现，CR-SPRC能明显提高冠状动脉左前降支结扎引起的急性心肌梗死大鼠的存活率、降低心脏梗死面积及左室纤维化面积、提高左室射血分数、降低左室内径指数、提高心衰大鼠的心功能、促进心脏中的血管新生(尤其能促进结扎部位周围的血管的形成)，CR-SPRC可增加血清中H2S浓度以及梗死周边区中CSE蛋白表达，并能维持谷胱甘肽(glutathione, GSH)、过氧化氢酶(catalase, CAT)和超氧化物歧化酶(super oxide dismutase, SOD)等抗氧化酶的水平，抑制梗死周边区中凋亡相关因子(bax、caspase-9和caspase-3)等来发挥抗氧化及抗凋亡作用，此外CR-SPRC还能够降低梗死心脏中生长刺激表达因子2 (growth stimulating express gene 2, ST2)的表达，并调控下游的丝裂原活化蛋白激酶(mitogen-activated protein kinase, MAPK)及蛋白激酶B (protein kinase B, PKB/Akt)信号通路。CR-SPRC所表现出来的这一系列心脏保护作用均优于普通SPRC，这不仅为H2S介导的药物治疗提供了一个崭新的研究方向，也为该化合物剂型的研究提供了一个参考。
+
+通过薄膜水化法制备成的SPRC纳米长循环脂质体在体内外均具有良好的缓释效果，能长时间提高体内血浆和组织中SPRC以及H2S浓度，与游离SPRC相比，SPRC纳米长循环脂质体对大鼠心力衰竭模型表现出更良好的治疗效果，其机制主要是通过提高体内H2S水平而发挥抗氧化、抗纤维化作用，与转化生长因子β1 (TGF-β1)/Smad3信号通路有关 [8]。
+
+2.4. 血管生成
+
+探究SPRC在正常状态及缺血状态下对血管新生作用 [9] 时发现，在体外实验中，SPRC可以促进人脐静脉内皮细胞(human umbilical vein endothelial cells, HUVEC)的活力、增殖、黏附、迁移以及管腔形成。在正常状态下的体内实验中，SPRC可以促进大鼠动脉环中细胞的向外迁出、促进Matrigel栓中的血管生成、促进血管向植入海绵中延伸、促进烫伤的愈合以及促进鸡胚绒毛尿囊膜上的血管新生。在缺血状态下的体内实验中，SPRC可以在小鼠下肢缺血模型中促进血流恢复、侧支循环生成以及使得毛细血管密度增加。在大鼠心梗模型中，SPRC能促进心功能恢复、减少梗死面积及纤维化面积、增加侧支循环。原代HUVEC细胞经SPRC处理后，STAT3磷酸化显著增强。RNA干扰证实了STAT3在介导SPRC促血管生成作用中的关键作用，但共结晶排除了SPRC和STAT3直接作用的可能，而免疫共沉淀则显示SPRC处理后血管内皮生长因子受体2(VEGFR2)与STAT3的作用加强，同时免疫荧光和染色质免疫沉淀显示SPRC诱导了STAT3的核转位，SPRC引起STAT3与血管内皮生长因子(Vegf)、细胞外调节蛋白激酶(Erk)、Cth、及Akt启动子的结合增强，随后检测到血管内皮生长因子(vascular endothelial growth factor, VEGF)及CTH蛋白合成增加。该实验首次阐明了SPRC促血管新生中STAT3所介导的相关分子机制，包括H2S-VEGFR2-STAT3这条STAT3激活通路的首次提出，以及STAT3对于Vegf、Cth基因转录激活的发现，为硫化氢及STAT3的基础研究提供了理论支持 [9]。
+
+2.5. 动脉粥样硬化
+
+通过体内外模型探究SPRC对动脉粥样硬化斑块的作用及其机制 [10]，结果表明SPRC可以降低血脂，抑制斑块的形成。SPRC能够抑制炎症因子诱导的MAPK通路的激活及转录因子激活因子蛋白-1 (AP-1)的活化，导致基质金属蛋白酶-9 (matrix metalloprotein 9, MMP-9)的表达减少，从而抑制斑块区细胞外基质的降解。抑制溶血磷脂酰胆碱(Lyso-phosphocholine, LysoPC)诱导的凝集素样氧化低密度脂蛋白受体-1 (low-density lipoprotein receptor-1, LOX-1)的表达和B淋巴细胞瘤-2基因(B-cell lymphoma-2, Bcl-2)的下调，减少Caspase通路的激活，抑制血管平滑肌细胞(vascular smooth muscle cell, VSMC)的凋亡，增加斑块纤维帽中VSMC的含量。同时SPRC能够增加巨噬细胞和VSMC的自噬，促进泡沫细胞的清除以及VSMC的损伤修复，因而推测SPRC具有稳定斑块的作用。
+
+3. 脑血管疾病
+
+在脑血管疾病中，SPRC是否存在类似于在心血管疾病中所表现出的保护作用？研究发现人和大鼠随着年龄的增长，体内的H2S含量与Hcy、活性氧(ROS)一样呈上升趋势，而急性脑梗病人血清中H2S浓度是显著下降的(P < 0.01)，长时间观察脑缺血–再灌注损伤(cerebral ischemia-reperfusion injury, CIRI)大鼠血清中H2S浓度发现其先下降后上升。通过gain-lost实验，在大鼠和CBS+/- + MST-ckd小鼠CIRI模型中发现SPRC对CIRI有治疗作用，并通过H2S含量的测定明确治疗作用是由H2S介导的。通过体内和原代神经元的氧糖剥夺(oxygen glucose deprivation, OGD)实验，发现H2S发挥保护作用是通过CBS和MST/H2S/LC3-II通路以及抗氧化机制实现的，该研究为脑缺血性疾病的防治提供了新思路 [11]。
+
+4. 抗氧化
+
+在高糖刺激的H9C2心肌细胞系中，SPRC处理能够显著降低高糖诱导的凋亡及细胞内ROS聚集。SPRC能够增加核因子E2相关因子2 (Nuclear factor-erythroid 2 related factor 2, Nrf2)的稳定性并促进其向核内迁移，上调其转录活性，并最终诱导下游抗氧化酶的表达和活性的提高。进一步的研究表明SPRC主要是通过CSE及Akt通路干扰Nrf2与Kelch样ECH-相关蛋白1 (kelch-like ECH-associated protein 1, KEAP1)的结合，激活Nrf2，最终升高其下游抗氧化酶的表达。在链脲佐菌素(streptozocin, STZ)诱导的大鼠二型糖尿病模型中也发现同细胞系一样的结果 [12]。
+
+在蛋氨酸和胆碱缺乏(methionine and choline deficient diet, MCD)饮食诱导的小鼠非酒精性脂肪肝(non-alcoholic fatty liver disease, NAFLD)模型中，SPRC能显著降低肝脏ROS和MDA水平、提高SOD活性，上调Akt的磷酸化、血红素加氧酶-1 (heme oxygenase-1, HO-1)和CSE的表达及Nrf2的核转位，在油酸(oleic acid, OA)诱导的HepG2细胞中，SPRC表现出相同的作用机制。而磷酸肌醇3激酶(phosphoinositide 3-kinase, PI3K)抑制剂LY294002可消除SPRC诱导的HO-1表达和Nrf2核转位，CSE抑制剂PAG和HO-1 siRNA可消除SPRC的抗氧化作用。这些结果证明SPRC通过PI3K/Akt/Nrf2/HO-1信号通路对NAFLD产生抗氧化作用 [13]。
+
+5. 炎症
+
+在探究SPRC对脂多糖(lipopolysaccharide, LPS)诱导的H9C2心肌细胞炎症的作用 [14] 中发现，SPRC呈剂量依赖性抑制LPS诱导的肿瘤坏死因子-α (tumor necrosis factor-α, TNF-α)、细胞间黏附分子-1(intercellular cell adhesion molecule-1, ICAM-1)和诱导型一氧化氮合酶(inducible nitric oxide synthese, iNOS) mRNA的表达、激活PI3K/Akt信号通路，有效抑制LPS诱导的细胞外调节蛋白激酶1/2 (extracellular-regulated kinase 1/2, ERK1/2)激活、核因子κB抑制蛋白α(IκBα)降解以及核因子κB(NF-κB)p65磷酸化、细胞内ROS产生，同时SPRC可增强LPS诱导的CSE和H2S的下调。该结果表明SPRC通过抑制IκBα/NF-κB信号通路、激活PI3K/Akt信号通路、调节CSE/H2S通路、抑制ROS生成等在LPS刺激的H9C2细胞中发挥抗炎作用。
+
+在TNF-α诱导的HUVEC内皮细胞炎症模型中，SPRC呈剂量依赖性抑制TNF-α诱导的ICAM-1、血管细胞黏附分子(vascular cell adhesion molecule 1, VCAM-1)蛋白表达，进而抑制U937单核细胞与内皮细胞HUVEC的黏附，同时SPRC可显著诱导TNF-α刺激的HUVEC细胞中CSE表达，有效抑制TNF-α诱导的细胞内ROS产生、c-Jun氨基末端激酶1/2(c-Jun N-terminal kinase, JNK1/2)激活、IκBα降解以及NF-κB p65磷酸化和核转位 [15]。
+
+在雨蛙肽诱导的小鼠急性胰腺炎(acute pancreatitis, AP)模型中，在AP诱导前3小时SPRC预处理可以显著改善模型小鼠的胰腺损伤和肺损伤，抑制炎症细胞因子白细胞介素-1β (IL-1β)和白细胞介素-6 (IL-6)的释放，促进抗炎细胞因子白细胞介素-10 (IL-10)的释放，同时与模型组和空白组相比，SPRC处理使得血浆中H2S水平发生显著性差异。但AP诱导前12小时SPRC预处理对胰腺和肺部炎症却没有明显改善作用。这为SPRC对AP的保护作用提供了新证据，而其机制可能与内源性H2S的缓慢释放以及其对CSE的负反馈调节有关 [16]。
+
+在IL-1β诱导的人类风湿关节炎(rheumatoid arthritis, RA)滑膜成纤维细胞系MH7A中，SPRC呈浓度依赖性抑制其炎症介质的表达、ROS的产生以及MMP-9的表达和活性。此外，SPRC还可阻断IL-1β介导的MH7A细胞的迁移和侵袭。在大鼠佐剂诱导的关节炎(adjuvant induced arthritis, AIA)模型中，SPRC治疗可显著减轻大鼠AIA的严重程度。进一步发现，SPRC可显著诱导HO-1的表达，该作用与KEAP1的降解和Nrf2的核转位有关，这一作用归因于KEAP1半胱氨酸残基的巯基化。该研究首次证明了内源性H2S调节剂SPRC通过上调Nrf2-抗氧化反应元件(antioxidant responsive element, ARE)信号通路在RA中发挥抗炎作用 [17]。
+
+利用聚乳酸(polylactic acid, PLA)包载SPRC制作成的SPRC聚乳酸微球(SPRC@PLA)，在体外能够持续释放SPRC，且释药可达4天，同时能够促进体内H2S的持续释放，释放时间在3天左右。研究发现SPRC@PLA对RA大鼠有更好的治疗效果，同时延长了给药间隔 [18]。利用树枝状介孔二氧化硅纳米球(dendritic mesoporous silica nanosphere, DMSN)和SPRC构建的SPRC@DMSN，在体内外均表现出持久的SPRC释放力。在体内SPRC的释放延长可以通过CSE/H2S途径进一步促进H2S的持续释放。在大鼠AIA模型中，SPRC@DMSN表现出良好的抗炎作用 [19]。
+
+在LPS或IL-6诱导的小鼠急性炎症性血铁过低模型和松节油诱导的小鼠慢性炎症贫血模型以及炎性铁调素被诱导表达的肝细胞(系)模型中，SPRC能够抑制炎症性铁调素表达，升高血清铁和转铁蛋白饱和率，改善红细胞形态，纠正低铁血症，同时缓解炎症性贫血小鼠的脾肿大和脾脏铁蓄积。机制研究表明，SPRC能够减少炎症刺激下巨噬细胞IL-6的释放、促进SIRT1介导的STAT3去乙酰化作用、以及通过激活单磷酸腺苷激活的蛋白激酶(adenosine 5'-monophosphate (AMP)-activated protein kinase, AMPK)促进细胞因子信号抑制物1 (suppressor of cytokine signaling 1, SOCS1)介导的Janus激酶2 (janus kinase 2, JAK2)蛋白降解。揭示了SPRC作为炎症性贫血治疗药物的可能性 [20]。
+
+6. 神经退行性疾病
+
+在阿尔茨海默病(alzheimers disease, AD)的发生和发展过程中，神经胶质细胞发挥着重要作用，当β淀粉样蛋白(amyloid β-protein, Aβ)在AD患者脑内聚集时，神经胶质细胞募集并且活化，产生或释放促炎症因子，诱导氧化应激，导致tau蛋白的过度磷酸化，并且对神经元突触和线粒体产生毒性作用，同时加剧Aβ的生成 [21]。降低神经炎症的损害对AD的治疗具有重要作用。研究发现SPRC能够明显减轻LPS诱导的大鼠空间学习和记忆障碍，其机制可能与抑制海马TNF-α、肿瘤坏死因子受体1 (tumor necrosis factor receptor 1, TNFR1)、Aβ前体蛋白(amyloid β-precursor protein, AβPP)的mRNA及蛋白表达，抑制IκB-α降解以及NF-κB p65激活等有关 [22]。
+
+此外，SPRC可抑制大鼠侧脑室注射Aβ25-35所致的认知功能障碍和神经元超微结构损伤。SPRC可抑制大鼠海马TNF-α、环氧合酶-2 (cyclooxygenase, COX-2)的mRNA及蛋白表达，抑制ERK1/2磷酸化水平、IκB-α降解以及NF-κB p65激活。该发现提示SPRC可能是治疗AD的潜在药物 [23]。
+
+7. 癌症
+
+SPRC对于癌症的作用探究，起初是在胃癌细胞中进行，研究发现SPRC能够显著降低SGC-7901胃癌细胞的存活率，抑制其增殖和迁移，并使得细胞周期停滞在G1/S期。体内实验表明，SPRC对SGC-7901荷瘤裸鼠肿瘤细胞增殖的抑制率达40%~75%，同时能够诱导肿瘤组织中的促凋亡作用，上调肿瘤细胞中p53和Bax的表达，以及上调CSE蛋白的表达并提高H2S释放水平，而CSE抑制剂PAG则可以显著抑制SPRC的抗肿瘤作用，从而推测SPRC可能是通过CSE/H2S相关通路发挥抗肿瘤作用 [24]。
+
+与正常细胞系相比，SPRC对人乳腺癌细胞具有更强的细胞毒性，可通过抑制细胞增殖、诱导细胞凋亡、阻断细胞周期、降低细胞侵袭、调控肿瘤相关基因的表达以及增加化疗的敏感性等方式实现其抗肿瘤作用。体内实验也表现出良好的抑制肿瘤生长和转移的效果。探究机制发现，SPRC可以诱导DNA损伤，同时激活死亡受体及线粒体介导的、caspase依赖的凋亡通路，以及诱导乳腺癌细胞周期停滞于S或者G2/M期，下调S或者G2/M期调控因子细胞周期蛋白(Cyclins)等的表达。在不同P53背景的胰腺癌细胞系中，SPRC能够有效诱导胰腺癌细胞凋亡并抑制其生长，SPRC通过混合谱系激酶3 (MAP3K mixed-lineage kinase 3, MLK3)-丝裂原活化蛋白激酶激酶4 (Mitogen-Activated Protein Kinase Kinase 4, MKK4)级联激活JNK-Jun-转录激活因子3 (Activating Transcription Factor 3, ATF3)-CCAAT/增强子结合蛋白同源蛋白(C/EBP homology protein, CHOP)通路，通过激活JNK的磷酸化水平以及降低JNK的泛素化调节JNK的蛋白水平，从而激发内质网应激产生，动物实验也表明SPRC对裸鼠Panc-1细胞移植瘤以及原位种植瘤的生长均具有剂量依赖性的抑制作用 [25]。
+
+8. 糖尿病肾病
+
+在STZ诱导的大鼠糖尿病肾病(diabetic nephropathy, DN)模型中，SPRC给药可以显著改善DN大鼠肾功能损伤及肾脏纤维化。其能够缓解糖尿病引起的体重减轻，改善多尿症状，降低肾脏指数，改善血脂中甘油三酯(triglyceride, TG)、总胆固醇(total cholesterol, TC)的含量，减轻肾脏的纤维化及糖原沉积，降低纤连蛋白和I/IV胶原蛋白的表达，降低炎症因子mRNA的表达，降低TGF-β1及Smad3磷酸化水平，同时降低JAK2/STAT3、p38/ERK的磷酸化水平。而在高糖诱导的系膜细胞增殖模型中，SPRC可显著抑制高糖导致的系膜细胞过度增殖和肥大，从而减少肾组织中细胞外基质的沉积。综合来看，SPRC改善糖尿病肾损伤可能与抑制JAK2/STAT3参与的TGF-β1/Smad3信号通路的激活有关，同时p38和ERK通路也参与其中。推测H2S在整个过程中发挥着重要作用 [26]。
+
+9. 子宫内膜异位症
+
+通过子宫内膜间质细胞系、C57BL/6小鼠子宫内膜异位症模型、Wistar大鼠子宫角粘连模型研究SPRC对子宫内膜异位症及其粘连的作用，发现SPRC能够有效抑制IL-1β诱导的子宫内膜间质细胞炎症反应，其机制与降低ERK1/2磷酸化、抑制NF-κB激活有关。SPRC能够明显改善内异症模型小鼠的热痛觉过敏，使病灶缩小，减轻纤维化。同时，SPRC能够抑制子宫角粘连模型大鼠的术后粘连形成。该结果显示SPRC有可能成为内异症治疗的前景药物 [27]。
+
+10. 总结与展望
+
+SPRC作为一种半胱氨酸类似物，在包括心脑血管疾病等多个临床前研究模型中表现出潜在的治疗作用，尤其在抗炎、抗氧化、抗纤维化等方面具有显著的效果。但其本身仍具有不稳定、半衰期短等特性，从而限制了其进一步的成药性。SPRC的聚乳酸微球及纳米脂质体等缓控剂型的研究，为其向临床的转化提供了可能，值得开展深入的后续研究。另一方面，SPRC作为内源性气体信号分子，在不同疾病中的具体作用机制研究仍较为有限，通过研究从而阐明其直接作用靶点和机制，将对今后以气体信号小分子药物的开发和应用提供新的思路和理论依据。

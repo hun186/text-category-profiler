@@ -51,14 +51,6 @@ def GetFixedTestPATH(args):
         if os.path.isdir(FixedTestSubDir):
             FixedTestPATHList.append(FixedTestSubDir)
             
-    #FTSCand = os.path.join(TopicTextCrawlerROOT,FixedTestSubDir)
-    #if os.path.isdir(FTSCand) != True:
-        #FixedTestSubDir = "../FixedTest"
-        #FTSCand = os.path.join(TopicTextCrawlerROOT,FixedTestSubDir)
-            #FixedTestPATHList = [os.path.join(FixedTestSubDir,x)
-                                 #for x in FixedTestPATHList]
-    #FixedTestPATHList = [os.path.join(TopicTextCrawlerROOT,"FixedTest",x)
-                         #for x in FixedTestPATHList]
     return FixedTestPATHList
 
 

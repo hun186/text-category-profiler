@@ -1,7 +1,8 @@
 import platform
 
 WorkPoolROOT = "WorkPool"
-TopicTextCrawlerROOT = "TopicTextCrawler"
+#TopicTextCrawlerROOT = "TopicTextCrawler"
+TopicTextCrawlerROOT = "../../AIData/text-category-profiler-data/"
 DatasetConverterROOT = "DatasetConverter"
 
 CombinerROOTPATHList = [

@@ -13,7 +13,6 @@ try:
 except:
     pass
 from TCF_Params.TCFParameters import WorkPoolROOT
-from TCF_Params.TCFParameters import TopicTextCrawlerROOT
 from TCF_Params.TCFParameters import DatasetConverterROOT
 from TCF_Params.TCFParameters import BertClassfierPath
 

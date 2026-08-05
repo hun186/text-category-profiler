@@ -1,0 +1,60 @@
+基于网络药理学探讨鬼针草治疗血脂异常的作用机制
+Discussion on the Mechanism of Bidens in Treatment of Dyslipidemia Based on Network Pharmacology
+
+1. 引言
+
+血脂异常主要是指血清中脂质代谢失常造成胆固醇或甘油三酯水平升高，是引起动脉粥样硬化性心血管疾病(atherosclerotic cardiovascular disease, ASCVD)关键因素之一 [1]。据调查，中国成人血脂异常患病率正逐年攀升，类型主要为高胆固醇(TG)血症、高甘油三酯(TC)血症、低高密度脂蛋白胆固醇(HDL-C)和高低密度脂蛋白胆固醇(LDL-C) [2] [3]。目前，调低LDL-C水平被认为是防治心血管疾病的主要管控手段，在2016~2020年中国颁布的血脂管理指南中，将超高危ASCVD患者血脂主要靶目标LDL-C从2016年的<1.8 mmol/L调整为<1.4 mmol/L，临床上虽采用了“他汀 + 依折麦布”进行降脂，但LDL-C降低率仍然很低 [4]。因此，探索更为有效的降脂药物依然是临床所需。中医药在治疗血脂异常上具有多成份，多靶点的特征，不仅能降低血脂水平，且未表现出明显的毒副作用和不良反应，具有很大的挖掘潜力。
+
+鬼针草性平，味苦，无毒，功效清热解毒、散瘀消肿，应用广泛，现代药理研究发现鬼针草主要有效成分是黄酮类化合物，具有抗炎、降压、降糖、降脂、保肝、抗血栓和抗肿瘤等作用 [5]。网络药理学的快速发展为中医药研究提供了有效的新方法，运用相关工具及数据库资源将复杂的“药物–成分–靶点–途径–疾病”关系进行系统性分析，整体性网络构建 [6]。本研究借助网络药理学探讨鬼针草治疗血脂异常的主要有效成分、基因靶点、作用途径等方面，为进一步研究中医药防治血脂异常及ASCVD等疾病提供一定的理论基础。
+
+2. 材料与方法
+
+2.1. 鬼针草活性成分及靶点筛选
+
+通过中药系统药理学数据库与分析平台(traditional Chinese medicine systems pharmacology database and analysis platform, TCMSP) [6] 数据库(https://old.tcmsp-e.com/tcmsp.php)进行搜索，获取鬼针草的化学成分，以口服生物利用度(oral bioavailability, OB) ≥ 30%和类药性(drug-likeness, DL) ≥ 0.18为标准筛选出化合物活性物质 [7]，获得鬼针草的有效活性成分及靶点。
+
+2.2. 鬼针草相关靶点预测及血脂异常疾病相关靶点的筛选
+
+通过GeneCards (https://www.genecards.org)和DisGeNET (https://www.disgenet.org/)数据库以“Dyslipidemia”及与血脂异常相关的“高脂血症(hyperlipidemia)”“高胆固醇血症(hypercholesterolemia)”和“高甘油三酯血症(hypertriglyceridemia)”疾病为检索关键词，去掉重复值，获取血脂异常相关靶点。
+
+2.3. 鬼针草–血脂异常蛋白相互作用(PPI)网络构建
+
+利用Venny2.1.0 (https://bioinfogp.cnb.csic.es/tools/venny/)导入鬼针草和血脂异常靶点交集信息绘制韦恩图。将药物与疾病共靶点导入STRING数据库(https://string-db.org/)，物种选择“Homo sapiens”，设置medium confidence ≥ 0.400，隐藏游离基因靶点，获取共同靶点PPI网络。利用Cytoscape3.7.2软件以degree值选择前10为核心靶点，用Tools工具对鬼针草–有效成分–共同靶点–血脂异常相互关系进行可视化分析。
+
+2.4. GO分析与KEGG通路富集分析
+
+利用DAVID (https://david.ncifcrf.gov/)数据库导入共靶点进行基因本体论(gene ontology, GO)和京都基因与基因组百科全书(KEGG)通路富集分析，选择(Homo sapiens)，P < 0.01。数据导入OmicShare Tools云工具(https://www.omicshare.com/tools/)按P值从小到大顺序筛选前20进行高级气泡图可视化。
+
+3. 结果
+
+3.1. 鬼针草主要有效成分及鬼针草-血脂异常相关靶点分析
+
+通过TCMSP数据库检索鬼针草，通过设定OB与DL值获得有效成分6个，去掉重复项，筛选4个药物成分对应基因靶点144个。检索GeneCards和DisGeNET数据库获得血脂异常相关靶点3846个，将疾病靶点与144个中药靶点交集得到119个共靶点。如图1。
+
+3.2. PPI网络构建
+
+将119个交集靶点导入STRING数据库进行PPI构建，网络拓扑分析获得119个节点，2275条边。如图2。采用Cytoscape软件Tools工具根据degree数值大小排列，筛选前10个(AKT1、TNF、IL6、TP53、VEGFA、IL1B、JUN、CASP3、PTGS2、HIF1A)为关键核心基因靶点，共获得10个节点，45条边。如图3。
+
+3.3. 构建鬼针草–成分–靶点–血脂异常关系网络
+
+将鬼针草、4个有效药物活性成分、血脂异常、119个共靶点导入Cytoscape进行可视化分析。如图4。
+
+3.4. GO富集分析
+
+将119个共靶点导入DAVID数据库，设置P < 0.01共获得118个靶点的732条GO注释，其中573条与生物过程(Biological process, BP)有关、46条与细胞组分(Cellular component, CC)有关，113条与分子功能(Molecular function, MF)有关。结果显示，鬼针草对血脂异常的作用主要富集在生物过程方面，如RNA聚合酶II启动子转录的正调控(positive regulation of transcription from RNA polymerase II promoter)、转录的正调控，DNA 模板化(positive regulation of transcription, DNA-templated)、对药物的反应(response to drug)、凋亡过程的负调控(negative regulation of apoptotic process)、对脂多糖的反应(response to lipopolysaccharide)、基因表达的正调控(positive regulation of gene expression)、对缺氧的反应(response to hypoxia)、细胞对脂多糖的反应(cellular response to lipopolysaccharide)、没有配体的外源性凋亡信号通路(extrinsic apoptotic signaling pathway in absence of ligand)、对雌二醇的反应(response to estradiol)、炎症反应(inflammatory response)、细胞对缺氧的反应(cellular response to hypoxia)、一氧化氮生物合成过程的正调控(positive regulation of nitric oxide biosynthetic process)、对有毒物质的反应(response to toxic substance)、血管生成的正调控(positive regulation of angiogenesis)、对抗生素的反应(response to antibiotic)、凋亡过程(apoptotic process)、对乙醇的反应(response to ethanol)、细胞对有机环状化合物的反应(cellular response to organic cyclic compound)和细胞外间隙(extracellular space)、胞外区(extracellular region)、胞质溶胶(cytosol)细胞组分以及酶结合(enzyme binding)、相同的蛋白质结合(identical protein binding)、转录因子结合(transcription factor binding)等分子功能密切相关。按P值大小顺序筛选前20个GO富集靶点。如图5~7。
+
+3.5. KEGG信号通路分析
+
+共靶点导入DAVID数据库，设置P < 0.01共获得109个靶点的113条KEGG通路，将KEGG分析数据导入OmicShare Tools云工具。结果显示，鬼针草对血脂异常的作用主要集中在癌症途径(Pathways in cancer)、乙型肝炎(Hepatitis B)、膀胱癌(Bladder cancer)、TNF信号通路(TNF signaling pathway)、前列腺癌(Prostate cancer)、HIF-1信号通路(HIF-1 signaling pathway)、恰加斯病(美洲锥虫病) (Chagas disease (American trypanosomiasis))、胰腺癌(Pancreatic cancer)、利什曼病(Leishmaniasis)、甲型流感(Influenza A)、癌症中的蛋白多糖(Proteoglycans in cancer)、Toll样受体信号通路(Toll-like receptor signaling pathway)、大肠癌(Colorectal cancer)、弓形体病(Toxoplasmosis)、丙型肝炎(Hepatitis C)、T细胞受体信号通路(T cell receptor signaling pathway)、小细胞肺癌(Small cell lung cancer)、非小细胞肺癌(Non-small cell lung cancer)、慢性粒细胞白血病(Chronic myeloid leukemia)、PI3K-Akt信号通路(PI3K-Akt signaling pathway)等信号通路。按P值顺序选取前20个通路绘制高级气泡图。如图8。
+
+4. 讨论
+
+心血管疾病约占全球人类疾病死亡率的三分之一，其中中国死亡人数占比最高，而血清胆固醇水平和AS是CVD的主要发病基础 [8]。血脂异常的主要危害是动脉粥样硬化 [9]。引起血脂异常的原因有多种，如年龄、饮食习惯、生活方式、药物、肠道微生物及其它疾病等。血脂异常常发生在自身免疫性疾病及代谢性疾病中，如炎症性肠病、系统性红斑狼疮、类风湿性关节炎、2型糖尿病、高脂血症、非酒精性脂肪肝、阿尔兹海默病、肥胖及癌症等 [10]。脂质代谢失常易导致血管内脂质大量堆积，损坏血管内皮细胞，促发炎症反应，使巨噬细胞过度聚集吞噬氧化型低密度脂蛋白胆固醇(ox-LDL)形成泡沫细胞，进而形成脂质核心，从而促AS发展或血栓破裂 [11]。血脂异常的防治主要是降脂管理，他汀类药物具有划时代的意义，多年来一直广泛应用于临床，取得了显著的成效。虽然新的治疗措施建议采用“他汀 + 依折麦布”和前蛋白转化枯草杆菌蛋白酶9 (PCSK9)抑制剂，能进一步缓解这一压力 [4]，但仍未满足所有血脂异常患者的需求，探索新的治疗方式和药物依然是一项严峻的挑战。
+
+鬼针草是常用中草药，临床应用鬼针草治疗94例高脂血症患者2个月后发现，鬼针草可以显著降低患者血清TC、TG、LDL-C水平和升高HDL-C水平，并能明显降低MMP-9从而抑制AS [12]。范琦琦等研究发现，鬼针草改善血脂降低TC、LDL-C水平和升高HDL-C水平的有效部位为乙酸乙酯和正丁醇部位萃取物，乙酸乙酯和正丁醇部位萃取化学物质主要为黄酮类 [13]。本研究通过网络药理学设置条件筛选出其有效化学成分主要为槲皮素、木犀草素等，分别对应AKT1、TNF、IL6、TP53、IL1B等10个关键基因靶点。现代研究表明，槲皮素(3,5,7,3’,4’-五羟基黄酮)是一种天然黄酮类生物活性化合物，具有抗氧化，抗炎，抗病毒，抗癌等作用 [14]，可以预防多种疾病，其强大的抗氧化活性可以通过谷胱甘肽(GSH)、酶活性、信号转导通路等产生对活性氧(ROS)的影响，减少氧化损伤，并且还可以通过清除脂多糖 (LPS) 诱导的内毒素血症引起的氧自由基来保护心血管疾病 [15]。槲皮素可通过增加PPARγ、LXRα和ABCA1基因的表达加速巨噬细胞中胆固醇的流出，从而减少泡沫细胞形成，缓解AS [16]。肠道微生物紊乱与ASCVD密切相关，LPS通过Toll样受体4 (TLR4)信号通路激活天然免疫反应是导致心血管疾病风险增加的关键因素之一，LPS还可引起氧化应激、巨噬细胞活化、细胞死亡、炎症等导致动脉粥样硬化 [17]。槲皮素则可以通过改善肠道微生物多样性，调节菌群组成，恢复肠道屏障功能，产生益生元样作用 [18]，并通过抗氧化、抗炎和调控Toll样受体信号通路，从而降低血脂水平，保护AS。木犀草素具有抗炎、抗氧化、抗过敏、抗菌和抗癌的作用，能够抑制脂质积累和ABCA1表达，来降低TG和保护心血管疾病 [19]。Boeing T等应用木犀草素预防伊立替康诱导的小鼠肠道粘膜炎，治疗后能够显著降低MPO酶活性、ROS、TNF、IL-1β和IL-6水平并增加IL-4和IL-10水平来减轻炎症，并可阻止肠壁ZO-1和occludin蛋白破坏保护肠壁的完整性 [20]，其还具有调节肠道菌群的作用 [21]。Ding X等应用木犀草素治疗高脂饮食诱导的ApoE−/−小鼠模型动脉粥样硬化12周后显著降低了巨噬细胞浸润和抑制炎症因子如VCAM-1、TNF-α和IL-6等的mRNA表达从而减轻AS，但有趣的是木犀草素并未明显影响血清LDL-C、HDL-C、TC和TG的水平 [22]，其降脂方面与Kwon EY等研究 [23] 木犀草素能显著降低肥胖小鼠TC、TG水平，缓解血脂异常的结果并未一致，提示木犀草素调节血脂的作用仍需进一步验证。
+
+鬼针草–成分–靶点–血脂异常关系网络分析提示AKT1、TNF、IL6、IL1B等关键基因靶点较多的参与了鬼针草治疗血脂异常的机制之中。Akt1是一种丝氨酸/苏氨酸特异性蛋白激酶B (PKB)，属(Akt1-3)亚型之一，在细胞凋亡、增殖、转录和迁移等过程中起着关键作用，具有促进巨噬细胞表达抗炎细胞因子(IL-10)水平和抑制动脉粥样硬化的作用 [24]，并参与细胞脂肪的形成过程。TNF和IL6是重要的炎症性细胞因子，TNF可对血管内皮细胞造成损伤，并能促进IL-6的表达，IL-6通过诱导内皮细胞粘附分子表达和抑制一氧化氮合酶(eNOS)激活直接影响内皮细胞 [25]，TNF和IL6可诱发炎症及影响血脂水平进而加重AS。Pan Q等研究发现 [26]，IL1B与TC和LDL-C水平存在密切关系。上述靶点信息提示，鬼针草可能主要通过抑制促炎细胞因子、抑制巨噬细胞凋亡，促进抗炎细胞因子表达，保护血管内皮等发挥调脂及抗AS作用。
+
+GO基因富集分析显示，鬼针草主要通过RNA聚合酶II启动子转录的正调控、凋亡过程的负调控、基因表达的正调控、细胞对脂多糖的反应、炎症反应、细胞对缺氧的反应、一氧化氮生物合成过程的正调控等生物过程调节血脂水平。KEGG信号通路预测显示，鬼针草调节血脂异常的通路主要集中在TNF信号通路、HIF-1信号通路、Toll样受体信号通路、PI3K-Akt信号通路等信号通路。TNF信号通路主要参与炎症、细胞增殖和凋亡，可激活核因子-κB (NF-κB)信号途径导致慢性炎症 [27]。Toll样受体信号通路可激活各种促炎细胞因子如IL-1、IL-6、和TNF-α等，促进炎症反应、自身免疫性疾病的发生 [28]，阻断Tolls信号途径可能有益于缓解AS [29]。据Kwon EY等研究发现 [30]，木犀草素能够通过调节Tolls信号通路减少TNF-α、IL-6等促炎细胞因子水平。PI3K-Akt信号通路能够调节细胞活化、增殖、凋亡、代谢过程，参与炎症反应；HIF-1信号通路可以调节血管内皮生长因子(VEGF)、促红细胞生成素(EPO)、诱导型一氧化氮合酶(iNOS)和血氧合酶及参与细胞凋亡和抗氧化应激过程；PI3K/Akt信号通路可上调HIF-1增加VEGF和内皮细胞NO合酶(eNOS)的表达来保护心血管 [31]。Yu ZP等研究发现 [32]，曲克芦丁通过干预心肌细胞介导PI3K/AKT/HIF-1α信号通路可有效降低IL-1β、IL-6和TNF-α的水平，抑制氧化应激和炎症反应。可以看出炎症细胞因子是多个信号通路调控的关键因素，控制炎症水平将是鬼针草治疗血脂异常的有效手段。
+
+综上所述，本研究基于网络药理学从多个方面探讨了鬼针草治疗血脂异常的作用机制，主要是通过鬼针草有效成分槲皮素和木犀草素等调节AKT1、TNF、IL6等基因靶点，参与脂多糖反应、基因表达的正调控、炎症反应等过程，以及TNF信号通路、HIF-1信号通路、Tolls信号通路等发挥治疗血脂异常及ASCVD的作用，充分体现了中药的多成分、多靶点特征，但网络药理学技术受限于数据库完整性、数据处理规范性等条件，仍需在此基础上进一步实验验证。

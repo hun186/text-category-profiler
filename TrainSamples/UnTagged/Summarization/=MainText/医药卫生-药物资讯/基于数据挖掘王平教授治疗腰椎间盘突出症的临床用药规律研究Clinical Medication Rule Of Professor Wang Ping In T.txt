@@ -1,0 +1,2 @@
+基于数据挖掘王平教授治疗腰椎间盘突出症的临床用药规律研究
+Clinical Medication Rule of Professor Wang Ping in Treating Lumbar Disc Herniation Based on Data Mining

@@ -13,7 +13,8 @@ from utils.TCF_utils import ClassfierOptionParser
 
 WorkPoolROOT = "WorkPool"
 WorkPoolROOT_ArticleComposition = "WorkPoolROOT_ArticleComposition"
-TopicTextCrawlerROOT = "TopicTextCrawler"
+#TopicTextCrawlerROOT = "TopicTextCrawler"
+TopicTextCrawlerROOT = "../../AIData/text-category-profiler-data/"
 DatasetConverterROOT = "DatasetConverter"
 
 
@@ -82,15 +83,6 @@ args = ClassfierOptionParser()
 if args.debugMode == True:
     ROOTPATHList = [
         "TopicTextCrawler/TrainSamples",
-        #"D:\shared\TopicClassification\TopicTextCrawler\Books\特定主題\網址\惡意網址分析",
-        #r"D:\VirtualBoxVMs\shared\TopicClassification\TopicTextCrawler\Books\特定主題\費率",
-        #"THUCNews",
-        #"AFPBB",
-        #"===DRNData",
-        #"TopicTextCrawler/Books",
-        #"TopicTextCrawler/C_GoogleSearch",
-        #"TopicTextCrawler/C_wikisourceSearch",
-        #"TopicTextCrawler/C_wikisourcePortal",
         ]
     #print(f"Run in debug Mode ROOTPATHList is forced set as {ROOTPATHList}")
     run_mode = "debug"
@@ -120,7 +112,7 @@ elif 'linux' in platform.system().lower():# or len(GPUDevices)>0:# and False:
         run_mode += "+trainWithMaliciousDomainDataset"       
 else:
     ROOTPATHList = [
-    "TopicTextCrawler/TrainSamples",
+    "TrainSamples",
     ]
     run_mode = "debug"
 

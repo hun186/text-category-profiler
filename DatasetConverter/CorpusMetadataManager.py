@@ -45,11 +45,12 @@ def getDBLabels(sql3cursor=None,
                               FilePath=FilePath)
 
 CleanLabelsInPath = False
-TopicTextCrawlerROOT = "../TopicTextCrawler/"
+#TopicTextCrawlerROOT = "../TopicTextCrawler/"
+TopicTextCrawlerROOT = "../../AIData/text-category-profiler-data/"
+
 ROOTPATHList = [
     "C_GoogleSearch",
     "Books",
-    "../THUCNews",
     "../===DRNData",
     "C_wikisourceSearch",
     "C_wikisourcePortal",

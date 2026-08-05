@@ -45,7 +45,6 @@ except:
     pass
 '''
 from TCF_Params.TCFParameters import WorkPoolROOT
-from TCF_Params.TCFParameters import TopicTextCrawlerROOT
 from TCF_Params.TCFParameters import DatasetConverterROOT
 #from TCF_Params.TCFParameters import ROOTPATHList
 #from TCF_Params.TCFParameters import BertClassfierPath
@@ -1062,15 +1061,6 @@ def setArguments(DCkwargs):
         ROOTPATHList = []
         global RemoveDumpSamples
         #RemoveDumpSamples = False
-
-    '''
-    ROOTPATHList = [fileNameNormalizer.proc(TopicTextCrawlerROOT+x)
-                    if "../" not in x else x for x in ROOTPATHList]
-    '''
-    #FNReplace()
-    
-    #SQLFile = ""
-    #SQLFile = "Books_Metadata.sql3"
 
     #指定全加到測試集，不分配至訓練集的檔案目錄
     if args.FixedTestPATH == "" and args.test == True:

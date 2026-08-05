@@ -1,0 +1,54 @@
+重组凝血因子VIII研究进展
+Advances in Recombinant Coagulation Factor VIII
+
+1. 背景
+
+血友病A(HA)是X连锁遗传性出血性疾病，由FVIII基因突变引起。5000例男性婴儿中有1例患病 [1]，属于罕见病，可导致内源性凝血途径中FVIII缺乏。根据血浆FVIII活性(FVIII: C)，血友病A可分为重型(FVIII: C < 1%)、中型(1%~5%)和轻型(6%~40%) [2]。血友病A的临床特征为自发性或创伤性出血发作，并可进展为关节损害且影响患者生活质量。
+
+2. 首研rFVIII产品
+
+rFVIII制剂可分为3代。第1代rFVIII产品为Kogenate、Recombinate，在细胞培养基中包含动物源蛋白和人源蛋白，且在最终制剂中加入人白蛋白作为稳定剂。第2代rFVIII浓缩物为Kogenate FS、Helixate FS，去除了人白蛋白，并使用了蔗糖作为稳定剂。第3代产品为Advate、ReFacto，细胞培养过程中使用的人血清白蛋白在最终配方之前已经被去除。
+
+rFVIII浓缩物也分为全长(Full length, FL)或B结构域缺失(B-domain deleted, BDD)浓缩物。rFVIII表达研究的早期证明，去除FVIII的B结构域不会影响FVIII的最终凝血效果。这种修饰可显著改善重组过程中细胞的分泌。BBDrFVIII (ReFacto AF/Xyntha)和FLrFVIII (Advate)的PK研究显示具有生物等效性 [3]。传统的rFVIII浓缩物在蛋白质序列或制造过程上有所不同，但具有相似的PK和安全性特征。
+
+3. 标准半衰期rFVIII产品
+
+除以上rFVIII产品，美国食品药品监督管理局(FDA)还批准了另外4种具有标准半衰期的第3代rFVIII浓缩物。这些新产品通过改变细胞系、蛋白质结构和制造技术区别于其他rFVIII (见表1)。
+
+2013年美国FDA批准turoctocog alfa (NovoEight)，它是在中国仓鼠卵巢细胞(CHO)细胞系中生产的BDDrFVIII，不添加任何人或动物来源材料。其主要结构包含被截断为N末端的10个氨基酸和C末端的11个氨基酸的B结构域，并且显示出类似于PdFVIII的硫酸化和糖基化模式。N8的糖基化，其主要特征是在B结构域中存在四个N-连接的糖基化和一个O-连接的糖基化。在成人/青少年患者(Guardian TM1) [4] 和儿童(Guardian TM3) [5] 中预防和治疗出血性发作的III期临床试验验证了Turoctocog alfa在经治疗患者(PTP)中的安全性和有效性。Guardian TM2扩展研究 [6] 结果显示，N8对年化出血率(ABR)有良好的长期效果，未检测到FVIII抑制剂。未经治疗患者(Guardian TM4) [7] 的III期结果显示43.1%患者产生抑制物，ABR为4.26。
+
+2016年，Octocog alfa (BAY-81-8973, Kovaltry)基于LEOPOLD I [8]、LEOPOLD II [9] 和Kids试验 [10] 获FDA批准。该产品为未经修饰的FLrFVIII，在BHK细胞系中生产，其氨基酸序列与其前身(Kogenate FS)相同。生产包括在新的细胞库中与热休克蛋白70 (HSP70)同时表达，并且在纯化或配制过程中无需在细胞培养物中添加人类或动物来源的材料。这些变化导致rFVIII产物的唾液酸化差异，其特征是分子表面N端聚糖的唾液酸高度封端。在与Kogenate FS相比的交叉PK研究中，Kovaltry的半衰期延长10%，被认为是这种新的唾液酸化谱所致。Kovaltry在成人和儿童PTP预防时有较低的ABR [9] [10]。Kovaltry的输注耐受性良好，PTP中没有抑制剂形成的报道。
+
+Lonoctocog alfa (rVIII-SingleChain, CSL-627, Afstyla)是唯一具有特定单链设计的rFVIII，可提高生产过程中的稳定性，而且对VWF有更强的亲和力。它在CHO细胞中生产而无需使用人类或动物衍生的蛋白，并使用色谱技术纯化。Afstyla的分子特征设计是由一条单链组成，其中一条重链和一条轻链通过截短的B结构域共价结合，其他rFVIII的两条链通过不稳定金属离子桥连接。VWF通过降低FVIII的降解和清除对FVIII起到保护作用，与octocog alfa相比，lonoctocog alfa与VWF结合得更快、更紧密，决定了其半衰期的轻微延长(14.5 vs 13.3小时) [11] [12]。包含两项关键研究和一项扩展研究的AFFINITY项目证实了Afstyla分子的安全性和临床有效性 [13]。
+
+最后，simoctocog alfa (human-cl rhFVIII, Nuwiq)是首个在HEK细胞系中生产的BDDrFVIII，2015年获FDA批准。Simoctocog alfa可确保人类翻译后修饰模式。其翻译后修饰增加了VWF结合亲和力。NuProtect研究(GENA-05) [14] 进行翻译后修饰对免疫原性的影响研究的中期分析结果显示，抑制剂的发生率较低，所有抑制物的累积发生率为20.8%和高滴度抑制物的发生率为12.8%。I/II和III期临床试验 [15] [16] 证明Simoctocog alfa在预防和治疗重型HA的PTP中出血的安全性和有效性。
+
+a = 成人，b = 儿童；ABR：年化出血率；CI：置信区间；SD：标准差；IQR：四分位间距。
+
+4. 长半衰期rFVIII产品
+
+由于rFVIII所获得的安全性得到提高，注意力已从避免病毒或其他传染源传播转移到修饰FVIII分子以改善替代疗，特别是尝试获得具有延长半衰期(EHLrFVIII)和增强的功能活性并降低免疫原性的rFVIII产品。通过蛋白质修饰技术来获得具有延长半衰期的FVIII产品。目前只有FVIII与聚乙二醇的强力连接(PEG化)和与IgG1分子的Fc部分融合技术获得监管部门批准。但是，FVIII与白蛋白的融合未能成功保留有效的凝血活性，而EHLrFVIII产品的半衰期延长也比较有限，仅比野生型FVIII长1.5~1.7倍(见表2)。
+
+4.1. 聚乙二醇化(PEG化)
+
+PEG化由聚乙二醇(亲水性惰性物质)和蛋白质之间的共价键组成。PEG化化蛋白质分子的重量和大小增加，导致肾脏消除减少，从而减少受体介导的清除和提供免疫识别的空间屏障。尽管人们对PEG可在网状内皮系统中存留提出质疑，但众多研究中证实PEG和PEG技术的安全性。PEG可改变FVIII与包括VWF在内的其他分子的相互作用，干扰FⅧ的凝血活性，因此目前仅有4种EHL产品已经获批(表2)。
+
+Rurioctocog alfa聚乙二醇(BAX-855, Adynovate)包含用于Advate的天然FLrFVIII蛋白与20 kDa支链PEG分子偶联，并去除过量的游离PEG试剂以及高度聚乙二醇化和非聚乙二醇化的rFVIII，每个FVIII分子产生了约2 mol PEG以增强PK特征。2015年11月获FDA批准。与按需治疗受试者相比，预防性治疗受试者(每周2次40~50 IU/kg)的ABR显著降低(90%)。研究发现Rurioctocog alfa pegol的半衰期比Advate的半衰期延长1~4倍(14~19.6小时)，未描述抑制剂的发生率 [17]。
+
+Damoctocog alfa pegol(BAY-94-9027, Jivi)是一种B结构域截短的rFVIII变体，通过半胱氨酸取代而位点特异性连接60 kDa PEG。在Damoctocog alfa pegol与rFVIII Kogenate FS进行了比较的I期试验 [18] 中，半衰期约19小时。在PROTECT VIII II/III期研究 [19] 中，重型HA的PTP中每5天预防给予45~60 IU/kg和每7天给与60 IU/kg时，Damoctocog alfa pegol的中位ABR分别为1.9和3.9。新的EHLrFVIII耐受良好，没有抑制剂形成。
+
+Turoctocog alfa聚乙二醇(N8-GP, Esperoct)为40 kDa PEG糖化的B结构域截短的rFVIII (Turoctocog alfa)，该PEG通过酶促转移连接到残留B结构域的21个氨基酸中独特的O-连接聚糖上。平均半衰期为19.0小时(范围11.6~27.3小时)，与患者以前使用过的rFVIII产品相比延长了约1~6倍 [20]。在临床研究中显示Turoctocog alfa pegol耐受性良好，并且在暴露93天后仅1例患者报告低滴度抑制性抗FVIII抗体 [21]。PATHFINDER 2的结果 [20] 显示，PTP的青少年及成人III期预防研究(50 IU/kg，隔4天1次)和按需治疗的中位ABR分别为1.3和30.9。
+
+4.2. Fc融合
+
+新生儿Fc受体(FcRn)保护IgG和白蛋白免于溶酶体分解，并参与抗原呈递细胞的抗原呈递。FVIII-Fc融合蛋白通过改变正常清除率来诱导半衰期延长。Fc融合是血友病领域中使用的第一个半衰期延长技术。Efmoroctocog alfa (rFVIIIFc, Eloctate)中的Fc (来自人IgG1)与BDD-rFVIII的C末端相连，并在HEK293H细胞中表达。III A-LONG期研究 [22] [23] [24] 证明了在经治疗的成人/青少年重型HA的儿童中，rFVIIIFc的半衰期延长以及安全性和止血功能。根据个体化PK参数进行Efmoroctocog alfa的个体化预防治疗(25~65 IU/kg每3~5天)显示中位ABR为1.6 [23]。来自ASPIRE扩展研究 [25] 证实，接受Efmoroctocog alfa预防患者中，延长预防剂量间隔，可维持低ABR。rFVIIIFc的平均半衰期为19小时，相对于标准rFVIII增加约1.5倍。
+
+备注：CHO (Chinese hamster ovary)中国仓鼠卵巢细胞；BHK (baby hamster kidney)小仓鼠肾细胞；HEK (human embryonic kidney)人类胚胎肾。
+
+5. 中国重组人凝血因子
+
+虽然重组人凝血因子VIII取得了较大进展，但中国的血友病患者仍然大量使用血浆源性凝血因子或者依赖进口的重组人凝血因子VIII。最近，中国首个B区缺失的重组人凝血因子VIII获批，商品名为安佳音®，其突出特点是因工艺流程的特殊改进，从而使得产品产量巨大，突破rFVIII产量限制的壁垒。该产品从药代动力学特点，疗效和安全性与同类品种相似 [26]。
+
+6. 结论
+
+血友病A的治疗已经有了长足的发展，尤其是rFVIII的生产，已从安全性、有效性和治疗负担在血友病治疗方法上很大变革，包括出现更新的rFVIII和EHLrFVIII产品。由于rFVIII的生理学模式和当抑制剂形成后独特的生理作用模式和和当抑制物形成后独特的诱导耐受性的能力，很可能在很长一段时间内是HA患者治疗的关键组成部分。

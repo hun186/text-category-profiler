@@ -1,0 +1,62 @@
+基于网络药理学探讨灵芝治疗哮喘的作用机制
+Study on the Mechanism of Ganoderma in Treating Asthma Based on Network Pharmacology
+
+1. 引言
+
+哮喘是一种由于下呼吸道慢性炎症引起的常见疾病 [1] ，其特点是呼吸道症状和气流受限。其发病机制复杂，可由各种过敏性物质诱发，其中涉及免疫细胞及促炎因子 [2] 。其主要治疗方法是抗炎和支气管扩张剂，并以循序渐进的方式使用 [3] 。然而，无论哮喘的严重程度如何，尽管现已有最佳的药物治疗，但患者还是会出现症状急性加重和因疾病失去控制的情况 [4] 。由于治疗困难，容易复发，仅仅依靠药物及环境控制措施，并不能解决根本问题 [5] 。因此寻找新的药物及治疗靶点受到人们关注。
+
+灵芝Ganoderma为担子菌纲，多孔菌科真菌赤芝Ganoderma lucidum (Leyss. Ex Fr.) Karst或紫芝G. sinense Zhao，Xuet Zhang的干燥子实体 [6] 。灵芝是中医药中历史悠久的中药材，具有广泛的药理活性及食用价值 [7] 。最早记载于2000多年前的《神农本草经》中 [8] 。其味甘，性平。归心、肺、肝、肾经。具有补气安神，止咳平喘。用于心神不宁，失眠心悸，肺虚咳喘，虚劳短气，不思饮食 [9] 。现代研究表明，从灵芝中分离出的各种化合物，主要的活性成分有多糖、三萜、甾醇、蛋白质、腺苷等 [10] [11] 。其中灵芝多糖是灵芝最关键的有效成分之一，在免疫调节、抗肿瘤、抗病毒、抗氧化、降血糖、调血脂等方面具有较好的药理作用 [12] 。其中报道的灵芝对哮喘的研究值得关注，Liu等 [13] 发现冲灵芝提取的灵芝酸β，发现灵芝酸β可以抑制IL-5，增强IFN-γ、IL-10和IL-12的产生，并恢复哮喘患者外周血单个核细胞的Th1/Treg-Th2平衡培养物。石敦义等 [14] 研究灵芝孢子粉对哮喘动物实验中，发现灵芝孢子粉可以有效减轻肺组织炎性病变，和抑制肥大细胞激活释放类胰蛋白酶的作用。
+
+2. 材料与方法
+
+2.1. 活性成分的建立及作用靶点预测
+
+通过TCMSP数据库 [15] (http://www.tcmip.cn/)检索“灵芝”所有的成分，以OB ≥ 30、DL ≥ 0.18为筛选条件 [16] ，此条件下默认为该化合物为活性成分，筛选出灵芝的活性成分及作用靶点，建立成分靶点数据集。
+
+2.2. 疾病靶点的筛选与建立
+
+进入GeneCards数据库 [17] (https://www.genecards.org/)，以“asthma”为关键词筛选与哮喘相关的基因靶点。将疾病靶点和药物靶点共同导入Venny 2.1.0 (https://bioinfogp.cnb.csic.es/tools/venny/)中，建立疾病–药物共用靶点图及数据集。
+
+2.3. 关键靶点PPI络建网络构建
+
+为了明确灵芝对治疗哮喘靶点之间的相互作用，将筛选出的靶点导入String [18] (https://string-db.org/)中，设置种类为“Homo sapiens (人类)”构建靶点互作网络图(PPI)，置信度为0.4 [19] ，隐藏网络中离散点，将结果导入Cytoscape 3.9.0中，采用其“Network Analyzer”选项进行分析，确定灵芝治疗哮喘的核心靶点。
+
+2.4. GO生物过程富集分析和KEGG信号通路
+
+将疾病–药物共有靶点导入DAVID数据库(https://david.ncifcrf.gov/)中进行GO生物过程富集分析和KEGG信号通路分析，结果以气泡图的形式进行展示。
+
+3. 结果
+
+3.1. 活性成分的筛选
+
+通过检索TCMSP数据库，以OB ≥ 30、DL ≥ 0.18为筛选条件，共得到灵芝化学成分242个，共得到具有靶点的活性成分14个，分别为：methyl (4R)-4-[(5R,10S,13R,14R,17R)-4,4,10,13,14-pentamethyl-3,7,11,15-tetraoxo-2,5,6,12,16,17-hexahydro-1H-cyclopenta[a]phenanthren-17-yl]pentanoate (MOL011129)、campesta-7,22E-dien-3beta-ol(MOL011137)、5alpha-Lanosta-7,9(11),24-triene-15alpha,26-dihydroxy-3-one (MOL011140)、ergosta-4,6,8(14),22-tetraene-3-one (MOL011159)、ergosta-7,9(11),22-trien-3β,5α,6α-triol (MOL011168)、ganoderal B (MOL011171)等，潜在靶点43个，具体见表1。43个靶点去重后共有28个潜在靶点。
+
+3.2. 疾病和药物相关靶点的筛选
+
+在GeneCards数据库中以“asthma”为关键词检索，得到与哮喘相关靶基因共7,472个，采用Venny2.1对灵芝相关靶点及哮喘的靶点进行维恩图绘制，见图1，得到灵芝与哮喘共有靶点24个，这些靶点包括NR3C2、PGR、NCOA2、NCOA1、PTGS1和PTGS2等。
+
+3.3. 灵芝治疗哮喘的直接作用靶点拓扑参数分析
+
+用String数据库构建关键靶点之间的相互作用图，将灵芝治疗哮喘的共有靶点导入String中，得到蛋白互作网络图(如图2所示)，其中number of nodes = 24、number of edges = 49、average node degree = 4.08、avg. local clustering coefficient = 0.578、expected number of edges = 10。将结果导入Cytoscape 3.9.0获取 PPI网络中拓扑参数，采用Cytoscape 3.9.0选项中“Network Analyzer”对共有靶点的Degree、Betweenness centrality和Closeness centrality分析，结果发现JUN (Degree = 10)、PTGS2 (Degree = 8)、CASP3 (Degree = 8)和PGR (Degree = 7)等综合排名较前，如图3所示，说明这些靶点在灵芝治疗哮喘中发挥着重要作用。
+
+3.4. GO生物学功能富集分析
+
+为了进一步探讨灵芝治疗哮喘的多重作用机制，将24个共有靶点导入David中进行GO富集分析，共得到GO生物学富集结果108条。其中前3位的富集过程包括adenylate cyclase-inhibiting G-protein coupled acetylcholine receptor signaling pathway、response to estradiol和G-protein coupled acetylcholine
+
+receptor signaling pathway。将前20条富集以气泡图的形式展示，其中圆圈的大小表示相关靶点在通路富集的多少，圆圈的颜色越深代表靶点的富集程度，如图4所示，这表明了灵芝可能是通过调节这些生物过程而发挥治疗哮喘的作用。
+
+3.5. KEGG通路分析
+
+将24个共有靶点映射到David数据库中进行KEGG通路富集分析，将物种定义为“人类”，共得到信号通路61条。通过筛选灵芝KEGG富集结果显著性较强的前20条信号通路进行展示，这些通路与灵芝治疗哮喘的作用机制密切相关，如图5所示。其中前5条通路包括Apoptosis-multiple species、Hepatitis B、Cholinergic synapse、Human immunodeficiency virus 1 infection和Lipid and atherosclerosis等，这些通路大多与CASP9，JUN，CASP8和CASP3等有关。
+
+为了更清晰的展现有效成分、核心靶点与通路之间的关系。利用Cytoscape 3.9.0软件将灵芝中的成分、共有靶点进行网络进行可视化分析，如图6所示，通过网络药理学构建出灵芝治疗哮喘的交互网络，筛选出相应的交互蛋白，其中蓝色代表灵芝和哮喘的共有靶点，绿色代表化学成分，共有14个，橙色代表药物，通过构建药物–成分–靶点网络图，可更直观更清晰的看出各成分对应的靶点调控。
+
+4. 讨论
+
+中医药近来因其疗效及独特的魅力而受到广泛关注。同时，中药存在的主要障碍，包括药物成分和治疗机制的模糊。随着虚拟筛选技术的发展，越来越多的中药化合物被研究以发现潜在的活性成分和作用机制。网络药理学建立了强大而全面的数据库，以了解中医与疾病网络之间的关系。在本次研究中，构建灵芝治疗哮喘的作用机制提供了理论基础和技术支撑，同时也明确了药效物质和实现中药功效的解释 [20] 。
+
+灵芝目前被作为药食两用的药材 [21] ，具有治疗哮喘的药理作用，但其作用机制尚不明确。Li等 [22] 人研究发现，灵芝可以通过降低IL-1β、5、6、8、17、25、33、38的水平，提高IL-10和12的水平来达到治疗哮喘的作用。阮正英等 [23] 等人发现灵芝多糖下调肺泡巨噬细胞GITR/GITRL信号系统的表达、降低BALF中细胞总数计数、减轻肺组织炎性病理改变，起到治疗哮喘的作用。这些研究表明，灵芝治疗哮喘具有多成分，多层次的特点。
+
+排名前三的关键靶点中的JUN (转录因子AP-1)、PTGS2 (前列腺素G/H合成酶2)、CASP3 (半胱氨酸蛋白酶3)参与了糖哮喘的发生发展，大量研究表明PTGS2基因的遗传变异与过敏性哮喘之间存在关联， PTGS2受促有丝分裂刺激和促炎刺激高度诱导，参与炎症反应的调节。在哮喘患者的呼吸道上皮和粘膜下层观察到PTGS2的表达增加 [24] 。通过Kegg富集分析，得到前5的信号通路为Apoptosis-multiple species、Hepatitis B、Cholinergic synapse、Human immunodeficiency virus 1 infection和Lipid and atherosclerosis。其中Apoptosis-multiple species (细胞凋亡)是一个通过激活caspases (天冬氨酸特异性半胱氨酸蛋白酶)来消除受损或多余细胞的基因编程过程。细胞凋亡的开始是由许多相互关联的过程控制的。促凋亡和抗凋亡信号之间的平衡最终决定了细胞是否会发生凋亡、生存或增殖。TNF家族的配体激活了抗凋亡或细胞生存信号以及凋亡信号。NGF和白细胞介素–3分别促进神经元或造血细胞的生存、增殖和分化 [25] 。
+
+综上所述，通过对灵芝治疗哮喘的网络药理学研究，初步明确灵芝治疗哮喘活性成分、关键靶点，生物过程及作用机制，可为下一步的实验验证提供参考。
