@@ -21,6 +21,13 @@
 - 未驗證／限制：未執行 runtime smoke test，因根目錄無 canonical install/test command，且主流程需真實資料、模型與工作池。
 - 後續：請人工確認 Python 版本、完整依賴、可安全 smoke fixture、資料提交邊界與是否仍需保留舊 SRA/RAG 內容。
 
+### 2026-08-05 — Pytorch transformer training progress clarity
+
+- 目標：釐清 PytorchXLM/PytorchRBTL3 執行時「載入資料慢」的觀感，並避免 train-only 呼叫被強制接續 prediction。
+- 結果：`TextClassification_transformers.py` 在資料載入/斷詞完成後明確印出樣本數，標示下一個 tqdm 是 Hugging Face Trainer 訓練/評估；Trainer batch size 改用程式估算值並避免 logging_steps 為 0；移除 main 內無條件 `args.test = True`。
+- 驗證：`python -m py_compile BertScript/TextClassification_transformers.py`、`git diff --check`。
+- 未驗證／限制：未執行完整訓練流程，因需模型、依賴與工作池資料；py_compile 顯示既有 regex escape SyntaxWarning。
+
 ## Open Handoffs
 
 - 需要使用者確認可安全執行的最小 fixture 與依賴安裝方式後，才能把 workflows 中的 smoke test 從待確認改成 canonical command。
