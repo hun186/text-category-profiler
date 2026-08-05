@@ -95,6 +95,12 @@ def ClassfierOptionParser():
         "-BertDataDirExt", "--BertDatasetSubDirExt", help="Add the extended part to Bert datasetDir",
         type=str, default="")
     parser.add_argument(
+        "-TopicTreeDir", "--TopicTreeDir", help="Directory containing topic tree edge CSV files. Use this to keep taxonomy data inside this project instead of relying on ../TACA.",
+        type=str, default="")
+    parser.add_argument(
+        "-TopicTreeFiles", "--TopicTreeFiles", help="Comma-separated topic tree CSV filenames or explicit paths.",
+        type=str, default="TopicTree.csv,TopicTree_AK4.csv")
+    parser.add_argument(
         "-RMBertData", "--RemoveBertDataDir", help="Move the DFPreambleCols_df_ALL to backup and Remove BertDatasetDir after all finished.",
         type=str2bool, default=False)
     parser.add_argument(
