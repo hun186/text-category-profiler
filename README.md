@@ -8,6 +8,13 @@
 - 已具備：資料集轉換、BERTScript 分類流程、分類結果合併、Dash/Plotly 視覺化相關腳本、Class tree 工具與共用 Python utilities。
 - 主要限制：根目錄已提供 `requirements.txt` 與輕量測試，但尚無 lockfile 或 CI；模型、資料集、工作池與部分外部路徑需由使用者提供。
 
+
+## 工作流程與特色
+
+![text-category-profiler 工作流程](docs/assets/workflow.svg)
+
+![text-category-profiler 特色介紹](docs/assets/features.svg)
+
 ## 快速開始
 
 ### 前置需求

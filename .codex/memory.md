@@ -12,6 +12,13 @@
 
 ## Recent Outcomes
 
+
+### 2026-08-05 — README workflow and feature SVGs
+
+- 目標：在 GitHub README 頁面加入工作流程圖與特色介紹圖。
+- 結果：新增 `docs/assets/workflow.svg` 與 `docs/assets/features.svg`，並在 README 目前狀態後插入「工作流程與特色」區塊引用兩張 SVG。
+- 驗證：`python -m unittest discover -s tests`、`git diff --check`。
+
 ### 2026-08-05 — Codex 指示檔案系統初始化
 
 - 目標：依根目錄 `AGENTS.md` 與 `CODEX_BOOTSTRAP.md` 初始化 Quickstart、`.codex/*.md` 與根 README。
