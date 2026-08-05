@@ -8,7 +8,6 @@ import platform
 import setproctitle
 
 from TCF_Params.TCFParameters import BertClassfierPath
-from DatasetConverter.ConverterParameters import DataAugmentationGoal
 from utils.utilities import getFNFromFullPath
 from utils.TCF_utils import datasetDirOutputDirPickers
 from utils.TCF_utils import get_testResFile_Name
@@ -27,6 +26,22 @@ from utils.DB_utils import sqlite3Query
 
 
 #def CopyModelRelatedFiles(BertDatasetSubDir, outputDir):
+def WriteOccurringLabelList(BertDatasetSubDir):
+    # 讀取有出現在 train.sql3 中的 Label，並寫到 Bert 參照的 LabelList File 內。
+    # 訓練新模型時，label space 應以 train split 實際可學到的類別為準；
+    # 否則完整 taxonomy 中沒有訓練樣本的 label 會進入 classifier head。
+    sql3File = os.path.join(BertDatasetSubDir,"train.sql3")
+    query = f'SELECT DISTINCT OutLabel FROM sampleSrc;'
+    OccuringLabelList = sqlite3Query(
+        sql3File, query = query,ListForm = True)
+    labelListFile = os.path.join(BertDatasetSubDir,
+            "TopicAnalysis_LabelList.txt")
+    with open(labelListFile, 'wt',encoding='utf-8') as f:
+        for y in sorted(set(OccuringLabelList)):
+            f.write(y+"\n")
+    return OccuringLabelList
+
+
 def CopyModelRelatedFiles(
         srcDir, desDir,datasetDBDir="datasetDB",onlyLabelFile=False
         ):
@@ -165,28 +180,11 @@ if __name__ == '__main__':
     
     #os.chdir(BertClassfierPath)
     if args.train == True:
-        if DataAugmentationGoal > 100:
-        #讀取有出現在train.sql中的Label，並寫到Bert參照的LabelList File內
-        #DataAugmentationGoal > 100的條件是為了避免某類的樣本數極少，
-        #且在亂數分配時，全分到驗證集去了。
-        #造成Bert訓練時，訓練集內此類一片都沒有，而不列入允許的LabelList，
-        #驗證時卻碰到了，導致Bert runclassfier.py報錯。
-            sql3File = os.path.join(BertDatasetSubDir,"train.sql3")
-            #print("sql3File",sql3File)
-            cols=['OutLabel']
-            query = f'SELECT DISTINCT OutLabel FROM sampleSrc;'
-            OccuringLabelList = sqlite3Query(
-                sql3File, query = query,ListForm = True)
-            with open(os.path.join(BertDatasetSubDir,
-                    "TopicAnalysis_LabelList.txt"),
-                 'wt',encoding='utf-8') as f:
-                #for y in sorted(set([LabelConvertDict[x] for x in DNTags])):
-                for y in sorted(set(OccuringLabelList)):
-                    f.write(y+"\n")
-            if len(OccuringLabelList) <= 1:
-                MES = f"{'-'*50}\n These is only one occuring label {OccuringLabelList} for the training set! This will result RuntimeError: Found dtype Long but expected Float! ABORT! Check your training set."
-                MPLOGGER_TCFMain.logW(MES)
-                raise Exception
+        OccuringLabelList = WriteOccurringLabelList(BertDatasetSubDir)
+        if len(OccuringLabelList) <= 1:
+            MES = f"{'-'*50}\n These is only one occuring label {OccuringLabelList} for the training set! This will result RuntimeError: Found dtype Long but expected Float! ABORT! Check your training set."
+            MPLOGGER_TCFMain.logW(MES)
+            raise Exception
                     
         
         outputDir = f"{BertClassfierPath}/output_{args.ExecutionTime}_{args.ModelType}"
