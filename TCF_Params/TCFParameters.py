@@ -100,10 +100,10 @@ elif 'linux' in platform.system().lower():# or len(GPUDevices)>0:# and False:
         "Kaggle",
         "BigDataWarehouse",
         "===DRNData",
-        "TopicTextCrawler/Books",
-        "TopicTextCrawler/C_GoogleSearch",
+        "Books",
+        "C_GoogleSearch",
         #"C_wikisourceSearch",
-        "TopicTextCrawler/C_wikisourcePortal",
+        "C_wikisourcePortal",
         ]
     run_mode = "linux"
     if args.trainWithMaliciousDomainDataset == True:
