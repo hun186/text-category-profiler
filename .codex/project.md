@@ -37,7 +37,7 @@
 | --- | --- | --- |
 | 主要語言 | Python | `TCFMain.py`, `DatasetConverter/*.py`, `BertScript/*.py` |
 | Framework / runtime | Python 腳本；BERTScript requirements 宣告 TensorFlow >= 1.11.0；視覺化腳本使用 Dash/Plotly 線索 | `BertScript/requirements.txt`, `BertScript/Test_result_Vis.py` |
-| 套件與 lockfile | 根目錄無已確認 manifest／lockfile；子目錄 `BertScript/requirements.txt` 只列 TensorFlow | `BertScript/requirements.txt` |
+| 套件與 lockfile | 根目錄 `requirements.txt` 列出目前盤點的共用 runtime/test 需求；子目錄 `BertScript/requirements.txt` 保留 TensorFlow 線索；尚無 lockfile | `requirements.txt`, `BertScript/requirements.txt` |
 | 儲存與外部服務 | SQLite 中間資料、工作池檔案系統；部分 Elasticsearch 匯入／設定腳本存在但非根流程必然需求 | `BertScript/RunClassfier.py`, `DatasetConverter/elasticsearch/`, `PythonModule/utils/ES_ingest_txt_to_es.py` |
 | 支援平台 | 待確認；程式含 Windows 與 Linux 路徑／平台分支 | `TCFMain.py`, `TCF_Params/TCFParameters.py` |
 
@@ -51,6 +51,7 @@
 | `BertScript/` | BERT／XLM 分類、結果合併、視覺化 | 修改模型訓練／推論、分類結果合併或 Dash 視覺化 |
 | `ClassesTree/` | 類別樹與標籤工具 | 修改 taxonomy、label tree、圖形視覺化 |
 | `PythonModule/utils/` | 共用 utilities | 修改跨模組共用行為、檔案系統、SQLite、多程序工具 |
+| `tests/` | 不依賴模型/資料的輕量功能測試 | 修改 console helper、README/requirements 契約或可無副作用測試的 utility |
 | `.codex/` | Codex current-state 記憶與路由 | 任務前後同步專案事實、流程、架構與契約 |
 
 ## 主要入口
@@ -94,7 +95,7 @@
 
 ## 待確認事項
 
-- [ ] 實際支援的 Python 版本與完整依賴安裝方式。
+- [ ] 實際支援的 Python 版本與完整依賴版本鎖定方式。
 - [ ] 可安全執行的最小 smoke test／fixture。
 - [ ] 哪些 sample/data 應留在 Git，哪些應移出或加入 ignore。
 - [ ] `BertScript/` 中第三方 BERT/Dash 範例內容與本專案維護邊界。

@@ -37,6 +37,9 @@ from utils.MP_utils import MPlogger
 from utils.MP_utils import multicoreJob
 from utils.df_utils import dfOutputer
 from utils.df_utils import dfFromSQLite3
+from utils.log_display import key_values
+from utils.log_display import stage_banner
+from utils.log_display import stage_done
 from ClassesTree.Label_utils import LabelListLoader
 #from utils.DataConverter_utils import datasetDirOutputDirPickers
 
@@ -313,8 +316,8 @@ if __name__=='__main__':
         "_rdy_for_CombineTestResult","_is_running_CombineTestResult")
     #NewBertDatasetSubDir += BertDatasetSubDir + "_is_running_DataConverter"
     os.rename(BertDatasetSubDir,NewBertDatasetSubDir)    
-    MES = "-"*50+"\n"
-    MES += f"CombineTestResult started. WorkDir is {NewBertDatasetSubDir}."
+    stage_banner("CombineTestResult", detail=f"WorkDir: {NewBertDatasetSubDir}")
+    MES = f"CombineTestResult started. WorkDir is {NewBertDatasetSubDir}."
     BertDatasetSubDir = NewBertDatasetSubDir
     MPLOGGER = MPlogger(logSubDir=f"{BertDatasetSubDir}/logs")
     MPLOGGER_TCFMain = MPlogger(logSubDir=f"{BertDatasetSubDir}/logs",logFile="TCFMain.log")
@@ -456,9 +459,9 @@ if __name__=='__main__':
         pass
     
     if len(df_map_result) == sum(MatchCount):
-        print("The Sum of Numbers of Samples Verification Is normal.")
+        key_values("Verification status", [("sample count sum", "normal")], icon="·")
     else:
-        print("WARNING, the sum of numbers of samples is strange!")
+        key_values("Verification status", [("sample count sum", "WARNING: strange")], icon="·")
     
     if args.SummarizePerformance == True:
         SummarizePerformance()
@@ -467,8 +470,8 @@ if __name__=='__main__':
         "_is_running_CombineTestResult","_rdy_for_TestResultVis")
     #os.rename(BertDatasetSubDir,NewBertDatasetSubDir)
     RenameDir(SrcDir=BertDatasetSubDir,DesDir=NewBertDatasetSubDir)
-    MES = "-"*50+"\n"
-    MES += f"CombineTestResult is finished. Rename {BertDatasetSubDir} as {NewBertDatasetSubDir}"
+    stage_done("CombineTestResult")
+    MES = f"CombineTestResult is finished. Rename {BertDatasetSubDir} as {NewBertDatasetSubDir}"
     MPLOGGER_TCFMain = MPlogger(logSubDir=f"{NewBertDatasetSubDir}/logs")
     MPLOGGER_TCFMain.logW(MES)
     

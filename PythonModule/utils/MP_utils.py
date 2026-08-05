@@ -20,6 +20,10 @@ from tqdm.contrib.concurrent import process_map
 import platform
 from platform import python_version
 import math
+from utils.log_display import info
+from utils.log_display import key_values
+from utils.log_display import section
+from utils.log_display import warning
 
 
 def _truthy_debug_flag(value):
@@ -58,13 +62,13 @@ def IsVersionValid(
     return Version(str(LBD))<=Version(CKVer)<=Version(str(UBD))
 
 if IsVersionValid(LBD="3.8.0"):
-    print("python version >= 3.8, using istarmap2.py in MP_utils.py")
+    info("python version >= 3.8, using istarmap2.py in MP_utils.py", icon="🐍")
     try:
         import istarmap2 as istarmap # import to apply patch
     except:
         import utils.istarmap2 as istarmap # import to apply patch
 else:
-    print("python version < 3.8, using istarmap.py in MP_utils.py")
+    info("python version < 3.8, using istarmap.py in MP_utils.py", icon="🐍")
     try:
         import istarmap # import to apply patch
     except:
@@ -444,45 +448,31 @@ class multicoreJob:
 
         method = self.method
         if len(DTBJobs) == 0:
-            print("="*50)
-            print("There is no jobs for multicorejob to run! Return empty list [] immediately!")
-            print("="*50)
+            warning("There is no jobs for multicoreJob to run; return empty list [] immediately.")
             return []
         
-        print("="*50)
-        print(f"執行multicorejob.run()函式，共有{len(DTBJobs)}個任務，前{min(3,len(DTBJobs))}個任務為")
+        section("Multicore job queue", detail=f"jobs={len(DTBJobs)}, preview={min(3,len(DTBJobs))}", icon="⚙️")
 
         for Job in DTBJobs[0:3]:
             if "show" not in dir(Job):
                 break
-            print('-'*50)
+            section("Job preview", icon="·")
             Job.show()
         res = []
         if len(DTBJobs) == 1 or self.nProcess ==1:
             self.MulticoreMode = False
-            print("There is only one job or nProcess=1. Deactive Multiprocessing.")
+            info("Only one job or nProcess=1; multiprocessing is deactivated.", icon="🧵")
         
         #將單一任務執行結果新增至res列表，俟所有任務完成，最後再換成DataFrame，
         #進行存檔或資料視覺化顯示。
         if self.MulticoreMode == False:
-            print("="*50)
-            print(("Multiprocessing is nonactive now and try pretest."
-                  "If everything is fine, try active Multiprocessing."
-                  ).replace("\n",""))
-            print("="*50)
+            info("Multiprocessing is inactive now; running jobs in single-process pretest mode.", icon="🧪")
             for Job in DTBJobs:
                 #print("now processing", Job)
                 #Job.show()
                 res.append(Launcher(Job, method))
         else:
-            print("="*50)
-            print(("Start Multiprocessing. If the system is halted,"
-                  "try inactive the Multiprocessing and make the PGM could "
-                  "run without Error or Exception. Otherwise the processing "
-                  "may call subprocess INFINITLY resulting in stucking "
-                  "in the multiprocess procedure!"
-                  ).replace("\n",""))
-            print("="*50)
+            warning("Starting multiprocessing. If the system stalls, retry with nProcess=1 to isolate subprocess issues.")
             '''
             #pool = mp.Pool(self.nProcess)
             pool = mp.Pool(
@@ -518,10 +508,7 @@ class multicoreJob:
                     for job in DTBJobs
                 ]
             
-                print(
-                    f"There are totally {len(DTBJobsWithMethod)} Jobs.",
-                    flush=True,
-                )
+                key_values("Multiprocessing settings", [("jobs", len(DTBJobsWithMethod)), ("processes", self.nProcess), ("safe mode", self.SafeMode)], icon="·")
             
                 if not self.SafeMode:
                     result_iter = pool.istarmap(

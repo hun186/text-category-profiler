@@ -95,6 +95,13 @@ from DatasetConverter.sampleHandler import SampleReader
 from utils.df_utils import dfOutputer
 from utils.MP_utils import multicoreJob
 from utils.MP_utils import MPlogger
+from utils.log_display import info
+from utils.log_display import key_values
+from utils.log_display import section
+from utils.log_display import stage_banner
+from utils.log_display import stage_done
+from utils.log_display import summarize_sequence
+from utils.log_display import warning
 from utils.Dash_utils import LevelDVisProcessor
 #from utilities_RAND import LoadTree
 #from utilities_RAND import RANDLoader
@@ -1062,8 +1069,8 @@ def setArguments(DCkwargs):
     #datasetDBDir = args.datasetDataBaseSubDir
     NewBertDatasetSubDir = args.BertDatasetSubDir + "_is_running_DataConverter"
 
-    MES = "-"*50+"\n"
-    MES += f"DataConveter started. WorkDir is {NewBertDatasetSubDir}."
+    stage_banner("DataConverter", detail=f"WorkDir: {NewBertDatasetSubDir}")
+    MES = f"DataConveter started. WorkDir is {NewBertDatasetSubDir}."
     args.BertDatasetSubDir = NewBertDatasetSubDir
     global MPLOGGER
     global MPLOGGER_TCFMain
@@ -1108,12 +1115,9 @@ def setArguments(DCkwargs):
 
     if args.test == False:
         args.FixedTestPATH = ""
-        print("Since args.test is False, set args.FixedTestPATH=''")
+        info("Since args.test is False, set args.FixedTestPATH=''", icon="🧪")
     else:
-        print("="*50)
-        print(f"According the TRVPort argument {args.TRVPort}, \
-              the detected FixedTestPATHList is", FixedTestPATHList)
-        print("="*50)
+        key_values("Fixed test detection", [("TRVPort", args.TRVPort), ("FixedTestPATHList", summarize_sequence(FixedTestPATHList, limit=4))], icon="·")
     #raise Exception
     DCkwargs.update({
         "FixedTestFileBound":args.FixedTestFileBound,
@@ -1143,13 +1147,9 @@ def loadLabels(args,DCkwargs=dict()):
         RemoveDumpSamples = False
     
     LabelsToCorrect = ListDiff(LabelList,InfoScoreTable.keys())
-    print("-"*50)
-    print("InfoScoreTable.keys()[0:10]+[:10]",
-          list(InfoScoreTable.keys())[0:10]+list(InfoScoreTable.keys())[-10:])
-    print("-"*50)
+    key_values("Topic tree labels", [("Label count", len(LabelList)), ("InfoScore preview", summarize_sequence(list(InfoScoreTable.keys())[0:10]+list(InfoScoreTable.keys())[-10:], limit=10))], icon="·")
     if len(LabelsToCorrect) > 0 and set(LabelList) != {"Negative","Positive"}:
-        print("*"*50)
-        print(f"The following Labels {LabelsToCorrect} are not in the TopicTree.csv which will lead an KeyError when applying sampleReader".
+        warning(f"The following Labels {LabelsToCorrect} are not in the TopicTree.csv which will lead an KeyError when applying sampleReader".
               format(LabelsToCorrect))
         raise Exception
     from DatasetConverter.ConverterParameters import RSTRLabelMode
@@ -1281,7 +1281,7 @@ if __name__ == '__main__':
     #將DTBJobs送入多進程執行。
     multicoreJob(DTBJobs,nProcess=DTBJnProcess).run()
     
-    print("Start to Generate dataset files.")
+    section("Generate dataset files", icon="📦")
     ShowElapsedTime(exeTimeDict["stage_start_time"])
     
     if args.ESDataConfigFile != "":
@@ -1300,10 +1300,10 @@ if __name__ == '__main__':
                      nProcess=nProcess,
                      datasetSubDir=args.BertDatasetSubDir).run()
     
-    print("All DatasetConverter job are finished.")
+    elapsed = time.time()-exeTimeDict["stage_start_time"]
+    stage_done("DataConverter", elapsed)
     print(ShowElapsedTime(exeTimeDict["stage_start_time"]))
-    
-    print("nDict",nDict)
+    key_values("Converted sample counts", sorted(nDict.items()), icon="·")
     nTotalTrainable = nDict["train"]+nDict["validation"]
     nTotalTest = nDict["test"]+nDict["fixed_test"]+nDict["Elasticsearch"]
     nTotalConverted = nTotalTrainable+nTotalTest

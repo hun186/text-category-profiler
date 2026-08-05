@@ -15,6 +15,11 @@ from utils.utilities import RenameDir
 from utils.utilities import getFNFromFullPath
 from utils.utilities_path import find_similar_directory
 from utils.df_utils import dfFromSQLite3
+from utils.log_display import key_values
+from utils.log_display import section
+from utils.log_display import stage_done
+from utils.log_display import summarize_sequence
+from utils.log_display import warning
 
 class TaskConnector:
     def __init__(self,SrcTask="",DesTask="",WorkingDir="",logFile=""):
@@ -25,8 +30,7 @@ class TaskConnector:
     def proc(self):
         NewWorkingDir = self.WorkingDir.replace(
             f"_is_running_{self.SrcTask}",f"_rdy_for_{self.DesTask}")
-        print("WorkingDir",self.WorkingDir)
-        print("NewWorkingDir",NewWorkingDir)
+        key_values("Stage handoff", [("from", self.WorkingDir), ("to", NewWorkingDir)], icon="·")
         for i in range(3):
             try:
                 #os.rename(self.WorkingDir,NewWorkingDir)
@@ -35,13 +39,13 @@ class TaskConnector:
                 #shutil.rmtree(self.WorkingDir)
                 RenameDir(SrcDir=self.WorkingDir,DesDir=NewWorkingDir)
                 if self.logFile != "":
-                    MES = "-"*50+"\n"
-                    MES += f"{self.SrcTask} is finished. Rename {self.WorkingDir} as {NewWorkingDir}"
+                    stage_done(self.SrcTask)
+                    MES = f"{self.SrcTask} is finished. Rename {self.WorkingDir} as {NewWorkingDir}"
                     MPlogger().logW(MES,logFile=self.logFile)
                 #BackupAndDelFile(SrcDir=self.WorkingDir,DesDir=NewWorkingDir,BackFNrePat=".*dataset_total.*")
                 break
             except Exception as e:
-                MES = "-"*50+"\n"
+                warning(f"When try to applying os.rename in TCF_utils.TaskConnector,the following occurs:\n{e}.")
                 MES = f"When try to applying os.rename in TCF_utils.TaskConnector,the following occurs:\n{e}."
                 MPlogger().logW(MES,logFile=self.logFile)
                 #time.sleep(13)
@@ -59,11 +63,11 @@ def ClassfierOptionParser():
         "-pub", "--public", help="Publish the web.",
         type=str2bool, default=False)
         #action="store_true")
-    
+
     parser.add_argument(
         "-task", "--task", help="Specific Task.",
         type=str, default="")
-    
+
     parser.add_argument(
         "-tr", "--train", help="Train the model.",
         type=str2bool, default=False)
@@ -109,7 +113,7 @@ def ClassfierOptionParser():
 
     parser.add_argument(
         "-RunTRV", "--Run_Test_result_Vis", help="Run Test_result_Vis.py.",
-        type=str2bool, default=True)    
+        type=str2bool, default=True)
     parser.add_argument(
         "-VisDir", "--VisDatasetDir", help="Use the dataset dir for Test_result_Vis.",
         type=str, default="")
@@ -128,15 +132,15 @@ def ClassfierOptionParser():
     parser.add_argument(
         "-ExpDBPATH", "--ExportDatabasePath", help="The DFBasePATH for exporting DFAll.sql3 Files.",
         type=str, default="DFDatabase")
-    
+
     parser.add_argument(
         "-DFAllExpPath", "--DFAllExportPATH", help="Export DFPreambleCols_df_ALL result to the path.",
         type=str, default="")
-    
+
     parser.add_argument(
         "-FTPath", "--FixedTestPATH", help="Use the files in the dir to predict.",
         type=str, default="")
-    
+
     parser.add_argument(
         "-WTFInpPath", "--WeiTechFormatInputPATH", help="Use the WeiTechFormat files in the dir to predict.",
         type=str, default="")
@@ -162,7 +166,7 @@ def ClassfierOptionParser():
     parser.add_argument(
         "-ESCFFile", "--ESDataConfigFile", help="Load the ElasticsearchJob.",
         type=str, default="")
-    
+
     parser.add_argument(
         "-FB", "--FixedTestFileBound", help="Input the bound for the number of file for Fixed Test Dir.",
         type=int, default=0)
@@ -213,8 +217,8 @@ def ClassfierOptionParser():
     parser.add_argument(
         "-nProcSPC", "--nProcessSPC", help="Number of special multi-processing",
         type=int, default=1)
-    
-    
+
+
     args = parser.parse_args()
 
     if args.train == True:
@@ -222,7 +226,7 @@ def ClassfierOptionParser():
         print("Start to training model, the test for FixedTest is turned off.")
     if args.train == False and args.test == False:
         args.test = True
-    
+
     return args
 
 
@@ -237,7 +241,7 @@ def GetRSTRLabelList(RSTRLabelMode):
             RSTRTreeFile = RSTRDBTreeFile
         else:
             RSTRTreeFile = "../TACA/DB/ZMRAND/Imported/TopicTree_PAK.txt"
-        
+
         RSTRLabelList = sorted(set(GetNodes(LoadTree(
             RSTRTreeFile,OnlyLettersDigitsLabels= OnlyLettersDigitsLabels))))
     else:
@@ -252,12 +256,12 @@ def BackupAIPredictResultAndDelTempFile(
     print("In BackupAIPredictResultAndDelTempFile")
     print("BertDatasetSubDir",BertDatasetSubDir)
     print("BackFNrePatList",BackFNrePatList)
-    
+
     if DesDir == "":
         DesDir = BertDatasetSubDir.replace(WorkPoolROOT,WorkPoolROOT+"_DFBackup")
     print("DesDir",DesDir)
     #BackFNrePat="(^DFPreambleCols_df_ALL.*)|(^dataset_total_.*_labels_count.*)"
-    
+
     BackupAndDelFile(SrcDir=BertDatasetSubDir,DesDir=DesDir,BackFNrePatList=BackFNrePatList)
 
 '''
@@ -270,12 +274,12 @@ def ExportDFAllResult(
     BackFNrePatList=["^DFPreambleCols_df_ALL.*","^dataset_total_.*_labels_count.*"]
     BackupAndDelFile(SrcDir=SrcDir,DesDir=DesDir,BackFNrePatList=BackFNrePatList)
 '''
-    
+
 def writeUsingMark(FN = "UsingMark.txt",
                    written_text = f"This is a UsingMark."):
     open(FN,'wt',encoding='utf-8').write(written_text)
-    
-    
+
+
 def ClearOldTestResFile(BertDatasetSubDir,outputDir,testResFile):
     UsingMarkFN = os.path.join(outputDir,"UsingMark.txt")
     written_text = f"This is a file to mark using model for {BertDatasetSubDir} after clearing old testResFile"
@@ -327,8 +331,8 @@ class datasetDirOutputDirPickers:
             self.MPLOGGER = MPlogger()
         else:
             self.MPLOGGER = MPLOGGER
-        
-        
+
+
     def VerifyUsing(self,outdir,testResFile):
         #testResFile.append("UsingMark.txt")
         testList = testResFile + ["UsingMark.txt"]
@@ -380,7 +384,7 @@ class datasetDirOutputDirPickers:
                 #self.datasetDirsROOT = x
             #break
         return None
-            
+
     def Pick_datasetDir(self,
                         ):
         #如果未指定將執行工作階段，將假定為起始階段，開始要做DataConverter
@@ -406,7 +410,7 @@ class datasetDirOutputDirPickers:
                 datasetDir += "_tr"
             #datasetDir += "_is_running_DataConverter"
             return datasetDir
-        
+
         #datasetIDStr = "dataset"
         #outputIDStr = "output"
         r = re.compile("^dataset_\d{12,16}_.*"+self.args["ModelType"]+".*")#"|^dataset_\d{12,16}$)")
@@ -419,7 +423,7 @@ class datasetDirOutputDirPickers:
         else:
             datasetDir = os.path.join(self.datasetDirsROOT,datasetDirs[0])
             return datasetDir
-        
+
     def Pick_outputDirsROOT(self,
                         ):
         CheckDict = {"pat":"(^output_\d{12,16}_.*|^output_\d{12,16}$)",
@@ -435,7 +439,7 @@ class datasetDirOutputDirPickers:
                 return x
                 #outputDirsROOT = x
                 #break
-        
+
     def Pick_outputDir(self,
                         ):
         #r = re.compile("(^output_\d{12,16}_.*|^output_\d{12,16}$)")
@@ -447,25 +451,25 @@ class datasetDirOutputDirPickers:
         outputDirs = [x for x in outputDirs if "using" not in x.lower()]
         outputDirs = sorted(outputDirs, reverse=True)
         #outputDir = outputDirs[0]
-        print("outputDirs",outputDirs)
+        key_values("Model directory candidates", [("root", self.outputDirsROOT), ("candidates", summarize_sequence(outputDirs, limit=5))], icon="·")
         #time.sleep(10)
         outputDir = ""
         #testResFile.append("UsingMark.txt")
         outputDirs = [os.path.join(self.outputDirsROOT,x) for x in outputDirs]
-        
+
         if self.args["ModelType"] == "TF15Bert":
             for outdir in outputDirs:
                 #outdir = os.path.join(outputDirsROOT,outdir)
                 print("In Line 450, testing", outdir)
                 RT = any([x.startswith("model") for x in os.listdir(outdir)
-                        if "000" not in x or 
+                        if "000" not in x or
                         time.time()-pathlib.Path(
                             os.path.join(outdir,x)).stat().st_ctime>60*20])
                 print("TF15",RT)
                 print("Using",self.VerifyUsing(outdir,self.testResFile))
                 #time.sleep(10)
                 if any([x.startswith("model") for x in os.listdir(outdir)
-                        if "000" not in x or 
+                        if "000" not in x or
                         time.time()-pathlib.Path(
                             os.path.join(outdir,x)).stat().st_ctime>60*20]):
                     if self.VerifyUsing(outdir,self.testResFile):
@@ -492,30 +496,30 @@ class datasetDirOutputDirPickers:
                 else:
                     continue  # only executed if the inner loop did NOT break
                 break  # only executed if the inner loop DID break
-            
+
     def proc(
             self
             ):
-        print(f"Run datasetDirOutputDirPickers to search dataset and output in {self.datasetDirsROOT},{self.outputDirsROOT} seperately.")        
+        section("Pick dataset/model directories", detail=f"dataset root={self.datasetDirsROOT}; model root={self.outputDirsROOT}", icon="🧭")
         if self.args["BertDatasetSubDir"] != "":
             datasetDir = self.args["BertDatasetSubDir"]
             #print("The args[BertDatasetSubDir] is", args["BertDatasetSubDir"])
             if not os.path.isdir(datasetDir):
-                print(f"{datasetDir} does NOT exits.")
+                warning(f"{datasetDir} does NOT exist.")
                 datasetDir = find_similar_directory(datasetDir)
-                print(f"Applying find_similar_directory, find {datasetDir}")
+                key_values("Similar directory fallback", [("selected", datasetDir)], icon="·")
         else:
             datasetDir = self.Pick_datasetDir()
-        print("final datasetDir",datasetDir)
+        key_values("Directory selection", [("dataset", datasetDir)], icon="·")
         #raise Exception
         if self.args["modelDir"] != "":
             outputDir = self.args["modelDir"]
         else:
             outputDir = self.Pick_outputDir()
-        
+
         #print("type(MPLOGGER)",type(self.MPLOGGER))
         #print("MPLOGGER",self.MPLOGGER)
-        MES = f"datasetDirOutputDirPickers pick the model dir {outputDir} for {self.args['ModelType']} mode" 
+        MES = f"datasetDirOutputDirPickers pick the model dir {outputDir} for {self.args['ModelType']} mode"
         self.MPLOGGER.logW(MES)
         return datasetDir,outputDir
 
@@ -523,7 +527,7 @@ def get_testResFile_Name(ModelType, BertDatasetSubDir="",outputDir=""):
     #如果是TF15Bert，testResFile輸出於模型目錄，
     #如果是PytorchXLM或PytorchRBTL3，testResFile輸出於BertdatasetSubdir目錄，
     if ModelType == "TF15Bert":
-        testResFile = ["predict.tf_record","test_results.tsv"]       
+        testResFile = ["predict.tf_record","test_results.tsv"]
         testResFile = [os.path.join(outputDir,x) for x in testResFile]
     elif ModelType in ["PytorchXLM","PytorchRBTL3"]:
         testResFile = ["test_results.tsv"]
@@ -536,7 +540,7 @@ def get_testResFile_Name(ModelType, BertDatasetSubDir="",outputDir=""):
     return testResFile
 
 class freeModelDirConformer:
-    def __init__(self, 
+    def __init__(self,
                  args = dict(),
                  outputDirsROOT = "",
                  datasetDirsROOT = "",
@@ -579,7 +583,7 @@ class freeModelDirConformer:
                 self.MPLOGGER.logW(MES,logFile="TCFMain.log")
                 time.sleep(10)
                 retry += 1
-                
+
             if retry >= self.RetryLimit:
                 MES = f"It has been waiting for {self.EachWaitTime*self.RetryLimit/3600:.2f} hour ({self.RetryLimit} times) and there is no free ModelDir to use. Abort!"
                 MPlogger().logW(MES,logFile="Exception.log",logSubDir="logs")
@@ -592,7 +596,7 @@ def LoadDatasetCount(outputDir):
     for file in OSWALK(outputDir):
         if getFNFromFullPath(file) == SQL3File:
             df = dfFromSQLite3(file)
-            #df.rename(columns = {'index':'Label'}, inplace = True) 
+            #df.rename(columns = {'index':'Label'}, inplace = True)
             df = df.set_index('index')
             #print("df",df)
     return df
@@ -609,7 +613,7 @@ def get_finished_date_dir_dict(port,datasetDir_VisSelf = "WorkPool_VisSelfServic
             if "test_results_verification.sql3" in files and "DFPreambleCols_df_ALL.sql3" in files:
                 filtered_datasetDirs.append(dir_name)
     filtered_datasetDirs = sorted(filtered_datasetDirs, reverse=True)
-    
+
     # 解析日期字串並格式化為字典
     date_dir_dict = {}
     for dir_name in filtered_datasetDirs:
@@ -617,5 +621,5 @@ def get_finished_date_dir_dict(port,datasetDir_VisSelf = "WorkPool_VisSelfServic
         date_obj = datetime.datetime.strptime(date_str, '%Y%m%d%H%M%S')
         formatted_date = date_obj.strftime('%Y/%m/%d %H:%M')
         date_dir_dict[formatted_date] = dir_name
-        
+
     return date_dir_dict
