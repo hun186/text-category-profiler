@@ -22,6 +22,7 @@ from utils.log_display import key_values
 from utils.log_display import summarize_sequence
 #from utils.TCF_utils import datasetDirOutputDirPickers
 from utils.TCF_utils import ClassfierOptionParser
+from utils.TCF_utils import get_base_model_checkpoint
 from utils.TextProcessor_utils import textReader
 from utils.TextProcessor_utils import BasicDataCleaner
 from utils.TextProcessor_utils import DataCleanerWithPattern
@@ -720,10 +721,7 @@ class SampleReader():
 def tokenization_wrap_Test(TestString,args=dict()):
     global tokenizer
     #model_checkpoint = "./xlm-roberta-base"
-    if args.ModelType == "PytorchXLM":
-        model_checkpoint = "xlm-roberta-base"
-    elif args.ModelType == "PytorchRBTL3":
-        model_checkpoint = "chinese_rbtl3_L-3_H-1024_A-16_Pytorch"
+    model_checkpoint = get_base_model_checkpoint(args.ModelType)
         
     for model_ckptDir in ["./","./BertScript/"]:
         #for model_checkpoint in ["./xlm-roberta-base","./BertScript/xlm-roberta-base"]:
@@ -731,7 +729,7 @@ def tokenization_wrap_Test(TestString,args=dict()):
         print("="*50)
         print("model_ckptPath",model_ckptPath)
         try:
-            tokenizer = AutoTokenizer.from_pretrained(model_ckptPath)
+            tokenizer = AutoTokenizer.from_pretrained(model_ckptPath, trust_remote_code=True)
             #如果成功載入tokenizer的話，回存取獲的完整模型正確路徑到model_checkpoint。
             model_checkpoint = model_ckptPath
             print("final model_checkpoint",model_checkpoint)

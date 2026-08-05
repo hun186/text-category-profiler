@@ -16,10 +16,28 @@ from utils.utilities import getFNFromFullPath
 from utils.utilities_path import find_similar_directory
 from utils.df_utils import dfFromSQLite3
 from utils.log_display import key_values
+
 from utils.log_display import section
 from utils.log_display import stage_done
 from utils.log_display import summarize_sequence
 from utils.log_display import warning
+
+PYTORCH_MODEL_TYPES = ["PytorchXLM", "PytorchRBTL3", "PytorchMMBERT"]
+BASE_MODEL_CHECKPOINTS = {
+    "PytorchXLM": "xlm-roberta-base",
+    "PytorchRBTL3": "chinese_rbtl3_L-3_H-1024_A-16_Pytorch",
+    "PytorchMMBERT": "mmBERT-base",
+}
+
+def get_base_model_checkpoint(ModelType):
+    try:
+        return BASE_MODEL_CHECKPOINTS[ModelType]
+    except KeyError:
+        MES = "The setting ModelType is not available, "
+        MES += "only TF15Bert or " + " or ".join(PYTORCH_MODEL_TYPES) + " is avaliable"
+        print(MES)
+        raise Exception
+
 
 class TaskConnector:
     def __init__(self,SrcTask="",DesTask="",WorkingDir="",logFile=""):
@@ -110,6 +128,9 @@ def ClassfierOptionParser():
     parser.add_argument(
         "-mdlDir", "--modelDir", help="Use the model in the dir to predict test set.",
         type=str, default="")
+    parser.add_argument(
+        "-MaxSeqLen", "--MaxSeqLength", help="Maximum sequence length for Hugging Face tokenizer truncation. Default keeps the original behavior at 180.",
+        type=int, default=180)
 
     parser.add_argument(
         "-RunTRV", "--Run_Test_result_Vis", help="Run Test_result_Vis.py.",
@@ -186,7 +207,7 @@ def ClassfierOptionParser():
         "-nScoreUPD", "--nScoringSegUPD", help="The upper bound of number of pieces to count InfoScoreSum.",
         type=int, default=100)
     parser.add_argument(
-        "-mdlType", "--ModelType", help="The type of using model, TF15Bert, PytorchXLM(default), PytorchRBTL3",
+        "-mdlType", "--ModelType", help="The type of using model, TF15Bert, PytorchXLM(default), PytorchRBTL3, PytorchMMBERT",
         type=str, default="PytorchXLM")
     parser.add_argument(
         "-ZeroShot", "--ActiveHTCZeroshot", help="Active Zero-Shot Learning with Hierarchical Text Classification",
@@ -480,7 +501,7 @@ class datasetDirOutputDirPickers:
                     return outdir
                     #outputDir = outdir
                     #break
-        elif self.args["ModelType"] in ["PytorchXLM","PytorchRBTL3"]:
+        elif self.args["ModelType"] in PYTORCH_MODEL_TYPES:
             for outdir in outputDirs:
                 #outdir = os.path.join(outputDirsROOT,outdir)
                 r = re.compile("^checkpoint-\d{1,}")
@@ -535,12 +556,12 @@ def get_testResFile_Name(ModelType, BertDatasetSubDir="",outputDir=""):
     if ModelType == "TF15Bert":
         testResFile = ["predict.tf_record","test_results.tsv"]
         testResFile = [os.path.join(outputDir,x) for x in testResFile]
-    elif ModelType in ["PytorchXLM","PytorchRBTL3"]:
+    elif ModelType in PYTORCH_MODEL_TYPES:
         testResFile = ["test_results.tsv"]
         testResFile = [os.path.join(BertDatasetSubDir,x) for x in testResFile]
     else:
         MES = "The setting ModelType is not available,"
-        MES += "only TF15Bert(default) or PytorchXLM or PytorchRBTL3 or PytorchRBTL3 is avaliable"
+        MES += "only TF15Bert(default) or PytorchXLM or PytorchRBTL3 or PytorchMMBERT is avaliable"
         print(MES)
         raise Exception
     return testResFile

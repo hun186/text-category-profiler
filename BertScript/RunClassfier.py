@@ -14,6 +14,7 @@ from utils.TCF_utils import get_testResFile_Name
 from utils.TCF_utils import freeModelDirConformer
 from utils.TCF_utils import ClearOldTestResFile
 from utils.TCF_utils import ClassfierOptionParser
+from utils.TCF_utils import PYTORCH_MODEL_TYPES
 from utils.utilities import MKDIR
 from utils.utilities import MKDIRandCopy
 from utils.utilities import getFNFromFullPath
@@ -323,14 +324,14 @@ if __name__ == '__main__':
         WatchedTimeBound = max(nTotalTest//60,20)+(nTotalTest)//500
 
 
-    elif args.ModelType in ["PytorchXLM","PytorchRBTL3"]:
+    elif args.ModelType in PYTORCH_MODEL_TYPES:
         #BatCMD = f"python {BertClassfierPath}/TextClassification_XLM.py"
         BatCMD = f"python {BertClassfierPath}/TextClassification_transformers.py"
         if args.train == True:
             BatCMD += " -tr True"
         if args.test == True:
             BatCMD += " -ts True"
-        BatCMD += f" -mdlDir {outputDir} -BertDataDir {BertDatasetSubDir} -mdlType {args.ModelType} -ZeroShot {args.ActiveHTCZeroshot} "
+        BatCMD += f" -mdlDir {outputDir} -BertDataDir {BertDatasetSubDir} -mdlType {args.ModelType} -ZeroShot {args.ActiveHTCZeroshot} -MaxSeqLen {args.MaxSeqLength} "
         #BatCMD += "> RunClassfier.log 2>&1 & \n\n" #背景作業
         run_log = os.path.join(BertDatasetSubDir, "logs", "RunClassfier.log")
         BatCMD += f'> "{run_log}" 2>&1'

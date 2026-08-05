@@ -115,7 +115,7 @@ def print_args_summary(args):
     values = vars(args) if hasattr(args, "__dict__") else {}
     important = [
         "task", "train", "test", "TRVPort", "TRVWebHost", "ModelType",
-        "ExecutionTime", "WorkPoolROOT", "BertDatasetSubDir", "modelDir",
+        "MaxSeqLength", "ExecutionTime", "WorkPoolROOT", "BertDatasetSubDir", "modelDir",
         "TopicTreeDir", "TopicTreeFiles", "nProcess", "nProcessSPC",
     ]
     shown = []

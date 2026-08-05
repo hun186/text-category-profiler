@@ -78,6 +78,7 @@ from utils.utilities import randomReplace
 from utils.TCF_utils import GetRSTRLabelList
 from utils.TCF_utils import datasetDirOutputDirPickers
 from utils.TCF_utils import ClassfierOptionParser
+from utils.TCF_utils import get_base_model_checkpoint
 from utils.TCF_utils import TaskConnector
 
 from utils.DataConverter_utils import getSrcFromFileName
@@ -270,7 +271,12 @@ class DataConvertJobGenerater():
                 info("tokenizationWrap is True but modelDir is empty; resolving modelDir from dataset/output settings.")
                 _,modelDir = datasetDirOutputDirPickers(
                     args=args,rdy_for_stage="DataConverter").proc()
-                key_values("Tokenizer model directory", [("modelDir", modelDir)], icon="·")
+                if modelDir in [None, ""]:
+                    modelDir = get_base_model_checkpoint(args.ModelType)
+                key_values("Tokenizer model directory", [
+                    ("modelDir", modelDir),
+                    ("MaxSeqLength", args.MaxSeqLength),
+                ], icon="·")
         #print("In DC,modelDir",modelDir)
         #raise Exception
         self.modelDir = modelDir
@@ -553,6 +559,8 @@ def BuildSamplesDfFromPaths(
     處理指定路徑，轉換成樣本DataFrame，其中rows_list為字典清單，如：[
     {'file': 'FixedTest/FixedTest_8050/Using/20220301/#T#[CN-IND Boundary]/老一辈革命家处理中印边界问题的对策方法.txt', 'InLabel': 'CN-IND Boundary', 'OutLabel': 'CN-IND Boundary', 'text': '文献研究室研究员，北京100017〕', 'PartNO': 65},....]
     '''
+    if start_time is None:
+        start_time = time.time()
     if MPLOGGER == None:
         MPLOGGER = MPlogger()
     #if "nProcess" in DCkwargs.keys():
