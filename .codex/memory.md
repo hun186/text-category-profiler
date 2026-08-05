@@ -68,3 +68,10 @@
 - 目標：讓未傳 `--TopicTreeDir` 的主流程可自動找到使用者放在 `ClassesTree/data` 的 `TopicTree.csv` 與 `TopicTree_AK4.csv`。
 - 結果：`ClassesTree.GetTreeFilePath()` 在 legacy `../TACA` fallback 前先檢查 `ClassesTree/data`，仍保留顯式 `--TopicTreeDir` 的高優先權與失敗訊息。
 - 驗證：`python -m py_compile ...`、AST-isolated `GetTreeFilePath()` lookup 檢查、`git diff --check`。
+
+### 2026-08-05 — Train-only DataConverter zero-test guard
+
+- 目標：修正 `python TCFMain.py -tr y` 在只產生 train/dev、沒有 test/fixed-test/ES 樣本時，DataConverter 誤判「all samples ZERO」並中止後續訓練的問題。
+- 結果：DataConverter 改以 train+validation+test/fixed-test/ES 的總轉換量判斷是否完全無樣本；只有 `args.test == True` 且 test 總量為 0 時才維持測試模式中止。
+- 驗證：`python -m py_compile DatasetConverter/DataConverter.py`、`git diff --check`。
+- 未驗證／限制：未執行完整 `TCFMain.py -tr y`，因流程需本機完整依賴、模型與工作池資料；py_compile 仍顯示既有 regex/path escape SyntaxWarning。
