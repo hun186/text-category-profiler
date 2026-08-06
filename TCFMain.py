@@ -4,8 +4,6 @@
 #WeiTech
 #python TCFMain.py --WeiTechworkIDPath D:\shared\rawData\ABT\ProcLink\AutoBertClassify --WeiTechWorkPoolPATH D:\shared\TopicClassification\WTWorkPool -p 8099999 -TRVHost False
 
-from PackageImport import PackageImporter
-PackageImporter.proc()
 
 from TCF_Params.TCFParameters import setArguments
 from TCF_Params.TCFParameters import WorkPoolROOT

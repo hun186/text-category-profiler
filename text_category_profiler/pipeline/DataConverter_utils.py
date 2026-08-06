@@ -1,9 +1,3 @@
-try:
-    import text_category_profiler
-except:
-    from PackageImport import PackageImporter
-    PackageImporter.proc()
-
 import os
 import re
 import pandas as pd

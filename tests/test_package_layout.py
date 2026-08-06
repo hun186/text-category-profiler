@@ -98,6 +98,28 @@ class PackageLayoutTests(unittest.TestCase):
                         violations.append(f"{path.relative_to(REPOSITORY_ROOT)}:{module}")
         self.assertEqual(violations, [])
 
+    def test_package_modules_do_not_import_legacy_path_injector(self):
+        roots = [
+            REPOSITORY_ROOT / "TCFMain.py",
+            REPOSITORY_ROOT / "TCF_Params",
+            PACKAGE_ROOT,
+        ]
+        violations = []
+        for root in roots:
+            paths = [root] if root.is_file() else root.rglob("*.py")
+            for path in paths:
+                try:
+                    tree = ast.parse(path.read_text(encoding="utf-8-sig"))
+                except (SyntaxError, UnicodeDecodeError):
+                    continue
+                for node in ast.walk(tree):
+                    if (
+                        isinstance(node, ast.ImportFrom)
+                        and node.module == "PackageImport"
+                    ):
+                        violations.append(str(path.relative_to(REPOSITORY_ROOT)))
+        self.assertEqual(violations, [])
+
 
 if __name__ == "__main__":
     unittest.main()
