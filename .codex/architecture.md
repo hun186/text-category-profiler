@@ -14,11 +14,11 @@
 | 元件／模組 | 責任 | 輸入 | 輸出 | 主要位置 |
 | --- | --- | --- | --- | --- |
 | Flow orchestrator | 串接資料轉換、分類、結果合併、視覺化與清理 | CLI args、工作池路徑、模型／資料設定 | Stage commands、工作目錄狀態、最終輸出 | `TCFMain.py` |
-| Parameter layer | 定義 CLI args、預設工作池與任務模式 | command-line args、平台資訊 | argparse namespace、常數 | `PythonModule/utils/pipeline/TCF_utils.py`, `TCF_Params/TCFParameters.py` |
+| Parameter layer | 定義 CLI args、預設工作池與任務模式 | command-line args、平台資訊 | argparse namespace、常數 | `text_category_profiler/pipeline/TCF_utils.py`, `TCF_Params/TCFParameters.py` |
 | Dataset converter | 建立分類器需要的 dataset／SQLite | 原始文字、固定測試資料、ES job config | `train.tsv`、`dev.tsv`、`test.tsv`、dataset DB | `DatasetConverter/` |
 | Classifier runner | 執行 BERT／XLM 訓練或推論並管理模型／dataset handoff | dataset dir、model dir、resource availability | prediction output、model artifacts、logs | `BertScript/RunClassfier.py`, `BertScript/run_classifier*.py` |
 | Result analysis | 合併原文與預測結果，產生分析與視覺化 | prediction result、dataset DB、label list | combined SQLite／分析資料／Dash UI | `BertScript/CombineTestResult.py`, `BertScript/Test_result_Vis.py` |
-| Shared utilities | 依領域提供 core、data、concurrency、pipeline、text、visualization 與 integrations 工具 | 跨模組 utility calls | 共用 helper behavior | `PythonModule/utils/<domain>/` |
+| Shared utilities | 依領域提供 core、data、concurrency、pipeline、text、visualization 與 integrations 工具 | 跨模組 utility calls | 共用 helper behavior | `text_category_profiler/<domain>/` |
 | Class tree tools | label tree 與分類樹視覺化／分析 | topic tree、labels | tree analysis／visualization | `ClassesTree/` |
 
 ## 主要資料流
@@ -32,8 +32,8 @@
 ## 依賴方向與模組邊界
 
 - 根流程應由 `TCFMain.py` orchestration；stage scripts 可被單獨呼叫，但其 CLI contract 需與 root flow 保持一致。
-- `PackageImport.py` 會把 `PythonModule` 等路徑加入 `sys.path`；共用工具以 `utils.<domain>.<module>` 匯入，修改 utilities 可能影響所有 stage。
-- `utils` 的 domain packages 分別承載基礎工具（`core`）、資料/SQLite（`data`）、多程序（`concurrency`）、主流程（`pipeline`）、文字（`text`）、視覺化（`visualization`）與外部整合（`integrations`）；新程式不得再把已分流模組放回 package root。
+- 共用工具位於 repository root 的 `text_category_profiler/`，以 `text_category_profiler.<domain>.<module>` 匯入；舊 `utils` namespace 不再是 active code 的匯入邊界。現有 stage 仍會呼叫 `PackageImporter.proc()` 來相容舊執行路徑，但不應再依賴 `PythonModule/utils` package。
+- `text_category_profiler` 的 domain packages 分別承載基礎工具（`core`）、資料/SQLite（`data`）、多程序（`concurrency`）、主流程（`pipeline`）、文字（`text`）、視覺化（`visualization`）與外部整合（`integrations`）；新程式不得再把已分流模組放回 package root。
 - Dataset handoff 依賴目錄命名狀態（例如 `_is_running_DataConverter`、`_rdy_for_RunClassfier`）與檔名（例如 `train.tsv`、`test.tsv`、SQLite DB）。
 - 禁止在未更新 contracts/workflows 前改名 stage handoff 檔案、目錄狀態 suffix 或主要 CLI option。
 - 分類 taxonomy CSV 是本專案的 label/tree metadata；TACA 可作為相鄰的拓撲視覺化／編修工具，但主流程應優先透過明確 `--TopicTreeDir` 讀取本專案邊界內的 CSV，避免硬依賴 `../TACA`。
@@ -42,7 +42,7 @@
 
 | 名稱 | 意義 | 擁有者 | 儲存／生命週期 | 權威定義 |
 | --- | --- | --- | --- | --- |
-| argparse namespace | 跨 stage 傳遞的流程設定 | `PythonModule/utils/pipeline/TCF_utils.py` | 每次命令執行產生 | `ClassfierOptionParser()` |
+| argparse namespace | 跨 stage 傳遞的流程設定 | `text_category_profiler/pipeline/TCF_utils.py` | 每次命令執行產生 | `ClassfierOptionParser()` |
 | WorkPool dataset dir | stage 間 handoff 的工作目錄 | `TCFMain.py` / DatasetConverter / RunClassfier | 會被 rename、搬移、備份或清理 | `datasetDirOutputDirPickers`, `TaskConnector`, stage scripts |
 | TSV dataset | BERT classifier input | `DatasetConverter/` | 每次資料轉換產出 | `DataConverter.py`, BERT scripts |
 | SQLite dataset/result DB | 樣本、固定測試與結果合併資料 | DatasetConverter / BertScript | 中間與交付產物 | SQL queries and filenames in scripts |
@@ -80,8 +80,8 @@
 
 | 想修改的能力 | 優先查看 | 相關測試／契約 |
 | --- | --- | --- |
-| CLI args 或預設流程 | `PythonModule/utils/pipeline/TCF_utils.py`, `TCF_Params/TCFParameters.py`, `TCFMain.py` | `CONTRACT-CLI-001` |
+| CLI args 或預設流程 | `text_category_profiler/pipeline/TCF_utils.py`, `TCF_Params/TCFParameters.py`, `TCFMain.py` | `CONTRACT-CLI-001` |
 | 資料轉換 | `DatasetConverter/DataConverter.py`, `DatasetConverter/sampleHandler.py` | `CONTRACT-FILE-001` |
 | 分類器執行 | `BertScript/RunClassfier.py`, `BertScript/run_classifier*.py` | `CONTRACT-FILE-001` |
 | 結果合併／視覺化 | `BertScript/CombineTestResult.py`, `BertScript/Test_result_Vis.py` | `CONTRACT-FILE-002` |
-| 共用工具 | `PythonModule/utils/<domain>/` | `tests/test_utils_package_layout.py` |
+| 共用工具 | `text_category_profiler/<domain>/` | `tests/test_package_layout.py` |

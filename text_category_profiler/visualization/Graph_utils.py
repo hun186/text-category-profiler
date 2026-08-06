@@ -3,7 +3,7 @@ import collections
 import random
 
 try:
-    from utils.core.utilities import flattenList
+    from text_category_profiler.core.utilities import flattenList
 except:
     from utilities import flattenList
 def ComputeComponent(edges):

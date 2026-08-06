@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from PythonModule.utils.core.model_paths import resolve_local_model_directory
+from text_category_profiler.core.model_paths import resolve_local_model_directory
 
 
 class ModelDirectoryResolutionTests(unittest.TestCase):

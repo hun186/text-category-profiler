@@ -17,13 +17,13 @@ import dash_uploader as du
 import reusable_components as rc  # see reusable_components.py
 from flask import request
 
-from utils.core.utilities import timeNow
-from utils.core.utilities import MKDIR
-from utils.pipeline.TCF_utils import get_finished_date_dir_dict
-from utils.data.df_utils import dfOutputer
+from text_category_profiler.core.utilities import timeNow
+from text_category_profiler.core.utilities import MKDIR
+from text_category_profiler.pipeline.TCF_utils import get_finished_date_dir_dict
+from text_category_profiler.data.df_utils import dfOutputer
 
-from utils.visualization.Dash_utils import get_upload_component
-from utils.visualization.Dash_utils import Build_DataArrayTable
+from text_category_profiler.visualization.Dash_utils import get_upload_component
+from text_category_profiler.visualization.Dash_utils import Build_DataArrayTable
 
 def Build_Upload_Block(date_session_id,UploadedFilename,VisSelfFinishedState):
     # if args.VisSelfService == True:        

@@ -1,16 +1,18 @@
-# `tcf_utils` 遷移 TODO
+# `text_category_profiler` 遷移 TODO
 
 > 類型：可持續執行的重構工作清單。後續 Codex 任務應一次處理一個可驗證批次，完成後更新本檔核取方塊與 `.codex/backlog.md` 狀態。
 
+> 目前狀態：根目錄 package 已從泛用的 `utils/`、歷史縮寫 `tcf_utils/` 逐步改名為 `text_category_profiler/`，repository 的 active imports 已同步使用完整專案 namespace。下列清單仍追蹤內容分流、deployment 相容與 path injection 淘汰。
+
 ## 目標
 
-將 `PythonModule/utils/` 中真正跨 stage 共用的 helper 整理為根目錄 `tcf_utils/` package，同時把具明確領域歸屬、測試、實驗、維護腳本與第三方程式移到合適邊界。遷移完成後，active code 不再依賴 `PackageImporter` 修改 `sys.path`，但既有 CLI、stage handoff 與資料格式保持相容。
+將 `PythonModule/utils/` 中真正跨 stage 共用的 helper 整理為根目錄 `text_category_profiler/` package，同時把具明確領域歸屬、測試、實驗、維護腳本與第三方程式移到合適邊界。遷移完成後，active code 不再依賴 `PackageImporter` 修改 `sys.path`，但既有 CLI、stage handoff 與資料格式保持相容。
 
 ## 已確認方向
 
-- 共用 package 名稱採用 `tcf_utils`，不使用過度泛用的頂層 `utils`，也暫不將整個應用程式包成 `text_category_profiler`。
+- Python package 名稱採用 `text_category_profiler`，與 repository 名稱 `text-category-profiler` 對齊，不使用過度泛用的頂層 `utils` 或舊專案縮寫 `tcf_utils`。
 - 保留 `DatasetConverter/`、`BertScript/`、`ClassesTree/` 的既有 stage／領域責任；本計畫不要求一次重組所有 stage。
-- 只有至少兩個 active stage 使用、責任明確且適合重用的程式才進入 `tcf_utils/`。
+- 只有至少兩個 active stage 使用、責任明確且適合重用的程式才進入 `text_category_profiler/`。
 - stage-specific 程式應留在或移回所屬 stage，不得為縮短 import 而塞進共用 package。
 - 先建立測試與相容層，再搬實作；最後才刪除 `PythonModule/` 與 `PackageImport.py`。
 
@@ -26,7 +28,7 @@
 ## 目標結構（第一階段）
 
 ```text
-tcf_utils/
+text_category_profiler/
 ├── __init__.py
 ├── console.py
 ├── progress.py
@@ -62,21 +64,21 @@ tcf_utils/
 - [ ] 為第一批候選模組確認或補齊無外部服務副作用的 characterization tests。
 - [ ] 記錄 repository 外部是否仍有程式依賴 `from utils...`；未確認前保留相容策略。
 
-### Phase 1：建立最小 `tcf_utils`
+### Phase 1：建立最小 `text_category_profiler`
 
-- [ ] 建立 `tcf_utils/__init__.py`，不在 package import 時載入大型 optional dependencies 或執行副作用。
-- [ ] 將 `model_paths.py` 搬至 `tcf_utils/model_paths.py`，更新測試與 active callers。
-- [ ] 將 `torch_compat.py` 搬至 `tcf_utils/torch_compat.py`，更新測試與 active callers。
-- [ ] 將 `log_display.py` 搬至 `tcf_utils/console.py`，更新測試與 active callers。
-- [ ] 將 `progress_utils.py` 搬至 `tcf_utils/progress.py`，更新 active callers。
+- [ ] 建立 `text_category_profiler/__init__.py`，不在 package import 時載入大型 optional dependencies 或執行副作用。
+- [ ] 將 `model_paths.py` 搬至 `text_category_profiler/model_paths.py`，更新測試與 active callers。
+- [ ] 將 `torch_compat.py` 搬至 `text_category_profiler/torch_compat.py`，更新測試與 active callers。
+- [ ] 將 `log_display.py` 搬至 `text_category_profiler/console.py`，更新測試與 active callers。
+- [ ] 將 `progress_utils.py` 搬至 `text_category_profiler/progress.py`，更新 active callers。
 - [ ] 確認以上模組可直接由 repository root import，不需要 `PackageImporter.proc()`。
 - [ ] 若需要 compatibility shim，加入針對舊 import path 的測試並記錄移除條件。
 
 ### Phase 2：拆分路徑、序列化與基礎 helper
 
-- [ ] 從 `utilities_path.py` 盤點純路徑 helper，搬到 `tcf_utils/paths.py`；檔案搬移／刪除函式需另行風險審查。
+- [ ] 從 `utilities_path.py` 盤點純路徑 helper，搬到 `text_category_profiler/paths.py`；檔案搬移／刪除函式需另行風險審查。
 - [ ] 從 `json_utils.py` 搬移通用 serialization helpers；具資料領域語意的 serializer 留在原領域。
-- [ ] 從 `utilities.py` 提取 hashing helpers，建立單元測試後搬到 `tcf_utils/hashing.py`。
+- [ ] 從 `utilities.py` 提取 hashing helpers，建立單元測試後搬到 `text_category_profiler/hashing.py`。
 - [ ] 盤點 time、collection 與 text helpers；只有確有跨 stage callers 才建立對應單一責任模組。
 - [ ] 移除已由新模組取代的重複實作，不保留兩份可分歧的 source of truth。
 
@@ -93,7 +95,7 @@ tcf_utils/
 
 ### Phase 4：淘汰 path injection
 
-- [ ] 將 active code 的 `from utils...`／`import utils...` 改為 `from tcf_utils...` 或明確 stage-local import。
+- [x] 將 active code 的 `from utils...`／`import utils...` 改為 `from text_category_profiler...` 或明確 stage-local import。
 - [ ] 移除 active entry points 中的 `PackageImporter.proc()`。
 - [ ] 移除 active code 對目前 working directory 深度的 import 假設；不得在 import 階段 `chdir`。
 - [ ] 盤點 repository 內所有 `PackageImport.py`，區分 active、vendor、deployment snapshot 後逐一處理。
@@ -118,7 +120,7 @@ tcf_utils/
 
 ## 整體完成條件
 
-- `tcf_utils` 只包含責任明確、確實跨 stage 使用的 helper。
+- `text_category_profiler` 只包含責任明確、確實跨 stage 使用的 helper。
 - active imports 不再仰賴 `sys.path` 注入或 working-directory 切換。
 - `PythonModule/` 已從主程式邊界移除，且沒有未解決的雙份權威實作。
 - 既有 CLI、stage handoff、dataset 與結果檔案契約未改變，或任何必要改變已另立 contract migration。

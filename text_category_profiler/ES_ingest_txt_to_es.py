@@ -1,6 +1,6 @@
-# utils/ES_ingest_txt_to_es.py
+# text_category_profiler/ES_ingest_txt_to_es.py
 # python ES_ingest_txt_to_es.py -d D:\shared\TopicClassification\TopicTextCrawler\Books\新聞網\聯合國新聞網\UnTagged\最新消息
-# cd D:\shared\TopicClassification\PythonModule\utils && python ES_ingest_txt_to_es.py -d D:\shared\TopicClassification\poc-agent\data\軍事情報文本\mil_30k_300days -i mil_reports-01
+# cd D:\shared\TopicClassification\text_category_profiler && python ES_ingest_txt_to_es.py -d D:\shared\TopicClassification\poc-agent\data\軍事情報文本\mil_30k_300days -i mil_reports-01
 import os
 import sys
 import time

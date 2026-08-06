@@ -20,19 +20,19 @@ import re
 import setproctitle
 from pathlib import Path
 #read the original test data for the text and id
-from utils.pipeline.TCF_utils import datasetDirOutputDirPickers
-from utils.pipeline.TCF_utils import ClassfierOptionParser
-from utils.core.utilities import OSWALK
-from utils.core.utilities import WaitUntilFileIsStable
-from utils.core.utilities import SplitList
-from utils.core.utilities import getFNFromFullPath
-from utils.core.utilities import RenameDir
-from utils.concurrency.MP_utils import MPlogger
-from utils.concurrency.MP_utils import multicoreJob
-from utils.data.df_utils import dfOutputer
-from utils.data.df_utils import dfFromSQLite3
+from text_category_profiler.pipeline.TCF_utils import datasetDirOutputDirPickers
+from text_category_profiler.pipeline.TCF_utils import ClassfierOptionParser
+from text_category_profiler.core.utilities import OSWALK
+from text_category_profiler.core.utilities import WaitUntilFileIsStable
+from text_category_profiler.core.utilities import SplitList
+from text_category_profiler.core.utilities import getFNFromFullPath
+from text_category_profiler.core.utilities import RenameDir
+from text_category_profiler.concurrency.MP_utils import MPlogger
+from text_category_profiler.concurrency.MP_utils import multicoreJob
+from text_category_profiler.data.df_utils import dfOutputer
+from text_category_profiler.data.df_utils import dfFromSQLite3
 from ClassesTree.Label_utils import LabelListLoader
-#from utils.pipeline.DataConverter_utils import datasetDirOutputDirPickers
+#from text_category_profiler.pipeline.DataConverter_utils import datasetDirOutputDirPickers
 
 
 class TextInfoSearcher:

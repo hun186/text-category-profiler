@@ -2,11 +2,11 @@ import os
 import re
 import sqlite3 as lite
 
-from utils.core.utilities import CapWords
-from utils.core.utilities import PathSEP
-from utils.core.utilities import pathSpliter
-from utils.core.utilities import OSWALK
-from utils.concurrency.MP_utils import MPlogger
+from text_category_profiler.core.utilities import CapWords
+from text_category_profiler.core.utilities import PathSEP
+from text_category_profiler.core.utilities import pathSpliter
+from text_category_profiler.core.utilities import OSWALK
+from text_category_profiler.concurrency.MP_utils import MPlogger
 
 class LabelNormalizer:
     def proc(LabelList, 

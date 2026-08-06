@@ -9,8 +9,8 @@
 | 作業系統 | 待確認；程式含 Windows 與 Linux 分支 | `TCFMain.py`, `TCF_Params/TCFParameters.py` |
 | Runtime 版本 | Python 版本待確認；BertScript 要求 TensorFlow >= 1.11.0 | `BertScript/requirements.txt` |
 | 套件管理器 | `pip` 可讀取根目錄 `requirements.txt`；尚無 lockfile | `requirements.txt`, `rg --files` 盤點 |
-| 必要本機服務 | 主要流程需要本機資料／模型／工作池；Elasticsearch 只在部分工具中出現 | `TCFMain.py`, `PythonModule/utils/ES_ingest_txt_to_es.py` |
-| 必要環境變數 | 目前無根流程已確認必要環境變數；路徑多由 CLI args 傳入 | `PythonModule/utils/TCF_utils.py` |
+| 必要本機服務 | 主要流程需要本機資料／模型／工作池；Elasticsearch 只在部分工具中出現 | `TCFMain.py`, `text_category_profiler/ES_ingest_txt_to_es.py` |
+| 必要環境變數 | 目前無根流程已確認必要環境變數；路徑多由 CLI args 傳入 | `text_category_profiler/TCF_utils.py` |
 
 ## Canonical Commands
 
@@ -33,7 +33,7 @@
 | 變更類型 | 最小必要檢查 | 需要擴大驗證的條件 |
 | --- | --- | --- |
 | 純文件 | `python -m unittest discover -s tests`；`git diff --check`；交叉閱讀 README、AGENTS Quickstart 與 `.codex/*.md` 一致性 | 文件新增可執行命令或改變資料邊界 |
-| CLI parser／參數 | 檢查 `PythonModule/utils/TCF_utils.py` 與 `TCFMain.py` stage command 組裝一致 | 參數影響工作池、模型、輸出路徑或外部服務 |
+| CLI parser／參數 | 檢查 `text_category_profiler/TCF_utils.py` 與 `TCFMain.py` stage command 組裝一致 | 參數影響工作池、模型、輸出路徑或外部服務 |
 | 資料轉換 | 需要已確認 fixture 後執行 DataConverter smoke test；目前待確認 | 會改寫真實資料、SQLite schema 或 handoff 檔名 |
 | 分類器 | 需要已確認模型／fixture 後執行 RunClassfier smoke test；目前待確認 | 影響模型格式、GPU/CPU resource gate 或 output contract |
 | 視覺化 | 靜態檢查＋若可執行再做 browser/screenshot；目前待確認 | layout、Dash callback 或部署設定改變 |

@@ -5,7 +5,7 @@ import shutil
 import time
 from pathlib import PureWindowsPath, PurePosixPath
 try:
-    from utils.concurrency.MP_utils import MPlogger
+    from text_category_profiler.concurrency.MP_utils import MPlogger
 except:
     from .MP_utils import MPlogger
 

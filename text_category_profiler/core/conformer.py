@@ -2,11 +2,11 @@ import time
 import sys
 import os
 import psutil
-from utils.core.progress_utils import draw_progress_bar
-from utils.concurrency.MP_utils import MPlogger
-from utils.core.log_display import key_values
-from utils.core.log_display import warning
-#from utils.core.utilities import GPU_mem_report  # 你自己已有的版本
+from text_category_profiler.core.progress_utils import draw_progress_bar
+from text_category_profiler.concurrency.MP_utils import MPlogger
+from text_category_profiler.core.log_display import key_values
+from text_category_profiler.core.log_display import warning
+#from text_category_profiler.core.utilities import GPU_mem_report  # 你自己已有的版本
 import GPUtil
 
 try:

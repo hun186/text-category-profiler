@@ -61,7 +61,7 @@ import socket
 #    pass
 
 try:
-    from utils.concurrency.MP_utils import MPlogger
+    from text_category_profiler.concurrency.MP_utils import MPlogger
 except:
     from .MP_utils import MPlogger
 
@@ -75,7 +75,7 @@ from tqdm import tqdm
 
 '''
 try:
-    import utils.Edited_zipfile as zf
+    import text_category_profiler.Edited_zipfile as zf
 except:
     import Edited_zipfile as zf
 '''
@@ -93,34 +93,34 @@ except:
 '''
 #from diff_match_patch import diff_match_patch
 
-from utils.core.utilities_path import OSWALK
-from utils.core.utilities_path import MKDIR
-from utils.core.utilities_path import MKDIRandCopy
-from utils.core.utilities_path import remove_empty_dirs
-from utils.core.utilities_path import RESETDIR
-from utils.core.utilities_path import fileNameNormalizer
-from utils.core.utilities_path import PathSEP
-from utils.core.utilities_path import pathSpliter
-from utils.core.utilities_path import fileNameReplacer
-from utils.core.utilities_path import ShortenFN
-from utils.core.utilities_path import getMFNFromFN,getFNFromFullPath,getFNExtFromFullPath
-from utils.core.utilities_path import getPathFromFN,getFileDirFromFN
-from utils.core.utilities_path import getSubdirectory
-from utils.core.utilities_path import FileNamePicker
-from utils.core.utilities_path import InsertDirnameToFN
-from utils.core.utilities_path import AppendedMFN
-from utils.core.utilities_path import RemoveIlleagalCharForFileName
-from utils.core.utilities_path import RemoveIlleagalCharForFileNameForLatex
-#from utils.core.utilities_path import find_similar_directory
-from utils.core.utilities_path import getFastAPIStaticDir
-from utils.core.utilities_path import BackupAndDelFile
-from utils.core.utilities_path import DirReplace
-from utils.core.utilities_path import RenameDir
-#from utils.core.utilities_json import JsonHandler
-#from utils.core.utilities_json import JsonFilesProcessor
-#from utils.data.json_utils import Serializer
-from utils.core.progress_utils import draw_progress_bar
-from utils.core.conformer import mem_report
+from text_category_profiler.core.utilities_path import OSWALK
+from text_category_profiler.core.utilities_path import MKDIR
+from text_category_profiler.core.utilities_path import MKDIRandCopy
+from text_category_profiler.core.utilities_path import remove_empty_dirs
+from text_category_profiler.core.utilities_path import RESETDIR
+from text_category_profiler.core.utilities_path import fileNameNormalizer
+from text_category_profiler.core.utilities_path import PathSEP
+from text_category_profiler.core.utilities_path import pathSpliter
+from text_category_profiler.core.utilities_path import fileNameReplacer
+from text_category_profiler.core.utilities_path import ShortenFN
+from text_category_profiler.core.utilities_path import getMFNFromFN,getFNFromFullPath,getFNExtFromFullPath
+from text_category_profiler.core.utilities_path import getPathFromFN,getFileDirFromFN
+from text_category_profiler.core.utilities_path import getSubdirectory
+from text_category_profiler.core.utilities_path import FileNamePicker
+from text_category_profiler.core.utilities_path import InsertDirnameToFN
+from text_category_profiler.core.utilities_path import AppendedMFN
+from text_category_profiler.core.utilities_path import RemoveIlleagalCharForFileName
+from text_category_profiler.core.utilities_path import RemoveIlleagalCharForFileNameForLatex
+#from text_category_profiler.core.utilities_path import find_similar_directory
+from text_category_profiler.core.utilities_path import getFastAPIStaticDir
+from text_category_profiler.core.utilities_path import BackupAndDelFile
+from text_category_profiler.core.utilities_path import DirReplace
+from text_category_profiler.core.utilities_path import RenameDir
+#from text_category_profiler.core.utilities_json import JsonHandler
+#from text_category_profiler.core.utilities_json import JsonFilesProcessor
+#from text_category_profiler.data.json_utils import Serializer
+from text_category_profiler.core.progress_utils import draw_progress_bar
+from text_category_profiler.core.conformer import mem_report
 
 # 檢查當前系統是否為 Windows
 def IsWindows():

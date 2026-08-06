@@ -18,17 +18,17 @@ from colorama import Fore#, Back, Style
 
 from elasticsearch import Elasticsearch
 
-from utils.core.utilities import MKDIR
-from utils.core.utilities import OSWALK
-from utils.core.utilities import DictIndentPrint
-from utils.core.utilities import ConvertTimeStrFMT
-from utils.core.utilities import DictTransposer
-from utils.core.utilities import TSVTextAdapter
-from utils.core.utilities import DateList
-from utils.core.utilities import timeRelative
+from text_category_profiler.core.utilities import MKDIR
+from text_category_profiler.core.utilities import OSWALK
+from text_category_profiler.core.utilities import DictIndentPrint
+from text_category_profiler.core.utilities import ConvertTimeStrFMT
+from text_category_profiler.core.utilities import DictTransposer
+from text_category_profiler.core.utilities import TSVTextAdapter
+from text_category_profiler.core.utilities import DateList
+from text_category_profiler.core.utilities import timeRelative
 try:
-    from utils.data.df_utils import dfFromSQLite3
-    from utils.data.df_utils import dfOutputer
+    from text_category_profiler.data.df_utils import dfFromSQLite3
+    from text_category_profiler.data.df_utils import dfOutputer
 except:
     pass
 

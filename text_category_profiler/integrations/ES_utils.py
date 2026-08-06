@@ -1,4 +1,4 @@
-# utils/ES_utils.py
+# text_category_profiler/ES_utils.py
 from pprint import pprint
 import json
 import yaml

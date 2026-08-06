@@ -8,7 +8,7 @@ import platform
 #import tensorflow as tf
 import math
 import GPUtil
-from utils.concurrency.MP_utils import multicoreJob
+from text_category_profiler.concurrency.MP_utils import multicoreJob
 
 GPUDevices = GPUtil.getAvailable()
 WIDTH = 48 #for short sentence detection

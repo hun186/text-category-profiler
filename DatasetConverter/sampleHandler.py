@@ -7,26 +7,26 @@ if os.getcwd().split(os.path.sep)[-1] in [
     print(f"Change working directory to {os.getcwd()}")
 import sqlite3 as lite
 from collections import Counter
-from utils.core.utilities import RemoveIlleagalCharForFileName
+from text_category_profiler.core.utilities import RemoveIlleagalCharForFileName
 #from MP_utils  import MPlogger
 #import tokenization
 from opencc import OpenCC
-from utils.core.utilities import ListCap
-from utils.core.utilities import wrap
-from utils.core.utilities import GetRatioOfDigits
-from utils.core.utilities import getFNExtFromFullPath
-from utils.core.utilities import fileNameNormalizer
-from utils.data.df_utils import dfFromSQLite3
-from utils.concurrency.MP_utils  import MPlogger
-from utils.core.log_display import key_values
-from utils.core.log_display import summarize_sequence
-#from utils.pipeline.TCF_utils import datasetDirOutputDirPickers
-from utils.pipeline.TCF_utils import ClassfierOptionParser
-from utils.pipeline.TCF_utils import get_base_model_checkpoint
-from utils.core.model_paths import resolve_local_model_directory
-from utils.text.TextProcessor_utils import textReader
-from utils.text.TextProcessor_utils import BasicDataCleaner
-from utils.text.TextProcessor_utils import DataCleanerWithPattern
+from text_category_profiler.core.utilities import ListCap
+from text_category_profiler.core.utilities import wrap
+from text_category_profiler.core.utilities import GetRatioOfDigits
+from text_category_profiler.core.utilities import getFNExtFromFullPath
+from text_category_profiler.core.utilities import fileNameNormalizer
+from text_category_profiler.data.df_utils import dfFromSQLite3
+from text_category_profiler.concurrency.MP_utils  import MPlogger
+from text_category_profiler.core.log_display import key_values
+from text_category_profiler.core.log_display import summarize_sequence
+#from text_category_profiler.pipeline.TCF_utils import datasetDirOutputDirPickers
+from text_category_profiler.pipeline.TCF_utils import ClassfierOptionParser
+from text_category_profiler.pipeline.TCF_utils import get_base_model_checkpoint
+from text_category_profiler.core.model_paths import resolve_local_model_directory
+from text_category_profiler.text.TextProcessor_utils import textReader
+from text_category_profiler.text.TextProcessor_utils import BasicDataCleaner
+from text_category_profiler.text.TextProcessor_utils import DataCleanerWithPattern
 from ClassesTree.Label_utils import getLabelsFromFileName
 #from ClassesTree.Label_utils import LabelsStringReader
 

@@ -18,18 +18,18 @@ import tqdm
     #print(e)
 from DatasetConverter.EXTConverter.ExtractionRule import ExtractionRuleDict
 from DatasetConverter.EXTConverter.ExtractionRule import CombinationRuleDict
-from utils.core.utilities import removeStrPrefix
-from utils.core.utilities import removeStrSuffix
-from utils.core.utilities import OSWALK
-from utils.core.utilities import MKDIR
-from utils.core.utilities import pathSpliter
-from utils.core.utilities import fileNameNormalizer
-from utils.core.utilities import getMFNFromFN
-from utils.core.utilities import getFNFromFullPath
-from utils.core.utilities import RemoveIlleagalCharForFileName
-from utils.core.utilities import DomainNameExtractor
-from utils.data.df_utils import DictRowsListToDF
-from utils.data.df_utils import dfOutputer
+from text_category_profiler.core.utilities import removeStrPrefix
+from text_category_profiler.core.utilities import removeStrSuffix
+from text_category_profiler.core.utilities import OSWALK
+from text_category_profiler.core.utilities import MKDIR
+from text_category_profiler.core.utilities import pathSpliter
+from text_category_profiler.core.utilities import fileNameNormalizer
+from text_category_profiler.core.utilities import getMFNFromFN
+from text_category_profiler.core.utilities import getFNFromFullPath
+from text_category_profiler.core.utilities import RemoveIlleagalCharForFileName
+from text_category_profiler.core.utilities import DomainNameExtractor
+from text_category_profiler.data.df_utils import DictRowsListToDF
+from text_category_profiler.data.df_utils import dfOutputer
 
 
 def ComputeOutputLabel(

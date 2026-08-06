@@ -1,6 +1,6 @@
-from utils.core.utilities import reCombiner
-from utils.concurrency.MP_utils import MPlogger
-from utils.pipeline.DataConverter_utils_Parameters import GeneralBinInfoScoreSumLBD
+from text_category_profiler.core.utilities import reCombiner
+from text_category_profiler.concurrency.MP_utils import MPlogger
+from text_category_profiler.pipeline.DataConverter_utils_Parameters import GeneralBinInfoScoreSumLBD
 
 #在Test_result_Vis_utils.py中的BinMissionVerifier.singleConstraintBool()中，
 #檢驗切片分數是否符合SimpleTag的正規表示式時，會自動加入符合SimpleTag類別的子類別一起考量。

@@ -12,11 +12,11 @@ import os
 
 from array import array
 
-from utils.core.utilities import ListFill
-from utils.core.utilities import ShowElapsedTime
-from utils.core.utilities import ShowPartDict
-from utils.core.utilities import MemUsage
-from utils.core.utilities import SortedDictWithValLen
+from text_category_profiler.core.utilities import ListFill
+from text_category_profiler.core.utilities import ShowElapsedTime
+from text_category_profiler.core.utilities import ShowPartDict
+from text_category_profiler.core.utilities import MemUsage
+from text_category_profiler.core.utilities import SortedDictWithValLen
 '''
 def ShowElapsedTime(start_time):
     elapsed_time = time.time() - start_time

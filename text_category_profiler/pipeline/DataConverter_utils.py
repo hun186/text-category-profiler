@@ -1,5 +1,5 @@
 try:
-    import utils
+    import text_category_profiler
 except:
     from PackageImport import PackageImporter
     PackageImporter.proc()
@@ -9,27 +9,27 @@ import re
 import pandas as pd
 import slugify
 
-from utils.core.utilities import CapWords
-from utils.core.utilities import OSWALK
-from utils.core.utilities import MKDIR
-#from utils.core.utilities import pathSeqFromFN
-from utils.core.utilities import pathSpliter
-from utils.core.utilities import removeStrPrefix
-from utils.core.utilities import ConvertTimeStrFMT
-from utils.core.utilities import getMFNFromFN
-from utils.core.utilities import getFNExtFromFullPath
-from utils.core.utilities import FileNamePicker
+from text_category_profiler.core.utilities import CapWords
+from text_category_profiler.core.utilities import OSWALK
+from text_category_profiler.core.utilities import MKDIR
+#from text_category_profiler.core.utilities import pathSeqFromFN
+from text_category_profiler.core.utilities import pathSpliter
+from text_category_profiler.core.utilities import removeStrPrefix
+from text_category_profiler.core.utilities import ConvertTimeStrFMT
+from text_category_profiler.core.utilities import getMFNFromFN
+from text_category_profiler.core.utilities import getFNExtFromFullPath
+from text_category_profiler.core.utilities import FileNamePicker
 
-from utils.core.utilities import RemoveIlleagalCharForFileName
-#from utils.core.utilities import DictSaver
-from utils.concurrency.MP_utils import MPlogger
-from utils.data.df_utils import XLSTodf
-from utils.data.df_utils import CSVtodf
-from utils.data.df_utils import dfFromSQLite3
-from utils.data.df_utils import dfOutputer
-from utils.data.df_utils import dfAppendToXLS
-from utils.data.df_utils import dfListToXLS
-from utils.pipeline.TCF_utils import datasetDirOutputDirPickers
+from text_category_profiler.core.utilities import RemoveIlleagalCharForFileName
+#from text_category_profiler.core.utilities import DictSaver
+from text_category_profiler.concurrency.MP_utils import MPlogger
+from text_category_profiler.data.df_utils import XLSTodf
+from text_category_profiler.data.df_utils import CSVtodf
+from text_category_profiler.data.df_utils import dfFromSQLite3
+from text_category_profiler.data.df_utils import dfOutputer
+from text_category_profiler.data.df_utils import dfAppendToXLS
+from text_category_profiler.data.df_utils import dfListToXLS
+from text_category_profiler.pipeline.TCF_utils import datasetDirOutputDirPickers
 
 from DatasetConverter.EXTConverter.ExtractionRule import ExtractionRuleDict
 from BertScript.ClassTable import ClassTable
@@ -416,8 +416,8 @@ if __name__=='__main__':
     Columns = ["Time","Sen","Rec","Rec2","text","unknown"]
     ctxCols = ["text"]
     SaveFNCols = ["Sen","Rec","Rec2","text"]
-    FN = r"D:\shared\TopicClassification\PythonModule\utils\KaggleExtraction\csvSample.txt"
-    ROOTPATH = r"D:\shared\TopicClassification\PythonModule\utils\KaggleExtraction"
+    FN = r"D:\shared\TopicClassification\text_category_profiler\KaggleExtraction\csvSample.txt"
+    ROOTPATH = r"D:\shared\TopicClassification\text_category_profiler\KaggleExtraction"
     for file in OSWALK(ROOTPATH):
         KDE = KaggleDatasetExtractor(
             filename=FN,Columns=Columns,ctxCols=ctxCols,SaveFNCols=SaveFNCols,

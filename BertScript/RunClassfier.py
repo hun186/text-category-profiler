@@ -8,30 +8,30 @@ import platform
 import setproctitle
 
 from TCF_Params.TCFParameters import BertClassfierPath
-from utils.core.utilities import getFNFromFullPath
-from utils.pipeline.TCF_utils import datasetDirOutputDirPickers
-from utils.pipeline.TCF_utils import get_testResFile_Name
-from utils.pipeline.TCF_utils import freeModelDirConformer
-from utils.pipeline.TCF_utils import ClearOldTestResFile
-from utils.pipeline.TCF_utils import ClassfierOptionParser
-from utils.pipeline.TCF_utils import PYTORCH_MODEL_TYPES
-from utils.core.utilities import MKDIR
-from utils.core.utilities import MKDIRandCopy
-from utils.core.utilities import getFNFromFullPath
-from utils.core.utilities import OSWALK
-from utils.core.conformer import freeGPUConformer
-from utils.core.conformer import HybridConformer
-from utils.core.utilities import WaitUntilFileIsStable
-from utils.concurrency.MP_utils import MPlogger
-from utils.data.DB_utils import sqlite3Query
-from utils.core.log_display import info
-from utils.core.log_display import key_values
-from utils.core.log_display import print_command
-from utils.core.log_display import section
-from utils.core.log_display import stage_banner
-from utils.core.log_display import stage_done
-from utils.core.log_display import summarize_sequence
-from utils.core.log_display import warning
+from text_category_profiler.core.utilities import getFNFromFullPath
+from text_category_profiler.pipeline.TCF_utils import datasetDirOutputDirPickers
+from text_category_profiler.pipeline.TCF_utils import get_testResFile_Name
+from text_category_profiler.pipeline.TCF_utils import freeModelDirConformer
+from text_category_profiler.pipeline.TCF_utils import ClearOldTestResFile
+from text_category_profiler.pipeline.TCF_utils import ClassfierOptionParser
+from text_category_profiler.pipeline.TCF_utils import PYTORCH_MODEL_TYPES
+from text_category_profiler.core.utilities import MKDIR
+from text_category_profiler.core.utilities import MKDIRandCopy
+from text_category_profiler.core.utilities import getFNFromFullPath
+from text_category_profiler.core.utilities import OSWALK
+from text_category_profiler.core.conformer import freeGPUConformer
+from text_category_profiler.core.conformer import HybridConformer
+from text_category_profiler.core.utilities import WaitUntilFileIsStable
+from text_category_profiler.concurrency.MP_utils import MPlogger
+from text_category_profiler.data.DB_utils import sqlite3Query
+from text_category_profiler.core.log_display import info
+from text_category_profiler.core.log_display import key_values
+from text_category_profiler.core.log_display import print_command
+from text_category_profiler.core.log_display import section
+from text_category_profiler.core.log_display import stage_banner
+from text_category_profiler.core.log_display import stage_done
+from text_category_profiler.core.log_display import summarize_sequence
+from text_category_profiler.core.log_display import warning
 
 
 def _display_model_command(command, log_path, background=False):

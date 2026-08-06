@@ -1,14 +1,6 @@
 import unittest
 
-from pathlib import Path
-import sys
-
-ROOT = Path(__file__).resolve().parents[1]
-PYTHON_MODULE = ROOT / "PythonModule"
-if str(PYTHON_MODULE) not in sys.path:
-    sys.path.insert(0, str(PYTHON_MODULE))
-
-from utils.core.torch_compat import disable_unsupported_windows_compile
+from text_category_profiler.core.torch_compat import disable_unsupported_windows_compile
 
 
 class FakeTorch:

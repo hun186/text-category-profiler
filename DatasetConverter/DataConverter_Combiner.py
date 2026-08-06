@@ -48,69 +48,69 @@ import shutil
 import argparse
 #import GPUtil
 
-from utils.core.utilities import CapWords
-from utils.core.utilities import OSWALK
-from utils.core.utilities import MKDIR
+from text_category_profiler.core.utilities import CapWords
+from text_category_profiler.core.utilities import OSWALK
+from text_category_profiler.core.utilities import MKDIR
 #from utilities import ShowElapsedTime
-#from utils.core.utilities import mem_report
-#from utils.pipeline.TCF_utils import GetTreeFilePath
-from utils.pipeline.TCF_utils import GetRSTRLabelList
-from utils.pipeline.TCF_utils import datasetDirOutputDirPickers
-from utils.pipeline.TCF_utils import ClassfierOptionParser
-from utils.pipeline.TCF_utils import TaskConnector
+#from text_category_profiler.core.utilities import mem_report
+#from text_category_profiler.pipeline.TCF_utils import GetTreeFilePath
+from text_category_profiler.pipeline.TCF_utils import GetRSTRLabelList
+from text_category_profiler.pipeline.TCF_utils import datasetDirOutputDirPickers
+from text_category_profiler.pipeline.TCF_utils import ClassfierOptionParser
+from text_category_profiler.pipeline.TCF_utils import TaskConnector
 
 from ClassesTree.Label_utils import getLabelsFromOSWALK
 from ClassesTree.Label_utils import getLabelsFromFileName
 from ClassesTree.Label_utils import LabelsStringReader
 from ClassesTree.Label_utils import LabelListExtractor
 
-from utils.pipeline.DataConverter_utils import getSrcFromFileName
-#from utils.pipeline.DataConverter_utils import datasetDirOutputDirPickers
-#from utils.pipeline.DataConverter_utils import LoadTree
-#from utils.pipeline.DataConverter_utils import GetNodes
-#from utils.pipeline.DataConverter_utils import GetSubTopics
-#from utils.pipeline.DataConverter_utils import GetClosestMatchingParent
-#from utils.pipeline.DataConverter_utils import GetInducedSubgraph
-#from utils.pipeline.DataConverter_utils import BuildInfoScoreTable
-#from utils.pipeline.DataConverter_utils import GetFixedTestPATH
-#from utils.pipeline.DataConverter_utils import RANDLoader
-#from utils.pipeline.DataConverter_utils import CheckDatasetFiles
+from text_category_profiler.pipeline.DataConverter_utils import getSrcFromFileName
+#from text_category_profiler.pipeline.DataConverter_utils import datasetDirOutputDirPickers
+#from text_category_profiler.pipeline.DataConverter_utils import LoadTree
+#from text_category_profiler.pipeline.DataConverter_utils import GetNodes
+#from text_category_profiler.pipeline.DataConverter_utils import GetSubTopics
+#from text_category_profiler.pipeline.DataConverter_utils import GetClosestMatchingParent
+#from text_category_profiler.pipeline.DataConverter_utils import GetInducedSubgraph
+#from text_category_profiler.pipeline.DataConverter_utils import BuildInfoScoreTable
+#from text_category_profiler.pipeline.DataConverter_utils import GetFixedTestPATH
+#from text_category_profiler.pipeline.DataConverter_utils import RANDLoader
+#from text_category_profiler.pipeline.DataConverter_utils import CheckDatasetFiles
 try:
     from sampleHandler import SampleReader
 except:
     from DatasetConverter.sampleHandler import SampleReader
 
 #from utilities import hash
-from utils.data.df_utils import dfOutputer
-from utils.concurrency.MP_utils import multicoreJob
-from utils.concurrency.MP_utils import MPlogger
-from utils.visualization.Dash_utils import LevelDVisProcessor
+from text_category_profiler.data.df_utils import dfOutputer
+from text_category_profiler.concurrency.MP_utils import multicoreJob
+from text_category_profiler.concurrency.MP_utils import MPlogger
+from text_category_profiler.visualization.Dash_utils import LevelDVisProcessor
 #from utilities_RAND import LoadTree
 #from utilities_RAND import RANDLoader
 
 
-from utils.core.utilities import fileNameNormalizer
-from utils.core.utilities import getMFNFromFN
-from utils.core.utilities import getFNFromFullPath
+from text_category_profiler.core.utilities import fileNameNormalizer
+from text_category_profiler.core.utilities import getMFNFromFN
+from text_category_profiler.core.utilities import getFNFromFullPath
 
-from utils.core.utilities import timeNow
-from utils.core.utilities import ShowElapsedTime
-from utils.core.utilities import ShowStepCostTime
-from utils.core.utilities import SplitList
-from utils.core.utilities import ListDivider
-from utils.core.utilities import ListDiff
-from utils.core.utilities import flattenList
-from utils.core.utilities import fileNameReplacer
-from utils.core.utilities import WaitUntilFileIsStable
-from utils.core.utilities import CopyOrMoveWithFNList
-from utils.core.utilities import RandomSample
-from utils.text.TextProcessor_utils import textReader
-from utils.text.TextProcessor_utils import TxtFileHashDictBuilder
+from text_category_profiler.core.utilities import timeNow
+from text_category_profiler.core.utilities import ShowElapsedTime
+from text_category_profiler.core.utilities import ShowStepCostTime
+from text_category_profiler.core.utilities import SplitList
+from text_category_profiler.core.utilities import ListDivider
+from text_category_profiler.core.utilities import ListDiff
+from text_category_profiler.core.utilities import flattenList
+from text_category_profiler.core.utilities import fileNameReplacer
+from text_category_profiler.core.utilities import WaitUntilFileIsStable
+from text_category_profiler.core.utilities import CopyOrMoveWithFNList
+from text_category_profiler.core.utilities import RandomSample
+from text_category_profiler.text.TextProcessor_utils import textReader
+from text_category_profiler.text.TextProcessor_utils import TxtFileHashDictBuilder
 
-from utils.data.DB_utils import sqlite3Query
-from utils.data.DB_utils import getESData
+from text_category_profiler.data.DB_utils import sqlite3Query
+from text_category_profiler.data.DB_utils import getESData
 
-from utils.data.df_utils import DictRowsListToDF
+from text_category_profiler.data.df_utils import DictRowsListToDF
 
 def ArticleRowsListToDF(rows_list,start_time=None):
     rows_list = list(filter((None).__ne__, rows_list))

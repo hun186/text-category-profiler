@@ -12,6 +12,18 @@
 
 ## Recent Outcomes
 
+### 2026-08-06 — Python namespace aligned with `text-category-profiler`
+
+- 目標：移除沿用舊 TopicClassification 名稱的 `tcf` 縮寫，讓 Python package 可直接對應目前 repository 名稱。
+- 結果：根目錄 package 改名為 `text_category_profiler/`，active application code 與 tests 統一使用 `text_category_profiler.<domain>.<module>`；README 與 current-state、decision、backlog、migration 文件已同步。
+- 相容邊界：本批不改名 `TCFMain.py`、`TCF_Params/`、`TCF_utils.py`、CLI options 或 stage handoff；`BertScript/TRV_deploy/` deployment snapshot 也保持獨立。
+
+### 2026-08-06 — `tcf_utils` namespace rename alignment
+
+- 目標：在共用工具目錄改名為根目錄 `tcf_utils/` 後，消除程式與 current-state 文件中殘留的 `utils` import 與 `PythonModule/utils` 路徑。
+- 結果：active application code 與輕量測試統一改用 `tcf_utils.<domain>.<module>`；README、project、architecture、contracts、decision 與 migration/backlog 說明也同步新邊界。
+- 保留邊界：`BertScript/TRV_deploy/` 是獨立 deployment snapshot，本批不將其內部舊 package 誤改為尚未佈署的根目錄 package。
+
 ### 2026-08-06 — PythonModule utilities domain migration
 
 - 目標：將 `PythonModule/utils/` 的共用模組依責任分流，降低所有 helper 平放在單一 package root 的耦合。

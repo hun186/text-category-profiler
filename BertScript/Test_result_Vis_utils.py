@@ -23,20 +23,20 @@ from VisParameters_DRN import GlobalExemptDict_DRN
 GlobalExemptDict.update(GlobalExemptDict_DRN)
 del(GlobalExemptDict_DRN)
 '''
-from utils.core.utilities import MKDIR
+from text_category_profiler.core.utilities import MKDIR
 #from VisParameters import BinMissionDict
-from utils.core.utilities import getMFNFromFN
-from utils.core.utilities import flattenList
-from utils.core.utilities import GetDigitElementsOfaList
-from utils.core.utilities import removeStrSuffix
-from utils.text.similarity_utils import SequenceSimilarity
-from utils.concurrency.MP_utils import multicoreJob
-from utils.concurrency.MP_utils import MPlogger
-from utils.data.df_utils import dfOutputer
+from text_category_profiler.core.utilities import getMFNFromFN
+from text_category_profiler.core.utilities import flattenList
+from text_category_profiler.core.utilities import GetDigitElementsOfaList
+from text_category_profiler.core.utilities import removeStrSuffix
+from text_category_profiler.text.similarity_utils import SequenceSimilarity
+from text_category_profiler.concurrency.MP_utils import multicoreJob
+from text_category_profiler.concurrency.MP_utils import MPlogger
+from text_category_profiler.data.df_utils import dfOutputer
 from ClassesTree.ClassesTree_utils import LoadTree
 from ClassesTree.ClassesTree_utils import GetSubTopics
 from ClassesTree.ClassesTree_utils import GetNodes
-from utils.data.DB_utils import sqlite3Query
+from text_category_profiler.data.DB_utils import sqlite3Query
 import difflib
 #print("finish loading difflib")
 '''

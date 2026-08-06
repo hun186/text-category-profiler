@@ -37,36 +37,36 @@ def run_stage_command(CMD, stage_name):
 import shutil
 #import GPUtil
 
-from utils.core.utilities import OSWALK
-from utils.core.utilities import MKDIR
-from utils.core.conformer import HybridConformer
+from text_category_profiler.core.utilities import OSWALK
+from text_category_profiler.core.utilities import MKDIR
+from text_category_profiler.core.conformer import HybridConformer
 #from utilities import ShowElapsedTime
-from utils.pipeline.TCF_utils import BackupAIPredictResultAndDelTempFile
-#from utils.pipeline.TCF_utils import ExportDFAllResult
-from utils.pipeline.TCF_utils import convert_to_args_str
-from utils.pipeline.TCF_utils import datasetDirOutputDirPickers
+from text_category_profiler.pipeline.TCF_utils import BackupAIPredictResultAndDelTempFile
+#from text_category_profiler.pipeline.TCF_utils import ExportDFAllResult
+from text_category_profiler.pipeline.TCF_utils import convert_to_args_str
+from text_category_profiler.pipeline.TCF_utils import datasetDirOutputDirPickers
 
-from utils.pipeline.DataConverter_utils import CheckDatasetFiles
-from utils.pipeline.DataConverter_utils import RawAndPredictionMerger
+from text_category_profiler.pipeline.DataConverter_utils import CheckDatasetFiles
+from text_category_profiler.pipeline.DataConverter_utils import RawAndPredictionMerger
 #from utilities import hash
 
-from utils.concurrency.MP_utils import MPlogger
-#from utils.visualization.Dash_utils import LevelDVisProcessor
+from text_category_profiler.concurrency.MP_utils import MPlogger
+#from text_category_profiler.visualization.Dash_utils import LevelDVisProcessor
 #from utilities_RAND import LoadTree
 #from utilities_RAND import RANDLoader
 
-from utils.core.utilities import ShowElapsedTime
-from utils.core.utilities import exit_program
-from utils.core.utilities import chownPath
-from utils.core.log_display import info
-from utils.core.log_display import print_args_summary
-from utils.core.log_display import print_command
-from utils.core.log_display import stage_banner
-from utils.core.log_display import stage_done
-from utils.core.log_display import stage_failed
-from utils.core.log_display import warning
+from text_category_profiler.core.utilities import ShowElapsedTime
+from text_category_profiler.core.utilities import exit_program
+from text_category_profiler.core.utilities import chownPath
+from text_category_profiler.core.log_display import info
+from text_category_profiler.core.log_display import print_args_summary
+from text_category_profiler.core.log_display import print_command
+from text_category_profiler.core.log_display import stage_banner
+from text_category_profiler.core.log_display import stage_done
+from text_category_profiler.core.log_display import stage_failed
+from text_category_profiler.core.log_display import warning
 
-#from utils.Tika_pdf_to_txt import ExtractTxt
+#from text_category_profiler.Tika_pdf_to_txt import ExtractTxt
 
 #將環境變數執行python所需之"."替換成r".\"，
 #否則import tulip時，在__init__.py的Line 31之os.add_dll_directory(".")會報錯中斷。

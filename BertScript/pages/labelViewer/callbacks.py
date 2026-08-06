@@ -12,7 +12,7 @@ from pages.labelViewer.demos import dash_reusable_components as drc
 
 
 
-from utils.visualization.Dash_utils import CallbackManager
+from text_category_profiler.visualization.Dash_utils import CallbackManager
 callback_manager = CallbackManager()
 
 # ############################## CALLBACKS ####################################
