@@ -27,6 +27,7 @@ from functools import partial
 #read the original test data for the text and id
 from utils.TCF_utils import datasetDirOutputDirPickers
 from utils.TCF_utils import ClassfierOptionParser
+from utils.TCF_utils import PYTORCH_MODEL_TYPES
 from utils.utilities import OSWALK
 from utils.utilities import WaitUntilFileIsStable
 from utils.utilities import SplitList
@@ -401,10 +402,12 @@ if __name__=='__main__':
             'label': df_result.idxmax(axis=1)})
         df_map_result['pred_Type'] = df_map_result['label'].apply(
             lambda x:labeltoType[x])
-    elif args.ModelType in ["PytorchXLM","PytorchRBTL3"]:
+    elif args.ModelType in PYTORCH_MODEL_TYPES:
         df_map_result = pd.DataFrame({'Type': df_test['Type'],
             'text': df_test['text']})
         df_map_result['pred_Type'] = df_result
+    else:
+        raise ValueError(f"Unsupported ModelType for result combination: {args.ModelType}")
     MES = "Start to query the Src of texts."
     MPLOGGER_TCFMain.logW(MES, printOnScreen=False)
     key_values("Source lookup", [("processes", nProcess), ("rows", len(df_map_result))])
@@ -476,4 +479,3 @@ if __name__=='__main__':
     key_values("CombineTestResult handoff", [("from", BertDatasetSubDir), ("to", NewBertDatasetSubDir)])
     MPLOGGER_TCFMain = MPlogger(logSubDir=f"{NewBertDatasetSubDir}/logs")
     MPLOGGER_TCFMain.logW(MES, printOnScreen=False)
-

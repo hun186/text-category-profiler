@@ -5,6 +5,7 @@ import time
 import pathlib
 import argparse
 import datetime
+from multiprocessing import current_process
 #import wmi
 from utils.MP_utils import MPlogger
 from utils.utilities import OSWALK
@@ -244,7 +245,8 @@ def ClassfierOptionParser():
 
     if args.train == True:
         args.test = False
-        print("Start to training model, the test for FixedTest is turned off.")
+        if current_process().name == "MainProcess":
+            print("Start to training model, the test for FixedTest is turned off.")
     if args.train == False and args.test == False:
         args.test = True
 

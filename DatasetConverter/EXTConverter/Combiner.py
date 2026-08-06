@@ -7,7 +7,6 @@ if os.getcwd().split(os.path.sep)[-1] in [
         "EXTConverter"]:
     os.chdir("../../")
     print(f"Change working directory to {os.getcwd()}")
-print(f"cwd:{os.getcwd()}")
 from PackageImport import PackageImporter
 PackageImporter.proc()
 

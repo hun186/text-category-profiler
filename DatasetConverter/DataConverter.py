@@ -101,7 +101,6 @@ from utils.log_display import stage_banner
 from utils.log_display import stage_done
 from utils.log_display import summarize_sequence
 from utils.log_display import warning
-from utils.Dash_utils import LevelDVisProcessor
 #from utilities_RAND import LoadTree
 #from utilities_RAND import RANDLoader
 
@@ -1016,6 +1015,11 @@ class DatasetGenerator:
         return nDict
     
 def GenStasticsVisJobs(df, datasetSubDir):
+    # Dash is only needed when statistics visualization jobs are requested.
+    # Keeping this import local prevents every Windows spawn worker from loading
+    # Dash (and repeating dependency deprecation warnings) during sample reads.
+    from utils.Dash_utils import LevelDVisProcessor
+
     result = []
     for VisPath in [['SrcType', 'Src', 'InLabel'],
                     ['InLabel', 'SrcType', 'Src'],
