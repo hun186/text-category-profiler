@@ -23,6 +23,7 @@ from utils.log_display import summarize_sequence
 #from utils.TCF_utils import datasetDirOutputDirPickers
 from utils.TCF_utils import ClassfierOptionParser
 from utils.TCF_utils import get_base_model_checkpoint
+from utils.model_paths import resolve_local_model_directory
 from utils.TextProcessor_utils import textReader
 from utils.TextProcessor_utils import BasicDataCleaner
 from utils.TextProcessor_utils import DataCleanerWithPattern
@@ -75,9 +76,16 @@ def tokenization_wrap(
             "ReTks":[],
             }
         return res
-    if not os.path.isdir(modelDir):
-        print("WARNING! The input modelDir {modelDir} for tokenization_wrap does not exist, use xlm-roberta-base instead")
-        modelDir = "xlm-roberta-base"
+    requestedModelDir = modelDir
+    modelDir = resolve_local_model_directory(requestedModelDir)
+    if modelDir is None:
+        fallbackModelDir = resolve_local_model_directory("xlm-roberta-base")
+        modelDir = fallbackModelDir or "xlm-roberta-base"
+        print(
+            f"WARNING! The input modelDir {requestedModelDir} for "
+            "tokenization_wrap does not exist; use "
+            f"{modelDir} instead"
+        )
     
     #context = "This is a book.這是一本書。那是一枝筆"
     #nTokensToWrap = 6
