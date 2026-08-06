@@ -6,7 +6,7 @@
 
 | ID | 優先度 | 狀態 | 項目 | 為何延後 | 完成條件 | 相依／阻擋 |
 | --- | --- | --- | --- | --- | --- | --- |
-| 目前無已接受項目 | — | — | — | — | — | — |
+| `BL-001` | High | Accepted | 將 `PythonModule/utils/` 分流並遷移至最小 `tcf_utils` shared package；詳見 [`tcf-utils-migration.md`](tcf-utils-migration.md) | 需分批建立測試、更新大量 active imports 並維持 stage 相容，不適合一次完成 | 達成本計畫的整體完成條件，移除 active code 對 `PythonModule`／`PackageImporter` 的依賴，且輕量測試通過 | 需先盤點 active callers、重複工具、vendor／deployment snapshot 與 repository 外部 legacy imports |
 
 ## Candidate Ideas
 
