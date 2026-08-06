@@ -13,18 +13,18 @@ from dash import html
 from dash.dependencies import Input, Output, State
 import dash_uploader as du
 
-import utils.reusable_components as rc  # see reusable_components.py
+import utils.visualization.reusable_components as rc  # see reusable_components.py
 import plotly.express as px
 
 import pandas as pd
 #import plotly.io as pio; pio.renderers.default='notebook'
 from plotly.offline import plot
 
-from utils.utilities import MKDIR
-#from utils.utilities import ListSimilarity
-from utils.MP_utils import MPlogger
-from utils.DB_utils import sqlite3Query
-from utils.Graph_utils import ComputeComponent
+from utils.core.utilities import MKDIR
+#from utils.core.utilities import ListSimilarity
+from utils.concurrency.MP_utils import MPlogger
+from utils.data.DB_utils import sqlite3Query
+from utils.visualization.Graph_utils import ComputeComponent
 
 
 from dataclasses import dataclass, field

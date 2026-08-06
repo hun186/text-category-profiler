@@ -8,17 +8,17 @@ import collections
 import glob
 #import shutil
 
-from utils.utilities import UniqueList
-from utils.utilities import flattenList
-from utils.utilities import DictSaver
-from utils.utilities import MKDIRandCopy
-from utils.utilities import DictIndentPrint
-from utils.df_utils import dfOutputer
-from utils.log_display import key_values
-from utils.DataConverter_utils_Parameters import ZeroSubtreeRootList
-from utils.DataConverter_utils_Parameters import SPECNodeScoreTable
-#from utils.DataConverter_utils import LabelNormalizer
-#import utils.DataConverter_utils as DataConverter_utils
+from utils.core.utilities import UniqueList
+from utils.core.utilities import flattenList
+from utils.core.utilities import DictSaver
+from utils.core.utilities import MKDIRandCopy
+from utils.core.utilities import DictIndentPrint
+from utils.data.df_utils import dfOutputer
+from utils.core.log_display import key_values
+from utils.pipeline.DataConverter_utils_Parameters import ZeroSubtreeRootList
+from utils.pipeline.DataConverter_utils_Parameters import SPECNodeScoreTable
+#from utils.pipeline.DataConverter_utils import LabelNormalizer
+#import utils.pipeline.DataConverter_utils as DataConverter_utils
 from ClassesTree.Label_utils import LabelNormalizer
 
 def CountDegree(edges=[],allow_multiple_edge=True):

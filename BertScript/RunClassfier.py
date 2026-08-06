@@ -8,30 +8,30 @@ import platform
 import setproctitle
 
 from TCF_Params.TCFParameters import BertClassfierPath
-from utils.utilities import getFNFromFullPath
-from utils.TCF_utils import datasetDirOutputDirPickers
-from utils.TCF_utils import get_testResFile_Name
-from utils.TCF_utils import freeModelDirConformer
-from utils.TCF_utils import ClearOldTestResFile
-from utils.TCF_utils import ClassfierOptionParser
-from utils.TCF_utils import PYTORCH_MODEL_TYPES
-from utils.utilities import MKDIR
-from utils.utilities import MKDIRandCopy
-from utils.utilities import getFNFromFullPath
-from utils.utilities import OSWALK
-from utils.conformer import freeGPUConformer
-from utils.conformer import HybridConformer
-from utils.utilities import WaitUntilFileIsStable
-from utils.MP_utils import MPlogger
-from utils.DB_utils import sqlite3Query
-from utils.log_display import info
-from utils.log_display import key_values
-from utils.log_display import print_command
-from utils.log_display import section
-from utils.log_display import stage_banner
-from utils.log_display import stage_done
-from utils.log_display import summarize_sequence
-from utils.log_display import warning
+from utils.core.utilities import getFNFromFullPath
+from utils.pipeline.TCF_utils import datasetDirOutputDirPickers
+from utils.pipeline.TCF_utils import get_testResFile_Name
+from utils.pipeline.TCF_utils import freeModelDirConformer
+from utils.pipeline.TCF_utils import ClearOldTestResFile
+from utils.pipeline.TCF_utils import ClassfierOptionParser
+from utils.pipeline.TCF_utils import PYTORCH_MODEL_TYPES
+from utils.core.utilities import MKDIR
+from utils.core.utilities import MKDIRandCopy
+from utils.core.utilities import getFNFromFullPath
+from utils.core.utilities import OSWALK
+from utils.core.conformer import freeGPUConformer
+from utils.core.conformer import HybridConformer
+from utils.core.utilities import WaitUntilFileIsStable
+from utils.concurrency.MP_utils import MPlogger
+from utils.data.DB_utils import sqlite3Query
+from utils.core.log_display import info
+from utils.core.log_display import key_values
+from utils.core.log_display import print_command
+from utils.core.log_display import section
+from utils.core.log_display import stage_banner
+from utils.core.log_display import stage_done
+from utils.core.log_display import summarize_sequence
+from utils.core.log_display import warning
 
 
 def _display_model_command(command, log_path, background=False):

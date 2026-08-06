@@ -9,7 +9,7 @@ from PackageImport import PackageImporter
 PackageImporter.proc()
 
 import os
-from utils.DB_utils import sqlite3Query
+from utils.data.DB_utils import sqlite3Query
 sql3File = os.path.join("DatasetConverter","dataset","top-1m_CZJ_SamplesFile.sql3")
 print(os.path.isfile(sql3File))
 table = "sampleSrc"

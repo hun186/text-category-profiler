@@ -10,7 +10,7 @@
 
 | ID | 類型 | 名稱 | Producer／Owner | Consumer | 權威定義 | 穩定性 |
 | --- | --- | --- | --- | --- | --- | --- |
-| `CONTRACT-CLI-001` | CLI | Text classification flow args | `PythonModule/utils/TCF_utils.py` | `TCFMain.py`, DatasetConverter, BertScript | `ClassfierOptionParser()` | Draft / currently used |
+| `CONTRACT-CLI-001` | CLI | Text classification flow args | `PythonModule/utils/pipeline/TCF_utils.py` | `TCFMain.py`, DatasetConverter, BertScript | `ClassfierOptionParser()` | Draft / currently used |
 | `CONTRACT-FILE-001` | File handoff | Classifier dataset directory | `DatasetConverter/` | `BertScript/RunClassfier.py`, `TCFMain.py` | Stage scripts and filename checks | Draft / currently used |
 | `CONTRACT-FILE-003` | File input | Topic tree taxonomy CSV files | `ClassesTree/` / project data owner | `DatasetConverter/DataConverter.py`, tree viewers | `--TopicTreeDir`, `--TopicTreeFiles`, `ClassesTree/ClassesTree_utils.py` | Draft / currently used |
 | `CONTRACT-FILE-002` | File handoff | Prediction/result analysis artifacts | `BertScript/RunClassfier.py`, `CombineTestResult.py` | `Test_result_Vis.py`, work pool output | Stage scripts and backup filename patterns | Draft / currently used |
@@ -29,7 +29,7 @@
 
 - 類型：CLI
 - 狀態：Draft
-- 權威定義：`PythonModule/utils/TCF_utils.py` 的 `ClassfierOptionParser()`。
+- 權威定義：`PythonModule/utils/pipeline/TCF_utils.py` 的 `ClassfierOptionParser()`。
 - Producer／Owner：共用 utils parser。
 - Consumer：`TCFMain.py`、`DatasetConverter/DataConverter.py`、`BertScript/RunClassfier.py`、`BertScript/CombineTestResult.py`、`BertScript/Test_result_Vis.py` 等 stage scripts。
 - 輸入：`--train/-tr`、`--test/-ts`、`--task`、`--WorkPoolROOT/-WPRoot`、`--BertDatasetSubDir/-BertDataDir`、`--TopicTreeDir/-TopicTreeDir`、`--TopicTreeFiles/-TopicTreeFiles`、`--modelDir/-mdlDir`、`--FixedTestPATH/-FTPath`、WeiTech work pool 相關參數、model type 與視覺化參數等。
@@ -89,7 +89,7 @@
 
 - 類型：File input / taxonomy metadata
 - 狀態：Draft
-- 權威定義：`PythonModule/utils/TCF_utils.py` 的 `--TopicTreeDir`、`--TopicTreeFiles`，以及 `ClassesTree/ClassesTree_utils.py` 的 `SetTreeFiles()`／`LoadTree()`。
+- 權威定義：`PythonModule/utils/pipeline/TCF_utils.py` 的 `--TopicTreeDir`、`--TopicTreeFiles`，以及 `ClassesTree/ClassesTree_utils.py` 的 `SetTreeFiles()`／`LoadTree()`。
 - Producer／Owner：分類專案的 taxonomy/data owner；TACA 可作為外部編修或視覺化工具，不應是唯一隱含位置。
 - Consumer：`DatasetConverter/DataConverter.py` 載入 labels 與 info score；`ClassesTree` viewer／analysis 工具載入 topic tree。
 - 輸入：預設檔名為 `TopicTree.csv,TopicTree_AK4.csv`；每列至少需有母節點、子節點、加入日期等三欄，程式使用前兩欄作為 edge。

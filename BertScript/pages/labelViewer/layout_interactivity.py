@@ -12,12 +12,12 @@ import dash_cytoscape as cyto
 from pages.labelViewer.demos import dash_reusable_components as drc
 import reusable_components as rc  # see reusable_components.py
 
-#from utils.TCF_utils import GetTreeFilePath
+#from utils.pipeline.TCF_utils import GetTreeFilePath
 
 from ClassesTree.ClassesTree_utils import LoadTree
 from ClassesTree.ClassesTree_utils import GetRoots
-from utils.utilities import flattenList
-from utils.utilities import RandomColor
+from utils.core.utilities import flattenList
+from utils.core.utilities import RandomColor
 # Load extra layouts
 
 

@@ -3,12 +3,12 @@ from PackageImport import PackageImporter
 PackageImporter.proc()
 
 import datetime
-from utils.df_utils import dfOutputer
-from utils.df_utils import dfFromSQLite3
-from utils.df_utils import CSVtodf
-from utils.utilities import getMFNFromFN
-from utils.utilities import removeStrPrefix
-from utils.utilities import ConvertTimeStrFMT
+from utils.data.df_utils import dfOutputer
+from utils.data.df_utils import dfFromSQLite3
+from utils.data.df_utils import CSVtodf
+from utils.core.utilities import getMFNFromFN
+from utils.core.utilities import removeStrPrefix
+from utils.core.utilities import ConvertTimeStrFMT
 from ClassTable import ClassTable
 
 CPBatFN = "CPAntCSV.bat"

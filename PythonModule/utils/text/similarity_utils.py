@@ -19,10 +19,10 @@ from numpy.linalg import norm
 from collections import Counter
 import pandas as pd
 
-from utils.utilities import frequency_sort
-from utils.utilities import wrap
-from utils.MP_utils import MPlogger
-from utils.utilities import SortedDictWithValue
+from utils.core.utilities import frequency_sort
+from utils.core.utilities import wrap
+from utils.concurrency.MP_utils import MPlogger
+from utils.core.utilities import SortedDictWithValue
 
 try:
     import diff_match_patch

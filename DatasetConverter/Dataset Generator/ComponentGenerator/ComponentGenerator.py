@@ -15,8 +15,8 @@ from faker import Faker
 import os
 import locale
 
-from utils.utilities import MKDIR
-from utils.df_utils import dfFromSQLite3
+from utils.core.utilities import MKDIR
+from utils.data.df_utils import dfFromSQLite3
 
 '''
 def MKDIR(DirName):

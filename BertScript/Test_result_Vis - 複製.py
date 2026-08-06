@@ -37,56 +37,56 @@ from flask import request
 import argparse
 import setproctitle
 
-from utils.Dash_utils import LevelDVisProcessor
-from utils.Dash_utils import create_card
-from utils.Dash_utils import get_button_id
-from utils.Dash_utils import get_button_id_comp
-from utils.Dash_utils import DictToDataArray
-from utils.Dash_utils import Build_DataArrayTable
-#from utils.Dash_utils import ComputeTwins
-from utils.df_utils import dfFromSQLite3
-from utils.df_utils import dfOutputer
-from utils.df_utils import concat_df_str1
-from utils.df_utils import XLSTodf
-from utils.df_utils import compare_dfs
-from utils.MP_utils import multicoreJob
-from utils.MP_utils import MPlogger
-from utils.utilities import OSWALK
-from utils.utilities import MKDIR
-from utils.utilities import hasher
-from utils.utilities import UniqueList
-from utils.utilities import ListDiff
-from utils.utilities import ListCap
-from utils.utilities import SplitList
-from utils.utilities import ShowElapsedTime
-from utils.utilities import getFNFromFullPath
-from utils.utilities import getMFNFromFN
-from utils.utilities import pathSpliter
-from utils.utilities import flattenList
-from utils.utilities import GetnDigitElementsOfaList
-from utils.utilities import KeyWordsListToRegx
-from utils.utilities import DateExtractor
-from utils.utilities import RandomSample
-from utils.utilities import ExtractZip
-from utils.utilities import timeNow
-from utils.utilities import rindex
-from utils.utilities import RandomColor
-#from utils.utilities import ActorUI
+from utils.visualization.Dash_utils import LevelDVisProcessor
+from utils.visualization.Dash_utils import create_card
+from utils.visualization.Dash_utils import get_button_id
+from utils.visualization.Dash_utils import get_button_id_comp
+from utils.visualization.Dash_utils import DictToDataArray
+from utils.visualization.Dash_utils import Build_DataArrayTable
+#from utils.visualization.Dash_utils import ComputeTwins
+from utils.data.df_utils import dfFromSQLite3
+from utils.data.df_utils import dfOutputer
+from utils.data.df_utils import concat_df_str1
+from utils.data.df_utils import XLSTodf
+from utils.data.df_utils import compare_dfs
+from utils.concurrency.MP_utils import multicoreJob
+from utils.concurrency.MP_utils import MPlogger
+from utils.core.utilities import OSWALK
+from utils.core.utilities import MKDIR
+from utils.core.utilities import hasher
+from utils.core.utilities import UniqueList
+from utils.core.utilities import ListDiff
+from utils.core.utilities import ListCap
+from utils.core.utilities import SplitList
+from utils.core.utilities import ShowElapsedTime
+from utils.core.utilities import getFNFromFullPath
+from utils.core.utilities import getMFNFromFN
+from utils.core.utilities import pathSpliter
+from utils.core.utilities import flattenList
+from utils.core.utilities import GetnDigitElementsOfaList
+from utils.core.utilities import KeyWordsListToRegx
+from utils.core.utilities import DateExtractor
+from utils.core.utilities import RandomSample
+from utils.core.utilities import ExtractZip
+from utils.core.utilities import timeNow
+from utils.core.utilities import rindex
+from utils.core.utilities import RandomColor
+#from utils.core.utilities import ActorUI
 #ActorUI.countScreenSize()
 #raise Exception
 
 
-from utils.Graph_utils import ComputeComponent
-from utils.Graph_utils import build_Louvain
-from utils.DB_utils import sqlite3Query
-from utils.DataConverter_utils import ClassfierOptionParser
+from utils.visualization.Graph_utils import ComputeComponent
+from utils.visualization.Graph_utils import build_Louvain
+from utils.data.DB_utils import sqlite3Query
+from utils.pipeline.DataConverter_utils import ClassfierOptionParser
 
 #print("args", args)
-from utils.DataConverter_utils import LabelListLoader
-from utils.DataConverter_utils import datasetDirOutputDirPickers
-from utils.DataConverter_utils import LoadTree
-from utils.DataConverter_utils import GetSubTopics
-from utils.DataConverter_utils import BuildInfoScoreTable
+from utils.pipeline.DataConverter_utils import LabelListLoader
+from utils.pipeline.DataConverter_utils import datasetDirOutputDirPickers
+from utils.pipeline.DataConverter_utils import LoadTree
+from utils.pipeline.DataConverter_utils import GetSubTopics
+from utils.pipeline.DataConverter_utils import BuildInfoScoreTable
 from Test_result_Vis_utils import GetInfoScoreStastic
 from Test_result_Vis_utils import GetClassOfMostPieces
 from Test_result_Vis_utils import GetClassOfHighestScore

@@ -14,19 +14,19 @@ try:
     #import MP_utils
     #import df_utils
 except:
-    utils.utilities = utilities
-    utils.MP_utils = MP_utils
-    utils.df_utils= df_utils
+    utils.core.utilities = utilities
+    utils.concurrency.MP_utils = MP_utils
+    utils.data.df_utils= df_utils
     
-#utilities = utils.utilities
+#utilities = utils.core.utilities
 #from utils import utilities
-from utils.utilities import OSWALK
-from utils.utilities import AppendedMFN
-from utils.utilities import hasher
-from utils.utilities import RENormalizer
-from utils.utilities import getFNExtFromFullPath
-from utils.MP_utils import MPlogger
-from utils.df_utils import dfOutputer
+from utils.core.utilities import OSWALK
+from utils.core.utilities import AppendedMFN
+from utils.core.utilities import hasher
+from utils.core.utilities import RENormalizer
+from utils.core.utilities import getFNExtFromFullPath
+from utils.concurrency.MP_utils import MPlogger
+from utils.data.df_utils import dfOutputer
     
 class textReader:
     def __init__(self, file, 

@@ -3,22 +3,22 @@ PackageImporter.proc()
 import os
 import sqlite3 as lite
 import shutil
-from utils.df_utils import dfFromSQLite3
-from utils.utilities import BackUp
-from utils.utilities import OSWALK
-from utils.utilities import MKDIR
-from utils.utilities import timeNow
-from utils.utilities import getFileModTime
-from utils.utilities import getMFNFromFN
-from utils.utilities import getFileDirFromFN
-from utils.utilities import hash
-from utils.utilities import textReader
-from utils.utilities import TextNormalizer
-from utils.utilities import removekey
-from utils.MP_utils import MPlogger
-from utils.utilities import fileNameNormalizer
+from utils.data.df_utils import dfFromSQLite3
+from utils.core.utilities import BackUp
+from utils.core.utilities import OSWALK
+from utils.core.utilities import MKDIR
+from utils.core.utilities import timeNow
+from utils.core.utilities import getFileModTime
+from utils.core.utilities import getMFNFromFN
+from utils.core.utilities import getFileDirFromFN
+from utils.core.utilities import hash
+from utils.core.utilities import textReader
+from utils.core.utilities import TextNormalizer
+from utils.core.utilities import removekey
+from utils.concurrency.MP_utils import MPlogger
+from utils.core.utilities import fileNameNormalizer
 
-from utils.DataConverter_utils import getSrcFromFileName
+from utils.pipeline.DataConverter_utils import getSrcFromFileName
 
 from ClassesTree.Label_utils import getLabelsFromOSWALK
 from ClassesTree.Label_utils import getLabelsFromFileName

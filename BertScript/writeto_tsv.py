@@ -2,7 +2,7 @@ import random
 import os
 from PackageImport import PackageImporter
 PackageImporter.proc()
-from utils.utilities import MKDIR
+from utils.core.utilities import MKDIR
 
 #依照樣本數量取樣。
 def PickSamples(THUCdir, ntrain, ndev, ntest):

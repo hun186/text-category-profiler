@@ -50,7 +50,7 @@
 | `DatasetConverter/` | 資料集轉換與樣本處理 | 修改輸入資料轉 TSV／SQLite／分類資料集流程 |
 | `BertScript/` | BERT／XLM 分類、結果合併、視覺化 | 修改模型訓練／推論、分類結果合併或 Dash 視覺化 |
 | `ClassesTree/` | 類別樹與標籤工具 | 修改 taxonomy、label tree、圖形視覺化 |
-| `PythonModule/utils/` | 共用 utilities | 修改跨模組共用行為、檔案系統、SQLite、多程序工具 |
+| `PythonModule/utils/` | 依 `core`、`data`、`concurrency`、`pipeline`、`text`、`visualization`、`integrations` 分流的共用 utilities | 修改跨模組共用行為、檔案系統、SQLite、多程序或外部整合工具 |
 | `tests/` | 不依賴模型/資料的輕量功能測試 | 修改 console helper、README/requirements 契約或可無副作用測試的 utility |
 | `.codex/` | Codex current-state 記憶與路由 | 任務前後同步專案事實、流程、架構與契約 |
 
@@ -67,7 +67,7 @@
 ## 事實來源
 
 1. 可執行 Python 入口與 import/call graph：`TCFMain.py`, `DatasetConverter/DataConverter.py`, `BertScript/RunClassfier.py`。
-2. CLI parser：`PythonModule/utils/TCF_utils.py` 的 `ClassfierOptionParser()`。
+2. CLI parser：`PythonModule/utils/pipeline/TCF_utils.py` 的 `ClassfierOptionParser()`。
 3. 流程常數與預設路徑：`TCF_Params/TCFParameters.py`。
 4. 子目錄 manifest：`BertScript/requirements.txt`。
 5. 根 README 只作 current user-facing summary；若與程式碼衝突，以程式碼與設定為準。

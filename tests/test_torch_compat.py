@@ -8,7 +8,7 @@ PYTHON_MODULE = ROOT / "PythonModule"
 if str(PYTHON_MODULE) not in sys.path:
     sys.path.insert(0, str(PYTHON_MODULE))
 
-from utils.torch_compat import disable_unsupported_windows_compile
+from utils.core.torch_compat import disable_unsupported_windows_compile
 
 
 class FakeTorch:

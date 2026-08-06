@@ -10,10 +10,10 @@ from transformers import TFXLMRobertaModel
 from transformers import AutoTokenizer
 from transformers import pipeline
 
-from utils.MP_utils import MPlogger
-from utils.DataConverter_utils import ClassfierOptionParser
-from utils.DataConverter_utils import datasetDirOutputDirPickers
-from utils.TextClassfier_utils import getTopicLabelList
+from utils.concurrency.MP_utils import MPlogger
+from utils.pipeline.DataConverter_utils import ClassfierOptionParser
+from utils.pipeline.DataConverter_utils import datasetDirOutputDirPickers
+from utils.pipeline.TextClassfier_utils import getTopicLabelList
 
 DC_args = ClassfierOptionParser()
 

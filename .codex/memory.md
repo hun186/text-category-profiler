@@ -12,6 +12,13 @@
 
 ## Recent Outcomes
 
+### 2026-08-06 — PythonModule utilities domain migration
+
+- 目標：將 `PythonModule/utils/` 的共用模組依責任分流，降低所有 helper 平放在單一 package root 的耦合。
+- 結果：production utilities 搬入 `core`、`data`、`concurrency`、`pipeline`、`text`、`visualization`、`integrations` 七個 package，並同步更新 repository 內 imports；新增 layout contract test 防止已遷移模組回流根目錄或使用舊 import。
+- 驗證：`python -m unittest discover -s tests`、針對遷移檔案的 `py_compile`、`git diff --check`。
+
+
 
 ### 2026-08-06 — Windows ModernBERT eager fallback
 

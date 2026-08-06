@@ -8,8 +8,8 @@ import os
 import json
 import pandas as pd
 import _pickle as pickle
-from utils.utilities_path import OSWALK
-from utils.df_utils import dfOutputer
+from utils.core.utilities_path import OSWALK
+from utils.data.df_utils import dfOutputer
 
 class PickleHandler:
     def __init__(self, file = "",obj = None, BaseFileName="",indent=None,variableName=""):

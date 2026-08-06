@@ -7,21 +7,21 @@ import argparse
 import datetime
 from multiprocessing import current_process
 #import wmi
-from utils.MP_utils import MPlogger
-from utils.utilities import OSWALK
-from utils.utilities import BackupAndDelFile
-from utils.utilities import timeNow
-from utils.utilities import str2bool
-from utils.utilities import RenameDir
-from utils.utilities import getFNFromFullPath
-from utils.utilities_path import find_similar_directory
-from utils.df_utils import dfFromSQLite3
-from utils.log_display import key_values
+from utils.concurrency.MP_utils import MPlogger
+from utils.core.utilities import OSWALK
+from utils.core.utilities import BackupAndDelFile
+from utils.core.utilities import timeNow
+from utils.core.utilities import str2bool
+from utils.core.utilities import RenameDir
+from utils.core.utilities import getFNFromFullPath
+from utils.core.utilities_path import find_similar_directory
+from utils.data.df_utils import dfFromSQLite3
+from utils.core.log_display import key_values
 
-from utils.log_display import section
-from utils.log_display import stage_done
-from utils.log_display import summarize_sequence
-from utils.log_display import warning
+from utils.core.log_display import section
+from utils.core.log_display import stage_done
+from utils.core.log_display import summarize_sequence
+from utils.core.log_display import warning
 
 PYTORCH_MODEL_TYPES = ["PytorchXLM", "PytorchRBTL3", "PytorchMMBERT"]
 BASE_MODEL_CHECKPOINTS = {
