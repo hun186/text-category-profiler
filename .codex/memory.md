@@ -219,3 +219,15 @@
 - 目標：整理 CombineTestResult 開始、來源查詢、verification dataframe、match count 與 handoff 段落中殘留的 PID log、debug sample text、大型 DataFrame sample 與重複 multiprocessing banner。
 - 結果：CombineTestResult workspace/source DB/source lookup/sort/match/handoff 改為 key-value 摘要；移除固定長文本查詢與 `df_map_result.sample` debug 輸出；process count 採 quiet mode；`print_once()` 透過環境旗標讓 Windows spawn workers 繼承一次性訊息狀態，降低 `MP_utils.py` Python version banner 洗板。
 - 驗證：`python -m unittest discover -s tests`、`python -m py_compile BertScript/CombineTestResult.py PythonModule/utils/log_display.py`、`git diff --check`。
+
+### 2026-08-06 — DataConverter multiprocessing console noise
+
+- 目標：避免 Windows spawn worker 重複輸出訓練模式、工作目錄與 Dash 相依套件棄用警告。
+- 結果：訓練模式提示只由 `MainProcess` 顯示；EXTConverter import 不再無條件印出 cwd；DataConverter 將 Dash 視覺化依賴延遲到實際建立視覺化 job 時載入。
+- 驗證：`python -m unittest discover -s tests`、相關檔案 `py_compile`、`git diff --check`；未執行完整 Windows DataConverter，因需本機資料、模型與完整依賴。
+
+### 2026-08-06 — CombineTestResult PytorchMMBERT support
+
+- 目標：修正 PytorchMMBERT prediction 已完成後，CombineTestResult 因未建立 `df_map_result` 而發生 NameError。
+- 結果：CombineTestResult 的 PyTorch result mapping 改用共用 `PYTORCH_MODEL_TYPES`，因此涵蓋 PytorchMMBERT；未知 ModelType 會在 mapping 階段回報明確 ValueError。
+- 驗證：`python -m unittest discover -s tests`、`python -m py_compile BertScript/CombineTestResult.py`、`git diff --check`；完整 Windows pipeline 仍需本機資料與模型驗證。

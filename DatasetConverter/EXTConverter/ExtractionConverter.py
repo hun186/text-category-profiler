@@ -4,7 +4,6 @@ if os.getcwd().split(os.path.sep)[-1] in [
         "EXTConverter"]:
     os.chdir("../../")
     print(f"Change working directory to {os.getcwd()}")
-print(f"cwd:{os.getcwd()}")
 from PackageImport import PackageImporter
 PackageImporter.proc()
 
@@ -318,6 +317,3 @@ if __name__=='__main__':
         nSubtaskUBD = math.inf
         #nSubtaskUBD = 1
         CombinationRuleDict[task]["processor"](nSubtaskUBD=nSubtaskUBD).proc()
-
-
-        
