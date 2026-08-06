@@ -9,10 +9,10 @@ import ast
 from MP_utils import MPlogger
 #from MP_utils import multicoreJob
 
-from utils.core.utilities import wrap
-from utils.core.utilities import ShowElapsedTime
-from utils.core.utilities import OffsetWrap
-from utils.core.utilities import UniqueList
+from text_category_profiler.core.utilities import wrap
+from text_category_profiler.core.utilities import ShowElapsedTime
+from text_category_profiler.core.utilities import OffsetWrap
+from text_category_profiler.core.utilities import UniqueList
 
 from df_utils import dfOutputer
 from df_utils import StrDfFromJson

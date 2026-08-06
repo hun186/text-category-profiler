@@ -5,11 +5,11 @@ import os
 import time
 import platform
 
-from utils.core.utilities import timeNow
-from utils.core.utilities import MKDIR
-from utils.concurrency.MP_utils import multicoreJob
-from utils.pipeline.TCF_utils import ClassfierOptionParser
-from utils.core.log_display import print_once
+from text_category_profiler.core.utilities import timeNow
+from text_category_profiler.core.utilities import MKDIR
+from text_category_profiler.concurrency.MP_utils import multicoreJob
+from text_category_profiler.pipeline.TCF_utils import ClassfierOptionParser
+from text_category_profiler.core.log_display import print_once
 
 WorkPoolROOT = "WorkPool"
 WorkPoolROOT_ArticleComposition = "WorkPoolROOT_ArticleComposition"

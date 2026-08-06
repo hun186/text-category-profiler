@@ -38,59 +38,59 @@ from flask import request
 import argparse
 import setproctitle
 
-from utils.pipeline.TCF_utils import GetTreeFilePath
-from utils.visualization.Dash_utils import LevelDVisProcessor
-from utils.visualization.Dash_utils import create_card
-from utils.visualization.Dash_utils import get_button_id
-from utils.visualization.Dash_utils import get_button_id_comp
-from utils.visualization.Dash_utils import DictToDataArray
-from utils.visualization.Dash_utils import Build_DataArrayTable
-#from utils.visualization.Dash_utils import ComputeTwins
-from utils.data.df_utils import dfFromSQLite3
-from utils.data.df_utils import dfOutputer
-#from utils.data.df_utils import WeiTechFormatOutputer
-from utils.data.df_utils import concat_df_str1
-from utils.data.df_utils import XLSTodf
-from utils.data.df_utils import compare_dfs
-from utils.concurrency.MP_utils import multicoreJob
-from utils.concurrency.MP_utils import MPlogger
-from utils.core.utilities import timeNow
-from utils.core.utilities import OSWALK
-from utils.core.utilities import MKDIR
-from utils.core.utilities import hasher
-from utils.core.utilities import UniqueList
-from utils.core.utilities import ListDiff
-from utils.core.utilities import ListCap
-from utils.core.utilities import SplitList
-from utils.core.utilities import ShowElapsedTime
-from utils.core.utilities import getFNFromFullPath
-from utils.core.utilities import getMFNFromFN
-from utils.core.utilities import pathSpliter
-from utils.core.utilities import flattenList
-from utils.core.utilities import GetnDigitElementsOfaList
-from utils.core.utilities import KeyWordsListToRegx
-from utils.core.utilities import DateExtractor
-from utils.core.utilities import RandomSample
-from utils.core.utilities import ExtractZip
-from utils.core.utilities import timeNow
-from utils.core.utilities import rindex
-from utils.core.utilities import RandomColor
-from utils.core.utilities import reCombiner
-#from utils.core.utilities import ActorUI
+from text_category_profiler.pipeline.TCF_utils import GetTreeFilePath
+from text_category_profiler.visualization.Dash_utils import LevelDVisProcessor
+from text_category_profiler.visualization.Dash_utils import create_card
+from text_category_profiler.visualization.Dash_utils import get_button_id
+from text_category_profiler.visualization.Dash_utils import get_button_id_comp
+from text_category_profiler.visualization.Dash_utils import DictToDataArray
+from text_category_profiler.visualization.Dash_utils import Build_DataArrayTable
+#from text_category_profiler.visualization.Dash_utils import ComputeTwins
+from text_category_profiler.data.df_utils import dfFromSQLite3
+from text_category_profiler.data.df_utils import dfOutputer
+#from text_category_profiler.data.df_utils import WeiTechFormatOutputer
+from text_category_profiler.data.df_utils import concat_df_str1
+from text_category_profiler.data.df_utils import XLSTodf
+from text_category_profiler.data.df_utils import compare_dfs
+from text_category_profiler.concurrency.MP_utils import multicoreJob
+from text_category_profiler.concurrency.MP_utils import MPlogger
+from text_category_profiler.core.utilities import timeNow
+from text_category_profiler.core.utilities import OSWALK
+from text_category_profiler.core.utilities import MKDIR
+from text_category_profiler.core.utilities import hasher
+from text_category_profiler.core.utilities import UniqueList
+from text_category_profiler.core.utilities import ListDiff
+from text_category_profiler.core.utilities import ListCap
+from text_category_profiler.core.utilities import SplitList
+from text_category_profiler.core.utilities import ShowElapsedTime
+from text_category_profiler.core.utilities import getFNFromFullPath
+from text_category_profiler.core.utilities import getMFNFromFN
+from text_category_profiler.core.utilities import pathSpliter
+from text_category_profiler.core.utilities import flattenList
+from text_category_profiler.core.utilities import GetnDigitElementsOfaList
+from text_category_profiler.core.utilities import KeyWordsListToRegx
+from text_category_profiler.core.utilities import DateExtractor
+from text_category_profiler.core.utilities import RandomSample
+from text_category_profiler.core.utilities import ExtractZip
+from text_category_profiler.core.utilities import timeNow
+from text_category_profiler.core.utilities import rindex
+from text_category_profiler.core.utilities import RandomColor
+from text_category_profiler.core.utilities import reCombiner
+#from text_category_profiler.core.utilities import ActorUI
 #ActorUI.countScreenSize()
 
-from utils.visualization.Graph_utils import ComputeComponent
-from utils.visualization.Graph_utils import build_Louvain
-from utils.data.DB_utils import sqlite3Query
-from utils.pipeline.DataConverter_utils import ClassfierOptionParser
+from text_category_profiler.visualization.Graph_utils import ComputeComponent
+from text_category_profiler.visualization.Graph_utils import build_Louvain
+from text_category_profiler.data.DB_utils import sqlite3Query
+from text_category_profiler.pipeline.DataConverter_utils import ClassfierOptionParser
 
 #print("args", args)
-from utils.pipeline.DataConverter_utils import LabelListLoader
-from utils.pipeline.DataConverter_utils import datasetDirOutputDirPickers
-from utils.pipeline.DataConverter_utils import LoadTree
-from utils.pipeline.DataConverter_utils import GetRoots
-from utils.pipeline.DataConverter_utils import GetSubTopics
-from utils.pipeline.DataConverter_utils import BuildInfoScoreTable
+from text_category_profiler.pipeline.DataConverter_utils import LabelListLoader
+from text_category_profiler.pipeline.DataConverter_utils import datasetDirOutputDirPickers
+from text_category_profiler.pipeline.DataConverter_utils import LoadTree
+from text_category_profiler.pipeline.DataConverter_utils import GetRoots
+from text_category_profiler.pipeline.DataConverter_utils import GetSubTopics
+from text_category_profiler.pipeline.DataConverter_utils import BuildInfoScoreTable
 from Test_result_Vis_utils import GetInfoScoreStastic
 from Test_result_Vis_utils import GetClassOfMostPieces
 from Test_result_Vis_utils import GetClassOfHighestScore
@@ -118,8 +118,8 @@ from VisParameters_Format import MT_style_cell,MT_style_cell_conditional
 from VisParameters_Format import Colortable_style_cell,Colortable_style_cell_conditional,Colortable_style_header
 
 
-from utils.tulip_utils.Graph_Builder import ClusterMetaNodeGraph
-from utils.tulip_utils.Graph_Builder import BuildGraph
+from text_category_profiler.tulip_utils.Graph_Builder import ClusterMetaNodeGraph
+from text_category_profiler.tulip_utils.Graph_Builder import BuildGraph
 
 from pages.labelViewer import layout_interactivity
 from pages.labelViewer.callbacks import callback_manager as callback_manager_labelViewer

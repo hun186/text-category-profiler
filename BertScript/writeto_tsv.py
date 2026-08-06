@@ -2,7 +2,7 @@ import random
 import os
 from PackageImport import PackageImporter
 PackageImporter.proc()
-from utils.core.utilities import MKDIR
+from text_category_profiler.core.utilities import MKDIR
 
 #依照樣本數量取樣。
 def PickSamples(THUCdir, ntrain, ndev, ntest):

@@ -28,40 +28,40 @@ import plotly.express as px
 import argparse
 import setproctitle
 
-from utils.visualization.Dash_utils import LevelDVisProcessor
-from utils.visualization.Dash_utils import create_card
-from utils.visualization.Dash_utils import get_button_id
-from utils.visualization.Dash_utils import DictToDataArray
-from utils.data.df_utils import dfFromSQLite3
-from utils.data.df_utils import dfOutputer
-from utils.data.df_utils import concat_df_str1
-from utils.data.df_utils import XLSTodf
-from utils.concurrency.MP_utils import multicoreJob
-from utils.concurrency.MP_utils import MPlogger
-from utils.core.utilities import hash
-from utils.core.utilities import UniqueList
-from utils.core.utilities import ListDiff
-from utils.core.utilities import ListCap
-from utils.core.utilities import ShowElapsedTime
-from utils.core.utilities import getFNFromFullPath
-from utils.core.utilities import getMFNFromFN
-from utils.core.utilities import flattenList
-from utils.core.utilities import GetnDigitElementsOfaList
-from utils.core.utilities import KeyWordsListToRegx
-#from utils.core.utilities import ActorUI
+from text_category_profiler.visualization.Dash_utils import LevelDVisProcessor
+from text_category_profiler.visualization.Dash_utils import create_card
+from text_category_profiler.visualization.Dash_utils import get_button_id
+from text_category_profiler.visualization.Dash_utils import DictToDataArray
+from text_category_profiler.data.df_utils import dfFromSQLite3
+from text_category_profiler.data.df_utils import dfOutputer
+from text_category_profiler.data.df_utils import concat_df_str1
+from text_category_profiler.data.df_utils import XLSTodf
+from text_category_profiler.concurrency.MP_utils import multicoreJob
+from text_category_profiler.concurrency.MP_utils import MPlogger
+from text_category_profiler.core.utilities import hash
+from text_category_profiler.core.utilities import UniqueList
+from text_category_profiler.core.utilities import ListDiff
+from text_category_profiler.core.utilities import ListCap
+from text_category_profiler.core.utilities import ShowElapsedTime
+from text_category_profiler.core.utilities import getFNFromFullPath
+from text_category_profiler.core.utilities import getMFNFromFN
+from text_category_profiler.core.utilities import flattenList
+from text_category_profiler.core.utilities import GetnDigitElementsOfaList
+from text_category_profiler.core.utilities import KeyWordsListToRegx
+#from text_category_profiler.core.utilities import ActorUI
 #ActorUI.countScreenSize()
 #raise Exception
-from utils.data.DB_utils import sqlite3Query
-from utils.pipeline.DataConverter_utils import ClassfierOptionParser
+from text_category_profiler.data.DB_utils import sqlite3Query
+from text_category_profiler.pipeline.DataConverter_utils import ClassfierOptionParser
 args = ClassfierOptionParser()
 InfoScoreSumLowerBound = args.InfoScoreSumLowerBound
 FixedTestFileBound = args.FixedTestFileBound
 
-from utils.pipeline.DataConverter_utils import LabelListLoader
-from utils.pipeline.DataConverter_utils import datasetDirOutputDirPickers
-from utils.pipeline.DataConverter_utils import LoadTree
-from utils.pipeline.DataConverter_utils import GetSubTopics
-from utils.pipeline.DataConverter_utils import BuildInfoScoreTable
+from text_category_profiler.pipeline.DataConverter_utils import LabelListLoader
+from text_category_profiler.pipeline.DataConverter_utils import datasetDirOutputDirPickers
+from text_category_profiler.pipeline.DataConverter_utils import LoadTree
+from text_category_profiler.pipeline.DataConverter_utils import GetSubTopics
+from text_category_profiler.pipeline.DataConverter_utils import BuildInfoScoreTable
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 

@@ -7,21 +7,21 @@ import argparse
 import datetime
 from multiprocessing import current_process
 #import wmi
-from utils.concurrency.MP_utils import MPlogger
-from utils.core.utilities import OSWALK
-from utils.core.utilities import BackupAndDelFile
-from utils.core.utilities import timeNow
-from utils.core.utilities import str2bool
-from utils.core.utilities import RenameDir
-from utils.core.utilities import getFNFromFullPath
-from utils.core.utilities_path import find_similar_directory
-from utils.data.df_utils import dfFromSQLite3
-from utils.core.log_display import key_values
+from text_category_profiler.concurrency.MP_utils import MPlogger
+from text_category_profiler.core.utilities import OSWALK
+from text_category_profiler.core.utilities import BackupAndDelFile
+from text_category_profiler.core.utilities import timeNow
+from text_category_profiler.core.utilities import str2bool
+from text_category_profiler.core.utilities import RenameDir
+from text_category_profiler.core.utilities import getFNFromFullPath
+from text_category_profiler.core.utilities_path import find_similar_directory
+from text_category_profiler.data.df_utils import dfFromSQLite3
+from text_category_profiler.core.log_display import key_values
 
-from utils.core.log_display import section
-from utils.core.log_display import stage_done
-from utils.core.log_display import summarize_sequence
-from utils.core.log_display import warning
+from text_category_profiler.core.log_display import section
+from text_category_profiler.core.log_display import stage_done
+from text_category_profiler.core.log_display import summarize_sequence
+from text_category_profiler.core.log_display import warning
 
 PYTORCH_MODEL_TYPES = ["PytorchXLM", "PytorchRBTL3", "PytorchMMBERT"]
 BASE_MODEL_CHECKPOINTS = {

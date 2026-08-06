@@ -9,24 +9,24 @@ import json
 
 
 try:
-    import utils
+    import text_category_profiler
     #import utilities
     #import MP_utils
     #import df_utils
 except:
-    utils.core.utilities = utilities
-    utils.concurrency.MP_utils = MP_utils
-    utils.data.df_utils= df_utils
+    text_category_profiler.core.utilities = utilities
+    text_category_profiler.concurrency.MP_utils = MP_utils
+    text_category_profiler.data.df_utils= df_utils
     
-#utilities = utils.core.utilities
-#from utils import utilities
-from utils.core.utilities import OSWALK
-from utils.core.utilities import AppendedMFN
-from utils.core.utilities import hasher
-from utils.core.utilities import RENormalizer
-from utils.core.utilities import getFNExtFromFullPath
-from utils.concurrency.MP_utils import MPlogger
-from utils.data.df_utils import dfOutputer
+#utilities = text_category_profiler.core.utilities
+#from text_category_profiler import utilities
+from text_category_profiler.core.utilities import OSWALK
+from text_category_profiler.core.utilities import AppendedMFN
+from text_category_profiler.core.utilities import hasher
+from text_category_profiler.core.utilities import RENormalizer
+from text_category_profiler.core.utilities import getFNExtFromFullPath
+from text_category_profiler.concurrency.MP_utils import MPlogger
+from text_category_profiler.data.df_utils import dfOutputer
     
 class textReader:
     def __init__(self, file, 

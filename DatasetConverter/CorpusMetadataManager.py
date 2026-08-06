@@ -3,22 +3,22 @@ PackageImporter.proc()
 import os
 import sqlite3 as lite
 import shutil
-from utils.data.df_utils import dfFromSQLite3
-from utils.core.utilities import BackUp
-from utils.core.utilities import OSWALK
-from utils.core.utilities import MKDIR
-from utils.core.utilities import timeNow
-from utils.core.utilities import getFileModTime
-from utils.core.utilities import getMFNFromFN
-from utils.core.utilities import getFileDirFromFN
-from utils.core.utilities import hash
-from utils.core.utilities import textReader
-from utils.core.utilities import TextNormalizer
-from utils.core.utilities import removekey
-from utils.concurrency.MP_utils import MPlogger
-from utils.core.utilities import fileNameNormalizer
+from text_category_profiler.data.df_utils import dfFromSQLite3
+from text_category_profiler.core.utilities import BackUp
+from text_category_profiler.core.utilities import OSWALK
+from text_category_profiler.core.utilities import MKDIR
+from text_category_profiler.core.utilities import timeNow
+from text_category_profiler.core.utilities import getFileModTime
+from text_category_profiler.core.utilities import getMFNFromFN
+from text_category_profiler.core.utilities import getFileDirFromFN
+from text_category_profiler.core.utilities import hash
+from text_category_profiler.core.utilities import textReader
+from text_category_profiler.core.utilities import TextNormalizer
+from text_category_profiler.core.utilities import removekey
+from text_category_profiler.concurrency.MP_utils import MPlogger
+from text_category_profiler.core.utilities import fileNameNormalizer
 
-from utils.pipeline.DataConverter_utils import getSrcFromFileName
+from text_category_profiler.pipeline.DataConverter_utils import getSrcFromFileName
 
 from ClassesTree.Label_utils import getLabelsFromOSWALK
 from ClassesTree.Label_utils import getLabelsFromFileName

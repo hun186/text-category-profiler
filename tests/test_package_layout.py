@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
-UTILS_ROOT = REPOSITORY_ROOT / "PythonModule" / "utils"
+PACKAGE_ROOT = REPOSITORY_ROOT / "text_category_profiler"
 DOMAIN_PACKAGES = {
     "concurrency",
     "core",
@@ -45,28 +45,28 @@ MIGRATED_MODULES = {
 }
 
 
-class UtilsPackageLayoutTests(unittest.TestCase):
+class PackageLayoutTests(unittest.TestCase):
     def test_domain_directories_are_packages(self):
         for package in DOMAIN_PACKAGES:
-            self.assertTrue((UTILS_ROOT / package / "__init__.py").is_file(), package)
+            self.assertTrue((PACKAGE_ROOT / package / "__init__.py").is_file(), package)
 
     def test_migrated_modules_are_not_left_at_package_root(self):
         leftovers = {
             path.stem
-            for path in UTILS_ROOT.glob("*.py")
+            for path in PACKAGE_ROOT.glob("*.py")
             if path.stem in MIGRATED_MODULES
         }
         self.assertEqual(leftovers, set())
 
     def test_application_imports_use_domain_packages(self):
-        legacy_prefixes = {f"utils.{name}" for name in MIGRATED_MODULES}
+        legacy_prefixes = {f"text_category_profiler.{name}" for name in MIGRATED_MODULES}
         roots = [
             REPOSITORY_ROOT / "TCFMain.py",
             REPOSITORY_ROOT / "TCF_Params",
             REPOSITORY_ROOT / "ClassesTree",
             REPOSITORY_ROOT / "DatasetConverter",
             REPOSITORY_ROOT / "BertScript",
-            UTILS_ROOT,
+            PACKAGE_ROOT,
         ]
         violations = []
         for root in roots:
@@ -84,9 +84,17 @@ class UtilsPackageLayoutTests(unittest.TestCase):
                         module = node.module
                     elif isinstance(node, ast.Import):
                         for alias in node.names:
-                            if alias.name in legacy_prefixes:
+                            if (
+                                alias.name in legacy_prefixes
+                                or alias.name == "tcf_utils"
+                                or alias.name.startswith("tcf_utils.")
+                            ):
                                 violations.append(f"{path.relative_to(REPOSITORY_ROOT)}:{alias.name}")
-                    if module in legacy_prefixes:
+                    if (
+                        module in legacy_prefixes
+                        or module == "tcf_utils"
+                        or (module and module.startswith("tcf_utils."))
+                    ):
                         violations.append(f"{path.relative_to(REPOSITORY_ROOT)}:{module}")
         self.assertEqual(violations, [])
 

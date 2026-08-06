@@ -11,16 +11,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 import re
 #read the original test data for the text and id
-from utils.core.utilities import WaitUntilFileIsStable
-from utils.core.utilities import SplitList
-from utils.core.utilities import getFNFromFullPath
-from utils.concurrency.MP_utils import MPlogger
-from utils.concurrency.MP_utils import multicoreJob
-from utils.data.df_utils import dfOutputer
-from utils.data.df_utils import dfFromSQLite3
-from utils.pipeline.DataConverter_utils import LabelListLoader
-from utils.pipeline.DataConverter_utils import datasetDirOutputDirPickers
-from utils.pipeline.DataConverter_utils import ClassfierOptionParser
+from text_category_profiler.core.utilities import WaitUntilFileIsStable
+from text_category_profiler.core.utilities import SplitList
+from text_category_profiler.core.utilities import getFNFromFullPath
+from text_category_profiler.concurrency.MP_utils import MPlogger
+from text_category_profiler.concurrency.MP_utils import multicoreJob
+from text_category_profiler.data.df_utils import dfOutputer
+from text_category_profiler.data.df_utils import dfFromSQLite3
+from text_category_profiler.pipeline.DataConverter_utils import LabelListLoader
+from text_category_profiler.pipeline.DataConverter_utils import datasetDirOutputDirPickers
+from text_category_profiler.pipeline.DataConverter_utils import ClassfierOptionParser
 
 class TextInfoSearcher:
     '''

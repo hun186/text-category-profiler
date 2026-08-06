@@ -2,15 +2,7 @@ import contextlib
 import io
 import unittest
 
-from pathlib import Path
-import sys
-
-ROOT = Path(__file__).resolve().parents[1]
-UTILS = ROOT / "PythonModule"
-if str(UTILS) not in sys.path:
-    sys.path.insert(0, str(UTILS))
-
-from utils.core import log_display
+from text_category_profiler.core import log_display
 
 
 class LogDisplayTests(unittest.TestCase):

@@ -1,4 +1,4 @@
-from utils.core.utilities import MKDIR
+from text_category_profiler.core.utilities import MKDIR
 import pandas as pd
 #import plotly.io as pio; pio.renderers.default='notebook'
 from plotly.offline import plot

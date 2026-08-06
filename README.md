@@ -68,7 +68,7 @@ python -m py_compile <changed-python-files>
 | `DatasetConverter/` | 將原始文本／資料來源轉換為分類器使用的資料集、SQLite 與記錄檔。 |
 | `BertScript/` | BERT／XLM 分類、訓練／推論、結果合併與 Dash/Plotly 視覺化腳本；包含部分第三方 BERT/Dash 範例內容。 |
 | `ClassesTree/` | 類別樹、標籤工具與視覺化實驗。 |
-| `PythonModule/utils/` | 依 `core`、`data`、`concurrency`、`pipeline`、`text`、`visualization`、`integrations` 分流的共用工具；透過 `PackageImport.py` 加入 `sys.path` 後以 `utils.<domain>.<module>` 匯入。 |
+| `text_category_profiler/` | 與 repository 同名的 Python package，目前依 `core`、`data`、`concurrency`、`pipeline`、`text`、`visualization`、`integrations` 分流；程式以 `text_category_profiler.<domain>.<module>` 匯入。 |
 | `tests/` | 輕量功能測試；避免依賴資料集、模型、GPU 或工作池副作用。 |
 | `TCF_Params/` | 流程預設參數與入口設定。 |
 | `.codex/` | Codex 專案記憶、工作流、架構、契約與初始化狀態文件。 |

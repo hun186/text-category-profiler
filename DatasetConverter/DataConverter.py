@@ -69,17 +69,17 @@ from DatasetConverter.EXTConverter.ExtractionRule import ExtractionRuleDict
 from DatasetConverter.EXTConverter.Combiner import CZJCorpusFileBuilder
 
 
-from utils.core.utilities import OSWALK
-from utils.core.utilities import MKDIR
-from utils.core.utilities import randomReplace
-from utils.pipeline.TCF_utils import GetRSTRLabelList
-from utils.pipeline.TCF_utils import datasetDirOutputDirPickers
-from utils.pipeline.TCF_utils import ClassfierOptionParser
-from utils.pipeline.TCF_utils import get_base_model_checkpoint
-from utils.pipeline.TCF_utils import TaskConnector
+from text_category_profiler.core.utilities import OSWALK
+from text_category_profiler.core.utilities import MKDIR
+from text_category_profiler.core.utilities import randomReplace
+from text_category_profiler.pipeline.TCF_utils import GetRSTRLabelList
+from text_category_profiler.pipeline.TCF_utils import datasetDirOutputDirPickers
+from text_category_profiler.pipeline.TCF_utils import ClassfierOptionParser
+from text_category_profiler.pipeline.TCF_utils import get_base_model_checkpoint
+from text_category_profiler.pipeline.TCF_utils import TaskConnector
 
-from utils.pipeline.DataConverter_utils import getSrcFromFileName
-from utils.pipeline.DataConverter_utils import GetFixedTestPATH
+from text_category_profiler.pipeline.DataConverter_utils import getSrcFromFileName
+from text_category_profiler.pipeline.DataConverter_utils import GetFixedTestPATH
 from ClassesTree.ClassesTree_utils import GetNodes
 from ClassesTree.ClassesTree_utils import GetSubTopics
 from ClassesTree.ClassesTree_utils import GetClosestMatchingParent
@@ -91,36 +91,36 @@ from ClassesTree.ClassesTree_utils import SetTreeFiles
 from DatasetConverter.sampleHandler import SampleReader
 
 #from utilities import hash
-from utils.data.df_utils import dfOutputer
-from utils.concurrency.MP_utils import multicoreJob
-from utils.concurrency.MP_utils import MPlogger
-from utils.core.log_display import info
-from utils.core.log_display import key_values
-from utils.core.log_display import section
-from utils.core.log_display import stage_banner
-from utils.core.log_display import stage_done
-from utils.core.log_display import summarize_sequence
-from utils.core.log_display import warning
+from text_category_profiler.data.df_utils import dfOutputer
+from text_category_profiler.concurrency.MP_utils import multicoreJob
+from text_category_profiler.concurrency.MP_utils import MPlogger
+from text_category_profiler.core.log_display import info
+from text_category_profiler.core.log_display import key_values
+from text_category_profiler.core.log_display import section
+from text_category_profiler.core.log_display import stage_banner
+from text_category_profiler.core.log_display import stage_done
+from text_category_profiler.core.log_display import summarize_sequence
+from text_category_profiler.core.log_display import warning
 #from utilities_RAND import LoadTree
 #from utilities_RAND import RANDLoader
 
 
-from utils.core.utilities import ShowElapsedTime
-from utils.core.utilities import ShowStepCostTime
-from utils.core.utilities import SplitList
-from utils.core.utilities import ListDiff
-from utils.core.utilities import flattenList
-from utils.core.utilities import fileNameReplacer
-from utils.core.utilities import CopyOrMoveWithFNList
-from utils.core.utilities import RandomSample
-from utils.core.utilities import FileHashDictBuilder
+from text_category_profiler.core.utilities import ShowElapsedTime
+from text_category_profiler.core.utilities import ShowStepCostTime
+from text_category_profiler.core.utilities import SplitList
+from text_category_profiler.core.utilities import ListDiff
+from text_category_profiler.core.utilities import flattenList
+from text_category_profiler.core.utilities import fileNameReplacer
+from text_category_profiler.core.utilities import CopyOrMoveWithFNList
+from text_category_profiler.core.utilities import RandomSample
+from text_category_profiler.core.utilities import FileHashDictBuilder
 
-from utils.data.DB_utils import getESData
-from utils.data.DB_utils import sqlite3Query
+from text_category_profiler.data.DB_utils import getESData
+from text_category_profiler.data.DB_utils import sqlite3Query
 
-from utils.data.df_utils import DictRowsListToDF
+from text_category_profiler.data.df_utils import DictRowsListToDF
 
-#from utils.Tika_pdf_to_txt import ExtractTxt
+#from text_category_profiler.Tika_pdf_to_txt import ExtractTxt
 '''
 import winreg
 winreg.SetValueEx(
@@ -1018,7 +1018,7 @@ def GenStasticsVisJobs(df, datasetSubDir):
     # Dash is only needed when statistics visualization jobs are requested.
     # Keeping this import local prevents every Windows spawn worker from loading
     # Dash (and repeating dependency deprecation warnings) during sample reads.
-    from utils.visualization.Dash_utils import LevelDVisProcessor
+    from text_category_profiler.visualization.Dash_utils import LevelDVisProcessor
 
     result = []
     for VisPath in [['SrcType', 'Src', 'InLabel'],

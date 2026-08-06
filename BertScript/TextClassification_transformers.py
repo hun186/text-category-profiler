@@ -12,7 +12,7 @@ import platform
 from time import sleep
 from tqdm import tqdm, trange
 
-from utils.core.torch_compat import disable_unsupported_windows_compile
+from text_category_profiler.core.torch_compat import disable_unsupported_windows_compile
 
 if disable_unsupported_windows_compile(torch):
     print("Windows detected: using eager PyTorch execution (torch.compile disabled).")
@@ -30,17 +30,17 @@ from transformers import Trainer
 from transformers import AutoModelForSequenceClassification
 from transformers import TrainingArguments
 
-from utils.core.utilities import SplitList
-from utils.core.utilities import flattenList
-from utils.core.utilities import SortedDictWithValue
-from utils.concurrency.MP_utils import MPlogger
-from utils.concurrency.MP_utils import multicoreJob
-from utils.pipeline.TCF_utils import ClassfierOptionParser
-from utils.pipeline.TCF_utils import datasetDirOutputDirPickers
-from utils.pipeline.TCF_utils import get_base_model_checkpoint
-from utils.data.DB_utils import sqlite3Query
-from utils.core.model_paths import resolve_local_model_directory
-from utils.pipeline.TextClassfier_utils import getTopicLabelList
+from text_category_profiler.core.utilities import SplitList
+from text_category_profiler.core.utilities import flattenList
+from text_category_profiler.core.utilities import SortedDictWithValue
+from text_category_profiler.concurrency.MP_utils import MPlogger
+from text_category_profiler.concurrency.MP_utils import multicoreJob
+from text_category_profiler.pipeline.TCF_utils import ClassfierOptionParser
+from text_category_profiler.pipeline.TCF_utils import datasetDirOutputDirPickers
+from text_category_profiler.pipeline.TCF_utils import get_base_model_checkpoint
+from text_category_profiler.data.DB_utils import sqlite3Query
+from text_category_profiler.core.model_paths import resolve_local_model_directory
+from text_category_profiler.pipeline.TextClassfier_utils import getTopicLabelList
 
 
 class classifierJob:

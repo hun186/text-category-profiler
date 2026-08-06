@@ -3,13 +3,13 @@ import os
 import re
 import shutil
 import glob
-from utils.data.df_utils import dfFromSQLite3
-from utils.data.df_utils import dfOutputer
-from utils.core.utilities import ListCap
-from utils.core.utilities import OSWALK
-from utils.core.utilities import MKDIR
+from text_category_profiler.data.df_utils import dfFromSQLite3
+from text_category_profiler.data.df_utils import dfOutputer
+from text_category_profiler.core.utilities import ListCap
+from text_category_profiler.core.utilities import OSWALK
+from text_category_profiler.core.utilities import MKDIR
 
-#from utils.concurrency.MP_utils import multicoreJob
+#from text_category_profiler.concurrency.MP_utils import multicoreJob
 
 def LoadTree(file):
     TACAPaths = []

@@ -6,7 +6,8 @@
 
 | ID | 決策 | 狀態 | 日期 | 影響範圍 | 被取代／取代者 |
 | --- | --- | --- | --- | --- | --- |
-| `ADR-0001` | 跨 stage 共用工具使用 `tcf_utils` namespace | Accepted | 2026-08-06 | Python shared utilities、imports、stage boundaries | — |
+| `ADR-0002` | Python package 使用 `text_category_profiler` namespace | Accepted | 2026-08-06 | Python package、imports、stage boundaries | 取代 `ADR-0001` |
+| `ADR-0001` | 跨 stage 共用工具使用 `tcf_utils` namespace | Superseded | 2026-08-06 | Python shared utilities、imports、stage boundaries | 被 `ADR-0002` 取代 |
 
 ## 何時建立 Decision Record
 
@@ -21,15 +22,25 @@
 
 ## Decision Records
 
-### ADR-0001：跨 stage 共用工具使用 `tcf_utils` namespace
+### ADR-0002：Python package 使用 `text_category_profiler` namespace
 
 - **狀態**：Accepted
 - **日期**：2026-08-06
-- **背景**：`PythonModule/utils/` 目前透過 `PackageImport.py` 加入 `sys.path`，再由多個 stage 使用泛用的 `utils` namespace。候選方案包括根目錄 `utils`、完整應用 namespace `text_category_profiler`，以及專案限定的 shared package `tcf_utils`。
-- **決策**：採用根目錄 `tcf_utils` 作為真正跨 stage helper 的 namespace；具有明確領域歸屬的程式回到所屬 stage。現階段不藉此把整個應用程式改造成 `text_category_profiler` package。
-- **理由**：`tcf_utils` 能表達這些 helper 屬於 TCF，又避免泛用 `utils` 的 import 衝突；相較完整應用 package，也符合目前仍以 `TCFMain.py` 與 stage scripts 為入口的結構。
-- **影響**：後續遷移不得將 `PythonModule/utils/` 整包改名；應依 `.codex/tcf-utils-migration.md` 盤點、測試、分流與漸進淘汰 path injection。
-- **重新檢視條件**：若未來整個專案採用正式 `src/text_category_profiler/` package layout，可另立 ADR 評估將 `tcf_utils` 納入該 namespace。
+- **背景**：專案已由 TopicClassification 改名為 `text-category-profiler`；`tcf_utils` 中的 `tcf` 是舊名稱縮寫，無法讓新維護者直接理解它與目前專案的關係。
+- **決策**：根目錄 Python package 與 imports 統一使用 `text_category_profiler`；repository 名稱仍使用連字號 `text-category-profiler`。本次不同時改名 `TCFMain.py`、`TCF_Params/` 或 `TCF_utils.py`，以維持現有 CLI 與 stage 相容性。
+- **理由**：完整專案 namespace 比歷史縮寫更容易理解，也不會與通用的頂層 `utils` package 衝突；並可在未來容納不屬於 utility 的 application modules。
+- **影響**：active code 必須以 `text_category_profiler.<domain>.<module>` 匯入。後續依 `.codex/text-category-profiler-package-migration.md` 收斂模組職責並漸進淘汰 path injection。
+- **重新檢視條件**：若未來採用 `src/` layout，可將此 package 搬至 `src/text_category_profiler/`，但不需再變更 public namespace。
+
+### ADR-0001：跨 stage 共用工具使用 `tcf_utils` namespace
+
+- **狀態**：Superseded by `ADR-0002`
+- **日期**：2026-08-06
+- **背景**：`PythonModule/utils/` 透過 `PackageImport.py` 加入 `sys.path`，再由多個 stage 使用泛用的 `utils` namespace。候選方案包括根目錄 `utils`、完整應用 namespace `text_category_profiler`，以及專案限定的 shared package `tcf_utils`。
+- **決策**：當時採用根目錄 `tcf_utils` 作為跨 stage helper namespace。
+- **理由**：相較泛用 `utils`，`tcf_utils` 可降低 import 衝突，並維持當時以 stage scripts 為入口的結構。
+- **影響**：此 namespace 已由 `ADR-0002` 取代；不得再對 active code 新增 `tcf_utils` imports。
+- **重新檢視條件**：已觸發；專案改名後，`tcf` 縮寫不再能清楚表達目前專案名稱。
 
 新增其他紀錄時：
 

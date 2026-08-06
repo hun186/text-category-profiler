@@ -1,5 +1,5 @@
 try:
-    import utils
+    import text_category_profiler
 except:
     from PackageImport import PackageImporter
     PackageImporter.proc()
@@ -20,24 +20,24 @@ from collections import Counter
 #import charts
 import random
 
-from utils.concurrency.MP_utils import MPlogger
-from utils.concurrency.MP_utils import multicoreJob
-from utils.core.utilities import MKDIR
-#from utils.core.utilities import hasher
-from utils.core.utilities import ShowElapsedTime
-from utils.core.utilities import flattenList
-from utils.core.utilities import RemoveIlleagalCharForFileName
-from utils.core.utilities import getFNExtFromFullPath
-from utils.core.utilities import getMFNFromFN
-from utils.core.utilities import getPathFromFN
-from utils.core.utilities import TSVTextAdapter
-from utils.core.utilities import IsVersionValid
-from utils.core.utilities import getLineOfMaxLen
-from utils.data.DB_utils import ensure_schema
-from utils.data.DB_utils import createIndex
-from utils.core.log_display import key_values
-from utils.core.log_display import summarize_sequence
-from utils.core.log_display import warning
+from text_category_profiler.concurrency.MP_utils import MPlogger
+from text_category_profiler.concurrency.MP_utils import multicoreJob
+from text_category_profiler.core.utilities import MKDIR
+#from text_category_profiler.core.utilities import hasher
+from text_category_profiler.core.utilities import ShowElapsedTime
+from text_category_profiler.core.utilities import flattenList
+from text_category_profiler.core.utilities import RemoveIlleagalCharForFileName
+from text_category_profiler.core.utilities import getFNExtFromFullPath
+from text_category_profiler.core.utilities import getMFNFromFN
+from text_category_profiler.core.utilities import getPathFromFN
+from text_category_profiler.core.utilities import TSVTextAdapter
+from text_category_profiler.core.utilities import IsVersionValid
+from text_category_profiler.core.utilities import getLineOfMaxLen
+from text_category_profiler.data.DB_utils import ensure_schema
+from text_category_profiler.data.DB_utils import createIndex
+from text_category_profiler.core.log_display import key_values
+from text_category_profiler.core.log_display import summarize_sequence
+from text_category_profiler.core.log_display import warning
 
 try:
     import xlsxwriter

@@ -1,5 +1,5 @@
 try:
-    import utils
+    import text_category_profiler
 except:
     from PackageImport import PackageImporter
     PackageImporter.proc()
@@ -8,8 +8,8 @@ import os
 import json
 import pandas as pd
 import _pickle as pickle
-from utils.core.utilities_path import OSWALK
-from utils.data.df_utils import dfOutputer
+from text_category_profiler.core.utilities_path import OSWALK
+from text_category_profiler.data.df_utils import dfOutputer
 
 class PickleHandler:
     def __init__(self, file = "",obj = None, BaseFileName="",indent=None,variableName=""):

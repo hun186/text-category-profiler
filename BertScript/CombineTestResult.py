@@ -25,25 +25,25 @@ from functools import partial
 #import numpy as np
 
 #read the original test data for the text and id
-from utils.pipeline.TCF_utils import datasetDirOutputDirPickers
-from utils.pipeline.TCF_utils import ClassfierOptionParser
-from utils.pipeline.TCF_utils import PYTORCH_MODEL_TYPES
-from utils.core.utilities import OSWALK
-from utils.core.utilities import WaitUntilFileIsStable
-from utils.core.utilities import SplitList
-from utils.core.utilities import getFNFromFullPath
-from utils.core.utilities import RenameDir
-from utils.core.utilities import flattenList
-from utils.concurrency.MP_utils import MPlogger
-from utils.concurrency.MP_utils import multicoreJob
-from utils.data.df_utils import dfOutputer
-from utils.data.df_utils import dfFromSQLite3
-from utils.core.log_display import key_values
-from utils.core.log_display import summarize_sequence
-from utils.core.log_display import stage_banner
-from utils.core.log_display import stage_done
+from text_category_profiler.pipeline.TCF_utils import datasetDirOutputDirPickers
+from text_category_profiler.pipeline.TCF_utils import ClassfierOptionParser
+from text_category_profiler.pipeline.TCF_utils import PYTORCH_MODEL_TYPES
+from text_category_profiler.core.utilities import OSWALK
+from text_category_profiler.core.utilities import WaitUntilFileIsStable
+from text_category_profiler.core.utilities import SplitList
+from text_category_profiler.core.utilities import getFNFromFullPath
+from text_category_profiler.core.utilities import RenameDir
+from text_category_profiler.core.utilities import flattenList
+from text_category_profiler.concurrency.MP_utils import MPlogger
+from text_category_profiler.concurrency.MP_utils import multicoreJob
+from text_category_profiler.data.df_utils import dfOutputer
+from text_category_profiler.data.df_utils import dfFromSQLite3
+from text_category_profiler.core.log_display import key_values
+from text_category_profiler.core.log_display import summarize_sequence
+from text_category_profiler.core.log_display import stage_banner
+from text_category_profiler.core.log_display import stage_done
 from ClassesTree.Label_utils import LabelListLoader
-#from utils.pipeline.DataConverter_utils import datasetDirOutputDirPickers
+#from text_category_profiler.pipeline.DataConverter_utils import datasetDirOutputDirPickers
 
 
 class TextInfoSearcher:

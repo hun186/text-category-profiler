@@ -8,7 +8,7 @@ if parentSubDir in [
     os.chdir("../")
     print(f"Change working directory to {os.getcwd()}")
 elif parentSubDir in [
-    "utils",
+    "text_category_profiler",
     ]:
     os.chdir("../../../")
     print(f"Change working directory to {os.getcwd()}")
@@ -19,10 +19,10 @@ from numpy.linalg import norm
 from collections import Counter
 import pandas as pd
 
-from utils.core.utilities import frequency_sort
-from utils.core.utilities import wrap
-from utils.concurrency.MP_utils import MPlogger
-from utils.core.utilities import SortedDictWithValue
+from text_category_profiler.core.utilities import frequency_sort
+from text_category_profiler.core.utilities import wrap
+from text_category_profiler.concurrency.MP_utils import MPlogger
+from text_category_profiler.core.utilities import SortedDictWithValue
 
 try:
     import diff_match_patch
