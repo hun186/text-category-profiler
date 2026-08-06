@@ -10,7 +10,7 @@ UTILS = ROOT / "PythonModule"
 if str(UTILS) not in sys.path:
     sys.path.insert(0, str(UTILS))
 
-from utils import log_display
+from utils.core import log_display
 
 
 class LogDisplayTests(unittest.TestCase):

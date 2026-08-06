@@ -5,11 +5,11 @@ import os
 import time
 import platform
 
-from utils.utilities import timeNow
-from utils.utilities import MKDIR
-from utils.MP_utils import multicoreJob
-from utils.TCF_utils import ClassfierOptionParser
-from utils.log_display import print_once
+from utils.core.utilities import timeNow
+from utils.core.utilities import MKDIR
+from utils.concurrency.MP_utils import multicoreJob
+from utils.pipeline.TCF_utils import ClassfierOptionParser
+from utils.core.log_display import print_once
 
 WorkPoolROOT = "WorkPool"
 WorkPoolROOT_ArticleComposition = "WorkPoolROOT_ArticleComposition"

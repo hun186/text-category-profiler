@@ -17,10 +17,10 @@ import re
 import sys
 
 
-from utils.utilities import textReader
-from utils.utilities import MKDIR
-from utils.utilities import getFNFromFullPath
-from utils.MP_utils import MPlogger
+from utils.core.utilities import textReader
+from utils.core.utilities import MKDIR
+from utils.core.utilities import getFNFromFullPath
+from utils.concurrency.MP_utils import MPlogger
 
 
 def Extract_Header(InputFN = None, OutputROOTPATH = "../EmailOutput"):

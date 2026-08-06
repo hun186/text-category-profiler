@@ -15,7 +15,7 @@ class CombineTestResultModelTypeTests(unittest.TestCase):
             alias.name
             for node in module.body
             if isinstance(node, ast.ImportFrom)
-            and node.module == "utils.TCF_utils"
+            and node.module == "utils.pipeline.TCF_utils"
             for alias in node.names
         }
         pytorch_branches = [
@@ -33,7 +33,7 @@ class CombineTestResultModelTypeTests(unittest.TestCase):
         self.assertTrue(pytorch_branches)
 
     def test_shared_pytorch_types_include_mmbert(self):
-        path = REPOSITORY_ROOT / "PythonModule/utils/TCF_utils.py"
+        path = REPOSITORY_ROOT / "PythonModule/utils/pipeline/TCF_utils.py"
         module = ast.parse(path.read_text(encoding="utf-8"))
         assignments = {
             target.id: ast.literal_eval(node.value)

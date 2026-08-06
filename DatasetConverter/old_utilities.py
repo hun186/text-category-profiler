@@ -7,7 +7,7 @@ import shutil
 import datetime
 import pathlib
 import platform
-from utils.MP_utils import MPlogger
+from utils.concurrency.MP_utils import MPlogger
 
 class VariableChangeDetector:
     """ A simple class, set to watch its variable. """

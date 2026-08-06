@@ -28,38 +28,38 @@ import plotly.express as px
 import argparse
 import setproctitle
 
-from utils.Dash_utils import LevelDVisProcessor
-from utils.Dash_utils import create_card
-from utils.Dash_utils import get_button_id
-from utils.Dash_utils import DictToDataArray
-from utils.df_utils import dfFromSQLite3
-from utils.df_utils import dfOutputer
-from utils.df_utils import concat_df_str1
-from utils.MP_utils import multicoreJob
-from utils.MP_utils import MPlogger
-from utils.utilities import hash
-from utils.utilities import UniqueList
-from utils.utilities import ListDiff
-from utils.utilities import ListCap
-from utils.utilities import ShowElapsedTime
-from utils.utilities import getFNFromFullPath
-from utils.utilities import getMFNFromFN
-from utils.utilities import flattenList
-from utils.utilities import GetnDigitElementsOfaList
-#from utils.utilities import ActorUI
+from utils.visualization.Dash_utils import LevelDVisProcessor
+from utils.visualization.Dash_utils import create_card
+from utils.visualization.Dash_utils import get_button_id
+from utils.visualization.Dash_utils import DictToDataArray
+from utils.data.df_utils import dfFromSQLite3
+from utils.data.df_utils import dfOutputer
+from utils.data.df_utils import concat_df_str1
+from utils.concurrency.MP_utils import multicoreJob
+from utils.concurrency.MP_utils import MPlogger
+from utils.core.utilities import hash
+from utils.core.utilities import UniqueList
+from utils.core.utilities import ListDiff
+from utils.core.utilities import ListCap
+from utils.core.utilities import ShowElapsedTime
+from utils.core.utilities import getFNFromFullPath
+from utils.core.utilities import getMFNFromFN
+from utils.core.utilities import flattenList
+from utils.core.utilities import GetnDigitElementsOfaList
+#from utils.core.utilities import ActorUI
 #ActorUI.countScreenSize()
 #raise Exception
-from utils.DB_utils import sqlite3Query
-from utils.DataConverter_utils import ClassfierOptionParser
+from utils.data.DB_utils import sqlite3Query
+from utils.pipeline.DataConverter_utils import ClassfierOptionParser
 args = ClassfierOptionParser()
 InfoScoreSumLowerBound = args.InfoScoreSumLowerBound
 FixedTestFileBound = args.FixedTestFileBound
 
-from utils.DataConverter_utils import LabelListLoader
-from utils.DataConverter_utils import datasetDirOutputDirPickers
-from utils.DataConverter_utils import LoadTree
-from utils.DataConverter_utils import GetSubTopics
-from utils.DataConverter_utils import BuildInfoScoreTable
+from utils.pipeline.DataConverter_utils import LabelListLoader
+from utils.pipeline.DataConverter_utils import datasetDirOutputDirPickers
+from utils.pipeline.DataConverter_utils import LoadTree
+from utils.pipeline.DataConverter_utils import GetSubTopics
+from utils.pipeline.DataConverter_utils import BuildInfoScoreTable
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 

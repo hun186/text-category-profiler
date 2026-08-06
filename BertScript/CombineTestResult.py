@@ -25,25 +25,25 @@ from functools import partial
 #import numpy as np
 
 #read the original test data for the text and id
-from utils.TCF_utils import datasetDirOutputDirPickers
-from utils.TCF_utils import ClassfierOptionParser
-from utils.TCF_utils import PYTORCH_MODEL_TYPES
-from utils.utilities import OSWALK
-from utils.utilities import WaitUntilFileIsStable
-from utils.utilities import SplitList
-from utils.utilities import getFNFromFullPath
-from utils.utilities import RenameDir
-from utils.utilities import flattenList
-from utils.MP_utils import MPlogger
-from utils.MP_utils import multicoreJob
-from utils.df_utils import dfOutputer
-from utils.df_utils import dfFromSQLite3
-from utils.log_display import key_values
-from utils.log_display import summarize_sequence
-from utils.log_display import stage_banner
-from utils.log_display import stage_done
+from utils.pipeline.TCF_utils import datasetDirOutputDirPickers
+from utils.pipeline.TCF_utils import ClassfierOptionParser
+from utils.pipeline.TCF_utils import PYTORCH_MODEL_TYPES
+from utils.core.utilities import OSWALK
+from utils.core.utilities import WaitUntilFileIsStable
+from utils.core.utilities import SplitList
+from utils.core.utilities import getFNFromFullPath
+from utils.core.utilities import RenameDir
+from utils.core.utilities import flattenList
+from utils.concurrency.MP_utils import MPlogger
+from utils.concurrency.MP_utils import multicoreJob
+from utils.data.df_utils import dfOutputer
+from utils.data.df_utils import dfFromSQLite3
+from utils.core.log_display import key_values
+from utils.core.log_display import summarize_sequence
+from utils.core.log_display import stage_banner
+from utils.core.log_display import stage_done
 from ClassesTree.Label_utils import LabelListLoader
-#from utils.DataConverter_utils import datasetDirOutputDirPickers
+#from utils.pipeline.DataConverter_utils import datasetDirOutputDirPickers
 
 
 class TextInfoSearcher:

@@ -11,13 +11,13 @@ PackageImporter.proc()
 import math
 import os
 import tqdm
-from utils.utilities import getPathFromFN
-from utils.utilities import getMFNFromFN
-from utils.df_utils import DictRowsListToDF
-from utils.df_utils import dfFromSQLite3
-from utils.df_utils import dfOutputer
-from utils.DB_utils import createTable
-from utils.DB_utils import createIndex
+from utils.core.utilities import getPathFromFN
+from utils.core.utilities import getMFNFromFN
+from utils.data.df_utils import DictRowsListToDF
+from utils.data.df_utils import dfFromSQLite3
+from utils.data.df_utils import dfOutputer
+from utils.data.DB_utils import createTable
+from utils.data.DB_utils import createIndex
 
 class EmbassyPagesCombiner:
     def __init__(self, 

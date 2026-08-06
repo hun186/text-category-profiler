@@ -5,14 +5,14 @@ import pandas as pd
 import setproctitle
 #載入摘要標註目錄參數設定
 from DatasetConverter.ConverterParameters_Combiner import SummarizationExcelROOTPATHList
-from utils.utilities import OSWALK
-from utils.utilities import getFNFromFullPath
+from utils.core.utilities import OSWALK
+from utils.core.utilities import getFNFromFullPath
 #DataFrame處理小函式
-from utils.df_utils import dfOutputer
-from utils.df_utils import XLSTodf
+from utils.data.df_utils import dfOutputer
+from utils.data.df_utils import XLSTodf
 #平行化運行小函式
-from utils.MP_utils import multicoreJob
-from utils.MP_utils import MPlogger
+from utils.concurrency.MP_utils import multicoreJob
+from utils.concurrency.MP_utils import MPlogger
 
 if __name__ == '__main__':
     setproctitle.setproctitle(f'SummarizationExcels')

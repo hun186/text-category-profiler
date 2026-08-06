@@ -26,10 +26,10 @@ from ClassesTree.ClassesTree_utils import BuildInfoScoreTable
 from ClassesTree.ClassesTree_utils import CountDegree
 from ClassesTree.longestPath import longestPath
 
-#from utils.utilities import hasher
-from utils.utilities import str2bool
-#from utils.df_utils import CSVtodf
-from utils.df_utils import flattenList
+#from utils.core.utilities import hasher
+from utils.core.utilities import str2bool
+#from utils.data.df_utils import CSVtodf
+from utils.data.df_utils import flattenList
 
 
 def ClassfierOptionParser():

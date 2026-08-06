@@ -9,27 +9,27 @@ import re
 import pandas as pd
 import slugify
 
-from utils.utilities import CapWords
-from utils.utilities import OSWALK
-from utils.utilities import MKDIR
-#from utils.utilities import pathSeqFromFN
-from utils.utilities import pathSpliter
-from utils.utilities import removeStrPrefix
-from utils.utilities import ConvertTimeStrFMT
-from utils.utilities import getMFNFromFN
-from utils.utilities import getFNExtFromFullPath
-from utils.utilities import FileNamePicker
+from utils.core.utilities import CapWords
+from utils.core.utilities import OSWALK
+from utils.core.utilities import MKDIR
+#from utils.core.utilities import pathSeqFromFN
+from utils.core.utilities import pathSpliter
+from utils.core.utilities import removeStrPrefix
+from utils.core.utilities import ConvertTimeStrFMT
+from utils.core.utilities import getMFNFromFN
+from utils.core.utilities import getFNExtFromFullPath
+from utils.core.utilities import FileNamePicker
 
-from utils.utilities import RemoveIlleagalCharForFileName
-#from utils.utilities import DictSaver
-from utils.MP_utils import MPlogger
-from utils.df_utils import XLSTodf
-from utils.df_utils import CSVtodf
-from utils.df_utils import dfFromSQLite3
-from utils.df_utils import dfOutputer
-from utils.df_utils import dfAppendToXLS
-from utils.df_utils import dfListToXLS
-from utils.TCF_utils import datasetDirOutputDirPickers
+from utils.core.utilities import RemoveIlleagalCharForFileName
+#from utils.core.utilities import DictSaver
+from utils.concurrency.MP_utils import MPlogger
+from utils.data.df_utils import XLSTodf
+from utils.data.df_utils import CSVtodf
+from utils.data.df_utils import dfFromSQLite3
+from utils.data.df_utils import dfOutputer
+from utils.data.df_utils import dfAppendToXLS
+from utils.data.df_utils import dfListToXLS
+from utils.pipeline.TCF_utils import datasetDirOutputDirPickers
 
 from DatasetConverter.EXTConverter.ExtractionRule import ExtractionRuleDict
 from BertScript.ClassTable import ClassTable

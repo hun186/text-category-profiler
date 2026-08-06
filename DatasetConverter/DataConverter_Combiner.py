@@ -48,69 +48,69 @@ import shutil
 import argparse
 #import GPUtil
 
-from utils.utilities import CapWords
-from utils.utilities import OSWALK
-from utils.utilities import MKDIR
+from utils.core.utilities import CapWords
+from utils.core.utilities import OSWALK
+from utils.core.utilities import MKDIR
 #from utilities import ShowElapsedTime
-#from utils.utilities import mem_report
-#from utils.TCF_utils import GetTreeFilePath
-from utils.TCF_utils import GetRSTRLabelList
-from utils.TCF_utils import datasetDirOutputDirPickers
-from utils.TCF_utils import ClassfierOptionParser
-from utils.TCF_utils import TaskConnector
+#from utils.core.utilities import mem_report
+#from utils.pipeline.TCF_utils import GetTreeFilePath
+from utils.pipeline.TCF_utils import GetRSTRLabelList
+from utils.pipeline.TCF_utils import datasetDirOutputDirPickers
+from utils.pipeline.TCF_utils import ClassfierOptionParser
+from utils.pipeline.TCF_utils import TaskConnector
 
 from ClassesTree.Label_utils import getLabelsFromOSWALK
 from ClassesTree.Label_utils import getLabelsFromFileName
 from ClassesTree.Label_utils import LabelsStringReader
 from ClassesTree.Label_utils import LabelListExtractor
 
-from utils.DataConverter_utils import getSrcFromFileName
-#from utils.DataConverter_utils import datasetDirOutputDirPickers
-#from utils.DataConverter_utils import LoadTree
-#from utils.DataConverter_utils import GetNodes
-#from utils.DataConverter_utils import GetSubTopics
-#from utils.DataConverter_utils import GetClosestMatchingParent
-#from utils.DataConverter_utils import GetInducedSubgraph
-#from utils.DataConverter_utils import BuildInfoScoreTable
-#from utils.DataConverter_utils import GetFixedTestPATH
-#from utils.DataConverter_utils import RANDLoader
-#from utils.DataConverter_utils import CheckDatasetFiles
+from utils.pipeline.DataConverter_utils import getSrcFromFileName
+#from utils.pipeline.DataConverter_utils import datasetDirOutputDirPickers
+#from utils.pipeline.DataConverter_utils import LoadTree
+#from utils.pipeline.DataConverter_utils import GetNodes
+#from utils.pipeline.DataConverter_utils import GetSubTopics
+#from utils.pipeline.DataConverter_utils import GetClosestMatchingParent
+#from utils.pipeline.DataConverter_utils import GetInducedSubgraph
+#from utils.pipeline.DataConverter_utils import BuildInfoScoreTable
+#from utils.pipeline.DataConverter_utils import GetFixedTestPATH
+#from utils.pipeline.DataConverter_utils import RANDLoader
+#from utils.pipeline.DataConverter_utils import CheckDatasetFiles
 try:
     from sampleHandler import SampleReader
 except:
     from DatasetConverter.sampleHandler import SampleReader
 
 #from utilities import hash
-from utils.df_utils import dfOutputer
-from utils.MP_utils import multicoreJob
-from utils.MP_utils import MPlogger
-from utils.Dash_utils import LevelDVisProcessor
+from utils.data.df_utils import dfOutputer
+from utils.concurrency.MP_utils import multicoreJob
+from utils.concurrency.MP_utils import MPlogger
+from utils.visualization.Dash_utils import LevelDVisProcessor
 #from utilities_RAND import LoadTree
 #from utilities_RAND import RANDLoader
 
 
-from utils.utilities import fileNameNormalizer
-from utils.utilities import getMFNFromFN
-from utils.utilities import getFNFromFullPath
+from utils.core.utilities import fileNameNormalizer
+from utils.core.utilities import getMFNFromFN
+from utils.core.utilities import getFNFromFullPath
 
-from utils.utilities import timeNow
-from utils.utilities import ShowElapsedTime
-from utils.utilities import ShowStepCostTime
-from utils.utilities import SplitList
-from utils.utilities import ListDivider
-from utils.utilities import ListDiff
-from utils.utilities import flattenList
-from utils.utilities import fileNameReplacer
-from utils.utilities import WaitUntilFileIsStable
-from utils.utilities import CopyOrMoveWithFNList
-from utils.utilities import RandomSample
-from utils.TextProcessor_utils import textReader
-from utils.TextProcessor_utils import TxtFileHashDictBuilder
+from utils.core.utilities import timeNow
+from utils.core.utilities import ShowElapsedTime
+from utils.core.utilities import ShowStepCostTime
+from utils.core.utilities import SplitList
+from utils.core.utilities import ListDivider
+from utils.core.utilities import ListDiff
+from utils.core.utilities import flattenList
+from utils.core.utilities import fileNameReplacer
+from utils.core.utilities import WaitUntilFileIsStable
+from utils.core.utilities import CopyOrMoveWithFNList
+from utils.core.utilities import RandomSample
+from utils.text.TextProcessor_utils import textReader
+from utils.text.TextProcessor_utils import TxtFileHashDictBuilder
 
-from utils.DB_utils import sqlite3Query
-from utils.DB_utils import getESData
+from utils.data.DB_utils import sqlite3Query
+from utils.data.DB_utils import getESData
 
-from utils.df_utils import DictRowsListToDF
+from utils.data.df_utils import DictRowsListToDF
 
 def ArticleRowsListToDF(rows_list,start_time=None):
     rows_list = list(filter((None).__ne__, rows_list))

@@ -20,24 +20,24 @@ from collections import Counter
 #import charts
 import random
 
-from utils.MP_utils import MPlogger
-from utils.MP_utils import multicoreJob
-from utils.utilities import MKDIR
-#from utils.utilities import hasher
-from utils.utilities import ShowElapsedTime
-from utils.utilities import flattenList
-from utils.utilities import RemoveIlleagalCharForFileName
-from utils.utilities import getFNExtFromFullPath
-from utils.utilities import getMFNFromFN
-from utils.utilities import getPathFromFN
-from utils.utilities import TSVTextAdapter
-from utils.utilities import IsVersionValid
-from utils.utilities import getLineOfMaxLen
-from utils.DB_utils import ensure_schema
-from utils.DB_utils import createIndex
-from utils.log_display import key_values
-from utils.log_display import summarize_sequence
-from utils.log_display import warning
+from utils.concurrency.MP_utils import MPlogger
+from utils.concurrency.MP_utils import multicoreJob
+from utils.core.utilities import MKDIR
+#from utils.core.utilities import hasher
+from utils.core.utilities import ShowElapsedTime
+from utils.core.utilities import flattenList
+from utils.core.utilities import RemoveIlleagalCharForFileName
+from utils.core.utilities import getFNExtFromFullPath
+from utils.core.utilities import getMFNFromFN
+from utils.core.utilities import getPathFromFN
+from utils.core.utilities import TSVTextAdapter
+from utils.core.utilities import IsVersionValid
+from utils.core.utilities import getLineOfMaxLen
+from utils.data.DB_utils import ensure_schema
+from utils.data.DB_utils import createIndex
+from utils.core.log_display import key_values
+from utils.core.log_display import summarize_sequence
+from utils.core.log_display import warning
 
 try:
     import xlsxwriter

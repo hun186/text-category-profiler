@@ -3,7 +3,7 @@ import collections
 import random
 
 try:
-    from utils.utilities import flattenList
+    from utils.core.utilities import flattenList
 except:
     from utilities import flattenList
 def ComputeComponent(edges):

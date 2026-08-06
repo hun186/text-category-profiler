@@ -18,18 +18,18 @@ import tqdm
     #print(e)
 from DatasetConverter.EXTConverter.ExtractionRule import ExtractionRuleDict
 from DatasetConverter.EXTConverter.ExtractionRule import CombinationRuleDict
-from utils.utilities import removeStrPrefix
-from utils.utilities import removeStrSuffix
-from utils.utilities import OSWALK
-from utils.utilities import MKDIR
-from utils.utilities import pathSpliter
-from utils.utilities import fileNameNormalizer
-from utils.utilities import getMFNFromFN
-from utils.utilities import getFNFromFullPath
-from utils.utilities import RemoveIlleagalCharForFileName
-from utils.utilities import DomainNameExtractor
-from utils.df_utils import DictRowsListToDF
-from utils.df_utils import dfOutputer
+from utils.core.utilities import removeStrPrefix
+from utils.core.utilities import removeStrSuffix
+from utils.core.utilities import OSWALK
+from utils.core.utilities import MKDIR
+from utils.core.utilities import pathSpliter
+from utils.core.utilities import fileNameNormalizer
+from utils.core.utilities import getMFNFromFN
+from utils.core.utilities import getFNFromFullPath
+from utils.core.utilities import RemoveIlleagalCharForFileName
+from utils.core.utilities import DomainNameExtractor
+from utils.data.df_utils import DictRowsListToDF
+from utils.data.df_utils import dfOutputer
 
 
 def ComputeOutputLabel(

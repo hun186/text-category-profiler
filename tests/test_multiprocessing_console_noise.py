@@ -8,7 +8,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 
 class MultiprocessingConsoleNoiseTests(unittest.TestCase):
     def test_training_notice_is_limited_to_main_process(self):
-        source = (REPOSITORY_ROOT / "PythonModule/utils/TCF_utils.py").read_text(
+        source = (REPOSITORY_ROOT / "PythonModule/utils/pipeline/TCF_utils.py").read_text(
             encoding="utf-8"
         )
 
@@ -26,7 +26,7 @@ class MultiprocessingConsoleNoiseTests(unittest.TestCase):
         self.assertFalse(
             any(
                 isinstance(node, ast.ImportFrom)
-                and node.module == "utils.Dash_utils"
+                and node.module == "utils.visualization.Dash_utils"
                 for node in module_scope_imports
             )
         )

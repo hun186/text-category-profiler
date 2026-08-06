@@ -20,11 +20,11 @@ from tqdm.contrib.concurrent import process_map
 import platform
 from platform import python_version
 import math
-from utils.log_display import info
-from utils.log_display import key_values
-from utils.log_display import print_once
-from utils.log_display import section
-from utils.log_display import warning
+from utils.core.log_display import info
+from utils.core.log_display import key_values
+from utils.core.log_display import print_once
+from utils.core.log_display import section
+from utils.core.log_display import warning
 
 
 def _truthy_debug_flag(value):
@@ -43,11 +43,11 @@ def _mp_debug_enabled(explicit=None):
 
 '''
 try:
-    import utils.utilities
+    import utils.core.utilities
 except:
     import utilities
 '''
-#copied from utils.utilities
+#copied from utils.core.utilities
 from platform import python_version
 import types
 from version_parser.version import Version
@@ -67,13 +67,13 @@ if IsVersionValid(LBD="3.8.0"):
     try:
         import istarmap2 as istarmap # import to apply patch
     except:
-        import utils.istarmap2 as istarmap # import to apply patch
+        import utils.concurrency.istarmap2 as istarmap # import to apply patch
 else:
     print_once("🐍 python version < 3.8, using istarmap.py in MP_utils.py")
     try:
         import istarmap # import to apply patch
     except:
-        import utils.istarmap # import to apply patch
+        import utils.concurrency.istarmap # import to apply patch
 '''
 pyver = float('.'.join(python_version().split(".")[:2]))
 
@@ -82,13 +82,13 @@ if pyver < 3.8:
     try:
         import istarmap  # import to apply patch
     except:
-        import utils.istarmap  # import to apply patch
+        import utils.concurrency.istarmap  # import to apply patch
 else:
     print("python version >= 3.8")
     try:
         import istarmap2 as istarmap # import to apply patch
     except:
-        import utils.istarmap2 as istarmap # import to apply patch
+        import utils.concurrency.istarmap2 as istarmap # import to apply patch
 '''
 def timeNow(FMT = "%Y%m%d%H%M%S"):
     return time.strftime(FMT, time.localtime())

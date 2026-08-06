@@ -69,17 +69,17 @@ from DatasetConverter.EXTConverter.ExtractionRule import ExtractionRuleDict
 from DatasetConverter.EXTConverter.Combiner import CZJCorpusFileBuilder
 
 
-from utils.utilities import OSWALK
-from utils.utilities import MKDIR
-from utils.utilities import randomReplace
-from utils.TCF_utils import GetRSTRLabelList
-from utils.TCF_utils import datasetDirOutputDirPickers
-from utils.TCF_utils import ClassfierOptionParser
-from utils.TCF_utils import get_base_model_checkpoint
-from utils.TCF_utils import TaskConnector
+from utils.core.utilities import OSWALK
+from utils.core.utilities import MKDIR
+from utils.core.utilities import randomReplace
+from utils.pipeline.TCF_utils import GetRSTRLabelList
+from utils.pipeline.TCF_utils import datasetDirOutputDirPickers
+from utils.pipeline.TCF_utils import ClassfierOptionParser
+from utils.pipeline.TCF_utils import get_base_model_checkpoint
+from utils.pipeline.TCF_utils import TaskConnector
 
-from utils.DataConverter_utils import getSrcFromFileName
-from utils.DataConverter_utils import GetFixedTestPATH
+from utils.pipeline.DataConverter_utils import getSrcFromFileName
+from utils.pipeline.DataConverter_utils import GetFixedTestPATH
 from ClassesTree.ClassesTree_utils import GetNodes
 from ClassesTree.ClassesTree_utils import GetSubTopics
 from ClassesTree.ClassesTree_utils import GetClosestMatchingParent
@@ -91,34 +91,34 @@ from ClassesTree.ClassesTree_utils import SetTreeFiles
 from DatasetConverter.sampleHandler import SampleReader
 
 #from utilities import hash
-from utils.df_utils import dfOutputer
-from utils.MP_utils import multicoreJob
-from utils.MP_utils import MPlogger
-from utils.log_display import info
-from utils.log_display import key_values
-from utils.log_display import section
-from utils.log_display import stage_banner
-from utils.log_display import stage_done
-from utils.log_display import summarize_sequence
-from utils.log_display import warning
+from utils.data.df_utils import dfOutputer
+from utils.concurrency.MP_utils import multicoreJob
+from utils.concurrency.MP_utils import MPlogger
+from utils.core.log_display import info
+from utils.core.log_display import key_values
+from utils.core.log_display import section
+from utils.core.log_display import stage_banner
+from utils.core.log_display import stage_done
+from utils.core.log_display import summarize_sequence
+from utils.core.log_display import warning
 #from utilities_RAND import LoadTree
 #from utilities_RAND import RANDLoader
 
 
-from utils.utilities import ShowElapsedTime
-from utils.utilities import ShowStepCostTime
-from utils.utilities import SplitList
-from utils.utilities import ListDiff
-from utils.utilities import flattenList
-from utils.utilities import fileNameReplacer
-from utils.utilities import CopyOrMoveWithFNList
-from utils.utilities import RandomSample
-from utils.utilities import FileHashDictBuilder
+from utils.core.utilities import ShowElapsedTime
+from utils.core.utilities import ShowStepCostTime
+from utils.core.utilities import SplitList
+from utils.core.utilities import ListDiff
+from utils.core.utilities import flattenList
+from utils.core.utilities import fileNameReplacer
+from utils.core.utilities import CopyOrMoveWithFNList
+from utils.core.utilities import RandomSample
+from utils.core.utilities import FileHashDictBuilder
 
-from utils.DB_utils import getESData
-from utils.DB_utils import sqlite3Query
+from utils.data.DB_utils import getESData
+from utils.data.DB_utils import sqlite3Query
 
-from utils.df_utils import DictRowsListToDF
+from utils.data.df_utils import DictRowsListToDF
 
 #from utils.Tika_pdf_to_txt import ExtractTxt
 '''
@@ -1018,7 +1018,7 @@ def GenStasticsVisJobs(df, datasetSubDir):
     # Dash is only needed when statistics visualization jobs are requested.
     # Keeping this import local prevents every Windows spawn worker from loading
     # Dash (and repeating dependency deprecation warnings) during sample reads.
-    from utils.Dash_utils import LevelDVisProcessor
+    from utils.visualization.Dash_utils import LevelDVisProcessor
 
     result = []
     for VisPath in [['SrcType', 'Src', 'InLabel'],

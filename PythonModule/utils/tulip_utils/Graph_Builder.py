@@ -12,11 +12,11 @@ import os
 
 from array import array
 
-from utils.utilities import ListFill
-from utils.utilities import ShowElapsedTime
-from utils.utilities import ShowPartDict
-from utils.utilities import MemUsage
-from utils.utilities import SortedDictWithValLen
+from utils.core.utilities import ListFill
+from utils.core.utilities import ShowElapsedTime
+from utils.core.utilities import ShowPartDict
+from utils.core.utilities import MemUsage
+from utils.core.utilities import SortedDictWithValLen
 '''
 def ShowElapsedTime(start_time):
     elapsed_time = time.time() - start_time

@@ -20,14 +20,14 @@ from transformers import Trainer
 from transformers import AutoModelForSequenceClassification
 from transformers import TrainingArguments
 
-from utils.utilities import SplitList
-from utils.utilities import flattenList
-from utils.MP_utils import MPlogger
-from utils.MP_utils import multicoreJob
-from utils.TCF_utils import ClassfierOptionParser
-from utils.TCF_utils import datasetDirOutputDirPickers
-from utils.DB_utils import sqlite3Query
-from utils.TextClassfier_utils import getTopicLabelList
+from utils.core.utilities import SplitList
+from utils.core.utilities import flattenList
+from utils.concurrency.MP_utils import MPlogger
+from utils.concurrency.MP_utils import multicoreJob
+from utils.pipeline.TCF_utils import ClassfierOptionParser
+from utils.pipeline.TCF_utils import datasetDirOutputDirPickers
+from utils.data.DB_utils import sqlite3Query
+from utils.pipeline.TextClassfier_utils import getTopicLabelList
 
 
 class classifierJob:
