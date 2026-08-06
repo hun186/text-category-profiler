@@ -1,0 +1,432 @@
+D:\shared\AIProjects\text-category-profiler\PackageImport.py
+D:\shared\AIProjects\text-category-profiler\TCFMain.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Biopython_test.py
+D:\shared\AIProjects\text-category-profiler\BertScript\ClassTable - 複製.py
+D:\shared\AIProjects\text-category-profiler\BertScript\ClassTable.py
+D:\shared\AIProjects\text-category-profiler\BertScript\CombineTestResult - 複製.py
+D:\shared\AIProjects\text-category-profiler\BertScript\CombineTestResult.py
+D:\shared\AIProjects\text-category-profiler\BertScript\count_test_accuracy - 複製.py
+D:\shared\AIProjects\text-category-profiler\BertScript\create_pretraining_data.py
+D:\shared\AIProjects\text-category-profiler\BertScript\df_utils.py
+D:\shared\AIProjects\text-category-profiler\BertScript\diff.py
+D:\shared\AIProjects\text-category-profiler\BertScript\extract_features.py
+D:\shared\AIProjects\text-category-profiler\BertScript\HK_PartCT.py
+D:\shared\AIProjects\text-category-profiler\BertScript\modeling.py
+D:\shared\AIProjects\text-category-profiler\BertScript\modeling_test.py
+D:\shared\AIProjects\text-category-profiler\BertScript\MP_utils.py
+D:\shared\AIProjects\text-category-profiler\BertScript\optimization.py
+D:\shared\AIProjects\text-category-profiler\BertScript\optimization_ori.py
+D:\shared\AIProjects\text-category-profiler\BertScript\optimization_test.py
+D:\shared\AIProjects\text-category-profiler\BertScript\PackageImport.py
+D:\shared\AIProjects\text-category-profiler\BertScript\reusable_components.py
+D:\shared\AIProjects\text-category-profiler\BertScript\RunClassfier.py
+D:\shared\AIProjects\text-category-profiler\BertScript\run_classifier - 複製.py
+D:\shared\AIProjects\text-category-profiler\BertScript\run_classifier.py
+D:\shared\AIProjects\text-category-profiler\BertScript\run_classifier_edit.py
+D:\shared\AIProjects\text-category-profiler\BertScript\run_classifier_try_freeze.py
+D:\shared\AIProjects\text-category-profiler\BertScript\run_classifier_with_tfhub.py
+D:\shared\AIProjects\text-category-profiler\BertScript\run_pretraining.py
+D:\shared\AIProjects\text-category-profiler\BertScript\run_squad.py
+D:\shared\AIProjects\text-category-profiler\BertScript\search_unique.py
+D:\shared\AIProjects\text-category-profiler\BertScript\split_train_test_data.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Test_Call_run_classifier.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Test_result_Vis - 複製 (2).py
+D:\shared\AIProjects\text-category-profiler\BertScript\Test_result_Vis - 複製 (3).py
+D:\shared\AIProjects\text-category-profiler\BertScript\Test_result_Vis - 複製.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Test_result_Vis.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Test_result_Vis_11121755.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Test_result_Vis_20220215.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Test_result_Vis_20220218 - 複製.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Test_result_Vis_20220218.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Test_result_Vis_layout.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Test_result_Vis_utils.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TextClassification_Train.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TextClassification_transformers.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TextClassification_XLM.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TextClassification_XLM_Pred_base.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TextClassification_XLM_Pred_deprecated.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TextClassification_XLM_Train_base.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TextClassification_XLM_Train_deprecated.py
+D:\shared\AIProjects\text-category-profiler\BertScript\tokenization.py
+D:\shared\AIProjects\text-category-profiler\BertScript\tokenization_test.py
+D:\shared\AIProjects\text-category-profiler\BertScript\utilities.py
+D:\shared\AIProjects\text-category-profiler\BertScript\VisParameters - 複製.py
+D:\shared\AIProjects\text-category-profiler\BertScript\VisParameters.py
+D:\shared\AIProjects\text-category-profiler\BertScript\VisParameters_DRN_Sample.py
+D:\shared\AIProjects\text-category-profiler\BertScript\VisParameters_Format.py
+D:\shared\AIProjects\text-category-profiler\BertScript\writeto_tsv.py
+D:\shared\AIProjects\text-category-profiler\BertScript\zwtwriteto_tsv.py
+D:\shared\AIProjects\text-category-profiler\BertScript\__init__.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Analytic_Web_Apps\Excel_to_Dash_Animal_Shelter\dash_api_data.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Analytic_Web_Apps\Excel_to_Dash_Animal_Shelter\Dash_excel.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Analytic_Web_Apps\Financial\finance.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Analytic_Web_Apps\Financial\part1_finance.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Analytic_Web_Apps\Flights_Analysis\flights.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Analytic_Web_Apps\Linkedin_Analysis\a-layout_only.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Analytic_Web_Apps\Linkedin_Analysis\b-layout_components.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Analytic_Web_Apps\Linkedin_Analysis\c-small-cards.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Analytic_Web_Apps\Linkedin_Analysis\d-final_analysis.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Analytic_Web_Apps\Operational_Dashboard\elections.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Analytic_Web_Apps\Operational_Dashboard\long_code.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Analytic_Web_Apps\SocialMedia_Twitter\app.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Analytic_Web_Apps\SocialMedia_Twitter\index.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Analytic_Web_Apps\SocialMedia_Twitter\mentions.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Analytic_Web_Apps\SocialMedia_Twitter\other.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Analytic_Web_Apps\SocialMedia_Twitter\trends.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Analytic_Web_Apps\VizForGood\Scatter_mapbox\summer_streets.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Analytic_Web_Apps\VizForGood\Treemap-choropleth\sankey.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Bootstrap\bootstrap_card.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Bootstrap\bootstrap_collapse.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Bootstrap\bootstrap_collapse2.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Bootstrap\bootstrap_intro.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Bootstrap\bootstrap_modal.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Bootstrap\spinners_bar.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Bootstrap\Complete_Guide\live_bootstrap.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Bootstrap\Side-Bar\side_bar.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Bootstrap\Stying\Dash-Bootsrap5-styling.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Callbacks\Basic Callback\basic_callback.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Callbacks\chained_callback\chained_fig_postset.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Callbacks\chained_callback\chained_fig_preset.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Callbacks\Client-side-callback\clientside_call.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Callbacks\Client-side-callback\clientside_interval.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Callbacks\Client-side-callback\clientside_win_api.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Callbacks\Pattern Matching Callbacks\dynamic_callbacks.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Cytoscape\layout-u-interactivity.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Cytoscape\networks.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Cytoscape\styling.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash Components\BeforeAfter\before-after.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash Components\Carousel\python-carousel.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash Components\Checklist\checkbox.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash Components\Checklist\easy_challenge_solution.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash Components\Checklist\hard_challenge_solution.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash Components\Checklist\medium_challenge_solution.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash Components\Daq_Components\daq.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash Components\Daq_Components\daq2.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash Components\DatePickerRange\datepicker.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash Components\Download\download_button.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash Components\Dropdown\dropdown.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash Components\Graph\dash-graph.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash Components\Image Annotations-Canvas\image_annot.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash Components\Input_element\challenge_solution.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash Components\Input_element\input_non_text.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash Components\Input_element\input_text.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash Components\Interval\interval.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash Components\Markdown\markdown_app.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash Components\Range_Slider\rangeslider.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash Components\Store\data_share.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash Components\Upload\uploading.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_and_Databases\MongoDB\data.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_and_Databases\MongoDB\live-mongodb-dash.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_and_Databases\MongoDB\long_data.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_and_Databases\MongoDB\mongo_dash_datatable.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_and_Databases\MongoDB\test_mongo.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_Interactive_Graphs\bar.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_Interactive_Graphs\choro_map.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_Interactive_Graphs\pie.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_Interactive_Graphs\scatter.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_Interactive_Graphs\Candle_OHLC\finance-charts.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_Interactive_Graphs\DataTable\datatable.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_Interactive_Graphs\Line_chart\line.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_Interactive_Graphs\Scatter_mapbox\recycling.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_Interactive_Graphs\Scatter_Matrix\scatter_mtrx.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\API\finance\challenge_solution.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\API\finance\finance_api.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\API\weather\easy_challenge_solution.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\API\weather\hard_challenge_solution.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\API\weather\medium_challenge_solution.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\API\weather\weather_api.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\BigQuery\Dash-BigQuery.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\CRUD_app\crud.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\CRUD_app\crud_dash_postgresql.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\Dash_Labs\loger_powerful_app.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\Dash_Labs\short_app.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\Dash_Mobile\mobile_app.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\Dash_Mobile\mobile_app_bootstrap.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\Dynamic Callbacks\dynamic_callbacks.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\Dynamic Callbacks\dynamic_remove.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\Intro to Python multipage\App-A\app.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\Intro to Python multipage\App-A\pages\pg1.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\Intro to Python multipage\App-A\pages\pg2.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\Intro to Python multipage\App-A\pages\pg3.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\Intro to Python multipage\App-B\app.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\Intro to Python multipage\App-B\pages\pg1.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\Intro to Python multipage\App-B\pages\pg2.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\Intro to Python multipage\App-B\pages\pg3.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\Lottie\lottie.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\Multi-page-app-python\src\app.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\Multi-page-app-python\src\pages\ma.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\Multi-page-app-python\src\pages\ny.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\Multi-page-app-python\src\pages\vt.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\Multipage_app\app.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\Multipage_app\app2_with_sidebar.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\Multipage_app\pages\bar_charts.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\Multipage_app\pages\heatmaps.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\Multipage_app\pages\histograms.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\Multipage_app\pages\not_found_404.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\PowerBi-to-Dash\Bitcoin\bitcoin-analysis.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\Sharing_data_multipage_app\app.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\Sharing_data_multipage_app\pages\bargraph.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\Sharing_data_multipage_app\pages\not_found_404.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Dash_More_Advanced_Shit\Sharing_data_multipage_app\pages\table.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\DataTable\datatable_intro_and_sort.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\DataTable\dropdown_in_DataTable.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\DataTable\height.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\DataTable\styling.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\DataTable\width_datatable.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\DataTable\Conditional_Formatting\con_formatting.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\DataTable\Conditional_Formatting\table_bars.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\DataTable\Sort-filter-select\selecting.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\DataTable\Tips-and-tricks\filter-datatable.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\DataTable\Tips-and-tricks\hide-x-cols.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\DataTable\Tips-and-tricks\pandas-w-dash.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\DataTable\Tips-and-tricks\sort-x-cols.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\DataTable\Tooltip\datatable-tooltip.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Deploy_App_to_Web\Authentication\datatable.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Deploy_App_to_Web\Heroku-Dash-tools\animal_shelter_support.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Deploy_App_to_Web\Heroku-Dash-tools\Graffiti_analysis.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Deploy_App_to_Web\Heroku_App\DataTable.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Deploy_App_to_Web\Multipage_App\app.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Deploy_App_to_Web\Multipage_App\index.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Deploy_App_to_Web\Multipage_App\apps\global_sales.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Deploy_App_to_Web\Multipage_App\apps\vgames.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Deploy_App_to_Web\Multipage_App\apps\__init__.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Deploy_App_to_Web\PWA-Phone-App\res-seating\phoneapp.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Deploy_App_to_Web\PythonAnyWhere\elections.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Good_to_Know\dash-with-math.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Good_to_Know\Callback-basics\dropdown.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Good_to_Know\Callback-basics\graph.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Good_to_Know\Callback-basics\radio-slider.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Good_to_Know\Callback-basics\radio.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Good_to_Know\Callback-basics\slider.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Good_to_Know\Dash2.0\app-with-graph.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Good_to_Know\Dash2.0\dash2.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Good_to_Know\Dash2.0\hello-world.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Good_to_Know\Dash2.0\interactive-app.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Good_to_Know\Dash2.0\Exercises\solution-1.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Good_to_Know\Dash2.0\Exercises\solution-2.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Good_to_Know\Dash2.0\Exercises\solution-3.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Good_to_Know\Dash2.0\Exercises\solution-4.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Good_to_Know\Dash2.0\Exercises\solution-5.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Good_to_Know\Layout-Design\layout-intro.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Good_to_Know\Layout-Design\layout-intro2.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Learn-from-Others\Dash-Bootstrap--saiprakash\app.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Other\Altair-matplot-bokeh\matplot-dash.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Other\Altair-matplot-bokeh\mat_alt_bok.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Other\COVID19_women\covid.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Other\Dash_Introduction\intro.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Other\Dash_Introduction\solution_bar.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Other\Dash_Introduction\solution_line.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Other\DPhi Presentation\bar-plot.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Other\DPhi Presentation\Dash-app.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Other\DPhi Presentation\sunburst.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Other\Excel_Dash\excel_plotly_dash.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Other\Excel_Dash\practice.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Other\Gender_Inequality\gender_ineq.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Other\Monterrey\add-alert-solution.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Other\Monterrey\add-dropdown-solucion.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Other\Monterrey\mexico-dash.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Other\Monterrey\monterrey-px.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Other\Monterrey\simple_app.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Other\Suicidal_Data\age_suicide_rates.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Other\Suicidal_Data\sex_suicide_rates.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Other\Suicidal_Data\suicide_rates.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Plotly_Graphs\3d_scatter\scatter3d.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Plotly_Graphs\Animated_Scatter\gender_ineq.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Plotly_Graphs\Bar\bar.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Plotly_Graphs\BigData\chicago_shader.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Plotly_Graphs\BigData\nyc_shader.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Plotly_Graphs\Dot_Plot\strip_plot.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Plotly_Graphs\Heatmaps\heatmap.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Plotly_Graphs\Heatmaps\heatmap_churn.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Plotly_Graphs\Heatmaps\heatmap_time.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Plotly_Graphs\Icicle\icicle_chart.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Plotly_Graphs\Pie\pie.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Plotly_Graphs\Plotly_Introduction\plotly_charts.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Plotly_Graphs\Racing_Bar_Graph\suicide_rates.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Plotly_Graphs\Radar-chart\radar-hotel.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Plotly_Graphs\Radar-chart\radarplot.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Plotly_Graphs\Scatter_Plot\scatterplot.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Plotly_Graphs\Sunburst\solution_challenge.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Plotly_Graphs\Sunburst\sunburst.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Plotly_Graphs\Sunburst-sm\Sunburst-sm.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Plotly_Graphs\ViolinBox\challenge_solution.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Plotly_Graphs\ViolinBox\violin.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Plotly_Graphs\ViolinBox\reddit\dup_bees.py
+D:\shared\AIProjects\text-category-profiler\BertScript\Dash-by-Plotly-master\Supporters\add-image\image_to_graph.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\setup.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\usage-advanced.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\usage-elements.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\usage-events.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\usage-stylesheet.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\usage.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\_validate_init.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\dash_cytoscape\Cytoscape.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\dash_cytoscape\_imports_.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\dash_cytoscape\__init__.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\dash_cytoscape\utils\Tree.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\dash_cytoscape\utils\__init__.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\dash_reusable_components.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\usage-animated-bfs.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\usage-breadthfirst-layout.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\usage-circle-layout.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\usage-compound-nodes.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\usage-concentric-layout.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\usage-concentric-social-network.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\usage-cose-bilkent-layout.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\usage-cose-layout.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\usage-dag-edges.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\usage-edge-types.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\usage-elements-extra.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\usage-grid-layout.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\usage-grid-social-network.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\usage-image-export.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\usage-initialisation.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\usage-labels.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\usage-linkout-example.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\usage-multiple-instances.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\usage-phylogeny.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\usage-pie-style.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\usage-preset-animation.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\usage-remove-selected-elements.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\usage-reset-button.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\usage-responsive-graph.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\usage-visual-style.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\__init__.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\editor\callbacks.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\editor\constants.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\editor\layout.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\demos\editor\__init__.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\tests\test_callbacks.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\tests\test_interactions.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\tests\test_percy_snapshot.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\tests\test_usage.py
+D:\shared\AIProjects\text-category-profiler\BertScript\dash-cytoscape-master\tests\__init__.py
+D:\shared\AIProjects\text-category-profiler\BertScript\MultiGPU\optimization.py
+D:\shared\AIProjects\text-category-profiler\BertScript\MultiGPU\run_classifier.py
+D:\shared\AIProjects\text-category-profiler\BertScript\pages\labelViewer\callbacks.py
+D:\shared\AIProjects\text-category-profiler\BertScript\pages\labelViewer\layout_interactivity.py
+D:\shared\AIProjects\text-category-profiler\BertScript\pages\labelViewer\demos\dash_reusable_components.py
+D:\shared\AIProjects\text-category-profiler\BertScript\pages\labelViewer_basic_test\callbacks.py
+D:\shared\AIProjects\text-category-profiler\BertScript\pages\labelViewer_basic_test\callback_manager.py
+D:\shared\AIProjects\text-category-profiler\BertScript\pages\labelViewer_basic_test\layout_interactivity.py
+D:\shared\AIProjects\text-category-profiler\BertScript\pages\labelViewer_basic_test\networks.py
+D:\shared\AIProjects\text-category-profiler\BertScript\pages\labelViewer_basic_test\styling.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TRV_deploy\deploy-dash-with-gcp-master\app\main.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TRV_deploy\deploy-dash-with-gcp-master\app\__init__.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TRV_deploy\deploy-dash-with-gcp-master\simple-dash-app-engine-app\main.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TRV_deploy\deploy-dash-with-gcp-master\simple-dash-app-using-a-bucket\main.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TRV_deploy\deploy-dash-with-gcp-master\simple-dash-app-using-a-bucket\__init__.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TRV_deploy\deploy-dash-with-gcp-master\simple-dash-app-using-a-bucket\data\dataDownloader.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TRV_deploy\deploy-dash-with-gcp-master\simple-dash-app-using-a-bucket\data\dataUpload.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TRV_deploy\deploy-dash-with-gcp-master\simple-dash-app-using-a-bucket\data\__init__.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TRV_deploy\deploy-dash-with-gcp-master\TRV\main.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TRV_deploy\deploy-dash-with-gcp-master\TRV\PackageImport.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TRV_deploy\deploy-dash-with-gcp-master\TRV\reusable_components.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TRV_deploy\deploy-dash-with-gcp-master\TRV\PythonModule\utils\Dash_utils.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TRV_deploy\deploy-dash-with-gcp-master\TRV\PythonModule\utils\DataConverter_utils.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TRV_deploy\deploy-dash-with-gcp-master\TRV\PythonModule\utils\DataVisualization_utils.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TRV_deploy\deploy-dash-with-gcp-master\TRV\PythonModule\utils\DB_utils.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TRV_deploy\deploy-dash-with-gcp-master\TRV\PythonModule\utils\df_utils.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TRV_deploy\deploy-dash-with-gcp-master\TRV\PythonModule\utils\Email_utils.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TRV_deploy\deploy-dash-with-gcp-master\TRV\PythonModule\utils\FTP_utils.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TRV_deploy\deploy-dash-with-gcp-master\TRV\PythonModule\utils\MP_utils.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TRV_deploy\deploy-dash-with-gcp-master\TRV\PythonModule\utils\reusable_components.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TRV_deploy\deploy-dash-with-gcp-master\TRV\PythonModule\utils\TextProcessor_utils.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TRV_deploy\deploy-dash-with-gcp-master\TRV\PythonModule\utils\utilities.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TRV_deploy\deploy-dash-with-gcp-master\TRV\PythonModule\utils\utilities_RAND.py
+D:\shared\AIProjects\text-category-profiler\BertScript\TRV_deploy\deploy-dash-with-gcp-master\TRV\PythonModule\utils\__init__.py
+D:\shared\AIProjects\text-category-profiler\BertScript\zwtWriteTHUCto_tsv\writeto_tsv.py
+D:\shared\AIProjects\text-category-profiler\ClassesTree\ClassesTree_utils.py
+D:\shared\AIProjects\text-category-profiler\ClassesTree\Label_utils.py
+D:\shared\AIProjects\text-category-profiler\ClassesTree\longestPath.py
+D:\shared\AIProjects\text-category-profiler\ClassesTree\PackageImport.py
+D:\shared\AIProjects\text-category-profiler\ClassesTree\Visualization\jaal\jaalViewer.py
+D:\shared\AIProjects\text-category-profiler\ClassesTree\Visualization\jaal\PackageImport.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\ConverterParameters.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\ConverterParameters_Combiner.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\CorpusMetadataManager.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\dash_table_test.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\dash_utils.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\DataConverter.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\DataConverter_Combiner.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\DateChecker.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\df_DupCheckTest.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\df_utils.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\epub_to_txt.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\ESDataConfigFile.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\FileSystemDirVisualization.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\FreqAnalysis_dash.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\old_MP_utils.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\old_utilities.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\PackageImport.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\sampleHandler.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\sampleHandler_InfoScoreTable.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\SummarizationExcels_Combiner.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\tokenization.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\utilities_RAND.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\Dataset Generator\Combiner\DataCombiner.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\Dataset Generator\ComponentGenerator\ComponentGenerator.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\Dataset Generator\ComponentGenerator\PackageImport.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\Dataset Generator\ComponentGenerator\JobTitleGenerator\jobtitlegenerator.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\Dataset Generator\uuid\uuidGenerator.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\elasticsearch\sampleBuilder.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\EXTConverter\Combiner - 複製.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\EXTConverter\Combiner.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\EXTConverter\ExtractionConverter.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\EXTConverter\ExtractionRule.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\EXTConverter\PackageImport.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\EXTConverter\split_mbox_by_subject.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\LoRA\instructions_set.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\LoRA\LoRA_training_set_Converter - 複製.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\LoRA\LoRA_training_set_Converter.py
+D:\shared\AIProjects\text-category-profiler\DatasetConverter\SMS\SMSMerger.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\__init__.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\ArtCluESJobTemplate.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\conformer.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\Dash_utils.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\DataConverter_utils.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\DataConverter_utils_Parameters.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\DataVisualization_utils.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\DB_utils.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\df_mpTest.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\df_mpTest_ThreadPoolExecutor.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\df_mpTest_wrapper.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\df_utils.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\Edited_zipfile.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\Email_utils.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\ES_ingest_txt_to_es.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\ES_utils.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\FTP_utils.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\Graph_utils.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\istarmap.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\istarmap2.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\json_utils.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\log_display.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\model_paths.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\mp_test.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\MP_utils.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\PackageImport.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\patch_mp_connection.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\progress_utils.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\reusable_components.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\selector.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\similarity_utils.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\TCF_utils.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\TextClassfier_utils.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\TextProcessor_utils.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\Timestamp generator.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\torch_compat.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\utilities.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\utilities_path.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\utilities_RAND.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\WTFOutputer_test.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\__init__.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\dijkstra_algorithm_master\dijkstra_algorithm.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\tulip_utils\Graph_Builder.py
+D:\shared\AIProjects\text-category-profiler\PythonModule\utils\tulip_utils\PackageImport.py
+D:\shared\AIProjects\text-category-profiler\TCF_Params\PackageImport.py
+D:\shared\AIProjects\text-category-profiler\TCF_Params\TCFParameters.py
+D:\shared\AIProjects\text-category-profiler\tests\test_log_display.py
+D:\shared\AIProjects\text-category-profiler\tests\test_model_directory_resolution.py
+D:\shared\AIProjects\text-category-profiler\tests\test_project_docs.py
+D:\shared\AIProjects\text-category-profiler\tests\test_torch_compat.py
