@@ -12,6 +12,12 @@
 
 ## Recent Outcomes
 
+### 2026-08-06 — Package 內部 path injector 淘汰
+
+- 目標：繼續 `text_category_profiler` package 遷移，先移除 package 自身與 root orchestration/parameter layer 對 legacy `PackageImporter` 的依賴。
+- 結果：`text_category_profiler/`、`TCFMain.py` 與 `TCF_Params/` 不再匯入 `PackageImport`；package layout characterization test 會掃描 AST 防止這些邊界退回 path injection。
+- 邊界：各 stage 直接執行仍使用既有 bootstrap，相容行為留待後續批次處理，因此尚未勾選「所有 active entry points」完成。
+
 ### 2026-08-06 — Python namespace aligned with `text-category-profiler`
 
 - 目標：移除沿用舊 TopicClassification 名稱的 `tcf` 縮寫，讓 Python package 可直接對應目前 repository 名稱。

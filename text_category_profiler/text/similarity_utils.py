@@ -1,5 +1,3 @@
-from PackageImport import PackageImporter
-PackageImporter.proc()
 import os
 parentSubDir = os.getcwd().split(os.path.sep)[-1]
 if parentSubDir in [

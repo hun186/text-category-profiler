@@ -1,5 +1,3 @@
-from PackageImport import PackageImporter
-PackageImporter.proc()
 
 import re
 import os

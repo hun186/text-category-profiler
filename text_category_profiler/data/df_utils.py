@@ -1,9 +1,3 @@
-try:
-    import text_category_profiler
-except:
-    from PackageImport import PackageImporter
-    PackageImporter.proc()
-
 import numpy as np
 import multiprocessing as mp
 import pandas as pd

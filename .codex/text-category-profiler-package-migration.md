@@ -96,6 +96,7 @@ text_category_profiler/
 ### Phase 4：淘汰 path injection
 
 - [x] 將 active code 的 `from utils...`／`import utils...` 改為 `from text_category_profiler...` 或明確 stage-local import。
+- [x] 移除 `text_category_profiler/` package 內部、`TCFMain.py` 與 `TCF_Params/` 對 `PackageImporter.proc()` 的依賴；package layout test 會阻止這些邊界重新匯入 legacy path injector。
 - [ ] 移除 active entry points 中的 `PackageImporter.proc()`。
 - [ ] 移除 active code 對目前 working directory 深度的 import 假設；不得在 import 階段 `chdir`。
 - [ ] 盤點 repository 內所有 `PackageImport.py`，區分 active、vendor、deployment snapshot 後逐一處理。
