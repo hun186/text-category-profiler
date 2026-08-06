@@ -12,6 +12,11 @@ import platform
 from time import sleep
 from tqdm import tqdm, trange
 
+from utils.torch_compat import disable_unsupported_windows_compile
+
+if disable_unsupported_windows_compile(torch):
+    print("Windows detected: using eager PyTorch execution (torch.compile disabled).")
+
 #import numpy as np
 #from sklearn.metrics import mean_absolute_error
 
@@ -34,6 +39,7 @@ from utils.TCF_utils import ClassfierOptionParser
 from utils.TCF_utils import datasetDirOutputDirPickers
 from utils.TCF_utils import get_base_model_checkpoint
 from utils.DB_utils import sqlite3Query
+from utils.model_paths import resolve_local_model_directory
 from utils.TextClassfier_utils import getTopicLabelList
 
 
@@ -141,7 +147,6 @@ def trainModel():
     
     sql3File = os.path.join(datasetDir,"train.sql3")
     tokenized_dataset['train'] = LoadSamples(sql3File,label2id)
-    print(tokenized_dataset['train'][0])
     sql3File = os.path.join(datasetDir,"dev.sql3")
     #dev過程可能會逐步吃光GPU Mem，導致OOM，故先暫時最多只取10萬筆做為dev
     tokenized_dataset['validation'] = LoadSamples(
@@ -223,7 +228,7 @@ def trainModel():
 
 def PredictSamples(ActiveHTCZeroshot=False):
     print(f"Start to predicting samples, the outputDir is {outputDir}")
-    r = re.compile("^checkpoint-\d{1,}$")
+    r = re.compile(r"^checkpoint-\d{1,}$")
     finetuned_checkpoint = list(filter(r.match, os.listdir(outputDir)))
     finetuned_checkpoint = sorted(finetuned_checkpoint, reverse=True)[0]
     finetuned_checkpoint = os.path.join(outputDir,finetuned_checkpoint)
@@ -335,21 +340,16 @@ if __name__=='__main__':
     args = ClassfierOptionParser()
     
     #model_checkpoint = "./xlm-roberta-base"
-    model_checkpoint = get_base_model_checkpoint(args.ModelType)
-        
-    for model_ckptDir in ["./","./BertScript/"]:
-        #for model_checkpoint in ["./xlm-roberta-base","./BertScript/xlm-roberta-base"]:
-        model_ckptPath = model_ckptDir+model_checkpoint
-        print("="*50)
-        print("model_ckptPath",model_ckptPath)
-        try:
-            tokenizer = AutoTokenizer.from_pretrained(model_ckptPath, trust_remote_code=True)
-            #如果成功載入tokenizer的話，回存取獲的完整模型正確路徑到model_checkpoint。
-            model_checkpoint = model_ckptPath
-            print("final model_checkpoint",model_checkpoint)
-            break
-        except:
-            pass
+    configured_checkpoint = get_base_model_checkpoint(args.ModelType)
+    model_checkpoint = (
+        resolve_local_model_directory(configured_checkpoint)
+        or configured_checkpoint
+    )
+    print(f"Model checkpoint: {model_checkpoint}")
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_checkpoint,
+        trust_remote_code=True,
+    )
     
     #raise Exception
     

@@ -4,9 +4,6 @@ if os.getcwd().split(os.path.sep)[-1] in [
     os.chdir("../")
 from PackageImport import PackageImporter
 PackageImporter.proc()
-from utils.log_display import print_once
-
-print_once(f"cwd:{os.getcwd()}", key="DataConverter.cwd")
 
 import setproctitle
 import sys

@@ -13,6 +13,13 @@
 ## Recent Outcomes
 
 
+### 2026-08-06 — Windows ModernBERT eager fallback
+
+- 目標：修正 mmBERT／ModernBERT 在 Windows 匯入時因 `@torch.compile` 觸發「Windows not yet supported」而無法開始訓練。
+- 結果：Windows 上會在載入 Transformers 前將 `torch.compile` 降級為 eager no-op；同時移除完整 tokenized sample dump，並將模型路徑探測濃縮為單一 checkpoint 訊息。
+- 驗證：`python -m unittest discover -s tests`、相關檔案 `py_compile`、`git diff --check`；完整訓練仍需 Windows 模型／資料／GPU 環境驗證。
+
+
 ### 2026-08-05 — README workflow and feature SVGs
 
 - 目標：在 GitHub README 頁面加入工作流程圖與特色介紹圖。
