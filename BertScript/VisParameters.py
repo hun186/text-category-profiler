@@ -1,6 +1,18 @@
+import multiprocessing as mp
+
 from text_category_profiler.core.utilities import reCombiner
 from text_category_profiler.concurrency.MP_utils import MPlogger
 from text_category_profiler.pipeline.DataConverter_utils_Parameters import GeneralBinInfoScoreSumLBD
+from text_category_profiler.core.optional_config import load_optional_module
+from text_category_profiler.core.optional_config import merge_module_mapping
+
+
+MPLOGGER = MPlogger(logFile="Exempt.log")
+DRN_CONFIG = load_optional_module("VisParameters_DRN")
+if DRN_CONFIG is None and mp.current_process().name == "MainProcess":
+    MPLOGGER.logW(
+        "Optional VisParameters_DRN was not found; using built-in defaults."
+    )
 
 #在Test_result_Vis_utils.py中的BinMissionVerifier.singleConstraintBool()中，
 #檢驗切片分數是否符合SimpleTag的正規表示式時，會自動加入符合SimpleTag類別的子類別一起考量。
@@ -42,18 +54,7 @@ LocalExemptDict = {
     }
 
 
-MPLOGGER = MPlogger(logFile="Exempt.log")
-MES = "Start to load LocalExemptDict_DRN from VisParameters_DRN"
-MPLOGGER.logW(MES)
-try:
-    from VisParameters_DRN import LocalExemptDict_DRN
-    LocalExemptDict.update(LocalExemptDict_DRN)
-    del(LocalExemptDict_DRN)
-    MES = f"Successfully loaded LocalExemptDict_DRN, the LocalExemptDict is now {LocalExemptDict}"
-    MPLOGGER.logW(MES)
-except Exception as e:
-    MES = f"When loading LocalExemptDict_DRN, the following error occurs:\n{e}"
-    MPLOGGER.logW(MES)
+merge_module_mapping(LocalExemptDict, DRN_CONFIG, "LocalExemptDict_DRN")
     
 
 GlobalExemptDict = {
@@ -86,17 +87,7 @@ GlobalExemptDict = {
         },
     
     }
-MES = "Start to load GlobalExemptDict_DRN from VisParameters_DRN"
-MPLOGGER.logW(MES)
-try:
-    from VisParameters_DRN import GlobalExemptDict_DRN
-    GlobalExemptDict.update(GlobalExemptDict_DRN)
-    del(GlobalExemptDict_DRN)
-    MES = f"Successfully loaded GlobalExemptDict_DRN, the GlobalExemptDict is now {GlobalExemptDict}"
-    MPLOGGER.logW(MES)
-except Exception as e:
-    MES = f"When loading GlobalExemptDict_DRN, the following error occurs:\n{e}"
-    MPLOGGER.logW(MES)
+merge_module_mapping(GlobalExemptDict, DRN_CONFIG, "GlobalExemptDict_DRN")
 
 '''
 1.當整篇文章總分高於InfoScoreSumLBD時，進行高相似度切片豁免。
@@ -535,19 +526,7 @@ raise Exception
 '''
 
 
-MES = f"Start to load BinMissionDict_DRN from VisParameters_DRN_Sample and VisParameters_DRN"
-MPLOGGER.logW(MES)
-try:
-    from VisParameters_DRN_Sample import BinMissionDict_DRN
-    BinMissionDict.update(BinMissionDict_DRN)
-    del(BinMissionDict_DRN)
-    from VisParameters_DRN import BinMissionDict_DRN
-    BinMissionDict.update(BinMissionDict_DRN)
-    del(BinMissionDict_DRN)
-    MES = f"Successfully loaded BinMissionDict_DRN, the BinMissionDict is now {BinMissionDict}"
-    MPLOGGER.logW(MES)
-except Exception as e:
-    MES = f"When loading BinMissionDict_DRN, the following error occurs:\n{e}"
-    MPLOGGER.logW(MES)
+DRN_SAMPLE_CONFIG = load_optional_module("VisParameters_DRN_Sample")
+merge_module_mapping(BinMissionDict, DRN_SAMPLE_CONFIG, "BinMissionDict_DRN")
+merge_module_mapping(BinMissionDict, DRN_CONFIG, "BinMissionDict_DRN")
     
-
