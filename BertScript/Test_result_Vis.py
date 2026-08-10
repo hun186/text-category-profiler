@@ -22,6 +22,11 @@ import math
 from collections import Counter
 from functools import partial
 
+# Windows spawn workers import this entry point again, so install the filters
+# before importing Dash and its compatibility dependencies in every process.
+from text_category_profiler.core.warning_filters import suppress_known_third_party_warnings
+suppress_known_third_party_warnings()
+
 import dash
 #import dash_table
 from dash import dash_table
