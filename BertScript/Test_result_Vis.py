@@ -22,6 +22,12 @@ import math
 from collections import Counter
 from functools import partial
 
+# Windows spawn workers import this entry point again, so install the filters
+# before importing Dash dependencies in workers.  The main process leaves the
+# warning visible once, while spawned workers suppress their duplicate copies.
+from text_category_profiler.core.warning_filters import suppress_known_third_party_warnings_in_workers
+suppress_known_third_party_warnings_in_workers()
+
 import dash
 #import dash_table
 from dash import dash_table
