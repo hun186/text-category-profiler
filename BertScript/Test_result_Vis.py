@@ -19,8 +19,18 @@ import uuid
 import shutil
 #from bisect import bisect_left
 import math
+import warnings
 from collections import Counter
 from functools import partial
+
+# dash-bootstrap-components releases that still import Dash's legacy shim emit
+# this once in every spawned Windows worker.  The application itself already
+# uses ``from dash import html``, so suppress only that dependency warning.
+warnings.filterwarnings(
+    "ignore",
+    message=r"The dash_html_components package is deprecated\..*",
+    category=UserWarning,
+)
 
 import dash
 #import dash_table
