@@ -23,14 +23,10 @@ import warnings
 from collections import Counter
 from functools import partial
 
-# dash-bootstrap-components releases that still import Dash's legacy shim emit
-# this once in every spawned Windows worker.  The application itself already
-# uses ``from dash import html``, so suppress only that dependency warning.
-warnings.filterwarnings(
-    "ignore",
-    message=r"The dash_html_components package is deprecated\..*",
-    category=UserWarning,
-)
+# Windows spawn workers import this entry point again, so install the filters
+# before importing Dash and its compatibility dependencies in every process.
+from text_category_profiler.core.warning_filters import suppress_known_third_party_warnings
+suppress_known_third_party_warnings()
 
 import dash
 #import dash_table
