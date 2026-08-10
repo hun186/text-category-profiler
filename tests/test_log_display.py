@@ -74,6 +74,18 @@ class LogDisplayTests(unittest.TestCase):
         self.assertIn("Type", output)
         self.assertIn("head(6)", output)
 
+    def test_section_replaces_icons_unsupported_by_console_encoding(self):
+        raw_output = io.BytesIO()
+        cp950_console = io.TextIOWrapper(raw_output, encoding="cp950")
+
+        with contextlib.redirect_stdout(cp950_console):
+            log_display.section("Pick dataset/model directories", icon="🧭")
+            cp950_console.flush()
+
+        output = raw_output.getvalue().decode("cp950")
+        self.assertIn("Pick dataset/model directories", output)
+        self.assertNotIn("🧭", output)
+
 
 if __name__ == "__main__":
     unittest.main()

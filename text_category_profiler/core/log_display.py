@@ -8,6 +8,7 @@ stage handoff messages easier to scan by humans.
 import hashlib
 import os
 import shlex
+import sys
 import textwrap
 import threading
 
@@ -48,6 +49,16 @@ _STAGE_ICONS = {
 }
 
 
+def _safe_print(message=""):
+    """Print text, replacing characters unsupported by the active console."""
+    try:
+        print(message)
+    except UnicodeEncodeError:
+        encoding = getattr(sys.stdout, "encoding", None) or "ascii"
+        fallback = str(message).encode(encoding, errors="replace").decode(encoding)
+        print(fallback)
+
+
 def colorize(text, color):
     if not _USE_COLOR:
         return text
@@ -76,7 +87,7 @@ def print_once(message, key=None, skip_child_process=True):
             return False
         _PRINTED_MESSAGES.add(cache_key)
         os.environ[env_key] = "1"
-    print(message)
+    _safe_print(message)
     return True
 
 
@@ -96,17 +107,17 @@ def stage_banner(stage_name, status="START", detail=None):
     lines = ["", colorize(rule(heading, "═"), "blue")]
     if detail:
         lines.append(colorize(detail, "dim"))
-    print("\n".join(lines))
+    _safe_print("\n".join(lines))
 
 
 def stage_done(stage_name, elapsed=None):
     detail = f"完成，耗時 {elapsed:.2f} 秒" if elapsed is not None else "完成"
-    print(colorize(f"✅ {stage_name} · {detail}", "green"))
-    print(colorize(rule(char="═"), "blue"))
+    _safe_print(colorize(f"✅ {stage_name} · {detail}", "green"))
+    _safe_print(colorize(rule(char="═"), "blue"))
 
 
 def stage_failed(stage_name, returncode, cmd):
-    print(colorize(f"❌ {stage_name} · 失敗，exit code {returncode}", "red"))
+    _safe_print(colorize(f"❌ {stage_name} · 失敗，exit code {returncode}", "red"))
     print_command(cmd, label="Failed command")
 
 
@@ -125,9 +136,9 @@ def print_args_summary(args):
             shown.append(f"{key}={value}")
     if not shown:
         return
-    print(colorize("設定摘要", "bold"))
+    _safe_print(colorize("設定摘要", "bold"))
     for chunk in textwrap.wrap(" | ".join(shown), width=_WIDTH):
-        print(f"  {chunk}")
+        _safe_print(f"  {chunk}")
 
 
 def _format_command_lines(parts, width=_WIDTH, indent="  "):
@@ -155,19 +166,19 @@ def _format_command_lines(parts, width=_WIDTH, indent="  "):
 
 def print_command(cmd, label="Command"):
     """Pretty-print a compact, copyable shell command."""
-    print(colorize(label, "bold"))
+    _safe_print(colorize(label, "bold"))
     try:
         parts = shlex.split(cmd)
         formatted = "\n".join(_format_command_lines(parts))
     except ValueError:
         formatted = cmd
-    print(textwrap.indent(formatted, "  "))
+    _safe_print(textwrap.indent(formatted, "  "))
 
 
 def info(message, icon="ℹ️"):
     for idx, line in enumerate(textwrap.wrap(str(message), width=_WIDTH) or [""]):
         prefix = f"{icon} " if idx == 0 else "  "
-        print(prefix + line)
+        _safe_print(prefix + line)
 
 
 def warning(message):
@@ -179,20 +190,20 @@ def section(title, detail=None, icon="▶"):
     lines = [colorize(rule(heading), "blue")]
     if detail:
         lines.append(colorize(str(detail), "dim"))
-    print("\n".join(lines))
+    _safe_print("\n".join(lines))
 
 
 def key_values(title, items, icon="•"):
     shown = [(key, value) for key, value in items if value not in (None, "")]
     if not shown:
         return
-    print(colorize(title, "bold"))
+    _safe_print(colorize(title, "bold"))
     key_width = min(max(len(str(key)) for key, _ in shown), 24)
     for key, value in shown:
         wrapped = textwrap.wrap(str(value), width=max(_WIDTH - key_width - 8, 20)) or [""]
-        print(f"  {icon} {str(key):<{key_width}} : {wrapped[0]}")
+        _safe_print(f"  {icon} {str(key):<{key_width}} : {wrapped[0]}")
         for line in wrapped[1:]:
-            print(f"    {'':<{key_width}}   {line}")
+            _safe_print(f"    {'':<{key_width}}   {line}")
 
 
 def summarize_sequence(values, limit=5):
@@ -212,4 +223,4 @@ def dataframe_summary(df, label="DataFrame", max_rows=6):
     ], icon="·")
     if hasattr(df, "head"):
         preview = df.head(max_rows)
-        print(textwrap.indent(str(preview), "  "))
+        _safe_print(textwrap.indent(str(preview), "  "))
