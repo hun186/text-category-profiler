@@ -116,11 +116,11 @@ def SequenceSimilarity(
             seq2 = ''.join(frequency_sort(seq2))
     if digits_assimilation == True:
         if type(seq1) == type(seq2) == list:
-            seq1 = [re.sub("\d","Ｄ",x) for x in seq1]
-            seq2 = [re.sub("\d","Ｄ",x) for x in seq2]
+            seq1 = [re.sub(r"\d","Ｄ",x) for x in seq1]
+            seq2 = [re.sub(r"\d","Ｄ",x) for x in seq2]
         elif type(seq1) == type(seq2) == str:
-            seq1 = ''.join([re.sub("\d","Ｄ",x) for x in seq1])
-            seq2 = ''.join([re.sub("\d","Ｄ",x) for x in seq2])
+            seq1 = ''.join([re.sub(r"\d","Ｄ",x) for x in seq1])
+            seq2 = ''.join([re.sub(r"\d","Ｄ",x) for x in seq2])
 
     if method == "difflib":
         return difflib.SequenceMatcher(None,seq1,seq2,autojunk=autojunk).ratio()

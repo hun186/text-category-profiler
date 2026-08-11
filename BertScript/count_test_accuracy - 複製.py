@@ -270,7 +270,7 @@ if __name__=='__main__':
         #datasetDir = args.BertDatasetSubDir
     #print("args", args)
     #raise Exception
-    '''
+    r'''
     r = re.compile("dataset_\d+$")
     datasetDirs = list(filter(r.match, os.listdir()))
     datasetDirs = sorted(datasetDirs, reverse=True)

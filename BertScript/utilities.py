@@ -59,7 +59,7 @@ def CheckStringWithRePatterns(string, RePatternDict):
     return False, None
 
 def getMFNFromFN(FN):
-    '''
+    r'''
     e.g: known_pictures\Hong Kong\artist\Aaron Kwok[3].jpg => Aaron Kwok[3].jpg
     '''
     return FN.split("\\")[-1]

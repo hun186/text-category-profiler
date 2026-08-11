@@ -20,8 +20,8 @@ def RemoveIlleagalCharForFileName(title, Mode = "FileName"):
     if Mode == "Latex":
         IlleagalMapDict = {}
         IlleagalMapDict["_"] = " "
-        IlleagalMapDict["&"] = "\&"
-        IlleagalMapDict["%"] = "\%"
+        IlleagalMapDict["&"] = r"\&"
+        IlleagalMapDict["%"] = r"\%"
         IlleagalMapDict["#"] = "＃"
     for x in IlleagalMapDict.keys():
         result = result.replace(x,IlleagalMapDict[x])
@@ -229,7 +229,7 @@ for x in range(5000):
     ct += 1
     #如果fmt本身已有時區的+0000的類似四碼字樣或不含有時分資訊，
     #則不進行額外的UTC補添產製。
-    if len(re.findall("(\+|-)\d{4}",fmt))>0 or not "%M" in fmt:
+    if len(re.findall(r"(\+|-)\d{4}",fmt))>0 or not "%M" in fmt:
         continue
     tz = random.choice(TZList)
     UTCExt = random.choice(UTCExtList)

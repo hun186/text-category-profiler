@@ -379,7 +379,7 @@ class datasetDirOutputDirPickers:
 
     def Pick_datasetDirsROOT(self,
                         ):
-        CheckDict = {"pat":"(^dataset_\d{12,16}_.*|^dataset_\d{12,16}$)",
+        CheckDict = {"pat": r"(^dataset_\d{12,16}_.*|^dataset_\d{12,16}$)",
                         "cands":["./","WorkPool","./WorkPool","../WorkPool",
                                  "WorkPool_VisSelfService","./WorkPool_VisSelfService","../WorkPool_VisSelfService"]}
         #if self.datasetDirsROOT == None:
@@ -436,7 +436,7 @@ class datasetDirOutputDirPickers:
 
         #datasetIDStr = "dataset"
         #outputIDStr = "output"
-        r = re.compile("^dataset_\d{12,16}_.*"+self.args["ModelType"]+".*")#"|^dataset_\d{12,16}$)")
+        r = re.compile(r"^dataset_\d{12,16}_.*"+self.args["ModelType"]+".*")#"|^dataset_\d{12,16}$)")
         #print(f"^dataset_\d{12,16}_.*{modelType}.*")
         datasetDirs = list(filter(r.search, os.listdir(self.datasetDirsROOT)))
         datasetDirs = [x for x in datasetDirs if "rdy_for_"+self.rdy_for_stage in x]
@@ -449,7 +449,7 @@ class datasetDirOutputDirPickers:
 
     def Pick_outputDirsROOT(self,
                         ):
-        CheckDict = {"pat":"(^output_\d{12,16}_.*|^output_\d{12,16}$)",
+        CheckDict = {"pat": r"(^output_\d{12,16}_.*|^output_\d{12,16}$)",
                         "cands":["./","BertScript","./BertScript","../BertScript"]}
         for x in CheckDict["cands"]:
             if not os.path.isdir(x):
@@ -466,7 +466,7 @@ class datasetDirOutputDirPickers:
     def Pick_outputDir(self,
                         ):
         #r = re.compile("(^output_\d{12,16}_.*|^output_\d{12,16}$)")
-        r = re.compile("(^output_\d{12,16}_.*$)")
+        r = re.compile(r"(^output_\d{12,16}_.*$)")
         outputDirs = list(filter(r.match, os.listdir(self.outputDirsROOT)))
         #依模型種類留下目錄有標記為該類模型之選項
         outputDirs = [x for x in outputDirs if self.args['ModelType'].lower() in x.lower()]
@@ -506,7 +506,7 @@ class datasetDirOutputDirPickers:
         elif self.args["ModelType"] in PYTORCH_MODEL_TYPES:
             for outdir in outputDirs:
                 #outdir = os.path.join(outputDirsROOT,outdir)
-                r = re.compile("^checkpoint-\d{1,}")
+                r = re.compile(r"^checkpoint-\d{1,}")
                 ckptDirs = list(filter(r.match, os.listdir(outdir)))
                 ckptDirs = sorted(ckptDirs, reverse=True)
                 for ckDir in ckptDirs:
@@ -631,7 +631,7 @@ def LoadDatasetCount(outputDir):
     return df
 
 def get_finished_date_dir_dict(port,datasetDir_VisSelf = "WorkPool_VisSelfService"):
-    r = re.compile(f"^dataset_\d{{12,16}}_.*_pt{port}_rdy_for_Spike")#"|^dataset_\d{12,16}$)")
+    r = re.compile(rf"^dataset_\d{{12,16}}_.*_pt{port}_rdy_for_Spike")#"|^dataset_\d{12,16}$)")
     datasetDirs = list(filter(r.search, os.listdir(datasetDir_VisSelf)))
     # 添加新的篩選條件
     filtered_datasetDirs = []

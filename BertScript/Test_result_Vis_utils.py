@@ -835,7 +835,7 @@ def UpdateRow(row):
     #UUID_re = "[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}"
     UUID_re = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
     #if re.search(UUID_re+"_20\d{2}-\d{2}-\d{2}T",row["File"]) is not None and (row["Date"] is "" or row["Date"] is np.nan):
-    if re.search(UUID_re+"_20\d{2}-\d{2}-\d{2}T",row["File"]) is not None:
+    if re.search(UUID_re+r"_20\d{2}-\d{2}-\d{2}T",row["File"]) is not None:
         newFile, newDate = row["File"].split("_")[:2]
         newDate = removeStrSuffix(newDate,".txt")
         row["File"],row["Date"] = newFile,newDate
