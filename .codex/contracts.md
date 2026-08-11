@@ -49,7 +49,7 @@
 - Consumer：RunClassfier stage 與 root flow。
 - 輸入：原始文字資料、固定測試資料、工作池任務與 label/topic metadata。
 - 輸出：至少一個 BERT dataset split（`train.tsv`、`dev.tsv`、`test.tsv`）與 `OnlyForRecord/`、`datasetDB/` 中間資料線索。
-- 驗證與約束：`TCFMain.py` 會檢查 dataset files 是否存在；RunClassfier 會查詢 `test.sql3`、`dataset_total_with_filename_FixedTest.sql3`、`dataset_total_with_filename_ES.sql3`。
+- 驗證與約束：一般來源樣本在計算 split 比例前依 `OutLabel`／`text` 去重，避免相同分類樣本同時進入 train/dev/test；`DataAugmentationGoal` 在切分完成後只補足 train 中的少類 label，不得產生 dev/test 樣本；`TCFMain.py` 會檢查 dataset files 是否存在；RunClassfier 會查詢 `test.sql3`、`dataset_total_with_filename_FixedTest.sql3`、`dataset_total_with_filename_ES.sql3`。
 - 錯誤／失敗語意：若找不到 dataset 或必要檔案，stage 可能 raise exception；完整 exit code 待確認。
 - 版本與相容性：無 schema/version marker；改名需同步所有 consumer。
 - 安全與敏感資訊：dataset 可能包含真實文本或個資；不可在測試輸出或 Codex 文件中貼全文。
