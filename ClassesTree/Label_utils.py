@@ -72,13 +72,13 @@ class LabelsStringReader:
 class FilePathLabelsPurifier:
     def proc(FilePath,LabelMarker=None):
         if LabelMarker == None:
-            '''
+            r'''
             if "\\" in FilePath:
                 LabelMarker = "\\#T#\[.*?\]"
             else:
                 LabelMarker = "/#T#\[.*?\]"
             '''
-            LabelMarker = PathSEP(FilePath)+"#T#\[.*?\]"
+            LabelMarker = PathSEP(FilePath)+r"#T#\[.*?\]"
         return re.sub(LabelMarker,"",FilePath)
     
 def getLabelsFromFileName(filePath,

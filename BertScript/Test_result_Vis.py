@@ -1197,7 +1197,7 @@ def VisDFToPredsDF(df):
     dfcols = df.columns.tolist()
     print(dfcols)
     
-    r = re.compile("^\d+$")
+    r = re.compile(r"^\d+$")
     NumCols = list(filter(r.match, dfcols))
     df = df[['File']+NumCols]
     df = df.set_index('File')
@@ -2455,7 +2455,7 @@ def save_current_table(
     
     df = pd.DataFrame.from_records(derived_virtual_data)
     dfcols = df.columns.tolist()
-    r = re.compile("^\d+$")
+    r = re.compile(r"^\d+$")
     NumCols = list(filter(r.match, dfcols))
     cols = PreambleCols + [str(x) for x in sorted([int(x) for x in NumCols])]
     df = df[cols]
@@ -3600,7 +3600,7 @@ if __name__=='__main__':
     }
     #print("VDDFSortParams",VDDFSortParams)
 
-    r = re.compile("dataset_\d+$")
+    r = re.compile(r"dataset_\d+$")
     #datasetDirs = list(filter(r.match, os.listdir()))
     #datasetDirs = sorted(datasetDirs, reverse=True)
     #datasetDir = datasetDirs[0]
@@ -4019,7 +4019,7 @@ if __name__=='__main__':
         #SumOptPath = os.path.join(BertDatasetSubDir,"Summary")
         SumFileDict = dict()
         for file in OSWALK(SumOptPath):
-            if any([re.search("Summary_\d{1,3}.txt",file) is None,
+            if any([re.search(r"Summary_\d{1,3}.txt",file) is None,
                     GetFileSize(file)==0]):
                 continue
             key = os.path.basename(os.path.dirname(file))

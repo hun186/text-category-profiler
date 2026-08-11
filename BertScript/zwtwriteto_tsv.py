@@ -61,7 +61,7 @@ def WriteTo_tsv(THUCdir, trainSampleList, devSampleList, testSampleList):
         fw.close()
 
 #THUCNews語料庫路徑
-THUCdir = "D:\VirtualBox VMs\shared\Emotion\dataset_THUC\THUCNews"
+THUCdir = r"D:\VirtualBox VMs\shared\Emotion\dataset_THUC\THUCNews"
 #每則文章最多取max_length個字
 max_length = 128
 #定義訓練集、開發集與測試級每個類別要取的樣本數量

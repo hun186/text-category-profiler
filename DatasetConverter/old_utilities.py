@@ -155,7 +155,7 @@ class VersionPicker:
         VerDict = {}
         if Option == "Verno":
             for x in inputObj:
-                VerCand = re.findall("\d+",x)
+                VerCand = re.findall(r"\d+",x)
                 if VerCand == []:
                     VerCand = [0]
                     
@@ -325,21 +325,21 @@ def CheckStringWithRePatterns(string, RePatternDict):
     return False, None
 
 def getMFNFromFN(FN):
-    '''
+    r'''
     e.g: known_pictures\Hong Kong\artist\Aaron Kwok[3].jpg => Aaron Kwok[3]
     '''
     return FN.split(PathSEP(FN))[-1].rpartition(".")[0]
 
 
 def getFNFromFullPath(FN):
-    '''
+    r'''
     e.g: known_pictures\Hong Kong\artist\Aaron Kwok[3].jpg => Aaron Kwok[3].jpg
     '''
     return FN.split(PathSEP(FN))[-1]
 
 
 def getFileDirFromFN(FN):
-    '''
+    r'''
     e.g: known_pictures\Hong Kong\artist\Aaron Kwok[3].jpg => Aaron Kwok[3].jpg
     '''
     FN = fileNameNormalizer.proc(fileName = FN)
@@ -428,8 +428,8 @@ def RemoveIlleagalCharForFileName(title, Mode = "FileName"):
     if Mode == "Latex":
         IlleagalMapDict = {}
         IlleagalMapDict["_"] = " "
-        IlleagalMapDict["&"] = "\&"
-        IlleagalMapDict["%"] = "\%"
+        IlleagalMapDict["&"] = r"\&"
+        IlleagalMapDict["%"] = r"\%"
         IlleagalMapDict["#"] = "＃"
     for x in IlleagalMapDict.keys():
         result = result.replace(x,IlleagalMapDict[x])

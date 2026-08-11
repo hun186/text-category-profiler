@@ -143,6 +143,39 @@ def ensure_train_covers_labels(
     return dataframe.iloc[selected_positions + remaining_positions].reset_index(drop=True)
 
 
+def expand_train_to_cover_labels(
+    plan: DatasetSplitPlan, row_count: int, label_count: int
+) -> DatasetSplitPlan:
+    """Move evaluation capacity to train when each label needs a training row.
+
+    A positional reorder cannot cover every label when the ratio-derived train
+    size is smaller than the number of labels. This occurs especially with tiny
+    smoke datasets: two valid labels at a 70% ratio previously produced one
+    training row and one validation row, which the classifier correctly rejected
+    as single-class training. Prefer retaining test rows, then consume validation
+    and test capacity only as needed to make label coverage possible.
+    """
+
+    if row_count < 0 or label_count < 0:
+        raise ValueError("row_count and label_count cannot be negative")
+    if sum(size for _, size in plan.items()) != row_count:
+        raise ValueError("split plan and row_count do not agree")
+
+    required_train_size = min(row_count, label_count)
+    shortfall = max(0, required_train_size - plan.train)
+    if shortfall == 0:
+        return plan
+
+    from_validation = min(shortfall, plan.validation)
+    remaining_shortfall = shortfall - from_validation
+    from_test = min(remaining_shortfall, plan.test)
+    return DatasetSplitPlan(
+        train=plan.train + from_validation + from_test,
+        validation=plan.validation - from_validation,
+        test=plan.test - from_test,
+    )
+
+
 def iter_dataset_splits(
     dataframe: Any, plan: DatasetSplitPlan
 ) -> Iterator[Tuple[str, Any]]:

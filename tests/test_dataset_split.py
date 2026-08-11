@@ -7,8 +7,10 @@ except ModuleNotFoundError:
 
 from DatasetConverter.dataset_split import augment_training_rows
 from DatasetConverter.dataset_split import build_split_plan
+from DatasetConverter.dataset_split import DatasetSplitPlan
 from DatasetConverter.dataset_split import deduplicate_dataset_rows
 from DatasetConverter.dataset_split import ensure_train_covers_labels
+from DatasetConverter.dataset_split import expand_train_to_cover_labels
 from DatasetConverter.dataset_split import iter_dataset_splits
 from DatasetConverter.dataset_split import iter_split_bounds
 
@@ -30,6 +32,24 @@ class DatasetSplitPlanTests(unittest.TestCase):
             list(iter_split_bounds(plan, row_count=11)),
             [("train", 0, 6), ("validation", 6, 9), ("test", 9, 11)],
         )
+
+    def test_tiny_dataset_expands_train_to_include_each_valid_label(self):
+        ratio_plan = build_split_plan(2, train_ratio=0.7, test_ratio=0.1)
+
+        plan = expand_train_to_cover_labels(
+            ratio_plan, row_count=2, label_count=2
+        )
+
+        self.assertEqual((plan.train, plan.validation, plan.test), (2, 0, 0))
+
+    def test_train_expansion_preserves_test_when_validation_is_sufficient(self):
+        ratio_plan = DatasetSplitPlan(train=3, validation=2, test=1)
+
+        plan = expand_train_to_cover_labels(
+            ratio_plan, row_count=6, label_count=4
+        )
+
+        self.assertEqual((plan.train, plan.validation, plan.test), (4, 1, 1))
 
 
 @unittest.skipIf(pd is None, "pandas is not installed")

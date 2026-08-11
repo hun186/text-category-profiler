@@ -82,7 +82,7 @@ ExtractionRuleDict = {
                 "bad":{#如果標籤對應為一個字典，則進一步用正規表示式去看text是否有滿足任何條件。
                     #使用此法，需設定"default"之對應值
                     "default":"Phishing Web Link",
-                     ".*\.exe":"Malware Web Link"},
+                     r".*\.exe":"Malware Web Link"},
                 },
             #正規表示式標籤轉換映射
             #"ReMapping":{".*":"Benign Web Link",
@@ -132,7 +132,7 @@ ExtractionRuleDict = {
         "fileNames":[
             #"openphish.com_feed.txt",
             #"openphish.com_feed_MainDomain.txt",
-            "openphish.com_feed.*\.txt",
+            r"openphish.com_feed.*\.txt",
             ],
         "header":False,
         "Sep":",",
@@ -190,7 +190,7 @@ ExtractionRuleDict = {
         "fileNames":[
             #"openphish.com_feed.txt",
             #"openphish.com_feed_MainDomain.txt",
-            ".*VirusTotal Benign Web Link.*\.txt",
+            r".*VirusTotal Benign Web Link.*\.txt",
             ],
         "header":False,
         "Sep":",",
@@ -214,7 +214,7 @@ ExtractionRuleDict = {
         "fileNames":[
             #"openphish.com_feed.txt",
             #"openphish.com_feed_MainDomain.txt",
-            ".*VirusTotal Malicious Web Link.*\.txt",
+            r".*VirusTotal Malicious Web Link.*\.txt",
             ],
         "header":False,
         "Sep":",",
@@ -238,7 +238,7 @@ ExtractionRuleDict = {
         "fileNames":[
             #"0927.csv",
             #"1206.txt",
-            "20[2-7]\d{5}.*\.(csv|txt)"
+            r"20[2-7]\d{5}.*\.(csv|txt)"
             ],
         "header":False,
         "Sep":",",
@@ -259,7 +259,7 @@ ExtractionRuleDict = {
         },
     #each line as an example for a specified class
     "LetterGreetings":{
-        "DirName":"D:\shared\TopicClassification\DatasetConverter\Dataset Generator\ComponentGenerator",
+        "DirName": r"D:\shared\TopicClassification\DatasetConverter\Dataset Generator\ComponentGenerator",
         "fileNames":[
             "LetterGreetingsForClosing.tsv",
             #"phishing_templates_gpt1.csv"
@@ -285,11 +285,11 @@ ExtractionRuleDict = {
     #產製CZJ_SamplesFile供訓練用，樣本無輸入Label時，則不採用。
     "SDSMS_Train":{
         #"DirName":"TopicClassification/===DRNData/SDSMS/SMS/Deactive_DCRB/rdy to convert",
-        "DirName":r"D:\shared\rawData\AIPool_SDSMS\WorkPool",
+        "DirName": r"D:\shared\rawData\AIPool_SDSMS\WorkPool",
         "fileNames":[
             #"0927.csv",
             #"1206.txt",
-            "SDSMS_20[2-7]\d{5}.*\.(csv|txt)$"
+            r"SDSMS_20[2-7]\d{5}.*\.(csv|txt)$"
             ],
         "header":True,
         "Sep":",",
@@ -302,7 +302,7 @@ ExtractionRuleDict = {
                 #},
             "InputLabelReMapping":{
                 #"Navigational Warning-.*":"UseInLabelAsOutLabel",
-                "(.|\s)*\S(.|\s)*":"UseInLabelAsOutLabel",
+                r"(.|\s)*\S(.|\s)*":"UseInLabelAsOutLabel",
                 },
             #"Prefix":"",
             "KeepUnseenInMapKey":True,
@@ -311,12 +311,12 @@ ExtractionRuleDict = {
         },
     #推論用，樣本無輸入Label時，則使用Scrap做為Label。
     "SDSMS_Prediction":{
-        #"DirName":r"TopicClassification\rawData\SDSMS\WorkPool",
-        "DirName":r"D:\shared\rawData\AIPool_SDSMS\WorkPool",
+        #"DirName": r"TopicClassification\rawData\SDSMS\WorkPool",
+        "DirName": r"D:\shared\rawData\AIPool_SDSMS\WorkPool",
         "fileNames":[
             #"0927.csv",
             #"1206.txt",
-            "SDSMS_20[2-7]\d{5}.*\.(csv|txt)$"
+            r"SDSMS_20[2-7]\d{5}.*\.(csv|txt)$"
             ],
         #"OUTPUTMAIN":"dataset_total_with_filename_FixedTest",
         "OverWriteOutput":False,
@@ -335,7 +335,7 @@ ExtractionRuleDict = {
                 "":"Scrap",
                 },
             "InputLabelReMapping":{
-                "(.|\s)*\S(.|\s)*":"UseInLabelAsOutLabel",
+                r"(.|\s)*\S(.|\s)*":"UseInLabelAsOutLabel",
                 #"^$":"Scrap",
                 },
             #"Prefix":"",

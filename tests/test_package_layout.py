@@ -1,5 +1,6 @@
 import ast
 import unittest
+import warnings
 from pathlib import Path
 
 
@@ -46,6 +47,38 @@ MIGRATED_MODULES = {
 
 
 class PackageLayoutTests(unittest.TestCase):
+    def test_application_source_has_no_invalid_escape_warnings(self):
+        roots = [
+            REPOSITORY_ROOT / "TCFMain.py",
+            REPOSITORY_ROOT / "TCF_Params",
+            REPOSITORY_ROOT / "ClassesTree",
+            REPOSITORY_ROOT / "DatasetConverter",
+            REPOSITORY_ROOT / "BertScript",
+            PACKAGE_ROOT,
+        ]
+        violations = []
+        for root in roots:
+            paths = [root] if root.is_file() else root.rglob("*.py")
+            for path in paths:
+                if {"TRV_deploy", "Dash-by-Plotly-master"}.intersection(path.parts):
+                    continue
+                try:
+                    with warnings.catch_warnings(record=True) as caught:
+                        warnings.simplefilter("always")
+                        ast.parse(
+                            path.read_text(encoding="utf-8-sig"),
+                            filename=str(path),
+                        )
+                except (SyntaxError, UnicodeDecodeError):
+                    continue
+                violations.extend(
+                    str(path.relative_to(REPOSITORY_ROOT))
+                    for warning in caught
+                    if "invalid escape sequence" in str(warning.message)
+                )
+
+        self.assertEqual(violations, [])
+
     def test_domain_directories_are_packages(self):
         for package in DOMAIN_PACKAGES:
             self.assertTrue((PACKAGE_ROOT / package / "__init__.py").is_file(), package)
@@ -72,7 +105,7 @@ class PackageLayoutTests(unittest.TestCase):
         for root in roots:
             paths = [root] if root.is_file() else root.rglob("*.py")
             for path in paths:
-                if "TRV_deploy" in path.parts:
+                if {"TRV_deploy", "Dash-by-Plotly-master"}.intersection(path.parts):
                     continue
                 try:
                     tree = ast.parse(path.read_text(encoding="utf-8-sig"))

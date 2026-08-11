@@ -99,6 +99,7 @@ from DatasetConverter.dataset_split import augment_training_rows
 from DatasetConverter.dataset_split import build_split_plan
 from DatasetConverter.dataset_split import deduplicate_dataset_rows
 from DatasetConverter.dataset_split import ensure_train_covers_labels
+from DatasetConverter.dataset_split import expand_train_to_cover_labels
 from DatasetConverter.dataset_split import iter_dataset_splits
 
 #from utilities import hash
@@ -132,7 +133,7 @@ from text_category_profiler.data.DB_utils import sqlite3Query
 from text_category_profiler.data.df_utils import DictRowsListToDF
 
 #from text_category_profiler.Tika_pdf_to_txt import ExtractTxt
-'''
+r'''
 import winreg
 winreg.SetValueEx(
     winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE,
@@ -256,8 +257,8 @@ class DataConvertJobGenerater():
         #輸入檔案單路完成型
         if self.fileList == []:
             self.fileList = self.BuildFileList(
-                FullPathFNrePat=("(.*CZJ_SamplesFile.*sql3)|"
-                                 "(.*#T#\[.*\].*\.txt)|(.*\.AI2)")
+                FullPathFNrePat=(r"(.*CZJ_SamplesFile.*sql3)|"
+                                 r"(.*#T#\[.*\].*\.txt)|(.*\.AI2)")
                 )
         #輸入檔案多路完成型
         #if self.fileList == []:
@@ -864,11 +865,22 @@ class DatasetGenerator:
         ], icon="·")
         #設定訓練集、驗證集及測試集比例。
         nDataset = self.df.shape[0]
-        split_plan = build_split_plan(
+        ratio_split_plan = build_split_plan(
             nDataset,
             train_ratio=self.DatasetRatio["Train"],
             test_ratio=self.DatasetRatio["Test"],
         )
+        split_plan = expand_train_to_cover_labels(
+            ratio_split_plan,
+            row_count=nDataset,
+            label_count=self.df["OutLabel"].dropna().nunique(),
+        )
+        if split_plan != ratio_split_plan:
+            warning(
+                "Training split expanded from "
+                f"{ratio_split_plan.train} to {split_plan.train} source rows "
+                "so every valid label can occur in training."
+            )
         self.df = ensure_train_covers_labels(self.df, split_plan.train)
         nDict = dict(split_plan.items())
         #FNDdict = {"train":"train.tsv", "validation":"dev.tsv", "test":"test.tsv"}

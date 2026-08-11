@@ -2,7 +2,7 @@ LocalExemptDict_DRN = {
     "Valueless Report":{"condition":{
         "SimpleTag":(".*"),
         #文本含有 (二十大或20大) 且含有　(代表、中共、党)
-        "text":"((?=.*证券)(?=.{0,20}\*行业週报\*).*)"
+        "text": r"((?=.*证券)(?=.{0,20}\*行业週报\*).*)"
         #"text":".*",
         },
         "OutputTag":"Keyword Neg Filter-Valueless Report",
