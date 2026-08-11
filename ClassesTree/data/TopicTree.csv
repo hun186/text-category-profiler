@@ -3063,3 +3063,13 @@ Public Governance,Election Administration,202607311453,contains,新增檢索橋�
 Election Administration,US Midterm Election 2026-Campaign And Election Process-Voting Access Election Administration And Integrity,202607311453,contains,新增結構型交叉父類別；補充選務治理分類維度的直接上下位關係；＠ChatGPT
 US Election,US Election Polling And Forecasts,202607311453,contains,新增必要中間節點；＠ChatGPT
 US Election Polling And Forecasts,US Midterm Election 2026-Electoral Outlook And Governance Impact-Polling Forecasts And Congressional Control,202607311453,contains,新增結構型交叉父類別；補充選情分析分類維度的直接上下位關係；＠ChatGPT
+TW Election,TW Election-CPC Election Interference,202608111140,contains,新增主要層級；建立臺灣選舉下之中共介選與選舉干預主題；＠ChatGPT
+CN Policy For TW,TW Election-CPC Election Interference,202608111140,contains,新增結構型交叉父類別；補充中共對臺政策分類維度的直接上下位關係；＠ChatGPT
+TW Election-CPC Election Interference,TW Election-CPC Election Interference-Information And Digital Operations,202608111140,contains,新增底層細緻類別；依介選手段區分資訊、認知、平台與網路行動；＠ChatGPT
+TW Election-CPC Election Interference,TW Election-CPC Election Interference-United Front Networks And Political Influence,202608111140,contains,新增底層細緻類別；依介選手段區分統戰網絡、政治代理、資金與物質利誘；＠ChatGPT
+TW Election-CPC Election Interference,TW Election-CPC Election Interference-Military Coercion And Threat Signaling,202608111140,contains,新增底層細緻類別；依介選手段區分軍事威懾、演訓與威脅信號；＠ChatGPT
+CN Cognitive Warfare In TW,TW Election-CPC Election Interference-Information And Digital Operations,202608111140,contains,新增結構型交叉父類別；補充對臺認知作戰分類維度的選舉干預子類；＠ChatGPT
+Cyberattack From CN On TW,TW Election-CPC Election Interference-Information And Digital Operations,202608111140,contains,新增結構型交叉父類別；補充中國對臺網路攻擊分類維度的選舉相關子類；＠ChatGPT
+United Front In Taiwan,TW Election-CPC Election Interference-United Front Networks And Political Influence,202608111140,contains,新增結構型交叉父類別；補充在臺統戰網絡分類維度的選舉干預子類；＠ChatGPT
+CN Military Operation,TW Election-CPC Election Interference-Military Coercion And Threat Signaling,202608111140,contains,新增結構型交叉父類別；補充中共軍事行動分類維度的選舉威懾子類；＠ChatGPT
+Grey Zone Conflicts,TW Election-CPC Election Interference-Military Coercion And Threat Signaling,202608111140,contains,新增結構型交叉父類別；補充灰色地帶衝突分類維度的選舉威懾子類；＠ChatGPT

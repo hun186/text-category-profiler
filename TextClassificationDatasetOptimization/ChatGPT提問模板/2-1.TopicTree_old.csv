@@ -3035,3 +3035,41 @@ Energy Security,Energy Security-Geopolitical Conflict Impact,202607281522,contai
 Energy Security-Geopolitical Conflict Impact,2026 US-Iran War-Humanitarian And Economic Impact-Energy And Global Economic Impact,202607281522,contains,新增檢索型主題包含；供能源安全上層向下展開取得本戰爭能源與經濟影響資訊；＠ChatGPT
 International Economics,International Economics-Geopolitical Conflict Impact,202607281522,contains,新增檢索橋接中間節點；由國際經濟轉入地緣衝突影響維度；＠ChatGPT
 International Economics-Geopolitical Conflict Impact,2026 US-Iran War-Humanitarian And Economic Impact-Energy And Global Economic Impact,202607281522,contains,新增檢索型主題包含；供國際經濟上層向下展開取得本戰爭能源與經濟影響資訊；＠ChatGPT
+US Election,US Midterm Election,202607311453,contains,新增必要中間節點；＠ChatGPT
+US Midterm Election,US Midterm Election 2026,202607311453,contains,新增主要層級；＠ChatGPT
+US Midterm Election 2026,US Midterm Election 2026-Races By Office,202607311453,contains,新增主要層級；＠ChatGPT
+US Midterm Election 2026,US Midterm Election 2026-Campaign And Election Process,202607311453,contains,新增主要層級；＠ChatGPT
+US Midterm Election 2026,US Midterm Election 2026-Electoral Outlook And Governance Impact,202607311453,contains,新增主要層級；＠ChatGPT
+US Midterm Election 2026-Races By Office,US Midterm Election 2026-Races By Office-House Elections,202607311453,contains,新增底層細緻類別；＠ChatGPT
+US Midterm Election 2026-Races By Office,US Midterm Election 2026-Races By Office-Senate Elections,202607311453,contains,新增底層細緻類別；＠ChatGPT
+US Midterm Election 2026-Races By Office,US Midterm Election 2026-Races By Office-Gubernatorial Elections,202607311453,contains,新增底層細緻類別；＠ChatGPT
+US Midterm Election 2026-Campaign And Election Process,US Midterm Election 2026-Campaign And Election Process-Primaries And Candidate Selection,202607311453,contains,新增底層細緻類別；＠ChatGPT
+US Midterm Election 2026-Campaign And Election Process,US Midterm Election 2026-Campaign And Election Process-Campaign Finance And Political Advertising,202607311453,contains,新增底層細緻類別；＠ChatGPT
+US Midterm Election 2026-Campaign And Election Process,US Midterm Election 2026-Campaign And Election Process-Voting Access Election Administration And Integrity,202607311453,contains,新增底層細緻類別；＠ChatGPT
+US Midterm Election 2026-Electoral Outlook And Governance Impact,US Midterm Election 2026-Electoral Outlook And Governance Impact-Polling Forecasts And Congressional Control,202607311453,contains,新增底層細緻類別；＠ChatGPT
+US Election,US Congressional Election,202607311453,contains,新增必要中間節點；＠ChatGPT
+US Congressional Election,US House Election,202607311453,contains,新增必要中間節點；＠ChatGPT
+US Congressional Election,US Senate Election,202607311453,contains,新增必要中間節點；＠ChatGPT
+US House Election,US Midterm Election 2026-Races By Office-House Elections,202607311453,contains,新增結構型交叉父類別；補充選舉類型分類維度的直接上下位關係；＠ChatGPT
+US Senate Election,US Midterm Election 2026-Races By Office-Senate Elections,202607311453,contains,新增結構型交叉父類別；補充選舉類型分類維度的直接上下位關係；＠ChatGPT
+US Election,US Gubernatorial Election,202607311453,contains,新增必要中間節點；＠ChatGPT
+US Gubernatorial Election,US Midterm Election 2026-Races By Office-Gubernatorial Elections,202607311453,contains,新增結構型交叉父類別；補充選舉類型分類維度的直接上下位關係；＠ChatGPT
+US Election,US Primary Election,202607311453,contains,新增必要中間節點；＠ChatGPT
+US Primary Election,US Midterm Election 2026-Campaign And Election Process-Primaries And Candidate Selection,202607311453,contains,新增結構型交叉父類別；補充選舉類型分類維度的直接上下位關係；＠ChatGPT
+US Politics,US Campaign Finance,202607311453,contains,新增檢索橋接中間節點；建立可重用的跨分類維度檢索路徑；＠ChatGPT
+US Finance,US Campaign Finance,202607311453,contains,新增檢索型主題包含；透過可重用的競選財務橋接節點供財務主題向下展開；＠ChatGPT
+US Campaign Finance,US Midterm Election 2026-Campaign And Election Process-Campaign Finance And Political Advertising,202607311453,contains,新增結構型交叉父類別；補充競選財務分類維度的直接上下位關係；＠ChatGPT
+Public Governance,Election Administration,202607311453,contains,新增檢索橋接中間節點；建立可重用的跨分類維度檢索路徑；＠ChatGPT
+Election Administration,US Midterm Election 2026-Campaign And Election Process-Voting Access Election Administration And Integrity,202607311453,contains,新增結構型交叉父類別；補充選務治理分類維度的直接上下位關係；＠ChatGPT
+US Election,US Election Polling And Forecasts,202607311453,contains,新增必要中間節點；＠ChatGPT
+US Election Polling And Forecasts,US Midterm Election 2026-Electoral Outlook And Governance Impact-Polling Forecasts And Congressional Control,202607311453,contains,新增結構型交叉父類別；補充選情分析分類維度的直接上下位關係；＠ChatGPT
+TW Election,TW Election-CPC Election Interference,202608111140,contains,新增主要層級；建立臺灣選舉下之中共介選與選舉干預主題；＠ChatGPT
+CN Policy For TW,TW Election-CPC Election Interference,202608111140,contains,新增結構型交叉父類別；補充中共對臺政策分類維度的直接上下位關係；＠ChatGPT
+TW Election-CPC Election Interference,TW Election-CPC Election Interference-Information And Digital Operations,202608111140,contains,新增底層細緻類別；依介選手段區分資訊、認知、平台與網路行動；＠ChatGPT
+TW Election-CPC Election Interference,TW Election-CPC Election Interference-United Front Networks And Political Influence,202608111140,contains,新增底層細緻類別；依介選手段區分統戰網絡、政治代理、資金與物質利誘；＠ChatGPT
+TW Election-CPC Election Interference,TW Election-CPC Election Interference-Military Coercion And Threat Signaling,202608111140,contains,新增底層細緻類別；依介選手段區分軍事威懾、演訓與威脅信號；＠ChatGPT
+CN Cognitive Warfare In TW,TW Election-CPC Election Interference-Information And Digital Operations,202608111140,contains,新增結構型交叉父類別；補充對臺認知作戰分類維度的選舉干預子類；＠ChatGPT
+Cyberattack From CN On TW,TW Election-CPC Election Interference-Information And Digital Operations,202608111140,contains,新增結構型交叉父類別；補充中國對臺網路攻擊分類維度的選舉相關子類；＠ChatGPT
+United Front In Taiwan,TW Election-CPC Election Interference-United Front Networks And Political Influence,202608111140,contains,新增結構型交叉父類別；補充在臺統戰網絡分類維度的選舉干預子類；＠ChatGPT
+CN Military Operation,TW Election-CPC Election Interference-Military Coercion And Threat Signaling,202608111140,contains,新增結構型交叉父類別；補充中共軍事行動分類維度的選舉威懾子類；＠ChatGPT
+Grey Zone Conflicts,TW Election-CPC Election Interference-Military Coercion And Threat Signaling,202608111140,contains,新增結構型交叉父類別；補充灰色地帶衝突分類維度的選舉威懾子類；＠ChatGPT
