@@ -1,12 +1,19 @@
 import os
+import sys
+from pathlib import Path
+
+# Direct script execution puts only DatasetConverter/ on sys.path.  Add the
+# repository root explicitly instead of loading the legacy path injector,
+# which also searched machine-specific and parent-relative directories.
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+if str(REPOSITORY_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPOSITORY_ROOT))
+
 if os.getcwd().split(os.path.sep)[-1] in [
         "DatasetConverter","BertScript"]:
     os.chdir("../")
-from PackageImport import PackageImporter
-PackageImporter.proc()
 
 import setproctitle
-import sys
 import ntpath
 import pathlib
 import platform
@@ -20,7 +27,6 @@ from pandas.io import sql
 import re
 import glob
 import subprocess
-from pathlib import Path
 from collections import Counter
 import json
 

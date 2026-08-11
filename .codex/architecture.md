@@ -32,7 +32,7 @@
 ## 依賴方向與模組邊界
 
 - 根流程應由 `TCFMain.py` orchestration；stage scripts 可被單獨呼叫，但其 CLI contract 需與 root flow 保持一致。
-- 共用工具位於 repository root 的 `text_category_profiler/`，以 `text_category_profiler.<domain>.<module>` 匯入；舊 `utils` namespace 不再是 active code 的匯入邊界。現有 stage 仍會呼叫 `PackageImporter.proc()` 來相容舊執行路徑，但不應再依賴 `PythonModule/utils` package。
+- 共用工具位於 repository root 的 `text_category_profiler/`，以 `text_category_profiler.<domain>.<module>` 匯入；舊 `utils` namespace 不再是 active code 的匯入邊界。四個 canonical stage 入口以 `__file__` 推導並加入唯一的 repository root，保留直接執行命令相容性，不再透過 `PackageImporter.proc()` 搜尋機器特定或多層相對路徑；其他輔助／legacy stage 仍待分批遷移。
 - `text_category_profiler` 的 domain packages 分別承載基礎工具（`core`）、資料/SQLite（`data`）、多程序（`concurrency`）、主流程（`pipeline`）、文字（`text`）、視覺化（`visualization`）與外部整合（`integrations`）；新程式不得再把已分流模組放回 package root。
 - Dataset handoff 依賴目錄命名狀態（例如 `_is_running_DataConverter`、`_rdy_for_RunClassfier`）與檔名（例如 `train.tsv`、`test.tsv`、SQLite DB）。
 - 禁止在未更新 contracts/workflows 前改名 stage handoff 檔案、目錄狀態 suffix 或主要 CLI option。
