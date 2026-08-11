@@ -12,6 +12,12 @@
 
 ## Recent Outcomes
 
+### 2026-08-11 — PyTorch Transformers path injector cleanup
+
+- 目標：繼續淘汰 active classifier code 對 legacy `PackageImporter` 與機器特定搜尋路徑的依賴。
+- 結果：`TextClassification_transformers.py` 直接執行時只加入由 `__file__` 推導的 repository root；package layout test 將此 backend 納入防退步邊界。
+- 驗證：`python -m unittest tests.test_package_layout`、`python -m unittest discover -s tests`、相關檔案 `py_compile`、`git diff --check`；未執行完整模型訓練／推論，因需要本機模型、資料與 ML runtime。
+
 ### 2026-08-11 — Test result visualization residual console cleanup
 
 - 目標：整理 Dash layout 與 callback 中殘留的 start/finished、PID、raw row data、filtered result 更新雜訊與 Windows `taskkill` 找不到行程訊息。
