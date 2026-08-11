@@ -5,7 +5,9 @@ try:
 except ModuleNotFoundError:
     pd = None
 
+from DatasetConverter.dataset_split import augment_training_rows
 from DatasetConverter.dataset_split import build_split_plan
+from DatasetConverter.dataset_split import deduplicate_dataset_rows
 from DatasetConverter.dataset_split import ensure_train_covers_labels
 from DatasetConverter.dataset_split import iter_dataset_splits
 from DatasetConverter.dataset_split import iter_split_bounds
@@ -32,6 +34,72 @@ class DatasetSplitPlanTests(unittest.TestCase):
 
 @unittest.skipIf(pd is None, "pandas is not installed")
 class DatasetDataFrameSplitTests(unittest.TestCase):
+    def test_only_training_split_is_augmented_after_deduplication(self):
+        dataframe = pd.DataFrame(
+            {
+                "row_id": [0, 1, 2, 3, 4, 5, 6],
+                "OutLabel": ["A", "A", "A", "B", "B", "C", "A"],
+                "text": ["a0", "a1", "a2", "b0", "b1", "c0", "a0"],
+                "file": [f"source-{index}" for index in range(7)],
+            }
+        )
+        dataframe = deduplicate_dataset_rows(dataframe)
+        plan = build_split_plan(len(dataframe), train_ratio=0.5, test_ratio=1 / 6)
+        splits = dict(iter_dataset_splits(dataframe, plan))
+        validation_before = splits["validation"].copy()
+        test_before = splits["test"].copy()
+
+        augmented_train, augmented_count = augment_training_rows(
+            splits["train"], samples_per_label=5, text_augmenter=str.upper
+        )
+
+        self.assertEqual(augmented_count, 2)
+        self.assertEqual(len(augmented_train), 5)
+        self.assertEqual(augmented_train["OutLabel"].value_counts().to_dict(), {"A": 5})
+        self.assertEqual(augmented_train.iloc[-1]["file"], "source-1")
+        pd.testing.assert_frame_equal(splits["validation"], validation_before)
+        pd.testing.assert_frame_equal(splits["test"], test_before)
+
+    def test_augmentation_balances_each_training_label_independently(self):
+        training = pd.DataFrame(
+            {
+                "OutLabel": ["A", "A", "B"],
+                "text": ["a0", "a1", "b0"],
+            }
+        )
+
+        augmented, augmented_count = augment_training_rows(
+            training, samples_per_label=3, text_augmenter=lambda text: text
+        )
+
+        self.assertEqual(augmented_count, 3)
+        self.assertEqual(augmented["OutLabel"].value_counts().to_dict(), {"A": 3, "B": 3})
+
+    def test_duplicates_are_removed_before_split_assignment(self):
+        dataframe = pd.DataFrame(
+            {
+                "row_id": [0, 1, 2, 3, 4],
+                "OutLabel": ["A", "B", "A", "C", "B"],
+                "text": ["same", "dev", "same", "test", "dev"],
+            }
+        )
+
+        deduplicated = deduplicate_dataset_rows(dataframe)
+        plan = build_split_plan(len(deduplicated), train_ratio=1 / 3, test_ratio=1 / 3)
+        splits = dict(iter_dataset_splits(deduplicated, plan))
+
+        self.assertEqual(deduplicated["row_id"].tolist(), [0, 1, 3])
+        assigned_examples = [
+            (row.OutLabel, row.text)
+            for split in splits.values()
+            for row in split.itertuples()
+        ]
+        self.assertEqual(len(assigned_examples), len(set(assigned_examples)))
+
+    def test_deduplication_requires_classifier_columns(self):
+        with self.assertRaisesRegex(ValueError, "missing columns: OutLabel, text"):
+            deduplicate_dataset_rows(pd.DataFrame({"row_id": [1]}))
+
     def test_splits_are_non_overlapping_and_cover_every_row(self):
         dataframe = pd.DataFrame({"row_id": range(11)})
         plan = build_split_plan(11, train_ratio=0.6, test_ratio=0.2)

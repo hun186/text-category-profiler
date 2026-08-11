@@ -95,7 +95,9 @@ from ClassesTree.ClassesTree_utils import SetTreeFiles
     #from sampleHandler import SampleReader
 #except:
 from DatasetConverter.sampleHandler import SampleReader
+from DatasetConverter.dataset_split import augment_training_rows
 from DatasetConverter.dataset_split import build_split_plan
+from DatasetConverter.dataset_split import deduplicate_dataset_rows
 from DatasetConverter.dataset_split import ensure_train_covers_labels
 from DatasetConverter.dataset_split import iter_dataset_splits
 
@@ -554,7 +556,6 @@ def BuildSamplesDfFromPaths(
     OUTPUTMAIN_Counter = None,
     datasetCountOFN = None,
     RemoveDumpArticle = True,
-    DataAugmentationGoal=0,
     Count_SQL_table="sampleCount_Main",
     nProcess = nProcess,
     DCkwargs = {},
@@ -662,38 +663,6 @@ def BuildSamplesDfFromPaths(
             orient='index')
         df_Counter.columns = ["Loaded Samples Count"]
         df_Counter.sort_values(by='Loaded Samples Count',ascending=False, inplace=True)
-        #樣本擴增
-        if DataAugmentationGoal > 0:
-            AguPoolDict = {}
-            for i,row in enumerate(rows_list):
-                if row['OutLabel'] not in AguPoolDict:
-                    AguPoolDict[row['OutLabel']] = [i]
-                elif len(AguPoolDict[row['OutLabel']]) < DataAugmentationGoal:
-                    AguPoolDict[row['OutLabel']].append(i)
-            for Label in AguPoolDict:
-                Len = len(AguPoolDict[Label])
-                ct = Len
-                #print(f"for {Label} ct is {ct}")
-                AugPointer = 0
-                while(ct< DataAugmentationGoal):
-                    idx = AguPoolDict[Label][AugPointer % Len]
-                    text = rows_list[idx]['text']
-                    text = randomReplace(text,nReplacedChar=1)
-                    
-                    rows_list.append({'OutLabel':Label,
-                                      'text':f"{ct}_{text}",
-                                      #'file':f"Cloned From {rows_list[idx]['file']}"
-                        })
-                    AugPointer += 1
-                    ct += 1
-            #儲存樣本數量資訊
-            df_Counter_Aug = pd.DataFrame.from_dict(
-                Counter([row['OutLabel'] for row in rows_list]),
-                orient='index')
-            df_Counter_Aug.columns = ["Augmentated Samples Count"]
-            df_Counter = pd.concat([df_Counter, df_Counter_Aug],axis=1)                    
-            del AguPoolDict
-            random.shuffle(rows_list)
         if OUTPUTMAIN_Counter is None:
             OUTPUTMAIN_Counter = OUTPUTMAIN.replace("_with_filename","")+"_labels_count"
         dfOutputer(df_Counter, OUTPUTMAIN_Counter,
@@ -710,7 +679,7 @@ def BuildSamplesDfFromPaths(
         rows_list,start_time=start_time,
         #RemoveDumpBasedOnCols=['file','OutLabel','text'],
         )
-    #樣本擴本複製的樣本點的PartNO會是Null，轉換為整數時會報錯，所以fillna(0)
+    #部分外部來源可能沒有 PartNO，轉換為整數前先補零。
     if len(df) > 0:
         #df = df.astype({"PartNO":"int32"})
         df["PartNO"] = df["PartNO"].fillna(0).astype("int32")
@@ -841,6 +810,7 @@ class DatasetGenerator:
                  IndexCols = [],
                  datasetSubDir = "dataset",
                  DatasetRatio = {},
+                 DataAugmentationGoal = 0,
                  FixedTestPATHList = [],
                  esJob = dict(),
                  DCkwargs = {},
@@ -855,6 +825,7 @@ class DatasetGenerator:
         self.IndexCols = IndexCols
         self.datasetSubDir = datasetSubDir
         self.DatasetRatio = DatasetRatio
+        self.DataAugmentationGoal = DataAugmentationGoal
         self.FixedTestPATHList = FixedTestPATHList
         self.esJob = esJob
         self.DCkwargs = DCkwargs
@@ -880,6 +851,17 @@ class DatasetGenerator:
         ], icon="·")
     def run(self):
         self.show()
+        if self.DataAugmentationGoal > 0 and not self.df.empty:
+            # Preserve the legacy randomized source order without mixing
+            # augmented variants into validation or test data.
+            self.df = self.df.sample(frac=1).reset_index(drop=True)
+        nBeforeDedup = len(self.df)
+        self.df = deduplicate_dataset_rows(self.df)
+        key_values("Dataset deduplication", [
+            ("original rows", nBeforeDedup),
+            ("removed rows", nBeforeDedup - len(self.df)),
+            ("remaining rows", len(self.df)),
+        ], icon="·")
         #設定訓練集、驗證集及測試集比例。
         nDataset = self.df.shape[0]
         split_plan = build_split_plan(
@@ -908,6 +890,26 @@ class DatasetGenerator:
         DTBJobs = []
         for key, Partdf in iter_dataset_splits(self.df, split_plan):
             key_values("Generate dataset split", [("split", key), ("planned rows", nDict[key])], icon="·")
+            if key == "train":
+                source_train_rows = len(Partdf)
+                Partdf, augmented_rows = augment_training_rows(
+                    Partdf,
+                    samples_per_label=self.DataAugmentationGoal,
+                    text_augmenter=lambda text: randomReplace(
+                        text, nReplacedChar=1
+                    ),
+                )
+                nDict["train_source"] = source_train_rows
+                nDict["train_augmented"] = augmented_rows
+                nDict["train"] = len(Partdf)
+                if augmented_rows > 0:
+                    Partdf = Partdf.sample(frac=1).reset_index(drop=True)
+                key_values("Training data augmentation", [
+                    ("target rows per label", self.DataAugmentationGoal),
+                    ("source rows", source_train_rows),
+                    ("augmented rows", augmented_rows),
+                    ("training rows", len(Partdf)),
+                ], icon="·")
             #Partdf["dataType"].astype("category")
             if key == "test":
                 if len(FixfiL) > 0:
@@ -964,16 +966,6 @@ class DatasetGenerator:
             #Partdf = multicoreJob(nProcess=self.nProcess).parallelize_dataframe(Partdf, TextNormalize)
             #dfOutputer(Partdf[['OutLabel','text']], MFNDdict[key]).run()
             #輸出各資料集至檔案，MFNDdict[key]為各資料集之輸出主檔名。
-            start_time = time.time()
-            nBeforeDedup = len(Partdf)
-            Partdf = Partdf.drop_duplicates(['OutLabel','text'])
-            key_values("Dataset split dedup", [
-                ("split", key),
-                ("original rows", nBeforeDedup),
-                ("removed rows", nBeforeDedup - len(Partdf)),
-                ("remaining rows", len(Partdf)),
-                ("elapsed seconds", f"{time.time()-start_time:.4f}"),
-            ], icon="·")
             DTBJobs.append(
                 self.Outputer(Partdf,
                               OUTPUTMAIN = os.path.join(self.datasetSubDir, MFNDdict[key]),
@@ -981,9 +973,11 @@ class DatasetGenerator:
         nDict["fixed_test"] = len(FT_df)
         nDict["Elasticsearch"] = len(es_df)
         key_values("Dataset split source counts", [
-            ("train before dedup", nDict["train"]),
-            ("validation before dedup", nDict["validation"]),
-            ("test before dedup", nDict["test"] + nDict["fixed_test"] + nDict["Elasticsearch"]),
+            ("train source rows", nDict["train_source"]),
+            ("train augmented rows", nDict["train_augmented"]),
+            ("train output rows", nDict["train"]),
+            ("validation source rows", nDict["validation"]),
+            ("test total rows", nDict["test"] + nDict["fixed_test"] + nDict["Elasticsearch"]),
             ("fixed_test rows", nDict["fixed_test"]),
             ("Elasticsearch rows", nDict["Elasticsearch"]),
         ], icon="·")
@@ -1292,7 +1286,6 @@ if __name__ == '__main__':
         datasetSubDir = args.BertDatasetSubDir,
         ROOTPATHList = ROOTPATHList,
         #SQLFile = SQLFile,
-        DataAugmentationGoal = DataAugmentationGoal,
         OUTPUTMAIN = OUTPUTMAIN,
         OUTPUTMAIN_Counter = OUTPUTMAIN_Counter,
         nProcess = nProcess,
@@ -1338,6 +1331,7 @@ if __name__ == '__main__':
                      OUTPUTMAIN=OUTPUTMAIN,
                      IndexCols=IndexCols,
                      DatasetRatio=DatasetRatioDict,
+                     DataAugmentationGoal=DataAugmentationGoal,
                      FixedTestPATHList=FixedTestPATHList,
                      esJob = esJob,
                      DCkwargs=DCkwargs,

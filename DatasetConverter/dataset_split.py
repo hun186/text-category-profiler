@@ -5,7 +5,7 @@ contract testable without importing the converter's model and I/O dependencies.
 """
 
 from dataclasses import dataclass
-from typing import Any, Iterator, Tuple
+from typing import Any, Callable, Iterator, Sequence, Tuple
 
 
 @dataclass(frozen=True)
@@ -43,6 +43,76 @@ def build_split_plan(
         validation=row_count - train - test,
         test=test,
     )
+
+
+def deduplicate_dataset_rows(
+    dataframe: Any, columns: Sequence[str] = ("OutLabel", "text")
+) -> Any:
+    """Remove duplicate classifier examples before assigning dataset splits.
+
+    Deduplicating each split independently can leave the same example in both
+    training and evaluation data.  Performing the operation once, before the
+    split plan is calculated, prevents that leakage and avoids repeating the
+    same work for every split.
+    """
+
+    if dataframe.empty:
+        return dataframe.reset_index(drop=True)
+
+    missing_columns = [column for column in columns if column not in dataframe.columns]
+    if missing_columns:
+        missing = ", ".join(missing_columns)
+        raise ValueError(f"cannot deduplicate dataset; missing columns: {missing}")
+
+    return dataframe.drop_duplicates(subset=list(columns)).reset_index(drop=True)
+
+
+def augment_training_rows(
+    dataframe: Any,
+    samples_per_label: int,
+    text_augmenter: Callable[[str], str],
+    label_column: str = "OutLabel",
+    text_column: str = "text",
+) -> Tuple[Any, int]:
+    """Expand minority labels in a training split to the requested row count.
+
+    This helper intentionally operates on an already-created training split so
+    augmented variants cannot be assigned to validation or test data.  Original
+    row metadata is retained for traceability; only the sample text is changed.
+    """
+
+    if samples_per_label <= 0 or dataframe.empty:
+        return dataframe, 0
+
+    missing_columns = [
+        column
+        for column in (label_column, text_column)
+        if column not in dataframe.columns
+    ]
+    if missing_columns:
+        missing = ", ".join(missing_columns)
+        raise ValueError(f"cannot augment training dataset; missing columns: {missing}")
+
+    augmented_rows = []
+    for label in dataframe[label_column].dropna().unique():
+        label_rows = dataframe[dataframe[label_column] == label]
+        source_rows = list(label_rows.to_dict(orient="records"))
+        for sequence in range(len(source_rows), samples_per_label):
+            source_row = source_rows[sequence % len(source_rows)].copy()
+            source_text = str(source_row[text_column])
+            source_row[text_column] = f"{sequence}_{text_augmenter(source_text)}"
+            augmented_rows.append(source_row)
+
+    if not augmented_rows:
+        return dataframe, 0
+
+    import pandas as pd
+
+    augmented_frame = pd.DataFrame.from_records(
+        augmented_rows, columns=dataframe.columns
+    )
+    combined = pd.concat([dataframe, augmented_frame], ignore_index=True)
+    return combined, len(augmented_rows)
 
 
 def ensure_train_covers_labels(
