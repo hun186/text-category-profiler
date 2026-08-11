@@ -7,7 +7,6 @@ try:
 except:
     pass
 import time
-import sys
 import os
 
 from array import array
@@ -17,6 +16,9 @@ from text_category_profiler.core.utilities import ShowElapsedTime
 from text_category_profiler.core.utilities import ShowPartDict
 from text_category_profiler.core.utilities import MemUsage
 from text_category_profiler.core.utilities import SortedDictWithValLen
+from text_category_profiler.core.log_display import key_values
+from text_category_profiler.core.log_display import section
+from text_category_profiler.core.log_display import summarize_sequence
 '''
 def ShowElapsedTime(start_time):
     elapsed_time = time.time() - start_time
@@ -50,7 +52,7 @@ def BuildEdges(graph, Edges, label2id):
         #multiple edges are allowed and will be counted repeated for degree
         if len(ed) >= 3:
             graph['viewLabel'][newEdge] = str(ed[2])
-    print(f"there are {graph.numberOfEdges()} different edges.")
+    print(f"Graph edges · {graph.numberOfEdges()} unique")
     return graph
 
 def NodeLabeltoIdTable(graph,start_time=0):
@@ -74,15 +76,14 @@ def NodeLabeltoIdTable(graph,start_time=0):
         for node in graph.getNodes():
             label2id[graph['viewLabel'][node]] = node.id
         ShowPartDict(label2id, 30, "label2id")
-    print("Finihed constructing inverse search list for nodes.")
-    ShowElapsedTime(start_time)
-    print("the memory size of label2id is", sys.getsizeof(label2id))
+    print("Node lookup · ready")
+    if start_time > 0:
+        ShowElapsedTime(start_time)
     ShowID = []
     if type(label2id) == array:
         ShowID = [int(x) for x in ShowID]
     for label in ShowID:
         print("The Node id of ", label, " is ", label2id[label])
-    print("The type of label2id is ", type(label2id))
     return label2id
 
 
@@ -118,7 +119,7 @@ def graph_global_references(graph):
     
 def BuildGraph(WeightEdgeList, start_time=0):
     graph = tlp.newGraph()
-    print("Start extracting nodes.")
+    section("Build similarity graph", icon="◈")
     nodeset = ExtractNodes(WeightEdgeList)
     
     node_digit = len(nodeset)
@@ -127,8 +128,10 @@ def BuildGraph(WeightEdgeList, start_time=0):
         print("Check Time Period Setting!")
         return None, None
     
-    print("The non-repeated-nodeset is completed. There are", len(nodeset), "nodes.")
-    print("The first 30 nodes are", nodeset[0:30])
+    key_values("Graph nodes", [
+        ("count", len(nodeset)),
+        ("preview", summarize_sequence(nodeset, limit=5)),
+    ], icon="·")
     True_node_0_ID_code = nodeset[0]
     for node in nodeset:
         n = graph.addNode()
@@ -137,12 +140,12 @@ def BuildGraph(WeightEdgeList, start_time=0):
     Original_nnodes = graph.numberOfNodes()
     #viewLabel = graph.getStringProperty("viewLabel")
     #ShowElapsedTime(start_time)
-    print("Start to construct inverse search list for nodes.")
+    print("Node lookup · building")
     #Construct the inverse search table
     label2id = NodeLabeltoIdTable(graph)
     #ShowElapsedTime(start_time)
     
-    print("Start to load edges in Time Period.")
+    print("Graph edges · loading")
     #load_edges(graph, data, data_format)
     
     graph = BuildEdges(graph, WeightEdgeList, label2id)
@@ -198,8 +201,7 @@ def ClusterMetaNodeGraph(graph, ClusterMethod):
     graph.applyDoubleAlgorithm(ClusterMethod, graphProperty, ClusterMethodParams)
     ColorParams = tlp.getDefaultPluginParameters('Color Mapping')
     ColorParams['result'] = viewColor
-    ColorParams['input property'] = graphProperty
-    print("ColorParams:", ColorParams)
+    ColorParams['property'] = graphProperty
     graph.applyColorAlgorithm('Color Mapping', viewColor, ColorParams)
     
     graph_meta = graph.addCloneSubGraph("graph_meta")

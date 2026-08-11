@@ -25,6 +25,7 @@ from text_category_profiler.core.utilities import MKDIR
 from text_category_profiler.concurrency.MP_utils import MPlogger
 from text_category_profiler.data.DB_utils import sqlite3Query
 from text_category_profiler.visualization.Graph_utils import ComputeComponent
+from text_category_profiler.core.log_display import key_values
 
 
 from dataclasses import dataclass, field
@@ -239,14 +240,15 @@ def Build_DataArrayTable(TableID,DataArray,ShownColumns=[],
                          MPLOGGER=None):
     if MPLOGGER == None:
         MPLOGGER = MPlogger()
-    print("*"*50)
-    print("Running Build_VisDatatable.")
     start_time = time.time()
     MES = f"Build Table {TableID} with \n ShownColumns {ShownColumns} and \n style_cell_conditional {style_cell_conditional}"
     MPLOGGER.logW(MES=MES,logFile="Test_result_Vis.log")
-    print("It cost {:.2f} seconds to Build_DataArrayTable".format(
-        time.time() - start_time))
-    print("Finished running Build_VisDatatable.")
+    key_values("Dash table", [
+        ("id", TableID),
+        ("columns", ShownColumns),
+        ("rows", len(DataArray)),
+        ("elapsed", "{:.2f} seconds".format(time.time() - start_time)),
+    ], icon="·")
     return dash_table.DataTable(
         id=TableID,
         #data=DF.to_dict('records'),
@@ -328,4 +330,3 @@ class CallbackManager:
             app.callback(
                 callback.outputs, callback.inputs, callback.states, **callback.kwargs
             )(callback.func)
-            
