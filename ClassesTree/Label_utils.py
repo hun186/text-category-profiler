@@ -78,7 +78,7 @@ class FilePathLabelsPurifier:
             else:
                 LabelMarker = "/#T#\[.*?\]"
             '''
-            LabelMarker = re.escape(PathSEP(FilePath))+r"#T#\[.*?\]"
+            LabelMarker = PathSEP(FilePath)+r"#T#\[.*?\]"
         return re.sub(LabelMarker,"",FilePath)
     
 def getLabelsFromFileName(filePath,

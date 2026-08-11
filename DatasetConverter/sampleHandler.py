@@ -709,7 +709,14 @@ class SampleReader():
                     textList,InLabel)*SampleDupeTime
                 result.extend(Samples)
             except KeyError as e:
-                MES = f"KeyError occurred: {e}"
+                if self.LabelConvertDict and InLabel not in self.LabelConvertDict:
+                    MES = (
+                        f"Input label {InLabel!r} is not present in the label conversion "
+                        "map; this sample was dropped. Rename its #T#[...] directory to "
+                        "a label defined by the configured TopicTree files."
+                    )
+                else:
+                    MES = f"KeyError occurred: {e}"
     
             except Exception as e:
                 MES = e
