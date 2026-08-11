@@ -1,0 +1,25 @@
+#母類別,子類別,日期,關係,備註
+Food Safety,Food Safety Incident,202607220000,contains,新增食安事件中間節點@ChatGPT
+Public Health,Food Safety Incident,202607220000,contains,新增公共衛生交叉父類別@ChatGPT
+Food Safety Incident,Edible Oil Contamination Incident,202607220000,contains,新增油品污染中間節點@ChatGPT
+Chemical Safety,Edible Oil Contamination Incident,202607220000,contains,新增化學安全交叉父類別@ChatGPT
+Food Safety Incident,TW Food Safety Incident,202607220000,contains,新增臺灣食安中間節點@ChatGPT
+TW Affairs,TW Food Safety Incident,202607220000,contains,新增臺灣事務交叉父類別@ChatGPT
+Edible Oil Contamination Incident,TW FSI-2026 Chung Lien Soybean Oil BaP Contamination,202607220000,contains,新增事件主幹@ChatGPT
+TW Food Safety Incident,TW FSI-2026 Chung Lien Soybean Oil BaP Contamination,202607220000,contains,新增事件主幹@ChatGPT
+TW FSI-2026 Chung Lien Soybean Oil BaP Contamination,TW FSI-Chung Lien Oil-Contamination And Test Findings,202607220000,contains,新增下游@ChatGPT
+TW FSI-2026 Chung Lien Soybean Oil BaP Contamination,TW FSI-Chung Lien Oil-Distribution Recall And Disposal,202607220000,contains,新增下游@ChatGPT
+TW FSI-2026 Chung Lien Soybean Oil BaP Contamination,TW FSI-Chung Lien Oil-Regulatory And Judicial Response,202607220000,contains,新增下游@ChatGPT
+TW FSI-2026 Chung Lien Soybean Oil BaP Contamination,TW FSI-Chung Lien Oil-Health Risk And Public Communication,202607220000,contains,新增下游@ChatGPT
+TW FSI-Chung Lien Oil-Contamination And Test Findings,TW FSI-Chung Lien Oil-BaP Exceedance And Laboratory Findings,202607220000,contains,新增下游@ChatGPT
+TW FSI-Chung Lien Oil-Contamination And Test Findings,TW FSI-Chung Lien Oil-Other PAH Findings,202607220000,contains,新增下游@ChatGPT
+TW FSI-Chung Lien Oil-Contamination And Test Findings,TW FSI-Chung Lien Oil-Contamination Source And Manufacturing Process Investigation,202607220000,contains,新增下游@ChatGPT
+TW FSI-Chung Lien Oil-Distribution Recall And Disposal,TW FSI-Chung Lien Oil-Affected Batches And Downstream Products,202607220000,contains,新增下游@ChatGPT
+TW FSI-Chung Lien Oil-Distribution Recall And Disposal,TW FSI-Chung Lien Oil-Supply Chain Traceability And Product Flow,202607220000,contains,新增下游@ChatGPT
+TW FSI-Chung Lien Oil-Distribution Recall And Disposal,TW FSI-Chung Lien Oil-Product Recall Refund And Disposal,202607220000,contains,新增下游@ChatGPT
+TW FSI-Chung Lien Oil-Regulatory And Judicial Response,TW FSI-Chung Lien Oil-Production Suspension Inspection And Corrective Action,202607220000,contains,新增下游@ChatGPT
+TW FSI-Chung Lien Oil-Regulatory And Judicial Response,TW FSI-Chung Lien Oil-Delayed Notification And Administrative Penalties,202607220000,contains,新增下游@ChatGPT
+TW FSI-Chung Lien Oil-Regulatory And Judicial Response,TW FSI-Chung Lien Oil-Criminal Investigation And Corporate Accountability,202607220000,contains,新增下游@ChatGPT
+TW FSI-Chung Lien Oil-Health Risk And Public Communication,TW FSI-Chung Lien Oil-Carcinogenic Risk And Exposure Assessment,202607220000,contains,新增下游@ChatGPT
+TW FSI-Chung Lien Oil-Health Risk And Public Communication,TW FSI-Chung Lien Oil-Consumer Guidance And Risk Communication,202607220000,contains,新增下游@ChatGPT
+TW FSI-Chung Lien Oil-Health Risk And Public Communication,TW FSI-Chung Lien Oil-Disinformation And Official Clarification,202607220000,contains,新增下游@ChatGPT

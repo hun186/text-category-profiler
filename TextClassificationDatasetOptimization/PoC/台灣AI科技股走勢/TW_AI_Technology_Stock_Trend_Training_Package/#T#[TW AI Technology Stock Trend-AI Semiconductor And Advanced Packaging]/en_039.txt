@@ -1,0 +1,47 @@
+#T#[TW AI Technology Stock Trend-AI Semiconductor And Advanced Packaging]
+
+Language version: English
+
+Record type: public source index and original classification summary; no article or report body is reproduced
+
+Quota role: direct fine-grained sample
+
+Intended fine-grained label: TW AI Technology Stock Trend-AI Semiconductor And Advanced Packaging
+
+Primary parent label: TW AI Technology Stock Trend
+
+All parent labels: TW AI Technology Stock Trend; TW Technology Stocks; TW Stock Market; TW Finance; TW Economics; TW Affairs
+
+Source title: Public news index: 均豪 Gallant Precision Machining | earnings guidance and EPS revisions | Taiwan AI technology equities
+
+Source domain: bing.com
+
+Source type: public news-search index; public news-search index (candidate source set, not a single article body)
+
+Indexed source language: English
+
+Publication date: candidate results from 2024–2026
+
+Collection date: 2026-07-23
+
+Original or index URL: https://www.bing.com/news/search?q=%E5%9D%87%E8%B1%AA+Gallant+Precision+Machining+earnings+guidance+and+EPS+revisions+Taiwan+AI+technology+stocks+trend+news+analyst+2024+2025+2026&setlang=en-us&FORM=HDRSC6
+
+English classification summary:
+
+This index query combines 均豪 Gallant Precision Machining, earnings guidance and EPS revisions, AI半導體、晶片設計與先進封裝股, and Taiwan equity-trend terms to retrieve candidate news or research items supporting TW AI Technology Stock Trend-AI Semiconductor And Advanced Packaging. Individual result bodies have not been downloaded and must be checked by a reviewer before production training.
+
+Category scope: Taiwan-listed AI compute semiconductors, foundry, ASIC and IP design, advanced packaging, test interfaces, semiconductor equipment, and materials, viewed through stock-price and market narratives.
+
+Focus company or market unit: 均豪 Gallant Precision Machining. Primary factor: earnings guidance and EPS revisions. Analytical angle: technical breadth and turnover. Recommended evidence signals include new-product ramp, customer qualification, utilization, and lead times. These fields are intended to help a classifier distinguish a general company or technology story from a Taiwan equity-trend story. The label should be used only when technology, orders, revenue, earnings, valuation, investor positioning, or risk is connected to a Taiwan-listed equity, a Taiwan market index, or investor behavior in Taiwan equities.
+
+Matching vocabulary: AI chip, GPU, ASIC, CoWoS, advanced packaging, advanced node, HBM, silicon IP, test interface, semiconductor equipment. Keywords are retrieval cues rather than sufficient labeling evidence. An article may mention AI servers, advanced packaging, or optical networking but still fall outside the category when it is a purely technical tutorial, an academic paper, a non-Taiwan company story, or a report with no financial or market narrative.
+
+Annotation rules:
+1. The subject must concern Taiwan-listed technology equities, a Taiwan technology or semiconductor index, or a company that can be explicitly mapped to the Taiwan AI supply chain.
+2. The text should contain at least one market-relevant signal: price movement, turnover, revenue, EPS, margin, orders, shipments, capacity, valuation, target price, institutional flow, or market risk.
+3. When several AI supply-chain segments appear, assign the segment with the greatest textual emphasis and the clearest causal chain. Use the earnings/valuation/flow label only when those market variables are the central analytical subject.
+4. Exclude purely technical chip discussions that do not address Taiwan-listed equities, prices, revenue, valuation, or investor flows.
+
+Usage boundary and quality control: this file is a source-index training record with newly written classification text, not the original news or think-tank body. Search results can change with time, geography, ranking algorithms, or link removal. Before production training, sample-check URL validity, source credibility, language, publication date, and label accuracy. If a lawfully licensed full text is obtained later, it may replace this summary, but the first-line label, source fields, and rights record should remain intact.
+
+Training objective: Public web search results commonly organize Taiwan AI equities around AI chips and advanced packaging, AI servers, cooling, PCB/CCL, power, networking, and optical interconnects; the dataset uses those recurring segments as fine-grained labels. Record 039 expands combinations of companies, factors, wording, and market settings so the model does not merely memorize a small set of ticker names.

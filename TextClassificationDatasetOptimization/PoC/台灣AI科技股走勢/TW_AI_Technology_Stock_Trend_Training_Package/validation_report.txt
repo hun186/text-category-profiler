@@ -1,0 +1,15 @@
+Existing taxonomy rows read: 3002
+New edges: 12
+Training txt files: 800
+Expected txt files: 800
+PNG exists: True size=302367
+MD exists: True
+CSV exists: True
+TW AI Technology Stock Trend-AI Semiconductor And Advanced Packaging zh: files=100 chars=192578 >=100000=YES
+TW AI Technology Stock Trend-AI Semiconductor And Advanced Packaging en: files=100 chars=451797 >=100000=YES
+TW AI Technology Stock Trend-AI Server And System Manufacturing zh: files=100 chars=191280 >=100000=YES
+TW AI Technology Stock Trend-AI Server And System Manufacturing en: files=100 chars=449304 >=100000=YES
+TW AI Technology Stock Trend-AI Infrastructure Components zh: files=100 chars=190665 >=100000=YES
+TW AI Technology Stock Trend-AI Infrastructure Components en: files=100 chars=449955 >=100000=YES
+TW AI Technology Stock Trend-Earnings Valuation And Capital Flow zh: files=100 chars=192598 >=100000=YES
+TW AI Technology Stock Trend-Earnings Valuation And Capital Flow en: files=100 chars=458447 >=100000=YES

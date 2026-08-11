@@ -1,0 +1,165 @@
+---
+
+## 中文單篇來源範例
+
+#T#[2026 US-Iran War-Mediation And Peace Negotiations]
+
+語言版本：中文
+
+記錄類型：單篇來源
+
+資料單位：公開來源索引與原創分類摘要（不含新聞／報告全文）
+
+配額角色：底層直接樣本
+
+對應底層類別：2026 US-Iran War-Mediation And Peace Negotiations
+
+主要母類別：2026 US-Iran War-Diplomacy And Legal Response
+
+所有母類別：2026 US-Iran War-Diplomacy And Legal Response
+
+來源標題（原文）：〖更新〗伊朗巨輪強闖美封鎖線 機艙炸出洞遭扣押｜伊朗戰爭｜美伊談判｜美以打擊伊朗｜新唐人電視台
+
+來源網站：ntdtv.com
+
+來源型態：新聞媒體
+
+來源語言索引：中文
+
+發布時間：2026-04-16
+
+蒐集日期：2026-07-22
+
+原文／索引連結：https://www.ntdtv.com/b5/2026/04/16/a104087183.html
+
+中文分類摘要：
+
+本來源可直接支持「2026 US-Iran War-Mediation And Peace Negotiations」。主要分類線索包含談判、斡旋、停火與外交接觸等內容。
+
+父類別範圍涵蓋停火與戰事重啟、第三方斡旋、和平談判、聯合國安全理事會，以及美國國內戰爭權力與國際法爭議。
+
+使用界線：本檔是用於類別訓練的來源索引與重新撰寫摘要，不是原始新聞或智庫報告全文。正式訓練前應人工抽查來源與標籤；如需置換為全文，必須先確認授權。
+
+---
+
+## 英文單篇來源範例
+
+#T#[2026 US-Iran War-UN Security Council Action]
+
+Language version: English
+
+Record type: single source
+
+Data unit: public source index and original classification summary; no article or report body is reproduced
+
+Quota role: direct fine-grained sample
+
+Intended fine-grained label: 2026 US-Iran War-UN Security Council Action
+
+Primary parent label: 2026 US-Iran War-Diplomacy And Legal Response
+
+All parent labels: 2026 US-Iran War-Diplomacy And Legal Response
+
+Source title: UN Security Council demands Iran halt 'egregious attacks' on Gulf states | Euronews
+
+Source domain: euronews.com
+
+Source type: news media
+
+Indexed source language: English
+
+Publication date: 2026-03-11
+
+Collection date: 2026-07-22
+
+Original or index URL: https://www.euronews.com/2026/03/11/israel-carries-out-strikes-in-lebanon-and-tehran-fires-at-gulf-states-as-iran-war-enters-d
+
+English classification summary:
+
+The source directly supports the fine-grained label “2026 US-Iran War-UN Security Council Action.” Matching cues include “UN Security Council,” “Security Council,” and “resolution.”
+
+Parent-category scope includes ceasefire and renewed hostilities, third-party mediation, peace negotiations, U.N. Security Council action, U.S. war-powers disputes, and international-law responses.
+
+Usage boundary: this file is a source-index training record with newly written classification text, not the original news or think-tank body. Human review is recommended. Obtain the necessary rights before replacing the summary with full text.
+
+
+
+---
+
+## 中文搜尋結果集合範例
+
+#T#[TW AI Technology Stock Trend-AI Semiconductor And Advanced Packaging]
+
+語言版本：中文
+
+記錄類型：搜尋結果集合
+
+資料單位：公開新聞搜尋索引與原創分類摘要（不含新聞全文）
+
+配額角色：候選來源集合／底層資料補充
+
+對應底層類別：TW AI Technology Stock Trend-AI Semiconductor And Advanced Packaging
+
+主要母類別：TW AI Technology Stock Trend
+
+所有母類別：TW AI Technology Stock Trend；TW Technology Stocks；TW Stock Market；TW Finance；TW Economics；TW Affairs
+
+來源標題（原文）：公開新聞索引：晶心科 Andes Technology｜估值、本益比與資金輪動｜AI 半導體、晶片設計與先進封裝股
+
+來源網站：bing.com
+
+來源型態：公開新聞搜尋索引；候選來源集合，非單篇全文
+
+來源語言索引：中文
+
+發布時間：2024–2026 候選結果
+
+蒐集日期：2026-07-23
+
+原文／索引連結：https://www.bing.com/news/search?q=%E6%99%B6%E5%BF%83%E7%A7%91+Andes+Technology+AI+Semiconductor+Advanced+Packaging&setlang=zh-tw
+
+中文分類摘要：
+
+本筆索引以「晶心科 Andes Technology、估值、本益比、資金輪動、AI 半導體、晶片設計、先進封裝、台股走勢」等組合詞進行搜尋，目的是取得可直接支援「TW AI Technology Stock Trend-AI Semiconductor And Advanced Packaging」的候選新聞或研究分析。
+
+此紀錄只是 Bing News 搜尋結果集合，不是單篇新聞全文。後續程式應展開搜尋結果、取得候選文章直接網址，再逐篇下載與清理正文。
+
+---
+
+## 英文搜尋結果集合範例
+
+#T#[TW AI Technology Stock Trend-AI Infrastructure Components]
+
+Language version: English
+
+Record type: search-result collection
+
+Data unit: public news-search index and original classification summary; no article body is reproduced
+
+Quota role: candidate-source collection / fine-grained data supplement
+
+Intended fine-grained label: TW AI Technology Stock Trend-AI Infrastructure Components
+
+Primary parent label: TW AI Technology Stock Trend
+
+All parent labels: TW AI Technology Stock Trend; TW Technology Stocks; TW Stock Market; TW Finance; TW Economics; TW Affairs
+
+Source title: Public news index: Taiwan AI infrastructure components, liquid cooling, power density, and supply-chain stocks
+
+Source domain: bing.com
+
+Source type: public news-search index; candidate-source collection, not a single article
+
+Indexed source language: English
+
+Publication date: 2024–2026 candidate results
+
+Collection date: 2026-07-23
+
+Original or index URL: https://www.bing.com/news/search?q=Taiwan+AI+infrastructure+components+liquid+cooling+power+density+stocks+2024+2025+2026&setlang=en-us
+
+English classification summary:
+
+This search index targets candidate news and research analysis related to Taiwan-listed AI infrastructure-component companies, including liquid cooling, high-density power delivery, thermal management, connectors, printed circuit boards, and server-related components.
+
+This record is a Bing News search-result collection rather than a single article. The downstream program should expand the search results, resolve the candidate article URLs, and retrieve each article body separately.

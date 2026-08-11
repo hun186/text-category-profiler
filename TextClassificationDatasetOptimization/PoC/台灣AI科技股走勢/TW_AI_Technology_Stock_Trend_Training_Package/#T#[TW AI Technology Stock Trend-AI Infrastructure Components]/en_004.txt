@@ -1,0 +1,47 @@
+#T#[TW AI Technology Stock Trend-AI Infrastructure Components]
+
+Language version: English
+
+Record type: public source index and original classification summary; no article or report body is reproduced
+
+Quota role: direct fine-grained sample
+
+Intended fine-grained label: TW AI Technology Stock Trend-AI Infrastructure Components
+
+Primary parent label: TW AI Technology Stock Trend
+
+All parent labels: TW AI Technology Stock Trend; TW Technology Stocks; TW Stock Market; TW Finance; TW Economics; TW Affairs
+
+Source title: Public news index: 康舒 AcBel | liquid cooling and higher power density | Taiwan AI technology equities
+
+Source domain: bing.com
+
+Source type: public news-search index; public news-search index (candidate source set, not a single article body)
+
+Indexed source language: English
+
+Publication date: candidate results from 2024–2026
+
+Collection date: 2026-07-23
+
+Original or index URL: https://www.bing.com/news/search?q=%E5%BA%B7%E8%88%92+AcBel+liquid+cooling+and+higher+power+density+Taiwan+AI+technology+stocks+trend+news+analyst+2024+2025+2026&setlang=en-us&FORM=HDRSC6
+
+English classification summary:
+
+This index query combines 康舒 AcBel, liquid cooling and higher power density, AI基礎設施零組件股, and Taiwan equity-trend terms to retrieve candidate news or research items supporting TW AI Technology Stock Trend-AI Infrastructure Components. Individual result bodies have not been downloaded and must be checked by a reviewer before production training.
+
+Category scope: Taiwan-listed suppliers of AI data-center cooling, liquid cooling, power, BBU, PCB/CCL, connectors, cables, networking, switches, optical communications, and high-speed interconnects.
+
+Focus company or market unit: 康舒 AcBel. Primary factor: liquid cooling and higher power density. Analytical angle: fund flows and positioning. Recommended evidence signals include global cloud capital spending and platform-vendor guidance. These fields are intended to help a classifier distinguish a general company or technology story from a Taiwan equity-trend story. The label should be used only when technology, orders, revenue, earnings, valuation, investor positioning, or risk is connected to a Taiwan-listed equity, a Taiwan market index, or investor behavior in Taiwan equities.
+
+Matching vocabulary: liquid cooling, thermal, power supply, BBU, PCB, CCL, M9, switch, 800G, 1.6T, CPO, silicon photonics, high-speed interconnect. Keywords are retrieval cues rather than sufficient labeling evidence. An article may mention AI servers, advanced packaging, or optical networking but still fall outside the category when it is a purely technical tutorial, an academic paper, a non-Taiwan company story, or a report with no financial or market narrative.
+
+Annotation rules:
+1. The subject must concern Taiwan-listed technology equities, a Taiwan technology or semiconductor index, or a company that can be explicitly mapped to the Taiwan AI supply chain.
+2. The text should contain at least one market-relevant signal: price movement, turnover, revenue, EPS, margin, orders, shipments, capacity, valuation, target price, institutional flow, or market risk.
+3. When several AI supply-chain segments appear, assign the segment with the greatest textual emphasis and the clearest causal chain. Use the earnings/valuation/flow label only when those market variables are the central analytical subject.
+4. Exclude generic consumer-electronics component coverage without an AI data-center use case or Taiwan-equity connection.
+
+Usage boundary and quality control: this file is a source-index training record with newly written classification text, not the original news or think-tank body. Search results can change with time, geography, ranking algorithms, or link removal. Before production training, sample-check URL validity, source credibility, language, publication date, and label accuracy. If a lawfully licensed full text is obtained later, it may replace this summary, but the first-line label, source fields, and rights record should remain intact.
+
+Training objective: Public web search results commonly organize Taiwan AI equities around AI chips and advanced packaging, AI servers, cooling, PCB/CCL, power, networking, and optical interconnects; the dataset uses those recurring segments as fine-grained labels. Record 004 expands combinations of companies, factors, wording, and market settings so the model does not merely memorize a small set of ticker names.

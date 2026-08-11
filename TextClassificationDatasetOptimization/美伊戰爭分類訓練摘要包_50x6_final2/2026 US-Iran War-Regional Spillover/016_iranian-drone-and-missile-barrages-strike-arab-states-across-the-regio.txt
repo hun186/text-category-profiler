@@ -1,0 +1,17 @@
+#T#[2026 US-Iran War-Regional Spillover]
+
+資料型態：來源索引與原創分類摘要（不是新聞／報告全文）
+原文標題：Iranian drone and missile barrages strike Arab states across the region (March 9-10 updates)
+來源網站：fdd.org
+來源型態：智庫／研究機構
+發布時間：4 months ago
+蒐集日期：2026-07-22
+原文連結：https://www.fdd.org/analysis/2026/03/10/iranian-drone-and-missile-barrages-strike-arab-states-across-the-region-march-9-10-updates
+語言：英文
+
+分類摘要：
+此來源可作為「區域外溢」類別的標題級訓練樣本，主要線索包含：iran、iranian、gulf、kuwait、bahrain、qatar、uae、saudi、iraq、jordan。
+本類別涵蓋：戰事向波斯灣國家、區域內美軍與盟國基地、親伊朗武裝團體，以及紅海與曼德海峽方向擴散。
+候選細分類：2026 US-Iran War-Attacks On Gulf States
+
+授權與使用提醒：本檔只保留可分享的來源資訊與重新撰寫的分類說明，未複製來源全文。若要將原文作為模型訓練資料，請先取得相應授權，再保留第一行標籤並替換本段以下內容。

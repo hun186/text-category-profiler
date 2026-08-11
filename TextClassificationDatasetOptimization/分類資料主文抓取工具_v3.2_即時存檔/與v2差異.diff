@@ -1,0 +1,216 @@
+--- /mnt/data/scrape_articles_with_search_indexes.py	2026-07-23 08:38:01.075197662 +0000
++++ "/mnt/data/\345\210\206\351\241\236\350\263\207\346\226\231\344\270\273\346\226\207\346\212\223\345\217\226\345\267\245\345\205\267_v3/scrape_articles.py"	2026-07-23 08:41:24.851192564 +0000
+@@ -439,7 +439,7 @@
+             source_name=source_node.get_text(" ", strip=True) if source_node else "",
+         ))
+         seen.add(url)
+-        if len(candidates) >= max_results:
++        if max_results > 0 and len(candidates) >= max_results:
+             break
+     return candidates
+ 
+@@ -475,7 +475,7 @@
+             continue
+         candidates.append(IndexCandidate(title=title, url=url))
+         seen_urls.add(url)
+-        if len(candidates) >= max_results:
++        if max_results > 0 and len(candidates) >= max_results:
+             break
+     return candidates
+ 
+@@ -502,9 +502,15 @@
+     per_domain_delay: float,
+     respect_robots: bool,
+ ) -> IndexFetchResult:
++    """展開 Bing News 索引。max_results=0 表示不設程式端上限。"""
+     session = get_session()
+     attempts: list[str] = []
+     rss_url = make_bing_rss_url(entry.url)
++    merged: list[IndexCandidate] = []
++    seen_urls: set[str] = set()
++    successful_methods: list[str] = []
++    last_status: Optional[int] = None
++    last_final_url = ""
+ 
+     for method, request_url in (("bing-rss", rss_url), ("bing-html", entry.url)):
+         try:
+@@ -518,19 +524,54 @@
+             data = read_limited_response(response, max_bytes)
+             response._content = data
+             text = response_to_text(response)
++
++            # 正式模式（0）解析端點回傳的全部候選；有限模式只解析尚缺的數量。
++            remaining = 0 if max_results <= 0 else max_results - len(merged)
++            if max_results > 0 and remaining <= 0:
++                break
+             if method == "bing-rss":
+-                candidates = parse_bing_rss(text, max_results)
++                candidates = parse_bing_rss(text, remaining)
+             else:
+-                candidates = parse_bing_html(text, response.url, max_results)
+-            if candidates:
+-                return IndexFetchResult(
+-                    index_url=entry.url, ok=True, candidates=candidates, method=method,
+-                    status_code=status, final_url=response.url,
+-                )
+-            attempts.append(f"{method}: 未解析到候選文章")
++                candidates = parse_bing_html(text, response.url, remaining)
++
++            added = 0
++            for candidate in candidates:
++                canonical = canonicalize_article_url(candidate.url) or candidate.url
++                if canonical in seen_urls:
++                    continue
++                seen_urls.add(canonical)
++                merged.append(IndexCandidate(
++                    title=candidate.title,
++                    url=canonical,
++                    published=candidate.published,
++                    source_name=candidate.source_name,
++                ))
++                added += 1
++                if max_results > 0 and len(merged) >= max_results:
++                    break
++
++            if added:
++                successful_methods.append(method)
++                last_status = status
++                last_final_url = response.url
++            else:
++                attempts.append(f"{method}: 未解析到新的候選文章")
++
++            if max_results > 0 and len(merged) >= max_results:
++                break
+         except Exception as exc:
+             attempts.append(f"{method}: {type(exc).__name__}: {exc}")
+ 
++    if merged:
++        return IndexFetchResult(
++            index_url=entry.url,
++            ok=True,
++            candidates=merged,
++            method="+".join(successful_methods) or "bing",
++            status_code=last_status,
++            final_url=last_final_url,
++        )
++
+     return IndexFetchResult(
+         index_url=entry.url, ok=False, candidates=[], error="；".join(attempts)
+     )
+@@ -929,12 +970,16 @@
+     parser.add_argument("--max-mb", type=int, default=30)
+     parser.add_argument("--index-max-mb", type=int, default=5)
+     parser.add_argument(
+-        "--max-results-per-index", type=int, default=10,
+-        help="每個搜尋結果集合最多展開幾篇候選文章；預設 10",
++        "--max-results-per-index", type=int, default=0,
++        help="每個搜尋結果集合最多展開幾篇候選文章；0 表示不限（正式模式預設）",
+     )
+     parser.add_argument(
+         "--max-articles-per-category", type=int, default=0,
+-        help="每類最多保留幾篇；0 表示不限",
++        help="每類最多保留幾篇；0 表示不限（正式模式預設）",
++    )
++    parser.add_argument(
++        "--test-mode", action="store_true",
++        help="測試模式：每個搜尋集合最多 10 篇、每類最多 20 篇",
+     )
+     parser.add_argument(
+         "--dedupe-scope", choices=("category", "global", "none"), default="category",
+@@ -949,6 +994,20 @@
+     parser.add_argument("--clean-output", action="store_true", help="先清空既有正文輸出")
+     args = parser.parse_args()
+ 
++    if args.max_results_per_index < 0:
++        parser.error("--max-results-per-index 不可小於 0；0 表示不限")
++    if args.max_articles_per_category < 0:
++        parser.error("--max-articles-per-category 不可小於 0；0 表示不限")
++
++    if args.test_mode:
++        effective_max_results_per_index = 10
++        effective_max_articles_per_category = 20
++        run_mode = "測試模式"
++    else:
++        effective_max_results_per_index = args.max_results_per_index
++        effective_max_articles_per_category = args.max_articles_per_category
++        run_mode = "正式模式"
++
+     input_zip = (args.input_zip or find_default_input(script_dir)).resolve()
+     output_dir = args.output_dir.resolve()
+     output_zip = (
+@@ -971,10 +1030,24 @@
+     supported_index_entries = [e for e in index_entries if e.index_kind == "bing_news_search"]
+     unsupported_index_entries = [e for e in index_entries if e.index_kind != "bing_news_search"]
+ 
++    index_limit_text = (
++        "不限（展開端點回傳的全部候選）"
++        if effective_max_results_per_index == 0
++        else str(effective_max_results_per_index)
++    )
++    category_limit_text = (
++        "不限"
++        if effective_max_articles_per_category == 0
++        else str(effective_max_articles_per_category)
++    )
+     print(
+         f"讀取完成：{len(entries)} 筆、{len(categories)} 類；"
+         f"單篇來源 {len(direct_entries)} 筆、搜尋結果集合 {len(index_entries)} 筆"
+     )
++    print(
++        f"執行模式：{run_mode}；每個搜尋集合上限：{index_limit_text}；"
++        f"每類文章上限：{category_limit_text}"
++    )
+     for cat, count in sorted(categories.items()):
+         print(f"  {cat}: {count}")
+     if unsupported_index_entries:
+@@ -1024,7 +1097,7 @@
+                     entry,
+                     timeout=timeout,
+                     max_bytes=args.index_max_mb * 1024 * 1024,
+-                    max_results=max(1, args.max_results_per_index),
++                    max_results=effective_max_results_per_index,
+                     per_domain_delay=args.per_domain_delay,
+                     respect_robots=respect_robots,
+                 ): url
+@@ -1135,11 +1208,11 @@
+         retained_tasks.append(task)
+ 
+     capped_count = 0
+-    if args.max_articles_per_category > 0:
++    if effective_max_articles_per_category > 0:
+         category_kept: Counter[str] = Counter()
+         capped_tasks: list[ArticleTask] = []
+         for task in retained_tasks:
+-            if category_kept[task.category] >= args.max_articles_per_category:
++            if category_kept[task.category] >= effective_max_articles_per_category:
+                 capped_count += 1
+                 continue
+             category_kept[task.category] += 1
+@@ -1236,6 +1309,9 @@
+         "=" * 32,
+         f"完成時間：{now_iso()}",
+         f"來源元素據：{input_zip.name}",
++        f"執行模式：{run_mode}",
++        f"每個搜尋集合上限：{index_limit_text}",
++        f"每類文章上限：{category_limit_text}",
+         f"原始記錄：{len(entries)}",
+         f"單篇來源記錄：{len(direct_entries)}",
+         f"搜尋結果集合記錄：{len(index_entries)}",
+@@ -1259,7 +1335,16 @@
+     summary += [
+         "",
+         "處理規則：",
+-        f"- 每個搜尋索引最多展開 {max(1, args.max_results_per_index)} 篇候選文章。",
++        (
++            "- 每個搜尋索引不設程式端篇數上限，合併 RSS 與 HTML 可取得的候選文章。"
++            if effective_max_results_per_index == 0
++            else f"- 每個搜尋索引最多展開 {effective_max_results_per_index} 篇候選文章。"
++        ),
++        (
++            "- 每類文章不設篇數上限。"
++            if effective_max_articles_per_category == 0
++            else f"- 每類最多保留 {effective_max_articles_per_category} 篇文章。"
++        ),
+         f"- 網址去重範圍：{args.dedupe_scope}。",
+         "- Bing News 索引優先以 RSS 展開，失敗時再解析搜尋頁 HTML。",
+         "- 搜尋結果頁本身不會被存成訓練正文。",

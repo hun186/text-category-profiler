@@ -1,0 +1,40 @@
+#母類別,子類別,日期,關係,備註
+US-IR Relations,US-IR Confrontation,202607220000,contains,新增主幹
+US-IR Confrontation,US-IR Military Confrontation,202607220000,contains,新增主幹
+US-IR Military Confrontation,2026 US-Iran War,202607220000,contains,新增主幹
+US Military,US-IR Military Confrontation,202607220000,contains,新增交叉父類別
+IR Military,US-IR Military Confrontation,202607220000,contains,新增交叉父類別
+2026 US-Iran War,2026 US-Iran War-Military Operations,202607220000,contains,新增下游
+2026 US-Iran War,2026 US-Iran War-Targets And Damage,202607220000,contains,新增下游
+2026 US-Iran War,2026 US-Iran War-Maritime And Energy Impact,202607220000,contains,新增下游
+2026 US-Iran War,2026 US-Iran War-Regional Spillover,202607220000,contains,新增下游
+2026 US-Iran War,2026 US-Iran War-Humanitarian Impact,202607220000,contains,新增下游
+2026 US-Iran War,2026 US-Iran War-Diplomacy And Legal Response,202607220000,contains,新增下游
+2026 US-Iran War-Military Operations,2026 US-Iran War-Operation Epic Fury,202607220000,contains,新增下游
+2026 US-Iran War-Military Operations,2026 US-Iran War-Operation Roaring Lion,202607220000,contains,新增下游
+2026 US-Iran War-Military Operations,2026 US-Iran War-Iranian Ballistic Missile Attacks,202607220000,contains,新增下游
+2026 US-Iran War-Military Operations,2026 US-Iran War-Drone Warfare,202607220000,contains,新增下游
+2026 US-Iran War-Military Operations,2026 US-Iran War-Air And Missile Defense,202607220000,contains,新增下游
+2026 US-Iran War-Military Operations,2026 US-Iran War-Cyber Operations,202607220000,contains,新增下游
+2026 US-Iran War-Targets And Damage,2026 US-Iran War-Iranian Command And Security Apparatus Strikes,202607220000,contains,新增下游
+2026 US-Iran War-Targets And Damage,2026 US-Iran War-Iranian Missile Drone And Air Defense Site Strikes,202607220000,contains,新增下游
+2026 US-Iran War-Targets And Damage,2026 US-Iran War-Iranian Naval Target Strikes,202607220000,contains,新增下游
+2026 US-Iran War-Targets And Damage,2026 US-Iran War-Iranian Nuclear Program And Facility Attacks,202607220000,contains,新增下游
+2026 US-Iran War-Targets And Damage,2026 US-Iran War-Regional US And Allied Base Attacks,202607220000,contains,新增下游
+2026 US-Iran War-Targets And Damage,2026 US-Iran War-Civilian And Critical Infrastructure Damage,202607220000,contains,新增下游
+2026 US-Iran War-Maritime And Energy Impact,2026 US-Iran War-Strait Of Hormuz Disruption,202607220000,contains,新增下游
+2026 US-Iran War-Maritime And Energy Impact,2026 US-Iran War-US Blockade Of Iranian Ports,202607220000,contains,新增下游
+2026 US-Iran War-Maritime And Energy Impact,2026 US-Iran War-Commercial Shipping Attacks,202607220000,contains,新增下游
+2026 US-Iran War-Maritime And Energy Impact,2026 US-Iran War-Oil And Gas Market Impact,202607220000,contains,新增下游
+2026 US-Iran War-Regional Spillover,2026 US-Iran War-Attacks On Gulf States,202607220000,contains,新增下游
+2026 US-Iran War-Regional Spillover,2026 US-Iran War-Regional US And Allied Base Attacks,202607220000,contains,新增多重母類別
+2026 US-Iran War-Regional Spillover,2026 US-Iran War-Iran-Backed Armed Group Involvement,202607220000,contains,新增下游
+2026 US-Iran War-Regional Spillover,2026 US-Iran War-Red Sea And Bab El-Mandeb Spillover,202607220000,contains,新增下游
+2026 US-Iran War-Humanitarian Impact,2026 US-Iran War-Casualties,202607220000,contains,新增下游
+2026 US-Iran War-Humanitarian Impact,2026 US-Iran War-Displacement And Evacuation,202607220000,contains,新增下游
+2026 US-Iran War-Humanitarian Impact,2026 US-Iran War-Civilian And Critical Infrastructure Damage,202607220000,contains,新增多重母類別
+2026 US-Iran War-Diplomacy And Legal Response,2026 US-Iran War-Ceasefire And Resumption,202607220000,contains,新增下游
+2026 US-Iran War-Diplomacy And Legal Response,2026 US-Iran War-Mediation And Peace Negotiations,202607220000,contains,新增下游
+2026 US-Iran War-Diplomacy And Legal Response,2026 US-Iran War-UN Security Council Action,202607220000,contains,新增下游
+2026 US-Iran War-Diplomacy And Legal Response,2026 US-Iran War-US War Powers Debate,202607220000,contains,新增下游
+Middle East Affairs,2026 US-Iran War-Regional Spillover,202607220000,contains,新增交叉父類別

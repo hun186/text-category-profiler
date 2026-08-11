@@ -1,0 +1,13 @@
+#母類別,子類別,日期,關係,備註
+TW Stock Market,TW Technology Stocks,202607231530,contains,新增主要層級；台灣股票市場下的科技股集合；＠ChatGPT
+TW Technology Company Development,TW Technology Stocks,202607231530,contains,新增交叉父類別；連結科技公司發展與股票市場；＠ChatGPT
+TW Technology Stocks,TW AI Technology Stock Trend,202607231530,contains,新增主要層級；焦點類別；＠ChatGPT
+TW AI Technology Stock Trend,TW AI Technology Stock Trend-AI Semiconductor And Advanced Packaging,202607231530,contains,新增底層細緻類別；＠ChatGPT
+TW AI Technology Stock Trend,TW AI Technology Stock Trend-AI Server And System Manufacturing,202607231530,contains,新增底層細緻類別；＠ChatGPT
+TW AI Technology Stock Trend,TW AI Technology Stock Trend-AI Infrastructure Components,202607231530,contains,新增底層細緻類別；＠ChatGPT
+TW AI Technology Stock Trend,TW AI Technology Stock Trend-Earnings Valuation And Capital Flow,202607231530,contains,新增底層細緻類別；＠ChatGPT
+Artificial Intelligence Chips,TW AI Technology Stock Trend-AI Semiconductor And Advanced Packaging,202607231530,contains,新增交叉父類別；AI晶片主題連結；＠ChatGPT
+Semiconductor Industry Developement,TW AI Technology Stock Trend-AI Semiconductor And Advanced Packaging,202607231530,contains,新增交叉父類別；半導體產業發展連結；＠ChatGPT
+High Performance Computing,TW AI Technology Stock Trend-AI Server And System Manufacturing,202607231530,contains,新增交叉父類別；高效能運算與AI伺服器連結；＠ChatGPT
+Information Infrastructure,TW AI Technology Stock Trend-AI Infrastructure Components,202607231530,contains,新增交叉父類別；資料中心基礎設施連結；＠ChatGPT
+TW Technology Company Revenue,TW AI Technology Stock Trend-Earnings Valuation And Capital Flow,202607231530,contains,新增交叉父類別；營收與基本面連結；＠ChatGPT

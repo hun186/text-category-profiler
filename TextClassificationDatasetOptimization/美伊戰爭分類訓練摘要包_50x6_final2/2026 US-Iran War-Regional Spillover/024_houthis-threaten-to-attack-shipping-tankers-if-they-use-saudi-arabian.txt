@@ -1,0 +1,17 @@
+#T#[2026 US-Iran War-Regional Spillover]
+
+資料型態：來源索引與原創分類摘要（不是新聞／報告全文）
+原文標題：Houthis threaten to attack shipping tankers if they use Saudi Arabian ports on Red Sea
+來源網站：theguardian.com
+來源型態：新聞媒體
+發布時間：today
+蒐集日期：2026-07-22
+原文連結：https://www.theguardian.com/world/2026/jul/21/houthis-threaten-attack-tankers-saudi-arabian-ports-red-sea-shipping
+語言：英文
+
+分類摘要：
+此來源可作為「區域外溢」類別的標題級訓練樣本，主要線索包含：kuwait、saudi、jordan、houthi、red sea、bab、bab el-mandeb、saudi arabia。
+本類別涵蓋：戰事向波斯灣國家、區域內美軍與盟國基地、親伊朗武裝團體，以及紅海與曼德海峽方向擴散。
+候選細分類：2026 US-Iran War-Attacks On Gulf States；2026 US-Iran War-Iran-Backed Armed Group Involvement；2026 US-Iran War-Red Sea And Bab El-Mandeb Spillover
+
+授權與使用提醒：本檔只保留可分享的來源資訊與重新撰寫的分類說明，未複製來源全文。若要將原文作為模型訓練資料，請先取得相應授權，再保留第一行標籤並替換本段以下內容。

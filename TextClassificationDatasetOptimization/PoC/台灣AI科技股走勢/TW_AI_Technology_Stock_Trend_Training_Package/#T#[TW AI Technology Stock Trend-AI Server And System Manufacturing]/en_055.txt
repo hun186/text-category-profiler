@@ -1,0 +1,47 @@
+#T#[TW AI Technology Stock Trend-AI Server And System Manufacturing]
+
+Language version: English
+
+Record type: public source index and original classification summary; no article or report body is reproduced
+
+Quota role: direct fine-grained sample
+
+Intended fine-grained label: TW AI Technology Stock Trend-AI Server And System Manufacturing
+
+Primary parent label: TW AI Technology Stock Trend
+
+All parent labels: TW AI Technology Stock Trend; TW Technology Stocks; TW Stock Market; TW Finance; TW Economics; TW Affairs
+
+Source title: Public news index: 凌華 ADLINK | gross-margin and product-mix improvement | Taiwan AI technology equities
+
+Source domain: bing.com
+
+Source type: public news-search index; public news-search index (candidate source set, not a single article body)
+
+Indexed source language: English
+
+Publication date: candidate results from 2024–2026
+
+Collection date: 2026-07-23
+
+Original or index URL: https://www.bing.com/news/search?q=%E5%87%8C%E8%8F%AF+ADLINK+gross-margin+and+product-mix+improvement+Taiwan+AI+technology+stocks+trend+news+analyst+2024+2025+2026&setlang=en-us&FORM=HDRSC6
+
+English classification summary:
+
+This index query combines 凌華 ADLINK, gross-margin and product-mix improvement, AI伺服器、ODM與系統製造股, and Taiwan equity-trend terms to retrieve candidate news or research items supporting TW AI Technology Stock Trend-AI Server And System Manufacturing. Individual result bodies have not been downloaded and must be checked by a reviewer before production training.
+
+Category scope: Taiwan-listed AI server, rack-scale system, ODM/OEM, motherboard, industrial computer, edge-computing, and data-center system manufacturers, including stock, order, and profit trends.
+
+Focus company or market unit: 凌華 ADLINK. Primary factor: gross-margin and product-mix improvement. Analytical angle: product-platform transition. Recommended evidence signals include foreign and domestic institutional flows, holdings, and target-price revisions. These fields are intended to help a classifier distinguish a general company or technology story from a Taiwan equity-trend story. The label should be used only when technology, orders, revenue, earnings, valuation, investor positioning, or risk is connected to a Taiwan-listed equity, a Taiwan market index, or investor behavior in Taiwan equities.
+
+Matching vocabulary: AI server, GB200, GB300, Vera Rubin, rack-scale, ODM, OEM, data center, motherboard, edge AI. Keywords are retrieval cues rather than sufficient labeling evidence. An article may mention AI servers, advanced packaging, or optical networking but still fall outside the category when it is a purely technical tutorial, an academic paper, a non-Taiwan company story, or a report with no financial or market narrative.
+
+Annotation rules:
+1. The subject must concern Taiwan-listed technology equities, a Taiwan technology or semiconductor index, or a company that can be explicitly mapped to the Taiwan AI supply chain.
+2. The text should contain at least one market-relevant signal: price movement, turnover, revenue, EPS, margin, orders, shipments, capacity, valuation, target price, institutional flow, or market risk.
+3. When several AI supply-chain segments appear, assign the segment with the greatest textual emphasis and the clearest causal chain. Use the earnings/valuation/flow label only when those market variables are the central analytical subject.
+4. Exclude stories only about global cloud providers or non-Taiwan-listed server vendors unless they explicitly connect to Taiwan equity performance.
+
+Usage boundary and quality control: this file is a source-index training record with newly written classification text, not the original news or think-tank body. Search results can change with time, geography, ranking algorithms, or link removal. Before production training, sample-check URL validity, source credibility, language, publication date, and label accuracy. If a lawfully licensed full text is obtained later, it may replace this summary, but the first-line label, source fields, and rights record should remain intact.
+
+Training objective: Public web search results commonly organize Taiwan AI equities around AI chips and advanced packaging, AI servers, cooling, PCB/CCL, power, networking, and optical interconnects; the dataset uses those recurring segments as fine-grained labels. Record 055 expands combinations of companies, factors, wording, and market settings so the model does not merely memorize a small set of ticker names.
