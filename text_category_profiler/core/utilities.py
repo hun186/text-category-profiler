@@ -491,7 +491,7 @@ def getFileModTime(file):
     return result
 
 def MemUsage(Object, ObjName):
-    print("Memory usage of", type(Object), ObjName, "is", sys.getsizeof(object), "bytes.,")
+    print(f"Memory usage · {ObjName}: {sys.getsizeof(Object)} bytes ({type(Object).__name__})")
 
 def MemUsageOfCurrentProcess(humanizedMessage=True):
     memUsage = psutil.Process(os.getpid()).memory_info().rss
@@ -510,7 +510,7 @@ def MemUsageOfCurrentProcess(humanizedMessage=True):
 def ShowElapsedTime(start_time=None):
     if start_time is not None:
         elapsed_time = time.time() - start_time
-        print("It has been passed for {:.4f} seconds".format(elapsed_time))
+        print("Elapsed time · {:.2f} seconds".format(elapsed_time))
         return elapsed_time
     else:
         return None
@@ -547,19 +547,20 @@ def DictIndentPrint(Dict,indent=4):
     print(json.dumps(Dict,indent=4,ensure_ascii=False))
     
 def ShowPartDict(Dict, nShow = 15, DictMeaning = None):
-    print("-"*50)
-    print("Show the first and last", nShow/2, "items of", DictMeaning)
+    shown_name = DictMeaning or "dictionary"
     KEYSList = list(Dict.keys())
-    print("key", "Dict[key]")
-    for key in KEYSList[0:int(nShow/2)]+KEYSList[-int(nShow/2):]:
+    half = max(int(nShow / 2), 1)
+    if len(KEYSList) <= nShow:
+        shown_keys = KEYSList
+    else:
+        shown_keys = KEYSList[:half] + KEYSList[-half:]
+    print(f"{shown_name} preview · {len(KEYSList)} items")
+    for key in shown_keys:
         try:
-            print(key, str(Dict[key])[0:1000])
+            print(f"  · {key!r}: {str(Dict[key])[:1000]}")
         except Exception as e:
             print(f"When Runngin ShowPartDict, the following error occurs:\n{e}\n")
-        if len(str(Dict[key])[0:1000]) > 1000:
-            print("-"*10)
     MemUsage(Dict, DictMeaning)
-    print("-"*50)
 
 def ShowLenOfValuesOfDict(mydict,Name=None):
     print(f"{'-'*10} Len of Values of The Dict {Name} {'-'*10}")

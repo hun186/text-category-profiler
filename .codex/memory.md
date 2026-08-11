@@ -12,6 +12,13 @@
 
 ## Recent Outcomes
 
+### 2026-08-11 — Test result visualization console readability
+
+- 目標：整理 Test_result_Vis 啟動時的 graph、InfoScore、Dash table 與 prediction chart 雜訊。
+- 結果：graph/table/chart 訊息改為 section 與 key-value 摘要，移除 raw DataFrame/JSON/plugin parameter dumps；修正零值 timer 印出 epoch 秒數、字典記憶體量測目標與 Tulip deprecated `input property` key。
+- 驗證：`python -m unittest discover -s tests`、相關檔案 `py_compile`、`git diff --check`；完整 Dash/Tulip 流程仍需使用者的 Windows 工作池與 runtime 驗證。
+
+
 ### 2026-08-06 — Package 內部 path injector 淘汰
 
 - 目標：繼續 `text_category_profiler` package 遷移，先移除 package 自身與 root orchestration/parameter layer 對 legacy `PackageImporter` 的依賴。

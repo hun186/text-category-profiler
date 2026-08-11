@@ -78,6 +78,7 @@ from text_category_profiler.core.log_display import section
 from text_category_profiler.core.log_display import stage_banner
 from text_category_profiler.core.log_display import stage_done
 from text_category_profiler.core.log_display import summarize_sequence
+from text_category_profiler.core.log_display import dataframe_summary
 from text_category_profiler.core.utilities import timeNow
 from text_category_profiler.core.utilities import OSWALK
 from text_category_profiler.core.utilities import MKDIR
@@ -705,8 +706,11 @@ class VisDatatableDFTransformer:
         #numCols=[str(i) for i in range(len(bar_df.columns)-2)]
         #bar_df = bar_df[['Article Class','File']+numCols]
     
-        print("Finished building bar_df")
-        ShowElapsedTime(start_time)
+        key_values("Analysis table ready", [
+            ("rows", len(bar_df)),
+            ("columns", len(bar_df.columns)),
+            ("elapsed", "{:.2f} seconds".format(time.time() - start_time)),
+        ], icon="·")
         #dash表格儲存格內容型別只接受string, number, boolean，所以將類別組成字典轉換為字串。
         #bar_df['Compositions'] = bar_df['Compositions'].apply(json.dumps)
         bar_df['Compositions'] = bar_df['Compositions'].apply(lambda x:json.dumps(x, indent=4))#.replace("\n","  \n"))
@@ -767,8 +771,10 @@ def ISMarksAnalysis(df):
     ISMarks = [SortedIS[min(int(LenSIS*0.1*i),LenSIS-1)] for i in range(11)]
     ISMarks = [int(x) for x in ISMarks]
     #"InfoScore Range" bar 初始取第500高的分數當下限
-    print("ISMarks[0:20]", ISMarks[0:20])
-    print("SortedIS[0:100]", SortedIS[0:100])
+    key_values("InfoScore bounds", [
+        ("range", f"{SortedIS[0]} .. {SortedIS[-1]}"),
+        ("marks", summarize_sequence(ISMarks, limit=6)),
+    ], icon="·")
     AutoISlbd = SortedIS[max(-3000,-len(SortedIS))]
     AutoISubd = SortedIS[-1]
     return AutoISlbd,AutoISubd,ISMarks
@@ -970,11 +976,10 @@ def Build_VisDatatable(
         filter_query = '',
         FilteredDF_OPTFN=""
         ):
-    print("="*50)
-    ShowElapsedTime(start_time)
-    print("Running Build_VisDatatable.")
+    section("Build results table", icon="▦")
     #print("derived_filter_query_structure", derived_query_structure)
-    print("filter_query", filter_query)
+    if filter_query:
+        info(f"Filter query · {filter_query}")
     #FilteredPreambleColsFN = FilteredDF_OPTFN+".sql3"
     #df = dfFromSQLite3(FilteredPreambleColsFN)
     
@@ -1073,9 +1078,11 @@ def Build_VisDatatable(
     columns=[{'name': str(i), 'id': str(i), 'hideable':True #'deletable':True
               } for i in PartDF.columns]
     #open("temp.txt","wt",encoding='utf-8').write(str(data))
-    ShowElapsedTime(start_time)
-
-    print("Finished Running Build_VisDatatable.")
+    key_values("Results table ready", [
+        ("rows", len(PartDF)),
+        ("columns", len(PartDF.columns)),
+        ("elapsed", "{:.2f} seconds".format(time.time() - start_time)),
+    ], icon="·")
     return [dash_table.DataTable(
                 id='VisDatatable',
                 columns=columns,
@@ -1209,11 +1216,8 @@ def Build_Pred_Block(
     #PartDF_File = PartDF_File[['InfoScoreSum','File']].sort_values(
         #by=['InfoScoreSum'],ascending=False)
     #PartDFFL = list(PartDF_File['File'])
-    print("="*50)
-    ShowElapsedTime(start_time)
-    print("Running Build_Pred_Block function")
+    section("Build prediction charts", icon="▥")
     #LevelDVisProcessor(df=PartDF, VisPath = 'Src')
-    print("="*50)
     SrcList = GetSrcList(sql3File)
     SrcList = ListCap(SrcList,list(df['File']))
     PredsDF,FileListWithNPiecesDESC = BuildPredsdf(
@@ -1233,7 +1237,11 @@ def Build_Pred_Block(
         VisPath_type = ['pred_Type']
     else:
         VisPath_type = ['pred_Type', 'Src']
-    print("Finished Running Build_Pred_Block function")
+    key_values("Prediction charts ready", [
+        ("files", len(SrcList)),
+        ("predictions", len(PredsDF)),
+        ("elapsed", "{:.2f} seconds".format(time.time() - start_time)),
+    ], icon="·")
     '''
     PredsData = [["Src","pred_Type"]]
     if len(PartDFFL) <40:
@@ -3841,8 +3849,10 @@ if __name__=='__main__':
         df_json = df.to_json(date_format='iso', orient='split')
         FilteredDF_json = df_json
     #FilteredDF = pd.read_json(FilteredDF_json, orient='split')
-    print("Initialing, df_json",df_json)
-    print("Initialing, FilteredDF_json",FilteredDF_json)
+    key_values("Visualization data initialized", [
+        ("rows", len(df)),
+        ("serialized in memory", df_json != '{}'),
+    ], icon="·")
     
     FilteredDF = df
     
@@ -3867,22 +3877,18 @@ if __name__=='__main__':
         AutoISlbd,AutoISubd,ISMarks = ISMarksAnalysis(df)
         #args.InfoScoreSumLowerBound = AutoISlbd
         #args.InfoScoreSumUpperBound = AutoISubd
-        ShowElapsedTime(start_time)
-        print("Start to Apply AutoInfoScoreBound.")
+        info(f"Applying automatic InfoScore range · {AutoISlbd} .. {AutoISubd}")
         df = DFfilter(df, 
         InfoScoreSumLowerBound = AutoISlbd,
         InfoScoreSumUpperBound = AutoISubd
         )
-        ShowElapsedTime(start_time)
-        print("Finished Applying AutoInfoScoreBound.")
-        print("df",df)
+        dataframe_summary(df, label="Filtered results", max_rows=3)
         #dfOutputer(df[PreambleCols],DF_OPTFN).run()
         
     MES = "As args.AutoInfoScoreBound is True, the df is refined with \n"
     MES += f"InfoScore Range=[{AutoISlbd}, {AutoISubd}]"
     MPLOGGER.logW(MES=MES,logFile="Test_result_Vis.log")
-    print("rdy to run server, df_json is ",df_json)
-    print("rdy to run server, FilteredDF_json is ",FilteredDF_json)
+    info(f"Visualization dataset ready · {len(df)} rows")
 
     cms = cmapSet()
     ColorDict = {}
