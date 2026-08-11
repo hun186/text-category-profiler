@@ -337,7 +337,7 @@ if __name__ == '__main__':
             BatCMD += " -tr True"
         if args.test == True:
             BatCMD += " -ts True"
-        BatCMD += f" -mdlDir {outputDir} -BertDataDir {BertDatasetSubDir} -mdlType {args.ModelType} -ZeroShot {args.ActiveHTCZeroshot} -MaxSeqLen {args.MaxSeqLength} "
+        BatCMD += f" -mdlDir {outputDir} -BertDataDir {BertDatasetSubDir} -mdlType {args.ModelType} -ZeroShot {args.ActiveHTCZeroshot} -MaxSeqLen {args.MaxSeqLength} -SaveOptimizer {args.SaveOptimizer} "
         #BatCMD += "> RunClassfier.log 2>&1 & \n\n" #背景作業
         run_log = os.path.join(BertDatasetSubDir, "logs", "RunClassfier.log")
         BatCMD += f'> "{run_log}" 2>&1'

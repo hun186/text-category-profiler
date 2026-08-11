@@ -1,6 +1,7 @@
 import ast
 import io
 import math
+import symtable
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
@@ -28,7 +29,7 @@ def _load_functions(*function_names):
 class TransformerDatasetLoadingTests(unittest.TestCase):
     def setUp(self):
         self.namespace = _load_functions(
-            "LoadSamples", "validation_runtime_config"
+            "LoadSamples", "validation_runtime_config", "optimizer_checkpoint_config"
         )
 
     def test_optional_missing_validation_dataset_returns_no_samples(self):
@@ -67,6 +68,34 @@ class TransformerDatasetLoadingTests(unittest.TestCase):
 
         self.assertTrue(has_validation)
         self.assertEqual(strategy, "steps")
+
+    def test_optimizer_checkpoint_is_not_saved_by_default(self):
+        save_only_model, notice = self.namespace["optimizer_checkpoint_config"](False)
+
+        self.assertTrue(save_only_model)
+        self.assertIn("optimizer.pt will NOT be kept", notice)
+        self.assertIn("--SaveOptimizer true", notice)
+
+    def test_optimizer_checkpoint_can_be_enabled(self):
+        save_only_model, notice = self.namespace["optimizer_checkpoint_config"](True)
+
+        self.assertFalse(save_only_model)
+        self.assertIn("optimizer.pt WILL be kept", notice)
+        self.assertIn("--SaveOptimizer false", notice)
+
+    def test_train_model_reads_cli_args_from_module_scope(self):
+        """TrainingArguments must not shadow the parsed CLI namespace."""
+
+        table = symtable.symtable(
+            TRANSFORMER_SCRIPT.read_text(encoding="utf-8"),
+            str(TRANSFORMER_SCRIPT),
+            "exec",
+        )
+        train_model_table = next(
+            child for child in table.get_children() if child.get_name() == "trainModel"
+        )
+
+        self.assertTrue(train_model_table.lookup("args").is_global())
 
 
 if __name__ == "__main__":

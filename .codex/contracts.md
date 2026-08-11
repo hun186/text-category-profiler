@@ -32,7 +32,7 @@
 - 權威定義：`text_category_profiler/pipeline/TCF_utils.py` 的 `ClassfierOptionParser()`。
 - Producer／Owner：共用 text_category_profiler parser。
 - Consumer：`TCFMain.py`、`DatasetConverter/DataConverter.py`、`BertScript/RunClassfier.py`、`BertScript/CombineTestResult.py`、`BertScript/Test_result_Vis.py` 等 stage scripts。
-- 輸入：`--train/-tr`、`--test/-ts`、`--task`、`--WorkPoolROOT/-WPRoot`、`--BertDatasetSubDir/-BertDataDir`、`--TopicTreeDir/-TopicTreeDir`、`--TopicTreeFiles/-TopicTreeFiles`、`--modelDir/-mdlDir`、`--FixedTestPATH/-FTPath`、WeiTech work pool 相關參數、model type 與視覺化參數等。
+- 輸入：`--train/-tr`、`--test/-ts`、`--task`、`--WorkPoolROOT/-WPRoot`、`--BertDatasetSubDir/-BertDataDir`、`--TopicTreeDir/-TopicTreeDir`、`--TopicTreeFiles/-TopicTreeFiles`、`--modelDir/-mdlDir`、`--FixedTestPATH/-FTPath`、`--SaveOptimizer/-SaveOptimizer`、WeiTech work pool 相關參數、model type 與視覺化參數等。`--SaveOptimizer` 預設為 `false`，因此 Hugging Face checkpoint 不保留 `optimizer.pt`；需要續訓狀態時可傳 `--SaveOptimizer true`。
 - 輸出：argparse namespace；`args.train == False and args.test == False` 時 parser 會將 `args.test` 設為 `True`。
 - 驗證與約束：修改 parser 後需檢查所有 `convert_to_args_str(args)` consumer 與手動附加參數。
 - 錯誤／exit code／失敗語意：argparse 會處理未知／不合法參數；stage script 其他錯誤語意待確認。

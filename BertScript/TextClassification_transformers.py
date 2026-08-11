@@ -157,6 +157,20 @@ def validation_runtime_config(validation_samples):
     has_validation = len(validation_samples) > 0
     return has_validation, ("steps" if has_validation else "no")
 
+
+def optimizer_checkpoint_config(save_optimizer):
+    """Return Trainer setting and a user-facing optimizer checkpoint notice."""
+
+    if save_optimizer:
+        return False, (
+            "Optimizer checkpoint: optimizer.pt WILL be kept. "
+            "To disable it, use --SaveOptimizer false (the default)."
+        )
+    return True, (
+        "Optimizer checkpoint: optimizer.pt will NOT be kept. "
+        "To keep it, use --SaveOptimizer true."
+    )
+
 def trainModel():
     label_names = getTopicLabelList(outputDir)
     id2label = {idx:label for idx, label in enumerate(label_names)}
@@ -204,11 +218,15 @@ def trainModel():
     logging_steps = max(1, len(tokenized_dataset["train"]) // (batch_size * num_train_epochs))
     train_steps_per_epoch = math.ceil(len(tokenized_dataset["train"]) / batch_size)
     expected_train_steps = train_steps_per_epoch * num_train_epochs
+    save_only_model, optimizer_notice = optimizer_checkpoint_config(
+        args.SaveOptimizer
+    )
     print(
         f"Training configuration: batch_size={batch_size}, "
         f"num_train_epochs={num_train_epochs}, "
         f"expected training steps={expected_train_steps}."
     )
+    print(optimizer_notice)
     
     # 共用參數
     common_args = dict(
@@ -216,6 +234,7 @@ def trainModel():
         eval_steps=50,
         save_strategy="epoch",
         save_total_limit=1,
+        save_only_model=save_only_model,
         learning_rate=2e-5,
         num_train_epochs=num_train_epochs,
         weight_decay=0.01,
@@ -232,20 +251,20 @@ def trainModel():
     
     # 嘗試使用 evaluation_strategy，若失敗則 fallback 到 eval_strategy（新版 dev）
     try:
-        args = TrainingArguments(
+        training_args = TrainingArguments(
             evaluation_strategy=evaluation_strategy,
             **common_args
         )
     except TypeError as e:
         print(f"⚠️發生TypeError:{e} 使用 eval_strategy（開發版 API）")
-        args = TrainingArguments(
+        training_args = TrainingArguments(
             eval_strategy=evaluation_strategy,
             **common_args
         )
     
     trainer = Trainer(
         model,
-        args,
+        training_args,
         train_dataset=tokenized_dataset["train"],
         eval_dataset=(tokenized_dataset["validation"] if has_validation else None),
         tokenizer=tokenizer,
