@@ -1,6 +1,6 @@
 import os
 #os.system(r'%windir%\System32\cmd.exe "/K" d:\ProgramData\Anaconda3\Scripts\activate.bat d:\ProgramData\Anaconda3\envs\TF1.5')
-os.system("cd d:\ProgramData\Anaconda3\Scripts")
+os.system(r"cd d:\ProgramData\Anaconda3\Scripts")
 os.system("dir")
 #os.system("cd d:\ProgramData\Anaconda3\Scripts")
 os.system("pause")

@@ -255,7 +255,7 @@ class TextDivider():
                     #if text.count(" ")/(len(text)+10**-100) > 0.13:
                     #if text_no_digits.count(" ")/(len(text_no_digits)+10**-100) > 0.13:
                     #被空格隔開的字符要大於1個，才計數，以避免" 示 範 字 串"這種單字接空白的中文字串被誤判為英文。
-                    if len(re.findall('\w{2,} ',text_no_digits))/(len(text_no_digits)+10**-100) > 0.11:
+                    if len(re.findall(r'\w{2,} ',text_no_digits))/(len(text_no_digits)+10**-100) > 0.11:
                         textList = wrap(self.text, 3*self.width)
                     else:
                         textList = wrap(self.text, self.width)
@@ -411,7 +411,7 @@ class SampleReader():
                 #如果數字比例大且去除特殊符號、數字、字母A-F後，
                 #剩下的中文或其他語文字元過少，
                 #則直接判定OutLabel為SPCOutLabelCand
-                if len(re.sub('[ -F,\[-f,\{-~]','',textseg)) < 40 and SPCOutLabelCand != "":
+                if len(re.sub(r'[ -F,\[-f,\{-~]','',textseg)) < 40 and SPCOutLabelCand != "":
                     sample = {
                         "file":self.file,
                         "InLabel": segInLabel,
@@ -709,7 +709,14 @@ class SampleReader():
                     textList,InLabel)*SampleDupeTime
                 result.extend(Samples)
             except KeyError as e:
-                MES = f"KeyError occurred: {e}"
+                if self.LabelConvertDict and InLabel not in self.LabelConvertDict:
+                    MES = (
+                        f"Input label {InLabel!r} is not present in the label conversion "
+                        "map; this sample was dropped. Rename its #T#[...] directory to "
+                        "a label defined by the configured TopicTree files."
+                    )
+                else:
+                    MES = f"KeyError occurred: {e}"
     
             except Exception as e:
                 MES = e
