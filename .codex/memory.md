@@ -12,6 +12,12 @@
 
 ## Recent Outcomes
 
+### 2026-08-11 — Optional Hugging Face optimizer checkpoints
+
+- 目標：避免訓練 checkpoint 預設保留體積較大的 `optimizer.pt`，同時讓需要續訓狀態的使用者可明確開啟。
+- 結果：新增 `--SaveOptimizer`／`-SaveOptimizer` boolean CLI，預設 `false` 並映射到 Hugging Face `save_only_model=True`；訓練開始前會顯示 `optimizer.pt` 是否保留及相反設定的命令提示。
+- 驗證：optimizer checkpoint 設定與提示的 isolated unittest、相關檔案 `py_compile`、`git diff --check`；完整輕量 suite 有一個既有 Windows path separator assertion 失敗，且未執行完整模型訓練。
+
 ### 2026-08-11 — README core capability diagrams and information architecture
 
 - 目標：在 GitHub README 清楚介紹模型基礎的訓練集覆蓋調優，以及下游文本切片、算分與推薦兩項核心能力。
