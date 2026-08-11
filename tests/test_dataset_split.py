@@ -13,9 +13,19 @@ from DatasetConverter.dataset_split import ensure_train_covers_labels
 from DatasetConverter.dataset_split import expand_train_to_cover_labels
 from DatasetConverter.dataset_split import iter_dataset_splits
 from DatasetConverter.dataset_split import iter_split_bounds
+from DatasetConverter.sample_schema import columns_for_sample_rows
 
 
 class DatasetSplitPlanTests(unittest.TestCase):
+    def test_empty_sample_rows_keep_downstream_schema(self):
+        self.assertEqual(
+            columns_for_sample_rows([]),
+            ["file", "InLabel", "OutLabel", "text", "PartNO"],
+        )
+
+    def test_reader_rows_define_their_own_columns(self):
+        self.assertEqual(columns_for_sample_rows([{"OutLabel": "Scrap"}]), [])
+
     def test_plan_assigns_every_row(self):
         plan = build_split_plan(11, train_ratio=0.6, test_ratio=0.2)
 

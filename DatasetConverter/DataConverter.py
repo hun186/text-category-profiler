@@ -101,6 +101,7 @@ from DatasetConverter.dataset_split import deduplicate_dataset_rows
 from DatasetConverter.dataset_split import ensure_train_covers_labels
 from DatasetConverter.dataset_split import expand_train_to_cover_labels
 from DatasetConverter.dataset_split import iter_dataset_splits
+from DatasetConverter.sample_schema import columns_for_sample_rows
 
 #from utilities import hash
 from text_category_profiler.data.df_utils import dfOutputer
@@ -197,6 +198,7 @@ class DataConvertJobGenerater():
                  RBDict = {},
                  RBActive = True,
                  DataCleanerRePatternDict = {},
+                 sourceRole = "regular source",
                  MPLOGGER = None
                  ):
         if MPLOGGER == None:
@@ -204,6 +206,7 @@ class DataConvertJobGenerater():
         else:
             self.MPLOGGER = MPLOGGER
         self.datasetSubDir = datasetSubDir
+        self.sourceRole = sourceRole
         self.ROOTPATHList = ROOTPATHList
         #self.SQLFile = SQLFile
         self.esJob = esJob
@@ -313,7 +316,7 @@ class DataConvertJobGenerater():
 
         
     def show(self):
-        key_values("Dataset converter job", [
+        key_values(f"{self.sourceRole.title()} converter job", [
             ("input roots", len(self.ROOTPATHList)),
             ("root preview", summarize_sequence(self.ROOTPATHList, limit=3)),
         ], icon="·")
@@ -353,7 +356,7 @@ class DataConvertJobGenerater():
     def BuildFileList(self,FullPathFNrePat):
         fiL = []
         start_time = time.time()
-        key_values("Dataset file discovery", [
+        key_values(f"{self.sourceRole.title()} file discovery", [
             ("input roots", len(self.ROOTPATHList)),
             ("root preview", summarize_sequence(self.ROOTPATHList, limit=3)),
             ("filename pattern", FullPathFNrePat),
@@ -406,7 +409,7 @@ class DataConvertJobGenerater():
             ], icon="·")
 
         else:
-            key_values("Dataset file discovery result", [
+            key_values(f"{self.sourceRole.title()} file discovery result", [
                 ("RemoveDumpArticle", False),
                 ("files", len(fiL)),
                 ("elapsed seconds", f"{time.time() - start_time:.4f}"),
@@ -561,6 +564,7 @@ def BuildSamplesDfFromPaths(
     nProcess = nProcess,
     DCkwargs = {},
     start_time=None,
+    sourceRole="regular source",
     MPLOGGER = None):
     '''
     處理指定路徑，轉換成樣本DataFrame，其中rows_list為字典清單，如：[
@@ -596,6 +600,7 @@ def BuildSamplesDfFromPaths(
         #SQLFile = SQLFile,
         esJob = esJob,
         RemoveDumpArticle = RemoveDumpArticle,
+        sourceRole=sourceRole,
         #nProcess = nProcess,
         MPLOGGER = MPLOGGER,
         **DCkwargs
@@ -613,7 +618,7 @@ def BuildSamplesDfFromPaths(
         ),
         icon="📥",
     )
-    key_values("Reader job inputs", [
+    key_values(f"{sourceRole.title()} reader job inputs", [
         ("configured input roots", len(ROOTPATHList)),
         ("matching sample files", len(DCJG.fileList)),
         ("Elasticsearch documents", len(DCJG.ESidList)),
@@ -626,7 +631,7 @@ def BuildSamplesDfFromPaths(
     else:
         MPresult = []
         warning(
-            "Sample loading was skipped: no reader jobs were created because no "
+            f"{sourceRole.title()} loading was skipped: no reader jobs were created because no "
             "supported input files, Elasticsearch documents, or corpus titles "
             "were discovered. Check the configured input roots and the file "
             "discovery summaries above."
@@ -637,7 +642,7 @@ def BuildSamplesDfFromPaths(
     else:
         rows_list, MultiLabelCountList = zip(*MPresult)
     rows_list = flattenList(rows_list)
-    key_values("Sample row collection result", [
+    key_values(f"{sourceRole.title()} row collection result", [
         ("reader results returned", len(MPresult)),
         ("sample rows collected", len(rows_list)),
         ("multi-label count results", len(MultiLabelCountList)),
@@ -671,7 +676,7 @@ def BuildSamplesDfFromPaths(
         ShowElapsedTime(start_time)
     else:
         warning(
-            "No sample rows are available for DataFrame conversion. "
+            f"No {sourceRole} rows are available for DataFrame conversion. "
             f"Configured input roots: {summarize_sequence(ROOTPATHList, limit=3)}."
         )
 
@@ -679,6 +684,9 @@ def BuildSamplesDfFromPaths(
     df = DictRowsListToDF(
         rows_list,start_time=start_time,
         #RemoveDumpBasedOnCols=['file','OutLabel','text'],
+        # Keep the sample handoff schema even when this particular source is
+        # empty. Test-only runs load FixedTest rows later in DatasetGenerator.
+        Cols=columns_for_sample_rows(rows_list),
         )
     #部分外部來源可能沒有 PartNO，轉換為整數前先補零。
     if len(df) > 0:
@@ -701,7 +709,7 @@ def BuildSamplesDfFromPaths(
     #統計輸出樣本數量
     MES = "There are totally {} samples converted, cf {} or {} for filename.".format(
         df.shape[0], OUTPUTMAIN+".tsv", OUTPUTMAIN+".sql3")
-    key_values("Dataset conversion result", [
+    key_values(f"{sourceRole.title()} conversion result", [
         ("samples", df.shape[0]),
         ("tsv", OUTPUTMAIN+".tsv"),
         ("sqlite", OUTPUTMAIN+".sql3"),
@@ -863,6 +871,23 @@ class DatasetGenerator:
             ("removed rows", nBeforeDedup - len(self.df)),
             ("remaining rows", len(self.df)),
         ], icon="·")
+        # FixedTest inputs are intentionally separate from the regular source
+        # roots. Discover them here so test-only logs clearly show whether the
+        # configured files exist before dataset split generation starts.
+        FixfiL = []
+        for workingPath in self.FixedTestPATHList:
+            FixfiL.extend(OSWALK(workingPath, Extension=["txt", "AI2", "sql3"]))
+        key_values("Fixed test file discovery", [
+            ("configured paths", summarize_sequence(self.FixedTestPATHList, limit=4)),
+            ("matching files", len(FixfiL)),
+            ("file preview", summarize_sequence(FixfiL, limit=3)),
+        ], icon="·")
+        if self.FixedTestPATHList and not FixfiL:
+            warning(
+                "No supported FixedTest files were found below the configured "
+                "paths. Expected .txt, .AI2, or .sql3 files in nested folders."
+            )
+
         #設定訓練集、驗證集及測試集比例。
         nDataset = self.df.shape[0]
         ratio_split_plan = build_split_plan(
@@ -888,15 +913,11 @@ class DatasetGenerator:
     
         FT_df = pd.DataFrame()
         es_df = pd.DataFrame()
-        #計算強制做為測試集的txt檔清單。
-        FixfiL = []
-        for workingPath in self.FixedTestPATHList:
-            FixfiL.extend(OSWALK(workingPath, Extension = ["txt","AI2","sql3"]))
         #生成各資料集。
-        key_values("Dataset split plan", [
+        key_values("Regular source split plan", [
             ("train", split_plan.train),
             ("validation", split_plan.validation),
-            ("test", split_plan.test),
+            ("test (excluding FixedTest)", split_plan.test),
             ("fixed test paths", summarize_sequence(self.FixedTestPATHList, limit=4)),
         ], icon="·")
         DTBJobs = []
@@ -932,6 +953,7 @@ class DatasetGenerator:
                         OUTPUTMAIN = self.OUTPUTMAIN_FT,
                         #nProcess = self.nProcess,
                         Count_SQL_table = "sampleCount_FixedTest",
+                        sourceRole="fixed test source",
                         DCkwargs = self.DCkwargs)
                 else:
                     FT_df = pd.DataFrame()
@@ -955,6 +977,7 @@ class DatasetGenerator:
                         OUTPUTMAIN = self.OUTPUTMAIN_es,
                         #nProcess = self.nProcess,
                         Count_SQL_table = "sampleCount_Elasticsearch",
+                        sourceRole="Elasticsearch source",
                         DCkwargs = self.DCkwargs)
                     key_values("Elasticsearch test samples", [
                         ("index", self.esJob["indexname"]),
