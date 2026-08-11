@@ -28,7 +28,7 @@ def _load_functions(*function_names):
 class TransformerDatasetLoadingTests(unittest.TestCase):
     def setUp(self):
         self.namespace = _load_functions(
-            "LoadSamples", "validation_runtime_config"
+            "LoadSamples", "validation_runtime_config", "optimizer_checkpoint_config"
         )
 
     def test_optional_missing_validation_dataset_returns_no_samples(self):
@@ -67,6 +67,20 @@ class TransformerDatasetLoadingTests(unittest.TestCase):
 
         self.assertTrue(has_validation)
         self.assertEqual(strategy, "steps")
+
+    def test_optimizer_checkpoint_is_not_saved_by_default(self):
+        save_only_model, notice = self.namespace["optimizer_checkpoint_config"](False)
+
+        self.assertTrue(save_only_model)
+        self.assertIn("optimizer.pt will NOT be kept", notice)
+        self.assertIn("--SaveOptimizer true", notice)
+
+    def test_optimizer_checkpoint_can_be_enabled(self):
+        save_only_model, notice = self.namespace["optimizer_checkpoint_config"](True)
+
+        self.assertFalse(save_only_model)
+        self.assertIn("optimizer.pt WILL be kept", notice)
+        self.assertIn("--SaveOptimizer false", notice)
 
 
 if __name__ == "__main__":

@@ -230,6 +230,11 @@ def ClassfierOptionParser():
         "-keep_checkpoint_max", "--keep_checkpoint_max", help="keep_checkpoint_max setting with default 1",
         type=int, default=1)
     parser.add_argument(
+        "-SaveOptimizer", "--SaveOptimizer",
+        help=("Keep optimizer.pt in Hugging Face training checkpoints. "
+              "Default is False; use --SaveOptimizer true to keep it."),
+        type=str2bool, default=False)
+    parser.add_argument(
         "-TextSum", "--TextSummarization", help="For article with score over 1000, output cutted texts to Generative Summary, default is False",
         type=str2bool, default=False)
 
