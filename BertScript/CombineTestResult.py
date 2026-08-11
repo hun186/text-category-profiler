@@ -1,12 +1,17 @@
 import os
+import sys
+from pathlib import Path
 #print("=*50")
 #print(os.getcwd().split(os.path.sep)[-1])
 #if os.getcwd().split(os.path.sep)[-1] in [
 #        "DatasetConverter","BertScript"]:
 #    os.chdir("../")
 #    print(f"Change working directory to {os.getcwd()}")
-from PackageImport import PackageImporter
-PackageImporter.proc()
+# Keep direct script execution compatible while making the import root
+# deterministic and repository-local.
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+if str(REPOSITORY_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPOSITORY_ROOT))
 
 import pandas as pd
 #import csv
@@ -18,7 +23,6 @@ from matplotlib.colors import LogNorm
 import numpy as np
 #import re
 import setproctitle
-from pathlib import Path
 #import multiprocessing as mp
 from multiprocessing import  Pool
 from functools import partial

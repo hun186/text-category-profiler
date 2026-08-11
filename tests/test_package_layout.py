@@ -120,6 +120,25 @@ class PackageLayoutTests(unittest.TestCase):
                         violations.append(str(path.relative_to(REPOSITORY_ROOT)))
         self.assertEqual(violations, [])
 
+    def test_canonical_stage_entry_points_do_not_import_legacy_path_injector(self):
+        entry_points = [
+            REPOSITORY_ROOT / "DatasetConverter/DataConverter.py",
+            REPOSITORY_ROOT / "BertScript/RunClassfier.py",
+            REPOSITORY_ROOT / "BertScript/CombineTestResult.py",
+            REPOSITORY_ROOT / "BertScript/Test_result_Vis.py",
+        ]
+        violations = []
+        for path in entry_points:
+            tree = ast.parse(path.read_text(encoding="utf-8-sig"))
+            for node in ast.walk(tree):
+                if (
+                    isinstance(node, ast.ImportFrom)
+                    and node.module == "PackageImport"
+                ):
+                    violations.append(str(path.relative_to(REPOSITORY_ROOT)))
+
+        self.assertEqual(violations, [])
+
 
 if __name__ == "__main__":
     unittest.main()

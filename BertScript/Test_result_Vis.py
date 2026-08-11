@@ -1,5 +1,11 @@
-from PackageImport import PackageImporter
-PackageImporter.proc()
+import sys
+from pathlib import Path
+
+# Direct script execution keeps BertScript/ as the first import location; add
+# only the repository root instead of probing external legacy module paths.
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+if str(REPOSITORY_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPOSITORY_ROOT))
 
 #import utilities_DB
 import numpy as np
