@@ -16,7 +16,8 @@
 
 - 目標：避免訓練 checkpoint 預設保留體積較大的 `optimizer.pt`，同時讓需要續訓狀態的使用者可明確開啟。
 - 結果：新增 `--SaveOptimizer`／`-SaveOptimizer` boolean CLI，預設 `false` 並映射到 Hugging Face `save_only_model=True`；訓練開始前會顯示 `optimizer.pt` 是否保留及相反設定的命令提示。
-- 驗證：optimizer checkpoint 設定與提示的 isolated unittest、相關檔案 `py_compile`、`git diff --check`；完整輕量 suite 有一個既有 Windows path separator assertion 失敗，且未執行完整模型訓練。
+- 修正：Hugging Face `TrainingArguments` 實例使用 `training_args` 命名，避免遮蔽 module-scope CLI `args` 並在讀取 `args.SaveOptimizer` 時觸發 `UnboundLocalError`；加入 symbol-table regression test。
+- 驗證：optimizer checkpoint 設定、提示與 CLI namespace scope 的 isolated unittest、相關檔案 `py_compile`、`git diff --check`；完整輕量 suite 有一個既有 Windows path separator assertion 失敗，且未執行完整模型訓練。
 
 ### 2026-08-11 — README core capability diagrams and information architecture
 

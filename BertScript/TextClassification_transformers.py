@@ -251,20 +251,20 @@ def trainModel():
     
     # 嘗試使用 evaluation_strategy，若失敗則 fallback 到 eval_strategy（新版 dev）
     try:
-        args = TrainingArguments(
+        training_args = TrainingArguments(
             evaluation_strategy=evaluation_strategy,
             **common_args
         )
     except TypeError as e:
         print(f"⚠️發生TypeError:{e} 使用 eval_strategy（開發版 API）")
-        args = TrainingArguments(
+        training_args = TrainingArguments(
             eval_strategy=evaluation_strategy,
             **common_args
         )
     
     trainer = Trainer(
         model,
-        args,
+        training_args,
         train_dataset=tokenized_dataset["train"],
         eval_dataset=(tokenized_dataset["validation"] if has_validation else None),
         tokenizer=tokenizer,

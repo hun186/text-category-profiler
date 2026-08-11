@@ -1,6 +1,7 @@
 import ast
 import io
 import math
+import symtable
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
@@ -81,6 +82,20 @@ class TransformerDatasetLoadingTests(unittest.TestCase):
         self.assertFalse(save_only_model)
         self.assertIn("optimizer.pt WILL be kept", notice)
         self.assertIn("--SaveOptimizer false", notice)
+
+    def test_train_model_reads_cli_args_from_module_scope(self):
+        """TrainingArguments must not shadow the parsed CLI namespace."""
+
+        table = symtable.symtable(
+            TRANSFORMER_SCRIPT.read_text(encoding="utf-8"),
+            str(TRANSFORMER_SCRIPT),
+            "exec",
+        )
+        train_model_table = next(
+            child for child in table.get_children() if child.get_name() == "trainModel"
+        )
+
+        self.assertTrue(train_model_table.lookup("args").is_global())
 
 
 if __name__ == "__main__":
