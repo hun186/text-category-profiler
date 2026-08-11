@@ -16,7 +16,7 @@
 ## 使用者與使用情境
 
 - 主要使用者：需要整理文字資料、執行主題分類與檢視分類結果的資料／NLP 工作者；具體團隊待確認。
-- 主要使用情境：批次工作池分類、固定測試資料推論、訓練資料轉換、分類結果合併與 Dash/Plotly 視覺化分析。
+- 主要使用情境：批次工作池分類、固定測試資料推論、訓練資料轉換、AI 輔助的 taxonomy／訓練集覆蓋調優、分類結果合併與 Dash/Plotly 視覺化分析。
 - 主要輸入：文字資料、工作池任務目錄、固定測試資料、模型目錄與分類參數。
 - 主要輸出：BERT dataset 檔案、SQLite 中間資料庫、預測結果、合併分析資料與視覺化輸出。
 
@@ -50,6 +50,7 @@
 | `DatasetConverter/` | 資料集轉換與樣本處理 | 修改輸入資料轉 TSV／SQLite／分類資料集流程 |
 | `BertScript/` | BERT／XLM 分類、結果合併、視覺化 | 修改模型訓練／推論、分類結果合併或 Dash 視覺化 |
 | `ClassesTree/` | 類別樹與標籤工具 | 修改 taxonomy、label tree、圖形視覺化 |
+| `TextClassificationDatasetOptimization/` | AI 代理人提示模板、taxonomy 擴充、來源索引、訓練集 PoC 與正文抓取工具 | 盤點類別缺口、連結當前議題、建立／驗證訓練文本 |
 | `text_category_profiler/` | 依 `core`、`data`、`concurrency`、`pipeline`、`text`、`visualization`、`integrations` 分流的共用 utilities | 修改跨模組共用行為、檔案系統、SQLite、多程序或外部整合工具 |
 | `tests/` | 不依賴模型/資料的輕量功能測試 | 修改 console helper、README/requirements 契約或可無副作用測試的 utility |
 | `.codex/` | Codex current-state 記憶與路由 | 任務前後同步專案事實、流程、架構與契約 |

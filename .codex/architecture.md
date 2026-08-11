@@ -4,7 +4,7 @@
 
 ## 系統邊界
 
-- 系統負責：文字資料整理、分類器資料集產生、BERT／XLM 訓練或推論、分類結果合併與視覺化分析。
+- 系統負責：文字資料整理、AI 輔助的 taxonomy／訓練集覆蓋調優、分類器資料集產生、BERT／XLM 訓練或推論、分類結果合併與視覺化分析。
 - 系統不負責：目前未證實提供常駐 HTTP API、RAG agent runtime、正式部署或套件發布。
 - 上游：文字檔、工作池任務、固定測試資料、模型目錄、可選 Elasticsearch／外部資料匯入來源。
 - 下游：分類結果 SQLite／TSV／log／視覺化輸出與工作池交付目錄。
@@ -20,6 +20,7 @@
 | Result analysis | 合併原文與預測結果，產生分析與視覺化 | prediction result、dataset DB、label list | combined SQLite／分析資料／Dash UI | `BertScript/CombineTestResult.py`, `BertScript/Test_result_Vis.py` |
 | Shared utilities | 依領域提供 core、data、concurrency、pipeline、text、visualization 與 integrations 工具 | 跨模組 utility calls | 共用 helper behavior | `text_category_profiler/<domain>/` |
 | Class tree tools | label tree 與分類樹視覺化／分析 | topic tree、labels | tree analysis／visualization | `ClassesTree/` |
+| Dataset optimization workspace | 以提示模板盤點 taxonomy 缺口、查核當前議題、設計類別與來源索引；由正文抓取工具將公開來源轉為待審核文本 | topic tree、代理人查核結果、來源索引 ZIP | 新增邊／子圖、來源索引、標記正文、抓取與驗證報告 | `TextClassificationDatasetOptimization/` |
 
 ## 主要資料流
 
