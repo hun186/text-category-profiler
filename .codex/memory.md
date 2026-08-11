@@ -15,7 +15,7 @@
 ### 2026-08-11 — Test-only conversion with no regular source rows
 
 - 目標：讓只提供 FixedTest／Elasticsearch 測試來源、沒有一般輸入 root 的轉換流程能繼續載入外部測試樣本，而不是在 split 規劃時因空 DataFrame 缺少 `OutLabel` 而中止。
-- 結果：一般來源沒有資料時以 `DataFrame(columns=...)` 建立標準 sample schema，避免 pandas 對零欄 DataFrame 直接改名所產生的 `Length mismatch`，也避免 split 階段缺少 `OutLabel`；FixedTest 檔案會在 split 前另行列出實際遞迴探索數量與 preview，清楚區分一般來源 `ROOTPATHList=[]` 和固定測試來源。
+- 結果：一般來源沒有資料時以 `DataFrame(columns=...)` 建立標準 sample schema，避免 pandas 對零欄 DataFrame 直接改名所產生的 `Length mismatch`，也避免 split 階段缺少 `OutLabel`；探索、reader job、row collection 與 conversion 摘要會分別標示 `Regular Source`、`Fixed Test Source` 或 `Elasticsearch Source`，FixedTest 另列遞迴探索數量與 preview，清楚區分預期為零的普通來源和已找到的固定測試檔案。
 - 驗證：dataset split regression tests、完整輕量 unittest、相關檔案 `py_compile` 與 `git diff --check`；完整 Windows FixedTest／模型推論仍需使用者環境驗證。
 
 ### 2026-08-11 — Optional Hugging Face optimizer checkpoints
