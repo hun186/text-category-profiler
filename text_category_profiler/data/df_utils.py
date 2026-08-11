@@ -691,9 +691,15 @@ def DictRowsListToDF(
         ("shuffle", True),
         ("elapsed seconds", f"{time.time() - start_time:.4f}"),
     ], icon="·")
-    df = pd.DataFrame(rows_list)
-    if len(Cols) > 0:
-        df.columns = Cols
+    if rows_list:
+        df = pd.DataFrame(rows_list)
+        if len(Cols) > 0:
+            # Preserve the legacy positional rename behavior for populated rows.
+            df.columns = Cols
+    else:
+        # Assigning names to a zero-column frame raises a pandas Length mismatch.
+        # Constructing it with columns creates the intended empty schema instead.
+        df = pd.DataFrame(columns=Cols)
     #RemoveDumpSamples = False
     if RemoveDumpSamples == True:
         oriLen = len(df)
