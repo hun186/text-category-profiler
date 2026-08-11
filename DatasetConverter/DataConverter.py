@@ -101,6 +101,7 @@ from DatasetConverter.dataset_split import deduplicate_dataset_rows
 from DatasetConverter.dataset_split import ensure_train_covers_labels
 from DatasetConverter.dataset_split import expand_train_to_cover_labels
 from DatasetConverter.dataset_split import iter_dataset_splits
+from DatasetConverter.sample_schema import columns_for_sample_rows
 
 #from utilities import hash
 from text_category_profiler.data.df_utils import dfOutputer
@@ -679,6 +680,9 @@ def BuildSamplesDfFromPaths(
     df = DictRowsListToDF(
         rows_list,start_time=start_time,
         #RemoveDumpBasedOnCols=['file','OutLabel','text'],
+        # Keep the sample handoff schema even when this particular source is
+        # empty. Test-only runs load FixedTest rows later in DatasetGenerator.
+        Cols=columns_for_sample_rows(rows_list),
         )
     #部分外部來源可能沒有 PartNO，轉換為整數前先補零。
     if len(df) > 0:
@@ -863,6 +867,23 @@ class DatasetGenerator:
             ("removed rows", nBeforeDedup - len(self.df)),
             ("remaining rows", len(self.df)),
         ], icon="·")
+        # FixedTest inputs are intentionally separate from the regular source
+        # roots. Discover them here so test-only logs clearly show whether the
+        # configured files exist before dataset split generation starts.
+        FixfiL = []
+        for workingPath in self.FixedTestPATHList:
+            FixfiL.extend(OSWALK(workingPath, Extension=["txt", "AI2", "sql3"]))
+        key_values("Fixed test file discovery", [
+            ("configured paths", summarize_sequence(self.FixedTestPATHList, limit=4)),
+            ("matching files", len(FixfiL)),
+            ("file preview", summarize_sequence(FixfiL, limit=3)),
+        ], icon="·")
+        if self.FixedTestPATHList and not FixfiL:
+            warning(
+                "No supported FixedTest files were found below the configured "
+                "paths. Expected .txt, .AI2, or .sql3 files in nested folders."
+            )
+
         #設定訓練集、驗證集及測試集比例。
         nDataset = self.df.shape[0]
         ratio_split_plan = build_split_plan(
@@ -888,10 +909,6 @@ class DatasetGenerator:
     
         FT_df = pd.DataFrame()
         es_df = pd.DataFrame()
-        #計算強制做為測試集的txt檔清單。
-        FixfiL = []
-        for workingPath in self.FixedTestPATHList:
-            FixfiL.extend(OSWALK(workingPath, Extension = ["txt","AI2","sql3"]))
         #生成各資料集。
         key_values("Dataset split plan", [
             ("train", split_plan.train),
