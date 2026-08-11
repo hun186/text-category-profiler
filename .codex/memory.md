@@ -12,6 +12,12 @@
 
 ## Recent Outcomes
 
+### 2026-08-11 — README core capability diagrams and information architecture
+
+- 目標：在 GitHub README 清楚介紹模型基礎的訓練集覆蓋調優，以及下游文本切片、算分與推薦兩項核心能力。
+- 結果：README 依「核心能力 → 專案全景 → 快速開始」重新編排；新增 AI 代理人連結當前議題、taxonomy／來源設計、正文爬取、品質閘門與訓練回饋的 SVG；方法控制點和特色圖均直接展開，無需點擊才能閱讀。
+- 驗證：兩張方法論 SVG XML 解析、README 文件契約測試、完整輕量 unittest 與 `git diff --check`。
+
 ### 2026-08-11 — DatasetConverter split planning and deduplication refactor
 
 - 目標：將 `DataConverter.py` 的 train/dev/test 切分責任抽離成可獨立測試邏輯，消除 split 邊界重疊與跨 split 重複；同時確保少類樣本擴增不會污染 dev/test。

@@ -9,9 +9,49 @@
 - 主要限制：根目錄已提供 `requirements.txt` 與輕量測試，但尚無 lockfile 或 CI；模型、資料集、工作池與部分外部路徑需由使用者提供。
 
 
-## 工作流程與特色
+## 核心能力
+
+| 能力層 | 解決的問題 | 方法 |
+| --- | --- | --- |
+| **模型基礎：訓練集調優** | 類別是否全面覆蓋快速變動的世界議題？ | AI 代理人盤點缺口、連結當前公開資訊、設計 taxonomy 與來源索引；爬蟲取得實際正文，再經品質閘門進入訓練。 |
+| **應用層：評分與推薦** | 如何把長文本轉成可追溯的推薦？ | 文本切片、逐片分類算分、文件級彙總、門檻與排序，並回傳關鍵證據片段。 |
+
+### 1. 模型基礎：AI 代理人驅動的訓練集調優
+
+![ChatGPT AI 代理人驅動的分類訓練集調優流程](docs/assets/dataset-optimization-loop.svg)
+
+`TextClassificationDatasetOptimization/` 提供一組 ChatGPT AI 代理人提問模板：先完整檢查既有分類圖的節點、關係、同義詞與粒度，再要求代理人搜尋執行當日的公開資訊，找出具有重大性、持續性與足夠文本量的缺漏議題。下一階段可設計新 label、父子關係、檢索橋接、分類子圖、來源索引與資料配額，讓 taxonomy 擴充和訓練資料蒐集使用同一套邊界。
+
+AI 代理人通常只提供來源與摘要，而不是可直接投入訓練的完整實際正文。Repository 因此另附以 ChatGPT 協作開發的正文抓取工具：依來源索引批次取得公開可存取的文章主文，清除頁面雜訊、保留 `#T#[類別]`，並逐篇即時存檔及記錄失敗原因；工具不會繞過登入、付費牆、CAPTCHA、Cloudflare 或 `robots.txt` 限制。產物仍須通過格式、標籤、語言、配額、重複與人工抽查，才適合納入訓練集。
+
+#### 訓練集調優的五個控制點
+
+1. **覆蓋盤點**：不可只比對關鍵字；需沿分類關係檢查別名、交叉父類別與既有涵蓋範圍。
+2. **即時議題查核**：以任務當日的可靠公開來源驗證重大性、持續性、分類邊界和資料可得性。
+3. **Taxonomy 治理**：先確定 label、粒度、主要路徑和必要橋接，再建立來源索引，避免為單一事件製造捷徑。
+4. **正文資料化**：代理人負責發現與設計，爬蟲負責取得實際正文；兩者輸出不能混為同一種訓練資料。
+5. **品質閉環**：以資料驗證、人工審核與模型錯誤案例回饋下一輪缺口盤點，而非無條件把爬取結果投入訓練。
+
+### 2. 應用流程：文本切片 → 算分 → 推薦
+
+![文本切片、分類算分與推薦方法論](docs/assets/text-scoring-recommendation.svg)
+
+長文本先依 token／字元長度切成可推論片段，必要時以 stride 保留跨切片語境；分類器逐片預測類別，再由 `InfoScoreTable` 將類別映射為資訊分數。文件層彙總切片的總分、平均、離散程度與代表類別，最後搭配門檻、排序和業務規則輸出推薦，並保留高分切片作為可追溯的推薦依據。
+
+#### 評分推薦的四個控制點
+
+1. **切片策略**：依模型上下文限制選擇切片寬度與 stride，在推論成本和語境完整度間取捨。
+2. **評分治理**：以明確的類別權重表管理正向、背景與排除訊號，讓分數定義可調整、可稽核。
+3. **文件彙總**：同時觀察 `InfoScoreSum`、`InfoScoreMean`、`InfoScoreStd` 與高分代表類別，降低單一切片誤判的影響。
+4. **推薦決策**：以分數門檻和排序產生候選，再疊加任務規則；推薦結果應連同關鍵切片呈現，而不是只輸出二元結論。
+
+## 專案全景
+
+### 端到端處理流程
 
 ![text-category-profiler 工作流程](docs/assets/workflow.svg)
+
+### 功能特色
 
 ![text-category-profiler 特色介紹](docs/assets/features.svg)
 
@@ -68,9 +108,9 @@ python -m py_compile <changed-python-files>
 | `DatasetConverter/` | 將原始文本／資料來源轉換為分類器使用的資料集、SQLite 與記錄檔。 |
 | `BertScript/` | BERT／XLM 分類、訓練／推論、結果合併與 Dash/Plotly 視覺化腳本；包含部分第三方 BERT/Dash 範例內容。 |
 | `ClassesTree/` | 類別樹、標籤工具與視覺化實驗。 |
+| `TextClassificationDatasetOptimization/` | ChatGPT AI 代理人提示模板、taxonomy 擴充成果、來源索引、訓練集 PoC 與公開文章正文抓取工具。 |
 | `text_category_profiler/` | 與 repository 同名的 Python package，目前依 `core`、`data`、`concurrency`、`pipeline`、`text`、`visualization`、`integrations` 分流；程式以 `text_category_profiler.<domain>.<module>` 匯入。 |
 | `tests/` | 輕量功能測試；避免依賴資料集、模型、GPU 或工作池副作用。 |
-| `TCF_Params/` | 流程預設參數與入口設定。 |
 | `.codex/` | Codex 專案記憶、工作流、架構、契約與初始化狀態文件。 |
 
 ## 輸入、輸出與資料邊界
