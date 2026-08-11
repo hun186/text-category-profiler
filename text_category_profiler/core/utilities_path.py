@@ -126,7 +126,7 @@ def clean_path_end_chars_OLD(path):
     return cleaned_path
 '''
 
-'''
+r'''
 def clean_path_end_chars_OLD_2(path: str) -> str:
     """
     安全清理路徑：

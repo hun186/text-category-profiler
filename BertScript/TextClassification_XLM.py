@@ -166,7 +166,7 @@ def trainModel():
 
 def PredictSamples():
     print(f"Start to predicting samples, the outputDir is {outputDir}")
-    r = re.compile("^checkpoint-\d{1,}$")
+    r = re.compile(r"^checkpoint-\d{1,}$")
     finetuned_checkpoint = list(filter(r.match, os.listdir(outputDir)))
     finetuned_checkpoint = sorted(finetuned_checkpoint, reverse=True)[0]
     finetuned_checkpoint = os.path.join(outputDir,finetuned_checkpoint)

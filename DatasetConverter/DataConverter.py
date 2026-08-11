@@ -132,7 +132,7 @@ from text_category_profiler.data.DB_utils import sqlite3Query
 from text_category_profiler.data.df_utils import DictRowsListToDF
 
 #from text_category_profiler.Tika_pdf_to_txt import ExtractTxt
-'''
+r'''
 import winreg
 winreg.SetValueEx(
     winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE,
@@ -256,8 +256,8 @@ class DataConvertJobGenerater():
         #輸入檔案單路完成型
         if self.fileList == []:
             self.fileList = self.BuildFileList(
-                FullPathFNrePat=("(.*CZJ_SamplesFile.*sql3)|"
-                                 "(.*#T#\[.*\].*\.txt)|(.*\.AI2)")
+                FullPathFNrePat=(r"(.*CZJ_SamplesFile.*sql3)|"
+                                 r"(.*#T#\[.*\].*\.txt)|(.*\.AI2)")
                 )
         #輸入檔案多路完成型
         #if self.fileList == []:

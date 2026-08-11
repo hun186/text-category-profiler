@@ -82,7 +82,7 @@ def getSrcFromFileName(FileName, LabelList):
     #print("SrcType, Src",SrcType, Src)
     return SrcType, Src
 
-'''
+r'''
 class NewestModelMainFileNamePickers:
     def proc(OldOutputDir=None):
         r = re.compile("^model\.ckpt-\d+.*$")

@@ -120,7 +120,7 @@ if __name__ == '__main__':
                 MKDIR(desSubDir)
                 for file in OSWALK(PATH, Extension = "txt"):
                     FN = file.split("\\")[-1]
-                    if len(re.findall("\d\d\d\d, \w\w\w$", PATH)) > 0:
+                    if len(re.findall(r"\d\d\d\d, \w\w\w$", PATH)) > 0:
                         if FN[0:40] != row["topics"][0:40]:
                             continue
                     des = os.path.join(desSubDir,FN)

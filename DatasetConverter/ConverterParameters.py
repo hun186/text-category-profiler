@@ -16,16 +16,16 @@ WIDTH = 256
 #目標標籤必須已經有加到TopicTree.csv後，才會發生作用，否則在程式中會直接自RBDict排除該item。
 #RBDict會在DataCleanerRePatternDict作用後才套用。
 RBDict = {
-    ("\w*?@.*?\.\w{2,3}",(max(WIDTH/40,6),math.inf)):"Email Header-Email Address",
-    ("\w*?@huawei.com",(max(WIDTH/40,6),math.inf)):"Huawei Email Address",
+    (r"\w*?@.*?\.\w{2,3}",(max(WIDTH/40,6),math.inf)):"Email Header-Email Address",
+    (r"\w*?@huawei.com",(max(WIDTH/40,6),math.inf)):"Huawei Email Address",
     #"\w*?h":"RBT",
     #"\w*?Economic":"RBT2",
-    ("^\w{0,5}.{0,3}\w{12,26}\.cloudfront\.net/{0,1}$",(1,math.inf)):"CDN Web Link-CloudFront",
+    (r"^\w{0,5}.{0,3}\w{12,26}\.cloudfront\.net/{0,1}$",(1,math.inf)):"CDN Web Link-CloudFront",
     }
 
 DataCleanerRePatternDict = {
     "EmailAddress Remover":
-        {"SrcPat":["(?:(\w{,20}\.){0,}\w{,20}@\w{1,20}?\.[^@]{2,20}){0,}(?:(\w{,20}\.){0,}\w{,20}@\w{1,20}?\.[^@]{2,3})",
+        {"SrcPat":[r"(?:(\w{,20}\.){0,}\w{,20}@\w{1,20}?\.[^@]{2,20}){0,}(?:(\w{,20}\.){0,}\w{,20}@\w{1,20}?\.[^@]{2,3})",
                    "(.{1}件人|抄送)(?:.{1,20}(com|;)){1,}",
                    "From(?:.{1,30};){1,}"
                    ],

@@ -86,6 +86,7 @@
 - 保留使用者既有變更，不修改無關檔案，不做未經要求的大規模重構。
 - 修改應沿用目前模組邊界與風格；若必須跨越邊界，先說明理由並更新架構或決策文件。
 - 不以 mock data、hard-coded output、fake success、silent fallback 或純 UI 假象宣稱真實功能完成。
+- 測試揭露 application source warning 時，應修正來源且加入防退步檢查；不得只在測試層過濾警告。
 - 暫時性 stub 必須在程式碼中明確標記，並只在使用者接受延後工作後加入 `.codex/backlog.md`。
 - 未經查證不要猜測命令、路徑、環境變數、介面或部署方式。
 
