@@ -31,6 +31,17 @@ class MultiprocessingConsoleNoiseTests(unittest.TestCase):
             )
         )
 
+    def test_empty_sample_loading_explains_stage_and_skips_generic_mp_warning(self):
+        source = (REPOSITORY_ROOT / "DatasetConverter/DataConverter.py").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("Load source data into sample rows", source)
+        self.assertIn("reader jobs created", source)
+        self.assertIn("no reader jobs were created because no", source)
+        self.assertIn("next step", source)
+        self.assertIn("if DTBJobs:", source)
+
     def test_ext_converter_imports_do_not_print_current_directory(self):
         for relative_path in (
             "DatasetConverter/EXTConverter/Combiner.py",
