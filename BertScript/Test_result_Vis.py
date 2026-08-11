@@ -1279,15 +1279,12 @@ def Build_Pred_Block(
 
 
 def Build_Twins_Block(df):#, TwinsColorDict):
-    print("="*50)
-    ShowElapsedTime(start_time)
-    print("Running Build_Twins_Block function")
+    section("Build similar-text group chart", icon="◇")
     #LevelDVisProcessor(df=PartDF, VisPath = 'Src')
-    ShowElapsedTime(start_time)
-    print("Finished Running Build_Pred_Block function")
     df = df[["File","Twins"]]
     df = df[df["Twins"]!=""]
     if len(df) == 0:
+        info("No similar-text groups found.")
         return "There is no twins group."
     TwinsData = [["File","Twins"]]
     #if len(FileList) <40:
@@ -1297,6 +1294,10 @@ def Build_Twins_Block(df):#, TwinsColorDict):
         VisPath_type = ['Twins']
     else:
         VisPath_type = ['Twins', 'File']
+    key_values("Similar-text groups ready", [
+        ("files", len(df)),
+        ("groups", df["Twins"].nunique()),
+    ], icon="·")
     return [dcc.Graph(
                     id="S3",
                     figure=LevelDVisProcessor(
@@ -2040,18 +2041,18 @@ def FilteredDF_update(
         #*args
         ):
     
-    print("="*50)
-    ShowElapsedTime(start_time)
+    callback_start_time = time.time()
+    section("Update filtered results", icon="🔎")
     MES = f"使用者登錄IP及伺服器port為{request.remote_addr}, {args.TRVPort},"
     MES += f"DF_OPTFN為{DF_OPTFN}"
-    MPLOGGER.logW(MES=MES,logFile="Test_result_Vis_LogIP.log")
-    print("Running FilteredDF_update.")
-    print("filter_query", filter_query)
+    MPLOGGER.logW(
+        MES=MES,
+        logFile="Test_result_Vis_LogIP.log",
+        printOnScreen=False,
+    )
     #print("derived_filter_query_structure", derived_query_structure)
     Old_derived_query_structure = json.loads(Old_derived_filter_query_structure_json)
-    print("Old_derived_query_structure", Old_derived_query_structure)
     #derived_filter_query_structure = None
-    print("receving derived_query_structure is ", derived_query_structure)    
 
     button_id_comp = get_button_id_comp(
         dash.callback_context, inspect.currentframe().f_code.co_name)
@@ -2061,6 +2062,13 @@ def FilteredDF_update(
         
     button_id = get_button_id(
         dash.callback_context, inspect.currentframe().f_code.co_name)
+
+    key_values("Filter request", [
+        ("trigger", button_id),
+        ("query", filter_query or "(none)"),
+        ("structured filter", derived_query_structure or "(none)"),
+        ("sort", sort_by or "(none)"),
+    ], icon="·")
 
     '''
     if button_id == "VisDatatable":
@@ -2138,6 +2146,10 @@ def FilteredDF_update(
         keywords = []
     else:
         keywords = [kw_data[i]['Key Word'] for i in kw_dvs_rows]
+    key_values("Filter selection", [
+        ("labels", summarize_sequence(selectedLabels)),
+        ("keywords", summarize_sequence(keywords)),
+    ], icon="·")
     '''
     if button_id == "InfoScore Range":
         df = DFfilter(df,
@@ -2150,7 +2162,6 @@ def FilteredDF_update(
         selectedLabels = selectedLabels,
         sql3File = sql3File,
         keywords = keywords)
-    print("sort_by",sort_by)
     #print("len(FilteredDF)",len(FilteredDF))
     if len(sort_by):
         FilteredDF = FilteredDF.sort_values(
@@ -2166,13 +2177,12 @@ def FilteredDF_update(
         derived_query_structure, FilteredDF)
     if pd_query_string != '':
         FilteredDF = FilteredDF.query(pd_query_string)
-    ShowElapsedTime(start_time)
     FilteredPreambleColsFN = FilteredDF_OPTFN+".sql3"
     #如果磁碟可寫入，且先前已有成功將FilteredDF存檔的先例，則不存至FilteredDF_json。
     if os.path.isfile(FilteredPreambleColsFN):
         FilteredDF_json = '{}'
     else:
-        print("Start to tf FilteredDF to FilteredDF_json.")
+        info("Serializing filtered results for the next dashboard callback.", icon="↪")
         FilteredDF_json =  FilteredDF.to_json(date_format='iso', orient='split')
     derived_query_structure_json = json.dumps(
         derived_query_structure, indent = 4)
@@ -2193,8 +2203,7 @@ def FilteredDF_update(
     
     dfOutputer(FilteredDF[PreambleCols],FilteredDF_OPTFN).run()
     #print("FilteredDF_json",FilteredDF_json)
-    ShowElapsedTime(start_time)
-    print("Finished Running FilteredDF_update.")
+    stage_done("Filtered results", elapsed=time.time() - callback_start_time)
     return [FilteredDF_json]+[
         FilteredDF.shape[0]]*2+[
         page_current+1
@@ -2239,14 +2248,14 @@ def ChunkDF_update(
         page_current,
         FilteredDF_OPTFN,
         TRsql3FileDatasetDir):
-    print("="*50)    
-    ShowElapsedTime(start_time)
-    print("Running ChunkDF_update.")
+    callback_start_time = time.time()
+    section("Refresh result charts", icon="📊")
         
     sql3File = os.path.join(TRsql3FileDatasetDir,"test_results_verification.sql3")
 
     button_id = get_button_id(
         dash.callback_context, inspect.currentframe().f_code.co_name)    
+    key_values("Chart request", [("trigger", button_id)], icon="·")
 
     #df_json = df.to_json(date_format='iso', orient='split')
     FilteredPreambleColsFN = FilteredDF_OPTFN+".sql3"
@@ -2272,14 +2281,11 @@ def ChunkDF_update(
     #if button_id in ['intermediate-value-FilteredDF']:
         #page_current = 0
     
-    ShowElapsedTime(start_time)
-    print("Running Build_Pred_Block and Build_Twins_Block")
     ColorDict = DataArrayToDict(ColortableArray)
     PredSum_children = Build_Pred_Block(
         FilteredDF, sql3File, ColorDict)
     TwinsCard_children = Build_Twins_Block(FilteredDF)
-    print("Finishing Running Build_Pred_Block and Build_Twins_Block")
-    ShowElapsedTime(start_time)
+    stage_done("Result charts", elapsed=time.time() - callback_start_time)
     return [
         #PartColDF_json]+[
             page_current]+[PredSum_children]+[TwinsCard_children]
