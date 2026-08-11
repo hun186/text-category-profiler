@@ -236,14 +236,13 @@ def PerformanceColExt(df):
 
 def GetSrcList(sql3File):
     MES = f"Start to Load FileList from {sql3File}"
-    MPLOGGER.logW(MES=MES,logFile="Test_result_Vis.log")
+    MPLOGGER.logW(MES=MES, logFile="Test_result_Vis.log", printOnScreen=False)
     query = "SELECT DISTINCT File FROM sampleSrc \
         WHERE File IS NOT NULL ORDER BY File;"
     SrcList = [x[0] for x in list(sqlite3Query(
         sql3File, query = query))]
-    print(f"There are totally {len(SrcList)} different files.")
     MES = f"Finished Loading SrcList from {sql3File}"
-    MPLOGGER.logW(MES=MES,logFile="Test_result_Vis.log")
+    MPLOGGER.logW(MES=MES, logFile="Test_result_Vis.log", printOnScreen=False)
     return SrcList
 
 def DFfilter(df,
@@ -1142,7 +1141,6 @@ def BuildPredsdf(sql3File, FileList):
     rowslist = []
     #SrcList = GetSrcList(sql3File)
     #ShowElapsedTime(start_time)
-    print("Building Predsdf.")
     #print("There are {} files in tempList.".format(len(tempList)))
     #cols = ['Src', 'pred_Type']
     cols = ['File', 'pred_Type']
@@ -1178,8 +1176,6 @@ def BuildPredsdf(sql3File, FileList):
         ORDER BY CT DESC;'
     FileListWithNPiecesDESC = sqlite3Query(sql3File,query = query,ListForm = True)
     FileListWithNPiecesDESC = list(filter(None, FileListWithNPiecesDESC))
-    ShowElapsedTime(start_time)
-    print("Finishing building Predsdf.")
     #print("rowslist",rowslist)
     return result,FileListWithNPiecesDESC
     
@@ -1444,7 +1440,6 @@ def Build_PerformancePVT(df):
         )
 
 def Build_selectLabelsTable():
-    print("Start to build selectLabelsTable")
     #print("="*500)
     selectLabelsTable = [
             dash_table.DataTable(
@@ -1475,7 +1470,10 @@ def Build_selectLabelsTable():
                 #'Add Row', 
                 #id='editing-Constraint-Dict-button', n_clicks=0),
             ]
-    print("finished to build selectLabelsTable")
+    key_values("Label selection table ready", [
+        ("columns", ["Label", "Color", "InfoScore"]),
+        ("rows", 0),
+    ], icon="·")
     return selectLabelsTable
 
 def Build_PerformanceTable(df):
@@ -1951,11 +1949,10 @@ def MissionTableSelection(
         Colortable_data,
         #*args
         ):
-    print("="*50)
-    ShowElapsedTime(start_time)
-    print("Running MissionTableSelection.")
-    print("derived_virtual_selected_rows", derived_virtual_selected_rows)
-    print("data",data)
+    key_values("Mission selection", [
+        ("selected rows", derived_virtual_selected_rows or []),
+        ("available missions", len(data or [])),
+    ], icon="·")
     #print("Colortable_data",Colortable_data)
     selectedLabels = []
     if derived_virtual_selected_rows is None:
@@ -1970,8 +1967,6 @@ def MissionTableSelection(
             if CILPair['Label'] == Label:
                 Colortable_rows.append(i)
     #print("Colortable_rows",Colortable_rows)
-    ShowElapsedTime(start_time)
-    print("Finished MissionTableSelection.")
     return Colortable_rows
 
 
