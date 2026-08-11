@@ -75,11 +75,18 @@ class classifierJob:
         return classifier(self.testSet)
     
 def LoadSamples(
-        sql3File,label2id={},istest = False,nSampleUPD = math.inf):
+        sql3File,label2id={},istest = False,nSampleUPD = math.inf,
+        allow_empty=False):
     #sqlCols = ['OutLabel','text']
     print(f"Loading data from {sql3File}, istest = {istest}")
     query = 'SELECT Count(*) FROM sampleSrc;'
-    totalrow = sqlite3Query(sql3File,query = query, ListForm=True)[0]
+    count_result = sqlite3Query(sql3File,query = query, ListForm=True)
+    if not count_result or count_result[0] == 0:
+        if allow_empty:
+            print(f"No samples found in optional dataset {sql3File}; skip loading it.")
+            return []
+        raise ValueError(f"Required dataset is missing or empty: {sql3File}")
+    totalrow = count_result[0]
     if nSampleUPD < totalrow:
         print("="*50)
         print(f"nSampleUPD {nSampleUPD} < #input samples {totalrow}, LoadSamples will only load {nSampleUPD} samples")
@@ -143,6 +150,13 @@ def compute_metrics(pred):
         'recall': recall
     }
 
+
+def validation_runtime_config(validation_samples):
+    """Return whether evaluation can run and its Trainer strategy value."""
+
+    has_validation = len(validation_samples) > 0
+    return has_validation, ("steps" if has_validation else "no")
+
 def trainModel():
     label_names = getTopicLabelList(outputDir)
     id2label = {idx:label for idx, label in enumerate(label_names)}
@@ -158,7 +172,10 @@ def trainModel():
     sql3File = os.path.join(datasetDir,"dev.sql3")
     #dev過程可能會逐步吃光GPU Mem，導致OOM，故先暫時最多只取10萬筆做為dev
     tokenized_dataset['validation'] = LoadSamples(
-        sql3File,label2id,nSampleUPD=10*10000)
+        sql3File,label2id,nSampleUPD=10*10000,allow_empty=True)
+    has_validation, evaluation_strategy = validation_runtime_config(
+        tokenized_dataset['validation']
+    )
     
     if torch.cuda.is_available():
         total = torch.cuda.get_device_properties(0).total_memory
@@ -206,17 +223,23 @@ def trainModel():
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
     )
+
+    if not has_validation:
+        print(
+            "Validation dataset is empty; Hugging Face Trainer evaluation is "
+            "disabled for this training run."
+        )
     
     # 嘗試使用 evaluation_strategy，若失敗則 fallback 到 eval_strategy（新版 dev）
     try:
         args = TrainingArguments(
-            evaluation_strategy="steps",
+            evaluation_strategy=evaluation_strategy,
             **common_args
         )
     except TypeError as e:
         print(f"⚠️發生TypeError:{e} 使用 eval_strategy（開發版 API）")
         args = TrainingArguments(
-            eval_strategy="steps",
+            eval_strategy=evaluation_strategy,
             **common_args
         )
     
@@ -224,9 +247,9 @@ def trainModel():
         model,
         args,
         train_dataset=tokenized_dataset["train"],
-        eval_dataset=tokenized_dataset["validation"],
+        eval_dataset=(tokenized_dataset["validation"] if has_validation else None),
         tokenizer=tokenizer,
-        compute_metrics=compute_metrics
+        compute_metrics=(compute_metrics if has_validation else None)
     )
     
     trainer.train()
