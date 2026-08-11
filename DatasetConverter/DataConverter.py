@@ -592,22 +592,45 @@ def BuildSamplesDfFromPaths(
     
     datasetCountOFP = open(datasetCountOFN,mode='at',encoding='utf-8')
     DTBJobs = DCJG.run()
-    #將DTBJobs送入多進程執行。
-    section("Load samples", detail="Build sample jobs and collect MP results", icon="📥")
-    key_values("Sample jobs", [("jobs", len(DTBJobs)), ("processes", nProcess)], icon="·")
-    MPresult = multicoreJob(
-        DTBJobs, nProcess=nProcess).run()
-        #DTBJobs, nProcess=1).run()
+    # 將每個已發現的檔案、ES document 或 corpus title 轉成 SampleReader job，
+    # 再匯集各 job 返回的 sample rows。
+    section(
+        "Load source data into sample rows",
+        detail=(
+            "Create one reader job per discovered file/document/corpus title, "
+            "then collect the rows returned by those readers."
+        ),
+        icon="📥",
+    )
+    key_values("Reader job inputs", [
+        ("configured input roots", len(ROOTPATHList)),
+        ("matching sample files", len(DCJG.fileList)),
+        ("Elasticsearch documents", len(DCJG.ESidList)),
+        ("corpus databases", len(DCJG.CZJCorpusSQLFileList)),
+        ("reader jobs created", len(DTBJobs)),
+        ("worker processes requested", nProcess),
+    ], icon="·")
+    if DTBJobs:
+        MPresult = multicoreJob(DTBJobs, nProcess=nProcess).run()
+    else:
+        MPresult = []
+        warning(
+            "Sample loading was skipped: no reader jobs were created because no "
+            "supported input files, Elasticsearch documents, or corpus titles "
+            "were discovered. Check the configured input roots and the file "
+            "discovery summaries above."
+        )
     if MPresult == []:
         rows_list = []
         MultiLabelCountList = []
     else:
         rows_list, MultiLabelCountList = zip(*MPresult)
     rows_list = flattenList(rows_list)
-    key_values("Loaded samples", [
-        ("MP result groups", len(MPresult)),
-        ("rows", len(rows_list)),
-        ("multi-label groups", len(MultiLabelCountList)),
+    key_values("Sample row collection result", [
+        ("reader results returned", len(MPresult)),
+        ("sample rows collected", len(rows_list)),
+        ("multi-label count results", len(MultiLabelCountList)),
+        ("next step", "convert collected rows to a DataFrame"),
         ("elapsed seconds", f"{time.time() - start_time:.4f}"),
     ], icon="·")
     
@@ -668,7 +691,10 @@ def BuildSamplesDfFromPaths(
                    tsvIndex=True,SQL_table=Count_SQL_table).run()
         ShowElapsedTime(start_time)
     else:
-        warning(f"No sample rows were loaded from {summarize_sequence(ROOTPATHList, limit=3)}.")
+        warning(
+            "No sample rows are available for DataFrame conversion. "
+            f"Configured input roots: {summarize_sequence(ROOTPATHList, limit=3)}."
+        )
 
 
     df = DictRowsListToDF(
