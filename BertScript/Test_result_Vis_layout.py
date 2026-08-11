@@ -21,6 +21,7 @@ from text_category_profiler.core.utilities import timeNow
 from text_category_profiler.core.utilities import MKDIR
 from text_category_profiler.pipeline.TCF_utils import get_finished_date_dir_dict
 from text_category_profiler.data.df_utils import dfOutputer
+from text_category_profiler.core.log_display import key_values
 
 from text_category_profiler.visualization.Dash_utils import get_upload_component
 from text_category_profiler.visualization.Dash_utils import Build_DataArrayTable
@@ -39,7 +40,6 @@ def Build_Upload_Block(date_session_id,UploadedFilename,VisSelfFinishedState):
     #     CardHeader = html.H2()
     #     UPLoad_Drag = html.H2(id='dash-uploader')
     #     btn = html.H2()
-    print("Start to Run Build_Upload_Block")
     #CardHeader = html.H2("Upload zip file compressing txt corpus to analysis")
     
     #CardHeader = html.H2([
@@ -57,7 +57,10 @@ def Build_Upload_Block(date_session_id,UploadedFilename,VisSelfFinishedState):
                     upload_id = date_session_id)#+"_is_running_DataConverter")
     btn = html.Button("下載自行上傳推論功能之範例檔",
                       id="btn_dataset_samples")
-    print("Finished Running Build_Upload_Block")
+    key_values("Upload panel ready", [
+        ("formats", ".7z, .zip"),
+        ("max size", "40 MB"),
+    ], icon="·")
     return dbc.Card(
                 [
                 dbc.CardHeader(CardHeader),
@@ -80,8 +83,8 @@ def Build_Upload_Block(date_session_id,UploadedFilename,VisSelfFinishedState):
                 )
 
 def Build_Finished_Task_Block(port,datasetDir_VisSelf="WorkPool_VisSelfService"):
-    print("Start to Run Build_Finished_Task_Block")
     date_dir_dict = get_finished_date_dir_dict(port=port,datasetDir_VisSelf=datasetDir_VisSelf)
+    key_values("Finished tasks ready", [("tasks", len(date_dir_dict))], icon="·")
     return dbc.Card(
                 [
                 dbc.CardHeader(html.H2("已完成自定任務")),

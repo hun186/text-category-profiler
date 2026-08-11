@@ -12,6 +12,12 @@
 
 ## Recent Outcomes
 
+### 2026-08-11 — Test result visualization residual console cleanup
+
+- 目標：整理 Dash layout 與 callback 中殘留的 start/finished、PID、raw row data 與 Windows `taskkill` 找不到行程訊息。
+- 結果：上傳、已完成任務、label selection 與 mission selection 改為簡短 key-value 摘要；資料表建置細節與 prediction query 進度只保留在 log file；清理不存在的舊 server 時不再顯示工具原始錯誤，也不再無條件等待 5 秒。
+- 驗證：`python -m unittest discover -s tests`、相關檔案 `py_compile`、`git diff --check`；完整 Dash 流程仍需使用者的 Windows 工作池與 runtime 驗證。
+
 ### 2026-08-11 — Test result visualization console readability
 
 - 目標：整理 Test_result_Vis 啟動時的 graph、InfoScore、Dash table 與 prediction chart 雜訊。

@@ -242,7 +242,7 @@ def Build_DataArrayTable(TableID,DataArray,ShownColumns=[],
         MPLOGGER = MPlogger()
     start_time = time.time()
     MES = f"Build Table {TableID} with \n ShownColumns {ShownColumns} and \n style_cell_conditional {style_cell_conditional}"
-    MPLOGGER.logW(MES=MES,logFile="Test_result_Vis.log")
+    MPLOGGER.logW(MES=MES, logFile="Test_result_Vis.log", printOnScreen=False)
     key_values("Dash table", [
         ("id", TableID),
         ("columns", ShownColumns),

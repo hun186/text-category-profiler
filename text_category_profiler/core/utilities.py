@@ -1481,12 +1481,25 @@ def clear_port(process_name):
             
     if "windows" in platform.system().lower():
         # 強制結束同名行程
-        subprocess.run(["taskkill", "/F", "/IM", process_name], check=False)
+        result = subprocess.run(
+            ["taskkill", "/F", "/IM", process_name],
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
         # 若需依指令列內容比對可改用 PowerShell Stop-Process -Id 或 -Name
     else:
         # -f 以完整指令列比對；避免 shell 注入，使用 list 參數
-        subprocess.run(["pkill", "-f", process_name], check=False)
-    time.sleep(5)
+        result = subprocess.run(
+            ["pkill", "-f", process_name],
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    if result.returncode == 0:
+        time.sleep(5)
+        return True
+    return False
 
 clearPort = clear_port
     
