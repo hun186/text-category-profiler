@@ -15,7 +15,7 @@
 | --- | --- | --- | --- | --- |
 | Flow orchestrator | 串接資料轉換、分類、結果合併、視覺化與清理 | CLI args、工作池路徑、模型／資料設定 | Stage commands、工作目錄狀態、最終輸出 | `TCFMain.py` |
 | Parameter layer | 定義 CLI args、預設工作池與任務模式 | command-line args、平台資訊 | argparse namespace、常數 | `text_category_profiler/pipeline/TCF_utils.py`, `TCF_Params/TCFParameters.py` |
-| Dataset converter | 建立分類器需要的 dataset／SQLite | 原始文字、固定測試資料、ES job config | `train.tsv`、`dev.tsv`、`test.tsv`、dataset DB | `DatasetConverter/` |
+| Dataset converter | 建立分類器需要的 dataset／SQLite；以可測試的 split plan 確保 train/dev/test 不重疊且完整覆蓋輸入 | 原始文字、固定測試資料、ES job config | `train.tsv`、`dev.tsv`、`test.tsv`、dataset DB | `DatasetConverter/DataConverter.py`, `DatasetConverter/dataset_split.py` |
 | Classifier runner | 執行 BERT／XLM 訓練或推論並管理模型／dataset handoff | dataset dir、model dir、resource availability | prediction output、model artifacts、logs | `BertScript/RunClassfier.py`, `BertScript/run_classifier*.py` |
 | Result analysis | 合併原文與預測結果，產生分析與視覺化 | prediction result、dataset DB、label list | combined SQLite／分析資料／Dash UI | `BertScript/CombineTestResult.py`, `BertScript/Test_result_Vis.py` |
 | Shared utilities | 依領域提供 core、data、concurrency、pipeline、text、visualization 與 integrations 工具 | 跨模組 utility calls | 共用 helper behavior | `text_category_profiler/<domain>/` |
@@ -52,6 +52,7 @@
 
 - `TCFMain.py` 組出的 stage commands 必須使用同一套 CLI parser 可接受的參數。
 - DataConverter 完成後至少需有 `train.tsv`、`dev.tsv` 或 `test.tsv` 之一；否則根流程會中止。
+- 來源 DataFrame 切分為 train/dev/test 時，每筆資料必須恰好分配一次；訓練容量允許時，train split 應至少包含每個 label 一筆。
 - 修改工作池搬移／清理邏輯前，必須先確認不會刪除或覆蓋真實任務資料。
 - 任何外部服務寫入（SQL/ES）都不能被當成無副作用驗證。
 

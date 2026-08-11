@@ -12,6 +12,12 @@
 
 ## Recent Outcomes
 
+### 2026-08-11 — DatasetConverter split planning refactor
+
+- 目標：將 `DataConverter.py` 的 train/dev/test 切分責任抽離成可獨立測試邏輯，並消除 label-based `.loc` inclusive slicing 導致的 split 邊界重疊。
+- 結果：新增 `dataset_split.py` 集中驗證比例、計算 split plan、維持 train label 覆蓋與以 position 產生無重疊 split；`DatasetGenerator` 僅負責 I/O 與固定測試資料整合。
+- 驗證：新增 ratio validation 與 DataFrame split characterization tests；當容器缺少 pandas 時，純 plan tests 仍會執行，DataFrame tests 會明確 skip。
+
 ### 2026-08-11 — PyTorch Transformers path injector cleanup
 
 - 目標：繼續淘汰 active classifier code 對 legacy `PackageImporter` 與機器特定搜尋路徑的依賴。

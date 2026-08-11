@@ -95,6 +95,9 @@ from ClassesTree.ClassesTree_utils import SetTreeFiles
     #from sampleHandler import SampleReader
 #except:
 from DatasetConverter.sampleHandler import SampleReader
+from DatasetConverter.dataset_split import build_split_plan
+from DatasetConverter.dataset_split import ensure_train_covers_labels
+from DatasetConverter.dataset_split import iter_dataset_splits
 
 #from utilities import hash
 from text_category_profiler.data.df_utils import dfOutputer
@@ -798,40 +801,6 @@ def MultiLabCt(MultiLabelCountList):
     return MLdict
         
 
-def EnsureTrainCoversLabels(df, nTrainSet, labelCol="OutLabel"):
-    # 切分 train/dev/test 前，先確保 train set 優先包含每個可覆蓋 label 至少一筆。
-    # 若 DataAugmentationGoal 太小、某 label 樣本太少，純 random shuffle 可能把該 label
-    # 全切到 validation/test，造成後續 classifier label list 與 dev/test 資料不一致。
-    if df.shape[0] == 0 or nTrainSet <= 0 or labelCol not in df.columns:
-        return df
-    LabelList = list(df[labelCol].dropna().unique())
-    if len(LabelList) == 0:
-        return df
-    if len(LabelList) > nTrainSet:
-        print(
-            f"WARNING: There are {len(LabelList)} labels but only {nTrainSet} "
-            "intended train slots; train set cannot cover every label."
-        )
-        return df
-    TrainLabelSet = set(df.iloc[:nTrainSet][labelCol].dropna().unique())
-    MissingLabelList = [label for label in LabelList if label not in TrainLabelSet]
-    if len(MissingLabelList) == 0:
-        return df
-    SelectedIndexList = []
-    for label in LabelList:
-        LabelIndexList = df.index[df[labelCol] == label].tolist()
-        if len(LabelIndexList) > 0:
-            SelectedIndexList.append(LabelIndexList[0])
-    SelectedIndexSet = set(SelectedIndexList)
-    RemainingIndexList = [idx for idx in df.index if idx not in SelectedIndexSet]
-    print(
-        "Reorder dataset rows before split to keep labels in train set. "
-        f"Missing labels before reorder: {MissingLabelList[:20]}"
-    )
-    return pd.concat([df.loc[SelectedIndexList], df.loc[RemainingIndexList]],
-                     ignore_index=True)
-
-
 class DatasetGenerator:
     '''
     將輸入的DataFrame切割為訓練集、驗證集、測試集，另加入固定全文指定做為測試集的資料。回傳各資料集數量字典。
@@ -912,20 +881,17 @@ class DatasetGenerator:
     def run(self):
         self.show()
         #設定訓練集、驗證集及測試集比例。
-        TrainSetRatio = self.DatasetRatio["Train"]
-        #ValidationSetRatio = self.DatasetRatio["Validation"]
-        TestSetRatio = self.DatasetRatio["Test"]
-        #依照比例分配資料點至訓練集、驗證集及測試集。
         nDataset = self.df.shape[0]
-        nTestSet = int(nDataset*TestSetRatio)
-        nTrainSet = int(nDataset*TrainSetRatio)
-        nValidationSet = nDataset - nTestSet - nTrainSet
-        self.df = EnsureTrainCoversLabels(self.df, nTrainSet)
-        nDict = {"train":nTrainSet, "validation":nValidationSet, "test":nTestSet}
+        split_plan = build_split_plan(
+            nDataset,
+            train_ratio=self.DatasetRatio["Train"],
+            test_ratio=self.DatasetRatio["Test"],
+        )
+        self.df = ensure_train_covers_labels(self.df, split_plan.train)
+        nDict = dict(split_plan.items())
         #FNDdict = {"train":"train.tsv", "validation":"dev.tsv", "test":"test.tsv"}
         MFNDdict = {"train":"train", "validation":"dev", "test":"test"}
     
-        Used = 0
         FT_df = pd.DataFrame()
         es_df = pd.DataFrame()
         #計算強制做為測試集的txt檔清單。
@@ -934,14 +900,13 @@ class DatasetGenerator:
             FixfiL.extend(OSWALK(workingPath, Extension = ["txt","AI2","sql3"]))
         #生成各資料集。
         key_values("Dataset split plan", [
-            ("train", nTrainSet),
-            ("validation", nValidationSet),
-            ("test", nTestSet),
+            ("train", split_plan.train),
+            ("validation", split_plan.validation),
+            ("test", split_plan.test),
             ("fixed test paths", summarize_sequence(self.FixedTestPATHList, limit=4)),
         ], icon="·")
         DTBJobs = []
-        for key in nDict.keys():
-            Partdf = self.df.loc[Used:Used+nDict[key],:].copy()
+        for key, Partdf in iter_dataset_splits(self.df, split_plan):
             key_values("Generate dataset split", [("split", key), ("planned rows", nDict[key])], icon="·")
             #Partdf["dataType"].astype("category")
             if key == "test":
@@ -998,9 +963,6 @@ class DatasetGenerator:
             #DFTextNormalize已整入dfOutputer函式
             #Partdf = multicoreJob(nProcess=self.nProcess).parallelize_dataframe(Partdf, TextNormalize)
             #dfOutputer(Partdf[['OutLabel','text']], MFNDdict[key]).run()
-            #累加已分配樣本之記數器，以記錄下一個分配資料集的正確起點。
-            Used += nDict[key]
-
             #輸出各資料集至檔案，MFNDdict[key]為各資料集之輸出主檔名。
             start_time = time.time()
             nBeforeDedup = len(Partdf)
