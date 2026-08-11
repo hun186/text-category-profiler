@@ -124,6 +124,7 @@ class PackageLayoutTests(unittest.TestCase):
         entry_points = [
             REPOSITORY_ROOT / "DatasetConverter/DataConverter.py",
             REPOSITORY_ROOT / "BertScript/RunClassfier.py",
+            REPOSITORY_ROOT / "BertScript/TextClassification_transformers.py",
             REPOSITORY_ROOT / "BertScript/CombineTestResult.py",
             REPOSITORY_ROOT / "BertScript/Test_result_Vis.py",
         ]
