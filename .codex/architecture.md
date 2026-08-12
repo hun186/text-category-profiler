@@ -15,7 +15,7 @@
 | --- | --- | --- | --- | --- |
 | Flow orchestrator | 串接資料轉換、分類、結果合併、視覺化與清理 | CLI args、工作池路徑、模型／資料設定 | Stage commands、工作目錄狀態、最終輸出 | `TCFMain.py` |
 | Parameter layer | 定義 CLI args、預設工作池與任務模式 | command-line args、平台資訊 | argparse namespace、常數 | `text_category_profiler/pipeline/TCF_utils.py`, `TCF_Params/TCFParameters.py` |
-| Dataset converter | 建立分類器需要的 dataset／SQLite；切分前依 label/text 去重，以可測試的 split plan 建立 train/dev/test，再僅對 train 的少類樣本擴增 | 原始文字、固定測試資料、ES job config | `train.tsv`、`dev.tsv`、`test.tsv`、dataset DB | `DatasetConverter/DataConverter.py`, `DatasetConverter/dataset_split.py` |
+| Dataset converter | 建立分類器需要的 dataset／SQLite；CLI 由 `main(argv=None)` 與 runtime bootstrap 進入，切分前依 label/text 去重，以可測試的 split plan 建立 train/dev/test，再僅對 train 的少類樣本擴增 | 原始文字、固定測試資料、ES job config | `train.tsv`、`dev.tsv`、`test.tsv`、dataset DB | `DatasetConverter/DataConverter.py`, `DatasetConverter/dataset_split.py` |
 | Classifier runner | 執行 BERT／XLM 訓練或推論並管理模型／dataset handoff | dataset dir、model dir、resource availability | prediction output、model artifacts、logs | `BertScript/RunClassfier.py`, `BertScript/run_classifier*.py` |
 | Result analysis | 合併原文與預測結果，產生分析與視覺化 | prediction result、dataset DB、label list | combined SQLite／分析資料／Dash UI | `BertScript/CombineTestResult.py`, `BertScript/Test_result_Vis.py` |
 | Shared utilities | 依領域提供 core、data、concurrency、pipeline、text、visualization 與 integrations 工具 | 跨模組 utility calls | 共用 helper behavior | `text_category_profiler/<domain>/` |

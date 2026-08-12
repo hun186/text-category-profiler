@@ -29,7 +29,7 @@
 
 - 類型：CLI
 - 狀態：Draft
-- 權威定義：`text_category_profiler/pipeline/TCF_utils.py` 的 `ClassfierOptionParser()`。
+- 權威定義：`text_category_profiler/pipeline/TCF_utils.py` 的 `ClassfierOptionParser(argv=None)`；未傳入 `argv` 時仍解析 process `sys.argv`。
 - Producer／Owner：共用 text_category_profiler parser。
 - Consumer：`TCFMain.py`、`DatasetConverter/DataConverter.py`、`BertScript/RunClassfier.py`、`BertScript/CombineTestResult.py`、`BertScript/Test_result_Vis.py` 等 stage scripts。
 - 輸入：`--train/-tr`、`--test/-ts`、`--task`、`--WorkPoolROOT/-WPRoot`、`--BertDatasetSubDir/-BertDataDir`、`--TopicTreeDir/-TopicTreeDir`、`--TopicTreeFiles/-TopicTreeFiles`、`--modelDir/-mdlDir`、`--FixedTestPATH/-FTPath`、`--SaveOptimizer/-SaveOptimizer`、WeiTech work pool 相關參數、model type 與視覺化參數等。`--SaveOptimizer` 預設為 `false`，因此 Hugging Face checkpoint 不保留 `optimizer.pt`；需要續訓狀態時可傳 `--SaveOptimizer true`。
