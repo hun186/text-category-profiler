@@ -9,11 +9,6 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
-if os.getcwd().split(os.path.sep)[-1] in [
-        "DatasetConverter","BertScript"]:
-    os.chdir("../")
-
-import setproctitle
 import ntpath
 import pathlib
 import platform
@@ -199,6 +194,7 @@ class DataConvertJobGenerater():
                  RBActive = True,
                  DataCleanerRePatternDict = {},
                  sourceRole = "regular source",
+                 cli_args = None,
                  MPLOGGER = None
                  ):
         if MPLOGGER == None:
@@ -207,6 +203,7 @@ class DataConvertJobGenerater():
             self.MPLOGGER = MPLOGGER
         self.datasetSubDir = datasetSubDir
         self.sourceRole = sourceRole
+        self.cli_args = cli_args
         self.ROOTPATHList = ROOTPATHList
         #self.SQLFile = SQLFile
         self.esJob = esJob
@@ -279,14 +276,18 @@ class DataConvertJobGenerater():
         self.tokenizationWrap = tokenizationWrap
         if tokenizationWrap == True:
             if modelDir == "":
+                if self.cli_args is None:
+                    raise ValueError(
+                        "cli_args is required to resolve an empty tokenizer modelDir"
+                    )
                 info("tokenizationWrap is True but modelDir is empty; resolving modelDir from dataset/output settings.")
                 _,modelDir = datasetDirOutputDirPickers(
-                    args=args,rdy_for_stage="DataConverter").proc()
+                    args=self.cli_args,rdy_for_stage="DataConverter").proc()
                 if modelDir in [None, ""]:
-                    modelDir = get_base_model_checkpoint(args.ModelType)
+                    modelDir = get_base_model_checkpoint(self.cli_args.ModelType)
                 key_values("Tokenizer model directory", [
                     ("modelDir", modelDir),
-                    ("MaxSeqLength", args.MaxSeqLength),
+                    ("MaxSeqLength", self.cli_args.MaxSeqLength),
                 ], icon="·")
         #print("In DC,modelDir",modelDir)
         #raise Exception
@@ -565,6 +566,7 @@ def BuildSamplesDfFromPaths(
     DCkwargs = {},
     start_time=None,
     sourceRole="regular source",
+    cli_args=None,
     MPLOGGER = None):
     '''
     處理指定路徑，轉換成樣本DataFrame，其中rows_list為字典清單，如：[
@@ -601,6 +603,7 @@ def BuildSamplesDfFromPaths(
         esJob = esJob,
         RemoveDumpArticle = RemoveDumpArticle,
         sourceRole=sourceRole,
+        cli_args=cli_args,
         #nProcess = nProcess,
         MPLOGGER = MPLOGGER,
         **DCkwargs
@@ -825,6 +828,7 @@ class DatasetGenerator:
                  DCkwargs = {},
                  datasetCountOFN = None,
                  nProcess = nProcess,
+                 cli_args = None,
                  MPLOGGER = None,
                  ):
         self.df = df
@@ -838,6 +842,7 @@ class DatasetGenerator:
         self.FixedTestPATHList = FixedTestPATHList
         self.esJob = esJob
         self.DCkwargs = DCkwargs
+        self.cli_args = cli_args
         if datasetCountOFN == None:
             self.datasetCountOFN = os.path.join("dataset","dataset.txt")
         else:
@@ -954,6 +959,7 @@ class DatasetGenerator:
                         #nProcess = self.nProcess,
                         Count_SQL_table = "sampleCount_FixedTest",
                         sourceRole="fixed test source",
+                        cli_args=self.cli_args,
                         DCkwargs = self.DCkwargs)
                 else:
                     FT_df = pd.DataFrame()
@@ -978,6 +984,7 @@ class DatasetGenerator:
                         #nProcess = self.nProcess,
                         Count_SQL_table = "sampleCount_Elasticsearch",
                         sourceRole="Elasticsearch source",
+                        cli_args=self.cli_args,
                         DCkwargs = self.DCkwargs)
                     key_values("Elasticsearch test samples", [
                         ("index", self.esJob["indexname"]),
@@ -1125,9 +1132,17 @@ def PickSelectTxt(SrcRoot = ""):
                 FNMatchingMode="Part",FNPatList=FNPatList)
     raise Exception
 
-def setArguments(DCkwargs):
-    setproctitle.setproctitle('CZJDataConvert')
-    args = ClassfierOptionParser()
+def bootstrap_runtime():
+    """Apply process-level setup required only when the converter is executed."""
+    import setproctitle
+
+    if os.getcwd().split(os.path.sep)[-1] in ["DatasetConverter", "BertScript"]:
+        os.chdir("../")
+    setproctitle.setproctitle("CZJDataConvert")
+
+
+def setArguments(DCkwargs, argv=None):
+    args = ClassfierOptionParser(argv)
     args.BertDatasetSubDir,_ = datasetDirOutputDirPickers(
         args=args,rdy_for_stage="DataConverter").proc()
     #BertDatasetSubDir,outputDir = datasetDirOutputDirPickers(args=args).proc()
@@ -1231,10 +1246,13 @@ def loadLabels(args,DCkwargs=dict()):
     return DCkwargs
     #return tpcTree,InfoScoreTable,LabelList,DCkwargs
       
-if __name__ == '__main__':
+def main(argv=None):
+    """Run the DatasetConverter CLI and return its successful exit status."""
+    global DCkwargs, exeTimeDict
+    bootstrap_runtime()
     exeTimeDict = dict()
     #解析並設定路徑相關參數。
-    args,DCkwargs,ROOTPATHList,FixedTestPATHList = setArguments(DCkwargs)
+    args,DCkwargs,ROOTPATHList,FixedTestPATHList = setArguments(DCkwargs, argv=argv)
     #讀取及建置分類樹結構、分數表、Label，並加入轉換參數。
     DCkwargs = loadLabels(args=args,DCkwargs=DCkwargs)
 
@@ -1325,6 +1343,7 @@ if __name__ == '__main__':
         OUTPUTMAIN_Counter = OUTPUTMAIN_Counter,
         nProcess = nProcess,
         DCkwargs = DCkwargs,
+        cli_args=args,
         start_time=exeTimeDict["stage_start_time"])
     
     #以下排序程式碼會將輸出依文本及檔名排序，以供快速查閱中文亂碼，僅供debug使用。
@@ -1372,6 +1391,7 @@ if __name__ == '__main__':
                      DCkwargs=DCkwargs,
                      #datasetCountOFN = datasetCountOFN,
                      nProcess=nProcess,
+                     cli_args=args,
                      datasetSubDir=args.BertDatasetSubDir).run()
     
     elapsed = time.time()-exeTimeDict["stage_start_time"]
@@ -1401,3 +1421,8 @@ if __name__ == '__main__':
     key_values("DataConverter timing", sorted(exeTimeDict.items()), icon="·")
     TaskConnector(SrcTask="DataConverter",DesTask="RunClassfier",
                   WorkingDir=args.BertDatasetSubDir,logFile="TCFMain.log").proc()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
