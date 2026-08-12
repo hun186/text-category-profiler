@@ -12,6 +12,12 @@
 
 ## Recent Outcomes
 
+### 2026-08-12 — DatasetConverter content-hash selection boundary
+
+- 目標：延續 Phase 3，將 filesystem discovery 後的 content hash 去重規則與 process/hash adapter 分離。
+- 結果：`select_unique_content_paths()` 純函式集中 worker mappings 合併與同 hash 保留最後 path 的既有規則；`DataConvertJobGenerater` 保留 SHA-1、前 100 MB 與 multiprocessing 行為，並新增跨 batch duplicate 與空結果測試。
+- 驗證：source collection/source-role/fixture targeted tests、完整輕量 unittest、相關檔案 `py_compile` 與 `git diff --check`。
+
 ### 2026-08-12 — DatasetConverter typed source discovery boundary
 
 - 目標：延續 Phase 3，讓 filesystem source 的用途與探索政策不再隱含於 caller，且讓 FixedTest 探索採用同一個可隔離測試的邊界。

@@ -5,6 +5,7 @@ from DatasetConverter.source_collection import discover_source_files
 from DatasetConverter.source_collection import discover_source_spec
 from DatasetConverter.source_collection import SourceRole
 from DatasetConverter.source_collection import SourceSpec
+from DatasetConverter.source_collection import select_unique_content_paths
 
 
 class DatasetSourceCollectionTests(unittest.TestCase):
@@ -99,6 +100,21 @@ class DatasetSourceCollectionTests(unittest.TestCase):
             self.fail("walker must not run for an empty source")
 
         self.assertEqual(discover_source_spec(source, walker=walker), [])
+
+    def test_content_deduplication_retains_last_path_for_each_hash(self):
+        hash_batches = [
+            {"first.txt": "same", "unique.txt": "unique"},
+            {"duplicate.txt": "same"},
+        ]
+
+        self.assertEqual(
+            select_unique_content_paths(hash_batches),
+            ["duplicate.txt", "unique.txt"],
+        )
+
+    def test_content_deduplication_accepts_empty_worker_results(self):
+        self.assertEqual(select_unique_content_paths([]), [])
+        self.assertEqual(select_unique_content_paths([{}, {}]), [])
 
 
 if __name__ == "__main__":
