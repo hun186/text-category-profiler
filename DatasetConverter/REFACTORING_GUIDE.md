@@ -273,3 +273,33 @@ DataConverter.py -> stage/config -> domain services -> ports
 3. **PR 3：Typed config** — 將 argparse／`DCkwargs` 正規化成 immutable config，保留舊函式薄 wrapper。
 
 前三步完成後再拆 source 與 pipeline，能大幅降低「邊搬程式、邊猜現行行為」造成的回歸風險。
+
+## 9. 執行進度
+
+### 2026-08-12 — Phase 1 入口邊界（進行中）
+
+本次完成：
+
+- `DataConverter.py` 已提供 `main(argv=None) -> int`，直接執行時只由
+  `raise SystemExit(main())` 進入流程；原有轉換演算法、CLI option、輸出檔名與
+  handoff suffix 均未改動。
+- cwd 調整與 process title 設定已移入 `bootstrap_runtime()`，import module 時不再
+  直接執行 `os.chdir()`；`setproctitle` 也延遲到 bootstrap 才匯入。
+- 共用 `ClassfierOptionParser(argv=None)` 可接收明確 argument list，既有無參數
+  caller 仍讀取 `sys.argv`，讓後續 CLI exit-code 測試不必修改 process globals。
+- 新增 AST regression test，固定 module scope 不改 cwd，以及 `main`／
+  `SystemExit` 的入口形狀。
+
+尚未完成／下次優先事項：
+
+1. **Phase 1 completion gate 尚未達成。** 此容器缺少 `psutil` 等 optional/runtime
+   dependencies，實際執行 `python -c "import DatasetConverter.DataConverter"` 仍會在
+   module-scope dependency import 失敗；下一批應依 adapter 使用點逐一延遲外部服務、
+   視覺化與重型 runtime imports，不得以 `try/except` 吞掉 import error。
+2. `setArguments()` 仍建立目錄、logger 並更新 globals；應把這些動作移入具名
+   bootstrap context，讓 argument normalization 本身可單獨測試。
+3. 主流程仍讀寫 `MPLOGGER`、`MPLOGGER_TCFMain`、`exeTimeDict` globals；完成 Phase 1
+   前需改為顯式參數或 context，但應分批進行，避免同時重寫 orchestration。
+4. Phase 0 目前只有 split 與 source-role 等局部測試；`DatasetGenerator.run()` 的
+   temporary-directory artifact contract、taxonomy mismatch 與完整 zero-sample
+   integration fixture 尚待補齊。

@@ -70,7 +70,7 @@ class TaskConnector:
                 #time.sleep(13)
 
 
-def ClassfierOptionParser():
+def ClassfierOptionParser(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-debug", "--debugMode", help="Run in debug Mode",
@@ -246,7 +246,7 @@ def ClassfierOptionParser():
         type=int, default=1)
 
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if args.train == True:
         args.test = False

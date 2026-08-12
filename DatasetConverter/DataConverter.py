@@ -9,11 +9,6 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
-if os.getcwd().split(os.path.sep)[-1] in [
-        "DatasetConverter","BertScript"]:
-    os.chdir("../")
-
-import setproctitle
 import ntpath
 import pathlib
 import platform
@@ -1125,9 +1120,17 @@ def PickSelectTxt(SrcRoot = ""):
                 FNMatchingMode="Part",FNPatList=FNPatList)
     raise Exception
 
-def setArguments(DCkwargs):
-    setproctitle.setproctitle('CZJDataConvert')
-    args = ClassfierOptionParser()
+def bootstrap_runtime():
+    """Apply process-level setup required only when the converter is executed."""
+    import setproctitle
+
+    if os.getcwd().split(os.path.sep)[-1] in ["DatasetConverter", "BertScript"]:
+        os.chdir("../")
+    setproctitle.setproctitle("CZJDataConvert")
+
+
+def setArguments(DCkwargs, argv=None):
+    args = ClassfierOptionParser(argv)
     args.BertDatasetSubDir,_ = datasetDirOutputDirPickers(
         args=args,rdy_for_stage="DataConverter").proc()
     #BertDatasetSubDir,outputDir = datasetDirOutputDirPickers(args=args).proc()
@@ -1231,10 +1234,13 @@ def loadLabels(args,DCkwargs=dict()):
     return DCkwargs
     #return tpcTree,InfoScoreTable,LabelList,DCkwargs
       
-if __name__ == '__main__':
+def main(argv=None):
+    """Run the DatasetConverter CLI and return its successful exit status."""
+    global DCkwargs, exeTimeDict
+    bootstrap_runtime()
     exeTimeDict = dict()
     #解析並設定路徑相關參數。
-    args,DCkwargs,ROOTPATHList,FixedTestPATHList = setArguments(DCkwargs)
+    args,DCkwargs,ROOTPATHList,FixedTestPATHList = setArguments(DCkwargs, argv=argv)
     #讀取及建置分類樹結構、分數表、Label，並加入轉換參數。
     DCkwargs = loadLabels(args=args,DCkwargs=DCkwargs)
 
@@ -1401,3 +1407,8 @@ if __name__ == '__main__':
     key_values("DataConverter timing", sorted(exeTimeDict.items()), icon="·")
     TaskConnector(SrcTask="DataConverter",DesTask="RunClassfier",
                   WorkingDir=args.BertDatasetSubDir,logFile="TCFMain.log").proc()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
