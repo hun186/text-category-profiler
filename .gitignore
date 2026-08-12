@@ -45,14 +45,6 @@ cache/
 # 教學影片
 /BertScript/教學影片/
 
-# 大型封裝及資料庫
-*.zip
-*.tar
-*.gz
-*.db
-*.sqlite
-*.sql3
-
 # Python
 __pycache__/
 *.py[cod]
@@ -60,6 +52,6 @@ __pycache__/
 venv/
 mp_processing_log.txt
 BertScript/mmBERT-base/pytorch_model.bin
-mp_processing_log.txt
-mp_processing_log.txt
-mp_processing_log.txt
+
+BertScript/TRV_deploy
+DatasetConverter/EXTConverter/Output/CZJ_CorpusFile.sql3
