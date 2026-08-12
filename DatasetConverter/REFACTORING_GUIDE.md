@@ -329,5 +329,28 @@ DataConverter.py -> stage/config -> domain services -> ports
 2. `BuildFileList()` 仍負責 hash-based duplicate article removal 與 log／timing；本批刻意
    只抽出 discovery，避免同時改動 dedup 演算法。後續應將 discovery result 與 content
    dedup 分成兩個可測步驟。
-3. 本批只驗證 injected walker 的契約，未執行完整 DataConverter；完整流程仍需要已確認
-   的隔離 fixture 與 runtime dependencies。
+3. 本批只驗證 injected walker 的契約，未執行完整 DataConverter；下節已補第一個隔離
+   integration slice，但完整 legacy CLI 仍需要 runtime dependencies 與更多 fixture cases。
+
+### 2026-08-12 — Phase 0 小型隔離 fixture（部分完成）
+
+本次完成：
+
+- 新增 `tests/fixtures/dataconverter_small/`，使用三個 UTF-8 小型文字檔涵蓋兩個 labels；
+  label 直接沿用 production source path 的 `#T#[label]` 契約，不需要模型或外部服務。
+- `test_dataconverter_fixture_integration.py` 會以兩個 process workers 讀取 fixture，使用
+  production `dataset_split` plan 產生 non-overlapping train／dev／test bounds，再將三個
+  TSV 寫入 `TemporaryDirectory` 並驗證檔名、columns、row count、labels 與無重複 rows。
+- 新增窄範圍、只依賴 Python standard library 的 fixture reader 與 TSV contract writer；
+  它們是 dependency-free contract probe，不取代 production pandas／SQLite adapters。
+- 此測試已可在目前 Codex 容器執行，因此「尚無經確認可安全使用的完整隔離 fixture」
+  已縮小為「已有 source → worker → split → TSV 的安全 fixture，但完整 legacy CLI 與
+  pandas／SQLite adapter 尚未涵蓋」。
+
+尚未完成／下次優先事項：
+
+1. Phase 0 的 duplicate、fixed-test、empty source、taxonomy mismatch 與 SQLite artifact
+   cases 尚待加入；目前 fixture 是第一個安全 integration slice，不應描述為完整 CLI E2E。
+2. `python DatasetConverter/DataConverter.py ...` 仍需要 pandas、psutil、Plotly 等 module-scope
+   dependencies；Phase 1 應繼續移除 import-time 重型依賴，之後把相同 fixture 接到正式
+   stage/bootstrap boundary。

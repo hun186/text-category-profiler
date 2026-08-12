@@ -12,11 +12,17 @@
 
 ## Recent Outcomes
 
+### 2026-08-12 — Dependency-free DataConverter integration fixture
+
+- 目標：讓 Codex 在缺少 pandas、模型與外部服務的容器中，仍能安全執行小型來源到 artifact 的 integration slice，而不接觸真實工作池。
+- 結果：加入兩 labels／三文件 fixture；測試會以 process pool 讀取 `#T#[label]` 來源，套用 production split plan，在 `TemporaryDirectory` 產生 train/dev/test TSV 並驗證 row、label、去重與 artifact contract。此 probe 不冒充完整 legacy CLI 或 pandas／SQLite E2E。
+- 驗證：fixture integration targeted test、完整輕量 unittest、相關檔案 `py_compile` 與 `git diff --check`。
+
 ### 2026-08-12 — DatasetConverter deterministic source discovery
 
 - 目標：依重構指引開始拆分來源收集，讓檔案探索規則可在不匯入完整轉換 stage 的情況下測試。
 - 結果：新增獨立 `source_collection.py`，由 caller 注入既有 `OSWALK`，集中 supported extensions、`UnTagged`／`UnSpec` 排除與穩定排序；`DataConvertJobGenerater.BuildFileList()` 保留 duplicate-content removal 與 log 邊界，先以薄 wrapper 採用新 discovery function。
-- 驗證：來源探索 isolated tests、既有 entrypoint/source-role tests、相關檔案 `py_compile` 與 `git diff --check`；完整 DataConverter 仍受缺少 runtime dependencies 與隔離 fixture 限制。
+- 驗證：來源探索 isolated tests、既有 entrypoint/source-role tests、相關檔案 `py_compile` 與 `git diff --check`；後續已補 dependency-free integration fixture，完整 legacy CLI 仍受 runtime dependencies 限制。
 
 ### 2026-08-11 — Test-only conversion with no regular source rows
 
