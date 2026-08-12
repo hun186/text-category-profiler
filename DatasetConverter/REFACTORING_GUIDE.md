@@ -498,3 +498,28 @@ DataConverter.py -> stage/config -> domain services -> ports
    等 malformed path 的 legacy failure behavior 尚未定義。改成具名 domain error 前應先確認實際資料需求。
 3. 完整 `DataConverter.py` import 與 CLI 仍被其他 module-scope runtime dependencies 阻擋；本批只移除
    provenance parser 對 pandas 等無關依賴，不代表 Phase 1 completion gate 已達成。
+
+### 2026-08-12 — Phase 4 reader row schema validation（進行中）
+
+本次完成：
+
+- `sample_schema.validate_sample_rows()` 固定 reader → assembly 邊界的必要 columns：`file`、
+  `InLabel`、`OutLabel`、`text`；驗證本身不依賴 pandas、process pool、filesystem 或 global state，
+  並保留 row 順序與原 mapping。
+- `PartNO` 維持 optional，因既有 external source adapter 可能省略，後續 DataFrame adapter 仍依原契約
+  補為 `0`；本批未將相容行為誤判為 schema failure。
+- `BuildSamplesDfFromPaths()` 在 label counter、DataFrame 與 artifact 副作用前執行驗證。非 mapping row
+  或缺少必要 columns 時，錯誤會包含 source role/stage、row index 與所有缺少的 columns。
+- isolated tests 固定 standard row、缺少 `PartNO` 的 external row、非 mapping payload 與缺欄診斷；
+  完整輕量 suite 保持通過。
+
+尚未完成／下次優先事項：
+
+1. **Phase 4 completion gate 尚未達成。** 本批只固定所有 reader role 的共同輸出 schema；
+   `SampleReader` 仍混合 filesystem／CZJ／ES I/O、文字切片與 normalize。下一批可先將
+   `textSegsToSamples()` 的 row assembly 抽成純函式，但不可同時更改 slicing、rule-based label 或
+   random sampling 語意。
+2. `text`、labels 與 provenance value 的型別／空值政策尚未集中驗證；應先以現有 regular、fixed-test、
+   CZJ 與 ES fixture 確認合法範圍，再收緊契約，避免拒絕 production 目前接受的資料。
+3. 完整 legacy CLI 仍受 module-scope runtime dependencies 與工作池／模型需求限制；本批驗證的是
+   dependency-free schema boundary，不代表 Phase 1 或完整 CLI E2E gate 已完成。

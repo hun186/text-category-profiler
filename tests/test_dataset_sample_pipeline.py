@@ -3,6 +3,7 @@ import unittest
 from DatasetConverter.sample_pipeline import aggregate_multi_label_counts
 from DatasetConverter.sample_pipeline import collect_reader_results
 from DatasetConverter.sample_pipeline import collect_source_metadata
+from DatasetConverter.sample_schema import validate_sample_rows
 
 
 class CollectReaderResultsTests(unittest.TestCase):
@@ -32,6 +33,44 @@ class CollectReaderResultsTests(unittest.TestCase):
     def test_rejects_non_sequence_rows(self):
         with self.assertRaisesRegex(TypeError, "reader rows at index 0"):
             collect_reader_results([({"file": "a.txt"}, None)])
+
+
+class ValidateSampleRowsTests(unittest.TestCase):
+    def test_preserves_standard_and_external_rows(self):
+        standard = {
+            "file": "a.txt",
+            "InLabel": "alpha",
+            "OutLabel": "alpha",
+            "text": "one",
+            "PartNO": 1,
+        }
+        external_without_part_number = {
+            "file": "es-id",
+            "InLabel": "Scrap",
+            "OutLabel": "Scrap",
+            "text": "two",
+        }
+
+        validated = validate_sample_rows(
+            [standard, external_without_part_number],
+            source_stage="fixed test reader",
+        )
+
+        self.assertEqual(validated, (standard, external_without_part_number))
+
+    def test_rejects_non_mapping_with_stage_and_row_index(self):
+        with self.assertRaisesRegex(TypeError, "regular reader row at index 0"):
+            validate_sample_rows(["not-a-row"], source_stage="regular reader")
+
+    def test_reports_all_missing_required_columns(self):
+        with self.assertRaisesRegex(
+            ValueError,
+            "fixed test reader row at index 0.*InLabel, OutLabel, text",
+        ):
+            validate_sample_rows(
+                [{"file": "fixed.txt"}],
+                source_stage="fixed test reader",
+            )
 
 
 class AggregateMultiLabelCountsTests(unittest.TestCase):
