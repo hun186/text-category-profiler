@@ -32,3 +32,18 @@ class DataConverterSourceRoleTests(unittest.TestCase):
         self.assertIn('f"{sourceRole.title()} conversion result"', self.source)
         self.assertIn('key_values("Regular source split plan"', self.source)
         self.assertIn('("test (excluding FixedTest)", split_plan.test)', self.source)
+
+    def test_source_metadata_uses_pipeline_boundary_without_silent_failure(self):
+        function = next(
+            node
+            for node in self.tree.body
+            if isinstance(node, ast.FunctionDef) and node.name == "GetDataSRC"
+        )
+        calls = [
+            node.func.id
+            for node in ast.walk(function)
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+        ]
+
+        self.assertIn("collect_source_metadata", calls)
+        self.assertFalse(any(isinstance(node, ast.Try) for node in ast.walk(function)))

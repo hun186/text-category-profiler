@@ -428,3 +428,52 @@ DataConverter.py -> stage/config -> domain services -> ports
    移除 fallback 而破壞 legacy sources。
 3. 本批不變更 reader jobs、multiprocessing 策略、TSV／SQLite schema、split 或 augmentation；
    完整 legacy CLI 仍受 Phase 1 的 module-scope runtime dependencies 限制。
+
+### 2026-08-12 — Phase 4 multi-label 計數邊界（進行中）
+
+本次完成：
+
+- 將 `MultiLabCt()` 的 multi-label worker counter 彙總規則抽到
+  `sample_pipeline.aggregate_multi_label_counts()`；`DataConverter.py` 保留原函式作為薄相容層，
+  現有 caller、回傳 dictionary 與「忽略無 label set 結果」的契約不變。
+- 純函式將 label set 排序後作為 key，確保不同 worker 回傳同一組 labels 時穩定合併；並在
+  malformed counter 缺少 labels 或 count 時指出 result index，避免無法定位的 unpack error。
+- isolated tests 固定跨 worker 累加、label 順序正規化、`None` 相容行為與 malformed contract；
+  不需 import `DataConverter.py`、pandas、process pool、模型、外部服務或 filesystem。
+
+尚未完成／下次優先事項：
+
+1. **Phase 4 completion gate 尚未達成。** `GetDataSRC()` 仍以 DataFrame chunk 執行且吞掉所有
+   metadata 解析錯誤；下一批仍應先固定 Books、一般 `#T#` path 與無法解析 path 的既有契約，
+   再抽出具名結果的純 row transformation。
+2. `SampleReader` 的來源格式讀取、文字切片與 normalize 仍耦合；應沿 reader role 逐一記錄
+   input/output columns 與 provenance，再移動單一責任，避免同時改變 sample schema。
+3. 本批不變更 multi-label 的 reader payload、TSV／SQLite schema、split、augmentation 或 handoff；
+   完整 legacy CLI 仍需 runtime dependencies 與工作池 fixture 才能驗證。
+
+### 2026-08-12 — Phase 4 source metadata 組裝邊界（進行中）
+
+本次完成：
+
+- 新增 immutable `SourceMetadata` 與純函式 `collect_source_metadata()`，將 provenance path resolver
+  的逐列呼叫、結果順序及 `(SrcType, Src)` shape validation 從 pandas adapter 抽離；resolver 以參數
+  注入，因此純 pipeline 測試不需載入 pandas 或 legacy stage dependencies。
+- `GetDataSRC()` 現在只負責從 DataFrame 取得 `file`／`InLabel`、呼叫 pipeline boundary，並寫回
+  `SrcType`／`Src` columns；既有 `getSrcFromFileName()` 仍是 path policy adapter，Books 與一般來源
+  的判定演算法未在本批重寫。
+- 移除 `GetDataSRC()` 原本吞掉所有例外的 bare `except`。未解析但合法的 path 仍保留既有
+  `(None, None)` metadata；resolver exception 或 malformed result 現在會阻止後續輸出／ready handoff，
+  malformed result 會帶 row index 與 path。
+- tests 固定 Books／一般來源的 injected routing、無法解析 path 的 `None` metadata、malformed result
+  診斷，以及 `GetDataSRC()` 不再以 `try` 靜默跳過整批 metadata。
+
+尚未完成／下次優先事項：
+
+1. **Phase 4 completion gate 尚未達成。** 本容器未安裝 pandas，無法直接 import legacy
+   `DataConverter_utils.getSrcFromFileName()`；Books 與一般 path 的 production parser 結果仍需在完整
+   runtime 以 temporary fixture characterization test 固定，本批只固定 injected adapter contract。
+2. `getSrcFromFileName()` 所在 module 同時 import pandas、SQLite 與其他 output dependencies；下一批可
+   將 path-only policy 移入 dependency-free module，再讓舊位置保留薄相容 import，避免 source metadata
+   解析被不相關 runtime dependency 阻擋。
+3. `SampleReader` 的來源格式讀取、文字切片與 normalize 仍耦合；應先記錄各 reader role 的 columns
+   與 provenance，再逐步抽取 normalize／validate，不在同一批改變 slicing 演算法。

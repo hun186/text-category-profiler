@@ -12,6 +12,18 @@
 
 ## Recent Outcomes
 
+### 2026-08-12 — DatasetConverter source metadata assembly boundary
+
+- 目標：延續 Phase 4，隔離 `GetDataSRC()` 的 DataFrame adapter 與逐列 provenance metadata 組裝。
+- 結果：`collect_source_metadata()` 以 immutable results 驗證 resolver shape；`GetDataSRC()` 保留薄 pandas adapter，移除會吞掉整批錯誤的 bare `except`，合法 unresolved path 仍回傳 `None` metadata。
+- 驗證：sample pipeline、entrypoint/source-role targeted tests、完整輕量 unittest、相關檔案 `py_compile` 與 `git diff --check`；production path parser 因容器缺少 pandas 尚未直接 import 驗證。
+
+### 2026-08-12 — DatasetConverter multi-label aggregation boundary
+
+- 目標：延續 Phase 4，將 reader multi-label counters 的彙總規則從 stage helper 抽成純轉換。
+- 結果：`aggregate_multi_label_counts()` 集中 label-set 正規化與跨 worker 累加，保留 `MultiLabCt()` 薄相容層與 `None` 行為，malformed payload 會指出 result index。
+- 驗證：sample pipeline targeted tests、完整輕量 unittest、相關檔案 `py_compile` 與 `git diff --check`。
+
 ### 2026-08-12 — DatasetConverter reader result assembly boundary
 
 - 目標：開始 Phase 4，將 process reader jobs 的結果組裝從 DataFrame 與輸出流程分離。
