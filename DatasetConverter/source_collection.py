@@ -7,11 +7,31 @@ the legacy runtime and can be tested without importing the conversion stage.
 from collections.abc import Callable, Iterable
 from concurrent.futures import Executor
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 
 
 SUPPORTED_SOURCE_EXTENSIONS = ("txt", "AI2", "sql3")
 EXCLUDED_PATH_PARTS = ("untagged", "unspec")
+
+
+class SourceRole(str, Enum):
+    """The semantic role a source plays in dataset generation."""
+
+    REGULAR = "regular source"
+    FIXED_TEST = "fixed test source"
+    CZJ_CORPUS = "CZJ corpus source"
+
+
+@dataclass(frozen=True)
+class SourceSpec:
+    """Declarative filesystem discovery policy for one source role."""
+
+    role: SourceRole
+    root_paths: tuple[str, ...]
+    filename_pattern: str | None = None
+    extensions: tuple[str, ...] = SUPPORTED_SOURCE_EXTENSIONS
+    excluded_path_parts: tuple[str, ...] = EXCLUDED_PATH_PARTS
 
 
 @dataclass(frozen=True)
@@ -70,17 +90,41 @@ def discover_source_files(
     ordering and path filtering from the conversion job class.
     """
 
+    return discover_source_spec(
+        SourceSpec(
+            role=SourceRole.REGULAR,
+            root_paths=tuple(root_paths),
+            filename_pattern=filename_pattern,
+        ),
+        walker=walker,
+    )
+
+
+def discover_source_spec(
+    source: SourceSpec,
+    *,
+    walker: Callable[..., Iterable[str]],
+) -> list[str]:
+    """Discover files for ``source`` without interpreting its source role.
+
+    The adapter owns filesystem traversal while the immutable spec records why
+    the files are being collected and which discovery policy applies.  A
+    ``None`` filename pattern intentionally omits the legacy walker keyword,
+    which preserves FixedTest discovery behaviour.
+    """
+
     discovered: list[str] = []
-    for root_path in root_paths:
-        paths = walker(
-            root_path,
-            Extension=list(SUPPORTED_SOURCE_EXTENSIONS),
-            FullPathFNrePat=filename_pattern,
-        )
+    for root_path in source.root_paths:
+        walker_kwargs = {"Extension": list(source.extensions)}
+        if source.filename_pattern is not None:
+            walker_kwargs["FullPathFNrePat"] = source.filename_pattern
+        paths = walker(root_path, **walker_kwargs)
         discovered.extend(
             path
             for path in paths
-            if not any(part in path.lower() for part in EXCLUDED_PATH_PARTS)
+            if not any(
+                part.lower() in path.lower()
+                for part in source.excluded_path_parts
+            )
         )
-
     return sorted(discovered)

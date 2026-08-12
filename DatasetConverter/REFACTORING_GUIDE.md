@@ -354,3 +354,29 @@ DataConverter.py -> stage/config -> domain services -> ports
 2. `python DatasetConverter/DataConverter.py ...` 仍需要 pandas、psutil、Plotly 等 module-scope
    dependencies；Phase 1 應繼續移除 import-time 重型依賴，之後把相同 fixture 接到正式
    stage/bootstrap boundary。
+
+### 2026-08-12 — Phase 3 SourceSpec 與 FixedTest discovery（進行中）
+
+本次完成：
+
+- `source_collection.py` 新增 immutable `SourceSpec` 與 `SourceRole`，讓 regular、fixed-test
+  與 CZJ corpus 的來源用途、roots、extensions、filename pattern 與排除規則可由資料描述，
+  不再只能由呼叫位置或 log 字串推測。
+- regular／CZJ 的 `BuildFileList()` 與 `DatasetGenerator.run()` 的 FixedTest 探索已共用
+  `discover_source_spec()`；舊 `discover_source_files()` 保留為 regular source 薄相容層。
+- 保留既有 discovery 契約：regular／CZJ 仍排除路徑中的 `UnTagged`／`UnSpec` 並傳入
+  filename regex；FixedTest 不傳 regex、也不套用該排除規則。各角色結果皆穩定排序。
+- isolated tests 固定 spec immutability、walker keyword、角色資訊、FixedTest policy 與空 roots
+  不呼叫 walker；不需 import `DataConverter.py`、pandas 或啟動 multiprocessing。
+
+尚未完成／下次優先事項：
+
+1. **Phase 3 completion gate 尚未達成。** `SourceSpec.role` 目前主要用於 routing metadata；
+   `BuildSamplesDfFromPaths()` 仍接收未具型別的 `sourceRole` 字串，後續應以薄 wrapper 將 role
+   一路傳到 reader job 與結果摘要，避免重複推導。
+2. content hash dedup 仍在 `DataConvertJobGenerater.BuildFileList()`，應抽成接收 discovery
+   result 的獨立步驟並以小型重複檔案 fixture 固定行為。
+3. ES source 沒有 filesystem roots，尚未建立相對應的 source adapter/spec；不要為了統一形式
+   把 ES 偽裝成檔案來源，應先定義一致的 sample-row adapter contract。
+4. Phase 0 的 duplicate、FixedTest row conversion、taxonomy mismatch 與 SQLite artifact cases
+   仍待補齊；本批只涵蓋 discovery/routing，不代表完整 legacy CLI E2E 已可執行。

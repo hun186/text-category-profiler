@@ -12,17 +12,11 @@
 
 ## Recent Outcomes
 
-### 2026-08-12 — Dependency-free DataConverter integration fixture
+### 2026-08-12 — DatasetConverter typed source discovery boundary
 
-- 目標：讓 Codex 在缺少 pandas、模型與外部服務的容器中，仍能安全執行小型來源到 artifact 的 integration slice，而不接觸真實工作池。
-- 結果：加入兩 labels／三文件 fixture；測試會以 process pool 讀取 `#T#[label]` 來源，套用 production split plan，在 `TemporaryDirectory` 產生 train/dev/test TSV 並驗證 row、label、去重與 artifact contract。此 probe 不冒充完整 legacy CLI 或 pandas／SQLite E2E。
-- 驗證：fixture integration targeted test、完整輕量 unittest、相關檔案 `py_compile` 與 `git diff --check`。
-
-### 2026-08-12 — DatasetConverter deterministic source discovery
-
-- 目標：依重構指引開始拆分來源收集，讓檔案探索規則可在不匯入完整轉換 stage 的情況下測試。
-- 結果：新增獨立 `source_collection.py`，由 caller 注入既有 `OSWALK`，集中 supported extensions、`UnTagged`／`UnSpec` 排除與穩定排序；`DataConvertJobGenerater.BuildFileList()` 保留 duplicate-content removal 與 log 邊界，先以薄 wrapper 採用新 discovery function。
-- 驗證：來源探索 isolated tests、既有 entrypoint/source-role tests、相關檔案 `py_compile` 與 `git diff --check`；後續已補 dependency-free integration fixture，完整 legacy CLI 仍受 runtime dependencies 限制。
+- 目標：延續 Phase 3，讓 filesystem source 的用途與探索政策不再隱含於 caller，且讓 FixedTest 探索採用同一個可隔離測試的邊界。
+- 結果：`SourceSpec`／`SourceRole` 描述 regular、fixed-test、CZJ corpus 的 roots、extensions、regex 與排除政策；regular/CZJ job generation 和 FixedTest discovery 共用 injected-walker adapter，同時保留 FixedTest 不排除 `UnTagged`／`UnSpec` 的舊行為。既有 dependency-free fixture 仍涵蓋 source → worker → split → TSV slice。
+- 驗證：source collection、entrypoint/source-role、fixture integration 與 split targeted tests、完整輕量 unittest、相關檔案 `py_compile` 與 `git diff --check`。
 
 ### 2026-08-11 — Test-only conversion with no regular source rows
 
