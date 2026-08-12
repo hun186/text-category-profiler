@@ -12,6 +12,12 @@
 
 ## Recent Outcomes
 
+### 2026-08-12 — DatasetConverter reader row schema validation boundary
+
+- 目標：延續 Phase 4，在 DataFrame／artifact 副作用前固定 reader rows 的共同 schema。
+- 結果：`validate_sample_rows()` 以 source stage 與 row index 診斷非 mapping 或缺少 `file`／`InLabel`／`OutLabel`／`text`；保留 external rows 可省略 `PartNO` 並由既有 adapter 補零的相容契約。
+- 驗證：sample pipeline 與 fixture targeted tests、完整輕量 unittest、相關檔案 `py_compile` 與 `git diff --check`。
+
 ### 2026-08-12 — DatasetConverter source metadata assembly and path-policy boundaries
 
 - 目標：延續 Phase 4，隔離 `GetDataSRC()` 的 DataFrame adapter 與逐列 provenance metadata 組裝。

@@ -96,7 +96,7 @@ from DatasetConverter.dataset_split import deduplicate_dataset_rows
 from DatasetConverter.dataset_split import ensure_train_covers_labels
 from DatasetConverter.dataset_split import expand_train_to_cover_labels
 from DatasetConverter.dataset_split import iter_dataset_splits
-from DatasetConverter.sample_schema import columns_for_sample_rows
+from DatasetConverter.sample_schema import columns_for_sample_rows, validate_sample_rows
 from DatasetConverter.sample_pipeline import aggregate_multi_label_counts
 from DatasetConverter.sample_pipeline import collect_reader_results
 from DatasetConverter.sample_pipeline import collect_source_metadata
@@ -636,7 +636,12 @@ def BuildSamplesDfFromPaths(
             "discovery summaries above."
         )
     collected_samples = collect_reader_results(MPresult)
-    rows_list = list(collected_samples.rows)
+    rows_list = list(
+        validate_sample_rows(
+            collected_samples.rows,
+            source_stage=f"{sourceRole} reader",
+        )
+    )
     MultiLabelCountList = list(collected_samples.multi_label_counts)
     key_values(f"{sourceRole.title()} row collection result", [
         ("reader results returned", len(MPresult)),
