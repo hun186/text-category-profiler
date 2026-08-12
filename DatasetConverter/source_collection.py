@@ -4,7 +4,7 @@ The caller supplies the filesystem walker so this module stays independent of
 the legacy runtime and can be tested without importing the conversion stage.
 """
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from concurrent.futures import Executor
 from dataclasses import dataclass
 from enum import Enum
@@ -128,3 +128,23 @@ def discover_source_spec(
             )
         )
     return sorted(discovered)
+
+
+def select_unique_content_paths(
+    hash_mappings: Iterable[Mapping[str, str]],
+) -> list[str]:
+    """Select one source path for each content hash.
+
+    Hash calculation is an adapter concern because the legacy stage performs it
+    in process workers. This pure step preserves that stage's conflict rule:
+    mappings are consumed in order and the last path seen for a hash is kept.
+    """
+
+    path_hashes: dict[str, str] = {}
+    for mapping in hash_mappings:
+        path_hashes.update(mapping)
+
+    hash_paths: dict[str, str] = {}
+    for path, content_hash in path_hashes.items():
+        hash_paths[content_hash] = path
+    return list(hash_paths.values())

@@ -100,6 +100,7 @@ from DatasetConverter.sample_schema import columns_for_sample_rows
 from DatasetConverter.source_collection import discover_source_spec
 from DatasetConverter.source_collection import SourceRole
 from DatasetConverter.source_collection import SourceSpec
+from DatasetConverter.source_collection import select_unique_content_paths
 
 #from utilities import hash
 from text_category_profiler.data.df_utils import dfOutputer
@@ -352,12 +353,7 @@ class DataConvertJobGenerater():
             for fiLCK in SplitList(fiL, nChunks=self.nProcess)]
         hashDictList = multicoreJob(
             DTBJobs, nProcess=self.nProcess).run()
-        hashDict = dict()
-        for mydict in hashDictList:
-            hashDict.update(mydict)
-        hashDict = {value : key for (key, value) in hashDict.items()}
-        fiL = list(hashDict.values())
-        return fiL
+        return select_unique_content_paths(hashDictList)
     
     def BuildFileList(self, FullPathFNrePat, source_role=SourceRole.REGULAR):
         start_time = time.time()

@@ -380,3 +380,25 @@ DataConverter.py -> stage/config -> domain services -> ports
    把 ES 偽裝成檔案來源，應先定義一致的 sample-row adapter contract。
 4. Phase 0 的 duplicate、FixedTest row conversion、taxonomy mismatch 與 SQLite artifact cases
    仍待補齊；本批只涵蓋 discovery/routing，不代表完整 legacy CLI E2E 已可執行。
+
+### 2026-08-12 — Phase 3 content hash 去重邊界（進行中）
+
+本次完成：
+
+- 將 content hash worker 結果的合併與「同 hash 保留最後一個 path」規則抽到
+  `source_collection.select_unique_content_paths()`；`DataConvertJobGenerater` 仍負責 process
+  worker 與檔案 hash adapter，因此沒有改變 hash 演算法、前 100 MB 上限或並行策略。
+- `BuildFileList()` 現在依序執行 discovery → hash adapter → pure selection，來源探索與內容
+  去重不再混成同一段轉換程式；舊有 worker batch 合併順序及衝突規則維持不變。
+- isolated tests 固定跨 worker batch duplicate、唯一檔案順序與空結果，不需讀檔、啟動
+  multiprocessing 或 import `DataConverter.py`。
+
+尚未完成／下次優先事項：
+
+1. **Phase 3 completion gate 尚未達成。** hash 計算、process executor、摘要 log 與
+   FixedTest bound sampling 仍在 `DataConvertJobGenerater`；下一批可先把 hash job 建立與執行
+   包成 injected adapter，再用 temporary duplicate files 驗證完整 discovery → hash → selection。
+2. Phase 0 的 duplicate fixture 現在只固定 pure selection 契約，尚未涵蓋 production
+   `FileHashDictBuilder` 的前 100 MB 讀取或 process failure propagation。
+3. `SourceSpec.role` 到 reader/result 的 typed routing、ES row adapter、FixedTest row conversion、
+   taxonomy mismatch 與 SQLite artifact contract 仍待完成。
