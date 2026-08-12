@@ -97,6 +97,7 @@ from DatasetConverter.dataset_split import ensure_train_covers_labels
 from DatasetConverter.dataset_split import expand_train_to_cover_labels
 from DatasetConverter.dataset_split import iter_dataset_splits
 from DatasetConverter.sample_schema import columns_for_sample_rows
+from DatasetConverter.sample_pipeline import collect_reader_results
 from DatasetConverter.source_collection import discover_source_spec
 from DatasetConverter.source_collection import SourceRole
 from DatasetConverter.source_collection import SourceSpec
@@ -632,12 +633,9 @@ def BuildSamplesDfFromPaths(
             "were discovered. Check the configured input roots and the file "
             "discovery summaries above."
         )
-    if MPresult == []:
-        rows_list = []
-        MultiLabelCountList = []
-    else:
-        rows_list, MultiLabelCountList = zip(*MPresult)
-    rows_list = flattenList(rows_list)
+    collected_samples = collect_reader_results(MPresult)
+    rows_list = list(collected_samples.rows)
+    MultiLabelCountList = list(collected_samples.multi_label_counts)
     key_values(f"{sourceRole.title()} row collection result", [
         ("reader results returned", len(MPresult)),
         ("sample rows collected", len(rows_list)),
