@@ -97,7 +97,9 @@ from DatasetConverter.dataset_split import ensure_train_covers_labels
 from DatasetConverter.dataset_split import expand_train_to_cover_labels
 from DatasetConverter.dataset_split import iter_dataset_splits
 from DatasetConverter.sample_schema import columns_for_sample_rows
-from DatasetConverter.source_collection import discover_source_files
+from DatasetConverter.source_collection import discover_source_spec
+from DatasetConverter.source_collection import SourceRole
+from DatasetConverter.source_collection import SourceSpec
 
 #from utilities import hash
 from text_category_profiler.data.df_utils import dfOutputer
@@ -259,13 +261,15 @@ class DataConvertJobGenerater():
         if self.fileList == []:
             self.fileList = self.BuildFileList(
                 FullPathFNrePat=(r"(.*CZJ_SamplesFile.*sql3)|"
-                                 r"(.*#T#\[.*\].*\.txt)|(.*\.AI2)")
+                                 r"(.*#T#\[.*\].*\.txt)|(.*\.AI2)"),
+                source_role=SourceRole.REGULAR,
                 )
         #輸入檔案多路完成型
         #if self.fileList == []:
         if True:
             self.CZJCorpusSQLFileList = self.BuildFileList(
-                FullPathFNrePat=".*CZJ_CorpusFile.*sql3"
+                FullPathFNrePat=".*CZJ_CorpusFile.*sql3",
+                source_role=SourceRole.CZJ_CORPUS,
                 )
             
         self.ReadQuery = ReadQuery
@@ -355,7 +359,7 @@ class DataConvertJobGenerater():
         fiL = list(hashDict.values())
         return fiL
     
-    def BuildFileList(self,FullPathFNrePat):
+    def BuildFileList(self, FullPathFNrePat, source_role=SourceRole.REGULAR):
         start_time = time.time()
         key_values(f"{self.sourceRole.title()} file discovery", [
             ("input roots", len(self.ROOTPATHList)),
@@ -366,9 +370,12 @@ class DataConvertJobGenerater():
         #if self.SQLFile == "":
         #print("In BfileL,FullPathFNrePat",FullPathFNrePat)
         #time.sleep(10)
-        fiL = discover_source_files(
-            self.ROOTPATHList,
-            FullPathFNrePat,
+        fiL = discover_source_spec(
+            SourceSpec(
+                role=source_role,
+                root_paths=tuple(self.ROOTPATHList),
+                filename_pattern=FullPathFNrePat,
+            ),
             walker=OSWALK,
         )
         nOri = len(fiL)
@@ -869,9 +876,15 @@ class DatasetGenerator:
         # FixedTest inputs are intentionally separate from the regular source
         # roots. Discover them here so test-only logs clearly show whether the
         # configured files exist before dataset split generation starts.
-        FixfiL = []
-        for workingPath in self.FixedTestPATHList:
-            FixfiL.extend(OSWALK(workingPath, Extension=["txt", "AI2", "sql3"]))
+        FixfiL = discover_source_spec(
+            SourceSpec(
+                role=SourceRole.FIXED_TEST,
+                root_paths=tuple(self.FixedTestPATHList),
+                # Legacy FixedTest discovery did not exclude UnTagged/UnSpec.
+                excluded_path_parts=(),
+            ),
+            walker=OSWALK,
+        )
         key_values("Fixed test file discovery", [
             ("configured paths", summarize_sequence(self.FixedTestPATHList, limit=4)),
             ("matching files", len(FixfiL)),
