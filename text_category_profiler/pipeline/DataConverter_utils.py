@@ -31,8 +31,8 @@ from BertScript.ClassTable import ClassTable
 from ClassesTree.ClassesTree_utils import GetSubNodes
 from ClassesTree.ClassesTree_utils import LoadTree
 from ClassesTree.ClassesTree_utils import BuildInfoScoreTable
-from ClassesTree.Label_utils import getLabelsFromFileName
 from ClassesTree.Label_utils import GetCTOfLabel
+from DatasetConverter.source_metadata import getSrcFromFileName
 
 def GetFixedTestPATH(args):
     #FixedTestPATHList = [
@@ -52,36 +52,6 @@ def GetFixedTestPATH(args):
 
 
       
-def getSrcFromFileName(FileName, LabelList):
-    #x = ../Books/中文文章/scrap/中文古文
-    #print("path is ", x)
-    FolderList = [CapWords(fold) for fold in pathSpliter.proc(FileName)]
-    #print("FolderList",FolderList)
-    #raise Exception
-    SrcType, Src = None, None
-    #print("="*50)
-    #print("FileName", FileName)
-    #print("getLabelsFromFileName(FileName)", getLabelsFromFileName(FileName))
-    for label in LabelList:
-        #print("label", label)
-        if label in getLabelsFromFileName(FileName):
-            #Ind = FolderList.index(label)
-            for i,fold in enumerate(FolderList):
-                if fold.startswith("#T#") and label in getLabelsFromFileName(fold):
-                    Ind = i
-                    break
-            #if "Books" in pathSeqFromFN(FileName):
-            if "Books" in pathSpliter.proc(FileName):
-                 SrcType = FolderList[Ind-1]
-                 Src = FolderList[Ind+1]
-            else:
-                #print("FolderList",FolderList)
-                SrcType = FolderList[Ind-2]
-                Src = FolderList[Ind-1]
-            break
-    #print("SrcType, Src",SrcType, Src)
-    return SrcType, Src
-
 r'''
 class NewestModelMainFileNamePickers:
     def proc(OldOutputDir=None):

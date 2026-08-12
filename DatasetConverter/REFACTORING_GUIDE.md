@@ -477,3 +477,24 @@ DataConverter.py -> stage/config -> domain services -> ports
    解析被不相關 runtime dependency 阻擋。
 3. `SampleReader` 的來源格式讀取、文字切片與 normalize 仍耦合；應先記錄各 reader role 的 columns
    與 provenance，再逐步抽取 normalize／validate，不在同一批改變 slicing 演算法。
+
+### 2026-08-12 — Phase 4 source path metadata policy（進行中）
+
+本次完成：
+
+- 新增 dependency-free `source_metadata.py`，將 `getSrcFromFileName()` 的 Books／一般來源 path
+  判定與 label marker parsing 從同時載入 pandas、SQLite、taxonomy 與 output adapters 的
+  `DataConverter_utils.py` 移出；現在可在缺少 pandas 的最小環境直接測試 production path policy。
+- `DataConverter.py`、`DataConverter_Combiner.py` 與 `CorpusMetadataManager.py` 直接依賴新的窄邊界；
+  舊 `DataConverter_utils.getSrcFromFileName` import 仍以 re-export 保持相容，避免一次要求外部 caller 遷移。
+- 保留 legacy camel-case function 與 `FileName`／`LabelList` keyword names，另提供 PEP 8 API；測試固定
+  POSIX 一般來源、Windows Books、multi-label marker、unknown label 及舊 keyword caller 契約。
+
+尚未完成／下次優先事項：
+
+1. **Phase 4 completion gate 尚未達成。** `SampleReader` 仍混合來源 I/O、文字切片與 normalize；下批應先
+   以 reader role 固定 row schema，再抽取不改 slicing 演算法的 normalize／validate 純函式。
+2. 本批固定 path policy 的代表性合法輸入；label marker 位於 path 邊界、缺少相鄰 metadata directory
+   等 malformed path 的 legacy failure behavior 尚未定義。改成具名 domain error 前應先確認實際資料需求。
+3. 完整 `DataConverter.py` import 與 CLI 仍被其他 module-scope runtime dependencies 阻擋；本批只移除
+   provenance parser 對 pandas 等無關依賴，不代表 Phase 1 completion gate 已達成。

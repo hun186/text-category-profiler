@@ -79,7 +79,7 @@ from text_category_profiler.pipeline.TCF_utils import ClassfierOptionParser
 from text_category_profiler.pipeline.TCF_utils import get_base_model_checkpoint
 from text_category_profiler.pipeline.TCF_utils import TaskConnector
 
-from text_category_profiler.pipeline.DataConverter_utils import getSrcFromFileName
+from DatasetConverter.source_metadata import getSrcFromFileName
 from text_category_profiler.pipeline.DataConverter_utils import GetFixedTestPATH
 from ClassesTree.ClassesTree_utils import GetNodes
 from ClassesTree.ClassesTree_utils import GetSubTopics
