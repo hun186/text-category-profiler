@@ -308,3 +308,49 @@ DataConverter.py -> stage/config -> domain services -> ports
 4. Phase 0 目前只有 split 與 source-role 等局部測試；`DatasetGenerator.run()` 的
    temporary-directory artifact contract、taxonomy mismatch 與完整 zero-sample
    integration fixture 尚待補齊。
+
+### 2026-08-12 — Phase 3 來源探索邊界（進行中）
+
+本次完成：
+
+- 新增 `source_collection.py`，將 regular／CZJ 來源共用的檔案探索結果過濾與排序
+  從 `DataConvertJobGenerater.BuildFileList()` 抽出；現有 `OSWALK` 以參數注入，未改變
+  既有 extension 與 filename regex 契約。
+- 探索結果現在於去除路徑包含 `UnTagged`／`UnSpec` 的項目後統一排序，避免 filesystem
+  enumeration order 使相同輸入在不同平台產生不同 reader job 順序。
+- 新增不需 pandas、模型、multiprocessing 或真實工作池的 isolated unit tests，固定
+  walker 呼叫契約、排除規則、穩定排序，以及多次呼叫不共用結果。
+
+尚未完成／下次優先事項：
+
+1. **Phase 3 completion gate 尚未達成。** FixedTest 探索仍直接寫在
+   `DatasetGenerator.run()`，ES 與 CZJ corpus title routing 仍由 job generator 處理；
+   下一批應先以 `SourceSpec` 固定 source role 與 discovery policy，再逐一遷移。
+2. `BuildFileList()` 仍負責 hash-based duplicate article removal 與 log／timing；本批刻意
+   只抽出 discovery，避免同時改動 dedup 演算法。後續應將 discovery result 與 content
+   dedup 分成兩個可測步驟。
+3. 本批只驗證 injected walker 的契約，未執行完整 DataConverter；下節已補第一個隔離
+   integration slice，但完整 legacy CLI 仍需要 runtime dependencies 與更多 fixture cases。
+
+### 2026-08-12 — Phase 0 小型隔離 fixture（部分完成）
+
+本次完成：
+
+- 新增 `tests/fixtures/dataconverter_small/`，使用三個 UTF-8 小型文字檔涵蓋兩個 labels；
+  label 直接沿用 production source path 的 `#T#[label]` 契約，不需要模型或外部服務。
+- `test_dataconverter_fixture_integration.py` 會以兩個 process workers 讀取 fixture，使用
+  production `dataset_split` plan 產生 non-overlapping train／dev／test bounds，再將三個
+  TSV 寫入 `TemporaryDirectory` 並驗證檔名、columns、row count、labels 與無重複 rows。
+- 新增窄範圍、只依賴 Python standard library 的 fixture reader 與 TSV contract writer；
+  它們是 dependency-free contract probe，不取代 production pandas／SQLite adapters。
+- 此測試已可在目前 Codex 容器執行，因此「尚無經確認可安全使用的完整隔離 fixture」
+  已縮小為「已有 source → worker → split → TSV 的安全 fixture，但完整 legacy CLI 與
+  pandas／SQLite adapter 尚未涵蓋」。
+
+尚未完成／下次優先事項：
+
+1. Phase 0 的 duplicate、fixed-test、empty source、taxonomy mismatch 與 SQLite artifact
+   cases 尚待加入；目前 fixture 是第一個安全 integration slice，不應描述為完整 CLI E2E。
+2. `python DatasetConverter/DataConverter.py ...` 仍需要 pandas、psutil、Plotly 等 module-scope
+   dependencies；Phase 1 應繼續移除 import-time 重型依賴，之後把相同 fixture 接到正式
+   stage/bootstrap boundary。

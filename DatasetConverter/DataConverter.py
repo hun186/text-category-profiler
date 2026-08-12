@@ -97,6 +97,7 @@ from DatasetConverter.dataset_split import ensure_train_covers_labels
 from DatasetConverter.dataset_split import expand_train_to_cover_labels
 from DatasetConverter.dataset_split import iter_dataset_splits
 from DatasetConverter.sample_schema import columns_for_sample_rows
+from DatasetConverter.source_collection import discover_source_files
 
 #from utilities import hash
 from text_category_profiler.data.df_utils import dfOutputer
@@ -355,7 +356,6 @@ class DataConvertJobGenerater():
         return fiL
     
     def BuildFileList(self,FullPathFNrePat):
-        fiL = []
         start_time = time.time()
         key_values(f"{self.sourceRole.title()} file discovery", [
             ("input roots", len(self.ROOTPATHList)),
@@ -366,21 +366,11 @@ class DataConvertJobGenerater():
         #if self.SQLFile == "":
         #print("In BfileL,FullPathFNrePat",FullPathFNrePat)
         #time.sleep(10)
-        for PATH in self.ROOTPATHList:
-            filePaths = OSWALK(
-                PATH, Extension = ["txt","AI2","sql3"],
-                FullPathFNrePat = FullPathFNrePat,
-                #FullPathFNrePat=("(.*CZJ_SamplesFile.*sql3)|"
-                                 #"(.*CZJ_CorpusFile.*sql3)|"
-                                 #"(.*#T#\[.*\].*\.txt)|(.*\.AI2)")
-                )
-            #print("filePaths b4",filePaths)
-            #排除路徑內有UnTagged或UnSpec的檔案。
-            filePaths = [x for x in filePaths 
-                         if "UnTagged".lower() not in x.lower() and 
-                          "UnSpec".lower() not in x.lower() ]
-            #print("filePaths af",filePaths)
-            fiL.extend(filePaths)
+        fiL = discover_source_files(
+            self.ROOTPATHList,
+            FullPathFNrePat,
+            walker=OSWALK,
+        )
         nOri = len(fiL)
         #利用Hash比對各檔案前100MB是否相同，以去除同樣檔案。
         if self.RemoveDumpArticle == True:
