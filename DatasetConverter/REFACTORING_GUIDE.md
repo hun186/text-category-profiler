@@ -402,3 +402,29 @@ DataConverter.py -> stage/config -> domain services -> ports
    `FileHashDictBuilder` 的前 100 MB 讀取或 process failure propagation。
 3. `SourceSpec.role` 到 reader/result 的 typed routing、ES row adapter、FixedTest row conversion、
    taxonomy mismatch 與 SQLite artifact contract 仍待完成。
+
+### 2026-08-12 — Phase 4 reader result 組裝邊界（進行中）
+
+本次完成：
+
+- 新增 `sample_pipeline.py`，以 immutable `CollectedSamples` 描述 reader jobs 回傳的 sample
+  rows 與 multi-label counters，先將 `BuildSamplesDfFromPaths()` 中不需要 DataFrame 的結果組裝
+  抽成純函式 `collect_reader_results()`。
+- 保留既有 worker result 順序與一層 rows flatten 契約；空 job results 會得到明確的空 rows／
+  counters，不需以 `zip(*)` 分支處理。
+- reader adapter 若回傳缺少 `(rows, multi_label_count)` 任一成員，或 rows 不是 list／tuple，
+  現在會在 DataFrame 與輸出副作用之前指出失敗的 result index，而非產生難以定位的 unpack
+  或 flatten error。
+- isolated tests 固定多 worker 排序、空結果與 malformed adapter result；不需 pandas、process
+  pool、模型、外部服務或 filesystem。
+
+尚未完成／下次優先事項：
+
+1. **Phase 4 completion gate 尚未達成。** `SampleReader` 仍同時負責來源格式讀取、文字切片與
+   normalize；下一批應先記錄各 reader role 的 row schema，再逐步把 normalize／validate 抽成
+   不讀 global state 的純轉換。
+2. `GetDataSRC()` 仍以 DataFrame chunk 執行且吞掉所有 metadata 解析錯誤；應先用 fixture 固定
+   Books、一般 `#T#` path 與無法解析 path 的契約，再改成可觀察的 row transformation，不能直接
+   移除 fallback 而破壞 legacy sources。
+3. 本批不變更 reader jobs、multiprocessing 策略、TSV／SQLite schema、split 或 augmentation；
+   完整 legacy CLI 仍受 Phase 1 的 module-scope runtime dependencies 限制。

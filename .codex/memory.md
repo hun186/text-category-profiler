@@ -12,6 +12,12 @@
 
 ## Recent Outcomes
 
+### 2026-08-12 — DatasetConverter reader result assembly boundary
+
+- 目標：開始 Phase 4，將 process reader jobs 的結果組裝從 DataFrame 與輸出流程分離。
+- 結果：`collect_reader_results()` 純函式以 `CollectedSamples` 回傳有序 sample rows 與 multi-label counters；空結果不再需要 `zip(*)` 分支，malformed adapter result 會在副作用前帶 index 失敗。
+- 驗證：sample pipeline、source collection/source role、fixture integration 與 split targeted tests、完整輕量 unittest、相關檔案 `py_compile` 與 `git diff --check`。
+
 ### 2026-08-12 — DatasetConverter content-hash selection boundary
 
 - 目標：延續 Phase 3，將 filesystem discovery 後的 content hash 去重規則與 process/hash adapter 分離。
