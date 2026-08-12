@@ -47,7 +47,6 @@ cache/
 
 # 大型封裝及資料庫
 *.zip
-*.7z
 *.tar
 *.gz
 *.db
