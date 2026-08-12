@@ -97,7 +97,9 @@ from DatasetConverter.dataset_split import ensure_train_covers_labels
 from DatasetConverter.dataset_split import expand_train_to_cover_labels
 from DatasetConverter.dataset_split import iter_dataset_splits
 from DatasetConverter.sample_schema import columns_for_sample_rows
+from DatasetConverter.sample_pipeline import aggregate_multi_label_counts
 from DatasetConverter.sample_pipeline import collect_reader_results
+from DatasetConverter.sample_pipeline import collect_source_metadata
 from DatasetConverter.source_collection import discover_source_spec
 from DatasetConverter.source_collection import SourceRole
 from DatasetConverter.source_collection import SourceSpec
@@ -738,14 +740,15 @@ def GetDataSRC(df):
         return SrcType, Src
     '''
     LabelList = list(df['InLabel'].unique())
-    try:
-        df['SrcType'], df['Src'] = zip(
-            *df['file'].apply(getSrcFromFileName, LabelList = LabelList))
-                #lambda x:getSrcFromFileName(
-                    #FileName=x, LabelList = LabelList))
-            #*df['file'].apply(MetaDataOfSample))
-    except:
-        pass
+    metadata = collect_source_metadata(
+        df['file'],
+        labels=LabelList,
+        resolver=lambda file_path, labels: getSrcFromFileName(
+            file_path, LabelList=labels
+        ),
+    )
+    df['SrcType'] = [item.source_type for item in metadata]
+    df['Src'] = [item.source for item in metadata]
     return df
 
 '''
@@ -764,13 +767,7 @@ def MultiLabCt(MultiLabelCountList):
      ({'COVID-19', 'PRC_OffDoc'}, 8),
      ...)
     '''
-    MLdict = {}
-    for MLset, count in MultiLabelCountList:
-        if MLset == None:
-            continue
-        key = tuple(sorted(MLset))
-        MLdict[key] = MLdict.get(key, 0)+count
-    return MLdict
+    return aggregate_multi_label_counts(MultiLabelCountList)
         
 
 class DatasetGenerator:

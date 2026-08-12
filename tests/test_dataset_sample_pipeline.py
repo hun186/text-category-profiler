@@ -1,6 +1,8 @@
 import unittest
 
+from DatasetConverter.sample_pipeline import aggregate_multi_label_counts
 from DatasetConverter.sample_pipeline import collect_reader_results
+from DatasetConverter.sample_pipeline import collect_source_metadata
 
 
 class CollectReaderResultsTests(unittest.TestCase):
@@ -30,6 +32,66 @@ class CollectReaderResultsTests(unittest.TestCase):
     def test_rejects_non_sequence_rows(self):
         with self.assertRaisesRegex(TypeError, "reader rows at index 0"):
             collect_reader_results([({"file": "a.txt"}, None)])
+
+
+class AggregateMultiLabelCountsTests(unittest.TestCase):
+    def test_combines_equivalent_label_sets_from_multiple_readers(self):
+        counts = aggregate_multi_label_counts(
+            [({"beta", "alpha"}, 2), ({"alpha", "beta"}, 3), None]
+        )
+
+        self.assertEqual(counts, {("alpha", "beta"): 5})
+
+    def test_ignores_legacy_result_with_no_label_set(self):
+        self.assertEqual(aggregate_multi_label_counts([(None, 9)]), {})
+
+    def test_rejects_malformed_reader_counter_with_its_index(self):
+        with self.assertRaisesRegex(ValueError, "index 1.*labels.*count"):
+            aggregate_multi_label_counts([({"alpha"}, 1), ({"beta"},)])
+
+
+class CollectSourceMetadataTests(unittest.TestCase):
+    def test_preserves_books_and_regular_resolver_results_in_row_order(self):
+        calls = []
+
+        def resolver(path, labels):
+            calls.append((path, labels))
+            if "Books" in path:
+                return "Book Type", "Publisher"
+            return "Web", "News"
+
+        metadata = collect_source_metadata(
+            [
+                r"root\Books\#T#[alpha]\publisher\book.txt",
+                "root/web/#T#[beta]/news.txt",
+            ],
+            labels=["alpha", "beta"],
+            resolver=resolver,
+        )
+
+        self.assertEqual(
+            [(item.source_type, item.source) for item in metadata],
+            [("Book Type", "Publisher"), ("Web", "News")],
+        )
+        self.assertEqual(calls[0][1], ["alpha", "beta"])
+
+    def test_preserves_unresolved_path_as_empty_metadata(self):
+        metadata = collect_source_metadata(
+            ["root/no-label.txt"],
+            labels=["alpha"],
+            resolver=lambda path, labels: (None, None),
+        )
+
+        self.assertIsNone(metadata[0].source_type)
+        self.assertIsNone(metadata[0].source)
+
+    def test_rejects_malformed_resolver_result(self):
+        with self.assertRaisesRegex(ValueError, "row 0.*source type.*source"):
+            collect_source_metadata(
+                ["root/file.txt"],
+                labels=["alpha"],
+                resolver=lambda path, labels: ("only-one-value",),
+            )
 
 
 if __name__ == "__main__":
