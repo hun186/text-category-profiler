@@ -6,14 +6,12 @@ if os.getcwd().split(os.path.sep)[-1] in [
     os.chdir("../")
     print(f"Change working directory to {os.getcwd()}")
 import sqlite3 as lite
-from collections import Counter
 from text_category_profiler.core.utilities import RemoveIlleagalCharForFileName
 #from MP_utils  import MPlogger
 #import tokenization
 from opencc import OpenCC
 from text_category_profiler.core.utilities import ListCap
 from text_category_profiler.core.utilities import wrap
-from text_category_profiler.core.utilities import GetRatioOfDigits
 from text_category_profiler.core.utilities import getFNExtFromFullPath
 from text_category_profiler.core.utilities import fileNameNormalizer
 from text_category_profiler.data.df_utils import dfFromSQLite3
@@ -28,6 +26,10 @@ from text_category_profiler.text.TextProcessor_utils import textReader
 from text_category_profiler.text.TextProcessor_utils import BasicDataCleaner
 from text_category_profiler.text.TextProcessor_utils import DataCleanerWithPattern
 from ClassesTree.Label_utils import getLabelsFromFileName
+from DatasetConverter.sample_pipeline import assemble_sample_row
+from DatasetConverter.sample_pipeline import detect_special_output_label
+from DatasetConverter.sample_pipeline import normalize_segment_layout
+from DatasetConverter.sample_pipeline import select_rule_based_input_label
 #from ClassesTree.Label_utils import LabelsStringReader
 
 #from tokenization import FullTokenizer
@@ -389,53 +391,30 @@ class SampleReader():
             segInLabel = InLabel
             LenSeg = len(textseg)
             #print("textseg at beg",textseg)
-            if textseg.count("\n")/LenSeg > 0.1:
-                #如果斷行過多，可能代表非預期之單字斷行現象發生，
-                #為優化文字排版，故用空白取代斷行。
-                textseg = textseg.replace("\n", " ")
+            #如果斷行過多，可能代表非預期之單字斷行現象發生，
+            #為優化文字排版，故用空白取代斷行。
+            textseg = normalize_segment_layout(textseg)
 
             if LenSeg >50 and self.RBActive == True:
-                SPCOutLabelCand = ''
-                #如果含有大量數字，候選類別為未知數字串。
-                if GetRatioOfDigits(textseg,SpaceExcluded=True) > 0.9:
-                    #Uncertainty-Unidentified Digits，
-                    #然後continue。
-                    SPCOutLabelCand = 'Uncertainty-Unidentified Digits'
-                #如果含有大量"."，候選類別為目錄。
-                elif textseg.count(".")/LenSeg > 0.9:
-                    SPCOutLabelCand = 'BD-Table Of Contents'
-                #如果含有最多的字元含量大於90%，候選類別為毀損資料流。
-                elif Counter(textseg).most_common()[0][1]/LenSeg > 0.9:
-                    SPCOutLabelCand = 'False Decoding-Broken Data Stream'
-                #SPCOutLabelCand = 'False Decoding'
-                #如果數字比例大且去除特殊符號、數字、字母A-F後，
-                #剩下的中文或其他語文字元過少，
-                #則直接判定OutLabel為SPCOutLabelCand
-                if len(re.sub(r'[ -F,\[-f,\{-~]','',textseg)) < 40 and SPCOutLabelCand != "":
-                    sample = {
-                        "file":self.file,
-                        "InLabel": segInLabel,
-                        "OutLabel": SPCOutLabelCand,
-                        "text": textseg,
-                        #"file": self.file,
-                        "PartNO":i
-                        }
+                special_output_label = detect_special_output_label(textseg)
+                if special_output_label is not None:
+                    sample = assemble_sample_row(
+                        file_path=self.file,
+                        input_label=segInLabel,
+                        output_label=special_output_label,
+                        text=textseg,
+                        part_number=i,
+                    )
                     result.append(sample)
                     continue
             if self.RBActive == True:
                 #針對特殊條件進行Rule-Based InLabel設定。
-                #取出符合觸發條件的標籤
-                sampleLenLBD = self.sampleMethod["LenLBD"]
-                ReMatchedLabel = sorted(
-                    #[self.RBDict[pat] for pat in self.RBDict.keys() 
-                     #if len(re.findall(pat,textseg.lower()))>max(self.width/40,6)], 
-                    [self.RBDict[(pat,intv)] for (pat,intv) in self.RBDict.keys() 
-                     if intv[0]<=len(re.findall(pat,textseg.lower()))<=intv[1]], 
-                    key = lambda x:self.InfoScoreTable[x]
-                    )
-                #print("ReMatchedLabel",ReMatchedLabel)
-                if len(ReMatchedLabel)>0:
-                    segInLabel = ReMatchedLabel[-1] #選符合條件中最高分的當InLabel
+                segInLabel = select_rule_based_input_label(
+                    textseg,
+                    default_label=segInLabel,
+                    rules=self.RBDict,
+                    info_scores=self.InfoScoreTable,
+                )
             #如果有簡繁轉碼設定，則使用OpenCC模組進行轉換。
             if self.ConvertToSpec != None:
                 cc = OpenCC(self.ConvertToSpec)
@@ -450,14 +429,13 @@ class SampleReader():
                 else:
                     OutLabel = segInLabel
                 #print("label af is {}".format(label))
-                sample = {
-                    "file":self.file,
-                    "InLabel": segInLabel,
-                    "OutLabel": OutLabel,
-                    "text": textseg,
-                    #"file": self.file,
-                    "PartNO":i
-                    }
+                sample = assemble_sample_row(
+                    file_path=self.file,
+                    input_label=segInLabel,
+                    output_label=OutLabel,
+                    text=textseg,
+                    part_number=i,
+                )
                 result.append(sample)
 
         #將樣本清單隨機排序，俾如果有設定"單一文本取樣上限"時，可全文分散選取。
