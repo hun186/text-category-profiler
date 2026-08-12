@@ -64,7 +64,7 @@ from ClassesTree.Label_utils import getLabelsFromFileName
 from ClassesTree.Label_utils import LabelsStringReader
 from ClassesTree.Label_utils import LabelListExtractor
 
-from text_category_profiler.pipeline.DataConverter_utils import getSrcFromFileName
+from DatasetConverter.source_metadata import getSrcFromFileName
 #from text_category_profiler.pipeline.DataConverter_utils import datasetDirOutputDirPickers
 #from text_category_profiler.pipeline.DataConverter_utils import LoadTree
 #from text_category_profiler.pipeline.DataConverter_utils import GetNodes

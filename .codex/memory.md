@@ -12,11 +12,11 @@
 
 ## Recent Outcomes
 
-### 2026-08-12 — DatasetConverter source metadata assembly boundary
+### 2026-08-12 — DatasetConverter source metadata assembly and path-policy boundaries
 
 - 目標：延續 Phase 4，隔離 `GetDataSRC()` 的 DataFrame adapter 與逐列 provenance metadata 組裝。
-- 結果：`collect_source_metadata()` 以 immutable results 驗證 resolver shape；`GetDataSRC()` 保留薄 pandas adapter，移除會吞掉整批錯誤的 bare `except`，合法 unresolved path 仍回傳 `None` metadata。
-- 驗證：sample pipeline、entrypoint/source-role targeted tests、完整輕量 unittest、相關檔案 `py_compile` 與 `git diff --check`；production path parser 因容器缺少 pandas 尚未直接 import 驗證。
+- 結果：`collect_source_metadata()` 以 immutable results 驗證 resolver shape；`GetDataSRC()` 保留薄 pandas adapter，移除會吞掉整批錯誤的 bare `except`。後續將 production path policy 搬到 dependency-free `source_metadata.py`，固定一般／Books／multi-label／unknown-label 行為並保留舊 import 與 keyword API。
+- 驗證：source metadata、sample pipeline、entrypoint/source-role targeted tests、完整輕量 unittest、相關檔案 `py_compile` 與 `git diff --check`；完整 CLI 仍受其他 runtime dependencies 與工作池需求限制。
 
 ### 2026-08-12 — DatasetConverter multi-label aggregation boundary
 
