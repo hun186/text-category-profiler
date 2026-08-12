@@ -12,6 +12,12 @@
 
 ## Recent Outcomes
 
+### 2026-08-12 — DatasetConverter deterministic source discovery
+
+- 目標：依重構指引開始拆分來源收集，讓檔案探索規則可在不匯入完整轉換 stage 的情況下測試。
+- 結果：新增獨立 `source_collection.py`，由 caller 注入既有 `OSWALK`，集中 supported extensions、`UnTagged`／`UnSpec` 排除與穩定排序；`DataConvertJobGenerater.BuildFileList()` 保留 duplicate-content removal 與 log 邊界，先以薄 wrapper 採用新 discovery function。
+- 驗證：來源探索 isolated tests、既有 entrypoint/source-role tests、相關檔案 `py_compile` 與 `git diff --check`；完整 DataConverter 仍受缺少 runtime dependencies 與隔離 fixture 限制。
+
 ### 2026-08-11 — Test-only conversion with no regular source rows
 
 - 目標：讓只提供 FixedTest／Elasticsearch 測試來源、沒有一般輸入 root 的轉換流程能繼續載入外部測試樣本，而不是在 split 規劃時因空 DataFrame 缺少 `OutLabel` 而中止。
