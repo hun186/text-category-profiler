@@ -44,6 +44,22 @@ class DataConverterEntrypointTests(unittest.TestCase):
         self.assertEqual(exit_call.func.id, "SystemExit")
         self.assertEqual(exit_call.args[0].func.id, "main")
 
+    def test_job_generator_does_not_read_module_global_args(self):
+        job_generator = next(
+            node
+            for node in self.module.body
+            if isinstance(node, ast.ClassDef)
+            and node.name == "DataConvertJobGenerater"
+        )
+        global_arg_reads = [
+            node
+            for node in ast.walk(job_generator)
+            if isinstance(node, ast.Name)
+            and node.id == "args"
+            and isinstance(node.ctx, ast.Load)
+        ]
+        self.assertEqual(global_arg_reads, [])
+
 
 if __name__ == "__main__":
     unittest.main()

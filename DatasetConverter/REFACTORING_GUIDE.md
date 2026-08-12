@@ -289,6 +289,11 @@ DataConverter.py -> stage/config -> domain services -> ports
   caller 仍讀取 `sys.argv`，讓後續 CLI exit-code 測試不必修改 process globals。
 - 新增 AST regression test，固定 module scope 不改 cwd，以及 `main`／
   `SystemExit` 的入口形狀。
+- 後續 Windows test-only 執行揭露 `DataConvertJobGenerater` 仍讀取舊 module-global
+  `args`，造成 tokenizer model directory 解析時出現 `NameError`；現已將 CLI namespace
+  由 `main()` 經 `BuildSamplesDfFromPaths()`／`DatasetGenerator` 顯式傳入 reader job
+  generator，並新增禁止該 class 讀取 global `args` 的 regression test。這是 Phase 1
+  「移除內部 global args」的第一個 runtime 驗證修正。
 
 尚未完成／下次優先事項：
 
