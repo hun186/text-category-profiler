@@ -523,3 +523,91 @@ DataConverter.py -> stage/config -> domain services -> ports
    CZJ 與 ES fixture 確認合法範圍，再收緊契約，避免拒絕 production 目前接受的資料。
 3. 完整 legacy CLI 仍受 module-scope runtime dependencies 與工作池／模型需求限制；本批驗證的是
    dependency-free schema boundary，不代表 Phase 1 或完整 CLI E2E gate 已完成。
+
+### 2026-08-12 — Phase 4 sliced-text row assembly（進行中）
+
+本次完成：
+
+- 將 `SampleReader.textSegsToSamples()` 兩條輸出路徑共用的 canonical row 組裝抽到
+  `sample_pipeline.assemble_sample_row()`；一般 label mapping 與 rule-based 特殊 label 現在使用同一個
+  dependency-free builder，固定輸出 `file`／`InLabel`／`OutLabel`／`text`／`PartNO`。
+- builder 不讀取 reader instance、global state、logger、filesystem、tokenizer 或外部服務，也不提前收緊
+  value validation；文字切片、rule-based label、OpenCC、random shuffle 與單一文本取樣上限語意均未改動。
+- isolated tests 固定 canonical keys/values、與 `validate_sample_rows()` 的契約相容，以及每個 segment 取得
+  獨立 row mapping，無需 import 具有重型 runtime dependencies 的 `sampleHandler.py`。
+
+尚未完成／下次優先事項：
+
+1. **Phase 4 completion gate 尚未達成。** `textSegsToSamples()` 仍同時處理 ES provenance filename/date、
+   segment layout cleanup、rule-based label、OpenCC 與 random sampling；下一批可先把不依賴 reader state 的
+   segment layout normalization 抽成純函式，並以空值、換行比例邊界 fixture 固定既有語意。
+2. 目前只固定 sliced-text 產生的 canonical row；CZJ samples SQLite 會直接回傳 database records，ES/CZJ
+   與 FixedTest 的 value type／empty policy 仍需 characterization，不能直接套用更嚴格 validation。
+3. 完整 `SampleReader.run()` 與 legacy CLI 仍需要 tokenizer、pandas、ES 等 runtime dependencies 及隔離資料；
+   本批不宣稱 Phase 1 import gate 或完整 CLI E2E 已完成。
+
+### 2026-08-12 — Phase 4 segment layout normalization（進行中）
+
+本次完成：
+
+- 依上一批建議，將 `SampleReader.textSegsToSamples()` 的 excessive-newline layout cleanup 抽到
+  `sample_pipeline.normalize_segment_layout()`；純函式不讀 reader state、logger、filesystem、tokenizer
+  或外部服務。
+- 保留 legacy threshold：只有換行字元占 segment 長度**大於** 10% 時才將 `\n` 換成空白，恰好 10%
+  不變；reader 原本會先排除空 segment，但純函式本身也安全保留空字串，避免除以零。
+- isolated characterization tests 固定高於 threshold、恰好位於 threshold、空字串與單行文字行為；
+  rule-based label、OpenCC、random shuffle、取樣上限及 row schema 均未改動。
+
+尚未完成／下次優先事項：
+
+1. **Phase 4 completion gate 尚未達成。** `textSegsToSamples()` 仍混合 ES provenance filename/date、
+   rule-based label、OpenCC 與 sampling；下一批可先將 rule-based 特殊輸出 label 的判定抽成純函式，
+   以數字、句點、單一重複字元及 threshold 邊界固定優先順序，不同時改 label 名稱或條件。
+2. segment value type 仍沿用 reader 提供字串的既有假設；CZJ samples SQLite 與 ES external rows 的
+   type／empty policy 尚未 characterization，收緊 schema 前必須先補對應 fixture。
+3. 完整 `SampleReader.run()` 與 legacy CLI 仍受重型 runtime dependencies、模型與工作池隔離資料限制；
+   本批只證明 dependency-free layout transformation 與輕量 regression suite。
+
+### 2026-08-12 — Phase 4 rule-based malformed-segment labels（進行中）
+
+本次完成：
+
+- 將 `SampleReader.textSegsToSamples()` 對異常長 segment 的特殊輸出 label 判定抽到 dependency-free
+  `sample_pipeline.detect_special_output_label()`；reader 仍保留 `LenSeg > 50` 與 `RBActive` gate。
+- 保留 legacy 判定優先順序與 strict thresholds：去除空白後數字比例大於 90%、句點比例大於 90%、
+  單一重複字元比例大於 90%；候選仍需通過「ASCII range cleanup 後殘留少於 40 字元」才輸出。
+- isolated characterization tests 固定三種 label、恰好 90% 不觸發、residual-text gate、空字串與一般文字；
+  並保留全空白長 segment 在 legacy digit-ratio 計算的 `ZeroDivisionError`；label 名稱、row schema、OpenCC、
+  regex label matching、random shuffle 與取樣上限均未改動。
+
+尚未完成／下次優先事項：
+
+1. **Phase 4 completion gate 尚未達成。** reader 仍混合 ES provenance filename/date、regex-based InLabel
+   override、OpenCC 與 sampling；下一批可先抽取 regex label candidates 的排序／選取，透過 injected match
+   counts 固定 interval、InfoScore priority 與無命中行為，避免純函式反向依賴 reader state。
+2. `detect_special_output_label()` 刻意不包含 caller 的長度與 `RBActive` gate，以維持 helper 單一責任；
+   若未來有其他 caller，必須明確套用對應 eligibility policy，不可誤將短文本分類為異常資料。
+3. 完整 `SampleReader.run()` 與 legacy CLI 仍受 tokenizer、pandas、ES、模型與工作池 fixture 限制；本批
+   僅驗證純判定、既有隔離 conversion fixture 與 repository 輕量測試。
+
+### 2026-08-12 — Phase 4 regex-based input-label selection（進行中）
+
+本次完成：
+
+- 將 `SampleReader.textSegsToSamples()` 的 regex rule matching、interval filtering、InfoScore 排序與
+  `InLabel` override 抽到 `sample_pipeline.select_rule_based_input_label()`；reader 只傳入 text、目前 label、
+  rules 與 score mapping，不再自行組裝 candidate list。
+- 保留 legacy 行為：比對前將 text 轉小寫、interval 兩端皆包含、最高 InfoScore 勝出；同分時依 mapping
+  iteration order 維持 stable sort，較後規則勝出，無命中則保留原 `InLabel`。
+- match counter 可注入，isolated tests 固定 matcher 收到 lower-case text、interval boundaries、score priority、
+  no-match fallback 與 equal-score tie；預設 adapter 仍使用 `re.findall()`，不改既有 regex 語意。
+
+尚未完成／下次優先事項：
+
+1. **Phase 4 completion gate 尚未達成。** `textSegsToSamples()` 仍處理 ES provenance filename/date、OpenCC、
+   minimum-length filter、random shuffle 與 per-document sampling；下一批可先抽取 sampling policy，將 shuffle
+   與 `nBound` selection 改由顯式 randomizer／純 slice boundary 驗證，但不可改預設隨機行為。
+2. 本批保留 rule 或 score mapping malformed 時的原生 `KeyError`／unpack error；若要改為具名 domain error，
+   應先建立 configuration validation boundary，而不是在純選取函式 silent fallback。
+3. 完整 reader／CLI 仍需 heavy runtime 與外部資料；本批只驗證純 label selection、隔離 conversion fixture
+   與 repository 輕量 suite，不代表 Phase 1 import gate 或完整 E2E 已完成。

@@ -1,9 +1,165 @@
 import unittest
 
 from DatasetConverter.sample_pipeline import aggregate_multi_label_counts
+from DatasetConverter.sample_pipeline import assemble_sample_row
 from DatasetConverter.sample_pipeline import collect_reader_results
 from DatasetConverter.sample_pipeline import collect_source_metadata
+from DatasetConverter.sample_pipeline import detect_special_output_label
+from DatasetConverter.sample_pipeline import normalize_segment_layout
+from DatasetConverter.sample_pipeline import select_rule_based_input_label
 from DatasetConverter.sample_schema import validate_sample_rows
+
+
+class NormalizeSegmentLayoutTests(unittest.TestCase):
+    def test_replaces_newlines_above_the_legacy_ten_percent_threshold(self):
+        self.assertEqual(
+            normalize_segment_layout("abcd\nefgh\n"),
+            "abcd efgh ",
+        )
+
+    def test_preserves_newlines_at_exactly_the_threshold(self):
+        self.assertEqual(
+            normalize_segment_layout("123456789\n"),
+            "123456789\n",
+        )
+
+    def test_preserves_empty_and_single_line_segments(self):
+        self.assertEqual(normalize_segment_layout(""), "")
+        self.assertEqual(normalize_segment_layout("single line"), "single line")
+
+
+class DetectSpecialOutputLabelTests(unittest.TestCase):
+    def test_labels_segments_with_more_than_ninety_percent_digits(self):
+        self.assertEqual(
+            detect_special_output_label("1" * 55 + "abcdef"),
+            "Uncertainty-Unidentified Digits",
+        )
+
+    def test_labels_periods_before_the_repeated_character_fallback(self):
+        self.assertEqual(
+            detect_special_output_label("." * 56 + "中文文本五"),
+            "BD-Table Of Contents",
+        )
+
+    def test_labels_dominant_repeated_character_segments(self):
+        self.assertEqual(
+            detect_special_output_label("~" * 56 + "中文文本五"),
+            "False Decoding-Broken Data Stream",
+        )
+
+    def test_preserves_strict_threshold_and_residual_text_gate(self):
+        self.assertIsNone(detect_special_output_label("1" * 54 + "中文文本六字"))
+        self.assertIsNone(detect_special_output_label("." * 401 + "中" * 40))
+
+    def test_returns_none_for_empty_or_regular_text(self):
+        self.assertIsNone(detect_special_output_label(""))
+        self.assertIsNone(detect_special_output_label("ordinary sample text"))
+
+    def test_preserves_legacy_all_spaces_failure(self):
+        with self.assertRaises(ZeroDivisionError):
+            detect_special_output_label(" " * 51)
+
+
+class SelectRuleBasedInputLabelTests(unittest.TestCase):
+    def test_selects_highest_info_score_with_inclusive_intervals(self):
+        calls = []
+        counts = {"first": 1, "second": 3, "outside": 4}
+
+        def match_counter(pattern, text):
+            calls.append((pattern, text))
+            return counts[pattern]
+
+        selected = select_rule_based_input_label(
+            "MIXED Text",
+            default_label="original",
+            rules={
+                ("first", (1, 1)): "low-score",
+                ("second", (2, 3)): "high-score",
+                ("outside", (0, 3)): "excluded",
+            },
+            info_scores={"low-score": 1.0, "high-score": 2.0},
+            match_counter=match_counter,
+        )
+
+        self.assertEqual(selected, "high-score")
+        self.assertEqual(
+            calls,
+            [
+                ("first", "mixed text"),
+                ("second", "mixed text"),
+                ("outside", "mixed text"),
+            ],
+        )
+
+    def test_returns_default_when_no_rule_matches(self):
+        self.assertEqual(
+            select_rule_based_input_label(
+                "plain text",
+                default_label="original",
+                rules={("missing", (1, 2)): "override"},
+                info_scores={"override": 1.0},
+            ),
+            "original",
+        )
+
+    def test_later_rule_wins_when_info_scores_are_equal(self):
+        selected = select_rule_based_input_label(
+            "alpha beta",
+            default_label="original",
+            rules={
+                ("alpha", (1, 1)): "first-label",
+                ("beta", (1, 1)): "second-label",
+            },
+            info_scores={"first-label": 5, "second-label": 5},
+        )
+
+        self.assertEqual(selected, "second-label")
+
+
+class AssembleSampleRowTests(unittest.TestCase):
+    def test_builds_the_canonical_sliced_text_row(self):
+        row = assemble_sample_row(
+            file_path="root/#T#[alpha]/article.txt",
+            input_label="alpha",
+            output_label="mapped-alpha",
+            text="sample text",
+            part_number=3,
+        )
+
+        self.assertEqual(
+            row,
+            {
+                "file": "root/#T#[alpha]/article.txt",
+                "InLabel": "alpha",
+                "OutLabel": "mapped-alpha",
+                "text": "sample text",
+                "PartNO": 3,
+            },
+        )
+        self.assertEqual(
+            validate_sample_rows([row], source_stage="regular reader"),
+            (row,),
+        )
+
+    def test_returns_a_fresh_row_for_each_segment(self):
+        first = assemble_sample_row(
+            file_path="a.txt",
+            input_label="alpha",
+            output_label="alpha",
+            text="first",
+            part_number=0,
+        )
+        second = assemble_sample_row(
+            file_path="a.txt",
+            input_label="alpha",
+            output_label="alpha",
+            text="second",
+            part_number=1,
+        )
+
+        first["text"] = "changed"
+
+        self.assertEqual(second["text"], "second")
 
 
 class CollectReaderResultsTests(unittest.TestCase):

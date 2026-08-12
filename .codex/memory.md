@@ -12,6 +12,30 @@
 
 ## Recent Outcomes
 
+### 2026-08-12 — DatasetConverter regex input-label selection boundary
+
+- 目標：延續 Phase 4，隔離 reader 的 regex interval matching 與 InfoScore label override。
+- 結果：`select_rule_based_input_label()` 固定 lower-case matching、inclusive interval、最高分、同分後規則勝出與無命中 fallback；matcher 可注入，reader 保留薄呼叫。
+- 驗證：sample pipeline targeted tests、conversion fixture、完整輕量 unittest、相關檔案 `py_compile` 與 `git diff --check`。
+
+### 2026-08-12 — DatasetConverter malformed-segment label boundary
+
+- 目標：延續 Phase 4，隔離 reader 對數字、句點與重複字元異常 segment 的特殊輸出 label 判定。
+- 結果：`detect_special_output_label()` 固定 legacy priority、strict 90% thresholds 與 residual-text gate；reader 保留長度／啟用 gate，不改其餘 label、OpenCC 或 sampling 行為。
+- 驗證：sample pipeline targeted tests、conversion fixture、完整輕量 unittest、相關檔案 `py_compile` 與 `git diff --check`。
+
+### 2026-08-12 — DatasetConverter segment layout normalization boundary
+
+- 目標：延續 Phase 4，隔離 reader 對 excessive newline 的文字排版清整規則。
+- 結果：`normalize_segment_layout()` 固定大於 10% 才取代換行、恰好 10% 不變與空字串安全行為；reader 保留薄呼叫，不改 label、OpenCC、sampling 或 schema。
+- 驗證：sample pipeline targeted tests、完整輕量 unittest、相關檔案 `py_compile` 與 `git diff --check`。
+
+### 2026-08-12 — DatasetConverter sliced-text row assembly boundary
+
+- 目標：延續 Phase 4，將 `SampleReader.textSegsToSamples()` 的共同 row assembly 與重型 reader adapters 分離。
+- 結果：`assemble_sample_row()` 統一一般與 rule-based label 的 canonical sample mapping，不改 slicing、label、OpenCC 或 sampling 語意。
+- 驗證：sample pipeline targeted tests、完整輕量 unittest、相關檔案 `py_compile` 與 `git diff --check`。
+
 ### 2026-08-12 — DatasetConverter reader row schema validation boundary
 
 - 目標：延續 Phase 4，在 DataFrame／artifact 副作用前固定 reader rows 的共同 schema。

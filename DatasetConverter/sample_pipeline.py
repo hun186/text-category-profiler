@@ -1,5 +1,7 @@
 """Pure transformations between sample readers and dataset assembly."""
 
+import re
+from collections import Counter
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -19,6 +21,109 @@ class SourceMetadata:
 
     source_type: Any
     source: Any
+
+
+def normalize_segment_layout(text: str) -> str:
+    """Replace excessive line breaks using the legacy reader threshold.
+
+    A segment is considered over-broken only when more than ten percent of
+    its characters are newlines. Empty strings are preserved so this pure
+    transformation remains safe independently of the reader's empty-segment
+    filtering step.
+    """
+
+    if not text:
+        return text
+    if text.count("\n") / len(text) > 0.1:
+        return text.replace("\n", " ")
+    return text
+
+
+def detect_special_output_label(text: str) -> str | None:
+    """Return the legacy rule-based label for a long malformed segment.
+
+    The caller retains the existing ``len(text) > 50`` and rule-based-active
+    gates. Candidate priority and strict thresholds intentionally mirror the
+    reader: digits, then periods, then a dominant repeated character. A
+    candidate is accepted only when fewer than 40 characters remain after the
+    legacy ASCII range cleanup.
+    """
+
+    length = len(text)
+    if length == 0:
+        return None
+
+    non_space_length = length - text.count(" ")
+    digit_count = sum(character in "0123456789" for character in text)
+    if digit_count / non_space_length > 0.9:
+        candidate = "Uncertainty-Unidentified Digits"
+    elif text.count(".") / length > 0.9:
+        candidate = "BD-Table Of Contents"
+    elif Counter(text).most_common(1)[0][1] / length > 0.9:
+        candidate = "False Decoding-Broken Data Stream"
+    else:
+        return None
+
+    if len(re.sub(r"[ -F,\[-f,\{-~]", "", text)) < 40:
+        return candidate
+    return None
+
+
+def select_rule_based_input_label(
+    text: str,
+    *,
+    default_label: str,
+    rules: Mapping[tuple[str, tuple[int, int]], str],
+    info_scores: Mapping[str, Any],
+    match_counter: Callable[[str, str], int] | None = None,
+) -> str:
+    """Select the highest-scoring regex label that matches its interval.
+
+    Rules retain mapping iteration order. Python's stable sort therefore
+    preserves the legacy behavior where the later rule wins when candidates
+    have equal information scores. The matcher is injectable so interval and
+    priority behavior can be tested without coupling callers to regex I/O.
+    """
+
+    if match_counter is None:
+        match_counter = lambda pattern, value: len(re.findall(pattern, value))
+
+    normalized_text = text.lower()
+    candidates = [
+        label
+        for (pattern, interval), label in rules.items()
+        if interval[0]
+        <= match_counter(pattern, normalized_text)
+        <= interval[1]
+    ]
+    if not candidates:
+        return default_label
+    return sorted(candidates, key=lambda label: info_scores[label])[-1]
+
+
+def assemble_sample_row(
+    *,
+    file_path: str,
+    input_label: str,
+    output_label: str,
+    text: str,
+    part_number: int,
+) -> dict[str, Any]:
+    """Build the canonical row emitted by a sliced-text reader.
+
+    Keeping row assembly outside ``SampleReader`` makes the reader's common
+    output contract testable without importing its filesystem, tokenizer, or
+    external-service adapters.  Value validation remains at the reader/schema
+    boundaries so this extraction does not narrow legacy inputs.
+    """
+
+    return {
+        "file": file_path,
+        "InLabel": input_label,
+        "OutLabel": output_label,
+        "text": text,
+        "PartNO": part_number,
+    }
 
 
 def collect_reader_results(
