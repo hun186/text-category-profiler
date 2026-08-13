@@ -1,27 +1,17 @@
-from PackageImport import PackageImporter
-PackageImporter.proc()
 import os
-if os.getcwd().split(os.path.sep)[-1] in [
-        "DatasetConverter","BertScript","GenerativeLanguageModel","ArticleClustering"]:
-    os.chdir("../")
-    print(f"Change working directory to {os.getcwd()}")
 import sqlite3 as lite
 from copy import deepcopy
-from text_category_profiler.core.utilities import RemoveIlleagalCharForFileName
 #from MP_utils  import MPlogger
 #import tokenization
-from opencc import OpenCC
-from text_category_profiler.core.utilities import ListCap
-from text_category_profiler.core.utilities import wrap
-from text_category_profiler.core.utilities import getFNExtFromFullPath
-from text_category_profiler.core.utilities import fileNameNormalizer
-from text_category_profiler.data.df_utils import dfFromSQLite3
+from DatasetConverter.reader_utils import filename_extension
+from DatasetConverter.reader_utils import intersect_lists
+from DatasetConverter.reader_utils import normalize_filename
+from DatasetConverter.reader_utils import sanitize_filename
+from DatasetConverter.reader_utils import wrap_text
 from text_category_profiler.concurrency.MP_utils  import MPlogger
 from text_category_profiler.core.log_display import key_values
 from text_category_profiler.core.log_display import summarize_sequence
 #from text_category_profiler.pipeline.TCF_utils import datasetDirOutputDirPickers
-from text_category_profiler.pipeline.TCF_utils import ClassfierOptionParser
-from text_category_profiler.pipeline.TCF_utils import get_base_model_checkpoint
 from text_category_profiler.core.model_paths import resolve_local_model_directory
 from text_category_profiler.text.TextProcessor_utils import textReader
 from text_category_profiler.text.TextProcessor_utils import BasicDataCleaner
@@ -39,8 +29,10 @@ from DatasetConverter.sample_sources import read_czj_sample_rows
 from DatasetConverter.sample_sources import read_regular_text_document
 from DatasetConverter.sample_sources import SourceDocument
 from DatasetConverter.elasticsearch_source import create_elasticsearch_client
+from DatasetConverter.opencc_source import convert_text
 from DatasetConverter.tokenizer_source import load_auto_tokenizer
 from DatasetConverter.tokenizer_source import resolve_tokenizer_model
+from DatasetConverter.tokenizer_pipeline import analyze_token_word_mapping
 from DatasetConverter.tokenizer_pipeline import split_tokenized_context
 #from ClassesTree.Label_utils import LabelsStringReader
 
@@ -67,7 +59,7 @@ def tokenization_wrap(
         debug = False):
     #print("in tokenization_wrap, nTokensToWrap is",nTokensToWrap)
     #print("input modelDir for tokenization_wrap b4",modelDir)
-    modelDir = fileNameNormalizer.proc(modelDir or "xlm-roberta-base")
+    modelDir = normalize_filename(modelDir or "xlm-roberta-base")
     #print("input modelDir for tokenization_wrap af",modelDir)
     
     if debug == True:
@@ -138,39 +130,22 @@ def tokenization_wrap(
         print("針對產出再次tokenized的結果:",ReTks)
         print([len(x) for x in ReTks])
     
-    if word_analysis == True:
-        corpora_records = context.split(' ')
-        word_2_char_mapping = dict()
-        char_cursor = 0
-        for ind in range(len(corpora_records)):
-            if(len(corpora_records[ind])>0): #the last space will not be considered
-                start = char_cursor
-                end = char_cursor+len(corpora_records[ind])
-                word_2_char_mapping[ind] = [start,end]
-                char_cursor = char_cursor+len(corpora_records[ind])+1 #consider the white
-        if debug == True:
-            print("word_2_char_mapping:",word_2_char_mapping)
-        
-        word_2_token_mapping = dict()
-        for token_index in range(len(encoded.tokens())):
-            this_token = encoded.word_ids()[token_index]
-            if (not this_token==None):
-                char_span=encoded.token_to_chars(token_index)
-                if debug == True:
-                    print("token_index,char_span",token_index,char_span)
-                for each_word in word_2_char_mapping:
-                    start = word_2_char_mapping[each_word][0]
-                    end = word_2_char_mapping[each_word][1]
-                    if (char_span.start)>=start and char_span.end<=end:
-                        #print(batch_encoding.tokens()[token_index]) #check the
-                        #print('--->')
-                        #print(corpora_records[each_word])
-                        if (each_word in word_2_token_mapping):
-                            word_2_token_mapping[each_word].append(token_index)
-                        else:
-                            word_2_token_mapping[each_word]=[token_index]
-        if debug == True:
-            print("word_2_token_mapping:",word_2_token_mapping)
+    if word_analysis and debug:
+        analysis = analyze_token_word_mapping(context, encoded)
+        print(
+            "word_2_char_mapping:",
+            {
+                word_index: [start, end]
+                for word_index, start, end in analysis.word_character_spans
+            },
+        )
+        print(
+            "word_2_token_mapping:",
+            {
+                word_index: list(token_positions)
+                for word_index, token_positions in analysis.word_token_positions
+            },
+        )
     res = dict()
     res["ctxCut"] = ctxCut
     res["ReTks"] = ReTks
@@ -189,7 +164,7 @@ class RedundantBlankSpaceRemover():
         self.width = width
     def proc(self,):
         #每一個片段各自處理，以因應多語種混合文本
-        TextList = wrap(self.text, self.width)
+        TextList = wrap_text(self.text, self.width)
         TextList = [seg.replace(" ","").replace("　","")
                     if len(set(seg))>80 and (seg.count(" ")+seg.count("　"))/len(seg)>0.4 else seg
                     for seg in TextList]
@@ -231,7 +206,7 @@ class TextDivider():
             if all(["FixedTest" in os.path.dirname(self.file),
                     not ExpandWidthForFixedTest]
                    ):
-                textList = wrap(self.text, self.width)
+                textList = wrap_text(self.text, self.width)
             else:
                 if self.tokenizationWrap == True:
                     #print("Using tokenizationWrap in sampleHandler")
@@ -261,9 +236,9 @@ class TextDivider():
                     #if text_no_digits.count(" ")/(len(text_no_digits)+10**-100) > 0.13:
                     #被空格隔開的字符要大於1個，才計數，以避免" 示 範 字 串"這種單字接空白的中文字串被誤判為英文。
                     if len(re.findall(r'\w{2,} ',text_no_digits))/(len(text_no_digits)+10**-100) > 0.11:
-                        textList = wrap(self.text, 3*self.width)
+                        textList = wrap_text(self.text, 3*self.width)
                     else:
-                        textList = wrap(self.text, self.width)
+                        textList = wrap_text(self.text, self.width)
         else:
             #每一份txt只取前width個字元，生成一個樣本。
             textList = [self.text[:self.width]]
@@ -363,7 +338,7 @@ class SampleReader():
             es_job=self.esJob,
             metadata=self.esRetMeta,
             subject=self.ESsubject,
-            sanitize_filename=RemoveIlleagalCharForFileName,
+            sanitize_filename=sanitize_filename,
         )
         self.file = provenance.file_path
         if provenance.invalid_date is not None:
@@ -384,7 +359,7 @@ class SampleReader():
                 label_conversion=self.LabelConvertDict,
                 minimum_length=self.sampleMethod["LenLBD"],
                 text_conversion=self.ConvertToSpec,
-                convert=lambda value, conversion: OpenCC(conversion).convert(value),
+                convert=convert_text,
             )
             if segment_result.row is not None:
                 result.append(segment_result.row)
@@ -414,7 +389,7 @@ class SampleReader():
         #print("self.CZJCorpusSQLFile",self.CZJCorpusSQLFile)
         #print("os.path.isfile",os.path.isfile(self.CZJCorpusSQLFile))
         #如果有es_tokens，則表示其為ES伺服器任務。
-        fileExt = getFNExtFromFullPath(self.file).lower()
+        fileExt = filename_extension(self.file, lower=True)
         #print("handling",self.file)
         if "es_tokens" in self.esJob.keys():# != {}:
             #ConWay = "Estoken"
@@ -490,7 +465,7 @@ class SampleReader():
             source_document = apply_regular_cleaning_rules(
                 source_document,
                 rules=self.DataCleanerRePatternDict,
-                labels_in_exemptions=ListCap,
+                labels_in_exemptions=intersect_lists,
                 clean_text=lambda value, rules: DataCleanerWithPattern(
                     value, rules
                 ).proc(),
@@ -514,34 +489,6 @@ class SampleReader():
             ))
             MultiLabelCount = (None, 0)
             return result, MultiLabelCount
-        elif re.search(".*CZJ_CorpusFile.*sql3",self.file) is not None:
-            #ConWay = "CZJ_SamplesFile in sql3"
-            print("*"*50)
-            print(f"Loading Corpus Database in CZJ Format {self.file}")
-            df = dfFromSQLite3(self.file).reset_index(drop=True).drop(columns=["index"])
-            df["InLabel"].fillna("Scrap",inplace=True)
-            print("df", df)
-            #result = df.to_dict('records')
-            result = []
-            for idx,dfrow in df.iterrows():
-                title = dfrow["title"]
-                CZJtext = dfrow["text"]
-                print("title",title)
-                #print("type(CZJtext)",type(CZJtext))
-                #SelfRun = self.run(self,LoadedCZJCorpusText=CZJtext)
-                result = SampleReader(
-                    file=title,CZJCorpusSQLFile=self.file,tokenizationWrap=True).run()
-                print("result",result)
-                #print(SelfRun)
-                #dfrow["text"]
-                #print("dfrow",dfrow)
-                #print("dfrow[0]",dfrow[0])
-                #print("dfrow[1]",dfrow["text"])
-            MultiLabelCount = (None, 0)
-            print("result",result)
-            #return result, MultiLabelCount
-
-            
         #elif self.SQLFile != "":
             ##ConWay = "SQLFI"
             #conn = lite.connect(self.SQLFile)
@@ -660,64 +607,3 @@ class SampleReader():
         #if "COVID-19" in InLabelList:
             #print("for file {}, 輸出樣本為{}".format(self.file,result))
         return result, MultiLabelCount
-
-def tokenization_wrap_Test(TestString,args=dict()):
-    global tokenizer
-    #model_checkpoint = "./xlm-roberta-base"
-    model_checkpoint = get_base_model_checkpoint(args.ModelType)
-        
-    for model_ckptDir in ["./","./BertScript/"]:
-        #for model_checkpoint in ["./xlm-roberta-base","./BertScript/xlm-roberta-base"]:
-        model_ckptPath = model_ckptDir+model_checkpoint
-        print("="*50)
-        print("model_ckptPath",model_ckptPath)
-        try:
-            tokenizer = load_auto_tokenizer(
-                model_ckptPath, trust_remote_code=True
-            )
-            #如果成功載入tokenizer的話，回存取獲的完整模型正確路徑到model_checkpoint。
-            model_checkpoint = model_ckptPath
-            print("final model_checkpoint",model_checkpoint)
-            break
-        except:
-            pass
-
-    tokensWrap = tokenization_wrap(TestString, model_checkpoint,ReTks=True)
-    print("tokensWrap",tokensWrap)
-    print("len(tokensWrap[ctxCut]",[len(x) for x in tokensWrap["ctxCut"]])
-    print("len(tokensWrap[ReTks]",[len(x) for x in tokensWrap["ReTks"]])
-
-if __name__=='__main__':
-    #setproctitle.setproctitle(f'TxCL_Transformer')
-    args = ClassfierOptionParser()
-    
-    TestString = """\
-东方证券-农业行业禽养殖专题之二：白鸡拐点已至，黄鸡景气持续
-
-农业行业
-行业研究 | 深度报告
-
-白羽肉鸡：淡季价格坚挺，引种依然受限。3 月下旬开始，鸡肉价格稳步上涨，6 月末屠宰加工企业白羽肉鸡产品综合价格回到 11.11元/公斤，同比上涨 8.7%，7月第 3 周价格为 11.13 元/公斤。本轮价格上涨略超预期，一方面，价格上涨于二季度传统淡季；另一方面，2022 年上半年的鸡苗供应量由 3 个季度之前父母代鸡苗销量决定，彼时父母代鸡苗同比增加 4.5%，当前供应水平不应紧缺，但是上半年商品代鸡苗销量同比大幅减少 12%。我们认为，偏高的产能与偏低的供应水平或与种鸡质量降低、持续低迷行情打击补栏情绪有关。由于毛鸡供应偏紧，但补栏意愿疲弱，行业利润向养殖环节集中，近 4个月单羽盈利在 2元以上。往后来看，1）父母代鸡苗的销售量自 2021 年 10 月开始拐点向下，对应今年下半年的商品代鸡苗出现实质性的下降，供应或将进一步收紧；2）祖代引种断档已经持续 2 个月，上半年祖代雏鸡累计更新数量仅 47 万套，同比减少 21.5%，其中 5、6 月更新数量分别为 0、4 万套，引种量均为 0套，祖代更新不足对行业下游供应的冲击或将重演。
-
-黄羽肉鸡：产能低位运行，猪鸡景气共振。黄羽肉鸡的价格自 2021年年中便开启上涨，受季节性消费波动影响，2022年 3月之后价格有所承压，于 4月末再度开启上涨，7月第 4周周末，中速鸡、慢速鸡价格已分别涨至 17.44、18.90元/公斤，同比涨幅分别为 40.6%、38.8%。往后来看，1）根据黄羽肉鸡生长周期规律， 2022 年 Q3的商品代鸡苗供应量由 2021年 Q4父母代鸡苗供应量决定，2021Q4监测企业的父母代鸡苗销量环比减少 7.7%，因此预计 Q3 市场依然处于鸡苗偏紧缺状态，叠加黄鸡育肥平均周期约 3 个月，从而价格景气至少有望持续至年末，且存在进一步上涨的可能。2）虽然价格恢复较早，但是由于原料价格上涨，行业的盈利始终没有得到充分的恢复，进而掣肘行业补栏。2022 年上半年，全国父母代黄羽肉种鸡平均存栏量 3946.8万套，同比减少 5.62%，仍处于近 3年低位，产能边际增量偏低，中期对高价的压制程度或较弱。3）黄鸡消费场景与猪肉消费极为类似，从而在价格趋势上与猪价具有较明显的同步特征，随着猪价拐点向上趋势明确，黄羽肉鸡的价格走势有望与猪价同步上行。
-
-白羽肉鸡：白羽肉鸡经历相对漫长的低迷后，下半年有望迎来相对确定性的供应拐点，叠加行业偏弱的养殖效率、餐饮消费的逐步复苏以及北美引种持续断档催化，行业至暗时刻已经过去，关注具备自主种源和养殖、食品两端的白鸡养殖龙头以及业绩具备苗价和鸡价弹性的相关标的。
-
-黄羽肉鸡：黄羽肉鸡产能去化相对明显，我们认为价格景气至少持续至年底，关注后续价格超预期机会，关注温氏股份、立华股份、湘佳股份。
-
-风险提示：原材料价格波动、发生鸡类疫病、消费需求下滑超预期
-
-目 录
-白羽：淡季价格坚挺，引种依然受限 .............................................................. 4
-养殖环节利润恢复，鸡苗供应量增质减 .............................................................................. 4
-北美供种制约持续，祖代更新下降明显 .............................................................................. 5
-黄羽：产能低位运行，猪鸡景气共振 .............................................................. 8
-毛鸡成本涨幅明显，养殖效益恢复偏慢 .............................................................................. 8
-存栏仍在低位，下半年景气持续 ......................................................................................... 9
-投资建议 ...................................................................................................... 11
-风险提示 ...................................................................................................... 11
-"""
-    tokenization_wrap_Test(TestString,args=args)
-
-    #CorpusSQL = "CZJ_CorpusFile_SDSMS_Prediction_FixedTest.sql3"
-    #SampleReader(file=CorpusSQL).run()

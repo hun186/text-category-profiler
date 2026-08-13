@@ -41,6 +41,67 @@ class AutoTokenizerFactoryTests(unittest.TestCase):
             )
         )
 
+    def test_reader_has_no_maintenance_probe_or_cli_parser_dependency(self):
+        path = REPOSITORY_ROOT / "DatasetConverter" / "sampleHandler.py"
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        imported_names = {
+            alias.name
+            for node in tree.body
+            if isinstance(node, ast.ImportFrom)
+            for alias in node.names
+        }
+        function_names = {
+            node.name for node in tree.body if isinstance(node, ast.FunctionDef)
+        }
+
+        self.assertNotIn("ClassfierOptionParser", imported_names)
+        self.assertNotIn("get_base_model_checkpoint", imported_names)
+        self.assertNotIn("tokenization_wrap_Test", function_names)
+        self.assertFalse(
+            any(
+                isinstance(node, ast.If)
+                and isinstance(node.test, ast.Compare)
+                and isinstance(node.test.left, ast.Name)
+                and node.test.left.id == "__name__"
+                for node in tree.body
+            )
+        )
+
+    def test_reader_has_no_legacy_path_injector_or_module_scope_chdir(self):
+        path = REPOSITORY_ROOT / "DatasetConverter" / "sampleHandler.py"
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+
+        self.assertFalse(
+            any(
+                isinstance(node, ast.ImportFrom)
+                and node.module == "PackageImport"
+                for node in tree.body
+            )
+        )
+        self.assertFalse(
+            any(
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and isinstance(node.func.value, ast.Name)
+                and node.func.value.id == "os"
+                and node.func.attr == "chdir"
+                for node in tree.body
+            )
+        )
+
+    def test_reader_has_no_pandas_dataframe_adapter_or_corpus_file_fanout(self):
+        path = REPOSITORY_ROOT / "DatasetConverter" / "sampleHandler.py"
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        imported_names = {
+            alias.name
+            for node in tree.body
+            if isinstance(node, ast.ImportFrom)
+            for alias in node.names
+        }
+
+        self.assertNotIn("dfFromSQLite3", imported_names)
+        self.assertNotIn("CZJ_CorpusFile", path.read_text(encoding="utf-8"))
+
 
 class TokenizerModelResolutionTests(unittest.TestCase):
     def test_uses_requested_local_model_and_first_nested_checkpoint(self):
