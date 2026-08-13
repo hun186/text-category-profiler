@@ -2,11 +2,15 @@ import unittest
 
 from DatasetConverter.sample_pipeline import aggregate_multi_label_counts
 from DatasetConverter.sample_pipeline import assemble_sample_row
+from DatasetConverter.sample_pipeline import build_elasticsearch_provenance
 from DatasetConverter.sample_pipeline import collect_reader_results
 from DatasetConverter.sample_pipeline import collect_source_metadata
 from DatasetConverter.sample_pipeline import detect_special_output_label
 from DatasetConverter.sample_pipeline import normalize_segment_layout
+from DatasetConverter.sample_pipeline import prepare_sample_text
+from DatasetConverter.sample_pipeline import select_document_samples
 from DatasetConverter.sample_pipeline import select_rule_based_input_label
+from DatasetConverter.sample_pipeline import transform_sample_segment
 from DatasetConverter.sample_schema import validate_sample_rows
 
 
@@ -26,6 +30,205 @@ class NormalizeSegmentLayoutTests(unittest.TestCase):
     def test_preserves_empty_and_single_line_segments(self):
         self.assertEqual(normalize_segment_layout(""), "")
         self.assertEqual(normalize_segment_layout("single line"), "single line")
+
+
+class BuildElasticsearchProvenanceTests(unittest.TestCase):
+    def test_builds_subject_target_and_date_in_legacy_order(self):
+        sanitized_subjects = []
+
+        def sanitize(subject):
+            sanitized_subjects.append(subject)
+            return "clean-subject"
+
+        result = build_elasticsearch_provenance(
+            "42",
+            es_job={"Vis_ESFileNameMode": "subject_id", "es_tokens": ["token"]},
+            metadata={"Target": "T", "itcDT": "2026-08-13T09:10:11"},
+            subject=123,
+            sanitize_filename=sanitize,
+        )
+
+        self.assertEqual(sanitized_subjects, ["123"])
+        self.assertEqual(result.file_path, "20260813/Target/clean-subject_42")
+        self.assertIsNone(result.invalid_date)
+
+    def test_supports_fractional_and_zulu_legacy_date_formats(self):
+        for source_date in (
+            "2026-08-13T09:10:11.123456Z",
+            "2026-08-13T09:10:11Z",
+        ):
+            with self.subTest(source_date=source_date):
+                result = build_elasticsearch_provenance(
+                    "42",
+                    es_job={},
+                    metadata={"itcDT": source_date},
+                    subject=None,
+                    sanitize_filename=lambda value: value,
+                )
+                self.assertEqual(result.file_path, "20260813/42")
+                self.assertIsNone(result.invalid_date)
+
+    def test_preserves_non_target_and_invalid_date_fallback(self):
+        result = build_elasticsearch_provenance(
+            "42",
+            es_job={"es_tokens": []},
+            metadata={"Target": "unexpected", "itcDT": "not-a-date"},
+            subject=None,
+            sanitize_filename=lambda value: value,
+        )
+
+        self.assertEqual(result.file_path, "None/NonTarget/42")
+        self.assertEqual(result.invalid_date, "not-a-date")
+
+    def test_does_not_sanitize_subject_when_subject_mode_is_disabled(self):
+        result = build_elasticsearch_provenance(
+            "42",
+            es_job={},
+            metadata={},
+            subject="ignored",
+            sanitize_filename=lambda value: self.fail("unexpected sanitizer call"),
+        )
+
+        self.assertEqual(result.file_path, "42")
+        self.assertIsNone(result.invalid_date)
+
+    def test_reports_non_string_date_as_invalid_metadata(self):
+        result = build_elasticsearch_provenance(
+            "42",
+            es_job={},
+            metadata={"itcDT": 20260813},
+            subject=None,
+            sanitize_filename=lambda value: value,
+        )
+
+        self.assertEqual(result.file_path, "None/42")
+        self.assertEqual(result.invalid_date, 20260813)
+
+
+class PrepareSampleTextTests(unittest.TestCase):
+    def test_converts_before_evaluating_minimum_length(self):
+        calls = []
+
+        def convert(text, conversion):
+            calls.append((text, conversion))
+            return text + "x"
+
+        result = prepare_sample_text(
+            "abc",
+            minimum_length=4,
+            conversion="tw2s",
+            convert=convert,
+        )
+
+        self.assertEqual(calls, [("abc", "tw2s")])
+        self.assertEqual(result, "abcx")
+
+    def test_accepts_text_at_exact_minimum_length(self):
+        self.assertEqual(
+            prepare_sample_text(
+                "abcd",
+                minimum_length=4,
+                conversion=None,
+                convert=lambda text, conversion: self.fail("unexpected conversion"),
+            ),
+            "abcd",
+        )
+
+    def test_rejects_text_below_minimum_length(self):
+        self.assertIsNone(
+            prepare_sample_text(
+                "abc",
+                minimum_length=4,
+                conversion=None,
+                convert=lambda text, conversion: self.fail("unexpected conversion"),
+            )
+        )
+
+
+class TransformSampleSegmentTests(unittest.TestCase):
+    def test_returns_named_accepted_result_after_all_normal_stages(self):
+        result = transform_sample_segment(
+            "alpha\ntext",
+            file_path="source.txt",
+            input_label="original",
+            part_number=2,
+            rule_based_active=True,
+            rules={("alpha", (1, 1)): "matched"},
+            info_scores={"matched": 5},
+            label_conversion={"matched": "mapped"},
+            minimum_length=10,
+            text_conversion="tw2s",
+            convert=lambda text, conversion: text + "!",
+        )
+
+        self.assertEqual(result.reason, "accepted")
+        self.assertEqual(
+            result.row,
+            {
+                "file": "source.txt",
+                "InLabel": "matched",
+                "OutLabel": "mapped",
+                "text": "alpha\ntext!",
+                "PartNO": 2,
+            },
+        )
+
+    def test_reports_below_minimum_without_assembling_a_row(self):
+        result = transform_sample_segment(
+            "short",
+            file_path="source.txt",
+            input_label="original",
+            part_number=0,
+            rule_based_active=False,
+            rules={},
+            info_scores={},
+            label_conversion={},
+            minimum_length=6,
+            text_conversion=None,
+            convert=lambda text, conversion: text,
+        )
+
+        self.assertIsNone(result.row)
+        self.assertEqual(result.reason, "below-minimum-length")
+
+    def test_special_label_bypasses_conversion_length_and_label_mapping(self):
+        def unexpected_conversion(text, conversion):
+            self.fail("special segment must bypass text conversion")
+
+        result = transform_sample_segment(
+            "1" * 55 + "abcdef",
+            file_path="source.txt",
+            input_label="original",
+            part_number=4,
+            rule_based_active=True,
+            rules={("1", (1, 100)): "matched"},
+            info_scores={"matched": 5},
+            label_conversion={"original": "mapped"},
+            minimum_length=1000,
+            text_conversion="tw2s",
+            convert=unexpected_conversion,
+        )
+
+        self.assertEqual(result.reason, "special-label")
+        self.assertEqual(result.row["InLabel"], "original")
+        self.assertEqual(result.row["OutLabel"], "Uncertainty-Unidentified Digits")
+        self.assertEqual(result.row["PartNO"], 4)
+
+    def test_preserves_missing_label_conversion_failure(self):
+        with self.assertRaises(KeyError):
+            transform_sample_segment(
+                "long enough",
+                file_path="source.txt",
+                input_label="missing",
+                part_number=0,
+                rule_based_active=False,
+                rules={},
+                info_scores={},
+                label_conversion={"configured": "mapped"},
+                minimum_length=1,
+                text_conversion=None,
+                convert=lambda text, conversion: text,
+            )
 
 
 class DetectSpecialOutputLabelTests(unittest.TestCase):
@@ -114,6 +317,54 @@ class SelectRuleBasedInputLabelTests(unittest.TestCase):
         )
 
         self.assertEqual(selected, "second-label")
+
+
+class SelectDocumentSamplesTests(unittest.TestCase):
+    def test_shuffles_before_applying_label_specific_bound(self):
+        rows = [{"id": 1}, {"id": 2}, {"id": 3}]
+        calls = []
+
+        def reverse(items):
+            calls.append(list(items))
+            items.reverse()
+
+        selected = select_document_samples(
+            rows,
+            input_label="alpha",
+            bounds={"default": 3, "alpha": 2},
+            random_sample=True,
+            shuffle=reverse,
+        )
+
+        self.assertEqual(calls, [rows])
+        self.assertEqual(selected, [{"id": 3}, {"id": 2}])
+        self.assertEqual(rows, [{"id": 1}, {"id": 2}, {"id": 3}])
+
+    def test_uses_default_bound_without_calling_shuffle_when_disabled(self):
+        rows = [{"id": 1}, {"id": 2}, {"id": 3}]
+
+        def unexpected_shuffle(items):
+            self.fail(f"shuffle should not be called for {items!r}")
+
+        selected = select_document_samples(
+            rows,
+            input_label="unconfigured",
+            bounds={"default": 2},
+            random_sample=False,
+            shuffle=unexpected_shuffle,
+        )
+
+        self.assertEqual(selected, rows[:2])
+
+    def test_preserves_legacy_missing_default_failure(self):
+        with self.assertRaises(KeyError):
+            select_document_samples(
+                [{"id": 1}],
+                input_label="unconfigured",
+                bounds={},
+                random_sample=False,
+                shuffle=lambda items: None,
+            )
 
 
 class AssembleSampleRowTests(unittest.TestCase):

@@ -26,15 +26,14 @@ from text_category_profiler.text.TextProcessor_utils import textReader
 from text_category_profiler.text.TextProcessor_utils import BasicDataCleaner
 from text_category_profiler.text.TextProcessor_utils import DataCleanerWithPattern
 from ClassesTree.Label_utils import getLabelsFromFileName
-from DatasetConverter.sample_pipeline import assemble_sample_row
-from DatasetConverter.sample_pipeline import detect_special_output_label
-from DatasetConverter.sample_pipeline import normalize_segment_layout
-from DatasetConverter.sample_pipeline import select_rule_based_input_label
+from DatasetConverter.sample_pipeline import build_elasticsearch_provenance
+from DatasetConverter.sample_pipeline import select_document_samples
+from DatasetConverter.sample_pipeline import transform_sample_segment
+from DatasetConverter.source_adapters import adapt_czj_sample_records
 #from ClassesTree.Label_utils import LabelsStringReader
 
 #from tokenization import FullTokenizer
 import re
-import datetime as dte
 import random
 
 from elasticsearch import Elasticsearch
@@ -357,94 +356,45 @@ class SampleReader():
         #如果是從Elasticsearch載入文本，self.file預設值為id，
         #如果Vis_ESFileNameMode模式為"subject_id"
         #且有抓到標題ESsubject，則將標題添加於self.file前面。
-        if self.esJob.get("Vis_ESFileNameMode","") == "subject_id":
-            if self.ESsubject != None:
-                if type(self.ESsubject) is not str:
-                    self.ESsubject = str(self.ESsubject)
-                self.file = RemoveIlleagalCharForFileName(
-                    self.ESsubject)[:100]+"_"+self.file
-        if "es_tokens" in self.esJob.keys():
-            if self.esRetMeta.get("Target",None) == "T":
-                self.file = f"Target/{self.file}"
-            else:
-                self.file = f"NonTarget/{self.file}"
-        if len(self.esRetMeta.get("itcDT","")) > 0:
-            for fmtcand in ["%Y-%m-%dT%H:%M:%S",
-                            "%Y-%m-%dT%H:%M:%S.%fZ",
-                            "%Y-%m-%dT%H:%M:%SZ"
-                            ]:
-                try:
-                    itcDT = dte.datetime.strftime(dte.datetime.strptime(
-                        self.esRetMeta['itcDT'],fmtcand),"%Y%m%d")
-                    break
-                except Exception as e:
-                    print(f"When converting the date for {self.file}, the following error occurs:\n{e}")
-                    itcDT = None
-                    pass
-            if itcDT is None:
-                MES = f"When converting {self.esRetMeta['itcDT']} from ES to %Y%m%d, it failed."
-                self.MPLOGGER.logW(MES,printOnScreen=False,logFile="ESGrab.log")
-            #itcDT = self.esRetMeta['itcDT']
-            self.file = f"{itcDT}/{self.file}"
-        for i,textseg in enumerate(textList):
-            #print("i,textseg",i,textseg)
-            segInLabel = InLabel
-            LenSeg = len(textseg)
-            #print("textseg at beg",textseg)
-            #如果斷行過多，可能代表非預期之單字斷行現象發生，
-            #為優化文字排版，故用空白取代斷行。
-            textseg = normalize_segment_layout(textseg)
-
-            if LenSeg >50 and self.RBActive == True:
-                special_output_label = detect_special_output_label(textseg)
-                if special_output_label is not None:
-                    sample = assemble_sample_row(
-                        file_path=self.file,
-                        input_label=segInLabel,
-                        output_label=special_output_label,
-                        text=textseg,
-                        part_number=i,
-                    )
-                    result.append(sample)
-                    continue
-            if self.RBActive == True:
-                #針對特殊條件進行Rule-Based InLabel設定。
-                segInLabel = select_rule_based_input_label(
-                    textseg,
-                    default_label=segInLabel,
-                    rules=self.RBDict,
-                    info_scores=self.InfoScoreTable,
-                )
-            #如果有簡繁轉碼設定，則使用OpenCC模組進行轉換。
-            if self.ConvertToSpec != None:
-                cc = OpenCC(self.ConvertToSpec)
-                textseg = cc.convert(textseg)
-            #樣本文字數量大於self.sampleLenLBD，才輸出。
-            sampleLenLBD = self.sampleMethod["LenLBD"]
-            if len(textseg) > sampleLenLBD-1:
-                if len(self.LabelConvertDict) > 0:
-                    #print("In read, label is {} and LabelConvertDict is {}"
-                          #.format(label,self.LabelConvertDict))
-                    OutLabel = self.LabelConvertDict[segInLabel]
-                else:
-                    OutLabel = segInLabel
-                #print("label af is {}".format(label))
-                sample = assemble_sample_row(
-                    file_path=self.file,
-                    input_label=segInLabel,
-                    output_label=OutLabel,
-                    text=textseg,
-                    part_number=i,
-                )
-                result.append(sample)
+        provenance = build_elasticsearch_provenance(
+            self.file,
+            es_job=self.esJob,
+            metadata=self.esRetMeta,
+            subject=self.ESsubject,
+            sanitize_filename=RemoveIlleagalCharForFileName,
+        )
+        self.file = provenance.file_path
+        if provenance.invalid_date is not None:
+            MES = (
+                f"When converting {provenance.invalid_date} from ES to %Y%m%d, "
+                "it failed."
+            )
+            self.MPLOGGER.logW(MES, printOnScreen=False, logFile="ESGrab.log")
+        for i, textseg in enumerate(textList):
+            segment_result = transform_sample_segment(
+                textseg,
+                file_path=self.file,
+                input_label=InLabel,
+                part_number=i,
+                rule_based_active=self.RBActive,
+                rules=self.RBDict,
+                info_scores=self.InfoScoreTable,
+                label_conversion=self.LabelConvertDict,
+                minimum_length=self.sampleMethod["LenLBD"],
+                text_conversion=self.ConvertToSpec,
+                convert=lambda value, conversion: OpenCC(conversion).convert(value),
+            )
+            if segment_result.row is not None:
+                result.append(segment_result.row)
 
         #將樣本清單隨機排序，俾如果有設定"單一文本取樣上限"時，可全文分散選取。
-        if self.sampleMethod["RandomSample"] == True:
-            random.shuffle(result)
-        #如果該類別有設定"單一文本取樣上限"，縮減輸出樣本量。
-        #result = result[0:self.nBound.get(InLabel, self.nBound["default"])]
-        nBound = self.sampleMethod["nBound"]
-        result = result[0:nBound.get(InLabel, nBound["default"])]
+        result = select_document_samples(
+            result,
+            input_label=InLabel,
+            bounds=self.sampleMethod["nBound"],
+            random_sample=self.sampleMethod["RandomSample"],
+            shuffle=random.shuffle,
+        )
         #回傳取出樣本。[{'label': 'xxxx', 'text': 'xxxxxx', 'file':'xxxxxx'},{...},{...},...]
         return result
             
@@ -567,10 +517,8 @@ class SampleReader():
         #elif "CZJ_SamplesFile.sql3" in self.file:
         elif re.search(".*CZJ_SamplesFile.*sql3",self.file) is not None:
             #ConWay = "CZJ_SamplesFile in sql3"
-            print("*"*50)
-            print(f"Loading SamplesFile Database in CZJ Format {self.file}")
-            df = dfFromSQLite3(self.file).reset_index(drop=True).drop(columns=["index"])
-            result = df.to_dict('records')
+            df = dfFromSQLite3(self.file).reset_index(drop=True)
+            result = list(adapt_czj_sample_records(df.to_dict("records")))
             MultiLabelCount = (None, 0)
             return result, MultiLabelCount
         elif re.search(".*CZJ_CorpusFile.*sql3",self.file) is not None:

@@ -611,3 +611,117 @@ DataConverter.py -> stage/config -> domain services -> ports
    應先建立 configuration validation boundary，而不是在純選取函式 silent fallback。
 3. 完整 reader／CLI 仍需 heavy runtime 與外部資料；本批只驗證純 label selection、隔離 conversion fixture
    與 repository 輕量 suite，不代表 Phase 1 import gate 或完整 E2E 已完成。
+
+### 2026-08-13 — Phase 4 per-document sampling policy（進行中）
+
+本次完成：
+
+- 依上一批建議，將 `SampleReader.textSegsToSamples()` 的隨機排序與單一文本筆數上限抽到
+  `sample_pipeline.select_document_samples()`；reader 保留薄呼叫，不改 segment 產生、label mapping、
+  OpenCC 或 row schema。
+- 保留 legacy 順序與設定規則：啟用 `RandomSample` 時先 shuffle 再 slice；label-specific `nBound` 優先，
+  未設定 label 時使用 `default`。缺少必要 `default` 時仍回報 `KeyError`，不加入 silent fallback。
+- shuffle strategy 改由 caller 顯式傳入；production 仍傳入 `random.shuffle` 維持預設行為，isolated tests
+  則可注入 deterministic strategy，固定 shuffle-before-limit、disabled-shuffle 與輸入 rows 不被原地改動。
+
+尚未完成／下次優先事項：
+
+1. **Phase 4 completion gate 尚未達成。** reader 仍處理 ES provenance filename/date、OpenCC 與 minimum-length
+   filter；下一批可先抽取 ES provenance filename 組裝或文字轉碼 adapter boundary，但不可同時改輸出命名契約。
+2. production random seed／generator 尚未納入 typed config；本批只建立可注入邊界，避免提前改變歷史上使用
+   module-level `random` 的非 deterministic 行為。Phase 5 收斂 augmentation 與重跑 reproducibility 時應統一決策。
+3. CZJ／ES／FixedTest value type 與 empty policy 仍缺 characterization；在收緊 sample value validation 前需先補
+   各來源 fixture。完整 reader／CLI 仍需 tokenizer、pandas、外部資料與工作池隔離環境。
+
+### 2026-08-13 — Phase 4 Elasticsearch provenance 組裝（進行中）
+
+本次完成：
+
+- 將 `SampleReader.textSegsToSamples()` 的 ES subject、Target／NonTarget 與 `itcDT` filename 組裝抽到
+  `sample_pipeline.build_elasticsearch_provenance()`，並以 immutable `ElasticsearchProvenance` 同時回傳
+  組裝結果與無效日期診斷；純轉換不讀 reader state、不 print，也不直接依賴 logger。
+- 保留 legacy path 順序與資料契約：subject 最長 100 字元並位於 document id 前，Target role 位於其外層，
+  日期 `YYYYMMDD` 位於最外層；三種既有 timestamp 格式均保持支援，非空無效日期仍產生 `None/` prefix，
+  但現在只由 adapter 寫一筆摘要 log，不再為每個候選格式輸出 exception noise。
+- filename sanitizer 以參數注入，production 仍使用 `RemoveIlleagalCharForFileName`；isolated tests 固定數字
+  subject 轉字串、subject/target/date ordering、fractional／Zulu timestamps、NonTarget fallback、無效日期診斷，
+  以及未啟用 subject mode 時不呼叫 sanitizer。
+
+尚未完成／下次優先事項：
+
+1. **Phase 4 completion gate 尚未達成。** OpenCC conversion 與 minimum-length eligibility 仍留在 reader；下批可
+   將「轉碼後才判斷長度」固定成純 segment-to-row policy，但應以 injected converter 避免純核心依賴 OpenCC。
+2. ES adapter 的 network read、`esRetMeta` 建立及 credential-bearing `esJob` 仍在 `SampleReader.run()`；後續應定義
+   sample-row adapter contract，且 normalized config/log 絕不可輸出 token。
+3. 本批刻意保留無效日期的 `None/` filename 相容行為。若要改為具名 input error，應另開契約變更並確認既有
+   artifact consumer，而不是在純函式加入 silent fallback。
+
+### 2026-08-13 — Phase 4 一般 segment 轉碼與長度 eligibility（進行中）
+
+本次完成：
+
+- 將一般 segment 的 optional OpenCC conversion 與 minimum-length gate 抽到
+  `sample_pipeline.prepare_sample_text()`；純函式以 converter callback 注入外部轉碼 adapter，因此不直接
+  import OpenCC，也不讀取 reader state、設定 dict、logger 或 filesystem。
+- 保留 legacy 執行順序與邊界：先完成轉碼，再以轉碼後文字判斷長度；`len(text) >= LenLBD` 才建立 row，
+  未設定 conversion 時完全不呼叫 converter。rule-based 特殊輸出 label 仍在此 gate 之前直接輸出，本批未改契約。
+- isolated tests 固定 conversion-before-length、恰好等於最小長度可接受、低於門檻被排除，以及未啟用轉碼
+  不呼叫 adapter；production reader 仍以薄 lambda 建立既有 OpenCC converter。
+- 補強上一批 ES provenance 邊界：非字串但 truthy 的 `itcDT` 在 legacy 會被日期解析視為無效資料；現在同樣
+  回傳 `None/` path 與 diagnostic，而不讓 `datetime.strptime()` 的 `TypeError` 越過 adapter boundary。
+
+尚未完成／下次優先事項：
+
+1. **Phase 4 completion gate 尚未達成。** `textSegsToSamples()` 的 per-segment orchestration 仍混合 special-label、
+   regex label、normal text preparation 與 row assembly；下一批應先以具名 `SegmentResult` 表示 accepted／dropped
+   與原因，再逐步縮小 loop，但不得改變 special-label bypass minimum-length 的既有順序。
+2. OpenCC adapter 仍依既有行為為每個一般 segment 建立 converter；只有 profiling 或 characterization 證明可安全
+   reuse 時才調整生命週期，不應在責任抽取同時宣稱效能改善。
+3. CZJ／ES／FixedTest 的 value type 與 empty policy、完整 reader／CLI fixture 仍未完成；Phase 4 completion 前仍需
+   補來源角色 characterization，且不得用真實 ES、模型或工作池作無副作用測試。
+
+### 2026-08-13 — Phase 4 per-segment orchestration 結果邊界（進行中）
+
+本次完成：
+
+- 新增 immutable `SegmentResult(row, reason)` 與 `sample_pipeline.transform_sample_segment()`，將單一 segment 的
+  layout normalization、special-label 判定、regex label override、轉碼、minimum-length gate、label mapping 與
+  canonical row assembly 收斂為可獨立測試的純 orchestration boundary。
+- `SampleReader.textSegsToSamples()` 的 loop 現在只傳入 reader 設定與 OpenCC adapter，並依 `SegmentResult.row`
+  決定是否收集樣本；drop 不再只能由缺少 row 反推，現以 `below-minimum-length` reason 明確表示。
+- 保留 legacy branch order：special malformed label 仍優先並略過 regex override、OpenCC、minimum-length 與一般
+  label conversion；一般 row 仍依序執行 regex label → 文字轉碼 → 長度 gate → label mapping。非空 label mapping
+  缺少 resolved label 時仍拋出 `KeyError`，避免抽取時意外加入 fallback。
+- characterization tests 固定 accepted row 的完整 schema、below-minimum drop、special-label bypass 與 missing label
+  conversion failure；測試不需 import `sampleHandler.py`、OpenCC、模型、process pool 或外部服務。
+
+尚未完成／下次優先事項：
+
+1. **Phase 4 completion gate 尚未達成。** reader loop 已縮小，但整份 `SampleReader.run()` 仍混合 filesystem、ES、
+   CZJ SQLite、清整、切片與 multi-label orchestration；下一批應選單一 source role 建立 adapter contract，不應一次
+   重寫所有來源分支。
+2. `SegmentResult.reason` 目前只有 `accepted`、`special-label`、`below-minimum-length`；只有 stage/result summary
+   確實需要統計時才擴充或彙總，不要在純函式直接 log/print。
+3. Phase 4 尚缺 CZJ／ES／FixedTest value type 與 empty policy characterization；Phase 5 的 `DatasetBundle`、
+   reproducible augmentation 與 output counts 尚未開始，不能因 per-segment loop 縮小就宣稱 Phase 4 完成。
+
+### 2026-08-13 — Phase 4 CZJ samples record adapter（進行中）
+
+本次完成：
+
+- 依上一批「一次選一個 source role」原則，新增 dependency-free `source_adapters.adapt_czj_sample_records()`，
+  專門處理 `CZJ_SamplesFile*.sql3` 讀出後的 records，將 pandas／SQLite adapter 與 record transformation 分離。
+- 保留 legacy artifact contract：輸出 row 移除 SQLite 中持久化的 `index` column，其他 sample/provenance columns、
+  row order 與 values 原樣保留；回傳新的 dictionaries，不修改 adapter 傳入的 records。
+- 缺少 persisted `index` 或收到非 mapping row 時，現在會在 downstream DataFrame/output 之前以 row index 診斷；
+  reader 的 CZJ samples 分支只負責 SQLite DataFrame 讀取、轉成 records 並呼叫 adapter。
+- 移除該分支固定輸出的星號與資料庫載入 `print`，不改成功回傳的 `(rows, (None, 0))` worker contract。
+
+尚未完成／下次優先事項：
+
+1. **Phase 4 completion gate 尚未達成。** 本批只涵蓋已切片的 CZJ samples database；`CZJ_CorpusFile` 分支仍含
+   DataFrame dump、逐 title print、遞迴建立 reader 與只保留最後一筆 result 的可疑行為。先補 characterization，
+   不得在未確認預期輸出前直接「修正」成累加。
+2. SQLite I/O 仍由 legacy `dfFromSQLite3` 執行；後續 output/source adapter 若改成直接 records loader，需以
+   temporary SQLite fixture 比較 columns、row order、NULL 與額外 provenance values。
+3. ES network adapter 與 FixedTest value/empty policy 仍待隔離；本批不代表 CZJ corpus 或完整 reader E2E 已驗證。
