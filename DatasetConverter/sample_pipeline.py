@@ -4,6 +4,7 @@ import re
 from collections import Counter
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 
 
@@ -23,6 +24,67 @@ class SourceMetadata:
     source: Any
 
 
+@dataclass(frozen=True)
+class ElasticsearchProvenance:
+    """Filename metadata assembled for an Elasticsearch sample."""
+
+    file_path: str
+    invalid_date: Any | None = None
+
+
+@dataclass(frozen=True)
+class SegmentResult:
+    """Named outcome of transforming one sliced-text segment."""
+
+    row: Mapping[str, Any] | None
+    reason: str
+
+
+def build_elasticsearch_provenance(
+    file_path: str,
+    *,
+    es_job: Mapping[str, Any],
+    metadata: Mapping[str, Any],
+    subject: Any,
+    sanitize_filename: Callable[[str], str],
+) -> ElasticsearchProvenance:
+    """Build the legacy ES subject/target/date provenance path.
+
+    Path components retain their historical order: optional subject prefix,
+    target role, then ingestion date. Invalid non-empty dates retain the
+    legacy ``None/`` prefix while returning diagnostics for the adapter to log.
+    """
+
+    resolved_path = str(file_path)
+    if es_job.get("Vis_ESFileNameMode", "") == "subject_id" and subject is not None:
+        resolved_path = f"{sanitize_filename(str(subject))[:100]}_{resolved_path}"
+
+    if "es_tokens" in es_job:
+        target_role = "Target" if metadata.get("Target") == "T" else "NonTarget"
+        resolved_path = f"{target_role}/{resolved_path}"
+
+    source_date = metadata.get("itcDT", "")
+    if not source_date:
+        return ElasticsearchProvenance(resolved_path)
+
+    parsed_date = None
+    for date_format in (
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%dT%H:%M:%S.%fZ",
+        "%Y-%m-%dT%H:%M:%SZ",
+    ):
+        try:
+            parsed_date = datetime.strptime(source_date, date_format).strftime("%Y%m%d")
+            break
+        except (TypeError, ValueError):
+            continue
+
+    return ElasticsearchProvenance(
+        f"{parsed_date}/{resolved_path}",
+        invalid_date=source_date if parsed_date is None else None,
+    )
+
+
 def normalize_segment_layout(text: str) -> str:
     """Replace excessive line breaks using the legacy reader threshold.
 
@@ -37,6 +99,26 @@ def normalize_segment_layout(text: str) -> str:
     if text.count("\n") / len(text) > 0.1:
         return text.replace("\n", " ")
     return text
+
+
+def prepare_sample_text(
+    text: str,
+    *,
+    minimum_length: int,
+    conversion: str | None,
+    convert: Callable[[str, str], str],
+) -> str | None:
+    """Convert a normal segment and apply the legacy minimum-length gate.
+
+    Conversion intentionally happens before eligibility is evaluated. The
+    strict legacy boundary accepts text with ``len(text) >= minimum_length``.
+    The conversion adapter is not called when no conversion is configured.
+    """
+
+    prepared = convert(text, conversion) if conversion is not None else text
+    if len(prepared) < minimum_length:
+        return None
+    return prepared
 
 
 def detect_special_output_label(text: str) -> str | None:
@@ -101,6 +183,29 @@ def select_rule_based_input_label(
     return sorted(candidates, key=lambda label: info_scores[label])[-1]
 
 
+def select_document_samples(
+    rows: Iterable[Mapping[str, Any]],
+    *,
+    input_label: str,
+    bounds: Mapping[str, int],
+    random_sample: bool,
+    shuffle: Callable[[list[Mapping[str, Any]]], None],
+) -> list[Mapping[str, Any]]:
+    """Apply the legacy per-document shuffle and sample-count limit.
+
+    The caller supplies the shuffle strategy so tests and future stage config
+    can make randomization deterministic without changing the current runtime
+    default. Label-specific bounds take precedence over ``default`` exactly as
+    they did in ``SampleReader.textSegsToSamples``.
+    """
+
+    selected = list(rows)
+    if random_sample:
+        shuffle(selected)
+    limit = bounds.get(input_label, bounds["default"])
+    return selected[:limit]
+
+
 def assemble_sample_row(
     *,
     file_path: str,
@@ -124,6 +229,76 @@ def assemble_sample_row(
         "text": text,
         "PartNO": part_number,
     }
+
+
+def transform_sample_segment(
+    text: str,
+    *,
+    file_path: str,
+    input_label: str,
+    part_number: int,
+    rule_based_active: bool,
+    rules: Mapping[tuple[str, tuple[int, int]], str],
+    info_scores: Mapping[str, Any],
+    label_conversion: Mapping[str, str],
+    minimum_length: int,
+    text_conversion: str | None,
+    convert: Callable[[str, str], str],
+) -> SegmentResult:
+    """Transform one reader segment while preserving legacy branch order.
+
+    Special malformed-segment labels bypass regex overrides, text conversion,
+    minimum-length filtering, and label conversion. Normal segments apply
+    those stages in their existing order and report an explicit drop reason.
+    """
+
+    original_length = len(text)
+    normalized_text = normalize_segment_layout(text)
+    if rule_based_active and original_length > 50:
+        special_label = detect_special_output_label(normalized_text)
+        if special_label is not None:
+            return SegmentResult(
+                assemble_sample_row(
+                    file_path=file_path,
+                    input_label=input_label,
+                    output_label=special_label,
+                    text=normalized_text,
+                    part_number=part_number,
+                ),
+                "special-label",
+            )
+
+    resolved_label = input_label
+    if rule_based_active:
+        resolved_label = select_rule_based_input_label(
+            normalized_text,
+            default_label=input_label,
+            rules=rules,
+            info_scores=info_scores,
+        )
+
+    prepared_text = prepare_sample_text(
+        normalized_text,
+        minimum_length=minimum_length,
+        conversion=text_conversion,
+        convert=convert,
+    )
+    if prepared_text is None:
+        return SegmentResult(None, "below-minimum-length")
+
+    output_label = (
+        label_conversion[resolved_label] if label_conversion else resolved_label
+    )
+    return SegmentResult(
+        assemble_sample_row(
+            file_path=file_path,
+            input_label=resolved_label,
+            output_label=output_label,
+            text=prepared_text,
+            part_number=part_number,
+        ),
+        "accepted",
+    )
 
 
 def collect_reader_results(
