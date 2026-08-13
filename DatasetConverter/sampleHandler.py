@@ -6,6 +6,7 @@ if os.getcwd().split(os.path.sep)[-1] in [
     os.chdir("../")
     print(f"Change working directory to {os.getcwd()}")
 import sqlite3 as lite
+from copy import deepcopy
 from text_category_profiler.core.utilities import RemoveIlleagalCharForFileName
 #from MP_utils  import MPlogger
 #import tokenization
@@ -30,17 +31,19 @@ from DatasetConverter.sample_pipeline import build_elasticsearch_provenance
 from DatasetConverter.sample_pipeline import select_document_samples
 from DatasetConverter.sample_pipeline import transform_sample_segment
 from DatasetConverter.sample_sources import apply_regular_cleaning_rules
+from DatasetConverter.sample_sources import map_elasticsearch_document
+from DatasetConverter.sample_sources import fetch_elasticsearch_response
 from DatasetConverter.sample_sources import prepare_document_segments
 from DatasetConverter.sample_sources import read_czj_corpus_document
+from DatasetConverter.sample_sources import read_czj_sample_rows
 from DatasetConverter.sample_sources import read_regular_text_document
 from DatasetConverter.sample_sources import SourceDocument
+from DatasetConverter.elasticsearch_source import create_elasticsearch_client
 #from ClassesTree.Label_utils import LabelsStringReader
 
 #from tokenization import FullTokenizer
 import re
 import random
-
-from elasticsearch import Elasticsearch
 
 from transformers import AutoTokenizer
 
@@ -278,7 +281,7 @@ class SampleReader():
                  #LoadedCZJCorpusText = "",
                  #Target = "",
                  Selected = "",
-                 LabelList = [], 
+                 LabelList = None,
                  width = 1024,
                  Mode = "FullCut",
                  tokenizationWrap=False,
@@ -286,27 +289,21 @@ class SampleReader():
                  ConvertToSpec = None,
                  #nBound = {"default":5000}, 
                  #sampleMethod["LenLBD"]為取樣的長度下限，如果切出的樣本字數少於sampleMethod["LenLBD"]則捨棄
-                 sampleMethod = {
-                     "nBound":{
-                        "default": 5000, 
-                        "Economist":1000, 
-                        },
-                     "RandomSample":True,
-                     "LenLBD":128},
-                 LabelConvertDict = {}, RBDict={},
+                 sampleMethod = None,
+                 LabelConvertDict = None, RBDict=None,
                  #TreeBinaryMode = False,
                  TreeBinaryTarget = None,
                  UniqueLabel = True,
                  #SQLFile = "",
                  CZJCorpusSQLFile = "",
-                 esJob = dict(),
-                 esRetMeta = dict(),
+                 esJob = None,
+                 esRetMeta = None,
                  ESsubject = None,
-                 InfoScoreTable = {},
+                 InfoScoreTable = None,
                  UniqueSortedLabels = True,
                  OnlyLettersDigitsLabels = False,
                  RBActive = True,
-                 DataCleanerRePatternDict = dict(),
+                 DataCleanerRePatternDict = None,
                  MPLOGGER = None
                  ):
         self.file = file
@@ -314,30 +311,34 @@ class SampleReader():
         self.Src = self.file
         #self.Target = Target
         self.Selected = Selected
-        self.LabelList = LabelList
+        self.LabelList = list(LabelList) if LabelList is not None else []
         self.width = width
         self.Mode = Mode
         self.tokenizationWrap = tokenizationWrap
         self.modelDir = modelDir
         self.ConvertToSpec = ConvertToSpec
-        self.sampleMethod = sampleMethod
-        self.LabelConvertDict = LabelConvertDict
+        self.sampleMethod = deepcopy(sampleMethod) if sampleMethod is not None else {
+            "nBound": {"default": 5000, "Economist": 1000},
+            "RandomSample": True,
+            "LenLBD": 128,
+        }
+        self.LabelConvertDict = dict(LabelConvertDict or {})
         #僅針對預輸入LabelList允許的標籤進行代換。
-        self.RBDict = {k:v for k,v in RBDict.items() 
+        self.RBDict = {k:v for k,v in (RBDict or {}).items()
                        if v in self.LabelList}
         #self.TreeBinaryMode = TreeBinaryMode,
         #self.TreeBinaryTarget = TreeBinaryTarget,
         self.UniqueLabel = UniqueLabel
         #self.SQLFile = SQLFile
         self.CZJCorpusSQLFile = CZJCorpusSQLFile
-        self.esJob = esJob
-        self.esRetMeta = esRetMeta #儲存由ES資料庫取得的日期、目標等資訊
+        self.esJob = deepcopy(esJob) if esJob is not None else {}
+        self.esRetMeta = dict(esRetMeta or {}) #儲存由ES資料庫取得的日期、目標等資訊
         self.ESsubject = ESsubject
-        self.InfoScoreTable = InfoScoreTable
+        self.InfoScoreTable = dict(InfoScoreTable or {})
         self.UniqueSortedLabels = UniqueSortedLabels
         self.OnlyLettersDigitsLabels = OnlyLettersDigitsLabels
         self.RBActive = RBActive
-        self.DataCleanerRePatternDict = DataCleanerRePatternDict
+        self.DataCleanerRePatternDict = deepcopy(DataCleanerRePatternDict or {})
         if MPLOGGER == None:
             self.MPLOGGER = MPlogger(logFile="sampleHandler.log")
         else:
@@ -421,36 +422,40 @@ class SampleReader():
         if "es_tokens" in self.esJob.keys():# != {}:
             #ConWay = "Estoken"
             es_tokens = self.esJob["es_tokens"]
-            retry = 0
-            text = None
-            while(retry == 0 or (retry<100 and text is None)):
-                try:
-                    es = Elasticsearch(
-                        es_tokens['host'],
-                        http_auth=(es_tokens['user'], es_tokens['password']),
-                        verify_certs=False
-                        )
-                    res = es.get(index=self.esJob['indexname'],id=self.file)
-                    text = res['_source']['rawInfo'].get('content')
-                except Exception as e:
-                    MES = f"When handdling {self.file} with retrial for {retry} times, the following error occrus:\n{e}\n"
-                    self.MPlogger.logW(MES,printOnScreen=False)
-                finally:
-                    retry += 1
-            if text == None:
-                print(MES)
+            def log_fetch_error(attempt, error):
+                message = (
+                    f"When handling {self.file}, Elasticsearch attempt "
+                    f"{attempt + 1} failed:\n{error}\n"
+                )
+                self.MPLOGGER.logW(message, printOnScreen=False)
+
+            res = fetch_elasticsearch_response(
+                attempts=100,
+                create_client=lambda: create_elasticsearch_client(es_tokens),
+                fetch=lambda client: client.get(
+                    index=self.esJob['indexname'], id=self.file
+                ),
+                content_from_response=lambda response: response['_source'][
+                    'rawInfo'
+                ].get('content'),
+                on_error=log_fetch_error,
+            )
+            if res is None:
+                self.MPLOGGER.logW(
+                    f"No Elasticsearch content found for {self.file} after 100 attempts."
+                )
                 return [],(None,0)
-            if "subject" in self.esJob.get("Vis_ESFileNameMode",""):
-                self.ESsubject = res['_source']['communication'].get('subject', "")
-            userNames = res['_source'].get('userNames',[])
-            if len(userNames) > 0:
-                #self.Target = "T"
-                self.esRetMeta["Target"] = "T"
-            self.esRetMeta["itcDT"] = res['_source'].get('itcDT',"")            
-            #tex =es.search(index=indexname,body=jqbody,scroll="2m")
-            es.close()
+            elasticsearch_document = map_elasticsearch_document(
+                res,
+                include_subject="subject" in self.esJob.get(
+                    "Vis_ESFileNameMode", ""
+                ),
+            )
+            text = elasticsearch_document.document.text
+            self.ESsubject = elasticsearch_document.subject
+            self.esRetMeta.update(elasticsearch_document.metadata)
             #假定ES資料庫無Label，故直接設定為Scrap。
-            InLabelList = ["Scrap"]
+            InLabelList = list(elasticsearch_document.document.input_labels)
             #self.Src = f"{self.Target}/{self.file}"
         elif self.CZJCorpusSQLFile != "":
             #ConWay = "SQLFI"
@@ -506,8 +511,10 @@ class SampleReader():
             #ConWay = "CZJ_SamplesFile in sql3"
             print("*"*50)
             print(f"Loading SamplesFile Database in CZJ Format {self.file}")
-            df = dfFromSQLite3(self.file).reset_index(drop=True).drop(columns=["index"])
-            result = df.to_dict('records')
+            result = list(read_czj_sample_rows(
+                self.file,
+                connect=lite.connect,
+            ))
             MultiLabelCount = (None, 0)
             return result, MultiLabelCount
         elif re.search(".*CZJ_CorpusFile.*sql3",self.file) is not None:

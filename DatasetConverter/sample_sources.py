@@ -4,6 +4,8 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
+from DatasetConverter.sample_schema import validate_sample_rows
+
 
 @dataclass(frozen=True)
 class SourceDocument:
@@ -20,6 +22,139 @@ class PreparedDocument:
     text: str
     input_labels: tuple[str, ...]
     segments: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class ElasticsearchDocument:
+    """Document content and provenance fields mapped from one ES response."""
+
+    document: SourceDocument
+    subject: Any
+    metadata: Mapping[str, Any]
+
+
+def map_elasticsearch_document(
+    response: Mapping[str, Any],
+    *,
+    include_subject: bool,
+) -> ElasticsearchDocument:
+    """Map the legacy Elasticsearch response shape without network access.
+
+    Required response containers retain fail-fast ``KeyError`` behavior.  A
+    missing content value is represented by ``None`` so the network adapter
+    can preserve its retry policy before this result enters text processing.
+    """
+
+    source = response["_source"]
+    text = source["rawInfo"].get("content")
+    subject = (
+        source["communication"].get("subject", "") if include_subject else None
+    )
+    metadata = {
+        "itcDT": source.get("itcDT", ""),
+    }
+    if len(source.get("userNames", [])) > 0:
+        metadata["Target"] = "T"
+    return ElasticsearchDocument(
+        document=SourceDocument(text=text, input_labels=("Scrap",)),
+        subject=subject,
+        metadata=metadata,
+    )
+
+
+def fetch_elasticsearch_response(
+    *,
+    attempts: int,
+    create_client: Callable[[], Any],
+    fetch: Callable[[Any], Mapping[str, Any]],
+    content_from_response: Callable[[Mapping[str, Any]], Any],
+    on_error: Callable[[int, Exception], None],
+) -> Mapping[str, Any] | None:
+    """Fetch a response with bounded retries and per-attempt client cleanup.
+
+    Credentials stay inside the injected client factory.  Exceptions and
+    missing content both consume an attempt; only exceptions are reported to
+    ``on_error``, matching the reader's legacy diagnostics.
+    """
+
+    if attempts < 1:
+        raise ValueError("Elasticsearch fetch attempts must be at least 1")
+
+    for attempt in range(attempts):
+        client = None
+        try:
+            client = create_client()
+            response = fetch(client)
+            if content_from_response(response) is not None:
+                return response
+        except Exception as error:
+            on_error(attempt, error)
+        finally:
+            if client is not None:
+                client.close()
+    return None
+
+
+def read_czj_corpus_titles(
+    database_path: str,
+    *,
+    connect: Callable[[str], Any],
+) -> tuple[str, ...]:
+    """Enumerate CZJ corpus titles in database row order.
+
+    Title discovery is kept separate from per-title document loading so job
+    generation does not need pandas or a generic query helper.  Null titles
+    are rejected before worker jobs are created, and the connection is always
+    closed.
+    """
+
+    connection = connect(database_path)
+    try:
+        rows = connection.execute('SELECT "title" FROM "Corpus"').fetchall()
+    finally:
+        connection.close()
+
+    titles: list[str] = []
+    for row_index, row in enumerate(rows):
+        if not isinstance(row, (list, tuple)) or len(row) != 1:
+            raise ValueError(
+                "CZJ corpus title query row at index "
+                f"{row_index} must contain exactly one value"
+            )
+        title = row[0]
+        if title is None:
+            raise ValueError(
+                f"CZJ corpus title query row at index {row_index} is null"
+            )
+        titles.append(title)
+    return tuple(titles)
+
+
+def read_czj_sample_rows(
+    database_path: str,
+    *,
+    connect: Callable[[str], Any],
+) -> tuple[Mapping[str, Any], ...]:
+    """Load and validate the already-sliced rows in a CZJ samples database.
+
+    The adapter reads only the canonical sample columns from ``sampleSrc`` so
+    pandas-generated index columns never leak into the domain rows.  The
+    connection is closed on every fetch path, an empty table has a stable
+    empty result, and malformed schemas fail before artifact output.
+    """
+
+    connection = connect(database_path)
+    try:
+        cursor = connection.execute(
+            'SELECT "file", "InLabel", "OutLabel", "text", "PartNO" '
+            'FROM "sampleSrc"'
+        )
+        column_names = tuple(description[0] for description in cursor.description)
+        rows = tuple(dict(zip(column_names, row)) for row in cursor.fetchall())
+    finally:
+        connection.close()
+
+    return validate_sample_rows(rows, source_stage="CZJ samples database")
 
 
 def read_regular_text_document(

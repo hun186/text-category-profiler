@@ -24,6 +24,7 @@ import glob
 import subprocess
 from collections import Counter
 import json
+from copy import deepcopy
 
 #import plotly.io as pio; pio.renderers.default='notebook'
 from plotly.offline import plot
@@ -102,6 +103,7 @@ from DatasetConverter.sample_pipeline import collect_reader_results
 from DatasetConverter.sample_pipeline import collect_source_metadata
 from DatasetConverter.source_collection import discover_source_spec
 from DatasetConverter.source_collection import SourceRole
+from DatasetConverter.sample_sources import read_czj_corpus_titles
 from DatasetConverter.source_collection import SourceSpec
 from DatasetConverter.source_collection import select_unique_content_paths
 
@@ -131,7 +133,6 @@ from text_category_profiler.core.utilities import RandomSample
 from text_category_profiler.core.utilities import FileHashDictBuilder
 
 from text_category_profiler.data.DB_utils import getESData
-from text_category_profiler.data.DB_utils import sqlite3Query
 
 from text_category_profiler.data.df_utils import DictRowsListToDF
 
@@ -159,14 +160,14 @@ class DataConvertJobGenerater():
     UniqueLabel：單一樣本若輸出入多個標籤，是否只取優序最高之標籤做為唯一輸出。
     '''
     def __init__(self,
-                 ROOTPATHList = [],
+                 ROOTPATHList = None,
                  datasetSubDir = "dataset",
                  nProcess = 1,
-                 fileList = [],
-                 CZJCorpusSQLFileList = [],
+                 fileList = None,
+                 CZJCorpusSQLFileList = None,
                  FixedTestFileBound=6000,
                  #SQLFile = "",
-                 esJob = dict(), #es_token,indexname,startDay,endDay
+                 esJob = None, #es_token,indexname,startDay,endDay
                  RemoveDumpArticle = True,
                  ReadQuery = "",
                  WIDTH = 256,
@@ -175,14 +176,7 @@ class DataConvertJobGenerater():
                  modelDir = "",
                  ConvertToSpec = None, #繁轉簡及慣用語轉換，None,'tw2s'
                  LabelList = None,
-                 sampleMethod = {
-                     "nBound":{
-                     "default": 5000, 
-                     "Economist":1000,
-                     },
-                     "RandomSample":True,
-                     "LenLBD":128
-                     },
+                 sampleMethod = None,
                  #nBound = {
                      #"default": 5000, 
                      #"Economist":1000, 
@@ -191,15 +185,15 @@ class DataConvertJobGenerater():
                  #TreeBinaryMode = False,
                  TreeBinaryTarget = None,
                  UniqueLabel = True, #輸出樣本是否僅單一Label
-                 InfoScoreTable = {},
+                 InfoScoreTable = None,
                  UniqueSortedLabels = True, #讀取Label清單字串時，是否進行Label Unique
                  OnlyLettersDigitsLabels = False, #讀取Label清單字串時，是否去除非字母或數字字符
                  tpcTree = None, #類別樹
                  #tpcDeepLimit = None, #類別深度限制
-                 RSTRLabelList = [], #限制允許標籤列表
-                 RBDict = {},
+                 RSTRLabelList = None, #限制允許標籤列表
+                 RBDict = None,
                  RBActive = True,
-                 DataCleanerRePatternDict = {},
+                 DataCleanerRePatternDict = None,
                  sourceRole = "regular source",
                  cli_args = None,
                  MPLOGGER = None
@@ -211,14 +205,14 @@ class DataConvertJobGenerater():
         self.datasetSubDir = datasetSubDir
         self.sourceRole = sourceRole
         self.cli_args = cli_args
-        self.ROOTPATHList = ROOTPATHList
+        self.ROOTPATHList = list(ROOTPATHList or [])
         #self.SQLFile = SQLFile
-        self.esJob = esJob
+        self.esJob = deepcopy(esJob) if esJob is not None else {}
         self.RemoveDumpArticle = RemoveDumpArticle
         self.nProcess = nProcess
         #self.nProcess = nProcess
-        self.fileList = fileList
-        self.CZJCorpusSQLFileList = CZJCorpusSQLFileList
+        self.fileList = list(fileList or [])
+        self.CZJCorpusSQLFileList = list(CZJCorpusSQLFileList or [])
         self.FixedTestFileBound = FixedTestFileBound
         
         #if len(self.esJob)>0:# != {}:
@@ -302,22 +296,26 @@ class DataConvertJobGenerater():
         #raise Exception
         self.modelDir = modelDir
         self.ConvertToSpec = ConvertToSpec
-        self.LabelList = LabelList
+        self.LabelList = list(LabelList) if LabelList is not None else []
         #self.nBound = nBound
         #self.sampleLenLBD = sampleLenLBD
-        self.sampleMethod = sampleMethod
+        self.sampleMethod = deepcopy(sampleMethod) if sampleMethod is not None else {
+            "nBound": {"default": 5000, "Economist": 1000},
+            "RandomSample": True,
+            "LenLBD": 128,
+        }
         self.TreeBinaryTarget = TreeBinaryTarget
         self.tpcTree = tpcTree
-        self.RSTRLabelList = RSTRLabelList
+        self.RSTRLabelList = list(RSTRLabelList or [])
         self.LabelConvertDict = self.BuildLabelConvertDict(
             self.LabelList, self.TreeBinaryTarget, self.RSTRLabelList)
-        self.RBDict = RBDict
+        self.RBDict = dict(RBDict or {})
         self.UniqueLabel = UniqueLabel
-        self.InfoScoreTable = InfoScoreTable
+        self.InfoScoreTable = dict(InfoScoreTable or {})
         self.UniqueSortedLabels = UniqueSortedLabels
         self.OnlyLettersDigitsLabels = OnlyLettersDigitsLabels
         self.RBActive = RBActive
-        self.DataCleanerRePatternDict = DataCleanerRePatternDict
+        self.DataCleanerRePatternDict = deepcopy(DataCleanerRePatternDict or {})
         #print("nProcess", nProcess)
         #raise Exception
         self.show()
@@ -499,10 +497,10 @@ class DataConvertJobGenerater():
         ESidSet = set(self.ESidList)
         CZJCorpusJobList = []
         for CZJSQL in self.CZJCorpusSQLFileList:
-            query = 'SELECT title FROM Corpus;'
-            TitleList = sqlite3Query(
-                CZJSQL, query = query,ListForm = True)
-            print("TitleList",TitleList)
+            TitleList = read_czj_corpus_titles(
+                CZJSQL,
+                connect=lite.connect,
+            )
             CZJCorpusJobList.extend(
                 [(ti,CZJSQL) for ti in TitleList])
         for (file,CZJSQL,esJob) in [
@@ -548,10 +546,10 @@ class DataConvertJobGenerater():
 
 def BuildSamplesDfFromPaths(
     datasetSubDir = "dataset",
-    ROOTPATHList = [],
+    ROOTPATHList = None,
     
     #SQLFile = "",
-    esJob = dict(),
+    esJob = None,
     OUTPUTMAIN = os.path.join(
         "dataset", "dataset_total_with_filename"),
     OUTPUTMAIN_Counter = None,
@@ -559,7 +557,7 @@ def BuildSamplesDfFromPaths(
     RemoveDumpArticle = True,
     Count_SQL_table="sampleCount_Main",
     nProcess = nProcess,
-    DCkwargs = {},
+    DCkwargs = None,
     start_time=None,
     sourceRole="regular source",
     cli_args=None,
@@ -570,6 +568,9 @@ def BuildSamplesDfFromPaths(
     '''
     if start_time is None:
         start_time = time.time()
+    ROOTPATHList = list(ROOTPATHList or [])
+    esJob = deepcopy(esJob) if esJob is not None else {}
+    DCkwargs = deepcopy(DCkwargs) if DCkwargs is not None else {}
     if MPLOGGER == None:
         MPLOGGER = MPlogger()
     #if "nProcess" in DCkwargs.keys():
@@ -812,13 +813,13 @@ class DatasetGenerator:
             
     def __init__(self, df,
                  OUTPUTMAIN = "",
-                 IndexCols = [],
+                 IndexCols = None,
                  datasetSubDir = "dataset",
-                 DatasetRatio = {},
+                 DatasetRatio = None,
                  DataAugmentationGoal = 0,
-                 FixedTestPATHList = [],
-                 esJob = dict(),
-                 DCkwargs = {},
+                 FixedTestPATHList = None,
+                 esJob = None,
+                 DCkwargs = None,
                  datasetCountOFN = None,
                  nProcess = nProcess,
                  cli_args = None,
@@ -828,13 +829,13 @@ class DatasetGenerator:
         self.OUTPUTMAIN = OUTPUTMAIN
         self.OUTPUTMAIN_FT = OUTPUTMAIN+"_FixedTest"
         self.OUTPUTMAIN_es = OUTPUTMAIN+"_ES"
-        self.IndexCols = IndexCols
+        self.IndexCols = list(IndexCols or [])
         self.datasetSubDir = datasetSubDir
-        self.DatasetRatio = DatasetRatio
+        self.DatasetRatio = dict(DatasetRatio or {})
         self.DataAugmentationGoal = DataAugmentationGoal
-        self.FixedTestPATHList = FixedTestPATHList
-        self.esJob = esJob
-        self.DCkwargs = DCkwargs
+        self.FixedTestPATHList = list(FixedTestPATHList or [])
+        self.esJob = deepcopy(esJob) if esJob is not None else {}
+        self.DCkwargs = deepcopy(DCkwargs) if DCkwargs is not None else {}
         self.cli_args = cli_args
         if datasetCountOFN == None:
             self.datasetCountOFN = os.path.join("dataset","dataset.txt")
