@@ -12,6 +12,16 @@
 
 ## Recent Outcomes
 
+### 2026-08-13 — DatasetConverter tokenizer integration and slicing boundaries
+
+- 目標：推進 Phase 1，讓非 tokenizer reader paths 不再因 module-scope Transformers import 依賴 optional runtime。
+- 結果：`tokenizer_source.load_auto_tokenizer()` 以 function-local import 集中 legacy factory contract；後續新增 immutable
+  `TokenizedChunks` 與 dependency-free `split_tokenized_context()`，固定 token reserve/group/span slicing、boundary 去重與
+  optional retokenization；`TokenizerModel`／`resolve_tokenizer_model()` 另隔離 local/fallback/nested-checkpoint discovery，
+  legacy wrapper 保留 dict API、warning 與既有 encoding reuse。
+- 驗證：isolated factory/model-resolution、fake-tokenizer slicing/empty/budget tests、module-scope import AST gates、完整
+  輕量 unittest、相關 `py_compile` 與 `git diff --check`。
+
 ### 2026-08-13 — DatasetConverter pipeline/dataset config isolation
 
 - 目標：推進 Phase 2，消除 active pipeline function 與 dataset generator mutable defaults／caller config leakage。
