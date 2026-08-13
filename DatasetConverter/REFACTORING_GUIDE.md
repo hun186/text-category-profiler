@@ -704,3 +704,99 @@ DataConverter.py -> stage/config -> domain services -> ports
    確實需要統計時才擴充或彙總，不要在純函式直接 log/print。
 3. Phase 4 尚缺 CZJ／ES／FixedTest value type 與 empty policy characterization；Phase 5 的 `DatasetBundle`、
    reproducible augmentation 與 output counts 尚未開始，不能因 per-segment loop 縮小就宣稱 Phase 4 完成。
+
+### 2026-08-13 — Phase 4 regular filesystem source adapter（進行中）
+
+本次完成：
+
+- 新增 dependency-free `sample_sources.py`，以 immutable `SourceDocument(text, input_labels)` 固定一般
+  `.txt`／`.ai2` reader 在切片前的輸出契約；path label parser 與 UTF-8 text reader 皆以 callback 注入，
+  isolated test 不需 import tokenizer、pandas、Elasticsearch 或讀取真實 filesystem。
+- `SampleReader.run()` 的 regular filesystem 分支改為薄 adapter：仍傳遞既有 `UniqueSorted`／
+  `OnlyLettersDigits` keyword，保留有 label 才讀取 `.txt`、無 label 的 `.ai2` 使用 `Scrap`、以及 UTF-8
+  text reader 契約；regex data cleaning、BasicDataCleaner、TextDivider、multi-label 與 sample transformation
+  順序均未改動。
+- characterization tests 固定 label adapter keyword、label 順序、UTF-8 reader arguments、unlabelled `.txt`
+  不觸發 I/O、unlabelled `.ai2` fallback，以及非 regular extension 在 adapter 呼叫前明確失敗。
+
+尚未完成／下次優先事項：
+
+1. **Phase 4 completion gate 尚未達成。** regular source 的讀取／routing 已有具名結果，但 regex cleaner 與
+   document-level BasicDataCleaner／TextDivider 仍由 `SampleReader.run()` orchestration；下一批可只抽取
+   regular document preparation boundary，不應同時改 tokenization 或切片寬度演算法。
+2. CZJ corpus／CZJ samples SQLite 與 ES network source 尚未採用 `SourceDocument`；應分別先固定各自的空值、
+   missing row 與 value-type 契約，不要假設 filesystem contract 可直接套用，也不得用正式服務作測試。
+3. 完整 reader／CLI 仍受重型 runtime dependencies、模型與工作池 fixture 限制；本批只驗證 regular source
+   adapter 和既有 dependency-free pipeline，Phase 5 的 bundle/result/output work 尚未開始。
+
+### 2026-08-13 — Phase 4 regular label-aware cleaning boundary（進行中）
+
+本次完成：
+
+- `sample_sources.apply_regular_cleaning_rules()` 將 regular filesystem document 的 label-aware regex cleaning
+  從 `SampleReader.run()` 抽到 dependency-free boundary；輸入／輸出皆使用 immutable `SourceDocument`，不讀
+  reader globals、logger、filesystem 或重型 runtime。
+- label overlap 與 pattern cleaner 以 callback 注入，production 仍使用既有 `ListCap` 與
+  `DataCleanerWithPattern` adapters。保留 legacy mapping iteration order、`ExemptInLabelList` 預設空清單，
+  以及每加入一條 eligible rule 就以累積 rules 再執行 cleaner 的歷史順序；本批未趁抽取時改成單次清理。
+- characterization tests 固定 eligible rules 累積順序、跨步驟 text 傳遞、label exemption、空 rules 不呼叫
+  adapters，以及 immutable labels 不因 cleaning 遺失。
+
+尚未完成／下次優先事項：
+
+1. **Phase 4 completion gate 尚未達成。** `BasicDataCleaner` 與 `TextDivider` 是 regular、CZJ corpus 與 ES
+   共用的 document preparation／slicing 路徑；下一批應先把共用 orchestration 的輸入／輸出固定為具名結果，
+   但保留 tokenizer、language heuristic 與 FixedTest width policy 作為 injected adapters 或現有薄相容層。
+2. 累積 rules 重複套用先前 cleaner 是已固定的 legacy 行為，不代表最佳效能；只有 fixture 證明單次套用產物
+   等價並完成效能量測後，才能在 Phase 8 改寫，不能在 Phase 4 責任抽取時暗中改變文本。
+3. CZJ／ES／FixedTest value type、empty policy 與 adapter failure 仍缺 characterization；完整 CLI、SQLite 與
+   external-service 路徑未在本批執行，Phase 5 仍未開始。
+
+### 2026-08-13 — Phase 4 共用 document preparation 結果邊界（進行中）
+
+本次完成：
+
+- 新增 immutable `PreparedDocument(text, input_labels, segments)` 與
+  `sample_sources.prepare_document_segments()`，固定 source document 在 sample conversion 前必須先執行
+  normalization、再執行 slicing，並以 tuple 保留 ordered segments 與 labels。
+- `SampleReader.run()` 的 regular filesystem、CZJ corpus lookup 與 ES read 分支現在於共同路徑建立
+  `SourceDocument`，再將既有 `BasicDataCleaner(strQ2B=True, DummySpace=True)` 與完整 `TextDivider` 設定以
+  callbacks 注入。tokenization、model directory、mode、width、FixedTest 與 language heuristic 仍留在原 adapter，
+  本批只抽取 orchestration，不重寫切片演算法。
+- characterization tests 固定 normalize-before-divide、divider 必須收到 normalized text、label／segment ordering、
+  empty segment sequence，以及 immutable named result；測試不需載入 tokenizer、OpenCC、pandas 或 ES。
+
+尚未完成／下次優先事項：
+
+1. **Phase 4 completion gate 尚未達成。** `SampleReader.run()` 仍直接執行 source-specific ES network、CZJ SQLite
+   與 CZJ samples DataFrame adapters；下一批應選 CZJ corpus title lookup 固定 missing row、null label 與 connection
+   cleanup 契約，再抽成窄 adapter，避免直接處理較高風險的 ES retry／credential boundary。
+2. `TextDivider` 仍混合 redundant-space cleanup、tokenizer adapter 與 character/language heuristic；現有
+   `prepare_document_segments()` 刻意只注入整體 divider。若繼續細分，應一次固定一項 policy，不得改變
+   FixedTest、FullCut 或 short-message 行為。
+3. 完整 reader／CLI、SQLite artifacts 與 external service 未執行；Phase 5 的 `DatasetBundle`、reproducible
+   augmentation 與 `ConversionResult` 仍未開始。
+
+### 2026-08-13 — Phase 4 CZJ corpus title lookup adapter（進行中）
+
+本次完成：
+
+- 新增 `sample_sources.read_czj_corpus_document()`，將 `SampleReader.run()` 內的 CZJ corpus SQLite title lookup
+  抽成窄 adapter，統一回傳 immutable `SourceDocument`；query 仍使用既有 `Corpus` table、`title=?` parameter、
+  `InLabel,text` columns 與 null label → `Scrap` fallback。
+- database connector 以 callback 注入，connection 由 `try/finally` 保證在成功、missing title、malformed row 或
+  fetch exception 時關閉。missing title 現在以包含 title 與 database path 的 `LookupError` 在 preparation／output
+  副作用前失敗，取代舊程式 unpack `None` 時缺少來源資訊的 `TypeError`。
+- characterization tests 固定 SQL 與 parameters、label/text mapping、null label fallback、missing/malformed diagnostics、
+  fetch failure cleanup；另以 `TemporaryDirectory` 與標準庫 SQLite 驗證真實 isolated database lookup，不讀寫專案
+  dataset 或工作池。
+
+尚未完成／下次優先事項：
+
+1. **Phase 4 completion gate 尚未達成。** CZJ samples database 分支仍透過 pandas `dfFromSQLite3()` 直接建立 rows，
+   CZJ corpus-file fan-out 分支也混合 DataFrame iteration、nested readers 與 console output；下一批應先固定 CZJ
+   samples rows schema／empty DB 行為，再決定是否抽 output-neutral SQLite row adapter。
+2. ES network branch 仍含 retry、credential-bearing client 建立、response parsing 與 cleanup；應先定義 response-to-
+   `SourceDocument` 純 mapping，再處理 executor/retry，不得在測試連線正式 ES 或輸出 credentials。
+3. 本批只執行 temporary SQLite lookup 與 dependency-free suites，未執行完整 legacy CLI、真實 CZJ corpus 或
+   workspace handoff；Phase 5 尚未開始。
