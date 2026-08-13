@@ -2,13 +2,16 @@ import unittest
 from types import SimpleNamespace
 
 from DatasetConverter.tokenizer_pipeline import TokenizedChunks
+from DatasetConverter.tokenizer_pipeline import TokenWordAnalysis
+from DatasetConverter.tokenizer_pipeline import analyze_token_word_mapping
 from DatasetConverter.tokenizer_pipeline import split_tokenized_context
 
 
 class FakeEncoding:
-    def __init__(self, tokens, spans):
+    def __init__(self, tokens, spans, word_ids=None):
         self._tokens = tokens
         self._spans = spans
+        self._word_ids = word_ids
 
     def tokens(self):
         return list(self._tokens)
@@ -16,6 +19,9 @@ class FakeEncoding:
     def token_to_chars(self, index):
         start, end = self._spans[index]
         return SimpleNamespace(start=start, end=end)
+
+    def word_ids(self):
+        return list(self._word_ids)
 
 
 class FakeTokenizer:
@@ -82,6 +88,35 @@ class TokenizerPipelineTests(unittest.TestCase):
             ValueError, "maximum_tokens must be greater than reserved_tokens"
         ):
             split_tokenized_context("text", FakeTokenizer(), maximum_tokens=3)
+
+
+class TokenWordAnalysisTests(unittest.TestCase):
+    def test_maps_tokens_to_legacy_space_delimited_word_spans(self):
+        encoding = FakeEncoding(
+            ["<s>", "alpha", "be", "ta", "</s>"],
+            [None, (0, 5), (6, 8), (8, 10), None],
+            [None, 0, 1, 1, None],
+        )
+
+        self.assertEqual(
+            analyze_token_word_mapping("alpha beta", encoding),
+            TokenWordAnalysis(
+                word_character_spans=((0, 0, 5), (1, 6, 10)),
+                word_token_positions=((0, (1,)), (1, (2, 3))),
+            ),
+        )
+
+    def test_preserves_legacy_indices_while_skipping_repeated_spaces(self):
+        encoding = FakeEncoding(
+            ["<s>", "alpha", "beta", "</s>"],
+            [None, (0, 5), (6, 10), None],
+            [None, 0, 1, None],
+        )
+
+        result = analyze_token_word_mapping("alpha  beta", encoding)
+
+        self.assertEqual(result.word_character_spans, ((0, 0, 5), (2, 6, 10)))
+        self.assertEqual(result.word_token_positions, ((0, (1,)), (2, (2,))))
 
 
 if __name__ == "__main__":

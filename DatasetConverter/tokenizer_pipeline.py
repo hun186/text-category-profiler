@@ -9,6 +9,44 @@ class TokenizedChunks:
     retokenized: tuple
 
 
+@dataclass(frozen=True)
+class TokenWordAnalysis:
+    word_character_spans: tuple
+    word_token_positions: tuple
+
+
+def analyze_token_word_mapping(context, encoding):
+    """Build the legacy debug word/token mapping without reader dependencies."""
+    word_character_spans = []
+    character_cursor = 0
+    for word_index, word in enumerate(context.split(" ")):
+        if not word:
+            continue
+        start = character_cursor
+        end = start + len(word)
+        word_character_spans.append((word_index, start, end))
+        character_cursor = end + 1
+
+    word_token_positions = {word_index: [] for word_index, _, _ in word_character_spans}
+    word_ids = encoding.word_ids()
+    for token_index, word_id in enumerate(word_ids):
+        if word_id is None:
+            continue
+        character_span = encoding.token_to_chars(token_index)
+        for word_index, start, end in word_character_spans:
+            if character_span.start >= start and character_span.end <= end:
+                word_token_positions[word_index].append(token_index)
+
+    return TokenWordAnalysis(
+        word_character_spans=tuple(word_character_spans),
+        word_token_positions=tuple(
+            (word_index, tuple(positions))
+            for word_index, positions in word_token_positions.items()
+            if positions
+        ),
+    )
+
+
 def split_tokenized_context(
     context,
     tokenizer,

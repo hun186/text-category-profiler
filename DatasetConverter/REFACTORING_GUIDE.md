@@ -1018,3 +1018,139 @@ DataConverter.py -> stage/config -> domain services -> ports
    caller 依賴，再把只產生 debug mapping、未進入回傳值的診斷移到 maintenance boundary，須保留 public dict shape。
 3. 未執行真實 Transformers/model smoke test；目前證明 factory 呼叫、dependency loading 與 fake-tokenizer slicing boundary，
    不宣稱模型路徑、remote code 或 checkpoint 在此容器可用。
+
+### 2026-08-13 — Phase 1 OpenCC integration boundary（進行中）
+
+本次完成：
+
+- 新增 `opencc_source.convert_text()`，集中既有 `OpenCC(conversion).convert(text)` 契約；
+  `SampleReader.textSegsToSamples()` 改為注入此 adapter，未改 conversion-before-length、special-label bypass、
+  label mapping、sampling 或 row schema。
+- 第三方 `opencc` import 移至 adapter function 內，且未使用 `try/except`；未啟用文字轉碼的 filesystem、CZJ、ES
+  與 tokenizer reader 路徑載入 `sampleHandler.py` 時，不再僅因 module-scope import 要求 OpenCC runtime。
+- isolated fake-module test 固定 conversion 名稱、輸入文字與回傳值，AST regression gate 同時禁止 reader 與 integration
+  adapter 重新加入 module-scope OpenCC import；測試不需安裝 OpenCC 或處理真實 dataset。
+
+尚未完成／下次優先事項：
+
+1. **Phase 1 completion gate 尚未達成。** `sampleHandler.py` 仍在 module scope 載入 dataframe、CLI、model path、
+   text processing 與 multiprocessing utilities；下一批應以 import/call graph 找出非 reader source 必需的最窄重型
+   dependency，再採 feature-activated adapter 處理，不可用 broad optional-import fallback。
+2. production adapter 仍依 legacy 行為為每個需轉碼的一般 segment 建立一個 `OpenCC` converter；未先 profiling 與固定
+   converter reuse/thread-safety 契約前，不應為效能猜測改成 global singleton 或 shared mutable cache。
+3. 本批未執行真實 OpenCC smoke test或完整 legacy CLI；目前只證明 adapter 呼叫契約、延遲 dependency loading 與既有
+   dependency-free transformation tests，不宣稱特定 conversion table 在此容器可用。
+
+### 2026-08-13 — Phase 1/4 tokenizer word-analysis boundary（進行中）
+
+本次完成：
+
+- import/call-site search 確認 `word_analysis` 只存在於 `tokenization_wrap()` 的相容 keyword，production callers 均未啟用；
+  該分支計算的 mappings 不進入既有 `{"ctxCut", "ReTks"}` 回傳值，只供 debug console 診斷。
+- 新增 immutable `TokenWordAnalysis` 與 dependency-free `analyze_token_word_mapping()`，將 space-delimited word spans、
+  tokenizer character spans 與 token positions 的組裝移出 legacy reader wrapper；保留空白 word 的 legacy index 與
+  token-to-word containment 規則。
+- `tokenization_wrap()` 保留 `word_analysis` keyword 與 public dict shape，但只在 `word_analysis=True` 且 `debug=True`
+  時建立診斷 mapping；過去 `word_analysis=True, debug=False` 會執行無法觀察、未回傳的 mapping 計算，現在直接略過。
+- fake encoding tests 固定一般兩詞、多 token word、重複空白的 legacy word index 與 special-token skip，不載入真實模型、
+  Transformers、OpenCC、pandas 或 reader runtime。
+
+尚未完成／下次優先事項：
+
+1. **Phase 1 completion gate 尚未達成。** `sampleHandler.py` 的 maintenance-only `tokenization_wrap_Test()` 仍讀 CLI parser、
+   捕捉 broad exception 並依賴 module globals；下一批應把 probe 搬至獨立 maintenance entrypoint，或先以 call-site/CLI
+   characterization 證明可移除，但不可改 production `tokenization_wrap()` 回傳 shape。
+2. word analysis 仍採每個 token 掃描所有 word spans 的 legacy O(tokens × words) 規則；它現在只在明確 debug 時執行。
+   若要改為 linear cursor，須先增加 punctuation、Unicode、token span 跨 word 與 tokenizer `None` span fixtures。
+3. 未執行真實 tokenizer/model smoke test或完整 legacy CLI；目前只證明純 mapping 與既有 fake-token slicing tests，
+   不宣稱任一實際 tokenizer 的 `word_ids()`／`token_to_chars()` 行為。
+
+### 2026-08-13 — Phase 1 reader maintenance probe removal（進行中）
+
+本次完成：
+
+- repository call-site search 證實 `tokenization_wrap_Test()` 只由 `sampleHandler.py` 自身的 `__main__` block 呼叫，沒有
+  production、test 或文件入口依賴；因此移除 maintenance probe、內嵌長篇測試文本與 script-mode block，而非將其搬到
+  另一個仍會 import reader side effects 的模組。
+- reader 不再為已移除的 probe 在 module scope import `ClassfierOptionParser` 與 `get_base_model_checkpoint`，也移除 probe
+  的 global tokenizer、broad exception swallowing、模型路徑逐一猜測及 raw tokenizer output；production
+  `tokenization_wrap()`、`SampleReader` API 與 stage caller 不變。
+- AST regression test 固定 reader 不再含 maintenance probe、CLI parser/model-checkpoint imports 或 `__main__` block；
+  tokenizer slicing、word analysis 與 package-layout targeted suites 保持通過。
+
+尚未完成／下次優先事項：
+
+1. **Phase 1 completion gate 尚未達成。** `sampleHandler.py` import 時仍呼叫 `PackageImporter.proc()`、可能變更 cwd，並載入
+   dataframe、multiprocessing 與 text-processing utilities；下批應優先 characterization import-time cwd 行為，再移除
+   reader 的 cwd mutation，且須維持 `DataConverter.py` 直接執行時的 package resolution。
+2. `tokenization_wrap()` 仍是 legacy public helper；若未來需要可執行 tokenizer probe，應建立有明確 argv、退出狀態與
+   小型 fixture 的 maintenance CLI，不應把大型真實文本或 silent exception fallback 放回 production reader。
+3. 本批未執行真實模型或完整 DataConverter CLI；目前只證明無 caller 的 maintenance code 可移除及 dependency-free
+   regression suites，不宣稱 Phase 1 import-side-effect completion gate 已達成。
+
+### 2026-08-13 — Phase 1 reader cwd/path-injector removal（進行中）
+
+本次完成：
+
+- 移除 `sampleHandler.py` import-time 的 `PackageImporter.proc()`；reader 不再把機器特定磁碟、`PythonModule` 或多層
+  parent-relative paths 追加到 `sys.path`。canonical caller `DataConverter.py` 已使用 `__file__` 推導 repository root，
+  因此直接執行 stage 的 package resolution 不依賴 reader 的 legacy injector。
+- 移除 reader 依當前目錄名稱判斷並執行 `os.chdir("../")` 的 module-scope block及其 console output；import reader 不再
+  由自身程式碼改變 process cwd，filesystem paths 繼續沿用 caller 傳入值與既有 stage working-directory contract。
+- AST regression gate 禁止 reader 重新 import `PackageImport` 或呼叫 module-scope `os.chdir()`；DataConverter entrypoint 與
+  package-layout targeted tests持續固定 direct-script root bootstrap 與 stage 自身不改 cwd 的邊界。
+
+尚未完成／下次優先事項：
+
+1. **Phase 1 completion gate 尚未達成。** isolated subprocess import 在此容器因缺少 `psutil`（由共用 utilities
+   module-scope import）而無法完成；下一批應先把 reader 實際使用的輕量 filesystem helpers 與重型 generic utilities
+   imports 分離，再建立真正的 `python -c "import DatasetConverter.sampleHandler"` cwd/side-effect test。
+2. reader 仍 module-scope import pandas-backed `dfFromSQLite3`，但 canonical CZJ samples adapter 已不再需要它；下批應先確認
+   剩餘 call sites 是否只屬 legacy corpus-file compatibility branch，再決定以 SQLite adapter 取代或延遲 import。
+3. 本批未執行完整 DataConverter CLI，因其需完整 runtime 與工作池設定；目前只證明 source-level injector/cwd mutation
+   已移除以及直接 stage 的 repository-root bootstrap 仍由既有 tests 固定。
+
+### 2026-08-13 — Phase 1/4 legacy CZJ corpus fan-out removal（進行中）
+
+本次完成：
+
+- call graph 確認 canonical `DataConvertJobGenerater.run()` 先以 `read_czj_corpus_titles()` 枚舉 title，再建立帶有
+  `CZJCorpusSQLFile` 的逐 title `SampleReader` jobs；reader 會在該具名 branch 使用 `read_czj_corpus_document()`，不會把
+  corpus database path 當作一般 `file` 重新 fan-out。
+- 移除 `SampleReader.run()` 中直接匹配 `CZJ_CorpusFile*.sql3` 的 legacy branch；該 branch 以 pandas 載入整庫、輸出 raw
+  DataFrame/title/result、建立未傳遞原 reader policies 的 nested readers，最後亦未 return assembled result，並非 canonical
+  job contract。CZJ samples database 與逐 title corpus lookup branches保持不變。
+- reader 因此不再 module-scope import pandas-backed `dfFromSQLite3`；AST regression gate 固定 dataframe adapter 與 corpus-file
+  filename fan-out 不回到 reader，CZJ SQLite adapter/source-role suites固定現有 canonical flow。
+
+尚未完成／下次優先事項：
+
+1. **Phase 1 completion gate 尚未達成。** isolated reader import 仍受共用 `utilities.py` 的 module-scope `psutil` 依賴阻擋；
+   下批應盤點 reader 實際使用的 `RemoveIlleagalCharForFileName`、`ListCap`、`wrap` 與 filename helpers，優先移至／改用
+   dependency-free boundary，不可用 try/except 隱藏 missing dependency。
+2. canonical CZJ corpus path目前仍由 generator title discovery與 reader per-title lookup各開啟 SQLite connection；若 Phase 8
+   profiling 證明是瓶頸，應在不跨 process共享 connection 的前提下比較 batch read artifact，而非恢復 pandas whole-DB fan-out。
+3. 本批未執行真實 CZJ database或完整 CLI；temporary SQLite adapter tests與 source-role tests證明既有 canonical contracts，
+   但不宣稱外部 corpus schema/data quality 已驗證。
+
+### 2026-08-13 — Phase 1 dependency-free reader helpers（進行中）
+
+本次完成：
+
+- 新增 `reader_utils.py`，以標準庫／純函式提供 reader 實際使用的 filename normalization、extension extraction、filename
+  sanitization、list intersection 與 fixed-width wrapping；逐項保留 generic utilities 的 legacy separators、illegal-character
+  mapping、set intersection與 piece limit契約。
+- `sampleHandler.py` 改用窄 reader helpers，不再 module-scope import `text_category_profiler.core.utilities`；因此 reader 不會
+  僅為五個小型轉換載入該 generic module 的 `psutil`、GPUtil、numpy、pandas、setproctitle 等無關 dependencies。
+- characterization tests固定 Windows separator、extension case、filename illegal characters、intersection與 piece-limit wrapping；
+  AST gate禁止 reader重新依賴 generic utilities，既有 provenance、tokenizer與 sample pipeline tests保持通過。
+
+尚未完成／下次優先事項：
+
+1. **Phase 1 completion gate 尚未達成。** 更新後的 isolated import 已越過 generic utilities／`psutil`，目前第一個可重現
+   blocker 是 `MPlogger` module-scope import 的缺少 `numpy`；下批應先建立 reader logger port／lazy default factory，並保留
+   caller注入 `MPLOGGER` 的契約，不可用 try/except隱藏 dependency。
+2. `reader_utils`只承接 reader實際使用的五個 contracts，不是新的 generic utility dump；其他 callers應繼續使用其既有模組，
+   除非 call graph與 dependency boundary證明需要共用。
+3. 本批未執行完整 DataConverter CLI或真實模型；isolated `python -c`已證明 cwd保持不變直到 `MPlogger` 的 numpy import
+   失敗，但尚未完成整個 reader import，故不宣稱 Phase 1 gate通過。
