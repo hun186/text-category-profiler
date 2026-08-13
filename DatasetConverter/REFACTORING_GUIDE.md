@@ -986,3 +986,35 @@ DataConverter.py -> stage/config -> domain services -> ports
    characterization BuildSamples → job generator → reader 的必要 keys/defaults，再建立 dataclass mapping。
 3. deep copy 對 taxonomy/tree objects 的成本尚未 profiling；若 Phase 8 證明是瓶頸，應用 immutable config 取代 copy，
    不可在缺少 ownership contract 時退回 shared mutable mapping。
+
+### 2026-08-13 — Phase 1/4 tokenizer integration 與 slicing boundary（進行中）
+
+本次完成：
+
+- 新增 `tokenizer_source.load_auto_tokenizer()` integration boundary，集中既有
+  `AutoTokenizer.from_pretrained(model_directory, trust_remote_code=True)` 契約；production wrapping 與 maintenance
+  probe 均改由同一 factory 載入 tokenizer，未改模型目錄解析、token slicing 或回傳格式。
+- `transformers` 改為 factory function 內的延遲 import，且未使用 `try/except`；一般 filesystem、CZJ、ES 與純
+  transformation 路徑載入 `sampleHandler` 時不再因 module-scope import 要求安裝 Transformers，只有 tokenizer 功能
+  實際啟用時才需要該 optional runtime。
+- isolated test 以暫時 module adapter 固定 model path 與 `trust_remote_code` constructor arguments，不下載模型或連線網路；
+  AST regression tests 同時禁止 reader 與 integration module 重新加入 module-scope Transformers import。
+- 後續依 review 回饋補上實際 transformation boundary：新增 immutable `TokenizedChunks` 與 dependency-free
+  `split_tokenized_context()`，將 special-token reserve、content token grouping、character span slicing、相鄰 boundary
+  去重與 optional retokenization 從 legacy reader helper 抽出；既有 `tokenization_wrap()` 保留 dict API 薄相容層。
+- fake tokenizer characterization tests 固定兩組 token chunks、相鄰 span 不重疊、只在要求時逐 chunk retokenize、只有
+  special tokens 的空結果，以及無內容 token budget 的具名錯誤；既有 encoding 可注入，避免 wrapper 重複 tokenize 正文。
+- 依本輪執行結果新增 immutable `TokenizerModel` 與 injected `resolve_tokenizer_model()`，將 requested path、local default
+  fallback、remote default name 與第一個含 `config.json` 的 nested checkpoint discovery 移出 legacy wrapper；walker 直接
+  使用每列 files metadata，不再對探索到的每個目錄額外呼叫 `os.listdir()`。
+- model-resolution tests 固定 requested local model、nested checkpoint、local fallback 與無本機模型時保留 remote default
+  name；`tokenization_wrap()` 現只負責組合 production resolver/walker、輸出既有 warning 並載入具名 resolved path。
+
+尚未完成／下次優先事項：
+
+1. **Phase 1 completion gate 尚未達成。** OpenCC、pandas/dataframe utilities 與其他 heavy imports 仍在 reader module
+   scope；下一批應依實際 feature activation 逐項建立窄 adapter，不可用 catch-all optional import 一次隱藏 dependency。
+2. `tokenization_wrap()` 仍直接處理 debug/word analysis 與 short-message fast path；下批可先確認 `word_analysis` 是否有
+   caller 依賴，再把只產生 debug mapping、未進入回傳值的診斷移到 maintenance boundary，須保留 public dict shape。
+3. 未執行真實 Transformers/model smoke test；目前證明 factory 呼叫、dependency loading 與 fake-tokenizer slicing boundary，
+   不宣稱模型路徑、remote code 或 checkpoint 在此容器可用。

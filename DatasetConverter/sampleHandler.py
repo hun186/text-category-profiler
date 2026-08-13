@@ -39,13 +39,14 @@ from DatasetConverter.sample_sources import read_czj_sample_rows
 from DatasetConverter.sample_sources import read_regular_text_document
 from DatasetConverter.sample_sources import SourceDocument
 from DatasetConverter.elasticsearch_source import create_elasticsearch_client
+from DatasetConverter.tokenizer_source import load_auto_tokenizer
+from DatasetConverter.tokenizer_source import resolve_tokenizer_model
+from DatasetConverter.tokenizer_pipeline import split_tokenized_context
 #from ClassesTree.Label_utils import LabelsStringReader
 
 #from tokenization import FullTokenizer
 import re
 import random
-
-from transformers import AutoTokenizer
 
 #def wrap(s, w):
     #return [s[i:i + w] for i in range(0, len(s), w)]
@@ -84,15 +85,17 @@ def tokenization_wrap(
             "ReTks":[],
             }
         return res
-    requestedModelDir = modelDir
-    modelDir = resolve_local_model_directory(requestedModelDir)
-    if modelDir is None:
-        fallbackModelDir = resolve_local_model_directory("xlm-roberta-base")
-        modelDir = fallbackModelDir or "xlm-roberta-base"
+    tokenizer_model = resolve_tokenizer_model(
+        modelDir,
+        resolve_local_directory=resolve_local_model_directory,
+        walk=os.walk,
+    )
+    if tokenizer_model.used_fallback:
         print(
-            f"WARNING! The input modelDir {requestedModelDir} for "
+            "WARNING! The input modelDir "
+            f"{tokenizer_model.requested_directory} for "
             "tokenization_wrap does not exist; use "
-            f"{modelDir} instead"
+            f"{tokenizer_model.resolved_directory} instead"
         )
     
     #context = "This is a book.這是一本書。那是一枝筆"
@@ -100,14 +103,10 @@ def tokenization_wrap(
     nTokensToWrap -= 3 #預留<s>、</s>及開頭補空白的位置
     #debug = True
     #context = "Все счастливые семьи похожи друг на друга, каждая несчастливая семья несчастлива по-своему. Все смешалось в доме Облонских. Жена узнала, что муж был в связи с бывшею в их доме француженкою-гувернанткой, и объявила мужу, что не мо- жет жить с ним в одном доме. Положение это продолжалось уже третий день и мучительно чувствовалось и самими супругами, и всеми членами семьи, и домочадцами. Все члены семьи и домочадцы чувствовали, что нет смысла в их сожительстве и что на каждом постоялом дворе случайно сошедшиеся люди более связаны между собой, чем они, члены семьи и домочадцы Облонских. "
-    for subdir in [x[0] for x in os.walk(modelDir)]:
-        if "config.json" in os.listdir(subdir):
-            #model_checkpoint = subdir
-            modelDir = subdir
-            break
-    #print("modelDir for tokenization",modelDir)
-    tokenizer = AutoTokenizer.from_pretrained(
-        modelDir,trust_remote_code=True)
+    tokenizer = load_auto_tokenizer(
+        tokenizer_model.resolved_directory,
+        trust_remote_code=True,
+    )
     encoded = tokenizer(context)
     ecTks = encoded.tokens()
     if debug == True:
@@ -118,24 +117,22 @@ def tokenization_wrap(
         print(len(ecTks))
         print("encoded.word_ids():",encoded.word_ids())
         print(len(encoded.word_ids()))
-    WrapPosList = []
-    tksPos = list(range(1,len(ecTks)-1))
-    indicator = [tksPos[i:i + nTokensToWrap] for i in range(0, len(tksPos), nTokensToWrap)]
     if debug == True:
+        tksPos = list(range(1,len(ecTks)-1))
+        indicator = [
+            tksPos[i:i + nTokensToWrap]
+            for i in range(0, len(tksPos), nTokensToWrap)
+        ]
         print("token分組位置清單:",indicator)
-    WrapPosList = [[encoded.token_to_chars(csIntv[0]).start,
-                    encoded.token_to_chars(csIntv[-1]).end] for csIntv in indicator]
-    for i in range(len(WrapPosList)-1):
-        if WrapPosList[i][1] == WrapPosList[i+1][0]:
-            WrapPosList[i][1] -= 1
-    if debug == True:
-        print("WrapPosList af",WrapPosList)
-    
-    ctxCut = [context[st:ed+1] for st,ed in WrapPosList]
-    if ReTks == True:
-        ReTks = [tokenizer(x).tokens() for x in ctxCut]
-    else:
-        ReTks = []
+    chunks = split_tokenized_context(
+        context,
+        tokenizer,
+        maximum_tokens=nTokensToWrap + 3,
+        retokenize=ReTks,
+        encoding=encoded,
+    )
+    ctxCut = list(chunks.chunks)
+    ReTks = [list(tokens) for tokens in chunks.retokenized]
     if debug == True:
         print("ctxCut",ctxCut)
         print("針對產出再次tokenized的結果:",ReTks)
@@ -675,7 +672,9 @@ def tokenization_wrap_Test(TestString,args=dict()):
         print("="*50)
         print("model_ckptPath",model_ckptPath)
         try:
-            tokenizer = AutoTokenizer.from_pretrained(model_ckptPath, trust_remote_code=True)
+            tokenizer = load_auto_tokenizer(
+                model_ckptPath, trust_remote_code=True
+            )
             #如果成功載入tokenizer的話，回存取獲的完整模型正確路徑到model_checkpoint。
             model_checkpoint = model_ckptPath
             print("final model_checkpoint",model_checkpoint)
