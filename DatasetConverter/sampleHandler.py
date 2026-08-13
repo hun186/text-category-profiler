@@ -29,6 +29,7 @@ from ClassesTree.Label_utils import getLabelsFromFileName
 from DatasetConverter.sample_pipeline import build_elasticsearch_provenance
 from DatasetConverter.sample_pipeline import select_document_samples
 from DatasetConverter.sample_pipeline import transform_sample_segment
+from DatasetConverter.source_adapters import adapt_czj_sample_records
 #from ClassesTree.Label_utils import LabelsStringReader
 
 #from tokenization import FullTokenizer
@@ -516,10 +517,8 @@ class SampleReader():
         #elif "CZJ_SamplesFile.sql3" in self.file:
         elif re.search(".*CZJ_SamplesFile.*sql3",self.file) is not None:
             #ConWay = "CZJ_SamplesFile in sql3"
-            print("*"*50)
-            print(f"Loading SamplesFile Database in CZJ Format {self.file}")
-            df = dfFromSQLite3(self.file).reset_index(drop=True).drop(columns=["index"])
-            result = df.to_dict('records')
+            df = dfFromSQLite3(self.file).reset_index(drop=True)
+            result = list(adapt_czj_sample_records(df.to_dict("records")))
             MultiLabelCount = (None, 0)
             return result, MultiLabelCount
         elif re.search(".*CZJ_CorpusFile.*sql3",self.file) is not None:

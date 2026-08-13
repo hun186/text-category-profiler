@@ -704,3 +704,24 @@ DataConverter.py -> stage/config -> domain services -> ports
    確實需要統計時才擴充或彙總，不要在純函式直接 log/print。
 3. Phase 4 尚缺 CZJ／ES／FixedTest value type 與 empty policy characterization；Phase 5 的 `DatasetBundle`、
    reproducible augmentation 與 output counts 尚未開始，不能因 per-segment loop 縮小就宣稱 Phase 4 完成。
+
+### 2026-08-13 — Phase 4 CZJ samples record adapter（進行中）
+
+本次完成：
+
+- 依上一批「一次選一個 source role」原則，新增 dependency-free `source_adapters.adapt_czj_sample_records()`，
+  專門處理 `CZJ_SamplesFile*.sql3` 讀出後的 records，將 pandas／SQLite adapter 與 record transformation 分離。
+- 保留 legacy artifact contract：輸出 row 移除 SQLite 中持久化的 `index` column，其他 sample/provenance columns、
+  row order 與 values 原樣保留；回傳新的 dictionaries，不修改 adapter 傳入的 records。
+- 缺少 persisted `index` 或收到非 mapping row 時，現在會在 downstream DataFrame/output 之前以 row index 診斷；
+  reader 的 CZJ samples 分支只負責 SQLite DataFrame 讀取、轉成 records 並呼叫 adapter。
+- 移除該分支固定輸出的星號與資料庫載入 `print`，不改成功回傳的 `(rows, (None, 0))` worker contract。
+
+尚未完成／下次優先事項：
+
+1. **Phase 4 completion gate 尚未達成。** 本批只涵蓋已切片的 CZJ samples database；`CZJ_CorpusFile` 分支仍含
+   DataFrame dump、逐 title print、遞迴建立 reader 與只保留最後一筆 result 的可疑行為。先補 characterization，
+   不得在未確認預期輸出前直接「修正」成累加。
+2. SQLite I/O 仍由 legacy `dfFromSQLite3` 執行；後續 output/source adapter 若改成直接 records loader，需以
+   temporary SQLite fixture 比較 columns、row order、NULL 與額外 provenance values。
+3. ES network adapter 與 FixedTest value/empty policy 仍待隔離；本批不代表 CZJ corpus 或完整 reader E2E 已驗證。

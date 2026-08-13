@@ -17,6 +17,7 @@
 - 目標：延續 Phase 4，隔離 reader 的 sampling、Elasticsearch provenance，以及一般 segment 轉碼／長度 eligibility。
 - 結果：`select_document_samples()` 保留 shuffle/slice 契約；`build_elasticsearch_provenance()` 集中 ES path 與日期診斷並支援非字串無效日期；`prepare_sample_text()` 以 injected converter 固定 conversion-before-length 與 `len >= LenLBD` 契約。
 - 延伸：`transform_sample_segment()` 以 immutable `SegmentResult` 收斂 layout、special/regex label、轉碼、長度、mapping 與 row assembly，明確區分 accepted、special-label 與 below-minimum drop，並保留 special bypass 與 missing mapping `KeyError`。
+- 來源 adapter：`adapt_czj_sample_records()` 隔離 CZJ samples SQLite records 的 persisted `index` 移除，保留 row order、額外 provenance 與 worker 回傳契約，malformed row 在 downstream side effects 前帶 index 失敗。
 - 驗證：sample pipeline targeted tests、conversion fixture、完整輕量 unittest、相關檔案 `py_compile` 與 `git diff --check`。
 
 ### 2026-08-12 — DatasetConverter regex input-label selection boundary
