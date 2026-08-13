@@ -47,6 +47,97 @@ MIGRATED_MODULES = {
 
 
 class PackageLayoutTests(unittest.TestCase):
+    def test_active_data_converter_apis_have_no_mutable_defaults(self):
+        path = REPOSITORY_ROOT / "DatasetConverter" / "DataConverter.py"
+        tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+        dataset_generator = next(
+            node for node in tree.body
+            if isinstance(node, ast.ClassDef) and node.name == "DatasetGenerator"
+        )
+        callables = [
+            next(
+                node for node in tree.body
+                if isinstance(node, ast.FunctionDef)
+                and node.name == "BuildSamplesDfFromPaths"
+            ),
+            next(
+                node for node in dataset_generator.body
+                if isinstance(node, ast.FunctionDef) and node.name == "__init__"
+            ),
+        ]
+
+        violations = {
+            function.name: [
+                ast.unparse(default)
+                for default in function.args.defaults
+                if isinstance(default, (ast.Dict, ast.List, ast.Set))
+            ]
+            for function in callables
+        }
+
+        self.assertEqual(violations, {
+            "BuildSamplesDfFromPaths": [],
+            "__init__": [],
+        })
+
+    def test_data_convert_job_generator_has_no_mutable_defaults(self):
+        path = REPOSITORY_ROOT / "DatasetConverter" / "DataConverter.py"
+        tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+        generator = next(
+            node for node in tree.body
+            if isinstance(node, ast.ClassDef) and node.name == "DataConvertJobGenerater"
+        )
+        constructor = next(
+            node for node in generator.body
+            if isinstance(node, ast.FunctionDef) and node.name == "__init__"
+        )
+
+        mutable_defaults = [
+            ast.unparse(default)
+            for default in constructor.args.defaults
+            if isinstance(default, (ast.Dict, ast.List, ast.Set))
+        ]
+
+        self.assertEqual(mutable_defaults, [])
+
+    def test_sample_handler_does_not_import_elasticsearch_at_module_scope(self):
+        path = REPOSITORY_ROOT / "DatasetConverter" / "sampleHandler.py"
+        tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+        imported_modules = {
+            alias.name
+            for node in tree.body
+            if isinstance(node, ast.Import)
+            for alias in node.names
+        }
+        imported_from = {
+            node.module
+            for node in tree.body
+            if isinstance(node, ast.ImportFrom)
+        }
+
+        self.assertNotIn("elasticsearch", imported_modules)
+        self.assertNotIn("elasticsearch", imported_from)
+
+    def test_sample_reader_constructor_has_no_mutable_defaults(self):
+        path = REPOSITORY_ROOT / "DatasetConverter" / "sampleHandler.py"
+        tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+        sample_reader = next(
+            node for node in tree.body
+            if isinstance(node, ast.ClassDef) and node.name == "SampleReader"
+        )
+        constructor = next(
+            node for node in sample_reader.body
+            if isinstance(node, ast.FunctionDef) and node.name == "__init__"
+        )
+
+        mutable_defaults = [
+            ast.unparse(default)
+            for default in constructor.args.defaults
+            if isinstance(default, (ast.Dict, ast.List, ast.Set))
+        ]
+
+        self.assertEqual(mutable_defaults, [])
+
     def test_application_source_has_no_invalid_escape_warnings(self):
         roots = [
             REPOSITORY_ROOT / "TCFMain.py",

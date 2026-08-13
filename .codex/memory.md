@@ -12,6 +12,67 @@
 
 ## Recent Outcomes
 
+### 2026-08-13 — DatasetConverter pipeline/dataset config isolation
+
+- 目標：推進 Phase 2，消除 active pipeline function 與 dataset generator mutable defaults／caller config leakage。
+- 結果：`BuildSamplesDfFromPaths()`、`DatasetGenerator.__init__()` 改以 `None` defaults 並逐 call/instance copy source、split、
+  ES 與 DC settings；保留 keyword、empty default、split/output contracts。
+- 驗證：AST gates、fixture integration/split/source-role targeted tests、完整輕量 unittest、`py_compile`、`git diff --check`。
+
+### 2026-08-13 — DatasetConverter job-generator config isolation
+
+- 目標：推進 Phase 2，消除 active job generator mutable defaults 與 caller/instance configuration leakage。
+- 結果：source lists、ES/sampling/rule mappings 改為 `None` 後逐 instance copy；會被寫入 `retItem` 的 ES job 與 nested
+  settings deep-copy，保留 legacy defaults 與 constructor/job contracts。
+- 驗證：AST mutable-default gate、source-role/source-collection/conversion fixture targeted tests、完整輕量 unittest、
+  `py_compile` 與 `git diff --check`。
+
+### 2026-08-13 — DatasetConverter Elasticsearch client factory boundary
+
+- 目標：延續 Phase 4，將 optional ES package import 與 credential-bearing client construction 移出 reader module scope。
+- 結果：`elasticsearch_source.create_elasticsearch_client()` 集中 legacy constructor contract 並採 function-local import；
+  reader 只注入 factory 給 bounded fetch adapter，非 ES reader imports 不再要求 Elasticsearch package。
+- 驗證：isolated fake-module factory test、module-scope import AST gates、完整輕量 unittest、相關 `py_compile` 與
+  `git diff --check`。
+
+### 2026-08-13 — DatasetConverter Elasticsearch bounded fetch boundary
+
+- 目標：延續 Phase 4，隔離 ES retry/fetch strategy 並確保每次 attempt cleanup，不接觸正式 ES。
+- 結果：`fetch_elasticsearch_response()` 注入 client/fetch/content/error adapters，固定 bounded attempts；每個 client 在
+  `finally` 關閉，reader 保留 100 attempts 與空結果契約，並修正錯誤 logger attribute/訊息。
+- 驗證：ES fetch/mapping targeted tests、完整輕量 unittest、相關檔案 `py_compile` 與 `git diff --check`。
+
+### 2026-08-13 — DatasetConverter Elasticsearch response mapping boundary
+
+- 目標：延續 Phase 4，將 ES response-to-document/provenance mapping 與 network、retry、credentials 分離。
+- 結果：immutable `ElasticsearchDocument` 與純 `map_elasticsearch_document()` 固定 raw content、Scrap label、optional
+  subject、Target 與 itcDT mapping；reader 在成功 fetch 後使用 mapper，保留既有 retry 與 filename 行為。
+- 驗證：ES mapping/sample pipeline targeted tests、完整輕量 unittest、相關檔案 `py_compile` 與 `git diff --check`。
+
+### 2026-08-13 — DatasetConverter SampleReader instance config isolation
+
+- 目標：推進 Phase 2，消除 active reader constructor 的 mutable default 與跨 instance configuration leakage。
+- 結果：所有 list/dict defaults 改為 `None` 後逐 instance 建立或 copy；nested sampling、ES job 與 cleaning rules 使用
+  deep copy，並保留 legacy default values 與 keyword API。
+- 驗證：AST mutable-default regression、sample/source targeted tests、完整輕量 unittest、相關檔案 `py_compile` 與
+  `git diff --check`。
+
+### 2026-08-13 — DatasetConverter CZJ corpus title discovery boundary
+
+- 目標：延續 Phase 4，隔離 CZJ corpus worker fan-out 前的 title discovery 與 connection lifecycle。
+- 結果：`read_czj_corpus_titles()` 直接讀取 `Corpus.title`，保留 database row order、空 table 行為並拒絕 null title；
+  canonical job generator 改用此 adapter，移除 generic query helper 依賴與 raw title-list console output。
+- 驗證：sample sources/source-role/source-collection targeted tests、完整輕量 unittest、相關檔案 `py_compile` 與
+  `git diff --check`。
+
+### 2026-08-13 — DatasetConverter CZJ samples row boundary
+
+- 目標：延續 Phase 4，隔離已切片 CZJ samples database 的 row loading、空結果與 schema validation。
+- 結果：`read_czj_sample_rows()` 以 injected SQLite connection factory 直接選取 canonical `sampleSrc` columns，
+  回傳 immutable ordered rows，空 table 固定為空 tuple，且所有 fetch 路徑關閉 connection；不再依賴 pandas 或
+  legacy `index` column，並在 artifact assembly 前沿用共同 sample schema 診斷。
+- 驗證：sample sources/pipeline targeted tests、完整輕量 unittest、相關檔案 `py_compile` 與 `git diff --check`。
+
 ### 2026-08-13 — DatasetConverter reader transformation boundaries
 
 - 目標：延續 Phase 4，隔離 reader 的 sampling、Elasticsearch provenance，以及一般 segment 轉碼／長度 eligibility。

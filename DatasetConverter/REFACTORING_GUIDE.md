@@ -800,3 +800,189 @@ DataConverter.py -> stage/config -> domain services -> ports
    `SourceDocument` 純 mapping，再處理 executor/retry，不得在測試連線正式 ES 或輸出 credentials。
 3. 本批只執行 temporary SQLite lookup 與 dependency-free suites，未執行完整 legacy CLI、真實 CZJ corpus 或
    workspace handoff；Phase 5 尚未開始。
+
+### 2026-08-13 — Phase 4 CZJ samples row adapter（進行中）
+
+本次完成：
+
+- 新增 `sample_sources.read_czj_sample_rows()`，將已切片 CZJ samples database 的 row loading 與 reader branch
+  分開；SQLite connection factory 以 callback 注入，adapter 直接從 canonical `sampleSrc` table 選取 sample
+  columns，核心結果固定為有序 tuple，不依賴 pandas、不直接寫檔或建立 DataFrame。
+- 共用 `sample_schema.validate_sample_rows()` 在 dataset assembly 前檢查 mapping shape，以及 `file`、`InLabel`、
+  `OutLabel`、`text` 必要欄位；錯誤會包含 `CZJ samples database` 與 row index，`PartNO` 仍維持 external row
+  可省略的既有契約。
+- 明確固定 empty table 回傳空 tuple；SQL 只選取 `file`、`InLabel`、`OutLabel`、`text`、`PartNO`，不再依賴
+  pandas 產生的 `index` column。所有 query／fetch 成功或失敗路徑均關閉 connection；reader 在 boundary 外轉回
+  list，故其下游 return shape 與 multi-label count 不變。
+- temporary SQLite characterization tests 涵蓋 canonical rows、legacy index 不外洩、empty table、缺少 canonical
+  column 與 fetch failure cleanup；完整輕量 unittest、相關檔案 `py_compile` 與 `git diff --check` 均通過。
+
+尚未完成／下次優先事項：
+
+1. **Phase 4 completion gate 尚未達成。** CZJ corpus-file fan-out branch 仍直接載入整個 DataFrame、逐列建立 nested
+   reader 並輸出 raw `df`／`title`／`result`；下一批應先建立 corpus title enumeration adapter，固定空 database、
+   多 title ordering 與 nested results aggregation，並移除 raw text/dataframe console output。
+2. `sampleSrc.PartNO` 目前依現有 CZJ artifact schema 視為 canonical database column；外部 in-memory rows 仍可依
+   `sample_schema` 契約省略它。若需支援缺少 `PartNO` 的第三方 database，應先新增具版本的 schema adapter，不能
+   以 broad exception 或 `SELECT *` 靜默接受未知格式。
+3. ES network response mapping、CZJ／ES value type 與完整 CLI fixture 仍未完成；Phase 5 的 `DatasetBundle`、
+   reproducible augmentation 與 `ConversionResult` 尚未開始。
+
+### 2026-08-13 — Phase 4 CZJ corpus title discovery adapter（進行中）
+
+本次完成：
+
+- 新增 `sample_sources.read_czj_corpus_titles()`，將 `DataConvertJobGenerater.run()` 的 CZJ corpus title discovery
+  從 generic `sqlite3Query()` 與 console output 抽成窄 SQLite adapter；job generator 不再理解 query string、
+  `ListForm` 或 generic DB helper 的回傳形狀。
+- adapter 使用 injected connection factory，依 database row order 回傳 immutable title tuple；空 `Corpus` table
+  明確回傳空 tuple，query／fetch 成功或失敗均關閉 connection，null title 在建立 worker job 前以 row index 診斷。
+- production job generation 保留 `(title, database path)` fan-out order 與後續 `SampleReader` 設定傳遞，並移除會將
+  完整 title list 印到 console 的 raw output；沒有改 per-title text loading、切片、label 或 multiprocessing 行為。
+- temporary SQLite 與 fake connection characterization tests 固定多 title ordering、empty corpus、null title 與 fetch
+  failure cleanup；source-related targeted suites、完整輕量 unittest、相關檔案 `py_compile` 與 `git diff --check` 通過。
+
+尚未完成／下次優先事項：
+
+1. **Phase 4 completion gate 尚未達成。** `SampleReader.run()` 仍保留一個直接收到 `CZJ_CorpusFile*.sql3` 的 legacy
+   branch，該 branch 以 pandas 載入整庫並建立 nested readers；canonical `DataConvertJobGenerater` 已不走此路徑。
+   下批應先以 import/call-site search 與 characterization 判定是否可移除或改為薄 compatibility adapter，不可在未確認
+   caller 時直接改變 return shape。
+2. title discovery 保留 SQLite 未指定 `ORDER BY` 的 database row order，以免重構時改變既有 job ordering；若 Phase 7
+   需要跨資料庫可重現排序，應另行定義排序契約並比較 artifacts，而不是在 adapter 中暗加 alphabetical sort。
+3. ES response-to-`SourceDocument` mapping、CZJ／ES text null/type policy 與完整 CLI fixture 仍未完成；Phase 5 尚未開始。
+
+### 2026-08-13 — Phase 2 SampleReader mutable defaults 收斂（進行中）
+
+本次完成：
+
+- 移除 `SampleReader.__init__()` 的 list／dict／nested dict mutable defaults；`LabelList`、`sampleMethod`、label/rule
+  mappings、ES job/metadata 與 cleaning rules 現以 `None` 作為 API default，並在 instance 建立時產生各自容器。
+- `sampleMethod`、`esJob` 與 nested cleaning rules 使用 deep copy，其他 flat mappings/list 使用明確 copy；caller 傳入
+  的設定不再因 reader 更新 `InfoScoreTable`、`esRetMeta` 或 nested config 而被跨 job／跨 instance 意外污染。
+- 保留未提供設定時的 legacy sampling defaults：每文件 default 5000、`Economist` 1000、random sampling enabled、
+  minimum length 128；既有 keyword names 與 production caller 不變。
+- 新增 AST regression gate，禁止 `SampleReader` constructor 再引入 list／dict／set defaults；sample/source targeted
+  tests、完整輕量 unittest、相關檔案 `py_compile` 與 `git diff --check` 通過。
+
+尚未完成／下次優先事項：
+
+1. **Phase 2 completion gate 尚未達成。** `SampleReader` 仍接收大量鬆散 options；下一批可先建立 immutable reader
+   policy dataclass 或單一 normalization function，但須維持現有 constructor keyword compatibility，避免同時重寫 caller。
+2. repository 其他 legacy constructors 仍可能有 mutable defaults；本批只修正 active DatasetConverter reader，沒有做
+   無界限的全 repository 格式化。後續應依實際 mutation risk 與 call graph 分批處理。
+3. ES response mapping、retry/client lifecycle 與 credential-bearing config 仍混在 reader；不得因 container isolation
+   完成就宣稱 external-service boundary 已建立。
+
+### 2026-08-13 — Phase 4 Elasticsearch response mapping boundary（進行中）
+
+本次完成：
+
+- 新增 immutable `ElasticsearchDocument(document, subject, metadata)` 與 dependency-free
+  `sample_sources.map_elasticsearch_document()`，將 ES `_source` response 轉成 `SourceDocument`、subject 與 provenance
+  metadata；純 mapping 不建立 client、不 retry、不讀 credentials、不 log。
+- 保留 legacy response 契約：正文取自 `rawInfo.content`、input label 固定為 `Scrap`、非空 `userNames` 設定
+  `Target=T`、日期取自 `itcDT`；只有 subject filename mode 啟用時才要求 `communication` container，必要 container
+  缺失仍以原生 `KeyError` fail fast，不加入 silent fallback。
+- `SampleReader.run()` 的 network branch 在成功取得非空 content 後使用 mapper，再更新 instance provenance；既有最多
+  100 次 retry、ES client construction/close、空 content failure 與後續 filename assembly 順序未改動。
+- characterization tests 固定完整 mapping、inactive subject/target、missing content、required shape failure 與 subject-mode
+  communication requirement；sample source/pipeline suites、完整輕量 unittest、相關 `py_compile` 與 `git diff --check` 通過。
+
+尚未完成／下次優先事項：
+
+1. **Phase 4 completion gate 尚未達成。** ES client lifecycle 仍有 retry 中重建 client、exception logging typo，以及只在
+   success path close 的風險；下一批應建立 injected fetch adapter，固定 retry count、每次 attempt cleanup 與最終 failure
+   result，但測試不得連線正式 ES 或記錄 credentials。
+2. `SourceDocument.text` annotation 仍是 `str`，mapper 暫時保留 missing content 為 `None` 以供 network retry boundary
+   判斷；在把 retry 搬出 reader 前不可直接收緊為 exception，否則會改變現有 retry 行為。
+3. ES `userNames` 的 string/list value-type policy 尚未正式化；目前保留 legacy `len(value) > 0` semantics。若要收斂
+   schema，須先補兩種實際 response fixture 並確認 Target 判定契約。
+
+### 2026-08-13 — Phase 4 Elasticsearch bounded fetch adapter（進行中）
+
+本次完成：
+
+- 新增 `sample_sources.fetch_elasticsearch_response()`，以 injected client factory、fetch callback、content selector 與
+  error reporter 固定 bounded retry；credentials 只存在 production factory closure，adapter 不讀取或輸出 credential。
+- 每次 attempt 都獨立建立並在 `finally` 關閉 client，修正 legacy 只有最後成功 client 會 close、失敗 attempts 可能洩漏
+  connection 的問題；exception 與 missing content 都消耗 attempt，但只有 exception 呼叫 error reporter，維持診斷語意。
+- `SampleReader.run()` 改用 fetch adapter，保留最多 100 attempts 與最終無 content 回傳空 reader result；同時修正舊路徑
+  呼叫不存在的 `self.MPlogger` 與含 typo 的錯誤訊息，改由既有 `self.MPLOGGER` 寫摘要且不含 credentials。
+- characterization tests 固定 missing-content retry、exception reporting、每次 client cleanup、bounded exhaustion 與 invalid
+  attempt validation；sample source/pipeline suites、完整輕量 unittest、相關 `py_compile` 與 `git diff --check` 通過。
+
+尚未完成／下次優先事項：
+
+1. **Phase 4 completion gate 尚未達成。** production client construction 仍位於 reader，且 `Elasticsearch` import 仍是
+   module-level heavy dependency；下一批可把 factory 移到明確 integration adapter 並延遲至 ES source 啟用時 import，
+   但不得用 try/except 包 import，也不得改 CLI credential/config contract。
+2. 目前仍保留 100 次立即 retry，未加入 backoff，以免無量測地改變歷史 latency；Phase 8 profiling 若證實 external
+   failure 造成資源壓力，再以 injectable retry policy 加入 delay/jitter 並建立 deterministic tests。
+3. mapper 的 missing content `None` 與 ES `userNames` value-type policy 尚待收斂；完整 CLI/isolated ES client fixture 仍未完成。
+
+### 2026-08-13 — Phase 4 Elasticsearch client factory integration boundary（進行中）
+
+本次完成：
+
+- 新增 `DatasetConverter/elasticsearch_source.py` integration module，以 `create_elasticsearch_client()` 集中 legacy
+  host、HTTP auth 與 `verify_certs=False` client construction；credentials 只傳給 client constructor，不進入純 mapper/
+  retry helpers 或 log。
+- 第三方 `elasticsearch` import 移入 factory function，且未使用 try/except；一般 filesystem、CZJ 與純 transformation
+  路徑載入 `sampleHandler` 時不再因 module-scope ES import 要求安裝 optional dependency，只有 ES source 啟用才載入。
+- `SampleReader` production fetch factory 改為呼叫 integration adapter，保留 CLI token mapping與既有 constructor arguments；
+  client close 仍由上一批 bounded fetch adapter 統一負責。
+- isolated factory test 以暫時 module adapter 驗證 constructor arguments，不需安裝 package 或連線網路；AST regression
+  tests 固定 `sampleHandler.py` 與 integration module 都沒有 module-scope Elasticsearch import。
+
+尚未完成／下次優先事項：
+
+1. **Phase 4 completion gate 尚未達成。** `transformers.AutoTokenizer`、OpenCC 等其他 heavy imports 仍在 reader module
+   scope；應依 source/feature activation 一項一項建立 adapter，不可用 catch-all optional import 或一次搬動所有 dependencies。
+2. ES credentials 仍以 legacy mutable mapping 由 CLI/job 傳入；Phase 2 config normalization 尚需建立 redacted immutable
+   external-source config，並以 tests 保證 normalized summary 不包含 password/token。
+3. 未執行真實 ES smoke test；目前只證明 client construction contract 與 dependency loading boundary，不宣稱 server、TLS
+   或 credentials 可用。
+
+### 2026-08-13 — Phase 2 DataConvertJobGenerater instance config isolation（進行中）
+
+本次完成：
+
+- 移除 active `DataConvertJobGenerater.__init__()` 的 mutable defaults：source roots/files、CZJ DB list、ES job、sampling、
+  score/rule mappings、restricted labels 與 cleaning rules 全部改以 `None` 表示未提供，再於 instance 初始化。
+- 對會被 generator 修改的 `esJob` 使用 deep copy；這修正 `retItem` 寫入 caller mapping、後續 generator 或 fixed-test job
+  互相污染的風險。nested sample/cleaning config 亦 deep copy，其他 flat list/mapping 明確 copy。
+- 保留 legacy sampling defaults、constructor keyword names、source discovery ordering 與 job payload shape；沒有改 ES query、
+  multiprocessing、label conversion 或 reader 行為。
+- 新增 AST regression gate，禁止 `DataConvertJobGenerater` constructor 再引入 list/dict/set defaults；source-role、source
+  collection、conversion fixture 與 package-layout targeted tests、完整輕量 unittest、`py_compile`、`git diff --check` 通過。
+
+尚未完成／下次優先事項：
+
+1. **Phase 2 completion gate 尚未達成。** `DatasetGenerator`、`BuildSamplesDfFromPaths()` 等 active APIs 仍有 mutable
+   defaults；應依 mutation/call graph 逐一收斂並加入窄 regression gate，不要只做全檔機械替換。
+2. generator 仍以大型 loose configuration surface 傳遞至 `SampleReader`；下一批可建立 immutable normalized reader-job
+   policy，但需先 characterization constructor-to-job mapping，維持 CLI/default compatibility。
+3. ES config 尚未成為 redacted typed config；本批只隔離 container ownership，不代表 credential validation/logging gate 完成。
+
+### 2026-08-13 — Phase 2 pipeline/dataset generator mutable defaults 收斂（進行中）
+
+本次完成：
+
+- 移除 active `BuildSamplesDfFromPaths()` 與 `DatasetGenerator.__init__()` 的 mutable defaults；source roots、index
+  columns、split ratio、fixed-test paths、ES job 與 `DCkwargs` 全改以 `None` 表示未提供，再建立逐次呼叫／逐 instance 容器。
+- `BuildSamplesDfFromPaths()` 在 stage boundary copy roots，並 deep-copy ES/config mappings，避免其 log truncation、job
+  normalization 或下游 adapters 回寫 caller config；`DatasetGenerator` 同樣隔離 output/split 階段持有的設定。
+- 保留既有 function/constructor keyword names、empty defaults、split/augmentation policy、output filenames 與 DataFrame
+  flow；本批只調整 ownership，不改資料演算法或 artifact contract。
+- 新增 AST regression gate，固定兩個 active APIs 不得再出現 list/dict/set defaults；fixture integration、split、source-role、
+  package-layout targeted tests、完整輕量 unittest、相關 `py_compile` 與 `git diff --check` 通過。
+
+尚未完成／下次優先事項：
+
+1. **Phase 2 completion gate 尚未達成。** `DatasetGenerator` nested output helper 與其他 stage helpers 仍需依 call graph
+   盤點；只有確實 active 且存在 mutation risk 的 API 才應收斂，避免把 legacy/dead scripts 一併機械修改。
+2. `DCkwargs` 仍是大型 mutable mapping，現在雖已隔離 ownership，但尚未形成單一 typed normalized config；下一批應先
+   characterization BuildSamples → job generator → reader 的必要 keys/defaults，再建立 dataclass mapping。
+3. deep copy 對 taxonomy/tree objects 的成本尚未 profiling；若 Phase 8 證明是瓶頸，應用 immutable config 取代 copy，
+   不可在缺少 ownership contract 時退回 shared mutable mapping。
