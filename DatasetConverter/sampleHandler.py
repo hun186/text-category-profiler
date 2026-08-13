@@ -29,6 +29,11 @@ from ClassesTree.Label_utils import getLabelsFromFileName
 from DatasetConverter.sample_pipeline import build_elasticsearch_provenance
 from DatasetConverter.sample_pipeline import select_document_samples
 from DatasetConverter.sample_pipeline import transform_sample_segment
+from DatasetConverter.sample_sources import apply_regular_cleaning_rules
+from DatasetConverter.sample_sources import prepare_document_segments
+from DatasetConverter.sample_sources import read_czj_corpus_document
+from DatasetConverter.sample_sources import read_regular_text_document
+from DatasetConverter.sample_sources import SourceDocument
 #from ClassesTree.Label_utils import LabelsStringReader
 
 #from tokenization import FullTokenizer
@@ -449,24 +454,28 @@ class SampleReader():
             #self.Src = f"{self.Target}/{self.file}"
         elif self.CZJCorpusSQLFile != "":
             #ConWay = "SQLFI"
-            conn = lite.connect(self.CZJCorpusSQLFile)
-            label_query = 'SELECT InLabel,text FROM Corpus WHERE title=?'
-            InLabel, text = conn.execute(label_query, [self.file]).fetchone()
-            conn.close()
-            if InLabel is None:
-                InLabel = "Scrap"
-            InLabelList = [InLabel]
+            source_document = read_czj_corpus_document(
+                self.CZJCorpusSQLFile,
+                title=self.file,
+                connect=lite.connect,
+            )
+            text = source_document.text
+            InLabelList = list(source_document.input_labels)
             
         elif fileExt in ["ai2","txt"]:
             #ConWay = "ai2,txt"
             #依子目錄名，決定label。
             #InLabel = ""
-            InLabelList = []
-            #如果完整檔名路徑含有特定Label，則該檔切出樣本使用該Label。
-            InLabelList = getLabelsFromFileName(
+            source_document = read_regular_text_document(
                 self.file,
-                UniqueSorted = self.UniqueSortedLabels,
-                OnlyLettersDigits = self.OnlyLettersDigitsLabels)
+                unique_sorted_labels=self.UniqueSortedLabels,
+                only_letters_digits_labels=self.OnlyLettersDigitsLabels,
+                labels_from_path=getLabelsFromFileName,
+                read_text=lambda **kwargs: textReader(**kwargs).run(),
+            )
+            if source_document is None:
+                return nullReturn
+            InLabelList = list(source_document.input_labels)
             MES = f"InLabelList:{InLabelList}"
             self.MPLOGGER.logW(MES,printOnScreen=False)
             '''
@@ -476,36 +485,15 @@ class SampleReader():
             '''
             #if "COVID-19" in InLabelList:
                 #print("for file {}, LabelList is {}".format(self.file,InLabelList))
-            #如果完整檔名路徑不含有任何Label，
-            #但副檔名為AI2，則強制添加Scrap為Label，
-            #否則回傳空列表，表示無取出樣本。
-            if InLabelList == []:
-                if getFNExtFromFullPath(self.file).lower() in [
-                    x.lower() for x in ["AI2"]]:
-                    InLabelList = ["Scrap"]
-                else:
-                    return nullReturn
-            #讀取文本。
-            text = textReader(
-                file=self.file,encoding="utf-8").run()
-            
-            if 'text' not in locals():
-                print('*'*50)
-                MES = f"SamepleHandler Line 305 WARNing! When handling {self.file} with ai2 or txt, text is not defined"
-                self.MPLOGGER.logW(MES)
-                return nullReturn
-            
-            #如果正規表示式資料清理字典非空，則進行相對應處理。
-            RePatternDict = self.DataCleanerRePatternDict
-            if len(RePatternDict.keys()) > 0:
-                InputRePatternDict = {}
-                for key in RePatternDict:
-                    #如果輸入文本標籤清單不略在排除清單內，才進行相關資料清理。
-                    if ListCap(InLabelList,RePatternDict[key].get(
-                            "ExemptInLabelList",[])) == []:
-                        InputRePatternDict[key] = RePatternDict[key]
-                        text = DataCleanerWithPattern(
-                            text,InputRePatternDict).proc()
+            source_document = apply_regular_cleaning_rules(
+                source_document,
+                rules=self.DataCleanerRePatternDict,
+                labels_in_exemptions=ListCap,
+                clean_text=lambda value, rules: DataCleanerWithPattern(
+                    value, rules
+                ).proc(),
+            )
+            text = source_document.text
 
         #處理CZJ切片樣本集合sql3檔
         #每一列欄位樣態：{'file': 'FixedTest/FixedTest_8050/Using/20220301/#T#[CN-IND Boundary]/老一辈革命家处理中印边界问题的对策方法.txt',
@@ -562,8 +550,24 @@ class SampleReader():
             return nullReturn
         
         
-        text = BasicDataCleaner(
-            strQ2B = True,DummySpace = True).proc(text)
+        prepared_document = prepare_document_segments(
+            SourceDocument(text=text, input_labels=tuple(InLabelList)),
+            normalize_text=lambda value: BasicDataCleaner(
+                strQ2B=True, DummySpace=True
+            ).proc(value),
+            divide_text=lambda value: TextDivider(
+                file=self.file,
+                text=value,
+                Mode=self.Mode,
+                tokenizationWrap=self.tokenizationWrap,
+                modelDir=self.modelDir,
+                ReTks=False,
+                width=self.width,
+            ).proc(),
+        )
+        text = prepared_document.text
+        InLabelList = list(prepared_document.input_labels)
+        textList = list(prepared_document.segments)
         '''
         #去除斷行。
         #text = text.replace("\n", " ")
@@ -575,13 +579,6 @@ class SampleReader():
             text = re.sub(f"({x})+", x, text)
         text = re.sub(" \n", "\n", text)
         '''
-        #print("self.modelDir",self.modelDir)
-        textList = TextDivider(
-                 file = self.file,text = text,Mode = self.Mode,
-                 tokenizationWrap = self.tokenizationWrap,
-                 modelDir = self.modelDir,ReTks = False,
-                 width = self.width,
-                 ).proc()
         #print("textList in sampleHandler",textList)
         result = []
         #if "COVID-19" in InLabelList:
