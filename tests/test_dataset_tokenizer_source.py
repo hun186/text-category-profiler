@@ -5,9 +5,9 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from DatasetConverter.tokenizer_source import load_auto_tokenizer
-from DatasetConverter.tokenizer_source import resolve_tokenizer_model
-from DatasetConverter.tokenizer_source import TokenizerModel
+from DatasetConverter.adapters.tokenizer_source import load_auto_tokenizer
+from DatasetConverter.adapters.tokenizer_source import resolve_tokenizer_model
+from DatasetConverter.adapters.tokenizer_source import TokenizerModel
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -151,7 +151,7 @@ class TokenizerModelResolutionTests(unittest.TestCase):
         self.assertTrue(result.used_fallback)
 
     def test_integration_module_has_no_module_scope_transformers_import(self):
-        path = REPOSITORY_ROOT / "DatasetConverter" / "tokenizer_source.py"
+        path = REPOSITORY_ROOT / "DatasetConverter" / "adapters" / "tokenizer_source.py"
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
 
         self.assertFalse(

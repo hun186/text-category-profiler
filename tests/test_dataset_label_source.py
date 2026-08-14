@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from DatasetConverter.label_source import labels_from_path
+from DatasetConverter.adapters.label_source import labels_from_path
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -43,7 +43,7 @@ class DatasetLabelSourceTests(unittest.TestCase):
     def test_reader_and_adapter_have_no_module_scope_legacy_import(self):
         for relative_path in (
             "DatasetConverter/sampleHandler.py",
-            "DatasetConverter/label_source.py",
+            "DatasetConverter/adapters/label_source.py",
         ):
             tree = ast.parse(
                 (REPOSITORY_ROOT / relative_path).read_text(encoding="utf-8")

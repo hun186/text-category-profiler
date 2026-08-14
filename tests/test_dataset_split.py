@@ -5,15 +5,15 @@ try:
 except ModuleNotFoundError:
     pd = None
 
-from DatasetConverter.dataset_split import augment_training_rows
-from DatasetConverter.dataset_split import build_split_plan
-from DatasetConverter.dataset_split import DatasetSplitPlan
-from DatasetConverter.dataset_split import deduplicate_dataset_rows
-from DatasetConverter.dataset_split import ensure_train_covers_labels
-from DatasetConverter.dataset_split import expand_train_to_cover_labels
-from DatasetConverter.dataset_split import iter_dataset_splits
-from DatasetConverter.dataset_split import iter_split_bounds
-from DatasetConverter.sample_schema import columns_for_sample_rows
+from DatasetConverter.core.dataset_split import augment_training_rows
+from DatasetConverter.core.dataset_split import build_split_plan
+from DatasetConverter.core.dataset_split import DatasetSplitPlan
+from DatasetConverter.core.dataset_split import deduplicate_dataset_rows
+from DatasetConverter.core.dataset_split import ensure_train_covers_labels
+from DatasetConverter.core.dataset_split import expand_train_to_cover_labels
+from DatasetConverter.core.dataset_split import iter_dataset_splits
+from DatasetConverter.core.dataset_split import iter_split_bounds
+from DatasetConverter.core.sample_schema import columns_for_sample_rows
 
 
 class DatasetSplitPlanTests(unittest.TestCase):

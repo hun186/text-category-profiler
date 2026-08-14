@@ -18,7 +18,7 @@ from text_category_profiler.core.utilities import removekey
 from text_category_profiler.concurrency.MP_utils import MPlogger
 from text_category_profiler.core.utilities import fileNameNormalizer
 
-from DatasetConverter.source_metadata import getSrcFromFileName
+from DatasetConverter.core.source_metadata import getSrcFromFileName
 
 from ClassesTree.Label_utils import getLabelsFromOSWALK
 from ClassesTree.Label_utils import getLabelsFromFileName

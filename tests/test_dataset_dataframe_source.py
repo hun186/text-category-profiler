@@ -5,9 +5,9 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from DatasetConverter.dataframe_source import concat_dataframes
-from DatasetConverter.dataframe_source import dataframe_from_dict
-from DatasetConverter.dataframe_source import empty_dataframe
+from DatasetConverter.adapters.dataframe_source import concat_dataframes
+from DatasetConverter.adapters.dataframe_source import dataframe_from_dict
+from DatasetConverter.adapters.dataframe_source import empty_dataframe
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -74,7 +74,7 @@ class DatasetDataframeSourceTests(unittest.TestCase):
     def test_entrypoint_and_adapter_have_no_module_scope_pandas_import(self):
         for relative_path in (
             "DatasetConverter/DataConverter.py",
-            "DatasetConverter/dataframe_source.py",
+            "DatasetConverter/adapters/dataframe_source.py",
         ):
             tree = ast.parse(
                 (REPOSITORY_ROOT / relative_path).read_text(encoding="utf-8")

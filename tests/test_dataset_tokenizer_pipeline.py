@@ -1,10 +1,10 @@
 import unittest
 from types import SimpleNamespace
 
-from DatasetConverter.tokenizer_pipeline import TokenizedChunks
-from DatasetConverter.tokenizer_pipeline import TokenWordAnalysis
-from DatasetConverter.tokenizer_pipeline import analyze_token_word_mapping
-from DatasetConverter.tokenizer_pipeline import split_tokenized_context
+from DatasetConverter.core.tokenizer_pipeline import TokenizedChunks
+from DatasetConverter.core.tokenizer_pipeline import TokenWordAnalysis
+from DatasetConverter.core.tokenizer_pipeline import analyze_token_word_mapping
+from DatasetConverter.core.tokenizer_pipeline import split_tokenized_context
 
 
 class FakeEncoding:

@@ -4,11 +4,11 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from DatasetConverter.dataset_split import build_split_plan
-from DatasetConverter.dataset_split import iter_split_bounds
-from DatasetConverter.fixture_artifacts import write_classifier_tsv
-from DatasetConverter.source_collection import discover_source_files
-from DatasetConverter.source_collection import read_text_sources
+from DatasetConverter.core.dataset_split import build_split_plan
+from DatasetConverter.core.dataset_split import iter_split_bounds
+from DatasetConverter.adapters.fixture_artifacts import write_classifier_tsv
+from DatasetConverter.sources.source_collection import discover_source_files
+from DatasetConverter.sources.source_collection import read_text_sources
 
 
 FIXTURE_ROOT = (

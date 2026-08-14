@@ -1,6 +1,6 @@
 import unittest
 
-from DatasetConverter.source_metadata import (
+from DatasetConverter.core.source_metadata import (
     get_source_from_file_name,
     getSrcFromFileName,
 )

@@ -2,11 +2,11 @@ import ast
 import unittest
 from pathlib import Path
 
-from DatasetConverter.reader_utils import filename_extension
-from DatasetConverter.reader_utils import intersect_lists
-from DatasetConverter.reader_utils import normalize_filename
-from DatasetConverter.reader_utils import sanitize_filename
-from DatasetConverter.reader_utils import wrap_text
+from DatasetConverter.core.reader_utils import filename_extension
+from DatasetConverter.core.reader_utils import intersect_lists
+from DatasetConverter.core.reader_utils import normalize_filename
+from DatasetConverter.core.reader_utils import sanitize_filename
+from DatasetConverter.core.reader_utils import wrap_text
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]

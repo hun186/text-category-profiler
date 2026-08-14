@@ -55,10 +55,9 @@ DatasetConverter/
 ├── DataConverter.py          # CLI composition root；保留直接執行相容性
 ├── config.py                 # argparse namespace -> immutable internal config
 ├── taxonomy.py               # topic tree 與 label validation
-├── source_collection.py      # 建立來源描述，不執行核心轉換
-├── sample_pipeline.py        # 純 sample/DataFrame transformation
-├── dataset_split.py          # 現有 dedup/split/train augmentation 規則
-├── sample_schema.py          # 現有 row schema 規則
+├── core/                     # 無 I/O 或 dependency-light 轉換政策與 schema
+├── sources/                  # 來源 discovery 與 document-reading 邊界
+├── adapters/                 # pandas／ES／OpenCC／tokenizer 等功能啟用式整合
 ├── outputs.py                # TSV/SQLite 與 record artifact 寫出
 └── stage.py                  # orchestration、結果摘要與 handoff
 ```
@@ -1241,3 +1240,26 @@ DataConverter.py -> stage/config -> domain services -> ports
    constructor operations，不宣稱轉換流程不需要 pandas，也不應用自製 DataFrame取代其資料語意。
 3. 本批未執行完整 CLI或真實 dataset；目前證明 adapter forwarding與既有輕量 fixtures，完整 pandas/SQLite artifact smoke test
    仍受 runtime及工作池限制。
+
+### 2026-08-14 — 依功能建立 core／sources／adapters 子套件（進行中）
+
+本次完成：
+
+- 將已抽離且 dependency-light 的 split、schema、sample/tokenizer pipeline、reader helper 與 provenance policy
+  移至 `DatasetConverter/core/`；將 source discovery 與具名 document reader 移至 `DatasetConverter/sources/`。
+- 將 pandas、Elasticsearch、label、logger、OpenCC、text processor、Transformers 與 fixture artifact 等
+  feature-activated integration 移至 `DatasetConverter/adapters/`；canonical entrypoint、reader、共用 caller 與測試均改用
+  新的完整 import path，根目錄因此減少 16 個平鋪的 Python module。
+- 三個子套件只以 `__init__.py` 說明責任，不在 package import 時 eager re-export optional integrations，避免重新引入
+  import-time dependency 與副作用；檔案搬移未改函式、dataclass、row schema、split 或 adapter 呼叫契約。
+- 更新 AST regression tests 的實際檔案位置，保留 optional dependency 必須 function-local import 的防退步檢查。
+
+尚未完成／下次優先事項：
+
+1. **Phase 1 completion gate 尚未達成。** canonical `DataConverter` import 下一個已知 blocker 仍是
+   `TCF_Params.TCFParameters` 載入 generic utilities／multiprocessing runtime；下一批應先拆出參數模組實際需要的
+   timestamp、directory 與 process-count 邊界，不可用 optional-import fallback 製造假成功。
+2. 根目錄仍有 legacy maintenance、visualization、combiner 與 compatibility scripts；須先查 caller 與直接執行方式，再依
+   `maintenance/`、`visualization/` 或既有 `EXTConverter/` 邊界分批移動，不應只為減少檔案數破壞 script path。
+3. 本次刻意不保留舊的內部 module path shim，因 repository caller 已全數遷移，且 eager compatibility alias 會讓 package import
+   重新載入 optional dependencies；若確認有 repository 外部 caller，應新增窄、具 deprecation 說明的相容層，而不是還原平鋪結構。
