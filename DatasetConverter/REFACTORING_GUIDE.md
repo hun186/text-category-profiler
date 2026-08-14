@@ -1263,3 +1263,48 @@ DataConverter.py -> stage/config -> domain services -> ports
    `maintenance/`、`visualization/` 或既有 `EXTConverter/` 邊界分批移動，不應只為減少檔案數破壞 script path。
 3. 本次刻意不保留舊的內部 module path shim，因 repository caller 已全數遷移，且 eager compatibility alias 會讓 package import
    重新載入 optional dependencies；若確認有 repository 外部 caller，應新增窄、具 deprecation 說明的相容層，而不是還原平鋪結構。
+
+### 2026-08-14 — Phase 2／3 taxonomy validation boundary（進行中）
+
+本次完成：
+
+- 新增 dependency-light `taxonomy.py`，以 frozen `TaxonomyValidation` 固定 label 去重／排序、InfoScore
+  缺漏清單與 binary taxonomy 判定，且不依賴 argparse、logger、filesystem 或 DataFrame。
+- 新增具名 `LoadedTaxonomy` 結果；`load_taxonomy()` 集中 `SetTreeFiles()` I/O，`loadLabels()` 保留既有名稱與
+  回傳 settings mapping 的相容 wrapper，不再自行混合 taxonomy 載入與 label validation。
+- `loadLabels()` 的 mutable `dict()` default 改為 `None`，並複製 caller settings 後再加入 taxonomy values，
+  避免跨呼叫或反向修改 caller configuration；CLI option、tree record output、label error gate 均未改名。
+- isolated tests 固定 label normalization、InfoScore mismatch、binary 判定，以及 entrypoint wrapper 不重新直接呼叫
+  `SetTreeFiles()`；測試不需 taxonomy CSV、pandas、模型、process pool 或外部服務。
+
+尚未完成／下次優先事項：
+
+1. **Phase 2／3 completion gates 尚未達成。** `load_taxonomy()` 仍接收 argparse namespace，且 `SetTreeFiles()`
+   同時讀取 taxonomy files 與寫出 `OnlyForRecord`；下一批應先以 temporary fixture 固定真實 CSV／record artifact
+   契約，再將 loader input 正規化成 immutable config，不能在缺少 characterization 時改變檔案格式。
+2. taxonomy mismatch 目前仍由 legacy wrapper 以 generic `Exception` 回報；建立 domain error 前應固定 CLI 訊息與
+   exit status，並確認 binary taxonomy 為何允許缺少 InfoScore label，避免誤改 production 相容規則。
+3. `setArguments()` 與 `main()` 仍使用 module-global `DCkwargs`、logger 與 timing state；後續應以具名 bootstrap／stage
+   context 分批注入，不應在 taxonomy slice 同時重寫 orchestration 或 handoff。
+
+### 2026-08-14 — Phase 2 taxonomy immutable config 與 loader injection（進行中）
+
+本次完成：
+
+- 針對上一批仍直接接收 argparse namespace 的缺口，新增 frozen `TaxonomyConfig` 與單一
+  `taxonomy_config_from_namespace()` mapping；comma-separated filenames 只在此處 trim／排除空值，loader 之後只接收
+  normalized tuple、source directory 與 record directory。
+- 將具名 taxonomy load flow 移至 dependency-light module，filesystem adapter 以 callable 注入；composition root 的
+  `load_taxonomy()` 現在只負責接上 legacy `SetTreeFiles`，不再自行解析 paths 或組裝 validation result。
+- 新增 fake-loader contract tests，固定 `SetTreeFiles` keyword mapping、具名結果與 missing-label validation；另固定 config
+  不可重新賦值，避免 stage 中途修改 normalized taxonomy settings。
+
+尚未完成／下次優先事項：
+
+1. **Phase 2／3 completion gates 尚未達成。** 本批以 injected adapter 固定 loader port，但尚未執行真實
+   `SetTreeFiles()` temporary fixture；下一批仍應建立最小 taxonomy CSV，確認 `OnlyForRecord` 內實際複製檔、
+   InfoScore artifacts 與 schema，再考慮將 filesystem adapter 移出 composition root。
+2. `TaxonomyConfig` 目前只涵蓋 taxonomy slice，不代表完整 `ConverterConfig`；下一批不可把所有 argparse fields 一次
+   搬入單一巨大 dataclass，應按 source／split／output 邊界各自正規化與驗證。
+3. `LoadedTaxonomy` 是具名 handoff，但 `tree`／`info_score_table` 保留 legacy mutable container，因 downstream constructors
+   目前會自行 copy；若要深度 immutable，需先固定所有 caller 的 list／dict expectations，不能只靠 frozen 外殼宣稱完成。

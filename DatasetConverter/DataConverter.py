@@ -103,6 +103,8 @@ from DatasetConverter.sources.source_collection import SourceRole
 from DatasetConverter.sources.sample_sources import read_czj_corpus_titles
 from DatasetConverter.sources.source_collection import SourceSpec
 from DatasetConverter.sources.source_collection import select_unique_content_paths
+from DatasetConverter.taxonomy import load_taxonomy as load_taxonomy_from_config
+from DatasetConverter.taxonomy import taxonomy_config_from_namespace
 
 #from utilities import hash
 from text_category_profiler.data.df_utils import dfOutputer
@@ -122,8 +124,6 @@ from text_category_profiler.core.log_display import warning
 from text_category_profiler.core.utilities import ShowElapsedTime
 from text_category_profiler.core.utilities import ShowStepCostTime
 from text_category_profiler.core.utilities import SplitList
-from text_category_profiler.core.utilities import ListDiff
-from text_category_profiler.core.utilities import flattenList
 from text_category_profiler.core.utilities import fileNameReplacer
 from text_category_profiler.core.utilities import CopyOrMoveWithFNList
 from text_category_profiler.core.utilities import RandomSample
@@ -1206,13 +1206,19 @@ def setArguments(DCkwargs, argv=None):
     #DCkwargs["FixedTestFileBound"] = args.FixedTestFileBound
     return args,DCkwargs,ROOTPATHList,FixedTestPATHList
 
-def loadLabels(args,DCkwargs=dict()):
+def load_taxonomy(args):
+    """Load and validate taxonomy files without mutating converter settings."""
+    return load_taxonomy_from_config(
+        taxonomy_config_from_namespace(args),
+        loader=SetTreeFiles,
+    )
+
+
+def loadLabels(args, DCkwargs=None):
     #讀取分類樹樹狀關係資料庫，並建立分類樹類別關係（邊）清單及分數表，並複製備份記錄到BertDatasetSubDir下。
-    TreeBaseFNList = [x.strip() for x in args.TopicTreeFiles.split(",") if x.strip()]
-    tpcTree,InfoScoreTable = SetTreeFiles(
-        TreeBaseFNList=TreeBaseFNList,
-        OutputPath = os.path.join(args.BertDatasetSubDir,"OnlyForRecord"),
-        TreeSourceDir=args.TopicTreeDir)
+    taxonomy = load_taxonomy(args)
+    tpcTree = taxonomy.tree
+    InfoScoreTable = taxonomy.info_score_table
     
     #取得標籤清單。
     '''
@@ -1221,13 +1227,8 @@ def loadLabels(args,DCkwargs=dict()):
         ROOTPATHList=ROOTPATHList+FixedTestPATHList,
         OnlyLettersDigits=OnlyLettersDigitsLabels)
     '''
-    LabelList = sorted(set(flattenList(tpcTree)))
-
-    if set(LabelList) == {"Negative","Positive"}:
-        global RemoveDumpSamples
-        RemoveDumpSamples = False
-    
-    LabelsToCorrect = ListDiff(LabelList,InfoScoreTable.keys())
+    LabelList = list(taxonomy.validation.labels)
+    LabelsToCorrect = list(taxonomy.validation.missing_info_score_labels)
     key_values("Topic tree labels", [
         ("Label count", len(LabelList)),
         ("InfoScore labels", summarize_sequence(list(InfoScoreTable.keys())[:5], limit=5)),
@@ -1238,13 +1239,14 @@ def loadLabels(args,DCkwargs=dict()):
         raise Exception
     from DatasetConverter.ConverterParameters import RSTRLabelMode
     RSTRLabelList = GetRSTRLabelList(RSTRLabelMode)
-    DCkwargs.update({
+    normalized_kwargs = dict(DCkwargs or {})
+    normalized_kwargs.update({
         "tpcTree":tpcTree,
         "InfoScoreTable":InfoScoreTable,
         "LabelList":LabelList,
         "RSTRLabelList":RSTRLabelList,
         })
-    return DCkwargs
+    return normalized_kwargs
     #return tpcTree,InfoScoreTable,LabelList,DCkwargs
       
 def main(argv=None):

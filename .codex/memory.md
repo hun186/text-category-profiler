@@ -12,6 +12,13 @@
 
 ## Recent Outcomes
 
+### 2026-08-14 — DatasetConverter taxonomy config／validation boundary
+
+- 目標：推進 Phase 2／3，將 taxonomy label normalization／InfoScore validation 從 legacy settings wrapper 抽離。
+- 結果：immutable `TaxonomyConfig` 集中 namespace mapping，injected loader與 frozen validation固定 adapter／label契約；
+  `loadLabels()`移除 mutable default、複製 caller settings且保留 legacy CLI/output/error gate。
+- 驗證：taxonomy config/fake-loader isolated tests、AST wrapper gate、完整輕量 unittest、`py_compile`與`git diff --check`。
+
 ### 2026-08-14 — DatasetConverter functional package layout
 
 - 目標：依重構指引降低 DatasetConverter root 的 Python module 平鋪數量，同時維持已固定的 import／行為契約。
@@ -77,11 +84,3 @@
 - 結果：`BuildSamplesDfFromPaths()`、`DatasetGenerator.__init__()` 改以 `None` defaults 並逐 call/instance copy source、split、
   ES 與 DC settings；保留 keyword、empty default、split/output contracts。
 - 驗證：AST gates、fixture integration/split/source-role targeted tests、完整輕量 unittest、`py_compile`、`git diff --check`。
-
-### 2026-08-13 — DatasetConverter job-generator config isolation
-
-- 目標：推進 Phase 2，消除 active job generator mutable defaults 與 caller/instance configuration leakage。
-- 結果：source lists、ES/sampling/rule mappings 改為 `None` 後逐 instance copy；會被寫入 `retItem` 的 ES job 與 nested
-  settings deep-copy，保留 legacy defaults 與 constructor/job contracts。
-- 驗證：AST mutable-default gate、source-role/source-collection/conversion fixture targeted tests、完整輕量 unittest、
-  `py_compile` 與 `git diff --check`。
