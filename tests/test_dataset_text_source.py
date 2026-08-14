@@ -5,9 +5,9 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from DatasetConverter.text_source import clean_text_with_patterns
-from DatasetConverter.text_source import normalize_basic_text
-from DatasetConverter.text_source import read_text
+from DatasetConverter.adapters.text_source import clean_text_with_patterns
+from DatasetConverter.adapters.text_source import normalize_basic_text
+from DatasetConverter.adapters.text_source import read_text
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -113,7 +113,7 @@ class DatasetTextSourceTests(unittest.TestCase):
     def test_reader_and_adapter_have_no_module_scope_legacy_import(self):
         for relative_path in (
             "DatasetConverter/sampleHandler.py",
-            "DatasetConverter/text_source.py",
+            "DatasetConverter/adapters/text_source.py",
         ):
             tree = ast.parse(
                 (REPOSITORY_ROOT / relative_path).read_text(encoding="utf-8")

@@ -9,7 +9,7 @@ import csv
 from pathlib import Path
 from typing import Iterable
 
-from DatasetConverter.source_collection import TextSource
+from DatasetConverter.sources.source_collection import TextSource
 
 
 def write_classifier_tsv(

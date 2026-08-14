@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from DatasetConverter.opencc_source import convert_text
+from DatasetConverter.adapters.opencc_source import convert_text
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -28,7 +28,7 @@ class OpenCCConversionAdapterTests(unittest.TestCase):
     def test_reader_and_adapter_have_no_module_scope_opencc_import(self):
         for relative_path in (
             "DatasetConverter/sampleHandler.py",
-            "DatasetConverter/opencc_source.py",
+            "DatasetConverter/adapters/opencc_source.py",
         ):
             with self.subTest(path=relative_path):
                 path = REPOSITORY_ROOT / relative_path

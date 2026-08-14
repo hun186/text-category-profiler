@@ -1,11 +1,11 @@
 import unittest
 from dataclasses import FrozenInstanceError
 
-from DatasetConverter.source_collection import discover_source_files
-from DatasetConverter.source_collection import discover_source_spec
-from DatasetConverter.source_collection import SourceRole
-from DatasetConverter.source_collection import SourceSpec
-from DatasetConverter.source_collection import select_unique_content_paths
+from DatasetConverter.sources.source_collection import discover_source_files
+from DatasetConverter.sources.source_collection import discover_source_spec
+from DatasetConverter.sources.source_collection import SourceRole
+from DatasetConverter.sources.source_collection import SourceSpec
+from DatasetConverter.sources.source_collection import select_unique_content_paths
 
 
 class DatasetSourceCollectionTests(unittest.TestCase):

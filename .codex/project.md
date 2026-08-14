@@ -47,7 +47,7 @@
 | --- | --- | --- |
 | `TCFMain.py` | 根流程 orchestrator | 修改整體流程、入口參數傳遞、階段順序 |
 | `TCF_Params/` | 預設參數、工作池根目錄、流程常數 | 修改 CLI 預設、任務模式、工作池／模型路徑 |
-| `DatasetConverter/` | 資料集轉換與樣本處理 | 修改輸入資料轉 TSV／SQLite／分類資料集流程 |
+| `DatasetConverter/` | 資料集轉換與樣本處理；內部依 `core/`、`sources/`、`adapters/` 分流 | 修改輸入資料轉 TSV／SQLite／分類資料集流程 |
 | `BertScript/` | BERT／XLM 分類、結果合併、視覺化 | 修改模型訓練／推論、分類結果合併或 Dash 視覺化 |
 | `ClassesTree/` | 類別樹與標籤工具 | 修改 taxonomy、label tree、圖形視覺化 |
 | `TextClassificationDatasetOptimization/` | AI 代理人提示模板、taxonomy 擴充、來源索引、訓練集 PoC 與正文抓取工具 | 盤點類別缺口、連結當前議題、建立／驗證訓練文本 |

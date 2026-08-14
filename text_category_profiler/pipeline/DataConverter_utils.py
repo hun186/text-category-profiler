@@ -32,7 +32,7 @@ from ClassesTree.ClassesTree_utils import GetSubNodes
 from ClassesTree.ClassesTree_utils import LoadTree
 from ClassesTree.ClassesTree_utils import BuildInfoScoreTable
 from ClassesTree.Label_utils import GetCTOfLabel
-from DatasetConverter.source_metadata import getSrcFromFileName
+from DatasetConverter.core.source_metadata import getSrcFromFileName
 
 def GetFixedTestPATH(args):
     #FixedTestPATHList = [

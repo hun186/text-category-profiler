@@ -12,6 +12,11 @@
 
 ## Recent Outcomes
 
+### 2026-08-14 — DatasetConverter functional package layout
+
+- 目標：依重構指引降低 DatasetConverter root 的 Python module 平鋪數量，同時維持已固定的 import／行為契約。
+- 結果：16 個已抽離 modules 分流至 `core/`、`sources/`、`adapters/`；所有 repository callers 與 regression tests 使用新路徑，子套件不 eager import optional dependencies。
+- 驗證：完整輕量 unittest、targeted DatasetConverter suites、`py_compile`、import-path search 與 `git diff --check`。
 ### 2026-08-14 — DatasetConverter entrypoint DataFrame constructor boundary
 
 - 目標：推進 Phase 1，移除 canonical entrypoint的 direct pandas import與無 caller的 pandas.io/Plotly/colorama imports。
@@ -80,11 +85,3 @@
   settings deep-copy，保留 legacy defaults 與 constructor/job contracts。
 - 驗證：AST mutable-default gate、source-role/source-collection/conversion fixture targeted tests、完整輕量 unittest、
   `py_compile` 與 `git diff --check`。
-
-### 2026-08-13 — DatasetConverter Elasticsearch client factory boundary
-
-- 目標：延續 Phase 4，將 optional ES package import 與 credential-bearing client construction 移出 reader module scope。
-- 結果：`elasticsearch_source.create_elasticsearch_client()` 集中 legacy constructor contract 並採 function-local import；
-  reader 只注入 factory 給 bounded fetch adapter，非 ES reader imports 不再要求 Elasticsearch package。
-- 驗證：isolated fake-module factory test、module-scope import AST gates、完整輕量 unittest、相關 `py_compile` 與
-  `git diff --check`。

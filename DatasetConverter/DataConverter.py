@@ -74,7 +74,7 @@ from text_category_profiler.pipeline.TCF_utils import ClassfierOptionParser
 from text_category_profiler.pipeline.TCF_utils import get_base_model_checkpoint
 from text_category_profiler.pipeline.TCF_utils import TaskConnector
 
-from DatasetConverter.source_metadata import getSrcFromFileName
+from DatasetConverter.core.source_metadata import getSrcFromFileName
 from text_category_profiler.pipeline.DataConverter_utils import GetFixedTestPATH
 from ClassesTree.ClassesTree_utils import GetNodes
 from ClassesTree.ClassesTree_utils import GetSubTopics
@@ -85,24 +85,24 @@ from ClassesTree.ClassesTree_utils import SetTreeFiles
     #from sampleHandler import SampleReader
 #except:
 from DatasetConverter.sampleHandler import SampleReader
-from DatasetConverter.dataset_split import augment_training_rows
-from DatasetConverter.dataset_split import build_split_plan
-from DatasetConverter.dataset_split import deduplicate_dataset_rows
-from DatasetConverter.dataset_split import ensure_train_covers_labels
-from DatasetConverter.dataset_split import expand_train_to_cover_labels
-from DatasetConverter.dataset_split import iter_dataset_splits
-from DatasetConverter.dataframe_source import concat_dataframes
-from DatasetConverter.dataframe_source import dataframe_from_dict
-from DatasetConverter.dataframe_source import empty_dataframe
-from DatasetConverter.sample_schema import columns_for_sample_rows, validate_sample_rows
-from DatasetConverter.sample_pipeline import aggregate_multi_label_counts
-from DatasetConverter.sample_pipeline import collect_reader_results
-from DatasetConverter.sample_pipeline import collect_source_metadata
-from DatasetConverter.source_collection import discover_source_spec
-from DatasetConverter.source_collection import SourceRole
-from DatasetConverter.sample_sources import read_czj_corpus_titles
-from DatasetConverter.source_collection import SourceSpec
-from DatasetConverter.source_collection import select_unique_content_paths
+from DatasetConverter.core.dataset_split import augment_training_rows
+from DatasetConverter.core.dataset_split import build_split_plan
+from DatasetConverter.core.dataset_split import deduplicate_dataset_rows
+from DatasetConverter.core.dataset_split import ensure_train_covers_labels
+from DatasetConverter.core.dataset_split import expand_train_to_cover_labels
+from DatasetConverter.core.dataset_split import iter_dataset_splits
+from DatasetConverter.adapters.dataframe_source import concat_dataframes
+from DatasetConverter.adapters.dataframe_source import dataframe_from_dict
+from DatasetConverter.adapters.dataframe_source import empty_dataframe
+from DatasetConverter.core.sample_schema import columns_for_sample_rows, validate_sample_rows
+from DatasetConverter.core.sample_pipeline import aggregate_multi_label_counts
+from DatasetConverter.core.sample_pipeline import collect_reader_results
+from DatasetConverter.core.sample_pipeline import collect_source_metadata
+from DatasetConverter.sources.source_collection import discover_source_spec
+from DatasetConverter.sources.source_collection import SourceRole
+from DatasetConverter.sources.sample_sources import read_czj_corpus_titles
+from DatasetConverter.sources.source_collection import SourceSpec
+from DatasetConverter.sources.source_collection import select_unique_content_paths
 
 #from utilities import hash
 from text_category_profiler.data.df_utils import dfOutputer

@@ -3,17 +3,17 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from DatasetConverter.sample_sources import PreparedDocument
-from DatasetConverter.sample_sources import ElasticsearchDocument
-from DatasetConverter.sample_sources import fetch_elasticsearch_response
-from DatasetConverter.sample_sources import SourceDocument
-from DatasetConverter.sample_sources import apply_regular_cleaning_rules
-from DatasetConverter.sample_sources import prepare_document_segments
-from DatasetConverter.sample_sources import map_elasticsearch_document
-from DatasetConverter.sample_sources import read_czj_corpus_document
-from DatasetConverter.sample_sources import read_czj_corpus_titles
-from DatasetConverter.sample_sources import read_czj_sample_rows
-from DatasetConverter.sample_sources import read_regular_text_document
+from DatasetConverter.sources.sample_sources import PreparedDocument
+from DatasetConverter.sources.sample_sources import ElasticsearchDocument
+from DatasetConverter.sources.sample_sources import fetch_elasticsearch_response
+from DatasetConverter.sources.sample_sources import SourceDocument
+from DatasetConverter.sources.sample_sources import apply_regular_cleaning_rules
+from DatasetConverter.sources.sample_sources import prepare_document_segments
+from DatasetConverter.sources.sample_sources import map_elasticsearch_document
+from DatasetConverter.sources.sample_sources import read_czj_corpus_document
+from DatasetConverter.sources.sample_sources import read_czj_corpus_titles
+from DatasetConverter.sources.sample_sources import read_czj_sample_rows
+from DatasetConverter.sources.sample_sources import read_regular_text_document
 
 
 class MapElasticsearchDocumentTests(unittest.TestCase):

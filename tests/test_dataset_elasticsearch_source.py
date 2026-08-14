@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from DatasetConverter.elasticsearch_source import create_elasticsearch_client
+from DatasetConverter.adapters.elasticsearch_source import create_elasticsearch_client
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -28,7 +28,7 @@ class ElasticsearchClientFactoryTests(unittest.TestCase):
         )
 
     def test_module_has_no_module_scope_elasticsearch_import(self):
-        path = REPOSITORY_ROOT / "DatasetConverter" / "elasticsearch_source.py"
+        path = REPOSITORY_ROOT / "DatasetConverter" / "adapters" / "elasticsearch_source.py"
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
 
         self.assertFalse(

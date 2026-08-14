@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from DatasetConverter.logger_source import create_sample_reader_logger
+from DatasetConverter.adapters.logger_source import create_sample_reader_logger
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -45,7 +45,7 @@ class DatasetLoggerSourceTests(unittest.TestCase):
         self.assertNotIn("text_category_profiler.concurrency.MP_utils", imports)
 
     def test_logger_adapter_imports_mp_utils_only_inside_factory(self):
-        path = REPOSITORY_ROOT / "DatasetConverter" / "logger_source.py"
+        path = REPOSITORY_ROOT / "DatasetConverter" / "adapters" / "logger_source.py"
         tree = ast.parse(path.read_text(encoding="utf-8"))
         module_imports = [
             node.module

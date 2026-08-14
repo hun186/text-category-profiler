@@ -4,7 +4,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from DatasetConverter.sample_schema import validate_sample_rows
+from DatasetConverter.core.sample_schema import validate_sample_rows
 
 
 @dataclass(frozen=True)
