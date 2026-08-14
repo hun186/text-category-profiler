@@ -8,15 +8,10 @@ from DatasetConverter.reader_utils import intersect_lists
 from DatasetConverter.reader_utils import normalize_filename
 from DatasetConverter.reader_utils import sanitize_filename
 from DatasetConverter.reader_utils import wrap_text
-from text_category_profiler.concurrency.MP_utils  import MPlogger
 from text_category_profiler.core.log_display import key_values
 from text_category_profiler.core.log_display import summarize_sequence
 #from text_category_profiler.pipeline.TCF_utils import datasetDirOutputDirPickers
 from text_category_profiler.core.model_paths import resolve_local_model_directory
-from text_category_profiler.text.TextProcessor_utils import textReader
-from text_category_profiler.text.TextProcessor_utils import BasicDataCleaner
-from text_category_profiler.text.TextProcessor_utils import DataCleanerWithPattern
-from ClassesTree.Label_utils import getLabelsFromFileName
 from DatasetConverter.sample_pipeline import build_elasticsearch_provenance
 from DatasetConverter.sample_pipeline import select_document_samples
 from DatasetConverter.sample_pipeline import transform_sample_segment
@@ -29,11 +24,16 @@ from DatasetConverter.sample_sources import read_czj_sample_rows
 from DatasetConverter.sample_sources import read_regular_text_document
 from DatasetConverter.sample_sources import SourceDocument
 from DatasetConverter.elasticsearch_source import create_elasticsearch_client
+from DatasetConverter.logger_source import create_sample_reader_logger
+from DatasetConverter.label_source import labels_from_path
 from DatasetConverter.opencc_source import convert_text
 from DatasetConverter.tokenizer_source import load_auto_tokenizer
 from DatasetConverter.tokenizer_source import resolve_tokenizer_model
 from DatasetConverter.tokenizer_pipeline import analyze_token_word_mapping
 from DatasetConverter.tokenizer_pipeline import split_tokenized_context
+from DatasetConverter.text_source import clean_text_with_patterns
+from DatasetConverter.text_source import normalize_basic_text
+from DatasetConverter.text_source import read_text
 #from ClassesTree.Label_utils import LabelsStringReader
 
 #from tokenization import FullTokenizer
@@ -230,8 +230,11 @@ class TextDivider():
                         text_no_digits = re.sub(
                             "({}){{2,}}".format(x), x, text_no_digits)
                     '''
-                    text_no_digits = BasicDataCleaner(
-                        strQ2B = False,DummySpace = True).proc(text_no_digits)
+                    text_no_digits = normalize_basic_text(
+                        text_no_digits,
+                        convert_full_width=False,
+                        dummy_space=True,
+                    )
                     #if text.count(" ")/(len(text)+10**-100) > 0.13:
                     #if text_no_digits.count(" ")/(len(text_no_digits)+10**-100) > 0.13:
                     #被空格隔開的字符要大於1個，才計數，以避免" 示 範 字 串"這種單字接空白的中文字串被誤判為英文。
@@ -312,7 +315,9 @@ class SampleReader():
         self.RBActive = RBActive
         self.DataCleanerRePatternDict = deepcopy(DataCleanerRePatternDict or {})
         if MPLOGGER == None:
-            self.MPLOGGER = MPlogger(logFile="sampleHandler.log")
+            self.MPLOGGER = create_sample_reader_logger(
+                log_file="sampleHandler.log"
+            )
         else:
             self.MPLOGGER = MPLOGGER
         
@@ -447,8 +452,15 @@ class SampleReader():
                 self.file,
                 unique_sorted_labels=self.UniqueSortedLabels,
                 only_letters_digits_labels=self.OnlyLettersDigitsLabels,
-                labels_from_path=getLabelsFromFileName,
-                read_text=lambda **kwargs: textReader(**kwargs).run(),
+                labels_from_path=lambda path, **kwargs: labels_from_path(
+                    path,
+                    unique_sorted=kwargs.get("UniqueSorted", True),
+                    only_letters_digits=kwargs.get("OnlyLettersDigits", False),
+                ),
+                read_text=lambda **kwargs: read_text(
+                    file=kwargs["file"],
+                    encoding=kwargs.get("encoding", "utf-8"),
+                ),
             )
             if source_document is None:
                 return nullReturn
@@ -466,9 +478,10 @@ class SampleReader():
                 source_document,
                 rules=self.DataCleanerRePatternDict,
                 labels_in_exemptions=intersect_lists,
-                clean_text=lambda value, rules: DataCleanerWithPattern(
-                    value, rules
-                ).proc(),
+                clean_text=lambda value, rules: clean_text_with_patterns(
+                    value,
+                    rules,
+                ),
             )
             text = source_document.text
 
@@ -503,9 +516,11 @@ class SampleReader():
         
         prepared_document = prepare_document_segments(
             SourceDocument(text=text, input_labels=tuple(InLabelList)),
-            normalize_text=lambda value: BasicDataCleaner(
-                strQ2B=True, DummySpace=True
-            ).proc(value),
+            normalize_text=lambda value: normalize_basic_text(
+                value,
+                convert_full_width=True,
+                dummy_space=True,
+            ),
             divide_text=lambda value: TextDivider(
                 file=self.file,
                 text=value,
