@@ -12,6 +12,34 @@
 
 ## Recent Outcomes
 
+### 2026-08-14 — DatasetConverter shared pipeline activation boundary
+
+- 目標：推進Phase 1，避免canonical module import為shared CLI/path/handoff policies載入`MP_utils`、numpy與pandas runtime。
+- 結果：`pipeline_source`以function-local imports轉接parser、directory/model/label/FixedTest與TaskConnector contracts；下一個
+  isolated import blocker收斂為`ClassesTree_utils -> pandas`。
+- 驗證：fake-module forwarding、AST activation gates、完整輕量unittest、`py_compile`、`git diff --check`。
+
+### 2026-08-14 — DatasetConverter dependency-light stage utilities
+
+- 目標：推進Phase 1，移除canonical entrypoint對含`psutil`等重型依賴的generic utilities module-scope coupling。
+- 結果：`core/stage_utils`集中stage filesystem、chunk、hash、sampling、augmentation與timing contracts；maintenance imports改為
+  function-local，isolated import下一blocker收斂為`TCF_utils -> MP_utils -> numpy`。
+- 驗證：temporary filesystem/hash、seeded random、timing、AST gates、完整輕量unittest、`py_compile`、`git diff --check`。
+
+### 2026-08-14 — DatasetConverter extraction activation boundary
+
+- 目標：推進Phase 1，讓未啟用extraction／WeiTech corpus conversion的流程不載入有副作用且依賴`tqdm`的EXTConverter modules。
+- 結果：`extraction_source`以function-local imports固定rule identity、extractor keywords與builder transform contracts；canonical
+  entrypoint不再eager import三個legacy modules，isolated import下一blocker收斂為generic utilities的`psutil`。
+- 驗證：fake-module adapter/AST activation gates、targeted與完整輕量unittest、`py_compile`、`git diff --check`。
+
+### 2026-08-14 — DatasetConverter entrypoint configuration boundary
+
+- 目標：推進 Phase 1／2，解除 canonical entrypoint 對 application／converter parameter bootstrap與import-time resource probe的耦合。
+- 結果：dependency-light `DatasetConverter.config`提供path/static defaults、frozen split及fresh nested reader settings；process counts
+  在`main()` bootstrap後計算，entrypoint不再import兩個legacy parameter modules；下一blocker為extraction的`tqdm` integration。
+- 驗證：config characterization、AST/subprocess import gates、完整輕量 unittest、`py_compile`與`git diff --check`。
+
 ### 2026-08-14 — DatasetConverter taxonomy config／validation boundary
 
 - 目標：推進 Phase 2／3，將 taxonomy label normalization／InfoScore validation 從 legacy settings wrapper 抽離。
@@ -53,34 +81,3 @@
 - 結果：刪除 `tokenization_wrap_Test()`、內嵌長文本及 `__main__` block；reader 不再 import CLI parser/model checkpoint helper，
   production tokenizer wrapper 與 reader API 不變。
 - 驗證：AST probe/CLI/main gates、tokenizer/package-layout targeted suites、完整輕量 unittest、`py_compile`、`git diff --check`。
-
-### 2026-08-13 — DatasetConverter tokenizer word-analysis boundary
-
-- 目標：延續 Phase 1/4，移除 production wrapper 中未回傳的 tokenizer debug mapping 工作。
-- 結果：immutable `TokenWordAnalysis` 與純 `analyze_token_word_mapping()` 固定 legacy word/span/token mapping；wrapper 保留
-  `word_analysis` keyword 與 dict shape，且只在 debug 可觀察時執行分析。
-- 驗證：fake encoding word/multi-token/repeated-space tests、tokenizer targeted suites、完整輕量 unittest、`py_compile` 與
-  `git diff --check`。
-
-### 2026-08-13 — DatasetConverter OpenCC integration boundary
-
-- 目標：推進 Phase 1，讓不使用文字轉碼的 reader paths 不再因 module-scope OpenCC import 依賴 optional runtime。
-- 結果：`opencc_source.convert_text()` 以 function-local import 集中 legacy conversion contract；reader 注入 adapter，保留 conversion-before-length、special-label bypass 與每 segment 建立 converter 的既有行為。
-- 驗證：isolated fake-module factory test、reader/adapter module-scope import AST gates、sample pipeline 與 package-layout targeted tests。
-
-### 2026-08-13 — DatasetConverter tokenizer integration and slicing boundaries
-
-- 目標：推進 Phase 1，讓非 tokenizer reader paths 不再因 module-scope Transformers import 依賴 optional runtime。
-- 結果：`tokenizer_source.load_auto_tokenizer()` 以 function-local import 集中 legacy factory contract；後續新增 immutable
-  `TokenizedChunks` 與 dependency-free `split_tokenized_context()`，固定 token reserve/group/span slicing、boundary 去重與
-  optional retokenization；`TokenizerModel`／`resolve_tokenizer_model()` 另隔離 local/fallback/nested-checkpoint discovery，
-  legacy wrapper 保留 dict API、warning 與既有 encoding reuse。
-- 驗證：isolated factory/model-resolution、fake-tokenizer slicing/empty/budget tests、module-scope import AST gates、完整
-  輕量 unittest、相關 `py_compile` 與 `git diff --check`。
-
-### 2026-08-13 — DatasetConverter pipeline/dataset config isolation
-
-- 目標：推進 Phase 2，消除 active pipeline function 與 dataset generator mutable defaults／caller config leakage。
-- 結果：`BuildSamplesDfFromPaths()`、`DatasetGenerator.__init__()` 改以 `None` defaults 並逐 call/instance copy source、split、
-  ES 與 DC settings；保留 keyword、empty default、split/output contracts。
-- 驗證：AST gates、fixture integration/split/source-role targeted tests、完整輕量 unittest、`py_compile`、`git diff --check`。
