@@ -38,8 +38,20 @@ try:
 except:
     pass
 '''
-from TCF_Params.TCFParameters import WorkPoolROOT
-from TCF_Params.TCFParameters import DatasetConverterROOT
+from DatasetConverter.config import DATASET_CONVERTER_ROOT
+from DatasetConverter.config import DATA_AUGMENTATION_GOAL
+from DatasetConverter.config import DEFAULT_SPLIT_CONFIG
+from DatasetConverter.config import REMOVE_DUPLICATE_FIXED_TEST_ARTICLES
+from DatasetConverter.config import RESTRICTED_LABEL_MODE
+from DatasetConverter.config import STATISTICS_ENABLED
+from DatasetConverter.config import WORK_POOL_ROOT
+from DatasetConverter.config import default_converter_settings
+
+# Preserve the legacy local names used throughout this stage without importing
+# TCFParameters, whose module initialization parses CLI arguments and loads the
+# multiprocessing runtime.
+WorkPoolROOT = WORK_POOL_ROOT
+DatasetConverterROOT = DATASET_CONVERTER_ROOT
 #from TCF_Params.TCFParameters import ROOTPATHList
 #from TCF_Params.TCFParameters import BertClassfierPath
 
@@ -49,33 +61,35 @@ from TCF_Params.TCFParameters import DatasetConverterROOT
 #from DatasetConverter.ConverterParameters import ConvertToSpec
 #from DatasetConverter.ConverterParameters import TreeBinaryTarget
 #from DatasetConverter.ConverterParameters import UniqueLabel
-from DatasetConverter.ConverterParameters import nProcess
-from DatasetConverter.ConverterParameters import nProcessSPC
 #from DatasetConverter.ConverterParameters import UniqueSortedLabels
 #from DatasetConverter.ConverterParameters import RemoveDumpSamples
 #from DatasetConverter.ConverterParameters import OnlyLettersDigitsLabels
-from DatasetConverter.ConverterParameters import DatasetRatioDict
 #from DatasetConverter.ConverterParameters import WIDTH
 #from DatasetConverter.ConverterParameters import sampleMethod
 #from DatasetConverter.ConverterParameters import DataAugmentationGoal
-from DatasetConverter.ConverterParameters import RemoveDumpArticle_FT
-from DatasetConverter.ConverterParameters import DCkwargs
-from DatasetConverter.EXTConverter.ExtractionConverter import Extractor
-from DatasetConverter.EXTConverter.ExtractionRule import ExtractionRuleDict
-from DatasetConverter.EXTConverter.Combiner import CZJCorpusFileBuilder
+DatasetRatioDict = DEFAULT_SPLIT_CONFIG.as_legacy_mapping()
+RemoveDumpArticle_FT = REMOVE_DUPLICATE_FIXED_TEST_ARTICLES
+DCkwargs = default_converter_settings()
+from DatasetConverter.adapters.extraction_source import build_czj_corpus
+from DatasetConverter.adapters.extraction_source import get_extraction_rule
+from DatasetConverter.adapters.extraction_source import run_extraction
 
 
-from text_category_profiler.core.utilities import OSWALK
-from text_category_profiler.core.utilities import MKDIR
-from text_category_profiler.core.utilities import randomReplace
-from text_category_profiler.pipeline.TCF_utils import GetRSTRLabelList
-from text_category_profiler.pipeline.TCF_utils import datasetDirOutputDirPickers
-from text_category_profiler.pipeline.TCF_utils import ClassfierOptionParser
-from text_category_profiler.pipeline.TCF_utils import get_base_model_checkpoint
-from text_category_profiler.pipeline.TCF_utils import TaskConnector
+from DatasetConverter.core.stage_utils import FileHashJob
+from DatasetConverter.core.stage_utils import make_directory
+from DatasetConverter.core.stage_utils import random_replace
+from DatasetConverter.core.stage_utils import random_sample
+from DatasetConverter.core.stage_utils import show_elapsed_time
+from DatasetConverter.core.stage_utils import split_list
+from DatasetConverter.core.stage_utils import walk_files
+from DatasetConverter.adapters.pipeline_source import connect_task
+from DatasetConverter.adapters.pipeline_source import fixed_test_paths
+from DatasetConverter.adapters.pipeline_source import parse_converter_options
+from DatasetConverter.adapters.pipeline_source import pick_dataset_directories
+from DatasetConverter.adapters.pipeline_source import resolve_base_model_checkpoint
+from DatasetConverter.adapters.pipeline_source import restricted_labels
 
 from DatasetConverter.core.source_metadata import getSrcFromFileName
-from text_category_profiler.pipeline.DataConverter_utils import GetFixedTestPATH
 from ClassesTree.ClassesTree_utils import GetNodes
 from ClassesTree.ClassesTree_utils import GetSubTopics
 from ClassesTree.ClassesTree_utils import GetClosestMatchingParent
@@ -120,14 +134,6 @@ from text_category_profiler.core.log_display import warning
 #from utilities_RAND import LoadTree
 #from utilities_RAND import RANDLoader
 
-
-from text_category_profiler.core.utilities import ShowElapsedTime
-from text_category_profiler.core.utilities import ShowStepCostTime
-from text_category_profiler.core.utilities import SplitList
-from text_category_profiler.core.utilities import fileNameReplacer
-from text_category_profiler.core.utilities import CopyOrMoveWithFNList
-from text_category_profiler.core.utilities import RandomSample
-from text_category_profiler.core.utilities import FileHashDictBuilder
 
 from text_category_profiler.data.DB_utils import getESData
 
@@ -281,10 +287,14 @@ class DataConvertJobGenerater():
                         "cli_args is required to resolve an empty tokenizer modelDir"
                     )
                 info("tokenizationWrap is True but modelDir is empty; resolving modelDir from dataset/output settings.")
-                _,modelDir = datasetDirOutputDirPickers(
-                    args=self.cli_args,rdy_for_stage="DataConverter").proc()
+                _, modelDir = pick_dataset_directories(
+                    args=self.cli_args,
+                    ready_for_stage="DataConverter",
+                )
                 if modelDir in [None, ""]:
-                    modelDir = get_base_model_checkpoint(self.cli_args.ModelType)
+                    modelDir = resolve_base_model_checkpoint(
+                        self.cli_args.ModelType
+                    )
                 key_values("Tokenizer model directory", [
                     ("modelDir", modelDir),
                     ("MaxSeqLength", self.cli_args.MaxSeqLength),
@@ -298,7 +308,7 @@ class DataConvertJobGenerater():
         #self.sampleLenLBD = sampleLenLBD
         self.sampleMethod = deepcopy(sampleMethod) if sampleMethod is not None else {
             "nBound": {"default": 5000, "Economist": 1000},
-            "RandomSample": True,
+            "random_sample": True,
             "LenLBD": 128,
         }
         self.TreeBinaryTarget = TreeBinaryTarget
@@ -345,10 +355,10 @@ class DataConvertJobGenerater():
         #fiLTxt = [x for x in fiL if os.path.splitext(x)[1][1:].lower() == "txt"]
         #fiLNonTxt = [x for x in fiL if os.path.splitext(x)[1][1:].lower() != "txt"]
         DTBJobs = [
-            #TxtFileHashDictBuilder(fiLCK, hashalg = "sha1")
-            FileHashDictBuilder(
-                fiLCK, hashalg = "sha1", nBytes = 100*1000*1000)
-            for fiLCK in SplitList(fiL, nChunks=self.nProcess)]
+            #TxtFileHashJob(fiLCK, hashalg = "sha1")
+            FileHashJob(
+                fiLCK, hash_algorithm="sha1", byte_limit=100 * 1000 * 1000)
+            for fiLCK in split_list(fiL, chunks=self.nProcess)]
         hashDictList = multicoreJob(
             DTBJobs, nProcess=self.nProcess).run()
         return select_unique_content_paths(hashDictList)
@@ -370,7 +380,7 @@ class DataConvertJobGenerater():
                 root_paths=tuple(self.ROOTPATHList),
                 filename_pattern=FullPathFNrePat,
             ),
-            walker=OSWALK,
+            walker=walk_files,
         )
         nOri = len(fiL)
         #利用Hash比對各檔案前100MB是否相同，以去除同樣檔案。
@@ -414,7 +424,7 @@ class DataConvertJobGenerater():
             PartNonFixedTest = [x for x in fiL if "FixedTest_" not in x and "AIpool".lower() not in x.lower()]
             #random.shuffle(PartFixedTest)
             #fiL = PartFixedTest[:self.FixedTestFileBound]+PartNonFixedTest
-            fiL = RandomSample(PartFixedTest,self.FixedTestFileBound)+PartNonFixedTest
+            fiL = random_sample(PartFixedTest,self.FixedTestFileBound)+PartNonFixedTest
         return fiL
 
     def BuildLabelConvertDict(self, 
@@ -478,7 +488,7 @@ class DataConvertJobGenerater():
             ("label count", len(LabelConvertDict.keys())),
             ("converted labels", nConvertedLabels),
         ], icon="·")
-        MKDIR(self.datasetSubDir)
+        make_directory(self.datasetSubDir)
         MPlogger(os.path.join(self.datasetSubDir,"OnlyForRecord"),
                  logFile="dataset.txt").logW(MES=MES, printOnScreen=False)
         with open(os.path.join(
@@ -553,7 +563,7 @@ def BuildSamplesDfFromPaths(
     datasetCountOFN = None,
     RemoveDumpArticle = True,
     Count_SQL_table="sampleCount_Main",
-    nProcess = nProcess,
+    nProcess = 1,
     DCkwargs = None,
     start_time=None,
     sourceRole="regular source",
@@ -672,7 +682,7 @@ def BuildSamplesDfFromPaths(
             OUTPUTMAIN_Counter = OUTPUTMAIN.replace("_with_filename","")+"_labels_count"
         dfOutputer(df_Counter, OUTPUTMAIN_Counter,
                    tsvIndex=True,SQL_table=Count_SQL_table).run()
-        ShowElapsedTime(start_time)
+        show_elapsed_time(start_time)
     else:
         warning(
             f"No {sourceRole} rows are available for DataFrame conversion. "
@@ -818,7 +828,7 @@ class DatasetGenerator:
                  esJob = None,
                  DCkwargs = None,
                  datasetCountOFN = None,
-                 nProcess = nProcess,
+                 nProcess = 1,
                  cli_args = None,
                  MPLOGGER = None,
                  ):
@@ -877,7 +887,7 @@ class DatasetGenerator:
                 # Legacy FixedTest discovery did not exclude UnTagged/UnSpec.
                 excluded_path_parts=(),
             ),
-            walker=OSWALK,
+            walker=walk_files,
         )
         key_values("Fixed test file discovery", [
             ("configured paths", summarize_sequence(self.FixedTestPATHList, limit=4)),
@@ -930,9 +940,7 @@ class DatasetGenerator:
                 Partdf, augmented_rows = augment_training_rows(
                     Partdf,
                     samples_per_label=self.DataAugmentationGoal,
-                    text_augmenter=lambda text: randomReplace(
-                        text, nReplacedChar=1
-                    ),
+                    text_augmenter=lambda text: random_replace(text, replaced_characters=1),
                 )
                 nDict["train_source"] = source_train_rows
                 nDict["train_augmented"] = augmented_rows
@@ -1076,7 +1084,7 @@ def FindFileContains(path, string, ApplyMoveFile = False, ApplyCountString = Fal
                 if string in open(src,'rt',encoding='utf-8').read():
                     desSubDir = os.path.join(path, "Containing_"+string)
                     des = os.path.join(desSubDir,file)
-                    MKDIR(desSubDir)
+                    make_directory(desSubDir)
                     shutil.move(src, des)
                     counter += 1
             except:
@@ -1087,7 +1095,7 @@ def FindFileContains(path, string, ApplyMoveFile = False, ApplyCountString = Fal
             "Containing_"+string))
     def CountString():
         print("針對目錄 {} ，統計字串'{}'出現次數之結果如下：".format(path,string))
-        for file in OSWALK(path):
+        for file in walk_files(path):
             count = open(file,'rt',encoding='utf-8').read().count(string)
             if count > 10:
                 print("檔案 {} 中，共含有 {} 個".format(file, count))
@@ -1100,6 +1108,8 @@ def FindFileContains(path, string, ApplyMoveFile = False, ApplyCountString = Fal
     raise Exception
     
 def FNReplace():
+    from text_category_profiler.core.utilities_path import fileNameReplacer
+
     fileNameReplacer.proc(ROOTPATHList=ROOTPATHList,
                           ReplaceDict={
                               #" Issue":" Affairs",
@@ -1112,6 +1122,8 @@ def FNReplace():
 
 
 def PickSelectTxt(SrcRoot = ""):
+    from text_category_profiler.core.utilities import CopyOrMoveWithFNList
+
     if SrcRoot=="":
         MES = "When try to PickSelectTxt, the SrcRoot is UNSETTED!!"
         print(MES)
@@ -1127,7 +1139,7 @@ def PickSelectTxt(SrcRoot = ""):
             #從單個類型挑選，如：Target，挑出來置於Target_select子目錄
             elif len(PickSrcSet) == 1:
                 DesRoot = os.path.join(SrcRoot,SrcType+"_select")
-            MKDIR(DesRoot)
+            make_directory(DesRoot)
             CopyOrMoveWithFNList(
                 SrcRoot=WSRoot, DesRoot=DesRoot,
                 FNMatchingMode="Part",FNPatList=FNPatList)
@@ -1143,9 +1155,11 @@ def bootstrap_runtime():
 
 
 def setArguments(DCkwargs, argv=None):
-    args = ClassfierOptionParser(argv)
-    args.BertDatasetSubDir,_ = datasetDirOutputDirPickers(
-        args=args,rdy_for_stage="DataConverter").proc()
+    args = parse_converter_options(argv)
+    args.BertDatasetSubDir, _ = pick_dataset_directories(
+        args=args,
+        ready_for_stage="DataConverter",
+    )
     #BertDatasetSubDir,outputDir = datasetDirOutputDirPickers(args=args).proc()
     #datasetDBDir = args.datasetDataBaseSubDir
     NewBertDatasetSubDir = args.BertDatasetSubDir + "_is_running_DataConverter"
@@ -1166,8 +1180,8 @@ def setArguments(DCkwargs, argv=None):
     #if not os.path.isdir(BertClassfierPath):
         #BertClassfierPath = "dataset"
     
-    MKDIR(WorkPoolROOT)
-    MKDIR(args.BertDatasetSubDir)
+    make_directory(WorkPoolROOT)
+    make_directory(args.BertDatasetSubDir)
     
     workingPath = r"C:\Users\Bruce2\Downloads\TopicTextCrawler_reload\C_wikisourceSearch\批复\PRC_OffDoc"
     #string = "﻿第四条"
@@ -1187,7 +1201,7 @@ def setArguments(DCkwargs, argv=None):
 
     #指定全加到測試集，不分配至訓練集的檔案目錄
     if args.FixedTestPATH == "" and args.test == True:
-        FixedTestPATHList = GetFixedTestPATH(args)
+        FixedTestPATHList = fixed_test_paths(args)
     else:
         FixedTestPATHList = [args.FixedTestPATH]
     if args.WeiTechFormatInputPATH != "":
@@ -1237,8 +1251,7 @@ def loadLabels(args, DCkwargs=None):
         warning(f"The following Labels {LabelsToCorrect} are not in the TopicTree.csv which will lead an KeyError when applying sampleReader".
               format(LabelsToCorrect))
         raise Exception
-    from DatasetConverter.ConverterParameters import RSTRLabelMode
-    RSTRLabelList = GetRSTRLabelList(RSTRLabelMode)
+    RSTRLabelList = restricted_labels(RESTRICTED_LABEL_MODE)
     normalized_kwargs = dict(DCkwargs or {})
     normalized_kwargs.update({
         "tpcTree":tpcTree,
@@ -1254,6 +1267,8 @@ def main(argv=None):
     global DCkwargs, exeTimeDict
     bootstrap_runtime()
     exeTimeDict = dict()
+    nProcess = multicoreJob().ComputeNProcess(log=False)
+    nProcessSPC = multicoreJob().ComputeSPCNProcess(log=False)
     #解析並設定路徑相關參數。
     args,DCkwargs,ROOTPATHList,FixedTestPATHList = setArguments(DCkwargs, argv=argv)
     #讀取及建置分類樹結構、分數表、Label，並加入轉換參數。
@@ -1272,17 +1287,18 @@ def main(argv=None):
         WTBertDatasetSubDir = os.path.join(args.WeiTechWorkPoolPATH,args.WeiTechworkID)
         #進行資料抽取轉換任務，輸出格式為CZJ_SamplesFile
         if args.ExtractionConverterTask != "":
-            if args.ExtractionConverterTask not in ExtractionRuleDict.keys():
+            try:
+                JobInfo = get_extraction_rule(args.ExtractionConverterTask)
+            except KeyError:
                 MES = f"資料集抽取轉換任務{args.ExtractionConverterTask}設定不存在於ExtractionRule，中止。檢查ExtractionRule.py及任務名稱。"
                 MPLOGGER_TCFMain.logW(MES)
                 raise Exception
-            else:
-                JobInfo = ExtractionRuleDict[args.ExtractionConverterTask]
-                JobInfo["DirName"] = WTBertDatasetSubDir
-                print("JobInfo",JobInfo)
-            Extractor(
-                task=args.ExtractionConverterTask,
-                FileNameInSQL3=False,JobInfo=JobInfo)
+            JobInfo["DirName"] = WTBertDatasetSubDir
+            print("JobInfo",JobInfo)
+            run_extraction(
+                args.ExtractionConverterTask,
+                job_info=JobInfo,
+            )
             MES = f"完成資料集抽取轉換任務{args.ExtractionConverterTask}for{WTBertDatasetSubDir}"
             MPLOGGER_TCFMain.logW(MES)
             
@@ -1296,10 +1312,10 @@ def main(argv=None):
             if os.path.isfile(WTdatasetDBFT):
                 print(f"Start to run CZJCorpusFileBuilder for {WTdatasetDBFT}")
                 OutputCZJCorpusFN=os.path.join(WTBertDatasetSubDir,"CZJ_CorpusFile_FixedTest.sql3")
-                CZJCorpusFileBuilder(
-                    SourceCZJSampleFN=WTdatasetDBFT,
-                    OutputCZJCorpusFN=OutputCZJCorpusFN,
-                    ).Transformer()
+                build_czj_corpus(
+                    source_path=WTdatasetDBFT,
+                    output_path=OutputCZJCorpusFN,
+                )
                 #備份WeiTech提供之依長度切割之dataset_total_with_filename.sql3及test.sql3
                 for file in ["dataset_total_with_filename_FixedTest.sql3",
                              "test.tsv","test.sql3"]:
@@ -1313,7 +1329,7 @@ def main(argv=None):
                 #time.sleep(30)
                 #raise Exception
             #if os.path.isfile(WTdatasetDBFT):    
-                #MKDIR(WTdatasetDBDir)
+                #make_directory(WTdatasetDBDir)
                 #des = os.path.join(WTdatasetDBDir,"dataset_total_with_filename_FixedTest.sql3")
                 #shutil.move(WTdatasetDBFT,des)
             else:
@@ -1335,7 +1351,6 @@ def main(argv=None):
     #else:
     #依照目錄設定，由txt檔產製資料集檔案。
     section("Dataset file generation", detail="開始產製資料集檔案。", icon="🧾")
-    from DatasetConverter.ConverterParameters import DataAugmentationGoal
     #print(f"{Fore.LIGHTYELLOW_EX}args.BertDatasetSubDir:{args.BertDatasetSubDir}{Fore.RESET}")
     #time.sleep(15)
     df = BuildSamplesDfFromPaths(
@@ -1361,8 +1376,7 @@ def main(argv=None):
     #將轉換成完成之資料集df以Sunburst視覺化方式顯示，並輸出html存檔。
     #if SQLFile != "":
         #StasticSwitch = False
-    from DatasetConverter.ConverterParameters import StasticSwitch
-    if StasticSwitch == True:
+    if STATISTICS_ENABLED == True:
         DTBJobs.extend(GenStasticsVisJobs(df, args.BertDatasetSubDir))
     
     if len(df) < 2000000:
@@ -1388,7 +1402,7 @@ def main(argv=None):
                      OUTPUTMAIN=OUTPUTMAIN,
                      IndexCols=IndexCols,
                      DatasetRatio=DatasetRatioDict,
-                     DataAugmentationGoal=DataAugmentationGoal,
+                     DataAugmentationGoal=DATA_AUGMENTATION_GOAL,
                      FixedTestPATHList=FixedTestPATHList,
                      esJob = esJob,
                      DCkwargs=DCkwargs,
@@ -1422,8 +1436,12 @@ def main(argv=None):
     del df
     exeTimeDict["DataConverter"] = f"{time.time()-exeTimeDict['stage_start_time']:.2f}"
     key_values("DataConverter timing", sorted(exeTimeDict.items()), icon="·")
-    TaskConnector(SrcTask="DataConverter",DesTask="RunClassfier",
-                  WorkingDir=args.BertDatasetSubDir,logFile="TCFMain.log").proc()
+    connect_task(
+        source_task="DataConverter",
+        destination_task="RunClassfier",
+        working_directory=args.BertDatasetSubDir,
+        log_file="TCFMain.log",
+    )
     return 0
 
 

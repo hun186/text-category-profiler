@@ -1308,3 +1308,126 @@ DataConverter.py -> stage/config -> domain services -> ports
    搬入單一巨大 dataclass，應按 source／split／output 邊界各自正規化與驗證。
 3. `LoadedTaxonomy` 是具名 handoff，但 `tree`／`info_score_table` 保留 legacy mutable container，因 downstream constructors
    目前會自行 copy；若要深度 immutable，需先固定所有 caller 的 list／dict expectations，不能只靠 frozen 外殼宣稱完成。
+
+### 2026-08-14 — Phase 1 entrypoint path config boundary（進行中）
+
+本次完成：
+
+- 新增 dependency-light `DatasetConverter/config.py`，只承接 canonical entrypoint import 時需要的 `WorkPoolROOT` 與
+  `DatasetConverterROOT` 固定 path names；entrypoint 保留原本 local names，因此既有 path composition 與 caller 不變。
+- `DataConverter.py` 不再為兩個常數載入 `TCF_Params.TCFParameters`；該 application parameter module 在 import 時會解析
+  CLI 並載入 generic utilities／multiprocessing runtime，不應成為 DatasetConverter module import 的必要條件。
+- AST 與 isolated subprocess regression gates 禁止 entrypoint 重新載入 parameter bootstrap，並證明 import 已越過先前的
+  `TCFParameters -> core.utilities -> psutil` blocker；未以 optional-import fallback 或 fake constant 掩蓋 runtime 行為。
+
+尚未完成／下次優先事項：
+
+1. **Phase 1 completion gate 尚未達成。** 真實 isolated import 的下一個 blocker 是
+   `DatasetConverter.ConverterParameters` module-scope `GPUtil`；下批應先盤點 `nProcess`、`nProcessSPC`、`DatasetRatioDict`、
+   `RemoveDumpArticle_FT` 與 `DCkwargs` 的 import-time 計算，再按 resource／split／source config 邊界正規化，不可把整個
+   legacy mapping 複製到新模組。
+2. `TCF_Params.TCFParameters` 仍是 `TCFMain.py` 等 application orchestration 的參數來源；本批只解除 DatasetConverter
+   entrypoint 對其 import-time bootstrap 的耦合，不宣稱該模組可安全 import，也未改其 CLI 或 platform-dependent defaults。
+3. 本批未執行完整 DataConverter CLI或真實工作池；目前只證明 path constants、source-level dependency gate與下一個可重現
+   dependency boundary，完整 pandas／SQLite artifact與 handoff仍待既有 fixture/runtime可支援後驗證。
+
+### 2026-08-14 — Phase 1／2 converter defaults 與 resource bootstrap 分離（進行中）
+
+本次完成：
+
+- 延續上一批已確認的 `ConverterParameters -> GPUtil` blocker，盤點 canonical entrypoint 實際使用的設定後，將 split ratios、
+  FixedTest 去重、restricted-label mode、augmentation、statistics switch 與 reader settings移入 dependency-light `config.py`；
+  未搬移無 active caller 的 GPU probe及 legacy path injector。
+- frozen `SplitConfig`固定 ratio values並按次產生 legacy mapping；`default_converter_settings()`按次建立完整 nested dict/list，
+  保留 WIDTH、sampling、rule-based label及cleaning regex values，同時避免module-global nested settings跨執行共享。
+- process count不再於parameter module import時呼叫GPUtil／multiprocessing helper，而是在`main()`完成runtime bootstrap後計算；
+  canonical main仍將相同`ComputeNProcess(log=False)`／`ComputeSPCNProcess(log=False)`結果傳給worker與output stages，isolated
+  module import則不為resource discovery執行這兩個 calls。
+- config characterization固定active legacy values、nested container ownership及split immutability；AST/subprocess gate同時禁止
+  `TCF_Params.TCFParameters`與`DatasetConverter.ConverterParameters`重新成為entrypoint import dependency。
+
+尚未完成／下次優先事項：
+
+1. **Phase 1 completion gate 尚未達成。** 真實 isolated import已越過`GPUtil`，下一個 blocker是
+   `DatasetConverter.EXTConverter.ExtractionConverter` module-scope `tqdm`；下批應確認 extraction僅在
+   `args.ExtractionConverterTask`啟用時使用，將其factory／imports移至明確adapter或feature branch，並先固定constructor與job
+   mutation契約，不可用missing-dependency fallback假裝抽取成功。
+2. **Phase 2 completion gate 尚未達成。** `default_converter_settings()`仍為legacy mapping compatibility factory，不是完整
+   typed `ConverterConfig`；下一批typed化應沿reader／source／split邊界進行，並保留`loadLabels()`加入taxonomy objects的handoff。
+3. `ConverterParameters.py`仍留給可能的repository外direct-script caller，本批只確認canonical `DataConverter.py`不再引用；
+   Phase 9前應再查外部使用證據，不因canonical caller遷移就直接刪除compatibility file。
+4. 本批未執行完整CLI、GPU resource discovery或真實資料輸出；targeted與完整輕量tests只證明static config、import boundary及
+   既有fixture contracts，不能宣稱Phase 1／2完成。
+
+### 2026-08-14 — Phase 1 extraction feature activation boundary（進行中）
+
+本次完成：
+
+- call graph確認`Extractor`只在`args.ExtractionConverterTask`非空時執行，而`CZJCorpusFileBuilder`只在WeiTech fixed-test
+  SQLite存在時執行；兩者不應成為一般DatasetConverter import或未啟用流程的runtime前提。
+- 新增`adapters/extraction_source.py`，以function-local imports分別集中rule lookup、extractor invocation與corpus builder
+  `Transformer()`契約；entrypoint不再module-scope載入會改cwd、注入path並依賴`tqdm`／pandas的三個legacy modules。
+- 保留既有task不存在失敗、selected rule mapping identity、`DirName`更新、`FileNameInSQL3=False`與builder keyword names；
+  未加入missing-dependency fallback，啟用 extraction時仍會真實載入並執行legacy integration。
+- fake-module adapter tests固定三個integration contracts，AST gate禁止entrypoint或adapter module scope重新eager import
+  EXTConverter dependencies；真實isolated import已越過`tqdm` blocker。
+
+尚未完成／下次優先事項：
+
+1. **Phase 1 completion gate 尚未達成。** 下一個真實blocker是`DataConverter.py`直接module-scope載入generic
+   `text_category_profiler.core.utilities`，再因缺少`psutil`失敗；下批應盤點entrypoint實際使用的filesystem、timing、sampling
+   與hash helpers，優先重用或建立窄dependency-light ports，不可整包複製generic utilities。
+2. `ExtractionRule.py`仍為`EmbassyPagesCombiner` eager import，且legacy extraction modules自身仍有cwd/path injection；本批只確保
+   feature未啟用時不載入。若要直接import／維護EXTConverter，應另以characterization tests分批修正其自身副作用。
+3. `get_extraction_rule()`刻意回傳原mapping identity以保留canonical `DirName` mutation；Phase 2若要immutable extraction config，
+   必須先確認同process多task重跑是否依賴此mutation，再由entrypoint copy／normalize，不能在adapter內暗中改語意。
+4. 本批未執行真實extraction、WeiTech database或完整CLI；測試證明activation與forwarding contract，不證明外部CSV／SQLite資料品質。
+
+### 2026-08-14 — Phase 1 dependency-light stage utilities（進行中）
+
+本次完成：
+
+- 盤點canonical entrypoint對generic `core.utilities`的active call sites，抽出具單一stage責任的`core/stage_utils.py`：filesystem
+  discovery／mkdir、balanced job chunks、serializable file-hash job、bounded sampling、legacy augmentation與elapsed-time output。
+- 保留`OSWALK` extension／regex／slash normalization、`SplitList`固定bucket數與前置remainder分配、hash byte limit、sampling上限、
+  one-position random replacement及elapsed message contracts；production callers改用具意義的新名稱與明確keywords。
+- `FNReplace()`／`PickSelectTxt()`兩個會刻意raise的maintenance helpers不進入新core boundary，其legacy imports只在函式實際呼叫時
+  載入；`ShowStepCostTime`確認無active caller後移除entrypoint import。
+- temporary filesystem、hash、seeded random、timing與AST tests固定新boundary；canonical `DataConverter.py`不再module-scope
+  import含`psutil`、GPUtil、numpy、pandas、OpenCC等無關dependencies的generic utilities。
+
+尚未完成／下次優先事項：
+
+1. **Phase 1 completion gate 尚未達成。** 真實isolated import下一個blocker是`pipeline.TCF_utils` module-scope載入
+   `concurrency.MP_utils`，再因缺少`numpy`失敗；下批應按entrypoint實際使用的parser、dataset path、label list、model checkpoint與
+   handoff functions建立窄ports或分離`TCF_utils`自身dependency，不可在DatasetConverter複製整個CLI parser。
+2. `DataConverter.py`仍module-scope載入`MP_utils`、dataframe／DB與ClassesTree integrations；即使先處理`TCF_utils`，後續仍需
+   依第一個真實blocker逐項feature-activate，不能以import測試越過一層就宣稱completion gate完成。
+3. `FileHashJob`保留逐file讀取最多100MB及worker-picklable object contract；若Phase 8要chunked hash或調整I/O，必須先用中型
+   fixture量測並維持last-path-wins dedup policy，不能在本次責任抽取中順便改演算法。
+4. 完整CLI與真實work pool仍未執行；目前tests證明helper parity、small fixture及import dependency方向，不涵蓋大檔效能。
+
+### 2026-08-14 — Phase 1 shared pipeline activation boundary（進行中）
+
+本次完成：
+
+- 盤點`DataConverter.py`對shared pipeline的六個contracts，新增`adapters/pipeline_source.py`，以function-local imports轉接
+  classifier option parser、dataset/output picker、base-model checkpoint、restricted labels、FixedTest discovery與TaskConnector。
+- adapter只forward既有argv、constructor keywords與`.proc()`呼叫，不複製大型CLI parser、dataset path policy或handoff rename
+  logic；因此shared `TCF_utils`／`DataConverter_utils`仍是單一行為來源，只有CLI/runtime走到對應feature時才載入。
+- canonical entrypoint不再module-scope載入會連帶引入`MP_utils -> numpy`或`DataConverter_utils -> pandas`的shared modules；
+  fake-module tests固定parser return、picker tuple、model/label/fixed-test結果及handoff keyword contract。
+- AST gate禁止entrypoint與adapter module scope重新import兩個shared pipeline modules；真實isolated import已依序越過numpy及pandas
+  blockers，沒有使用catch-all import或missing-dependency fallback。
+
+尚未完成／下次優先事項：
+
+1. **Phase 1 completion gate 尚未達成。** 下一個真實blocker是module-scope `ClassesTree.ClassesTree_utils`載入pandas；下批應盤點
+   `GetNodes`、`GetSubTopics`、`GetClosestMatchingParent`與`SetTreeFiles`的activation points，taxonomy loader與binary-label mapping
+   應使用窄adapter/injected ports，不可複製tree演算法。
+2. `pipeline_source`是DatasetConverter對shared pipeline的integration port，不是新的pipeline policy module；其他stage不應為了
+   import整潔改依賴它，shared behavior的修正仍應落在`text_category_profiler.pipeline`並由各caller測試。
+3. parser與directory picker在`setArguments()`開始時仍會載入完整shared runtime；本批目標是消除module import副作用，不代表
+   CLI可在缺少numpy/pandas的environment執行。完整CLI dependency與exit-status gate仍待Phase 1後續完成。
+4. TaskConnector仍只在所有conversion checks後呼叫；adapter未變更ready directory命名、retry/log或failure semantics，真實workspace
+   rename未在測試執行。
