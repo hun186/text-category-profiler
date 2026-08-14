@@ -12,13 +12,10 @@ if str(REPOSITORY_ROOT) not in sys.path:
 import ntpath
 import pathlib
 import platform
-import psutil
-import pandas as pd
 #import csv
 import random
 import time
 import sqlite3 as lite
-from pandas.io import sql
 import re
 import glob
 import subprocess
@@ -27,15 +24,12 @@ import json
 from copy import deepcopy
 
 #import plotly.io as pio; pio.renderers.default='notebook'
-from plotly.offline import plot
-import plotly.express as px
 import textwrap
 #from zhconv import convert
 import multiprocessing as mp
 
 import shutil
 import argparse
-from colorama import Fore#, Back, Style
 
 #載入DatasetConverter參數設定
 '''
@@ -97,6 +91,9 @@ from DatasetConverter.dataset_split import deduplicate_dataset_rows
 from DatasetConverter.dataset_split import ensure_train_covers_labels
 from DatasetConverter.dataset_split import expand_train_to_cover_labels
 from DatasetConverter.dataset_split import iter_dataset_splits
+from DatasetConverter.dataframe_source import concat_dataframes
+from DatasetConverter.dataframe_source import dataframe_from_dict
+from DatasetConverter.dataframe_source import empty_dataframe
 from DatasetConverter.sample_schema import columns_for_sample_rows, validate_sample_rows
 from DatasetConverter.sample_pipeline import aggregate_multi_label_counts
 from DatasetConverter.sample_pipeline import collect_reader_results
@@ -231,7 +228,7 @@ class DataConvertJobGenerater():
                 x['id']:x['subject'] for x in getESData(self.esSelectedJob)}
             #print("self.ESSelectedidList",self.ESSelectedDictList)
             #from collections import Counter
-            df_selectedMessage = pd.DataFrame.from_dict(
+            df_selectedMessage = dataframe_from_dict(
                 self.ESSelectedDictList, 
                 #Counter(self.ESidList),
                 orient='index',columns = ["subject"])
@@ -666,7 +663,7 @@ def BuildSamplesDfFromPaths(
  
     #計算樣本標記數量。
     if len(rows_list) > 0:
-        df_Counter = pd.DataFrame.from_dict(
+        df_Counter = dataframe_from_dict(
             Counter([row['OutLabel'] for row in rows_list]),
             orient='index')
         df_Counter.columns = ["Loaded Samples Count"]
@@ -916,8 +913,8 @@ class DatasetGenerator:
         #FNDdict = {"train":"train.tsv", "validation":"dev.tsv", "test":"test.tsv"}
         MFNDdict = {"train":"train", "validation":"dev", "test":"test"}
     
-        FT_df = pd.DataFrame()
-        es_df = pd.DataFrame()
+        FT_df = empty_dataframe()
+        es_df = empty_dataframe()
         #生成各資料集。
         key_values("Regular source split plan", [
             ("train", split_plan.train),
@@ -962,13 +959,15 @@ class DatasetGenerator:
                         cli_args=self.cli_args,
                         DCkwargs = self.DCkwargs)
                 else:
-                    FT_df = pd.DataFrame()
+                    FT_df = empty_dataframe()
                 key_values("Fixed test samples", [
                     ("paths", summarize_sequence(self.FixedTestPATHList, limit=4)),
                     ("rows", len(FT_df)),
                 ], icon="·")
                 #print("Partdf bf add FT",Partdf)
-                Partdf = pd.concat([Partdf, FT_df], ignore_index=True)
+                Partdf = concat_dataframes(
+                    [Partdf, FT_df], ignore_index=True
+                )
                 #print("Start to output FT_df to MainFN {} \n".
                       #format(self.OUTPUTMAIN_FT))
                 #print("FT_df",FT_df)
@@ -991,8 +990,10 @@ class DatasetGenerator:
                         ("rows", len(es_df)),
                     ], icon="·")
                 else:
-                    es_df = pd.DataFrame()
-                Partdf = pd.concat([Partdf, es_df], ignore_index=True)
+                    es_df = empty_dataframe()
+                Partdf = concat_dataframes(
+                    [Partdf, es_df], ignore_index=True
+                )
                 key_values("Elasticsearch output", [("output", self.OUTPUTMAIN_es), ("rows", len(es_df))], icon="·")
                 dfOutputer(es_df, self.OUTPUTMAIN_es, IndexCols=self.IndexCols).run()
 

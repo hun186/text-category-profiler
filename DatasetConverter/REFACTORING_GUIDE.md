@@ -1154,3 +1154,90 @@ DataConverter.py -> stage/config -> domain services -> ports
    除非 call graph與 dependency boundary證明需要共用。
 3. 本批未執行完整 DataConverter CLI或真實模型；isolated `python -c`已證明 cwd保持不變直到 `MPlogger` 的 numpy import
    失敗，但尚未完成整個 reader import，故不宣稱 Phase 1 gate通過。
+
+### 2026-08-14 — Phase 1 reader logger factory boundary（進行中）
+
+本次完成：
+
+- 新增 `logger_source.create_sample_reader_logger()`，以 function-local import 建立既有 `MPlogger(logFile=...)`；
+  `sampleHandler.py` 不再於 module scope 載入含 numpy、pandas、psutil 與 multiprocessing setup 的 `MP_utils`。
+- `SampleReader` 保留既有 `MPLOGGER` injection 契約；caller 傳入 logger 時不會載入 `MP_utils`，未傳入時才透過窄 factory
+  建立 `sampleHandler.log` logger，未加入 silent fallback 或替代 logger。
+- isolated fake-module factory test 固定 constructor keyword/回傳 identity；AST gates 禁止 reader 與 adapter module scope
+  重新 import `MP_utils`，subprocess test 證明 reader import 不會觸碰該 module。
+
+尚未完成／下次優先事項：
+
+1. **Phase 1 completion gate 尚未達成。** 真實 `python -c "import DatasetConverter.sampleHandler"` 現在越過 logger dependency，
+   下一個 blocker 是 `TextProcessor_utils` module-scope 載入 generic `utilities.py` 時缺少 `psutil`；下批應盤點 reader 實際
+   使用的 `textReader`、`BasicDataCleaner`、`DataCleanerWithPattern`，建立 feature-activated text-processing adapter，不可用
+   catch-all import 或無行為的 fallback 隱藏 dependency。
+2. `DataConverter.py` 仍直接使用 `MPlogger`，且 stage 本身確實需要 logging/multiprocessing runtime；本批只縮小 reader import
+   邊界，不宣稱 composition root 已 dependency-free，也不應在未固定 stage bootstrap 前機械式延遲所有 logger imports。
+3. 本批未執行完整 DataConverter CLI，因其需完整 runtime 與工作池設定；目前證明 lazy logger factory、injected logger
+   相容性及 reader 不再碰觸 `MP_utils`，但不宣稱完整 reader isolated import 或 Phase 1 gate通過。
+
+### 2026-08-14 — Phase 1 reader text／label integration boundaries（進行中）
+
+本次完成：
+
+- 新增 `text_source` 三個 feature-activated adapters，分別保留 legacy `textReader`、`BasicDataCleaner` 與
+  `DataCleanerWithPattern` 的 constructor／`proc()` 契約；`sampleHandler.py` 不再於 module scope 載入
+  `TextProcessor_utils`，且未改變其既有 default logger、encoding、full-width、dummy-space 或 regex cleaning policies。
+- 新增 `label_source.labels_from_path()`，以 function-local import 保留 `getLabelsFromFileName()` 的 path、unique-sort 與
+  letters/digits keyword mapping；regular filesystem source 的 label routing 與 source-role contract不變。
+- factory contract與 AST tests固定三個 text adapters及 label adapter的 arguments／returns，isolated subprocess現在可直接
+  import真實 `DatasetConverter.sampleHandler`，不需 fake modules；同時確認 cwd不變，且 `MP_utils`、`TextProcessor_utils`、
+  `Label_utils` 均未因 reader import進入 `sys.modules`。
+
+尚未完成／下次優先事項：
+
+1. **整體 Phase 1 completion gate 尚未達成。** reader module的 isolated import gate已通過，但 canonical
+   `python -c "import DatasetConverter.DataConverter"` 目前在 `DataConverter.py` 自身 module-scope `import psutil` 失敗；
+   下批應先盤點 psutil只用於哪些 bootstrap/resource gates，再把 dependency移到明確啟用點，不可用 optional-import fallback。
+2. text與 label adapters刻意只是 legacy integration ports，不複製 normalization或 taxonomy演算法；若後續要讓核心轉換完全
+   dependency-free，應先為真實 punctuation、Unicode、AI2、encoding fallback與 regex logging建立 fixtures，再逐項抽純函式。
+3. 本批未執行完整 CLI或真實工作池；目前只宣稱 reader import邊界與既有 adapter contracts，`DataConverter` composition root、
+   stage exit status及完整 Phase 1 gate仍待後續處理。
+
+### 2026-08-14 — Phase 1 entrypoint unused psutil removal（進行中）
+
+本次完成：
+
+- call-site search確認 `DatasetConverter/DataConverter.py` 只有 module-scope `import psutil`，沒有任何 attribute access或 runtime
+  使用，因此直接移除未使用 dependency；未加入 lazy wrapper、optional import或假實作。
+- 新增 AST regression gate固定 canonical entrypoint不重新直接 import `psutil`；isolated subprocess以 rejecting importer確認
+  entrypoint import會先進入下一個真實 dependency boundary，而非嘗試載入 `psutil`。
+- 真實 isolated import的第一個可重現 blocker已由 `psutil`推進為 module-scope `pandas`；本批沒有宣稱整個 composition root
+  可在 dependency-free環境載入。
+
+尚未完成／下次優先事項：
+
+1. **Phase 1 completion gate 尚未達成。** `DataConverter.py`廣泛使用 pandas DataFrame及 `pandas.io.sql`，不可像未使用的
+   `psutil`一樣直接刪除；下批應先依 class/function call graph區分核心 DataFrame policy與 output/visualization adapters，並以
+   fixture固定 active import/call contracts後再延遲 feature-specific imports。
+2. `DataConverter.py`仍 module-scope載入 plotly、generic utilities、class-tree、dataframe與 multiprocessing modules；應依 isolated
+   import每次揭露的第一個 blocker逐項處理，不可一次用 `sys.modules` shim或 broad exception製造假成功。
+3. 本批未執行完整 CLI或真實資料流程；目前只證明 `psutil`在 canonical entrypoint無 caller且可安全移除，pandas-backed
+   conversion/output行為完全未變。
+
+### 2026-08-14 — Phase 1 entrypoint DataFrame constructor boundary（進行中）
+
+本次完成：
+
+- 新增 `dataframe_source`，以三個 feature-activated functions集中 active `DataFrame.from_dict()`、empty `DataFrame()`與
+  `pandas.concat()` contracts；`DataConverter.py`不再直接於 module scope import pandas或 `pandas.io.sql`。
+- call-site search確認 `pandas.io.sql`、Plotly `plot`／`plotly.express`及 `colorama.Fore`在 canonical entrypoint沒有 active
+  caller，因此一併移除未使用 imports；視覺化 job既有 function-local Dash adapter保持不變。
+- fake-pandas contract tests固定 data/orient/columns、empty constructor與 `ignore_index` mapping；AST gates固定 entrypoint及
+  adapter不出現 module-scope pandas import，既有 DataFrame mutation、split與 output contracts未重寫。
+
+尚未完成／下次優先事項：
+
+1. **Phase 1 completion gate 尚未達成。** isolated import目前已越過 direct pandas與 colorama imports，下一個 blocker是
+   `TCF_Params.TCFParameters`為 `timeNow`載入 generic `core.utilities`，再因缺少 `psutil`失敗；下批應先確認參數模組是否只需
+   dependency-free timestamp helper，並避免為設定常數載入整個 generic utilities module。
+2. `DataConverter.py`仍透過 `df_utils`、dataset split/output paths使用真實 pandas objects；本批只延遲 entrypoint自身的三種
+   constructor operations，不宣稱轉換流程不需要 pandas，也不應用自製 DataFrame取代其資料語意。
+3. 本批未執行完整 CLI或真實 dataset；目前證明 adapter forwarding與既有輕量 fixtures，完整 pandas/SQLite artifact smoke test
+   仍受 runtime及工作池限制。

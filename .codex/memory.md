@@ -12,13 +12,13 @@
 
 ## Recent Outcomes
 
-### 2026-08-13 — DatasetConverter dependency-free reader helpers
+### 2026-08-14 — DatasetConverter entrypoint DataFrame constructor boundary
 
-- 目標：推進 Phase 1，移除 reader為五個小型 helpers載入 heavy generic utilities及 `psutil` 的耦合。
-- 結果：`reader_utils`固定 filename normalize/extension/sanitize、intersection與 wrapping contracts；reader不再 import
-  `text_category_profiler.core.utilities`。
-- 驗證：helper characterization與 AST import gate、sample/tokenizer targeted suites、完整輕量 unittest、`py_compile`、
-  `git diff --check`；isolated import下一個 blocker已收斂為 `MPlogger` 的缺少 `numpy`。
+- 目標：推進 Phase 1，移除 canonical entrypoint的 direct pandas import與無 caller的 pandas.io/Plotly/colorama imports。
+- 結果：`dataframe_source`以 function-local pandas import集中 from-dict、empty與 concat contracts；conversion仍使用真實
+  pandas objects，CLI、split、output與 handoff行為未改。
+- 驗證：fake-pandas forwarding與 AST import gates、完整輕量 unittest；isolated import下一 blocker收斂為
+  `TCFParameters -> core.utilities -> psutil`。
 
 ### 2026-08-13 — DatasetConverter legacy CZJ corpus fan-out removal
 
