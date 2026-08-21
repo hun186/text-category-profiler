@@ -30,6 +30,7 @@ import multiprocessing as mp
 
 import shutil
 import argparse
+from dataclasses import dataclass
 
 #載入DatasetConverter參數設定
 '''
@@ -69,7 +70,6 @@ DatasetConverterROOT = DATASET_CONVERTER_ROOT
 #from DatasetConverter.ConverterParameters import DataAugmentationGoal
 DatasetRatioDict = DEFAULT_SPLIT_CONFIG.as_legacy_mapping()
 RemoveDumpArticle_FT = REMOVE_DUPLICATE_FIXED_TEST_ARTICLES
-DCkwargs = default_converter_settings()
 from DatasetConverter.adapters.extraction_source import build_czj_corpus
 from DatasetConverter.adapters.extraction_source import get_extraction_rule
 from DatasetConverter.adapters.extraction_source import run_extraction
@@ -120,9 +120,11 @@ from DatasetConverter.taxonomy import load_taxonomy as load_taxonomy_from_config
 from DatasetConverter.taxonomy import taxonomy_config_from_namespace
 
 #from utilities import hash
-from text_category_profiler.data.df_utils import dfOutputer
-from text_category_profiler.concurrency.MP_utils import multicoreJob
-from text_category_profiler.concurrency.MP_utils import MPlogger
+from DatasetConverter.adapters.runtime_source import create_dataframe_output as dfOutputer
+from DatasetConverter.adapters.runtime_source import create_logger as MPlogger
+from DatasetConverter.adapters.runtime_source import create_multicore_job as multicoreJob
+from DatasetConverter.adapters.runtime_source import dataframe_from_rows as DictRowsListToDF
+from DatasetConverter.adapters.runtime_source import fetch_elasticsearch_data as getESData
 from text_category_profiler.core.log_display import info
 from text_category_profiler.core.log_display import key_values
 from text_category_profiler.core.log_display import section
@@ -133,10 +135,6 @@ from text_category_profiler.core.log_display import warning
 #from utilities_RAND import LoadTree
 #from utilities_RAND import RANDLoader
 
-
-from text_category_profiler.data.DB_utils import getESData
-
-from text_category_profiler.data.df_utils import DictRowsListToDF
 
 #from text_category_profiler.Tika_pdf_to_txt import ExtractTxt
 r'''
@@ -1153,7 +1151,20 @@ def bootstrap_runtime():
     setproctitle.setproctitle("CZJDataConvert")
 
 
-def setArguments(DCkwargs, argv=None):
+@dataclass(frozen=True)
+class StageContext:
+    """Runtime state created by CLI bootstrap and owned by one stage run."""
+
+    args: argparse.Namespace
+    converter_settings: dict
+    root_paths: list
+    fixed_test_paths: list
+    logger: object
+    tcf_main_logger: object
+    stage_start_time: float
+
+
+def setArguments(converter_settings, argv=None):
     args = parse_converter_options(argv)
     args.BertDatasetSubDir, _ = pick_dataset_directories(
         args=args,
@@ -1166,13 +1177,13 @@ def setArguments(DCkwargs, argv=None):
     stage_banner("DataConverter", detail=f"WorkDir: {NewBertDatasetSubDir}")
     MES = f"DataConveter started. WorkDir is {NewBertDatasetSubDir}."
     args.BertDatasetSubDir = NewBertDatasetSubDir
-    global MPLOGGER
-    global MPLOGGER_TCFMain
-    MPLOGGER = MPlogger(logSubDir=f"{args.BertDatasetSubDir}/logs")
-    MPLOGGER_TCFMain = MPlogger(logSubDir=f"{args.BertDatasetSubDir}/logs",logFile="TCFMain.log")
-    MPLOGGER_TCFMain.logW(MES)
-
-    exeTimeDict["stage_start_time"] = time.time()
+    logger = MPlogger(logSubDir=f"{args.BertDatasetSubDir}/logs")
+    tcf_main_logger = MPlogger(
+        logSubDir=f"{args.BertDatasetSubDir}/logs",
+        logFile="TCFMain.log",
+    )
+    tcf_main_logger.logW(MES)
+    stage_start_time = time.time()
     #nProcess = multicoreJob().ComputeNProcess()
     #nProcessSPC = multicoreJob().ComputeSPCNProcess()
     
@@ -1195,7 +1206,6 @@ def setArguments(DCkwargs, argv=None):
     from TCF_Params.TCFParameters import ROOTPATHList
     if args.train == False:
         ROOTPATHList = []
-        global RemoveDumpSamples
         #RemoveDumpSamples = False
 
     #指定全加到測試集，不分配至訓練集的檔案目錄
@@ -1213,11 +1223,20 @@ def setArguments(DCkwargs, argv=None):
     else:
         key_values("Fixed test detection", [("TRVPort", args.TRVPort), ("FixedTestPATHList", summarize_sequence(FixedTestPATHList, limit=4))], icon="·")
     #raise Exception
-    DCkwargs.update({
+    normalized_settings = dict(converter_settings)
+    normalized_settings.update({
         "FixedTestFileBound":args.FixedTestFileBound,
         })
     #DCkwargs["FixedTestFileBound"] = args.FixedTestFileBound
-    return args,DCkwargs,ROOTPATHList,FixedTestPATHList
+    return StageContext(
+        args=args,
+        converter_settings=normalized_settings,
+        root_paths=list(ROOTPATHList),
+        fixed_test_paths=FixedTestPATHList,
+        logger=logger,
+        tcf_main_logger=tcf_main_logger,
+        stage_start_time=stage_start_time,
+    )
 
 def load_taxonomy(args):
     """Load and validate taxonomy files without mutating converter settings."""
@@ -1263,15 +1282,19 @@ def loadLabels(args, DCkwargs=None):
       
 def main(argv=None):
     """Run the DatasetConverter CLI and return its successful exit status."""
-    global DCkwargs, exeTimeDict
     bootstrap_runtime()
-    exeTimeDict = dict()
     nProcess = multicoreJob().ComputeNProcess(log=False)
     nProcessSPC = multicoreJob().ComputeSPCNProcess(log=False)
     #解析並設定路徑相關參數。
-    args,DCkwargs,ROOTPATHList,FixedTestPATHList = setArguments(DCkwargs, argv=argv)
+    context = setArguments(default_converter_settings(), argv=argv)
+    timings = {"stage_start_time": context.stage_start_time}
+    args = context.args
+    converter_settings = context.converter_settings
+    ROOTPATHList = context.root_paths
+    FixedTestPATHList = context.fixed_test_paths
+    tcf_main_logger = context.tcf_main_logger
     #讀取及建置分類樹結構、分數表、Label，並加入轉換參數。
-    DCkwargs = loadLabels(args=args,DCkwargs=DCkwargs)
+    converter_settings = loadLabels(args=args, DCkwargs=converter_settings)
 
     #datasetDBDir = args.datasetDataBaseSubDir
     OUTPUTMAIN = os.path.join(
@@ -1282,7 +1305,7 @@ def main(argv=None):
     #如果是WeiTechworkID工作模式，因已有完成之test.sql3，不執行原有之文本轉換功能。
     if args.WeiTechworkID != "":
         MES = f"啓動WeiTechworkID工作模式 for workID {args.WeiTechworkID}"
-        MPLOGGER_TCFMain.logW(MES)
+        tcf_main_logger.logW(MES)
         WTBertDatasetSubDir = os.path.join(args.WeiTechWorkPoolPATH,args.WeiTechworkID)
         #進行資料抽取轉換任務，輸出格式為CZJ_SamplesFile
         if args.ExtractionConverterTask != "":
@@ -1290,7 +1313,7 @@ def main(argv=None):
                 JobInfo = get_extraction_rule(args.ExtractionConverterTask)
             except KeyError:
                 MES = f"資料集抽取轉換任務{args.ExtractionConverterTask}設定不存在於ExtractionRule，中止。檢查ExtractionRule.py及任務名稱。"
-                MPLOGGER_TCFMain.logW(MES)
+                tcf_main_logger.logW(MES)
                 raise Exception
             JobInfo["DirName"] = WTBertDatasetSubDir
             print("JobInfo",JobInfo)
@@ -1299,7 +1322,7 @@ def main(argv=None):
                 job_info=JobInfo,
             )
             MES = f"完成資料集抽取轉換任務{args.ExtractionConverterTask}for{WTBertDatasetSubDir}"
-            MPLOGGER_TCFMain.logW(MES)
+            tcf_main_logger.logW(MES)
             
         try:
             #如果輸入是被他人預先切割好的dataset_total_with_filename_FixedTest，
@@ -1359,9 +1382,9 @@ def main(argv=None):
         OUTPUTMAIN = OUTPUTMAIN,
         OUTPUTMAIN_Counter = OUTPUTMAIN_Counter,
         nProcess = nProcess,
-        DCkwargs = DCkwargs,
+        DCkwargs = converter_settings,
         cli_args=args,
-        start_time=exeTimeDict["stage_start_time"])
+        start_time=context.stage_start_time)
     
     #以下排序程式碼會將輸出依文本及檔名排序，以供快速查閱中文亂碼，僅供debug使用。
     #正式產製訓練資料時，務必mark，否則會因沒有亂數排序，導致訓練資料集label不平衡。
@@ -1387,7 +1410,7 @@ def main(argv=None):
     
     section("Generate dataset files", icon="📦")
     key_values("Dataset generation handoff", [
-        ("elapsed seconds", f"{time.time() - exeTimeDict['stage_start_time']:.4f}"),
+        ("elapsed seconds", f"{time.time() - context.stage_start_time:.4f}"),
         ("FixedTestPATHList", summarize_sequence(FixedTestPATHList, limit=4)),
         ("OUTPUTMAIN", OUTPUTMAIN),
     ], icon="·")
@@ -1404,13 +1427,13 @@ def main(argv=None):
                      DataAugmentationGoal=DATA_AUGMENTATION_GOAL,
                      FixedTestPATHList=FixedTestPATHList,
                      esJob = esJob,
-                     DCkwargs=DCkwargs,
+                     DCkwargs=converter_settings,
                      #datasetCountOFN = datasetCountOFN,
                      nProcess=nProcess,
                      cli_args=args,
                      datasetSubDir=args.BertDatasetSubDir).run()
     
-    elapsed = time.time()-exeTimeDict["stage_start_time"]
+    elapsed = time.time()-context.stage_start_time
     stage_done("DataConverter", elapsed)
     key_values("Converted sample counts", sorted(nDict.items()), icon="·")
     nTotalTrainable = nDict["train"]+nDict["validation"]
@@ -1423,18 +1446,18 @@ def main(argv=None):
         MES += "1.The port setting is correct and FixedTest_{port} data are fine.\n"
         MES += "2.For ElasticSearch Database, remerber to use -ESCFFile ABC\n"
         MES += "3.For WTF, remember to set -WTFInpPath {InputPath} -WTFOptPath {OutputPath} and -WTFSepWorkPool if necessary.\n"
-        MPLOGGER_TCFMain.logW(MES)
+        tcf_main_logger.logW(MES)
         raise Exception
     if args.test == True and nTotalTest == 0:
         MES = "-"*50+"\n"
         MES += "The total number of test samples is ZERO, but test mode is enabled!\n"
         MES += "Make sure that FixedTest, Elasticsearch, or dataset test split settings provide test samples.\n"
-        MPLOGGER_TCFMain.logW(MES)
+        tcf_main_logger.logW(MES)
         raise Exception
     #刪除資料集df，釋放記憶體。
     del df
-    exeTimeDict["DataConverter"] = f"{time.time()-exeTimeDict['stage_start_time']:.2f}"
-    key_values("DataConverter timing", sorted(exeTimeDict.items()), icon="·")
+    timings["DataConverter"] = f"{time.time()-context.stage_start_time:.2f}"
+    key_values("DataConverter timing", sorted(timings.items()), icon="·")
     connect_task(
         source_task="DataConverter",
         destination_task="RunClassfier",

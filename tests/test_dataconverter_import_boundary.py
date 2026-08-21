@@ -15,6 +15,9 @@ PIPELINE_ADAPTER = (
     REPOSITORY_ROOT / "DatasetConverter" / "adapters" / "pipeline_source.py"
 )
 TREE_ADAPTER = REPOSITORY_ROOT / "DatasetConverter" / "adapters" / "tree_source.py"
+RUNTIME_ADAPTER = (
+    REPOSITORY_ROOT / "DatasetConverter" / "adapters" / "runtime_source.py"
+)
 
 
 class DataConverterImportBoundaryTests(unittest.TestCase):
@@ -169,6 +172,56 @@ except ModuleNotFoundError:
 
         self.assertNotIn("ClassesTree.ClassesTree_utils", entrypoint_imports)
         self.assertNotIn("ClassesTree.ClassesTree_utils", adapter_imports)
+
+    def test_numpy_and_pandas_runtime_is_feature_activated(self):
+        entrypoint_tree = ast.parse(DATA_CONVERTER.read_text(encoding="utf-8"))
+        adapter_tree = ast.parse(RUNTIME_ADAPTER.read_text(encoding="utf-8"))
+        forbidden = {
+            "text_category_profiler.concurrency.MP_utils",
+            "text_category_profiler.data.DB_utils",
+            "text_category_profiler.data.df_utils",
+        }
+
+        entrypoint_imports = {
+            node.module
+            for node in entrypoint_tree.body
+            if isinstance(node, ast.ImportFrom)
+        }
+        adapter_imports = {
+            node.module
+            for node in adapter_tree.body
+            if isinstance(node, ast.ImportFrom)
+        }
+
+        self.assertTrue(forbidden.isdisjoint(entrypoint_imports))
+        self.assertTrue(forbidden.isdisjoint(adapter_imports))
+
+    def test_entrypoint_import_does_not_activate_conversion_runtime(self):
+        script = """
+import importlib.abc
+import sys
+
+class RejectConversionRuntime(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname in {
+            'text_category_profiler.concurrency.MP_utils',
+            'text_category_profiler.data.DB_utils',
+            'text_category_profiler.data.df_utils',
+        }:
+            raise AssertionError('DataConverter activated conversion runtime')
+        return None
+
+sys.meta_path.insert(0, RejectConversionRuntime())
+import DatasetConverter.DataConverter
+"""
+        result = subprocess.run(
+            [sys.executable, "-c", script],
+            cwd=REPOSITORY_ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
 
 if __name__ == "__main__":
     unittest.main()
