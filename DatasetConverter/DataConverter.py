@@ -90,11 +90,10 @@ from DatasetConverter.adapters.pipeline_source import resolve_base_model_checkpo
 from DatasetConverter.adapters.pipeline_source import restricted_labels
 
 from DatasetConverter.core.source_metadata import getSrcFromFileName
-from ClassesTree.ClassesTree_utils import GetNodes
-from ClassesTree.ClassesTree_utils import GetSubTopics
-from ClassesTree.ClassesTree_utils import GetClosestMatchingParent
-#from ClassesTree.ClassesTree_utils import GetInducedSubgraph
-from ClassesTree.ClassesTree_utils import SetTreeFiles
+from DatasetConverter.adapters.tree_source import closest_matching_parent
+from DatasetConverter.adapters.tree_source import load_tree_files
+from DatasetConverter.adapters.tree_source import subtopics
+from DatasetConverter.adapters.tree_source import tree_nodes
 #try:
     #from sampleHandler import SampleReader
 #except:
@@ -437,7 +436,7 @@ class DataConvertJobGenerater():
         #如果有設定二元分類目標（非None），則進行正負標籤轉換。
         if TreeBinaryTarget is not None:
             #tpcTree = LoadTree(TreeFile)
-            subTpcs = GetSubTopics([TreeBinaryTarget], self.tpcTree)
+            subTpcs = subtopics([TreeBinaryTarget], self.tpcTree)
             print("subTpcs of topic {} are {}.".format(
                 TreeBinaryTarget, subTpcs))
             for tpc in LabelList:
@@ -452,8 +451,8 @@ class DataConvertJobGenerater():
             #print("="*50)
             #tpcTree = GetInducedSubgraph(tpcTree,RSTRLabelList)
             #print("InducedSubtree", tpcTree)
-            for node in sorted(set(GetNodes(self.tpcTree))):
-                CMPNodeList = GetClosestMatchingParent(
+            for node in sorted(set(tree_nodes(self.tpcTree))):
+                CMPNodeList = closest_matching_parent(
                     self.tpcTree, node, RSTRLabelList,
                     ReturnOnlyOneClosestParent = True)
                 #CMPNode = CMPNodeList[0]
@@ -1224,7 +1223,7 @@ def load_taxonomy(args):
     """Load and validate taxonomy files without mutating converter settings."""
     return load_taxonomy_from_config(
         taxonomy_config_from_namespace(args),
-        loader=SetTreeFiles,
+        loader=load_tree_files,
     )
 
 
