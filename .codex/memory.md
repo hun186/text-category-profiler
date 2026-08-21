@@ -12,6 +12,12 @@
 
 ## Recent Outcomes
 
+### 2026-08-21 — DatasetConverter class-tree activation boundary
+
+- 目標：推進 Phase 1，避免 canonical entrypoint 在未使用 taxonomy tree 行為時載入 legacy class-tree runtime。
+- 結果：`tree_source` 以 function-local imports 轉接 tree-file、node、subtopic 與 closest-parent contracts；isolated import 下一 blocker 收斂為 `df_utils -> numpy`。
+- 驗證：fake-module forwarding、AST activation gate、完整輕量 unittest、`py_compile` 與 `git diff --check`。
+
 ### 2026-08-14 — DatasetConverter shared pipeline activation boundary
 
 - 目標：推進Phase 1，避免canonical module import為shared CLI/path/handoff policies載入`MP_utils`、numpy與pandas runtime。
@@ -74,10 +80,3 @@
   `__file__` bootstrap repository root，reader API/path semantics 不變。
 - 驗證：AST path-injector/chdir gates、entrypoint/package-layout targeted suites、完整輕量 unittest、`py_compile`、
   `git diff --check`；isolated import 仍受缺少 `psutil` 阻擋。
-
-### 2026-08-13 — DatasetConverter reader maintenance probe removal
-
-- 目標：推進 Phase 1，移除 reader module 中無外部 caller 的 tokenizer maintenance script 與其 CLI coupling。
-- 結果：刪除 `tokenization_wrap_Test()`、內嵌長文本及 `__main__` block；reader 不再 import CLI parser/model checkpoint helper，
-  production tokenizer wrapper 與 reader API 不變。
-- 驗證：AST probe/CLI/main gates、tokenizer/package-layout targeted suites、完整輕量 unittest、`py_compile`、`git diff --check`。

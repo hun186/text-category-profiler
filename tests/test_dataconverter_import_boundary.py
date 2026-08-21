@@ -14,6 +14,7 @@ STAGE_UTILS = REPOSITORY_ROOT / "DatasetConverter" / "core" / "stage_utils.py"
 PIPELINE_ADAPTER = (
     REPOSITORY_ROOT / "DatasetConverter" / "adapters" / "pipeline_source.py"
 )
+TREE_ADAPTER = REPOSITORY_ROOT / "DatasetConverter" / "adapters" / "tree_source.py"
 
 
 class DataConverterImportBoundaryTests(unittest.TestCase):
@@ -150,6 +151,24 @@ except ModuleNotFoundError:
             "text_category_profiler.pipeline.DataConverter_utils",
             adapter_imports,
         )
+
+    def test_class_tree_runtime_is_feature_activated(self):
+        entrypoint_tree = ast.parse(DATA_CONVERTER.read_text(encoding="utf-8"))
+        adapter_tree = ast.parse(TREE_ADAPTER.read_text(encoding="utf-8"))
+
+        entrypoint_imports = {
+            node.module
+            for node in entrypoint_tree.body
+            if isinstance(node, ast.ImportFrom)
+        }
+        adapter_imports = {
+            node.module
+            for node in adapter_tree.body
+            if isinstance(node, ast.ImportFrom)
+        }
+
+        self.assertNotIn("ClassesTree.ClassesTree_utils", entrypoint_imports)
+        self.assertNotIn("ClassesTree.ClassesTree_utils", adapter_imports)
 
 if __name__ == "__main__":
     unittest.main()

@@ -275,6 +275,20 @@ DataConverter.py -> stage/config -> domain services -> ports
 
 ## 9. 執行進度
 
+### 2026-08-21 — Phase 1 class-tree activation boundary（進行中）
+
+本次完成：
+
+- 新增 `adapters/tree_source.py`，以 function-local imports 轉接 `SetTreeFiles`、node traversal、subtopic 與 closest-parent contracts。
+- `DataConverter.py` import 時不再立即載入 `ClassesTree_utils`；因此未啟用 taxonomy tree 行為時，不會連帶載入該 legacy module 的 pandas、path bootstrap 與 filesystem dependencies。
+- fake-module forwarding tests 固定既有 positional／keyword call contract，AST gate 防止 class-tree runtime 再回到 module-scope import。
+
+尚未完成／下次優先事項：
+
+1. **Phase 1 completion gate 尚未達成。** isolated import 已越過 class-tree boundary；目前下一個已確認 blocker 是 `text_category_profiler.data.df_utils -> numpy`。
+2. 下一次應優先把 `dfOutputer`／`DictRowsListToDF` 收斂到 DataFrame/output adapter，避免同時改動輸出 schema 或 persistence 行為。
+3. 完整 `ConverterConfig`／`SourceConfig`／`OutputConfig`、集中驗證，以及 `DataConvertJobGenerater` 內仍混合的 ES、multiprocessing 與 output orchestration 應留在後續小批次處理。
+
 ### 2026-08-12 — Phase 1 入口邊界（進行中）
 
 本次完成：
