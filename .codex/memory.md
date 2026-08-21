@@ -12,6 +12,20 @@
 
 ## Recent Outcomes
 
+### 2026-08-21 — DatasetConverter named stage context
+
+- 目標：推進 Phase 1，停止 bootstrap／main 透過 module globals 共享 logger、timing 與 mutable converter settings。
+- 結果：frozen `StageContext` 提供具名 bootstrap handoff，`main()` 每次建立 fresh settings並使用 local timing/logger state；
+  下一步是把 `setArguments()` 的純 normalization 與 filesystem/logger bootstrap 分開。
+- 驗證：AST state-ownership gates、entrypoint/import/runtime targeted tests、完整輕量 unittest、`py_compile` 與 `git diff --check`。
+
+### 2026-08-21 — DatasetConverter conversion runtime activation boundary
+
+- 目標：推進 Phase 1，解除 canonical entrypoint 對 numpy／pandas-backed conversion runtime 的 module-scope coupling。
+- 結果：`runtime_source` 以 function-local imports 轉接 logger、multiprocessing、DataFrame output／rows 與 ES fetch contracts；
+  `DatasetConverter.DataConverter` 已可在缺少 numpy 的目前環境 isolated import，下一步是收斂 bootstrap／stage globals。
+- 驗證：fake-module forwarding、AST／rejecting-finder activation gates、isolated import、完整輕量 unittest、`py_compile` 與 `git diff --check`。
+
 ### 2026-08-21 — DatasetConverter class-tree activation boundary
 
 - 目標：推進 Phase 1，避免 canonical entrypoint 在未使用 taxonomy tree 行為時載入 legacy class-tree runtime。
@@ -72,11 +86,3 @@
 - 結果：canonical generator title jobs與 `read_czj_corpus_document()` flow保留；刪除未 return、會輸出 raw data且遺失 reader
   policies 的 nested-reader branch，reader 不再 import `dfFromSQLite3`。
 - 驗證：AST dataframe/fan-out gates、CZJ source/source-role targeted suites、完整輕量 unittest、`py_compile`、`git diff --check`。
-
-### 2026-08-13 — DatasetConverter reader cwd/path-injector removal
-
-- 目標：推進 Phase 1，停止 reader import 修改 `sys.path`、process cwd 與 console。
-- 結果：移除 `PackageImporter.proc()` 與 directory-name-based `os.chdir("../")`；DataConverter direct script 繼續以
-  `__file__` bootstrap repository root，reader API/path semantics 不變。
-- 驗證：AST path-injector/chdir gates、entrypoint/package-layout targeted suites、完整輕量 unittest、`py_compile`、
-  `git diff --check`；isolated import 仍受缺少 `psutil` 阻擋。

@@ -1445,3 +1445,44 @@ DataConverter.py -> stage/config -> domain services -> ports
    CLI可在缺少numpy/pandas的environment執行。完整CLI dependency與exit-status gate仍待Phase 1後續完成。
 4. TaskConnector仍只在所有conversion checks後呼叫；adapter未變更ready directory命名、retry/log或failure semantics，真實workspace
    rename未在測試執行。
+
+### 2026-08-21 — Phase 1 conversion runtime activation boundary（進行中）
+
+本次完成：
+
+- 延續 class-tree boundary 後確認的 `df_utils -> numpy` blocker，新增 `adapters/runtime_source.py`，以 function-local imports
+  轉接 logger、multiprocessing job、DataFrame output／rows conversion 與 Elasticsearch fetch contracts。
+- `DataConverter.py` 不再於 module scope 載入 `MP_utils`、`df_utils` 或 `DB_utils`；實際 conversion path 仍呼叫原有 constructors／
+  functions，未加入 optional dependency fallback，也未改動 pandas／SQLite／ES output schema。
+- fake-module forwarding tests 固定 positional／keyword contracts；AST 與拒絕 runtime modules 的 subprocess gate 證明 canonical
+  entrypoint 可在目前缺少 numpy 的隔離環境安全 import。`python -c "import DatasetConverter.DataConverter"` 現已成功。
+
+尚未完成／下次優先事項：
+
+1. **Phase 1 completion gate 尚未達成。** module import gate 已通過，但 `setArguments()` 仍建立目錄、logger 並更新 globals，主流程也
+   仍依賴 `MPLOGGER`、`MPLOGGER_TCFMain` 與 `exeTimeDict`；下一批應先建立具名 bootstrap／stage context，逐步顯式傳遞其中一組狀態。
+2. runtime adapter 是 activation boundary，不是新的 dataframe、multiprocessing 或 ES policy source；後續行為修正仍應落在原實作並由
+   adapter contract tests保護，避免在 wrapper 複製邏輯。
+3. 本批未執行完整 CLI、真實 work pool、pandas／SQLite output 或 Elasticsearch；isolated import 成功只證明 import-time side-effect
+   boundary，不代表 conversion runtime dependencies 可省略。
+
+### 2026-08-21 — Phase 1 named stage context 與 global state 收斂（進行中）
+
+本次完成：
+
+- 新增 frozen `StageContext`，集中一次 stage bootstrap 產生的 CLI namespace、converter settings、regular／fixed-test paths、
+  兩個 logger 與 start time；`setArguments()` 改回傳具名結果，不再寫入 `MPLOGGER`、`MPLOGGER_TCFMain` 或 `exeTimeDict` globals。
+- `main()` 每次執行都由 `default_converter_settings()` 建立 fresh settings，並只使用 local context／timings；移除 module-level
+  `DCkwargs`，避免同一 process 重跑時沿用上一次 taxonomy 或 CLI mutation。
+- 保留兩個 logger 的建立時機與參數、stage start timestamp 位置、FixedTest path list、ROOTPATHList、timing log 與 downstream
+  `DCkwargs` keyword handoff；本批只改 state ownership，不改 CLI、資料切分、輸出或 handoff suffix。
+- AST regression gates 固定 `setArguments()` 無 global declaration、回傳 `StageContext`，且 `main()` 不再引用四個 legacy globals。
+
+尚未完成／下次優先事項：
+
+1. **Phase 1 completion gate 尚未達成。** `setArguments()` 仍同時解析 CLI、選擇／建立目錄、建立 logger、載入 ROOTPATHList 與處理
+   FixedTest policy；下一批應先拆成純 argument normalization 與有副作用的 bootstrap 兩步，並用 fake ports 固定呼叫順序。
+2. `StageContext` 的 frozen 外殼只固定欄位重新賦值，內部 argparse namespace、settings 與 path lists 為相容 legacy callers 仍可變；
+   不應把它描述成完整 immutable `ConverterConfig`，後續 typed config 仍需依 source／split／output slices 漸進建立。
+3. 本批未執行真實 CLI／work pool；完整 runtime 需要 numpy、pandas 與實際 taxonomy／dataset，因此目前驗證涵蓋 source-level state
+   ownership、isolated import 與既有輕量 fixture，不證明 production filesystem handoff。

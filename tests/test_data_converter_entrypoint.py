@@ -60,6 +60,63 @@ class DataConverterEntrypointTests(unittest.TestCase):
         ]
         self.assertEqual(global_arg_reads, [])
 
+    def test_bootstrap_state_is_returned_in_a_named_context(self):
+        classes = {
+            node.name: node
+            for node in self.module.body
+            if isinstance(node, ast.ClassDef)
+        }
+        self.assertIn("StageContext", classes)
+
+        functions = {
+            node.name: node
+            for node in self.module.body
+            if isinstance(node, ast.FunctionDef)
+        }
+        set_arguments = functions["setArguments"]
+        global_writes = [
+            name
+            for node in ast.walk(set_arguments)
+            if isinstance(node, ast.Global)
+            for name in node.names
+        ]
+        self.assertEqual(global_writes, [])
+        returns = [
+            node.value
+            for node in ast.walk(set_arguments)
+            if isinstance(node, ast.Return)
+        ]
+        self.assertTrue(
+            any(
+                isinstance(value, ast.Call)
+                and isinstance(value.func, ast.Name)
+                and value.func.id == "StageContext"
+                for value in returns
+            )
+        )
+
+    def test_main_does_not_use_legacy_stage_globals(self):
+        main = next(
+            node
+            for node in self.module.body
+            if isinstance(node, ast.FunctionDef) and node.name == "main"
+        )
+        forbidden = {"DCkwargs", "MPLOGGER", "MPLOGGER_TCFMain", "exeTimeDict"}
+        referenced = {
+            node.id
+            for node in ast.walk(main)
+            if isinstance(node, ast.Name)
+        }
+        self.assertTrue(forbidden.isdisjoint(referenced))
+        module_assignments = {
+            target.id
+            for statement in self.module.body
+            if isinstance(statement, ast.Assign)
+            for target in statement.targets
+            if isinstance(target, ast.Name)
+        }
+        self.assertNotIn("DCkwargs", module_assignments)
+
 
 if __name__ == "__main__":
     unittest.main()
