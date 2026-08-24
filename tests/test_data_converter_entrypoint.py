@@ -81,19 +81,66 @@ class DataConverterEntrypointTests(unittest.TestCase):
             for name in node.names
         ]
         self.assertEqual(global_writes, [])
-        returns = [
-            node.value
+        calls = {
+            node.func.id
             for node in ast.walk(set_arguments)
-            if isinstance(node, ast.Return)
-        ]
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+        }
+        self.assertEqual(
+            calls,
+            {"normalize_stage_plan", "activate_stage_context"},
+        )
+
+    def test_normalization_is_separate_from_runtime_activation(self):
+        functions = {
+            node.name: node
+            for node in self.module.body
+            if isinstance(node, ast.FunctionDef)
+        }
+        normalize = functions["normalize_stage_plan"]
+        activate = functions["activate_stage_context"]
+
+        normalization_calls = {
+            node.func.id
+            for node in ast.walk(normalize)
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+        }
         self.assertTrue(
-            any(
-                isinstance(value, ast.Call)
-                and isinstance(value.func, ast.Name)
-                and value.func.id == "StageContext"
-                for value in returns
+            {"make_directory", "MPlogger", "stage_banner"}.isdisjoint(
+                normalization_calls
             )
         )
+
+        activation_calls = {
+            node.func.id
+            for node in ast.walk(activate)
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+        }
+        self.assertTrue(
+            {"make_directory", "MPlogger", "stage_banner"}.issubset(
+                activation_calls
+            )
+        )
+
+        main = functions["main"]
+        main_calls = [
+            node.func.id
+            for node in ast.walk(main)
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+        ]
+        self.assertIn("normalize_stage_plan", main_calls)
+        self.assertIn("activate_stage_context", main_calls)
+        self.assertLess(
+            main_calls.index("normalize_stage_plan"),
+            main_calls.index("activate_stage_context"),
+        )
+
+        normalization_imports = {
+            node.module
+            for node in ast.walk(normalize)
+            if isinstance(node, ast.ImportFrom)
+        }
+        self.assertNotIn("TCF_Params.TCFParameters", normalization_imports)
 
     def test_main_does_not_use_legacy_stage_globals(self):
         main = next(

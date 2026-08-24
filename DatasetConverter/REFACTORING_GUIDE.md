@@ -275,6 +275,65 @@ DataConverter.py -> stage/config -> domain services -> ports
 
 ## 9. 執行進度
 
+### 2026-08-24 — Phase 2 immutable converter configuration（進行中）
+
+本次完成：
+
+- 新增 frozen `ConverterConfig`，將 `WIDTH`、mode、tokenization、conversion mode 與 FixedTest bound 提升為具名 fields，其餘 legacy reader policies 以 recursively frozen mapping 保存。
+- `StagePlan`／`StageContext` 現在擁有 `converter_config`；`converter_settings` compatibility property 每次 thaw 為新的 nested dict/list，避免 downstream mutation 回寫 plan 或跨執行共享。
+- normalization 在任何 activation／目錄寫入前驗證 `WIDTH` 必須為正整數、`FixedTestFileBound` 必須為非負整數，並以具名 `ConfigValidationError` 回報。
+- tests 固定 legacy settings round-trip、nested mutation ownership、frozen mapping、invalid width/bound，以及 stage plan 每次取得 fresh legacy mapping。
+
+尚未完成／下次優先事項：
+
+1. **Phase 2 completion gate 尚未達成。** argparse namespace 仍可變，split ratios、process counts、必要 paths 與互斥 modes 尚未集中驗證；`OutputConfig` 也尚未建立。
+2. 下一批應優先把 `SplitConfig` validation 與 CLI ratio mapping 接到 `ConverterConfig`，或建立最小 `OutputConfig` 固定 dataset/database directory contracts；一次只移動一項責任。
+3. **Phase 1 exit-code gate、Phase 0 artifact gaps 與 Phase 3–9 仍未完成。** 詳細項目沿用下方進度；本指引仍有後續工作。
+
+### 2026-08-24 — Phase 2 typed source configuration（進行中）
+
+本次完成：
+
+- 新增 frozen `SourceConfig` 與 `SourceMode`，集中保存 immutable root paths、fixed-test paths、train/test gates 與實際選中的 debug／DRN／platform mode。
+- `StagePlan`／`StageContext` 現在擁有單一 `source_config`，不再各自保存可變的 root/fixed-test lists；薄 properties 每次回傳新的 legacy list，避免舊 downstream caller 修改 typed config。
+- 保留 `root_paths_from_namespace()` 作為舊 root-only policy 的相容 wrapper；新增測試固定 typed mode、tuple ownership、frozen assignment，以及 legacy list copy 不會反向修改 plan。
+
+尚未完成／下次優先事項：
+
+1. **Phase 2 completion gate 尚未達成。** typed `ConverterConfig` 的 reader-settings slice 已由上節完成；argparse namespace、ratio/process/path validation 與 `OutputConfig` 仍待處理。
+2. **Phase 1 exit-code gate 仍未完成。** `main()` 尚未將 domain/input/adapter errors 映射為已測試的非零 code；應先抽出不執行真實資料轉換的 CLI boundary。
+3. Phase 0 artifact cases與 Phase 3–9 的未完成項目仍維持；下方較舊進度中的「下一步 typed `SourceConfig`」已由本節完成。
+
+### 2026-08-24 — Phase 1 dependency-light root-path policy（進行中）
+
+本次完成：
+
+- 將 debug、DRN-only、Linux、非 Linux 與 malicious-domain opt-in 的 legacy root-path 選擇規則移入 dependency-light `config.root_paths_from_namespace()`；`normalize_stage_plan()` 不再 import 具有 CLI parsing、multiprocessing、logger 與 filesystem bootstrap 的 `TCF_Params.TCFParameters`。
+- platform name 可注入，root paths 以 tuple 回傳；unit tests 固定各 mode 的優先順序、training-disabled 空集合、Linux malicious-domain append 與非 Linux fallback。
+- 新增真正呼叫 `normalize_stage_plan()` 的 characterization tests，以 fake parser／directory／FixedTest policies 驗證 normalized handoff、caller settings 不被修改，且目錄、logger 與 banner 均未啟用；不再只依賴 AST 形狀宣稱副作用隔離。
+
+尚未完成／下次優先事項：
+
+1. **Phase 1 completion gate 仍未完全達成。** `main()` 的成功與 domain/input/adapter failure exit codes 尚未隔離固定；`bootstrap_runtime()` 與 process-count activation 也仍在 plan 之前。下一批應先建立 injected orchestration seam 或窄 CLI boundary test，不應為測試執行真實工作池轉換。
+2. **Phase 2 尚未完成。** argparse namespace 與 nested converter settings 仍可變；原訂 typed `SourceConfig` 已由上節完成，下一步以上節的 typed converter-settings slice 為準。
+3. Phase 0 的 duplicate、FixedTest row conversion、taxonomy mismatch 與 production SQLite artifact contract 仍未完成；Phase 3–9 也仍有後續項目。本文件的答案仍是「有未完成項目」。
+
+### 2026-08-24 — Phase 1 normalization／activation boundary（進行中）
+
+本次完成：
+
+- 新增 frozen `StagePlan`，將 CLI、dataset directory suffix、root／fixed-test paths 與 fresh converter settings 的正規化結果，和已啟用 logger／timing 的 `StageContext` 分開。
+- `normalize_stage_plan()` 不建立目錄、不建立 logger、也不輸出 stage banner；`activate_stage_context()` 才集中執行這些副作用。`main()` 明確先 plan、後 activation，舊 `setArguments()` 保留為薄相容 wrapper。
+- 移除 `setArguments()` 中未被執行的人工檔案搜尋變數與註解噪音；CLI option、`_is_running_DataConverter` suffix、fixed-test routing 與 logger 檔名均未改變。
+- AST regression gate 固定 normalization 不得重新取得 filesystem／logger 副作用，並固定 canonical `main()` 的 activation 順序。
+
+尚未完成／下次優先事項：
+
+1. **Phase 1 completion gate 尚未完全達成。** isolated import 現已通過並越過 numpy／pandas conversion runtime；完整成功／失敗 CLI exit status 仍尚未有隔離測試。此處原記錄的 legacy `ROOTPATHList` coupling 已由 2026-08-24 dependency-light root-path policy 完成。
+2. 原訂的 root-path default 抽離與 plan normalization characterization 已由上節完成；下一優先事項以上節列出的 CLI boundary／typed `SourceConfig` 為準。
+3. **Phase 2 尚未完成。** `SourceConfig` 與 core reader-settings `ConverterConfig` 已由最新進度完成；`OutputConfig`、argparse normalization 與集中 ratio/process/path validation 仍待分批建立。
+4. Phase 0 的 duplicate、FixedTest row conversion、taxonomy mismatch 與 production SQLite artifact contract 仍未完成；Phase 3–9 也各有下述未完成項目，因此本指引仍有後續工作。
+
 ### 2026-08-21 — Phase 1 class-tree activation boundary（進行中）
 
 本次完成：

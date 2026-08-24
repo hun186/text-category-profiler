@@ -12,6 +12,30 @@
 
 ## Recent Outcomes
 
+### 2026-08-24 — DatasetConverter immutable converter configuration
+
+- 目標：推進 Phase 2，停止 plan/context 擁有 mutable nested converter settings。
+- 結果：frozen `ConverterConfig` 擁有具名 core fields與 recursively frozen reader policies，legacy mapping每次 fresh thaw；normalization在activation前驗證 width/fixed-test bound；下一步是 split/output config與集中 validation。
+- 驗證：round-trip/ownership/validation tests、stage-plan compatibility tests、完整輕量 unittest、`py_compile`、isolated import與`git diff --check`。
+
+### 2026-08-24 — DatasetConverter typed source configuration
+
+- 目標：推進 Phase 2，停止 stage plan/context 直接擁有 mutable root/fixed-test lists。
+- 結果：frozen `SourceConfig`／`SourceMode` 集中 source routing state，plan/context 只以 copy properties提供 legacy lists；下一步是最小 typed converter-settings slice 與集中 validation。
+- 驗證：typed config immutability/mode tests、plan copy-ownership tests、targeted與完整輕量 unittest、`py_compile`、isolated import與`git diff --check`。
+
+### 2026-08-24 — DatasetConverter dependency-light root paths
+
+- 目標：完成上一批的優先事項，讓 stage plan normalization 不再載入 legacy application parameter bootstrap。
+- 結果：debug／DRN／platform／malicious-domain root policy 移至 dependency-light config 並可注入 platform；新增直接執行 normalization 的 side-effect characterization tests；下一步是 typed source config 與隔離 CLI exit-code boundary。
+- 驗證：config/plan/entrypoint targeted tests、isolated rejecting-finder import gate、完整輕量 unittest、`py_compile` 與 `git diff --check`。
+
+### 2026-08-24 — DatasetConverter normalization／activation boundary
+
+- 目標：推進 Phase 1，將 CLI/source normalization 與 filesystem、logger、timing activation 分開。
+- 結果：frozen `StagePlan` 先承接正規化輸入，`activate_stage_context()` 再建立 `StageContext`；`main()` 明確依序呼叫，legacy `setArguments()` 保留薄 wrapper；下一步是移除 plan 對 legacy root-path bootstrap 的依賴。
+- 驗證：entrypoint AST activation gates、isolated import、targeted與完整輕量 unittest、`py_compile`、`git diff --check`。
+
 ### 2026-08-21 — DatasetConverter named stage context
 
 - 目標：推進 Phase 1，停止 bootstrap／main 透過 module globals 共享 logger、timing 與 mutable converter settings。
@@ -52,37 +76,3 @@
 - 結果：`extraction_source`以function-local imports固定rule identity、extractor keywords與builder transform contracts；canonical
   entrypoint不再eager import三個legacy modules，isolated import下一blocker收斂為generic utilities的`psutil`。
 - 驗證：fake-module adapter/AST activation gates、targeted與完整輕量unittest、`py_compile`、`git diff --check`。
-
-### 2026-08-14 — DatasetConverter entrypoint configuration boundary
-
-- 目標：推進 Phase 1／2，解除 canonical entrypoint 對 application／converter parameter bootstrap與import-time resource probe的耦合。
-- 結果：dependency-light `DatasetConverter.config`提供path/static defaults、frozen split及fresh nested reader settings；process counts
-  在`main()` bootstrap後計算，entrypoint不再import兩個legacy parameter modules；下一blocker為extraction的`tqdm` integration。
-- 驗證：config characterization、AST/subprocess import gates、完整輕量 unittest、`py_compile`與`git diff --check`。
-
-### 2026-08-14 — DatasetConverter taxonomy config／validation boundary
-
-- 目標：推進 Phase 2／3，將 taxonomy label normalization／InfoScore validation 從 legacy settings wrapper 抽離。
-- 結果：immutable `TaxonomyConfig` 集中 namespace mapping，injected loader與 frozen validation固定 adapter／label契約；
-  `loadLabels()`移除 mutable default、複製 caller settings且保留 legacy CLI/output/error gate。
-- 驗證：taxonomy config/fake-loader isolated tests、AST wrapper gate、完整輕量 unittest、`py_compile`與`git diff --check`。
-
-### 2026-08-14 — DatasetConverter functional package layout
-
-- 目標：依重構指引降低 DatasetConverter root 的 Python module 平鋪數量，同時維持已固定的 import／行為契約。
-- 結果：16 個已抽離 modules 分流至 `core/`、`sources/`、`adapters/`；所有 repository callers 與 regression tests 使用新路徑，子套件不 eager import optional dependencies。
-- 驗證：完整輕量 unittest、targeted DatasetConverter suites、`py_compile`、import-path search 與 `git diff --check`。
-### 2026-08-14 — DatasetConverter entrypoint DataFrame constructor boundary
-
-- 目標：推進 Phase 1，移除 canonical entrypoint的 direct pandas import與無 caller的 pandas.io/Plotly/colorama imports。
-- 結果：`dataframe_source`以 function-local pandas import集中 from-dict、empty與 concat contracts；conversion仍使用真實
-  pandas objects，CLI、split、output與 handoff行為未改。
-- 驗證：fake-pandas forwarding與 AST import gates、完整輕量 unittest；isolated import下一 blocker收斂為
-  `TCFParameters -> core.utilities -> psutil`。
-
-### 2026-08-13 — DatasetConverter legacy CZJ corpus fan-out removal
-
-- 目標：推進 Phase 1/4，移除 reader 中非 canonical、pandas-backed 的整庫 corpus fan-out。
-- 結果：canonical generator title jobs與 `read_czj_corpus_document()` flow保留；刪除未 return、會輸出 raw data且遺失 reader
-  policies 的 nested-reader branch，reader 不再 import `dfFromSQLite3`。
-- 驗證：AST dataframe/fan-out gates、CZJ source/source-role targeted suites、完整輕量 unittest、`py_compile`、`git diff --check`。
