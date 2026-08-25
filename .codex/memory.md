@@ -12,6 +12,36 @@
 
 ## Recent Outcomes
 
+### 2026-08-24 — DatasetConverter bounded WeiTech workspace configuration
+
+- 目標：推進 Phase 2，在 copy/rmtree 前正規化 WeiTech work-pool/work-ID path slice。
+- 結果：frozen `WorkspaceConfig` 要求 active work ID 有 pool且為單一安全 component，plan/context/main不再自行join mutable args；下一步是 FixedTest/WeiTech-format input paths。
+- 驗證：config/stage/entrypoint targeted tests、完整輕量 unittest、`py_compile`、isolated import與`git diff --check`。
+
+### 2026-08-24 — DatasetConverter normalized mode configuration
+
+- 目標：推進 Phase 2，將 source/WeiTech/extraction activation 從 mutable argparse namespace 正規化。
+- 結果：frozen `ModeConfig`／`WorkMode` 保留 source priority與ignored extraction-task compatibility，main以context mode啟用WeiTech/extraction；下一步是單一外部 path slice validation。
+- 驗證：config/stage/entrypoint targeted tests、完整輕量 unittest、`py_compile`、isolated import與`git diff --check`。
+
+### 2026-08-24 — DatasetConverter normalized runtime process configuration
+
+- 目標：推進 Phase 2，將 runtime discovery 產生的 process counts 正規化後注入 stage context。
+- 結果：frozen `RuntimeConfig` 驗證兩種 positive integer counts，activation在filesystem/logger前拒絕 invalid injection，main只從context使用 counts；下一步是 mode validation。
+- 驗證：config/stage/entrypoint targeted tests、完整輕量 unittest、`py_compile`、isolated import與`git diff --check`。
+
+### 2026-08-24 — DatasetConverter normalized output configuration
+
+- 目標：推進 Phase 2，停止 main 重複組合 canonical dataset artifact paths。
+- 結果：frozen `OutputConfig` 於 activation 前驗證 path components並產生 main/count/fixed-test stems，plan/context共同擁有；下一步是 dependency-light process configuration。
+- 驗證：config/stage/entrypoint targeted tests、完整輕量 unittest、`py_compile`、isolated import與`git diff --check`。
+
+### 2026-08-24 — DatasetConverter normalized split configuration
+
+- 目標：推進 Phase 2，讓 split ratios 由 normalized config 擁有並在 activation 前驗證。
+- 結果：`SplitConfig` 拒絕非有限、負數與非 unit-sum ratios，`ConverterConfig` 擁有 split slice，main 不再讀 module-level mutable ratio mapping；下一步是最小 typed output config。
+- 驗證：config/stage/entrypoint targeted tests、完整輕量 unittest、`py_compile`、isolated import與`git diff --check`。
+
 ### 2026-08-24 — DatasetConverter immutable converter configuration
 
 - 目標：推進 Phase 2，停止 plan/context 擁有 mutable nested converter settings。
@@ -42,37 +72,3 @@
 - 結果：frozen `StageContext` 提供具名 bootstrap handoff，`main()` 每次建立 fresh settings並使用 local timing/logger state；
   下一步是把 `setArguments()` 的純 normalization 與 filesystem/logger bootstrap 分開。
 - 驗證：AST state-ownership gates、entrypoint/import/runtime targeted tests、完整輕量 unittest、`py_compile` 與 `git diff --check`。
-
-### 2026-08-21 — DatasetConverter conversion runtime activation boundary
-
-- 目標：推進 Phase 1，解除 canonical entrypoint 對 numpy／pandas-backed conversion runtime 的 module-scope coupling。
-- 結果：`runtime_source` 以 function-local imports 轉接 logger、multiprocessing、DataFrame output／rows 與 ES fetch contracts；
-  `DatasetConverter.DataConverter` 已可在缺少 numpy 的目前環境 isolated import，下一步是收斂 bootstrap／stage globals。
-- 驗證：fake-module forwarding、AST／rejecting-finder activation gates、isolated import、完整輕量 unittest、`py_compile` 與 `git diff --check`。
-
-### 2026-08-21 — DatasetConverter class-tree activation boundary
-
-- 目標：推進 Phase 1，避免 canonical entrypoint 在未使用 taxonomy tree 行為時載入 legacy class-tree runtime。
-- 結果：`tree_source` 以 function-local imports 轉接 tree-file、node、subtopic 與 closest-parent contracts；isolated import 下一 blocker 收斂為 `df_utils -> numpy`。
-- 驗證：fake-module forwarding、AST activation gate、完整輕量 unittest、`py_compile` 與 `git diff --check`。
-
-### 2026-08-14 — DatasetConverter shared pipeline activation boundary
-
-- 目標：推進Phase 1，避免canonical module import為shared CLI/path/handoff policies載入`MP_utils`、numpy與pandas runtime。
-- 結果：`pipeline_source`以function-local imports轉接parser、directory/model/label/FixedTest與TaskConnector contracts；下一個
-  isolated import blocker收斂為`ClassesTree_utils -> pandas`。
-- 驗證：fake-module forwarding、AST activation gates、完整輕量unittest、`py_compile`、`git diff --check`。
-
-### 2026-08-14 — DatasetConverter dependency-light stage utilities
-
-- 目標：推進Phase 1，移除canonical entrypoint對含`psutil`等重型依賴的generic utilities module-scope coupling。
-- 結果：`core/stage_utils`集中stage filesystem、chunk、hash、sampling、augmentation與timing contracts；maintenance imports改為
-  function-local，isolated import下一blocker收斂為`TCF_utils -> MP_utils -> numpy`。
-- 驗證：temporary filesystem/hash、seeded random、timing、AST gates、完整輕量unittest、`py_compile`、`git diff --check`。
-
-### 2026-08-14 — DatasetConverter extraction activation boundary
-
-- 目標：推進Phase 1，讓未啟用extraction／WeiTech corpus conversion的流程不載入有副作用且依賴`tqdm`的EXTConverter modules。
-- 結果：`extraction_source`以function-local imports固定rule identity、extractor keywords與builder transform contracts；canonical
-  entrypoint不再eager import三個legacy modules，isolated import下一blocker收斂為generic utilities的`psutil`。
-- 驗證：fake-module adapter/AST activation gates、targeted與完整輕量unittest、`py_compile`、`git diff --check`。

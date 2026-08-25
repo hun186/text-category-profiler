@@ -164,6 +164,127 @@ class DataConverterEntrypointTests(unittest.TestCase):
         }
         self.assertNotIn("DCkwargs", module_assignments)
 
+    def test_main_gets_split_ratios_from_normalized_converter_config(self):
+        main = next(
+            node
+            for node in self.module.body
+            if isinstance(node, ast.FunctionDef) and node.name == "main"
+        )
+        referenced = {
+            node.id
+            for node in ast.walk(main)
+            if isinstance(node, ast.Name)
+        }
+        self.assertNotIn("DatasetRatioDict", referenced)
+
+        split_mapping_calls = [
+            node
+            for node in ast.walk(main)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "as_legacy_mapping"
+            and isinstance(node.func.value, ast.Attribute)
+            and node.func.value.attr == "split"
+        ]
+        self.assertEqual(len(split_mapping_calls), 1)
+
+    def test_main_gets_artifact_paths_from_normalized_output_config(self):
+        main = next(
+            node
+            for node in self.module.body
+            if isinstance(node, ast.FunctionDef) and node.name == "main"
+        )
+        output_attributes = {
+            node.attr
+            for node in ast.walk(main)
+            if isinstance(node, ast.Attribute)
+            and isinstance(node.value, ast.Attribute)
+            and node.value.attr == "output_config"
+        }
+        self.assertTrue(
+            {"output_main", "labels_count_output", "fixed_test_output"}.issubset(
+                output_attributes
+            )
+        )
+
+    def test_main_normalizes_discovered_process_counts_once(self):
+        main = next(
+            node
+            for node in self.module.body
+            if isinstance(node, ast.FunctionDef) and node.name == "main"
+        )
+        runtime_config_calls = [
+            node
+            for node in ast.walk(main)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "RuntimeConfig"
+        ]
+        self.assertEqual(len(runtime_config_calls), 1)
+
+        process_names = {
+            node.attr
+            for node in ast.walk(main)
+            if isinstance(node, ast.Attribute)
+            and isinstance(node.value, ast.Attribute)
+            and node.value.attr == "runtime_config"
+        }
+        self.assertEqual(
+            process_names,
+            {"worker_processes", "large_output_processes"},
+        )
+
+    def test_main_uses_normalized_weitech_mode_for_activation(self):
+        main = next(
+            node
+            for node in self.module.body
+            if isinstance(node, ast.FunctionDef) and node.name == "main"
+        )
+        legacy_mode_reads = {
+            node.attr
+            for node in ast.walk(main)
+            if isinstance(node, ast.Attribute)
+            and isinstance(node.value, ast.Name)
+            and node.value.id == "args"
+            and node.attr in {"WeiTechworkID", "ExtractionConverterTask"}
+        }
+        self.assertEqual(legacy_mode_reads, set())
+
+        normalized_mode_reads = {
+            node.attr
+            for node in ast.walk(main)
+            if isinstance(node, ast.Attribute)
+            and isinstance(node.value, ast.Attribute)
+            and node.value.attr == "mode_config"
+        }
+        self.assertTrue(
+            {"wei_tech_work_id", "extraction_task", "extraction_enabled"}.issubset(
+                normalized_mode_reads
+            )
+        )
+
+        legacy_workspace_reads = {
+            node.attr
+            for node in ast.walk(main)
+            if isinstance(node, ast.Attribute)
+            and isinstance(node.value, ast.Name)
+            and node.value.id == "args"
+            and node.attr == "WeiTechWorkPoolPATH"
+        }
+        self.assertEqual(legacy_workspace_reads, set())
+
+        workspace_reads = {
+            node.attr
+            for node in ast.walk(main)
+            if isinstance(node, ast.Attribute)
+            and isinstance(node.value, ast.Attribute)
+            and node.value.attr == "workspace_config"
+        }
+        self.assertEqual(
+            workspace_reads,
+            {"work_item_directory", "work_pool_directory"},
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
