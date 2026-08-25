@@ -41,7 +41,6 @@ except:
 '''
 from DatasetConverter.config import DATASET_CONVERTER_ROOT
 from DatasetConverter.config import DATA_AUGMENTATION_GOAL
-from DatasetConverter.config import DEFAULT_SPLIT_CONFIG
 from DatasetConverter.config import REMOVE_DUPLICATE_FIXED_TEST_ARTICLES
 from DatasetConverter.config import RESTRICTED_LABEL_MODE
 from DatasetConverter.config import STATISTICS_ENABLED
@@ -50,6 +49,14 @@ from DatasetConverter.config import default_converter_settings
 from DatasetConverter.config import SourceConfig
 from DatasetConverter.config import source_config_from_namespace
 from DatasetConverter.config import ConverterConfig
+from DatasetConverter.config import OutputConfig
+from DatasetConverter.config import DEFAULT_RUNTIME_CONFIG
+from DatasetConverter.config import RuntimeConfig
+from DatasetConverter.config import ConfigValidationError
+from DatasetConverter.config import ModeConfig
+from DatasetConverter.config import mode_config_from_namespace
+from DatasetConverter.config import WorkspaceConfig
+from DatasetConverter.config import workspace_config_from_namespace
 
 # Preserve the legacy local names used throughout this stage without importing
 # TCFParameters, whose module initialization parses CLI arguments and loads the
@@ -71,7 +78,6 @@ DatasetConverterROOT = DATASET_CONVERTER_ROOT
 #from DatasetConverter.ConverterParameters import WIDTH
 #from DatasetConverter.ConverterParameters import sampleMethod
 #from DatasetConverter.ConverterParameters import DataAugmentationGoal
-DatasetRatioDict = DEFAULT_SPLIT_CONFIG.as_legacy_mapping()
 RemoveDumpArticle_FT = REMOVE_DUPLICATE_FIXED_TEST_ARTICLES
 from DatasetConverter.adapters.extraction_source import build_czj_corpus
 from DatasetConverter.adapters.extraction_source import get_extraction_rule
@@ -1161,7 +1167,13 @@ class StagePlan:
     args: argparse.Namespace
     converter_config: ConverterConfig
     source_config: SourceConfig
-    work_directory: str
+    output_config: OutputConfig
+    mode_config: ModeConfig
+    workspace_config: WorkspaceConfig
+
+    @property
+    def work_directory(self) -> str:
+        return self.output_config.dataset_directory
 
     @property
     def converter_settings(self) -> dict:
@@ -1186,6 +1198,10 @@ class StageContext:
     args: argparse.Namespace
     converter_config: ConverterConfig
     source_config: SourceConfig
+    output_config: OutputConfig
+    runtime_config: RuntimeConfig
+    mode_config: ModeConfig
+    workspace_config: WorkspaceConfig
     logger: object
     tcf_main_logger: object
     stage_start_time: float
@@ -1233,16 +1249,26 @@ def normalize_stage_plan(converter_settings, argv=None):
         converter_settings,
         fixed_test_file_bound=args.FixedTestFileBound,
     )
+    output_config = OutputConfig(
+        dataset_directory=NewBertDatasetSubDir,
+        database_subdirectory=args.datasetDataBaseSubDir,
+    )
+    mode_config = mode_config_from_namespace(args, source_config)
+    workspace_config = workspace_config_from_namespace(args, mode_config)
     return StagePlan(
         args=args,
         converter_config=converter_config,
         source_config=source_config,
-        work_directory=NewBertDatasetSubDir,
+        output_config=output_config,
+        mode_config=mode_config,
+        workspace_config=workspace_config,
     )
 
 
-def activate_stage_context(plan):
+def activate_stage_context(plan, runtime_config=DEFAULT_RUNTIME_CONFIG):
     """Create stage directories, loggers, and timing state for a normalized plan."""
+    if not isinstance(runtime_config, RuntimeConfig):
+        raise ConfigValidationError("runtime_config must be a RuntimeConfig")
     args = plan.args
     stage_banner("DataConverter", detail=f"WorkDir: {plan.work_directory}")
     message = f"DataConveter started. WorkDir is {plan.work_directory}."
@@ -1262,6 +1288,10 @@ def activate_stage_context(plan):
         args=args,
         converter_config=plan.converter_config,
         source_config=plan.source_config,
+        output_config=plan.output_config,
+        runtime_config=runtime_config,
+        mode_config=plan.mode_config,
+        workspace_config=plan.workspace_config,
         logger=logger,
         tcf_main_logger=tcf_main_logger,
         stage_start_time=time.time(),
@@ -1317,46 +1347,50 @@ def loadLabels(args, DCkwargs=None):
 def main(argv=None):
     """Run the DatasetConverter CLI and return its successful exit status."""
     bootstrap_runtime()
-    nProcess = multicoreJob().ComputeNProcess(log=False)
-    nProcessSPC = multicoreJob().ComputeSPCNProcess(log=False)
+    runtime = multicoreJob()
+    runtime_config = RuntimeConfig(
+        worker_processes=runtime.ComputeNProcess(log=False),
+        large_output_processes=runtime.ComputeSPCNProcess(log=False),
+    )
     #解析並設定路徑相關參數。
     plan = normalize_stage_plan(default_converter_settings(), argv=argv)
-    context = activate_stage_context(plan)
+    context = activate_stage_context(plan, runtime_config=runtime_config)
     timings = {"stage_start_time": context.stage_start_time}
     args = context.args
     converter_settings = context.converter_settings
     ROOTPATHList = context.root_paths
     FixedTestPATHList = context.fixed_test_paths
     tcf_main_logger = context.tcf_main_logger
+    nProcess = context.runtime_config.worker_processes
+    nProcessSPC = context.runtime_config.large_output_processes
     #讀取及建置分類樹結構、分數表、Label，並加入轉換參數。
     converter_settings = loadLabels(args=args, DCkwargs=converter_settings)
 
     #datasetDBDir = args.datasetDataBaseSubDir
-    OUTPUTMAIN = os.path.join(
-        args.BertDatasetSubDir, args.datasetDataBaseSubDir, "dataset_total_with_filename")
-    OUTPUTMAIN_Counter = OUTPUTMAIN.replace("_with_filename","")+"_labels_count"
-    OUTPUTMAIN_FT = OUTPUTMAIN+"_FixedTest"
+    OUTPUTMAIN = context.output_config.output_main
+    OUTPUTMAIN_Counter = context.output_config.labels_count_output
+    OUTPUTMAIN_FT = context.output_config.fixed_test_output
     
     #如果是WeiTechworkID工作模式，因已有完成之test.sql3，不執行原有之文本轉換功能。
-    if args.WeiTechworkID != "":
-        MES = f"啓動WeiTechworkID工作模式 for workID {args.WeiTechworkID}"
+    if context.mode_config.wei_tech_work_id != "":
+        MES = f"啓動WeiTechworkID工作模式 for workID {context.mode_config.wei_tech_work_id}"
         tcf_main_logger.logW(MES)
-        WTBertDatasetSubDir = os.path.join(args.WeiTechWorkPoolPATH,args.WeiTechworkID)
+        WTBertDatasetSubDir = context.workspace_config.work_item_directory
         #進行資料抽取轉換任務，輸出格式為CZJ_SamplesFile
-        if args.ExtractionConverterTask != "":
+        if context.mode_config.extraction_enabled:
             try:
-                JobInfo = get_extraction_rule(args.ExtractionConverterTask)
+                JobInfo = get_extraction_rule(context.mode_config.extraction_task)
             except KeyError:
-                MES = f"資料集抽取轉換任務{args.ExtractionConverterTask}設定不存在於ExtractionRule，中止。檢查ExtractionRule.py及任務名稱。"
+                MES = f"資料集抽取轉換任務{context.mode_config.extraction_task}設定不存在於ExtractionRule，中止。檢查ExtractionRule.py及任務名稱。"
                 tcf_main_logger.logW(MES)
                 raise Exception
             JobInfo["DirName"] = WTBertDatasetSubDir
             print("JobInfo",JobInfo)
             run_extraction(
-                args.ExtractionConverterTask,
+                context.mode_config.extraction_task,
                 job_info=JobInfo,
             )
-            MES = f"完成資料集抽取轉換任務{args.ExtractionConverterTask}for{WTBertDatasetSubDir}"
+            MES = f"完成資料集抽取轉換任務{context.mode_config.extraction_task}for{WTBertDatasetSubDir}"
             tcf_main_logger.logW(MES)
             
         try:
@@ -1401,8 +1435,8 @@ def main(argv=None):
         except Exception as e:
             print(e)
         key_values("WeiTech dataset handoff", [
-            ("workID", args.WeiTechworkID),
-            ("work pool", args.WeiTechWorkPoolPATH),
+            ("workID", context.mode_config.wei_tech_work_id),
+            ("work pool", context.workspace_config.work_pool_directory),
             ("dataset dir", args.BertDatasetSubDir),
         ], icon="·")
     #else:
@@ -1458,7 +1492,7 @@ def main(argv=None):
     nDict = DatasetGenerator(df,
                      OUTPUTMAIN=OUTPUTMAIN,
                      IndexCols=IndexCols,
-                     DatasetRatio=DatasetRatioDict,
+                     DatasetRatio=context.converter_config.split.as_legacy_mapping(),
                      DataAugmentationGoal=DATA_AUGMENTATION_GOAL,
                      FixedTestPATHList=FixedTestPATHList,
                      esJob = esJob,

@@ -275,6 +275,80 @@ DataConverter.py -> stage/config -> domain services -> ports
 
 ## 9. 執行進度
 
+### 2026-08-24 — Phase 2 bounded WeiTech workspace configuration（進行中）
+
+本次完成：
+
+- 新增 frozen `WorkspaceConfig`，將 WeiTech work-pool directory 與 work ID 從 argparse namespace 分離，並以 `work_item_directory` 提供唯一的 path composition。
+- 有 work ID 時現在會在 activation／copy／rmtree 前要求非空 work-pool path，且 work ID 必須是單一路徑 component；拒絕 `.`、`..`、slash/backslash 與 null byte，避免 work item 逸出預期 root。
+- standard mode 仍允許空 workspace；factory 另驗證 `ModeConfig` 與 workspace 是否選擇相同 active/inactive WeiTech mode。
+- `StagePlan`／`StageContext` 現在共同擁有 workspace config，canonical main 不再直接讀 `args.WeiTechWorkPoolPATH` 或自行 join work ID；tests 固定 active/inactive paths、immutability、unsafe IDs 與 entrypoint ownership。
+
+尚未完成／下次優先事項：
+
+1. **Phase 2 completion gate 尚未達成。** WeiTech work-item input path、WeiTech-format input/output、FixedTest、taxonomy、model 與 ES config paths 仍由 argparse/legacy adapters 持有；只有 work-pool/work-ID slice 已集中驗證。
+2. 下一批應優先處理 FixedTest／WeiTech-format input path slice，因其直接影響 `SourceConfig.fixed_test_paths`；先固定空值、ordering 與 test-disabled compatibility，再決定是否驗證存在性。
+3. 本批不檢查 work-pool 是否已存在，也不建立目錄；filesystem existence/containment 與 copy/rmtree safety 屬 activation/workspace adapter responsibility，須以 temporary directory characterization 後再加。
+
+### 2026-08-24 — Phase 2 normalized mode configuration（進行中）
+
+本次完成：
+
+- 新增 frozen `ModeConfig`／`WorkMode`，將 source mode、standard/WeiTech/WeiTech-extraction mode、work ID 與 extraction task 從 mutable argparse namespace 正規化成具名設定。
+- 保留既有 source precedence：training disabled 優先於所有 training roots，debug 優先於 DRN-only，DRN-only 優先於 platform/malicious-domain roots；只有同時存在 WeiTech work ID 與 extraction task 才啟用 extraction，單獨指定 task 仍依 legacy flow 忽略。
+- mode factory 驗證 source config type、work ID/task string/null-byte contract；`ModeConfig` 本身拒絕不一致的 enum/work-ID/task 組合。
+- `StagePlan`／`StageContext` 現在共同擁有 normalized mode，canonical main 的 WeiTech/extraction activation 不再讀 mutable namespace fields；tests 固定 priority、ignored-task compatibility、invalid values 與 entrypoint ownership。
+
+尚未完成／下次優先事項：
+
+1. **Phase 2 completion gate 尚未達成。** WeiTech work-pool/work-ID slice 已由上節完成；argparse namespace 仍承載 taxonomy、model、ES 與其他 workspace/test-source paths，且完整 config 摘要 logging 尚未建立。
+2. 本項原訂的窄 workspace path slice 已由上節完成；後續優先事項以上節列出的 FixedTest／WeiTech-format input path slice 為準。
+3. 本批刻意保留「有 extraction task 但沒有 WeiTech work ID 時忽略 task」的 legacy 語意；若要改成 input error，應先新增 CLI exit-code characterization 並確認 `TCFMain.py` caller 不會送出該組合。
+
+### 2026-08-24 — Phase 2 normalized runtime process configuration（進行中）
+
+本次完成：
+
+- 新增 frozen `RuntimeConfig`，集中保存一般 worker 與大型 output worker counts；兩者都必須為正整數，拒絕 zero、negative、boolean、float 與 string values。
+- CPU/GPU/process discovery 仍留在 activated runtime composition root，不移入 dependency-light `config.py`；discovery 結果會先正規化成 `RuntimeConfig`，再交給 `activate_stage_context()`。
+- `StageContext` 現在擁有 normalized runtime config，main 的 conversion、output 與 generator calls 只從 context 取得 process counts，不再長期傳遞 discovery 產生的 loose locals。
+- activation 在建立目錄、logger 或輸出 banner 前驗證 injected runtime config type；tests 固定 invalid counts、immutability、side-effect gate 與 canonical main normalization/ownership。
+
+尚未完成／下次優先事項：
+
+1. **Phase 2 completion gate 尚未達成。** train/test、debug/DRN 與 extraction/WeiTech mode normalization 已由上節完成；其餘 argparse fields 與外部 source paths 仍主要由 legacy adapters 解讀。
+2. 本項原訂的窄 `ModeConfig` 已由上節完成；後續優先事項以上節列出的單一 path slice validation 為準。
+3. Runtime discovery 目前仍在 `bootstrap_runtime()` 之後執行，因直接 script 模式可能先修正 cwd；若要讓所有 config normalization 都早於 process-level bootstrap，必須先固定從 repository root 與 `DatasetConverter/` 啟動時的 path contracts。
+
+### 2026-08-24 — Phase 2 normalized output configuration（進行中）
+
+本次完成：
+
+- 新增 frozen `OutputConfig`，集中保存 running dataset directory、database subdirectory 與 canonical dataset artifact stem，並以具名 properties 產生 main、label-count 與 fixed-test output paths。
+- output normalization 在 filesystem/logger activation 前拒絕空 dataset directory、非字串 path component 與 null byte；空 database subdirectory 仍保留既有「直接輸出至 dataset directory」語意。
+- `StagePlan`／`StageContext` 現在共同擁有 `OutputConfig`；canonical `main()` 不再自行重複組合三個主要 artifact paths，既有 `_is_running_DataConverter` suffix 與 filenames 均未改變。
+- tests 固定 path contracts、immutability、invalid path failure、normalization-before-activation，以及 entrypoint 必須使用 normalized output config 的 regression gate。
+
+尚未完成／下次優先事項：
+
+1. **Phase 2 completion gate 尚未達成。** process counts 已由上節正規化；argparse namespace 與 train/test、debug/DRN 等互斥模式仍未形成單一完整 validation boundary，必要外部 source paths 也只完成最小字串驗證。
+2. 本項原訂的 dependency-light process configuration 已由上節完成；後續優先事項以上節列出的 mode validation 為準。
+3. `OutputConfig` 本批只承接 canonical dataset artifacts；WeiTech copy/move/rmtree、TSV/SQLite staging、ES outputs 與 atomic handoff 屬於 Phase 6，須先補 temporary-directory artifact tests，不應提前混入此 dataclass。
+
+### 2026-08-24 — Phase 2 normalized split configuration（進行中）
+
+本次完成：
+
+- `SplitConfig` 現在於建立時集中驗證 train／validation／test ratios：各值必須為有限非負數，且總和必須為 `1.0`；無效設定會以既有 `ConfigValidationError` 在 stage activation 前失敗。
+- `ConverterConfig` 正式擁有 immutable split slice；canonical `main()` 不再讀取 module-level mutable `DatasetRatioDict`，而是在建立 `DatasetGenerator` 時才取得 fresh legacy mapping。
+- tests 固定負值、boolean、infinity 與總和錯誤，並以 entrypoint regression gate 防止 split policy 再退回 module global。
+
+尚未完成／下次優先事項：
+
+1. **Phase 2 completion gate 尚未達成。** process counts 與最小 `OutputConfig` 已由最新進度完成；外部 source paths、互斥 modes 與 argparse namespace 仍未集中驗證。
+2. 後續優先事項以上方 normalized runtime process configuration 所列的 mode validation 為準。
+3. `SplitConfig` 目前保留現行固定 defaults，因 canonical CLI 沒有 ratio options；若日後新增 CLI mapping，必須另行更新 CLI contract 與 caller，而不能暗中引入未證實的 option。
+
 ### 2026-08-24 — Phase 2 immutable converter configuration（進行中）
 
 本次完成：
@@ -286,8 +360,8 @@ DataConverter.py -> stage/config -> domain services -> ports
 
 尚未完成／下次優先事項：
 
-1. **Phase 2 completion gate 尚未達成。** argparse namespace 仍可變，split ratios、process counts、必要 paths 與互斥 modes 尚未集中驗證；`OutputConfig` 也尚未建立。
-2. 下一批應優先把 `SplitConfig` validation 與 CLI ratio mapping 接到 `ConverterConfig`，或建立最小 `OutputConfig` 固定 dataset/database directory contracts；一次只移動一項責任。
+1. **Phase 2 completion gate 尚未達成。** argparse namespace 仍可變，外部 source paths 與互斥 modes 尚未集中驗證；split、output 與 process validation 已由最新三批完成。
+2. 下一批優先事項以上方 normalized runtime process configuration 所列的 mode validation 為準；一次只移動一項責任。
 3. **Phase 1 exit-code gate、Phase 0 artifact gaps 與 Phase 3–9 仍未完成。** 詳細項目沿用下方進度；本指引仍有後續工作。
 
 ### 2026-08-24 — Phase 2 typed source configuration（進行中）
@@ -300,7 +374,7 @@ DataConverter.py -> stage/config -> domain services -> ports
 
 尚未完成／下次優先事項：
 
-1. **Phase 2 completion gate 尚未達成。** typed `ConverterConfig` 的 reader-settings slice 已由上節完成；argparse namespace、ratio/process/path validation 與 `OutputConfig` 仍待處理。
+1. **Phase 2 completion gate 尚未達成。** reader、source、split 與最小 output slices 已完成；argparse namespace、process/external-path validation 與互斥 modes 仍待處理。
 2. **Phase 1 exit-code gate 仍未完成。** `main()` 尚未將 domain/input/adapter errors 映射為已測試的非零 code；應先抽出不執行真實資料轉換的 CLI boundary。
 3. Phase 0 artifact cases與 Phase 3–9 的未完成項目仍維持；下方較舊進度中的「下一步 typed `SourceConfig`」已由本節完成。
 
@@ -331,7 +405,7 @@ DataConverter.py -> stage/config -> domain services -> ports
 
 1. **Phase 1 completion gate 尚未完全達成。** isolated import 現已通過並越過 numpy／pandas conversion runtime；完整成功／失敗 CLI exit status 仍尚未有隔離測試。此處原記錄的 legacy `ROOTPATHList` coupling 已由 2026-08-24 dependency-light root-path policy 完成。
 2. 原訂的 root-path default 抽離與 plan normalization characterization 已由上節完成；下一優先事項以上節列出的 CLI boundary／typed `SourceConfig` 為準。
-3. **Phase 2 尚未完成。** `SourceConfig` 與 core reader-settings `ConverterConfig` 已由最新進度完成；`OutputConfig`、argparse normalization 與集中 ratio/process/path validation 仍待分批建立。
+3. **Phase 2 尚未完成。** source、core reader、split 與最小 output configs 已由最新進度完成；argparse normalization 與集中 process/external-path/mode validation 仍待分批建立。
 4. Phase 0 的 duplicate、FixedTest row conversion、taxonomy mismatch 與 production SQLite artifact contract 仍未完成；Phase 3–9 也各有下述未完成項目，因此本指引仍有後續工作。
 
 ### 2026-08-21 — Phase 1 class-tree activation boundary（進行中）
@@ -346,7 +420,7 @@ DataConverter.py -> stage/config -> domain services -> ports
 
 1. **Phase 1 completion gate 尚未達成。** isolated import 已越過 class-tree boundary；目前下一個已確認 blocker 是 `text_category_profiler.data.df_utils -> numpy`。
 2. 下一次應優先把 `dfOutputer`／`DictRowsListToDF` 收斂到 DataFrame/output adapter，避免同時改動輸出 schema 或 persistence 行為。
-3. 完整 `ConverterConfig`／`SourceConfig`／`OutputConfig`、集中驗證，以及 `DataConvertJobGenerater` 內仍混合的 ES、multiprocessing 與 output orchestration 應留在後續小批次處理。
+3. reader／source／split／最小 output configs 已在後續批次建立；集中 process/mode validation，以及 `DataConvertJobGenerater` 內仍混合的 ES、multiprocessing 與 output orchestration 仍應留在後續小批次處理。
 
 ### 2026-08-12 — Phase 1 入口邊界（進行中）
 

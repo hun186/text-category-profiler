@@ -8,8 +8,9 @@ settings are created by a factory so callers never share nested containers.
 """
 
 import math
+import os
 import platform
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from types import MappingProxyType
 from typing import Any, Mapping
@@ -19,6 +20,10 @@ WORK_POOL_ROOT = "WorkPool"
 DATASET_CONVERTER_ROOT = "DatasetConverter"
 
 
+class ConfigValidationError(ValueError):
+    """Raised when normalized converter settings are invalid."""
+
+
 @dataclass(frozen=True)
 class SplitConfig:
     """Normalized default dataset ratios."""
@@ -26,6 +31,25 @@ class SplitConfig:
     train: float = 0.7
     validation: float = 0.2
     test: float = 0.1
+
+    def __post_init__(self) -> None:
+        ratios = {
+            "Train": self.train,
+            "Validation": self.validation,
+            "Test": self.test,
+        }
+        for name, value in ratios.items():
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not math.isfinite(value)
+                or value < 0
+            ):
+                raise ConfigValidationError(
+                    f"{name} split ratio must be a finite non-negative number"
+                )
+        if not math.isclose(sum(ratios.values()), 1.0, rel_tol=0.0, abs_tol=1e-9):
+            raise ConfigValidationError("split ratios must sum to 1.0")
 
     def as_legacy_mapping(self) -> dict[str, float]:
         return {
@@ -66,6 +90,14 @@ class SourceMode(str, Enum):
     NON_LINUX = "non_linux"
 
 
+class WorkMode(str, Enum):
+    """Normalized optional workspace mode selected for this conversion."""
+
+    STANDARD = "standard"
+    WEITECH = "weitech"
+    WEITECH_EXTRACTION = "weitech_extraction"
+
+
 @dataclass(frozen=True)
 class SourceConfig:
     """Immutable source routing inputs for one conversion run."""
@@ -77,8 +109,180 @@ class SourceConfig:
     test_enabled: bool
 
 
-class ConfigValidationError(ValueError):
-    """Raised when normalized converter settings are invalid."""
+@dataclass(frozen=True)
+class ModeConfig:
+    """Normalized CLI mode selection without retaining the argparse namespace."""
+
+    source_mode: SourceMode
+    work_mode: WorkMode
+    wei_tech_work_id: str
+    extraction_task: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.source_mode, SourceMode):
+            raise ConfigValidationError("source_mode must be a SourceMode")
+        if not isinstance(self.work_mode, WorkMode):
+            raise ConfigValidationError("work_mode must be a WorkMode")
+        if self.work_mode is WorkMode.STANDARD and self.wei_tech_work_id:
+            raise ConfigValidationError("standard mode must not have a WeiTech work ID")
+        if self.work_mode is not WorkMode.STANDARD and not self.wei_tech_work_id:
+            raise ConfigValidationError("WeiTech mode requires a work ID")
+        if (
+            self.work_mode is WorkMode.WEITECH_EXTRACTION
+            and not self.extraction_task
+        ):
+            raise ConfigValidationError("WeiTech extraction mode requires a task")
+        if self.work_mode is WorkMode.WEITECH and self.extraction_task:
+            raise ConfigValidationError("WeiTech mode with a task must enable extraction")
+
+    @property
+    def extraction_enabled(self) -> bool:
+        return self.work_mode is WorkMode.WEITECH_EXTRACTION
+
+
+def mode_config_from_namespace(args: Any, source_config: SourceConfig) -> ModeConfig:
+    """Preserve legacy source precedence and WeiTech extraction activation."""
+
+    if not isinstance(source_config, SourceConfig):
+        raise ConfigValidationError("source_config must be a SourceConfig")
+    work_id = args.WeiTechworkID
+    extraction_task = args.ExtractionConverterTask
+    for name, value in {
+        "WeiTechworkID": work_id,
+        "ExtractionConverterTask": extraction_task,
+    }.items():
+        if not isinstance(value, str):
+            raise ConfigValidationError(f"{name} must be a string")
+        if "\0" in value:
+            raise ConfigValidationError(f"{name} must not contain a null byte")
+
+    if not work_id:
+        work_mode = WorkMode.STANDARD
+    elif extraction_task:
+        work_mode = WorkMode.WEITECH_EXTRACTION
+    else:
+        work_mode = WorkMode.WEITECH
+
+    return ModeConfig(
+        source_mode=source_config.mode,
+        work_mode=work_mode,
+        wei_tech_work_id=work_id,
+        extraction_task=extraction_task,
+    )
+
+
+@dataclass(frozen=True)
+class WorkspaceConfig:
+    """Validated WeiTech workspace path slice for an optional work item."""
+
+    work_pool_directory: str
+    work_id: str
+
+    def __post_init__(self) -> None:
+        for name, value in {
+            "WeiTechWorkPoolPATH": self.work_pool_directory,
+            "WeiTechworkID": self.work_id,
+        }.items():
+            if not isinstance(value, str):
+                raise ConfigValidationError(f"{name} must be a string")
+            if "\0" in value:
+                raise ConfigValidationError(f"{name} must not contain a null byte")
+        if self.work_id:
+            if not self.work_pool_directory:
+                raise ConfigValidationError(
+                    "WeiTechWorkPoolPATH is required when WeiTechworkID is set"
+                )
+            if self.work_id in {".", ".."} or "/" in self.work_id or "\\" in self.work_id:
+                raise ConfigValidationError(
+                    "WeiTechworkID must be a single path component"
+                )
+
+    @property
+    def work_item_directory(self) -> str | None:
+        if not self.work_id:
+            return None
+        return os.path.join(self.work_pool_directory, self.work_id)
+
+
+def workspace_config_from_namespace(
+    args: Any,
+    mode_config: ModeConfig,
+) -> WorkspaceConfig:
+    """Normalize the WeiTech workspace slice and verify mode consistency."""
+
+    if not isinstance(mode_config, ModeConfig):
+        raise ConfigValidationError("mode_config must be a ModeConfig")
+    config = WorkspaceConfig(
+        work_pool_directory=args.WeiTechWorkPoolPATH,
+        work_id=mode_config.wei_tech_work_id,
+    )
+    if (config.work_id != "") != (mode_config.work_mode is not WorkMode.STANDARD):
+        raise ConfigValidationError("workspace and mode config must select the same work mode")
+    return config
+
+
+@dataclass(frozen=True)
+class OutputConfig:
+    """Normalized stage directories and canonical dataset artifact stems."""
+
+    dataset_directory: str
+    database_subdirectory: str
+    dataset_stem: str = field(default="dataset_total_with_filename", init=False)
+
+    def __post_init__(self) -> None:
+        values = {
+            "dataset directory": self.dataset_directory,
+            "database subdirectory": self.database_subdirectory,
+            "dataset stem": self.dataset_stem,
+        }
+        for name, value in values.items():
+            if not isinstance(value, str):
+                raise ConfigValidationError(f"{name} must be a string")
+            if "\0" in value:
+                raise ConfigValidationError(f"{name} must not contain a null byte")
+        if not self.dataset_directory:
+            raise ConfigValidationError("dataset directory must not be empty")
+        if not self.dataset_stem:
+            raise ConfigValidationError("dataset stem must not be empty")
+
+    @property
+    def database_directory(self) -> str:
+        return os.path.join(self.dataset_directory, self.database_subdirectory)
+
+    @property
+    def output_main(self) -> str:
+        return os.path.join(self.database_directory, self.dataset_stem)
+
+    @property
+    def labels_count_output(self) -> str:
+        return self.output_main.replace("_with_filename", "") + "_labels_count"
+
+    @property
+    def fixed_test_output(self) -> str:
+        return self.output_main + "_FixedTest"
+
+
+@dataclass(frozen=True)
+class RuntimeConfig:
+    """Validated process counts discovered by the activated runtime adapter."""
+
+    worker_processes: int
+    large_output_processes: int
+
+    def __post_init__(self) -> None:
+        values = {
+            "worker process count": self.worker_processes,
+            "large-output process count": self.large_output_processes,
+        }
+        for name, value in values.items():
+            if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+                raise ConfigValidationError(f"{name} must be a positive integer")
+
+
+DEFAULT_RUNTIME_CONFIG = RuntimeConfig(
+    worker_processes=1,
+    large_output_processes=1,
+)
 
 
 def _freeze_setting(value: Any) -> Any:
@@ -112,6 +316,7 @@ class ConverterConfig:
     tokenization_wrap: bool
     convert_to_spec: str
     fixed_test_file_bound: int
+    split: SplitConfig
     reader_settings: Mapping[str, Any]
 
     @classmethod
@@ -120,6 +325,7 @@ class ConverterConfig:
         settings: Mapping[str, Any],
         *,
         fixed_test_file_bound: int,
+        split: SplitConfig = DEFAULT_SPLIT_CONFIG,
     ) -> "ConverterConfig":
         remaining = dict(settings)
         width = remaining.pop("WIDTH")
@@ -134,12 +340,15 @@ class ConverterConfig:
             raise ConfigValidationError(
                 "FixedTestFileBound must be a non-negative integer"
             )
+        if not isinstance(split, SplitConfig):
+            raise ConfigValidationError("split must be a SplitConfig")
         return cls(
             width=width,
             mode=str(mode),
             tokenization_wrap=bool(tokenization_wrap),
             convert_to_spec=str(convert_to_spec),
             fixed_test_file_bound=fixed_test_file_bound,
+            split=split,
             reader_settings=_freeze_setting(remaining),
         )
 
