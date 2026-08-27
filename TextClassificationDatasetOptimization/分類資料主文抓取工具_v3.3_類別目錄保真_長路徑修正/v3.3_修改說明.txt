@@ -1,0 +1,27 @@
+分類資料主文抓取工具 v3.3 修改說明
+===================================
+
+1. 修正 v3.2 長類別名稱被程式主動截斷的問題。
+   舊版使用 safe_component(category, 100)，超過 100 字元就截斷並加 8 位 SHA-1。
+
+2. 你提供的實例可完全重現舊版行為：
+   原類別：
+   Grey Zone Conflicts-Maritime Coercion-CN Coast Guard Pressure On TW Offshore Islands-Boarding Inspection And Maritime Control
+
+   v3.2 會變成：
+   Grey Zone Conflicts-Maritime Coercion-CN Coast Guard Pressure On TW Offshore Islands-Boar__94b71f9c
+
+3. v3.3 的 #T#[正式類別 label] 目錄永不截斷、hash、正規化或自動替換。
+
+4. 完整路徑過長時，只縮短文章標題檔名，並在必要時加短 hash 避免檔名碰撞。
+   正式類別目錄維持完整。
+
+5. 新增 --max-path-chars，預設 240；設 0 表示停用舊式 Windows 路徑預算。
+
+6. 如果類別目錄本身太長，程式會明確報錯並建議使用較短 --output-dir，
+   而不再偷偷修改類別 label。
+
+7. 已以 125 字元的上述類別做 dry-run 驗證：
+   - 類別目錄完整保留。
+   - 文章檔名自動縮短。
+   - 完整輸出路徑控制在 240 字元。

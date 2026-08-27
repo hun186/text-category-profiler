@@ -1,0 +1,20 @@
+Windows CMD compatibility fix
+=============================
+
+The BAT files in this package contain ASCII characters only.
+This avoids UTF-8 / Big5 code-page corruption in cmd.exe.
+
+Other changes:
+- The long Python command is written on one physical line.
+- No caret (^) line continuation is used.
+- py.exe is preferred; python.exe is used as a fallback.
+- Running the main BAT without an argument lets scrape_articles.py search its default input locations.
+- Dragging a ZIP onto the BAT is still supported.
+
+Full mode:
+  Drag a ZIP onto: 一鍵抓取主文.bat
+  Or run: 一鍵抓取主文.bat "D:\path\metadata.zip"
+
+Test mode:
+  Drag a ZIP onto: 測試模式抓取.bat
+  Or run: run_scraper.bat "D:\path\metadata.zip" test

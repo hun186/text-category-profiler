@@ -3073,3 +3073,11 @@ Cyberattack From CN On TW,TW Election-CPC Election Interference-Information And 
 United Front In Taiwan,TW Election-CPC Election Interference-United Front Networks And Political Influence,202608111140,contains,新增結構型交叉父類別；補充在臺統戰網絡分類維度的選舉干預子類；＠ChatGPT
 CN Military Operation,TW Election-CPC Election Interference-Military Coercion And Threat Signaling,202608111140,contains,新增結構型交叉父類別；補充中共軍事行動分類維度的選舉威懾子類；＠ChatGPT
 Grey Zone Conflicts,TW Election-CPC Election Interference-Military Coercion And Threat Signaling,202608111140,contains,新增結構型交叉父類別；補充灰色地帶衝突分類維度的選舉威懾子類；＠ChatGPT
+Grey Zone Conflicts,Maritime Coercion,202608271405,contains,新增必要中間節點；建立灰色地帶衝突下之海上脅迫分類層；目標類別：中國海警對臺離島灰色地帶施壓；＠ChatGPT
+Maritime Coercion,CN Coast Guard Pressure On TW Offshore Islands,202608271405,contains,新增主要層級；建立中國海警對臺離島海上灰色地帶施壓主題；目標類別：中國海警對臺離島灰色地帶施壓；＠ChatGPT
+CN Coast Guard Pressure On TW Offshore Islands,CN Coast Guard Pressure On TW Offshore Islands-Patrol And Restricted Waters Operations,202608271405,contains,新增底層細緻類別；依施壓手段區分編隊巡航、進入禁限制水域與常態化海上存在；目標類別：中國海警對臺離島灰色地帶施壓；＠ChatGPT
+CN Coast Guard Pressure On TW Offshore Islands,CN Coast Guard Pressure On TW Offshore Islands-Inspection Boarding And Vessel Interdiction,202608271405,contains,新增底層細緻類別；依施壓手段區分登檢、查證、扣押與船舶攔截行動；目標類別：中國海警對臺離島灰色地帶施壓；＠ChatGPT
+CN Coast Guard Pressure On TW Offshore Islands,CN Coast Guard Pressure On TW Offshore Islands-Jurisdiction Claims And Law Enforcement Normalization,202608271405,contains,新增底層細緻類別；依施壓手段區分管轄權主張、法律戰與執法常態化敘事；目標類別：中國海警對臺離島灰色地帶施壓；＠ChatGPT
+CN Policy For TW,CN Coast Guard Pressure On TW Offshore Islands,202608271405,contains,新增結構型交叉父類別；補充中共對臺政策分類維度下之海警灰色地帶施壓子類；目標類別：中國海警對臺離島灰色地帶施壓；＠ChatGPT
+Asia-Pacific Security,Cross-Strait Security,202608271405,contains,新增檢索橋接中間節點；建立亞太安全至台海安全之穩定檢索路徑；目標類別：中國海警對臺離島灰色地帶施壓；＠ChatGPT
+Cross-Strait Security,CN Coast Guard Pressure On TW Offshore Islands,202608271405,contains,新增檢索型主題包含；供台海安全上層向下展開取得對臺離島海警灰色地帶施壓資訊；目標類別：中國海警對臺離島灰色地帶施壓；＠ChatGPT

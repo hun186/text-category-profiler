@@ -1,0 +1,30 @@
+分類資料主文抓取工具 v3.4 修改說明
+===================================
+
+1. 延續 v3.3 的「正式類別目錄保真」原則：
+   #T#[正式類別 label] 永不因完整路徑過長而被截斷或改成 __xxxxxxxx。
+
+2. 新增 Windows Long Paths 自動偵測。未指定 --max-path-chars 時，程式會讀取：
+   HKLM\SYSTEM\CurrentControlSet\Control\FileSystem\LongPathsEnabled
+
+3. 若 LongPathsEnabled=1：
+   自動使用 effective --max-path-chars 0，停用舊式 240 字元完整路徑預算。
+
+4. 若 Long Paths 未啟用、無法讀取登錄值，或不是 Windows：
+   保守沿用 240 字元安全上限。
+
+5. 若使用者明確指定 --max-path-chars：
+   明確值優先，程式不會以自動偵測結果覆蓋。
+
+6. 啟動時新增「路徑模式」輸出。例如：
+   路徑模式：Windows Long Paths 已啟用；自動停用 240 字元路徑預算
+
+7. 已加入回歸測試，涵蓋：
+   - LongPathsEnabled=1 -> 自動解析為 0。
+   - LongPathsEnabled=0 -> 自動解析為 240。
+   - 登錄讀取失敗 -> 安全回退 240。
+   - 非 Windows -> 不誤判為 Windows Long Paths。
+   - 明確 --max-path-chars 值優先於自動偵測。
+
+8. 針對長輸出根目錄＋長正式類別 label 做 dry-run 整合驗證：
+   自動解析為 0 時不再觸發 v3.3 的 240 字元安全上限錯誤，正式類別名稱完整保留。
