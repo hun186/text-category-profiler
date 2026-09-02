@@ -3081,3 +3081,17 @@ CN Coast Guard Pressure On TW Offshore Islands,CN Coast Guard Pressure On TW Off
 CN Policy For TW,CN Coast Guard Pressure On TW Offshore Islands,202608271405,contains,新增結構型交叉父類別；補充中共對臺政策分類維度下之海警灰色地帶施壓子類；目標類別：中國海警對臺離島灰色地帶施壓；＠ChatGPT
 Asia-Pacific Security,Cross-Strait Security,202608271405,contains,新增檢索橋接中間節點；建立亞太安全至台海安全之穩定檢索路徑；目標類別：中國海警對臺離島灰色地帶施壓；＠ChatGPT
 Cross-Strait Security,CN Coast Guard Pressure On TW Offshore Islands,202608271405,contains,新增檢索型主題包含；供台海安全上層向下展開取得對臺離島海警灰色地帶施壓資訊；目標類別：中國海警對臺離島灰色地帶施壓；＠ChatGPT
+CN Military Power,PLA Capability To Blockade And Quarantine TW,202608271648,contains,新增主要層級；將對臺封鎖與隔離能力定位為解放軍軍力之可持續作戰能力主題；目標類別：解放軍對臺封鎖與隔離能力；＠ChatGPT
+PLA Capability To Blockade And Quarantine TW,PLA Capability To Blockade And Quarantine TW-Operational Enforcement,202608271648,contains,新增必要中間節點；以作戰執行能力作為底層細緻類別的共同分類軸；目標類別：解放軍對臺封鎖與隔離能力；＠ChatGPT
+PLA Capability To Blockade And Quarantine TW,PLA Capability To Blockade And Quarantine TW-Enabling And Sustainment,202608271648,contains,新增必要中間節點；以支援與持續作戰能力作為底層細緻類別的共同分類軸；目標類別：解放軍對臺封鎖與隔離能力；＠ChatGPT
+PLA Capability To Blockade And Quarantine TW-Operational Enforcement,PLA Capability To Blockade And Quarantine TW-Maritime Interdiction And Sea Control,202608271648,contains,新增底層細緻類別；區分海上攔截、制海、封控航道與海上拒止能力；目標類別：解放軍對臺封鎖與隔離能力；＠ChatGPT
+PLA Capability To Blockade And Quarantine TW-Operational Enforcement,PLA Capability To Blockade And Quarantine TW-Air Interdiction And Airspace Control,202608271648,contains,新增底層細緻類別；區分空中攔截、制空與空域拒止能力；目標類別：解放軍對臺封鎖與隔離能力；＠ChatGPT
+PLA Capability To Blockade And Quarantine TW-Operational Enforcement,PLA Capability To Blockade And Quarantine TW-Joint Firepower And Port And Airfield Denial,202608271648,contains,新增底層細緻類別；區分聯合火力、港口與機場拒止及遠程精準打擊能力；目標類別：解放軍對臺封鎖與隔離能力；＠ChatGPT
+PLA Capability To Blockade And Quarantine TW-Operational Enforcement,PLA Capability To Blockade And Quarantine TW-Quarantine Support And Escalation Control,202608271648,contains,新增底層細緻類別；區分低於全面戰爭門檻之隔離、登檢支援與升級控制能力；目標類別：解放軍對臺封鎖與隔離能力；＠ChatGPT
+PLA Capability To Blockade And Quarantine TW-Enabling And Sustainment,PLA Capability To Blockade And Quarantine TW-ISR Targeting And Command Control,202608271648,contains,新增底層細緻類別；區分情監偵、目標獲得、指揮管制與聯合殺傷鏈支援能力；目標類別：解放軍對臺封鎖與隔離能力；＠ChatGPT
+PLA Capability To Blockade And Quarantine TW-Enabling And Sustainment,PLA Capability To Blockade And Quarantine TW-Cyber Electronic And Space Support,202608271648,contains,新增底層細緻類別；區分網路、電子、太空與通訊隔離等跨域支援能力；目標類別：解放軍對臺封鎖與隔離能力；＠ChatGPT
+PLA Capability To Blockade And Quarantine TW-Enabling And Sustainment,PLA Capability To Blockade And Quarantine TW-Logistics Sustainment And Force Endurance,202608271648,contains,新增底層細緻類別；區分後勤補給、兵力持續與長時間封控之耐久能力；目標類別：解放軍對臺封鎖與隔離能力；＠ChatGPT
+Cross-Strait Security,PLA Capability To Blockade And Quarantine TW,202608271648,contains,新增檢索型主題包含；重用既有台海安全橋接節點，使上層安全主題向下展開可取得解放軍封鎖與隔離能力資訊；目標類別：解放軍對臺封鎖與隔離能力；＠ChatGPT
+PLA Navy,PLA Capability To Blockade And Quarantine TW-Maritime Interdiction And Sea Control,202608271648,supports,新增明確非階層語意關係；海上攔截與制海能力直接由解放軍海軍兵力提供主要支援；目標類別：解放軍對臺封鎖與隔離能力；＠ChatGPT
+PLA Air Force,PLA Capability To Blockade And Quarantine TW-Air Interdiction And Airspace Control,202608271648,supports,新增明確非階層語意關係；空中攔截與空域控制能力直接由解放軍空軍兵力提供主要支援；目標類別：解放軍對臺封鎖與隔離能力；＠ChatGPT
+PLA Rocket Force,PLA Capability To Blockade And Quarantine TW-Joint Firepower And Port And Airfield Denial,202608271648,supports,新增明確非階層語意關係；遠程精準火力與港口機場拒止能力直接由解放軍火箭軍提供重要支援；目標類別：解放軍對臺封鎖與隔離能力；＠ChatGPT

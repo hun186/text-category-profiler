@@ -1,0 +1,38 @@
+分類訓練正文抓取摘要
+================================
+完成時間：2026-09-02T15:18:18+08:00
+來源元素據：中共對臺海底電纜與關鍵基礎設施威脅_完整執行成果_20260902.zip
+執行模式：正式模式
+每個搜尋集合上限：不限（展開端點回傳的全部候選）
+每類文章上限：不限
+完整路徑安全上限：停用
+路徑模式：Windows Long Paths 已啟用；自動停用 240 字元路徑預算
+原始記錄：43
+單篇來源記錄：31
+搜尋結果集合記錄：12
+成功展開的不重複搜尋索引：8
+未成功展開的搜尋索引記錄：4
+展開前文章工作：43
+網址去重移除：1
+類別數量上限移除：0
+實際文章工作：42
+不重複文章網址：41
+成功輸出：37
+失敗／受限：5
+
+類別結果：
+- CN Threats To TW Critical Infrastructure-Blockade Isolation And Essential Service Disruption: 成功 9 / 文章工作 11 / 原始記錄 14
+- CN Threats To TW Critical Infrastructure-Cyber Intrusion And Network Disruption: 成功 10 / 文章工作 13 / 原始記錄 14
+- CN Threats To TW Critical Infrastructure-Submarine Cable Damage And Maritime Interference: 成功 18 / 文章工作 18 / 原始記錄 15
+
+處理規則：
+- 每個搜尋索引不設程式端篇數上限，合併 RSS 與 HTML 可取得的候選文章。
+- 每類文章不設篇數上限。
+- 網址去重範圍：category。
+- Bing News 索引優先以 RSS 展開，失敗時再解析搜尋頁 HTML。
+- 搜尋結果頁本身不會被存成訓練正文。
+- 每份成功 TXT 僅含清理後主文；類別由所在的 #T#[類別] 目錄表示。
+- #T#[正式類別 label] 目錄名稱永不截斷、雜湊或自動替換；路徑過長時只縮短文章檔名。
+- 若類別 label 本身含 Windows 不合法字元或單一目錄元件過長，程式會明確報錯而不是偷改類別名。
+- 未繞過登入、付費牆、CAPTCHA、robots.txt 或網站封鎖。
+- 詳細原因請查看抓取結果.csv與索引展開結果.csv。

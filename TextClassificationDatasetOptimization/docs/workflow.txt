@@ -1,0 +1,71 @@
+github專案優化流程子目錄頁面：
+https://github.com/hun186/text-category-profiler/tree/main/TextClassificationDatasetOptimization
+
+以下ChatGPT Plus代理人功能應用，使用＂對話＂模式即可，不會耗用計費token，無需使用＂工作＂模式。每個階段往下送之前建議人工概略檢查一下有沒有重大錯誤。
+
+1.現有分類結構檔（2千多類），摘錄範例如下：
+#母類別	子類別	日期	關係	備註
+Agriculture	Agricultural Biotechnology	202209141803	can be improved with
+Agriculture	Agriculture Industry	202304022042	
+Agriculture Industry	CN Agriculture Industry	202408191428	
+Agriculture Industry	TW Agriculture Industry	202304022042	
+
+2.上傳現有的分類結構檔，用ChatGPT提問模板/1.類別缺漏識別與分析ChatGPT提問模板.md（29k字元），讓ChatGPT自動分析時事，擬定十一個面向的尚待擴增的重大主題類別文本。
+(1)政治。
+(2)國際安全與地緣政治。
+(3)經濟。
+(4)財經與金融市場。
+(5)體育。
+(6)氣候變遷、極端天氣與能源轉型。
+(7)藝文與娛樂。
+(8)健康與公共衛生。
+(9)食品安全。
+(10)社會與民生。
+(11)中共對臺作為與能力。
+
+ChatGPT回傳範例摘錄:
+#### 國際安全與地緣政治
+
+1. [【蘇丹內戰與人道危機】](https://www.reuters.com/world/africa/why-is-sudan-war-what-is-impact-2026-04-15/)
+2. [【剛果民主共和國東部M23衝突】](https://www.reuters.com/world/africa/congolese-authorities-hand-over-15-prisoners-m23-rebels-2026-08-07/)
+3. [【緬甸內戰與軍政府統治】](https://www.reuters.com/world/asia-pacific/myanmar-civil-war-nears-rare-opening-talks-diplomacy-gains-ground-2026-08-05/)
+4. [【中菲南海海警衝突與海上灰色地帶對抗】](https://www.reuters.com/world/china/philippines-accuses-china-using-water-cannon-its-vessels-second-day-2026-07-24/)
+5. [【胡塞武裝紅海航運襲擊與封鎖】](https://www.reuters.com/world/middle-east/red-sea-shipping-slows-after-houthi-attack-saudi-arabia-data-shows-2026-07-27/)
+
+
+
+3.選定一個主題，例如：【蘇丹內戰與人道危機】，填入＂ChatGPT提問模板/2-0.綜合.任務指示.ChatGPT新增類別_語意前綴與目標類別備註版_20260901_關係方向修正版.md＂（76k字元）的主題位置。
+
+4.將ChatGPT提問模板下的＂2-0.綜合.任務指示.ChatGPT新增類別_語意前綴與目標類別備註版_20260901_關係方向修正版.md、2-1.TopicTree_old.csv、2-2.綜合_附件.2026_US-Iran_War_子圖.png、2-3.綜合_附件.公開來源索引與原創分類摘要_輸出範例.txt＂等四個檔案上傳到ChatGPT Plus新對話，產製推薦的新增類別及類別關係，並提供新聞、報告來源之訓練文本連結包。
+
+5.受限於版權因素，ChatGPT Plus無法直接提供訓練文本包，只能提供連結包，前一個階段對話完成後，下載訓練資料元素據包，放到＂分類資料主文抓取工具_v3.4_Windows_Long_Paths自動偵測＂目錄下，把壓縮包拖曳到一鍵抓取主文.bat放開，就會自動執行下載程式。
+
+6.回到ChatGPT Plus開啓新對話，貼上＂3.ChatGPT文本清整提問模板.txt＂（12k字元）內容，並上傳剛剛下載回來的訓練文本壓縮包，讓ChatGPT Plus進行文本清整確認。
+
+7.依目錄結構範本整理前面幾個階段的自動化蒐整結果，蒐整到訓練文本池：
+1. XX主題_解壓_除去文本元素據連結檔案
+必做，以免元素據因目錄名符合label格式，被錯誤地列入訓練文本。另將新增邊加到分類模型之正式類別結構檔TopicTree.csv最後，也要記得再把新版的TopicTree.csv取代覆蓋優化工作區的2-1.TopicTree_old.csv。
+2. Article_Text_Package_20260811_141935_爬文結果.zip
+3. Article_Text_Package_20260811_141935_Cleaned_清整結果
+
+
+8.如欲設定二元推薦器，到專案根目錄下的BertScript/VisParameters.py設定二元條件，可套用條件功能極為彈性且強大。例如下列為俄烏戰爭議題的推薦條件：總分300分以上，平均40分以上，俄烏衝突（含所有子類別）片段2片以上，佔比達30%以上，並符合表列正規表示式。
+    "RUWar":{
+        "active":True,
+        "Icon":"⚔",
+        "Or_Pool":{
+            "Main":{
+                "InfoScoreSumInterval":[300,99999999],
+                "InfoScoreMeanInterval":[40,99999999],
+                "Labels":{
+                    "SimpleTag":"(^RU-UA Confrontation$)",
+                    "MatchingBlockInterval":[2,99999999],
+                    "RatioInterval":[0.3,1],
+                    },
+                "KW":{
+                    "MatchingBlockWithKWInterval":[0,99999999],
+                    "text":"(?=.*俄|.*Russian)(?=.*烏|.*Ukarine).*"
+                    },
+                }
+            }
+        },
