@@ -3095,3 +3095,24 @@ Cross-Strait Security,PLA Capability To Blockade And Quarantine TW,202608271648,
 PLA Navy,PLA Capability To Blockade And Quarantine TW-Maritime Interdiction And Sea Control,202608271648,supports,新增明確非階層語意關係；海上攔截與制海能力直接由解放軍海軍兵力提供主要支援；目標類別：解放軍對臺封鎖與隔離能力；＠ChatGPT
 PLA Air Force,PLA Capability To Blockade And Quarantine TW-Air Interdiction And Airspace Control,202608271648,supports,新增明確非階層語意關係；空中攔截與空域控制能力直接由解放軍空軍兵力提供主要支援；目標類別：解放軍對臺封鎖與隔離能力；＠ChatGPT
 PLA Rocket Force,PLA Capability To Blockade And Quarantine TW-Joint Firepower And Port And Airfield Denial,202608271648,supports,新增明確非階層語意關係；遠程精準火力與港口機場拒止能力直接由解放軍火箭軍提供重要支援；目標類別：解放軍對臺封鎖與隔離能力；＠ChatGPT
+Strategy And Security,Critical Infrastructure Security,202609020932,contains,新增必要中間節點；建立國家安全框架下可持續擴充之關鍵基礎設施安全分類層；目標類別：中共對臺海底電纜與關鍵基礎設施威脅；＠ChatGPT
+Critical Infrastructure Security,CN Threats To TW Critical Infrastructure,202609020932,contains,新增主要層級；建立中共對臺關鍵基礎設施威脅之核心主題節點；目標類別：中共對臺海底電纜與關鍵基礎設施威脅；＠ChatGPT
+CN Threats To TW Critical Infrastructure,CN Threats To TW Critical Infrastructure-Submarine Cable Damage And Maritime Interference,202609020932,contains,新增底層細緻類別；依威脅手段區分海底電纜拖錨、割纜、可疑船舶徘徊及海上干擾；目標類別：中共對臺海底電纜與關鍵基礎設施威脅；＠ChatGPT
+CN Threats To TW Critical Infrastructure,CN Threats To TW Critical Infrastructure-Cyber Intrusion And Network Disruption,202609020932,contains,新增底層細緻類別；依威脅手段區分對關鍵基礎設施之網路滲透、DDoS、供應鏈攻擊與數位中斷；目標類別：中共對臺海底電纜與關鍵基礎設施威脅；＠ChatGPT
+CN Threats To TW Critical Infrastructure,CN Threats To TW Critical Infrastructure-Blockade Isolation And Essential Service Disruption,202609020932,contains,新增底層細緻類別；依威脅手段區分封鎖隔離、港口要域封控與能源及必要服務中斷；目標類別：中共對臺海底電纜與關鍵基礎設施威脅；＠ChatGPT
+CN Policy For TW,CN Threats To TW Critical Infrastructure,202609020932,contains,新增結構型交叉父類別；補充中共對臺政策分類維度下之關鍵基礎設施施壓與威脅主題；目標類別：中共對臺海底電纜與關鍵基礎設施威脅；＠ChatGPT
+Cross-Strait Security,CN Threats To TW Critical Infrastructure,202609020932,contains,新增檢索型主題包含；供台海安全上層向下展開取得關鍵基礎設施與海纜威脅資訊；目標類別：中共對臺海底電纜與關鍵基礎設施威脅；＠ChatGPT
+Maritime Coercion,CN Threats To TW Critical Infrastructure-Submarine Cable Damage And Maritime Interference,202609020932,contains,新增檢索型主題包含；供海上脅迫上層向下展開取得以船舶、拖錨及海上干擾造成海纜風險之資訊；目標類別：中共對臺海底電纜與關鍵基礎設施威脅；＠ChatGPT
+Cyberattack From CN On TW,CN Threats To TW Critical Infrastructure-Cyber Intrusion And Network Disruption,202609020932,contains,新增結構型交叉父類別；此底層類別為中國來源對臺網路攻擊中鎖定關鍵基礎設施之直接子類；目標類別：中共對臺海底電纜與關鍵基礎設施威脅；＠ChatGPT
+PLA Capability To Blockade And Quarantine TW,CN Threats To TW Critical Infrastructure-Blockade Isolation And Essential Service Disruption,202609020932,contains,新增檢索型主題包含；供對臺封鎖與隔離能力主題向下展開取得基礎設施隔離與必要服務中斷資訊；目標類別：中共對臺海底電纜與關鍵基礎設施威脅；＠ChatGPT
+CN Strategy,CN Intelligence System,202609031701,contains,新增必要中間節點；比照既有 US Intelligence System、UK Intelligence System 命名與層級，補足中國情報體系分類層；目標類別：中共對臺情報蒐集與間諜網絡；＠ChatGPT
+CN Intelligence System,CN Intelligence And Espionage Against TW,202609031701,contains,新增主要層級；建立中共對臺情報蒐集、間諜活動與組織網絡之核心主題節點；目標類別：中共對臺情報蒐集與間諜網絡；＠ChatGPT
+CN Intelligence And Espionage Against TW,CN Intelligence And Espionage Against TW-Targeted Intelligence Collection,202609031701,contains,新增必要中間節點；將情報蒐集依被鎖定目標領域形成一致的下層分類軸；目標類別：中共對臺情報蒐集與間諜網絡；＠ChatGPT
+CN Intelligence And Espionage Against TW,CN Intelligence And Espionage Against TW-Espionage Network Operations,202609031701,contains,新增必要中間節點；將間諜網絡依招募運作與網絡基礎設施形成一致的下層分類軸；目標類別：中共對臺情報蒐集與間諜網絡；＠ChatGPT
+CN Intelligence And Espionage Against TW-Targeted Intelligence Collection,CN Intelligence And Espionage Against TW-Military And Defense Targets,202609031701,contains,新增底層細緻類別；依情報蒐集目標領域區分軍事、國防、武器、演訓與部隊機敏資訊；目標類別：中共對臺情報蒐集與間諜網絡；＠ChatGPT
+CN Intelligence And Espionage Against TW-Targeted Intelligence Collection,CN Intelligence And Espionage Against TW-Government Political And Security Targets,202609031701,contains,新增底層細緻類別；依情報蒐集目標領域區分政府、政黨、外交、首長行程及國安機敏資訊；目標類別：中共對臺情報蒐集與間諜網絡；＠ChatGPT
+CN Intelligence And Espionage Against TW-Targeted Intelligence Collection,CN Intelligence And Espionage Against TW-Technology And Economic Targets,202609031701,contains,新增底層細緻類別；依情報蒐集目標領域區分高科技、產業、營業秘密、人才與經濟競爭資訊；目標類別：中共對臺情報蒐集與間諜網絡；＠ChatGPT
+CN Intelligence And Espionage Against TW-Espionage Network Operations,CN Intelligence And Espionage Against TW-Recruitment Cultivation And Agent Handling,202609031701,contains,新增底層細緻類別；依間諜網絡運作機制區分物色、接觸、培養、招募、利誘、脅迫與代理人處理；目標類別：中共對臺情報蒐集與間諜網絡；＠ChatGPT
+CN Intelligence And Espionage Against TW-Espionage Network Operations,CN Intelligence And Espionage Against TW-Network Infrastructure Financing And Communication Channels,202609031701,contains,新增底層細緻類別；依間諜網絡運作機制區分掩護據點、組織基礎、資金移轉及通訊傳遞管道；目標類別：中共對臺情報蒐集與間諜網絡；＠ChatGPT
+CN Policy For TW,CN Intelligence And Espionage Against TW,202609031701,contains,新增結構型交叉父類別；補充中共對臺政策分類維度下之情報蒐集與間諜滲透工具；目標類別：中共對臺情報蒐集與間諜網絡；＠ChatGPT
+Cross-Strait Security,CN Intelligence And Espionage Against TW,202609031701,contains,新增檢索型主題包含；供台海安全上層向下展開取得中共對臺情報蒐集、滲透及間諜網絡資訊；目標類別：中共對臺情報蒐集與間諜網絡；＠ChatGPT
