@@ -29,8 +29,6 @@ import textwrap
 import multiprocessing as mp
 
 import shutil
-import argparse
-from dataclasses import dataclass
 
 #載入DatasetConverter參數設定
 '''
@@ -46,17 +44,12 @@ from DatasetConverter.config import RESTRICTED_LABEL_MODE
 from DatasetConverter.config import STATISTICS_ENABLED
 from DatasetConverter.config import WORK_POOL_ROOT
 from DatasetConverter.config import default_converter_settings
-from DatasetConverter.config import SourceConfig
-from DatasetConverter.config import source_config_from_namespace
-from DatasetConverter.config import ConverterConfig
-from DatasetConverter.config import OutputConfig
-from DatasetConverter.config import DEFAULT_RUNTIME_CONFIG
 from DatasetConverter.config import RuntimeConfig
-from DatasetConverter.config import ConfigValidationError
-from DatasetConverter.config import ModeConfig
-from DatasetConverter.config import mode_config_from_namespace
-from DatasetConverter.config import WorkspaceConfig
-from DatasetConverter.config import workspace_config_from_namespace
+from DatasetConverter.stage import StageContext
+from DatasetConverter.stage import StagePlan
+from DatasetConverter.stage import activate_stage_context
+from DatasetConverter.stage import normalize_stage_plan
+from DatasetConverter.stage import setArguments
 
 # Preserve the legacy local names used throughout this stage without importing
 # TCFParameters, whose module initialization parses CLI arguments and loads the
@@ -92,9 +85,6 @@ from DatasetConverter.core.stage_utils import show_elapsed_time
 from DatasetConverter.core.stage_utils import split_list
 from DatasetConverter.core.stage_utils import walk_files
 from DatasetConverter.adapters.pipeline_source import connect_task
-from DatasetConverter.adapters.pipeline_source import fixed_test_paths
-from DatasetConverter.adapters.pipeline_source import parse_converter_options
-from DatasetConverter.adapters.pipeline_source import pick_dataset_directories
 from DatasetConverter.adapters.pipeline_source import resolve_base_model_checkpoint
 from DatasetConverter.adapters.pipeline_source import restricted_labels
 
@@ -134,10 +124,8 @@ from DatasetConverter.adapters.runtime_source import create_logger as MPlogger
 from DatasetConverter.adapters.runtime_source import create_multicore_job as multicoreJob
 from DatasetConverter.adapters.runtime_source import dataframe_from_rows as DictRowsListToDF
 from DatasetConverter.adapters.runtime_source import fetch_elasticsearch_data as getESData
-from text_category_profiler.core.log_display import info
 from text_category_profiler.core.log_display import key_values
 from text_category_profiler.core.log_display import section
-from text_category_profiler.core.log_display import stage_banner
 from text_category_profiler.core.log_display import stage_done
 from text_category_profiler.core.log_display import summarize_sequence
 from text_category_profiler.core.log_display import warning
@@ -1159,148 +1147,6 @@ def bootstrap_runtime():
         os.chdir("../")
     setproctitle.setproctitle("CZJDataConvert")
 
-
-@dataclass(frozen=True)
-class StagePlan:
-    """Normalized stage inputs produced before filesystem/logger activation."""
-
-    args: argparse.Namespace
-    converter_config: ConverterConfig
-    source_config: SourceConfig
-    output_config: OutputConfig
-    mode_config: ModeConfig
-    workspace_config: WorkspaceConfig
-
-    @property
-    def work_directory(self) -> str:
-        return self.output_config.dataset_directory
-
-    @property
-    def converter_settings(self) -> dict:
-        """Return a mutable legacy mapping for downstream compatibility."""
-        return self.converter_config.as_legacy_mapping()
-
-    @property
-    def root_paths(self) -> list[str]:
-        """Return a legacy-compatible copy of configured training roots."""
-        return list(self.source_config.root_paths)
-
-    @property
-    def fixed_test_paths(self) -> list[str]:
-        """Return a legacy-compatible copy of configured fixed-test roots."""
-        return list(self.source_config.fixed_test_paths)
-
-
-@dataclass(frozen=True)
-class StageContext:
-    """Activated runtime state owned by one stage run."""
-
-    args: argparse.Namespace
-    converter_config: ConverterConfig
-    source_config: SourceConfig
-    output_config: OutputConfig
-    runtime_config: RuntimeConfig
-    mode_config: ModeConfig
-    workspace_config: WorkspaceConfig
-    logger: object
-    tcf_main_logger: object
-    stage_start_time: float
-
-    @property
-    def converter_settings(self) -> dict:
-        return self.converter_config.as_legacy_mapping()
-
-    @property
-    def root_paths(self) -> list[str]:
-        return list(self.source_config.root_paths)
-
-    @property
-    def fixed_test_paths(self) -> list[str]:
-        return list(self.source_config.fixed_test_paths)
-
-
-def normalize_stage_plan(converter_settings, argv=None):
-    """Normalize CLI and source settings without creating files or loggers."""
-    args = parse_converter_options(argv)
-    args.BertDatasetSubDir, _ = pick_dataset_directories(
-        args=args,
-        ready_for_stage="DataConverter",
-    )
-    #BertDatasetSubDir,outputDir = datasetDirOutputDirPickers(args=args).proc()
-    #datasetDBDir = args.datasetDataBaseSubDir
-    NewBertDatasetSubDir = args.BertDatasetSubDir + "_is_running_DataConverter"
-    args.BertDatasetSubDir = NewBertDatasetSubDir
-
-    #指定全加到測試集，不分配至訓練集的檔案目錄
-    if args.FixedTestPATH == "" and args.test == True:
-        FixedTestPATHList = fixed_test_paths(args)
-    else:
-        FixedTestPATHList = [args.FixedTestPATH]
-    if args.WeiTechFormatInputPATH != "":
-        FixedTestPATHList.append(args.WeiTechFormatInputPATH)
-
-    if args.test == False:
-        args.FixedTestPATH = ""
-    source_config = source_config_from_namespace(
-        args,
-        fixed_test_paths=tuple(FixedTestPATHList),
-    )
-    converter_config = ConverterConfig.from_legacy_settings(
-        converter_settings,
-        fixed_test_file_bound=args.FixedTestFileBound,
-    )
-    output_config = OutputConfig(
-        dataset_directory=NewBertDatasetSubDir,
-        database_subdirectory=args.datasetDataBaseSubDir,
-    )
-    mode_config = mode_config_from_namespace(args, source_config)
-    workspace_config = workspace_config_from_namespace(args, mode_config)
-    return StagePlan(
-        args=args,
-        converter_config=converter_config,
-        source_config=source_config,
-        output_config=output_config,
-        mode_config=mode_config,
-        workspace_config=workspace_config,
-    )
-
-
-def activate_stage_context(plan, runtime_config=DEFAULT_RUNTIME_CONFIG):
-    """Create stage directories, loggers, and timing state for a normalized plan."""
-    if not isinstance(runtime_config, RuntimeConfig):
-        raise ConfigValidationError("runtime_config must be a RuntimeConfig")
-    args = plan.args
-    stage_banner("DataConverter", detail=f"WorkDir: {plan.work_directory}")
-    message = f"DataConveter started. WorkDir is {plan.work_directory}."
-    make_directory(WorkPoolROOT)
-    make_directory(plan.work_directory)
-    logger = MPlogger(logSubDir=f"{plan.work_directory}/logs")
-    tcf_main_logger = MPlogger(
-        logSubDir=f"{plan.work_directory}/logs",
-        logFile="TCFMain.log",
-    )
-    tcf_main_logger.logW(message)
-    if args.test == False:
-        info("Since args.test is False, set args.FixedTestPATH=''", icon="🧪")
-    else:
-        key_values("Fixed test detection", [("TRVPort", args.TRVPort), ("FixedTestPATHList", summarize_sequence(plan.fixed_test_paths, limit=4))], icon="·")
-    return StageContext(
-        args=args,
-        converter_config=plan.converter_config,
-        source_config=plan.source_config,
-        output_config=plan.output_config,
-        runtime_config=runtime_config,
-        mode_config=plan.mode_config,
-        workspace_config=plan.workspace_config,
-        logger=logger,
-        tcf_main_logger=tcf_main_logger,
-        stage_start_time=time.time(),
-    )
-
-
-def setArguments(converter_settings, argv=None):
-    """Compatibility wrapper for callers that expect immediate activation."""
-    return activate_stage_context(normalize_stage_plan(converter_settings, argv=argv))
 
 def load_taxonomy(args):
     """Load and validate taxonomy files without mutating converter settings."""

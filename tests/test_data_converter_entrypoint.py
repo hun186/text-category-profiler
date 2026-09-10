@@ -5,12 +5,16 @@ from pathlib import Path
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 DATA_CONVERTER = REPOSITORY_ROOT / "DatasetConverter/DataConverter.py"
+DATA_CONVERTER_STAGE = REPOSITORY_ROOT / "DatasetConverter/stage.py"
 
 
 class DataConverterEntrypointTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.module = ast.parse(DATA_CONVERTER.read_text(encoding="utf-8"))
+        cls.stage_module = ast.parse(
+            DATA_CONVERTER_STAGE.read_text(encoding="utf-8")
+        )
 
     def test_module_scope_does_not_change_working_directory(self):
         module_scope_calls = [
@@ -63,14 +67,14 @@ class DataConverterEntrypointTests(unittest.TestCase):
     def test_bootstrap_state_is_returned_in_a_named_context(self):
         classes = {
             node.name: node
-            for node in self.module.body
+            for node in self.stage_module.body
             if isinstance(node, ast.ClassDef)
         }
         self.assertIn("StageContext", classes)
 
         functions = {
             node.name: node
-            for node in self.module.body
+            for node in self.stage_module.body
             if isinstance(node, ast.FunctionDef)
         }
         set_arguments = functions["setArguments"]
@@ -92,13 +96,13 @@ class DataConverterEntrypointTests(unittest.TestCase):
         )
 
     def test_normalization_is_separate_from_runtime_activation(self):
-        functions = {
+        stage_functions = {
             node.name: node
-            for node in self.module.body
+            for node in self.stage_module.body
             if isinstance(node, ast.FunctionDef)
         }
-        normalize = functions["normalize_stage_plan"]
-        activate = functions["activate_stage_context"]
+        normalize = stage_functions["normalize_stage_plan"]
+        activate = stage_functions["activate_stage_context"]
 
         normalization_calls = {
             node.func.id
@@ -106,7 +110,7 @@ class DataConverterEntrypointTests(unittest.TestCase):
             if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
         }
         self.assertTrue(
-            {"make_directory", "MPlogger", "stage_banner"}.isdisjoint(
+            {"make_directory", "create_logger", "stage_banner"}.isdisjoint(
                 normalization_calls
             )
         )
@@ -117,12 +121,16 @@ class DataConverterEntrypointTests(unittest.TestCase):
             if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
         }
         self.assertTrue(
-            {"make_directory", "MPlogger", "stage_banner"}.issubset(
+            {"make_directory", "create_logger", "stage_banner"}.issubset(
                 activation_calls
             )
         )
 
-        main = functions["main"]
+        main = next(
+            node
+            for node in self.module.body
+            if isinstance(node, ast.FunctionDef) and node.name == "main"
+        )
         main_calls = [
             node.func.id
             for node in ast.walk(main)
