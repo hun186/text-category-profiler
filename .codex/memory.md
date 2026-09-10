@@ -12,6 +12,12 @@
 
 ## Recent Outcomes
 
+### 2026-09-10 — DatasetConverter stage boundary extraction
+
+- 目標：縮小肥大的 canonical converter 單檔，讓 stage planning／activation 有明確模組邊界。
+- 結果：`StagePlan`、`StageContext`、normalization 與 side-effect activation 移至 `DatasetConverter/stage.py`，入口保留 compatibility re-export 與原 CLI orchestration。
+- 驗證：stage／entrypoint／import targeted tests、完整輕量 unittest、`py_compile` 與 `git diff --check`。
+
 ### 2026-08-24 — DatasetConverter bounded WeiTech workspace configuration
 
 - 目標：推進 Phase 2，在 copy/rmtree 前正規化 WeiTech work-pool/work-ID path slice。
@@ -65,10 +71,3 @@
 - 目標：推進 Phase 1，將 CLI/source normalization 與 filesystem、logger、timing activation 分開。
 - 結果：frozen `StagePlan` 先承接正規化輸入，`activate_stage_context()` 再建立 `StageContext`；`main()` 明確依序呼叫，legacy `setArguments()` 保留薄 wrapper；下一步是移除 plan 對 legacy root-path bootstrap 的依賴。
 - 驗證：entrypoint AST activation gates、isolated import、targeted與完整輕量 unittest、`py_compile`、`git diff --check`。
-
-### 2026-08-21 — DatasetConverter named stage context
-
-- 目標：推進 Phase 1，停止 bootstrap／main 透過 module globals 共享 logger、timing 與 mutable converter settings。
-- 結果：frozen `StageContext` 提供具名 bootstrap handoff，`main()` 每次建立 fresh settings並使用 local timing/logger state；
-  下一步是把 `setArguments()` 的純 normalization 與 filesystem/logger bootstrap 分開。
-- 驗證：AST state-ownership gates、entrypoint/import/runtime targeted tests、完整輕量 unittest、`py_compile` 與 `git diff --check`。
