@@ -127,7 +127,7 @@ Characterize root behavior without importing heavyweight stage runtimes or launc
 
 **Existing behavior protected**
 
-Exact Stage 1–4 command prefixes and forwarded args; canonical order; `ArticleAnalysis` only when `args.test is True`; SDSMS merge only for `SDSMS`/`SDSMS_Prediction`; non-zero abort; train exit after classifier; and both `TestResultVis()` invocations, including a second identical command when all WeiTech paths are empty.
+Exact Stage 1–4 command prefixes and forwarded args; canonical order; `ArticleAnalysis` only when `args.test is True`; SDSMS merge only for `SDSMS`/`SDSMS_Prediction`; non-zero abort; train exit after classifier; and both `TestResultVis()` invocations, including a second command with `-WTFSepWorkPool False` appended to the base command when the WeiTech paths are empty.
 
 **Interfaces**
 

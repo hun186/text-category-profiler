@@ -1,4 +1,5 @@
 import argparse
+import ast
 import importlib.util
 import os
 from pathlib import Path
@@ -20,6 +21,17 @@ BASE_PATTERNS = [
     "test.sql3",
     "test.tsv",
 ]
+STAGE_HANDOFFS = {
+    "BertScript/RunClassfier.py": (
+        "_is_running_RunClassfier", "_rdy_for_CombineTestResult"
+    ),
+    "BertScript/CombineTestResult.py": (
+        "_is_running_CombineTestResult", "_rdy_for_TestResultVis"
+    ),
+    "BertScript/Test_result_Vis.py": (
+        "_is_running_TestResultVis", "_rdy_for_Spike"
+    ),
+}
 
 
 def _module(name, **attributes):
@@ -112,14 +124,40 @@ class WorkpoolCharacterizationTests(unittest.TestCase):
                                  WorkingDir=str(running)).proc()
             self.assertTrue(Path(str(dataset) + "_rdy_for_RunClassfier").is_dir())
 
-        suffixes = [
-            "_is_running_DataConverter", "_rdy_for_RunClassfier",
-            "_is_running_RunClassfier", "_rdy_for_CombineTestResult",
-            "_is_running_CombineTestResult", "_rdy_for_TestResultVis",
-            "_is_running_TestResultVis", "_rdy_for_Spike",
-        ]
-        for suffix in suffixes:
-            self.assertRegex(suffix, r"^_(?:is_running|rdy_for)_[A-Za-z]+$")
+
+    def assert_source_defines_handoff(self, source, expected):
+        tree = ast.parse(source)
+        observed = {
+            tuple(argument.value for argument in call.args[:2])
+            for call in ast.walk(tree)
+            if (
+                isinstance(call, ast.Call)
+                and isinstance(call.func, ast.Attribute)
+                and call.func.attr == "replace"
+                and len(call.args) >= 2
+                and all(
+                    isinstance(argument, ast.Constant)
+                    and isinstance(argument.value, str)
+                    for argument in call.args[:2]
+                )
+            )
+        }
+        self.assertIn(expected, observed)
+
+    def test_stage_2_to_4_sources_define_canonical_handoffs(self):
+        for relative_path, expected in STAGE_HANDOFFS.items():
+            with self.subTest(source=relative_path):
+                source = (ROOT / relative_path).read_text(encoding="utf-8")
+                self.assert_source_defines_handoff(source, expected)
+
+    def test_stage_2_to_4_handoff_assertions_detect_source_drift(self):
+        for relative_path, expected in STAGE_HANDOFFS.items():
+            with self.subTest(source=relative_path):
+                source = (ROOT / relative_path).read_text(encoding="utf-8")
+                altered_source = source.replace(expected[1], expected[1] + "_changed")
+                self.assertNotEqual(source, altered_source)
+                with self.assertRaises(AssertionError):
+                    self.assert_source_defines_handoff(altered_source, expected)
 
     def test_final_output_patterns_base_and_sdsms(self):
         base_module, _ = load_parameters()
