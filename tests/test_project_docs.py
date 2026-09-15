@@ -6,6 +6,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class ProjectDocumentationTests(unittest.TestCase):
+    def test_known_issues_agrees_with_lightweight_smoke_command(self):
+        known_issues = (ROOT / ".codex" / "known_issues.md").read_text(encoding="utf-8")
+
+        self.assertIn("python -m unittest discover -s tests", known_issues)
+        self.assertNotIn("沒有已確認的安裝、lint、test 或 smoke test 命令", known_issues)
+
     def test_root_requirements_exists_with_core_sections(self):
         requirements = (ROOT / "requirements.txt").read_text(encoding="utf-8")
         for expected in [
