@@ -35,7 +35,6 @@ def run_stage_command(CMD, stage_name, runner=None):
         completed, stage_name, CMD
     )
 
-import shutil
 #import GPUtil
 
 from text_category_profiler.core.utilities import OSWALK
@@ -52,6 +51,14 @@ from text_category_profiler.pipeline.commands import (
     dataset_command,
     visualization_commands,
 )
+from text_category_profiler.pipeline.configuration import PipelineContext
+from text_category_profiler.pipeline.orchestrator import PipelineOrchestrator
+from text_category_profiler.pipeline.workpool import (
+    DeliveryManager,
+    WorkPoolManager,
+    WorkPoolPlan,
+)
+from text_category_profiler.filesystem import LegacyFileSystem
 
 from text_category_profiler.pipeline.DataConverter_utils import CheckDatasetFiles
 from text_category_profiler.pipeline.DataConverter_utils import RawAndPredictionMerger
@@ -88,23 +95,18 @@ def DataConvert(args,exeTimeDict=dict()):
     #並續於DataConverter將該workID相關dataset_total_with_filename_FixedTest.sql3和test3.sql3拷貝到WorkPool
     #print("start to find WeiTechworkIDPath")
     if args.WeiTechworkIDPath != "" and args.WeiTechWorkPoolPATH !="":
-        workIDList = os.listdir(args.WeiTechworkIDPath)
-        #print("workIDList",workIDList)
-        workIDList.sort()
-        workIDList.reverse()
-        if len(workIDList) == 0:
-            warning(f"WeiTechworkIDPath is set as {args.WeiTechworkIDPath}, but there is no WTwork To Run. Abort!")
-            raise Exception
-        for workID in workIDList:
-            if workID in os.listdir(args.WeiTechWorkPoolPATH):
-                args.WeiTechworkID = workID
-                Src = os.path.join(args.WeiTechworkIDPath,args.WeiTechworkID)
-                Des = os.path.join(args.WeiTechworkIDPath,"..","AutoBertClassify_Processing",args.WeiTechworkID)
-                MKDIR(os.path.join(args.WeiTechworkIDPath,"..","AutoBertClassify_Processing"))
-                shutil.move(Src,Des)
-                break
-        MES = f"Found workID {args.WeiTechworkID} in {args.WeiTechworkIDPath}, we will start to apply this task."
-        info(MES, icon="📌")
+        context = PipelineContext(
+            args=args, root_paths=(),
+            final_output_patterns=tuple(FinalOfferedOutputFNrePatList),
+            run_mode="legacy",
+        )
+        manager = WorkPoolManager(
+            WorkPoolPlan.from_context(context, workpool_root=WorkPoolROOT),
+            _legacy_filesystem(),
+            warning=warning,
+            info=lambda message: info(message, icon="📌"),
+        )
+        args.WeiTechworkID = manager.acquire()
     
     CMD = dataset_command(args, args_renderer=convert_to_args_str).render_shell()
     ShowElapsedTime(exeTimeDict["start"])
@@ -193,38 +195,28 @@ def BackupAndClean(args):
         stage_banner("BackupAndClean", detail="備份預測結果並清理暫存資料")
         info("args.RemoveBertDataDir is True, Running BackupAIPredictResultAndDelTempFile", icon="🧹")
         info(f"BertDatasetSubDir: {BertDatasetSubDir}", icon="📁")
-        BackupAIPredictResultAndDelTempFile(
-            WorkPoolROOT=WorkPoolROOT,BertDatasetSubDir=BertDatasetSubDir)
+    context = PipelineContext(
+        args=args, root_paths=(),
+        final_output_patterns=tuple(FinalOfferedOutputFNrePatList),
+        run_mode="legacy",
+    )
+    DeliveryManager(
+        WorkPoolPlan.from_context(context, workpool_root=WorkPoolROOT),
+        _legacy_filesystem(),
+        output_logger=lambda message: MPlogger(logSubDir="logs").logW(
+            message, logFile="WeiTechOutputDF.log"
+        ),
+    ).backup_and_complete(BertDatasetSubDir)
 
-    if args.WeiTechworkID != "":
-        DesDir=os.path.join(args.WeiTechWorkPoolPATH,args.WeiTechworkID)
-        #BackFNrePatList = ["^DFPreambleCols_df_ALL.*"]
-        #if args.task == "BDS":
-            #BackFNrePatList = []
 
-        delivery_patterns = list(FinalOfferedOutputFNrePatList)
-        if args.task in ["SDSMS", "SDSMS_Prediction"] and "SDSMS.*" not in delivery_patterns:
-            delivery_patterns.append("SDSMS.*")
-        BackupAIPredictResultAndDelTempFile(
-            BertDatasetSubDir=BertDatasetSubDir,
-            DesDir=DesDir,
-            BackFNrePatList=delivery_patterns)
-        MES = f"Complete {args.WeiTechworkIDPath}/{args.WeiTechworkID}, Move Output {BertDatasetSubDir}/DFPreambleCols_df_ALL.sql3 to {DesDir}"
-        MPlogger(logSubDir="logs").logW(MES,logFile="WeiTechOutputDF.log")
-        ProcessingDir = os.path.join(args.WeiTechworkIDPath,"..","AutoBertClassify_Processing")
-        ProcessedDir = os.path.join(args.WeiTechworkIDPath,"..","AutoBertClassify_Processed")
-        Src = os.path.join(ProcessingDir,args.WeiTechworkID)
-        Des = os.path.join(ProcessedDir,args.WeiTechworkID)
-
-        if 'linux' in platform.system().lower():
-            for path in [ProcessingDir,ProcessedDir,Src]+OSWALK(Des):
-                chownPath(path)
-                
-        MKDIR(ProcessedDir)
-        try:
-            shutil.move(Src,Des)
-        except Exception as e:
-            print(e)
+def _legacy_filesystem():
+    return LegacyFileSystem(
+        make_directory=lambda path: MKDIR(path),
+        walk=lambda path: OSWALK(path),
+        chown=lambda path: chownPath(path),
+        backup=lambda **kwargs: BackupAIPredictResultAndDelTempFile(**kwargs),
+        platform_name=lambda: platform.system(),
+    )
 
 def ArticleAnalysis(args,exeTimeDict=dict()):
     #綜合輸入資料及推論結果，製作資料庫，以供檢索
@@ -237,22 +229,34 @@ def ArticleAnalysis(args,exeTimeDict=dict()):
     #備份AI分析結果，並清除過程檔案
     BackupAndClean(args)
 
-if __name__ == '__main__':
-    
+def main(argv=None):
 #WT測試指令:python TCFMain.py -WTworkIDPath rawData/ABT/ProcLink/AutoBertClassify -WTWorkPoolPath WTWorkPool -TRVHost False
     exeTimeDict = dict()
     exeTimeDict["start"] = time.time()
 #%%初始化，智慧化參數設定
-    args = setArguments()
+    args = setArguments() if argv is None else setArguments(argv)
     setproctitle.setproctitle(f'TCFMain{args.ExecutionTime[4:]}')
-#%%轉換資料集
     HybridConformer(cpuUsageThreshold=90).proc()
-    DataConvert(args,exeTimeDict=exeTimeDict)
-    
-#%%進行分類核心模型運算。
-    RunClassfier(args,exeTimeDict=exeTimeDict)
-#%%進行文本綜合分析
-    if args.test == True:
-        ArticleAnalysis(args,exeTimeDict=exeTimeDict)
+
+    context = PipelineContext(
+        args=args,
+        root_paths=(),
+        final_output_patterns=tuple(FinalOfferedOutputFNrePatList),
+        run_mode="legacy",
+    )
+    orchestrator = PipelineOrchestrator(
+        context,
+        convert=lambda: DataConvert(args, exeTimeDict=exeTimeDict),
+        classify=lambda: RunClassfier(args, exeTimeDict=exeTimeDict),
+        combine=lambda: CombineTestResult(args, exeTimeDict=exeTimeDict),
+        visualize=lambda: TestResultVis(args, exeTimeDict=exeTimeDict),
+        merge=lambda: RawAndPredictionMerger(args=args).proc(),
+        deliver=lambda: BackupAndClean(args),
+    )
+    orchestrator.run()
 
     info(f"各階段耗時摘要: {exeTimeDict}", icon="⏱️")
+
+
+if __name__ == '__main__':
+    main()

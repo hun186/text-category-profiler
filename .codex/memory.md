@@ -12,6 +12,12 @@
 
 ## Recent Outcomes
 
+### 2026-09-16 — Root orchestration and WorkPool lifecycle boundaries
+
+- 目標：完成 Architecture Refactoring Phase 3，隔離 canonical stage sequencing 與 root filesystem lifecycle ownership。
+- 結果：`PipelineOrchestrator` 只依賴 injected ports；root adapters 透過 frozen `WorkPoolPlan`、`WorkPoolManager`、`DeliveryManager` 與 `LegacyFileSystem` 保留 selection、delivery、ownership 與 final-move policies。
+- 驗證：orchestrator／WorkPool targeted tests、Phase 0–2 contracts、DatasetConverter fixture、完整 dependency-light unittest、compileall 與 `git diff --check`。
+
 ### 2026-09-10 — DatasetConverter stage boundary extraction
 
 - 目標：縮小肥大的 canonical converter 單檔，讓 stage planning／activation 有明確模組邊界。
@@ -65,9 +71,3 @@
 - 目標：完成上一批的優先事項，讓 stage plan normalization 不再載入 legacy application parameter bootstrap。
 - 結果：debug／DRN／platform／malicious-domain root policy 移至 dependency-light config 並可注入 platform；新增直接執行 normalization 的 side-effect characterization tests；下一步是 typed source config 與隔離 CLI exit-code boundary。
 - 驗證：config/plan/entrypoint targeted tests、isolated rejecting-finder import gate、完整輕量 unittest、`py_compile` 與 `git diff --check`。
-
-### 2026-08-24 — DatasetConverter normalization／activation boundary
-
-- 目標：推進 Phase 1，將 CLI/source normalization 與 filesystem、logger、timing activation 分開。
-- 結果：frozen `StagePlan` 先承接正規化輸入，`activate_stage_context()` 再建立 `StageContext`；`main()` 明確依序呼叫，legacy `setArguments()` 保留薄 wrapper；下一步是移除 plan 對 legacy root-path bootstrap 的依賴。
-- 驗證：entrypoint AST activation gates、isolated import、targeted與完整輕量 unittest、`py_compile`、`git diff --check`。

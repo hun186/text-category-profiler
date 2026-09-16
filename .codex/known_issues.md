@@ -6,7 +6,7 @@
 
 | ID | 嚴重度 | 問題 | 影響範圍 | Workaround | 證據 | 狀態 |
 | --- | --- | --- | --- | --- | --- | --- |
-| `KI-002` | Medium | 主流程可能搬移、備份或刪除工作池資料，不適合未隔離執行 | Runtime 驗證、資料安全 | 只在隔離 fixture/workpool 中執行；未確認前做靜態 contract 檢查 | `TCFMain.py` 的 `BackupAndClean()` 與 workID 搬移流程 | Open |
+| `KI-002` | Medium | 主流程可能搬移、備份或刪除工作池資料，不適合未隔離執行 | Runtime 驗證、資料安全 | 使用 recording filesystem／temporary fixture 驗證 `WorkPoolManager`、`DeliveryManager`；完整 root/model integration 仍不得指向真實 WorkPool | `tests/test_workpool_manager.py` 與 `tests/test_tcf_workpool_characterization.py` 已隔離 lifecycle；完整 root integration 尚未建立 | Open |
 | `KI-003` | Medium | 尚無完整模型／GPU／真實 WorkPool pipeline smoke test | 完整 runtime 驗證 | 使用 `python -m unittest discover -s tests` 執行 dependency-light suite；資料轉換另跑隔離 fixture | `.codex/workflows.md` 驗證矩陣；Phase 0 characterization tests | Open |
 
 ## Issue Details
@@ -17,8 +17,8 @@
 - 最小重現方式或證據位置：`TCFMain.py` 會根據 WeiTech/workpool args 搬移任務目錄、備份輸出並可移除暫存資料。
 - 預期與實際行為：預期 smoke test 無副作用；實際主流程與工作池 state 緊密耦合。
 - 影響、嚴重度與受影響範圍：Medium；影響 `TCFMain.py`、DatasetConverter、RunClassfier 與備份清理流程驗證。
-- 已知 workaround 及其不足：使用隔離 fixture/workpool；目前 fixture 待確認。
-- 修復條件：定義可安全重建與清理的測試工作池。
+- 已知 workaround 及其不足：以 recording filesystem 與 temporary fixture 執行 lifecycle tests；可重複證明 selection/delivery policy，但尚未涵蓋完整模型 root run。
+- 修復條件：建立 Plan v1.1 要求的可安全重建、清理且涵蓋完整 root integration 的測試工作池。
 - 狀態：Open。
 
 ### `KI-003` — 缺少完整 pipeline smoke test
