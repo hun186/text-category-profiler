@@ -34,6 +34,7 @@
 - Consumer：`TCFMain.py`、`DatasetConverter/DataConverter.py`、`BertScript/RunClassfier.py`、`BertScript/CombineTestResult.py`、`BertScript/Test_result_Vis.py` 等 stage scripts。
 - 輸入：`--train/-tr`、`--test/-ts`、`--task`、`--WorkPoolROOT/-WPRoot`、`--BertDatasetSubDir/-BertDataDir`、`--TopicTreeDir/-TopicTreeDir`、`--TopicTreeFiles/-TopicTreeFiles`、`--modelDir/-mdlDir`、`--FixedTestPATH/-FTPath`、`--SaveOptimizer/-SaveOptimizer`、WeiTech work pool 相關參數、model type 與視覺化參數等。`--SaveOptimizer` 預設為 `false`，因此 Hugging Face checkpoint 不保留 `optimizer.pt`；需要續訓狀態時可傳 `--SaveOptimizer true`。
 - 輸出：argparse namespace；`args.train == False and args.test == False` 時 parser 會將 `args.test` 設為 `True`。
+- Root compatibility：`TCF_Params.TCFParameters.setArguments(argv=None)` 仍回傳 activated argparse namespace；其內部先建立 `PipelinePlan`，再明確 activation WeiTech filesystem 動作與 process counts。Import `TCFParameters` 本身不解析 process argv。
 - 驗證與約束：修改 parser 後需檢查所有 `convert_to_args_str(args)` consumer 與手動附加參數。
 - 錯誤／exit code／失敗語意：argparse 會處理未知／不合法參數；stage script 其他錯誤語意待確認。
 - 版本與相容性：無版本化機制；破壞性變更需文件同步與 migration note。
@@ -64,7 +65,7 @@
 - Consumer：Test_result_Vis、BackupAndClean 與外部工作池 consumer。
 - 輸入：模型預測結果、label list、dataset DB。
 - 輸出：`DFPreambleCols_df_ALL*`、`dataset_total_with_filename_FixedTest.sql3`、`test.sql3`、`test.tsv`，SDSMS 任務另包含 `SDSMS.*` patterns。
-- 驗證與約束：`FinalOfferedOutputFNrePatList` 決定交付／備份檔名；修改需同步外部工作池 consumer。
+- 驗證與約束：每個 `PipelinePlan` 擁有 fresh immutable pattern tuple；legacy `FinalOfferedOutputFNrePatList` 保留為 import-safe compatibility list，activation 以當次內容更新。`BackupAndClean` 對一般任務使用 base patterns，對 SDSMS／SDSMS_Prediction 使用 base 加 `SDSMS.*`；修改需同步外部工作池 consumer。
 - 錯誤／失敗語意：備份／搬移失敗目前多為 print/log；完整 rollback 待確認。
 - 版本與相容性：無明確版本；破壞性檔名變更需 migration plan。
 - 安全與敏感資訊：輸出可能包含原文、預測、分數與內部任務 ID；不得提交真實輸出。
