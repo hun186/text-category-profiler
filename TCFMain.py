@@ -18,19 +18,22 @@ import time
 import json
 import subprocess
 
+from text_category_profiler.execution.process import (
+    LegacyShellProcessRunner,
+    RootFailFastPolicy,
+)
+
 #import plotly.io as pio; pio.renderers.default='notebook'
 #from zhconv import convert
 
 
-def run_stage_command(CMD, stage_name):
-    completed = subprocess.run(CMD, shell=True, check=False)
-    if completed.returncode != 0:
-        stage_failed(stage_name, completed.returncode, CMD)
-        raise RuntimeError(
-            f"{stage_name} failed with exit code {completed.returncode}. "
-            f"Abort following stages. Command: {CMD}"
-        )
-    return completed
+def run_stage_command(CMD, stage_name, runner=None):
+    if runner is None:
+        runner = LegacyShellProcessRunner(run_process=subprocess.run)
+    completed = runner.execute(CMD)
+    return RootFailFastPolicy(failure_reporter=stage_failed).check(
+        completed, stage_name, CMD
+    )
 
 import shutil
 #import GPUtil
@@ -43,6 +46,12 @@ from text_category_profiler.pipeline.TCF_utils import BackupAIPredictResultAndDe
 #from text_category_profiler.pipeline.TCF_utils import ExportDFAllResult
 from text_category_profiler.pipeline.TCF_utils import convert_to_args_str
 from text_category_profiler.pipeline.TCF_utils import datasetDirOutputDirPickers
+from text_category_profiler.pipeline.commands import (
+    classifier_command,
+    combine_command,
+    dataset_command,
+    visualization_commands,
+)
 
 from text_category_profiler.pipeline.DataConverter_utils import CheckDatasetFiles
 from text_category_profiler.pipeline.DataConverter_utils import RawAndPredictionMerger
@@ -97,8 +106,7 @@ def DataConvert(args,exeTimeDict=dict()):
         MES = f"Found workID {args.WeiTechworkID} in {args.WeiTechworkIDPath}, we will start to apply this task."
         info(MES, icon="📌")
     
-    CMD = "python DatasetConverter/DataConverter.py"
-    CMD += convert_to_args_str(args)
+    CMD = dataset_command(args, args_renderer=convert_to_args_str).render_shell()
     ShowElapsedTime(exeTimeDict["start"])
     print_command(CMD, label="DataConverter command")
     run_stage_command(CMD, "DataConverter")
@@ -118,8 +126,9 @@ def RunClassfier(args,exeTimeDict=dict()):
     stage_start_time = time.time()
     stage_banner("RunClassfier", detail="執行模型訓練或推論")
     print_args_summary(args)
-    CMD = f"python {BertClassfierPath}/RunClassfier.py"
-    CMD += convert_to_args_str(args)
+    CMD = classifier_command(
+        args, BertClassfierPath, args_renderer=convert_to_args_str
+    ).render_shell()
     #stage_start_time = time.time()
     ShowElapsedTime(exeTimeDict["start"])
     print_command(CMD, label="RunClassfier command")
@@ -136,8 +145,9 @@ def CombineTestResult(args,exeTimeDict=dict()):
     stage_banner("CombineTestResult", detail="合併預測結果與原始文本索引")
     #print("Start to run count_test_accuracy.py")
     print_args_summary(args)
-    CMD = f"python {BertClassfierPath}/CombineTestResult.py"
-    CMD += convert_to_args_str(args)
+    CMD = combine_command(
+        args, BertClassfierPath, args_renderer=convert_to_args_str
+    ).render_shell()
     ShowElapsedTime(exeTimeDict["start"])
     print_command(CMD, label="CombineTestResult command")
     run_stage_command(CMD, "CombineTestResult")
@@ -146,21 +156,19 @@ def CombineTestResult(args,exeTimeDict=dict()):
     stage_done("CombineTestResult", time.time()-stage_start_time)
 
 def TestResultVis(args,exeTimeDict=dict()):
-    CMD = f"python {BertClassfierPath}/Test_result_Vis.py"
-    CMD += convert_to_args_str(args)
+    base_command, weitech_command = visualization_commands(
+        args, BertClassfierPath, args_renderer=convert_to_args_str
+    )
+    CMD = base_command.render_shell()
     stage_start_time = time.time()
     stage_banner("Test_result_Vis", detail="產生結果分析與視覺化網頁資料")
     print_args_summary(args)
     ShowElapsedTime(exeTimeDict["start"])
     print_command(CMD, label="TestResultVis command")
     run_stage_command(CMD, "Test_result_Vis")
-    for arg in [(args.WeiTechFormatInputPATH,"WTFInpPath"),
-                (args.WeiTechFormatOutputPATH,"WTFOptPath"),
-                (args.WeiTechFormatSepWorkPool,"WTFSepWorkPool"),]:
-        if arg[0] != "":
-            CMD += f" -{arg[1]} {arg[0]}"
-
-    run_stage_command(CMD, "Test_result_Vis with WeiTech options")
+    run_stage_command(
+        weitech_command.render_shell(), "Test_result_Vis with WeiTech options"
+    )
     if args.TRVWebHost == False:
         BertDatasetSubDir,outputDir = datasetDirOutputDirPickers(
             args=args,rdy_for_stage="Spike").proc()
