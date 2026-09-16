@@ -93,6 +93,29 @@ class WorkPoolManagerTests(unittest.TestCase):
             trace.append("command")
         self.assertEqual([], trace)
 
+    def test_nonempty_unmatched_candidates_preserve_existing_work_id_without_raising(self):
+        fs = RecordingFileSystem({
+            "/jobs/AutoBertClassify": ["job-003", "job-002"],
+            "/jobs/WorkPool": ["unrelated-job"],
+        })
+
+        selected = WorkPoolManager(plan(), fs).acquire()
+
+        self.assertEqual("", selected)
+        self.assertFalse(any(call[0] == "mkdir" for call in fs.calls))
+        self.assertFalse(any(call[0] == "move" for call in fs.calls))
+
+    def test_nonempty_unmatched_candidates_preserve_preselected_work_id(self):
+        fs = RecordingFileSystem({
+            "/jobs/AutoBertClassify": ["job-003", "job-002"],
+            "/jobs/WorkPool": ["unrelated-job"],
+        })
+
+        selected = WorkPoolManager(plan(work_id="preselected-job"), fs).acquire()
+
+        self.assertEqual("preselected-job", selected)
+        self.assertFalse(any(call[0] == "move" for call in fs.calls))
+
     def test_complete_uses_exact_output_patterns(self):
         for task, expected in (
             ("", BASE_PATTERNS),

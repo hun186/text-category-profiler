@@ -101,6 +101,33 @@ class WorkpoolCharacterizationTests(unittest.TestCase):
             with self.assertRaises(Exception):
                 module.DataConvert(args, {"start": 0})
 
+    def test_nonempty_weitech_queue_without_pool_match_continues_to_dataset_command(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            incoming = root / "AutoBertClassify"
+            pool = root / "WorkPool"
+            incoming.mkdir(); pool.mkdir()
+            (incoming / "job-003").mkdir()
+            (pool / "unrelated-job").mkdir()
+            trace = []
+            args = default_args(
+                WeiTechworkID="preselected-job",
+                WeiTechworkIDPath=str(incoming),
+                WeiTechWorkPoolPATH=str(pool),
+                _dataset_dir=temp,
+                _output_dir=temp,
+            )
+            module = load_main(args, trace=trace)
+
+            module.DataConvert(args, {"start": 0})
+
+            self.assertEqual("preselected-job", args.WeiTechworkID)
+            self.assertEqual(1, sum(entry[0] == "command" for entry in trace))
+            self.assertTrue((incoming / "job-003").is_dir())
+            self.assertFalse(
+                (root / "AutoBertClassify_Processing" / "job-003").exists()
+            )
+
     def test_dataset_picker_preserves_name_and_stage_suffixes(self):
         module = load_tcf_utils()
         with tempfile.TemporaryDirectory() as temp:
