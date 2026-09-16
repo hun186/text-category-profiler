@@ -50,7 +50,15 @@ class WorkPoolManager:
         candidates = sorted(
             self.filesystem.list_directory(self.plan.incoming_path), reverse=True
         )
+        if not candidates:
+            self.warning(
+                f"WeiTechworkIDPath is set as {self.plan.incoming_path}, "
+                "but there is no WTwork To Run. Abort!"
+            )
+            raise Exception()
+
         available = self.filesystem.list_directory(self.plan.pool_path)
+        selected_work_id = self.plan.work_id
         for work_id in candidates:
             if work_id in available:
                 processing = os.path.join(
@@ -61,16 +69,13 @@ class WorkPoolManager:
                     os.path.join(self.plan.incoming_path, work_id),
                     os.path.join(processing, work_id),
                 )
-                self.info(
-                    f"Found workID {work_id} in {self.plan.incoming_path}, "
-                    "we will start to apply this task."
-                )
-                return work_id
-        self.warning(
-            f"WeiTechworkIDPath is set as {self.plan.incoming_path}, "
-            "but there is no WTwork To Run. Abort!"
+                selected_work_id = work_id
+                break
+        self.info(
+            f"Found workID {selected_work_id} in {self.plan.incoming_path}, "
+            "we will start to apply this task."
         )
-        raise Exception()
+        return selected_work_id
 
 
 class DeliveryManager:
