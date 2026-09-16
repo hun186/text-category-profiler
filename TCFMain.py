@@ -194,10 +194,13 @@ def BackupAndClean(args):
         #if args.task == "BDS":
             #BackFNrePatList = []
 
+        delivery_patterns = list(FinalOfferedOutputFNrePatList)
+        if args.task in ["SDSMS", "SDSMS_Prediction"] and "SDSMS.*" not in delivery_patterns:
+            delivery_patterns.append("SDSMS.*")
         BackupAIPredictResultAndDelTempFile(
             BertDatasetSubDir=BertDatasetSubDir,
             DesDir=DesDir,
-            BackFNrePatList=FinalOfferedOutputFNrePatList)
+            BackFNrePatList=delivery_patterns)
         MES = f"Complete {args.WeiTechworkIDPath}/{args.WeiTechworkID}, Move Output {BertDatasetSubDir}/DFPreambleCols_df_ALL.sql3 to {DesDir}"
         MPlogger(logSubDir="logs").logW(MES,logFile="WeiTechOutputDF.log")
         ProcessingDir = os.path.join(args.WeiTechworkIDPath,"..","AutoBertClassify_Processing")
