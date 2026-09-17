@@ -5,6 +5,7 @@ import unittest
 from unittest.mock import patch
 from unittest.mock import MagicMock
 import importlib
+import tempfile
 import sys
 
 from BertScript.classifier_stage import (
@@ -21,6 +22,77 @@ def args(**changes):
 
 
 class ClassifierStageTests(unittest.TestCase):
+    def _runclassifier_module(self):
+        modules = ("setproctitle", "TCF_Params.TCFParameters",
+                   "text_category_profiler.core.utilities",
+                   "text_category_profiler.pipeline.TCF_utils",
+                   "text_category_profiler.core.conformer",
+                   "text_category_profiler.concurrency.MP_utils",
+                   "text_category_profiler.data.DB_utils",
+                   "text_category_profiler.core.log_display")
+        with patch.dict(sys.modules, {name: MagicMock() for name in modules}):
+            return importlib.import_module("BertScript.RunClassfier")
+
+    def _canonical_prepare(self, model_type, renderer, system_calls,
+                           classifier_path=None):
+        RunClassfier = self._runclassifier_module()
+        RunClassfier.PYTORCH_MODEL_TYPES = ["PytorchXLM", "PytorchRBTL3", "PytorchMMBERT"]
+        if classifier_path is not None:
+            RunClassfier.BertClassfierPath = classifier_path
+        dataset_dir = "/x_rdy_for_RunClassfier"
+        model_dir = "/model"
+        plan = ClassifierPlan(
+            args(ModelType=model_type, modelDir=model_dir, test=False,
+                 datasetDataBaseSubDir="datasetDB", WorkPoolROOT="/pool",
+                 ExecutionTime="now"), dataset_dir, model_dir, "", "pending")
+        patches = (
+            patch.object(RunClassfier, "HybridConformer"),
+            patch.object(RunClassfier, "MPlogger", return_value=MagicMock()),
+            patch.object(RunClassfier.os.path, "isfile", return_value=False),
+            patch.object(RunClassfier, "get_testResFile_Name", return_value=[]),
+            patch.object(RunClassfier, "CopyModelRelatedFiles"),
+            patch.object(RunClassfier, "ClearOldTestResFile"),
+            patch.object(RunClassfier, "_display_model_command"),
+        )
+        for context in patches:
+            context.start()
+            self.addCleanup(context.stop)
+        prepare = lambda active: RunClassfier._prepare_classifier(
+            active,
+            render_pytorch_command=renderer if model_type != "TF15Bert" else None,
+            render_tf_command=renderer if model_type == "TF15Bert" else None)
+        return plan, prepare
+
+    def test_canonical_classifier_uses_extracted_pytorch_renderer(self):
+        system_calls = []
+        sentinel = "SENTINEL PYTORCH COMMAND"
+        renderer = MagicMock(return_value=sentinel)
+        plan, prepare = self._canonical_prepare("PytorchXLM", renderer, system_calls)
+        run_classifier_stage(
+            plan, prepare=prepare, system=lambda command: system_calls.append(command),
+            rename=lambda *_: None, handoff=lambda *_: None)
+        self.assertEqual(system_calls, [sentinel])
+        renderer.assert_called_once()
+
+    def test_canonical_classifier_uses_extracted_tf_renderer(self):
+        RunClassfier = self._runclassifier_module()
+        sentinel = "SENTINEL TF BATCH CONTENT"
+        renderer = MagicMock(return_value=sentinel)
+        system_calls = []
+        with tempfile.TemporaryDirectory() as classifier_path:
+            Path(classifier_path, "run_classifier_script_automatic_dynamic_template.txt").write_text(
+                "template", encoding="utf-8")
+            with patch.object(RunClassfier, "BertClassfierPath", classifier_path):
+                plan, prepare = self._canonical_prepare(
+                    "TF15Bert", renderer, system_calls, classifier_path)
+                run_classifier_stage(
+                    plan, prepare=prepare,
+                    system=lambda command: system_calls.append(command),
+                    rename=lambda *_: None, handoff=lambda *_: None)
+                batch_file = Path(classifier_path, "run_classifier_script_automatic_dynamic.bat")
+                self.assertEqual(batch_file.read_text(encoding="utf-8"), sentinel)
+        renderer.assert_called_once()
+
     def test_runclassifier_entrypoint_routes_through_classifier_stage_runner(self):
         calls = []
         fake_stage = type("Stage", (), {
@@ -48,6 +120,9 @@ class ClassifierStageTests(unittest.TestCase):
 
     def test_plan_preserves_tf_template_flags(self):
         command = render_tf_command(args(), "/data", "/model", "python run_classifier.py^\n", windows=False)
+        self.assertEqual(
+            command,
+            'python run_classifier.py\\\n--do_train=False \\\n--output_dir=/model/  \\\n--do_predict=True \\\n--keep_checkpoint_max=2 \\\n--data_dir=/data/  \\\n> "/data/logs/RunClassfier.log" 2>&1 \n\n')
         for flag in ("--do_train=False", "--output_dir=/model/", "--do_predict=True", "--keep_checkpoint_max=2", "--data_dir=/data/"):
             self.assertIn(flag, command)
 

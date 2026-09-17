@@ -12,6 +12,7 @@ import time
 import shutil
 import platform
 import setproctitle
+from functools import partial
 
 from TCF_Params.TCFParameters import BertClassfierPath
 from text_category_profiler.core.utilities import getFNFromFullPath
@@ -108,7 +109,8 @@ def CopyModelRelatedFiles(
                 continue
             MKDIRandCopy(src, des)
 
-def _prepare_classifier(active_plan):
+def _prepare_classifier(active_plan, *, render_pytorch_command,
+                        render_tf_command):
         args = active_plan.args
         BertDatasetSubDir = active_plan.dataset_dir
         outputDir = active_plan.output_dir
@@ -253,50 +255,22 @@ def _prepare_classifier(active_plan):
             WindowsAnacondaPromptCMD = os.path.join(
                 WindowsAnacondaPath,'Scripts/activate.bat')
 
-            if "windows" in platform.system().lower():
-                LineBreaker = " ^\n"
-            else:
-                LineBreaker = " \\\n"
-
             BatFile = os.path.join(
                 BertClassfierPath, "run_classifier_script_automatic_dynamic.bat")
             BatFileTemplateFile = os.path.join(
                 BertClassfierPath, "run_classifier_script_automatic_dynamic_template.txt")
             #BatCMD = open(BatFile,'rt',encoding='utf-8').read()
-            BatCMD = open(BatFileTemplateFile,'rt',encoding='utf-8').read()
-            if "windows" in platform.system().lower():
-                BatCMD = "call activate TF1.5\n\n" + BatCMD
-            else:
-                BatCMD = BatCMD.replace("^\n","\\\n")
-
-            if args.train == True:
-                BatCMD += ("--do_train=True"+LineBreaker)
-                #BatCMD += "--output_dir={} {}".format(
-                    #f"./output_{execTime}/", LineBreaker)
-
-            else:
-                #BatCMD = BatCMD.replace("--do_train=True", "--do_train=False")
-                BatCMD += ("--do_train=False"+LineBreaker)
-
+            with open(BatFileTemplateFile, 'rt', encoding='utf-8') as template_file:
+                template = template_file.read()
+            if args.train != True:
                 MES = f"Using the {args.ModelType} model in {outputDir} to predict."
                 MPLOGGER_TCFMain.logW(MES,logFile="TCFMain.log")
-            BatCMD += "--output_dir={} {}".format(f"{outputDir}/", LineBreaker)
-            BatCMD += (f"--do_predict={args.test}"+LineBreaker)
-            BatCMD += (f"--keep_checkpoint_max={args.keep_checkpoint_max}"+LineBreaker)
-            BatCMD += "--data_dir={} {}".format(
-                f"{BertDatasetSubDir}/", LineBreaker)
-
-            #if "windows" in platform.system().lower():
-                #BatCMD +=  "> RunClassfier.log 2>&1 & \n\n"
-            #else:
-                #BatCMD +=  "2>&1 | tee RunClassfier.log \n\n"
-            #如果是訓練模式，因枆時甚長，無需計算各階段時間，則採背景作業。
+            BatCMD = render_tf_command(
+                args, BertDatasetSubDir, outputDir, template,
+                windows="windows" in platform.system().lower())
             run_log = os.path.join(BertDatasetSubDir, "logs", "RunClassfier.log")
-            BatCMD += f'> "{run_log}" 2>&1'
-            if args.train == True:
-                BatCMD += " &"
-            BatCMD += " \n\n"
-            open(BatFile,'wt',encoding='utf-8').write(BatCMD)
+            with open(BatFile, 'wt', encoding='utf-8') as batch_file:
+                batch_file.write(BatCMD)
             MES = f"RunClassfier command is written to {run_log}"
             MPLOGGER_TCFMain.logW(MES, logFile="TCFMain.log", printOnScreen=False)
             _display_model_command(BatCMD, run_log, background=args.train == True)
@@ -312,20 +286,9 @@ def _prepare_classifier(active_plan):
 
 
         elif args.ModelType in PYTORCH_MODEL_TYPES:
-            #BatCMD = f"python {BertClassfierPath}/TextClassification_XLM.py"
-            BatCMD = f"python {BertClassfierPath}/TextClassification_transformers.py"
-            if args.train == True:
-                BatCMD += " -tr True"
-            if args.test == True:
-                BatCMD += " -ts True"
-            BatCMD += f" -mdlDir {outputDir} -BertDataDir {BertDatasetSubDir} -mdlType {args.ModelType} -ZeroShot {args.ActiveHTCZeroshot} -MaxSeqLen {args.MaxSeqLength} -SaveOptimizer {args.SaveOptimizer} "
-            #BatCMD += "> RunClassfier.log 2>&1 & \n\n" #背景作業
+            BatCMD = render_pytorch_command(
+                args, BertDatasetSubDir, outputDir, BertClassfierPath)
             run_log = os.path.join(BertDatasetSubDir, "logs", "RunClassfier.log")
-            BatCMD += f'> "{run_log}" 2>&1'
-            #如果是訓練模式，因枆時甚長，無需計算各階段時間，則採背景作業。
-            if args.train == True:
-                BatCMD += " &"
-            BatCMD += " \n\n"
             MES = f"RunClassfier command is written to {run_log}"
             MPLOGGER_TCFMain.logW(MES, logFile="TCFMain.log", printOnScreen=False)
             _display_model_command(BatCMD, run_log, background=args.train == True)
@@ -411,7 +374,10 @@ def _build_classifier_plan(argv, stage_api):
         raise Exception
     plan = stage_api.ClassifierPlan(args, dataset_dir, output_dir, "", "pending")
     return plan, {
-        "prepare": _prepare_classifier,
+        "prepare": partial(
+            _prepare_classifier,
+            render_pytorch_command=stage_api.render_pytorch_command,
+            render_tf_command=stage_api.render_tf_command),
         "system": os.system,
         "wait_until_stable": WaitUntilFileIsStable,
         "rename": os.rename,

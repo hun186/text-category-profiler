@@ -23,7 +23,9 @@ class ResultCombinationPlan:
 def activate_result_combination(plan, rename=os.rename):
     running = plan.dataset_dir.replace(READY_SUFFIX, RUNNING_SUFFIX)
     rename(plan.dataset_dir, running)
-    return ResultCombinationPlan(plan.args, running, plan.output_dir)
+    return ResultCombinationPlan(
+        plan.args, running, plan.output_dir, plan.source_db_glob,
+        plan.label_file, plan.test_database, plan.result_file)
 
 
 def run_result_combination_stage(plan, *, combine: Callable,
