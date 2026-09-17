@@ -8,7 +8,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | `KI-002` | Medium | 主流程可能搬移、備份或刪除工作池資料，不適合未隔離執行 | Runtime 驗證、資料安全 | 使用 recording filesystem／temporary fixture 驗證 `WorkPoolManager`、`DeliveryManager`；完整 root/model integration 仍不得指向真實 WorkPool | `tests/test_workpool_manager.py` 與 `tests/test_tcf_workpool_characterization.py` 已隔離 lifecycle；完整 root integration 尚未建立 | Open |
 | `KI-003` | Medium | 尚無完整模型／GPU／真實 WorkPool pipeline smoke test | 完整 runtime 驗證 | 使用 `python -m unittest discover -s tests` 執行 dependency-light suite；資料轉換另跑隔離 fixture | `.codex/workflows.md` 驗證矩陣；Phase 0 characterization tests | Open |
-| `KI-004` | Low | Repository-wide compileall 被兩個既有 syntax defects 阻擋 | 完整靜態編譯 gate | 對本次修改檔案執行 `py_compile`，並如實保留 compileall non-zero 結果 | `DatasetConverter/sampleHandler_InfoScoreTable.py`、`text_category_profiler/integrations/FTP_utils.py`；repository-wide compileall | Open |
+| `KI-004` | Low | Repository-wide compileall 因六個已驗證、未修改的 syntax/indentation failures 而回傳 non-zero | 完整靜態編譯 gate | 對本次修改模組執行 `py_compile`，並如實回報 repository-wide compileall non-zero 結果 | 下方 `KI-004` 詳細資訊列出六個路徑；repository-wide compileall | Open |
 
 ## Issue Details
 
@@ -35,8 +35,14 @@
 ### `KI-004` — Repository-wide compile gate 的既有語法錯誤
 
 - 最小重現方式：`python -m compileall TCFMain.py TCF_Params DatasetConverter BertScript text_category_profiler`。
-- 實際行為：`DatasetConverter/sampleHandler_InfoScoreTable.py` 回報 dictionary key 缺少 `:`，`text_category_profiler/integrations/FTP_utils.py` 回報 `SyntaxError: '(' was never closed`；兩者皆未由 Phase 5 修改。
-- Workaround：對變更檔案執行 `py_compile` 並確認 compileall 沒有新增其他失敗；修正 FTP integration 需另立範圍。
+- 實際行為：repository-wide compileall 因下列六個已驗證、未修改的 syntax/indentation failures 而回傳 non-zero；不代表這些問題由 Phase 5 引入：
+  - `DatasetConverter/sampleHandler_InfoScoreTable.py`
+  - `BertScript/Dash-by-Plotly-master/Dash Components/Checklist/easy_challenge_solution.py`
+  - `BertScript/HK_PartCT.py`
+  - `BertScript/TRV_deploy/deploy-dash-with-gcp-master/TRV/PythonModule/utils/FTP_utils.py`
+  - `BertScript/TRV_deploy/deploy-dash-with-gcp-master/simple-dash-app-using-a-bucket/data/dataUpload.py`
+  - `text_category_profiler/integrations/FTP_utils.py`
+- Workaround：對本次修改的 Python 模組執行 `py_compile`，並如實回報 repository-wide compileall 的 non-zero 結果。
 - 狀態：Open。
 
 ## Recently Resolved
