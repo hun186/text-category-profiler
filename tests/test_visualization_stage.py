@@ -3,6 +3,7 @@ import ast
 import subprocess
 import sys
 import threading
+import types
 import unittest
 from argparse import Namespace
 from pathlib import Path
@@ -209,6 +210,84 @@ assert namespace['visualization_stage'].__name__ == 'BertScript.visualization_st
         namespace["main"](stage_api=FakeStageAPI)
         self.assertEqual([item[0] for item in received], ["build", "run"])
         self.assertIs(received[1][1], plan)
+
+    def test_layout_helpers_are_module_globals_when_canonical_layout_is_evaluated(self):
+        source = Path("BertScript/Test_result_Vis.py").read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        application = next(
+            node for node in tree.body
+            if isinstance(node, ast.FunctionDef)
+            and node.name == "_run_visualization_application")
+        canonical_layout = next(
+            node for node in tree.body
+            if isinstance(node, ast.FunctionDef) and node.name == "serve_layout")
+        helper_names = {"Build_Upload_Block", "Build_Finished_Task_Block"}
+        helper_calls = [
+            node for node in ast.walk(canonical_layout)
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+            and node.func.id in helper_names]
+        self.assertEqual({call.func.id for call in helper_calls}, helper_names)
+
+        reduced_layout = ast.FunctionDef(
+            name=canonical_layout.name,
+            args=canonical_layout.args,
+            body=[ast.Return(value=ast.Tuple(elts=helper_calls, ctx=ast.Load()))],
+            decorator_list=[],
+        )
+        relevant_body = [
+            node for node in application.body
+            if isinstance(node, (ast.Global, ast.ImportFrom))
+            and (not isinstance(node, ast.ImportFrom)
+                 or node.module == "Test_result_Vis_layout")
+        ]
+        relevant_body.extend(
+            node for node in application.body
+            if isinstance(node, ast.Assign)
+            and isinstance(node.value, ast.Name)
+            and node.value.id == canonical_layout.name)
+        reduced_application = ast.FunctionDef(
+            name=application.name,
+            args=application.args,
+            body=relevant_body,
+            decorator_list=[],
+        )
+
+        calls = []
+        fake_layout_module = types.ModuleType("Test_result_Vis_layout")
+        for helper_name in helper_names:
+            setattr(
+                fake_layout_module,
+                helper_name,
+                lambda *args, _name=helper_name, **kwargs:
+                    calls.append((_name, args, kwargs)) or _name,
+            )
+
+        class EvaluatingApp:
+            @property
+            def layout(self):
+                return self._layout
+
+            @layout.setter
+            def layout(self, value):
+                self._layout = value()
+
+        namespace = {
+            "app": EvaluatingApp(),
+            "date_session_id": "session",
+            "UploadedFilename": "upload.txt",
+            "VisSelfFinishedState": False,
+            "args": Namespace(TRVPort=8059),
+            "datasetDir_VisSelf": "dataset",
+        }
+        harness = ast.fix_missing_locations(ast.Module(
+            body=[reduced_layout, reduced_application], type_ignores=[]))
+        exec(compile(harness, "Test_result_Vis.py", "exec"), namespace)
+        with mock.patch.dict(sys.modules, {
+                "Test_result_Vis_layout": fake_layout_module}):
+            namespace[application.name]("workspace", mock.Mock())
+
+        self.assertTrue(helper_names.issubset(namespace))
+        self.assertEqual({name for name, _, _ in calls}, helper_names)
 
     def _plan(self, hosted=False):
         return self.stage.VisualizationPlan(
