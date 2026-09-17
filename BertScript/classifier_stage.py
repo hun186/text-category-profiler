@@ -71,15 +71,25 @@ def activate_classifier(plan, rename=os.rename):
 def run_classifier_stage(plan, *, system=os.system,
                          wait_until_stable=lambda path, **kwargs: None,
                          result_files: Sequence[str] = (), rename=os.rename,
-                         warn=lambda message: None):
+                         warn=lambda message: None, prepare=None,
+                         finalize=lambda active: None, handoff=None):
     """Activate and execute while retaining each legacy call-site policy."""
     active = activate_classifier(plan, rename=rename)
+    if prepare is not None:
+        prepared = prepare(active)
+        active = prepared.get("plan", active)
+        result_files = prepared.get("result_files", result_files)
+        finalize = prepared.get("finalize", finalize)
+        wait_until_stable = prepared.get("wait_until_stable", wait_until_stable)
     if active.model_kind == "tf":
         if active.activation_command:
             system(active.activation_command)       # non-zero intentionally ignored
         if active.batch_file and "windows" not in platform.system().lower():
             system(f"chmod 700 {active.batch_file}")  # non-zero intentionally ignored
-        system(active.batch_file or active.command)  # exceptions intentionally propagate
+        batch_command = active.batch_file or active.command
+        if active.batch_file and "windows" not in platform.system().lower():
+            batch_command = "." + os.path.sep + active.batch_file
+        system(batch_command)  # exceptions intentionally propagate
     else:
         try:
             system(active.command)                  # non-zero intentionally ignored
@@ -88,8 +98,9 @@ def run_classifier_stage(plan, *, system=os.system,
     if active.args.test is True:
         for filename in result_files:
             wait_until_stable(filename)
+        finalize(active)
         destination = active.dataset_dir.replace(RUNNING_SUFFIX, NEXT_SUFFIX)
-        rename(active.dataset_dir, destination)
+        (handoff or rename)(active.dataset_dir, destination)
         return destination
     return active.dataset_dir
 
@@ -99,4 +110,3 @@ def main(argv=None, legacy_main: Optional[Callable] = None):
     if legacy_main is None:
         raise RuntimeError("classifier computation adapter is required")
     return legacy_main(argv)
-

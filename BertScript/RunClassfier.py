@@ -108,27 +108,11 @@ def CopyModelRelatedFiles(
                 continue
             MKDIRandCopy(src, des)
 
-def _legacy_main(argv=None):
-
-        setproctitle.setproctitle(f'CZJRunClassfier')
-        #print("start to run RunCF, wait for 100 secs")
-        #time.sleep(100)
-        #print(os.getcwd().split(os.path.sep)[-1])
-        if os.getcwd().split(os.path.sep)[-1] in [
-                "DatasetConverter","BertScript"]:
-            os.chdir("../")
-            info(f"Change working directory to {os.getcwd()}", icon="📁")
-        args = ClassfierOptionParser(argv)
-        BertDatasetSubDir,outputDir = datasetDirOutputDirPickers(
-            args=args,rdy_for_stage="RunClassfier").proc()
-        if BertDatasetSubDir == None:
-            MES = f"In {args.WorkPoolROOT}, There is no BertDatasetSubDir ready for RunClassfier! ABORT!"
-            MPlogger().logW(MES)
-            raise Exception
-        NewBertDatasetSubDir = BertDatasetSubDir.replace(
-            "_rdy_for_RunClassfier","_is_running_RunClassfier")
-        #NewBertDatasetSubDir += BertDatasetSubDir + "_is_running_DataConverter"
-        os.rename(BertDatasetSubDir,NewBertDatasetSubDir)
+def _prepare_classifier(active_plan):
+        args = active_plan.args
+        BertDatasetSubDir = active_plan.dataset_dir
+        outputDir = active_plan.output_dir
+        NewBertDatasetSubDir = BertDatasetSubDir
         stage_banner("RunClassfier")
         key_values("RunClassfier workspace", [("WorkDir", NewBertDatasetSubDir)], icon="·")
         MES = f"RunClassfier started. WorkDir is {NewBertDatasetSubDir}."
@@ -319,13 +303,9 @@ def _legacy_main(argv=None):
             ClearOldTestResFile(BertDatasetSubDir=BertDatasetSubDir,outputDir=outputDir,testResFile=testResFile)
 
 
-            #開始執行AI運算。
-            if "windows" in platform.system().lower():
-                os.system(WindowsAnacondaPromptCMD)
-            else:
-                os.system(f"chmod 700 {BatFile}")
-                BatFile = "."+os.path.sep+BatFile
-            os.system(BatFile)
+            execution_plan = active_plan.__class__(
+                args, BertDatasetSubDir, outputDir, BatCMD, "tf",
+                BatFile, WindowsAnacondaPromptCMD if "windows" in platform.system().lower() else None)
             #假設每秒至少推論60個樣本，且至少設為20秒給推論。
             #runclassifier.py的write example速度則假設每秒至少600個
             WatchedTimeBound = max(nTotalTest//60,20)+(nTotalTest)//500
@@ -350,28 +330,41 @@ def _legacy_main(argv=None):
             MPLOGGER_TCFMain.logW(MES, logFile="TCFMain.log", printOnScreen=False)
             _display_model_command(BatCMD, run_log, background=args.train == True)
             ClearOldTestResFile(BertDatasetSubDir=BertDatasetSubDir,outputDir=outputDir,testResFile=testResFile)
-            try:
-                os.system(BatCMD)
-            except Exception as e:
-                warning(f"RunClassfier command failed: {e}")
+            execution_plan = active_plan.__class__(
+                args, BertDatasetSubDir, outputDir, BatCMD, "pytorch")
             #raise Exception
             #if TestAfterConvert == True:
                 #os.system(f"python TextClassification_XLM_Pred.py -mdlDir {outputDir}")
             WatchedTimeBound = 6000
 
         key_values("Prediction result files", [("testResFile", summarize_sequence(testResFile, limit=3))])
+        runtime = {
+            "args": args,
+            "dataset_dir": BertDatasetSubDir,
+            "output_dir": outputDir,
+            "test_result_files": testResFile,
+            "watched_time_bound": WatchedTimeBound,
+            "original_output_dir": locals().get("original_outputDir"),
+            "using_output_dir": locals().get("using_outputDir"),
+        }
+        return {
+            "plan": execution_plan,
+            "result_files": testResFile,
+            "wait_until_stable": lambda filename: WaitUntilFileIsStable(
+                filename, WatchedTimeBound=WatchedTimeBound),
+            "finalize": lambda _active: _finalize_classifier(runtime),
+        }
+
+
+def _finalize_classifier(runtime):
+        args = runtime["args"]
+        BertDatasetSubDir = runtime["dataset_dir"]
+        testResFile = runtime["test_result_files"]
+        outputDir = runtime["output_dir"]
 
         #WatchedTimeBound = 6000
         #如果是TF15Bert，將預測完的輸出結果移至資料集目錄。
         if args.test == True:
-            for filename in testResFile:
-                #if args.ModelType == "TF15Bert":
-                    #WatchedFN = os.path.join(outputDir, filename)
-                WatchedFN = filename
-                WaitUntilFileIsStable(
-                    WatchedFN,WatchedTimeBound=WatchedTimeBound)
-            #stage_time_cost.append((f"AI Model Prediction",f"{time.time()-stage_start_time:.2f}"))
-            #stage_start_time = time.time()
             if args.ModelType in ["TF15Bert"]:
                 for filename in testResFile:
                     #src = filename
@@ -383,35 +376,59 @@ def _legacy_main(argv=None):
             #還原使用的output模型目錄名稱，以釋放此目錄使用權。
             if args.ModelType in ["TF15Bert"]:
                 #shutil.move(using_outputDir,original_outputDir)
-                os.rename(using_outputDir,original_outputDir)
-        if args.train == True:
-            MES = "Start to train model in the background."
-            NewBertDatasetSubDir = BertDatasetSubDir
-            #exit_program()
-            #NewBertDatasetSubDir = BertDatasetSubDir.replace(
-            #    "_is_running_RunClassfier","_rdy_for_Predict")
-            #1
-        elif args.test == True:
-            #將目錄更名，以供下階段功能程式抓取。
-            NewBertDatasetSubDir = BertDatasetSubDir.replace(
-                "_is_running_RunClassfier","_rdy_for_CombineTestResult")
-            nTryRename = 0
-            while(nTryRename < 5 and not os.path.isdir(NewBertDatasetSubDir)):
-                os.rename(BertDatasetSubDir,NewBertDatasetSubDir)
-                nTryRename += 1
-                time.sleep(2)
-            stage_done("RunClassfier")
-            MES = f"RunClassfier is finished. Rename {BertDatasetSubDir} as {NewBertDatasetSubDir}"
-            key_values("RunClassfier handoff", [("from", BertDatasetSubDir), ("to", NewBertDatasetSubDir)])
-        MPLOGGER_TCFMain = MPlogger(logSubDir=f"{NewBertDatasetSubDir}/logs",logFile="TCFMain.log")
-        MPLOGGER_TCFMain.logW(MES, printOnScreen=False)
-        #print("finish runngi RunCF, wait for 100 secs")
-        #time.sleep(100)
+                os.rename(runtime["using_output_dir"], runtime["original_output_dir"])
 
 
-def main(argv=None):
-    from BertScript import classifier_stage
-    return classifier_stage.main(argv, legacy_main=_legacy_main)
+def _retry_classifier_handoff(source, destination, *, rename=os.rename,
+                              isdir=os.path.isdir, sleep=time.sleep):
+    nTryRename = 0
+    while nTryRename < 5 and not isdir(destination):
+        rename(source, destination)
+        nTryRename += 1
+        sleep(2)
+
+
+def _classifier_handoff(source, destination):
+    _retry_classifier_handoff(source, destination)
+    stage_done("RunClassfier")
+    message = f"RunClassfier is finished. Rename {source} as {destination}"
+    key_values("RunClassfier handoff", [("from", source), ("to", destination)])
+    MPlogger(logSubDir=f"{destination}/logs", logFile="TCFMain.log").logW(
+        message, printOnScreen=False)
+
+
+def _build_classifier_plan(argv, stage_api):
+    setproctitle.setproctitle('CZJRunClassfier')
+    if os.getcwd().split(os.path.sep)[-1] in ["DatasetConverter", "BertScript"]:
+        os.chdir("../")
+        info(f"Change working directory to {os.getcwd()}", icon="📁")
+    args = ClassfierOptionParser(argv)
+    dataset_dir, output_dir = datasetDirOutputDirPickers(
+        args=args, rdy_for_stage="RunClassfier").proc()
+    if dataset_dir is None:
+        message = f"In {args.WorkPoolROOT}, There is no BertDatasetSubDir ready for RunClassfier! ABORT!"
+        MPlogger().logW(message)
+        raise Exception
+    plan = stage_api.ClassifierPlan(args, dataset_dir, output_dir, "", "pending")
+    return plan, {
+        "prepare": _prepare_classifier,
+        "system": os.system,
+        "wait_until_stable": WaitUntilFileIsStable,
+        "rename": os.rename,
+        "warn": warning,
+        "handoff": _classifier_handoff,
+    }
+
+
+def main(argv=None, stage_api=None):
+    if stage_api is None:
+        from BertScript import classifier_stage as stage_api
+    plan, adapters = _build_classifier_plan(argv, stage_api)
+    result = stage_api.run_classifier_stage(plan, **adapters)
+    if plan.args.train is True:
+        MPlogger(logSubDir=f"{result}/logs", logFile="TCFMain.log").logW(
+            "Start to train model in the background.", printOnScreen=False)
+    return result
 
 
 if __name__ == "__main__":
