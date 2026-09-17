@@ -53,7 +53,7 @@
 | --- | --- | --- | --- |
 | 缺少 pandas／模型等完整 runtime 依賴 | `python -m unittest tests.test_dataconverter_fixture_integration` | `python -m unittest discover -s tests` | 可證明隔離的 source → worker → split → TSV 契約，但不能證明完整 legacy CLI、pandas／SQLite 或工作池 handoff |
 | 流程命令可能搬移／刪除工作池資料 | 在隔離 fixture 中執行 | 僅檢查 command assembly 與 contract 文件 | 不能覆蓋 I/O side effects |
-| Repository-wide compile | `python -m compileall TCFMain.py TCF_Params DatasetConverter BertScript text_category_profiler` | 對修改模組另跑 `py_compile` | 目前會因未修改的 `DatasetConverter/sampleHandler_InfoScoreTable.py` 與 `text_category_profiler/integrations/FTP_utils.py` 既有 syntax errors 回傳 non-zero；不得誤報為通過 |
+| Repository-wide compile | `python -m compileall TCFMain.py TCF_Params DatasetConverter BertScript text_category_profiler` | 對修改的 Python 模組另跑 `py_compile` | 目前會因六個已驗證、未修改的 blockers 回傳 non-zero：`DatasetConverter/sampleHandler_InfoScoreTable.py`、`BertScript/Dash-by-Plotly-master/Dash Components/Checklist/easy_challenge_solution.py`、`BertScript/HK_PartCT.py`、`BertScript/TRV_deploy/deploy-dash-with-gcp-master/TRV/PythonModule/utils/FTP_utils.py`、`BertScript/TRV_deploy/deploy-dash-with-gcp-master/simple-dash-app-using-a-bucket/data/dataUpload.py`、`text_category_profiler/integrations/FTP_utils.py`；repository-wide compileall 在 exit status 為 non-zero 時不得回報為 PASS |
 
 ## 完成前檢查
 

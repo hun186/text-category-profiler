@@ -19,4 +19,4 @@
 7. Stage 3 以 `ResultCombinationPlan`／lifecycle boundary 擁有 canonical inputs、activation 與成功 handoff；pandas/SQLite computation 留在 compatibility entrypoint。
 8. Stage 4 以 `VisualizationPlan`／dependency-light lifecycle boundary 擁有 ready→running、hosted decision 與成功 running→spike-ready handoff；Dash layouts、callbacks 與 algorithms 留在 compatibility entrypoint。
 9. AST architecture guards保護 shared boundaries 不反向 import stage implementations、stages 不控制後續 stage、DatasetConverter split 與五個 legacy entrypoint paths。
-10. Dependency-light unittest 與 DatasetConverter fixture 可重複執行；完整 pipeline smoke gap (`KI-003`) 與兩個既有 syntax defects 所造成的 compileall blocker (`KI-004`) 仍存在。
+10. Dependency-light unittest 與 DatasetConverter fixture 可重複執行；完整 pipeline smoke gap (`KI-003`) 與已驗證的既有 repository-wide compileall blockers (`KI-004`) 仍維持 Open。
