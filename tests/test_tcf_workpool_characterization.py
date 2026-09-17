@@ -28,7 +28,7 @@ STAGE_HANDOFFS = {
     "BertScript/result_combination_stage.py": (
         "_is_running_CombineTestResult", "_rdy_for_TestResultVis"
     ),
-    "BertScript/Test_result_Vis.py": (
+    "BertScript/visualization_stage.py": (
         "_is_running_TestResultVis", "_rdy_for_Spike"
     ),
 }

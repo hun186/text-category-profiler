@@ -46,7 +46,96 @@ MIGRATED_MODULES = {
 }
 
 
+def imported_modules(source):
+    modules = set()
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.ImportFrom) and node.module:
+            modules.add(node.module)
+        elif isinstance(node, ast.Import):
+            modules.update(alias.name for alias in node.names)
+    return modules
+
+
+STAGE_IMPLEMENTATION_MODULES = {
+    "DatasetConverter.DataConverter",
+    "BertScript.RunClassfier",
+    "BertScript.CombineTestResult",
+    "BertScript.Test_result_Vis",
+}
+
+
 class PackageLayoutTests(unittest.TestCase):
+    def test_shared_boundaries_do_not_import_stage_implementations(self):
+        self.assertIn(
+            "BertScript.RunClassfier",
+            imported_modules("from BertScript.RunClassfier import main"),
+        )
+        violations = []
+        for package in ("pipeline", "execution", "filesystem"):
+            for path in (PACKAGE_ROOT / package).rglob("*.py"):
+                forbidden = imported_modules(path.read_text(encoding="utf-8-sig"))
+                forbidden &= STAGE_IMPLEMENTATION_MODULES
+                violations.extend(
+                    "{}:{}".format(path.relative_to(REPOSITORY_ROOT), module)
+                    for module in sorted(forbidden)
+                )
+        self.assertEqual(violations, [])
+
+    def test_stage_implementations_do_not_import_next_stage(self):
+        rules = {
+            "DatasetConverter/DataConverter.py": {
+                "BertScript.RunClassfier", "BertScript.CombineTestResult",
+                "BertScript.Test_result_Vis",
+            },
+            "BertScript/RunClassfier.py": {
+                "BertScript.CombineTestResult", "BertScript.Test_result_Vis",
+            },
+            "BertScript/classifier_stage.py": {
+                "BertScript.CombineTestResult", "BertScript.Test_result_Vis",
+            },
+            "BertScript/CombineTestResult.py": {"BertScript.Test_result_Vis"},
+            "BertScript/result_combination_stage.py": {"BertScript.Test_result_Vis"},
+            "BertScript/Test_result_Vis.py": set(),
+            "BertScript/visualization_stage.py": set(),
+        }
+        synthetic = imported_modules("from BertScript.Test_result_Vis import main")
+        self.assertTrue(synthetic & {"BertScript.Test_result_Vis"})
+        violations = []
+        for relative_path, forbidden_modules in rules.items():
+            path = REPOSITORY_ROOT / relative_path
+            found = imported_modules(path.read_text(encoding="utf-8-sig"))
+            violations.extend(
+                "{}:{}".format(relative_path, module)
+                for module in sorted(found & forbidden_modules)
+            )
+        self.assertEqual(violations, [])
+
+    def test_datasetconverter_stage_plan_modules_remain_present(self):
+        boundaries = (
+            "DatasetConverter/stage.py",
+            "DatasetConverter/config.py",
+            "DatasetConverter/core/stage_utils.py",
+            "DatasetConverter/adapters/pipeline_source.py",
+            "DatasetConverter/sources/source_collection.py",
+        )
+        self.assertEqual(
+            [path for path in boundaries if not (REPOSITORY_ROOT / path).is_file()],
+            [],
+        )
+
+    def test_legacy_entrypoints_remain_present(self):
+        entrypoints = (
+            "TCFMain.py",
+            "DatasetConverter/DataConverter.py",
+            "BertScript/RunClassfier.py",
+            "BertScript/CombineTestResult.py",
+            "BertScript/Test_result_Vis.py",
+        )
+        self.assertEqual(
+            [path for path in entrypoints if not (REPOSITORY_ROOT / path).is_file()],
+            [],
+        )
+
     def test_active_data_converter_apis_have_no_mutable_defaults(self):
         path = REPOSITORY_ROOT / "DatasetConverter" / "DataConverter.py"
         tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
