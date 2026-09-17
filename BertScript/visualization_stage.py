@@ -76,11 +76,9 @@ def run_visualization_stage(
     return plan.completed_workspace
 
 
-def run_summary_command(command, invoke, process_artifacts):
-    """Preserve the summary call site's ignored status and exception behavior."""
-    status = invoke(command)
-    process_artifacts()
-    return status
+def run_summary_command(command, invoke):
+    """Invoke summarization without translating status codes or exceptions."""
+    return invoke(command)
 
 
 def _replace_suffix(path, old_suffix, new_suffix):

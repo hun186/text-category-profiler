@@ -74,22 +74,85 @@ class VisualizationStageTests(unittest.TestCase):
         self.assertEqual(rename.call_args_list, [mock.call("x_rdy_for_TestResultVis", "x_is_running_TestResultVis")])
 
     def test_summary_nonzero_continues_to_artifact_processing(self):
-        artifacts = mock.Mock()
-        status = self.stage.run_summary_command("summary", lambda _: 7, artifacts)
+        status = self.stage.run_summary_command("summary", lambda _: 7)
         self.assertEqual(status, 7)
-        artifacts.assert_called_once_with()
 
     def test_summary_python_exception_propagates(self):
-        artifacts = mock.Mock()
         def fail(_):
             raise OSError("cannot invoke")
         with self.assertRaises(OSError):
-            self.stage.run_summary_command("summary", fail, artifacts)
-        artifacts.assert_not_called()
+            self.stage.run_summary_command("summary", fail)
 
     def test_importing_stage_plan_does_not_import_dash(self):
         code = "import sys; import BertScript.visualization_stage; assert 'dash' not in sys.modules"
         subprocess.run([sys.executable, "-c", code], check=True, cwd=Path(__file__).parents[1])
+
+    def test_test_result_vis_bootstrap_imports_visualization_stage_after_repo_root_setup(self):
+        repository_root = Path(__file__).resolve().parents[1]
+        script = repository_root / "BertScript" / "Test_result_Vis.py"
+        tree = ast.parse(script.read_text(encoding="utf-8"))
+        bootstrap = []
+        for node in tree.body:
+            bootstrap.append(node)
+            if (isinstance(node, ast.ImportFrom) and node.module == "BertScript"
+                    and any(alias.name == "visualization_stage" for alias in node.names)):
+                break
+        else:
+            self.fail("canonical visualization_stage bootstrap import was not found")
+
+        prefix = ast.unparse(ast.Module(body=bootstrap, type_ignores=[]))
+        harness = """
+import sys
+sys.path[:] = [path for path in sys.path if path not in ({root!r}, '')]
+sys.path.insert(0, {script_dir!r})
+namespace = {{'__file__': {script!r}}}
+exec(compile({prefix!r}, {script!r}, 'exec'), namespace)
+assert namespace['visualization_stage'].__name__ == 'BertScript.visualization_stage'
+""".format(
+            root=str(repository_root), script_dir=str(script.parent),
+            script=str(script), prefix=prefix)
+        subprocess.run([sys.executable, "-c", harness], check=True,
+                       cwd=repository_root.parent)
+
+    def test_canonical_summary_execution_routes_through_stage_policy(self):
+        calls = []
+
+        class StageAPI:
+            @staticmethod
+            def run_summary_command(command, invoke):
+                calls.append((command, invoke))
+                return invoke(command)
+
+        invoke = mock.Mock(return_value=0)
+        self._execute_canonical_summary_slice(
+            StageAPI, invoke, mock.Mock(return_value=[]))
+        self.assertEqual(len(calls), 1)
+        self.assertIs(calls[0][1], invoke)
+
+    def test_canonical_summary_nonzero_continues_to_artifact_processing(self):
+        artifacts = mock.Mock(return_value=[])
+
+        class StageAPI:
+            @staticmethod
+            def run_summary_command(command, invoke):
+                return invoke(command)
+
+        self._execute_canonical_summary_slice(
+            StageAPI, mock.Mock(return_value=7), artifacts)
+        artifacts.assert_called_once_with("summary-source")
+
+    def test_canonical_summary_python_exception_prevents_artifact_processing(self):
+        artifacts = mock.Mock(return_value=[])
+
+        class StageAPI:
+            @staticmethod
+            def run_summary_command(command, invoke):
+                return invoke(command)
+
+        invoke = mock.Mock(side_effect=OSError("cannot invoke"))
+        with self.assertRaisesRegex(OSError, "cannot invoke"):
+            self._execute_canonical_summary_slice(StageAPI, invoke, artifacts)
+        artifacts.assert_not_called()
 
     def test_command_executor_nonzero_is_caught_and_callback_continues(self):
         source = Path("text_category_profiler/concurrency/MP_utils.py").read_text(encoding="utf-8")
@@ -153,6 +216,39 @@ class VisualizationStageTests(unittest.TestCase):
             hosted=hosted, host="0.0.0.0", port=9000,
             weitech_separate_work_pool=False, weitech_input_path="in",
             weitech_output_path="out", ssl_context="adhoc")
+
+    def _execute_canonical_summary_slice(self, stage_api, invoke, artifacts):
+        source = Path("BertScript/Test_result_Vis.py").read_text(encoding="utf-8")
+        application = next(
+            node for node in ast.parse(source).body
+            if isinstance(node, ast.FunctionDef)
+            and node.name == "_run_visualization_application")
+        summary_if = next(
+            node for node in ast.walk(application)
+            if isinstance(node, ast.If)
+            and isinstance(node.test, ast.Compare)
+            and isinstance(node.test.left, ast.Attribute)
+            and node.test.left.attr == "TextSummarization")
+        start = next(
+            index for index, node in enumerate(summary_if.body)
+            if isinstance(node, ast.Assign)
+            and any(isinstance(target, ast.Name) and target.id == "CMD"
+                    for target in node.targets))
+        finish = next(
+            index for index, node in enumerate(summary_if.body[start:], start)
+            if isinstance(node, ast.Assign)
+            and any(isinstance(target, ast.Name) and target.id == "MES"
+                    for target in node.targets))
+        summary_slice = summary_if.body[start:finish + 1]
+        namespace = {
+            "visualization_stage": stage_api,
+            "os": mock.Mock(system=invoke),
+            "SumPath": "summary-source",
+            "SumOptPath": "summary-output",
+            "OSWALK": artifacts,
+        }
+        exec(compile(ast.Module(body=summary_slice, type_ignores=[]),
+                     "Test_result_Vis.py", "exec"), namespace)
 
 
 if __name__ == "__main__":
