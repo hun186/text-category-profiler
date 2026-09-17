@@ -312,8 +312,6 @@ def _combine_results(active_plan, database_dir):
         MPLOGGER_TCFMain = MPlogger(logSubDir=f"{BertDatasetSubDir}/logs",logFile="TCFMain.log")
         MPLOGGER_TCFMain.logW(MES, printOnScreen=False)
         key_values("CombineTestResult workspace", [("workdir", BertDatasetSubDir)])
-        datasetDBDir = args.datasetDataBaseSubDir
-
         datasetDir = BertDatasetSubDir
         '''
         args = ClassfierOptionParser(argv)
@@ -332,9 +330,9 @@ def _combine_results(active_plan, database_dir):
             ]
         '''
         #dataset_total_with_filename.sql3,dataset_total_with_filename_ES.sql3,dataset_total_with_filename_FixedTest.sql3
-        SrcLogFileList = OSWALK(os.path.join(datasetDir,datasetDBDir),FNrePat=r"dataset_total_with_filename.*\.sql3")
+        SrcLogFileList = OSWALK(database_dir, FNrePat=active_plan.source_db_glob)
         if len(SrcLogFileList) == 0:
-            MES = f"When run CombineTestResult.py, there is no dataset_total_with_filename database found! Check the correctness of the datasetDB file pointer for {os.path.join(datasetDir,datasetDBDir)}."
+            MES = f"When run CombineTestResult.py, there is no dataset_total_with_filename database found! Check the correctness of the datasetDB file pointer for {database_dir}."
             MPLOGGER_TCFMain.logW(MES)
         key_values("Result analysis inputs", [
             ("dataset", datasetDir),
@@ -347,9 +345,7 @@ def _combine_results(active_plan, database_dir):
         '''
         nProcess = multicoreJob().ComputeNProcess(log=False)
 
-        LabelFile = "TopicAnalysis_LabelList.txt"
-
-        LabelFile = os.path.join(datasetDir,"TopicAnalysis_LabelList.txt")
+        LabelFile = os.path.join(datasetDir, active_plan.label_file)
         #TypeList = ['体育', '娱乐', '家居', '彩票','房产', '教育', '时尚', '时政','星座',
                     #'游戏', '社会', '科技','股票', '财经']
         #SPEC_TOPIC_LIST = ['PRC_OffDoc','South_Sea']
@@ -365,14 +361,14 @@ def _combine_results(active_plan, database_dir):
         #print(indextoLabel)
 
         #讀取test.tsv，內含label答案。
-        df_test = dfFromSQLite3(os.path.join(datasetDir,"test.sql3"))
+        df_test = dfFromSQLite3(os.path.join(datasetDir, active_plan.test_database))
         for removeCol in ["index","ID"]:
             if removeCol in df_test.columns:
                 df_test = df_test.drop([removeCol],axis=1)
         df_test.columns = ["Type", "text"]
 
         #讀取test_results.tsv，內含模型預測機率值。
-        WatchedFN = os.path.join(datasetDir, 'test_results.tsv')
+        WatchedFN = os.path.join(datasetDir, active_plan.result_file)
         WaitUntilFileIsStable(WatchedFN)
         #df_result = pd.read_csv(os.path.join(outputDir, 'test_results.tsv'),sep='\t', header=None)
         df_result = pd.read_csv(WatchedFN,sep='\t', header=None)
