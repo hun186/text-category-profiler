@@ -22,7 +22,7 @@ class GCPUploader:
 if __name__ == '__main__':
 
     df = create_data_frame()
-    project_name = <PROJECT-NAME>
-    destination_blob_name = <BLOB-NAME>
+    project_name = "<PROJECT-NAME>"
+    destination_blob_name = "<BLOB-NAME>"
     upload = GCPUploader()
     upload.upload_blob(project_name, df, destination_blob_name)

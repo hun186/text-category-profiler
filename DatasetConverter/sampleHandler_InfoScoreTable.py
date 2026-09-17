@@ -520,7 +520,7 @@ InfoScoreTable = {
     "Uncertainty-Regular Report":20, #週期性報告
     "Uncertainty-Regular Construction Report":30, #定期施工報告
     "Uncertainty-Regular Maintenance Report":30, #定期維護報告
-    "Uncertainty-Regular Marketing Report",30, #定期銷售報告
+    "Uncertainty-Regular Marketing Report":30, #定期銷售報告
     "Uncertainty-Shipment Advice":20, #發貨通知、運輸通知
     "Uncertainty-Table Of Contents":20, #目錄片段
     

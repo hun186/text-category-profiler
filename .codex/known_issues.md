@@ -8,7 +8,6 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | `KI-002` | Medium | 主流程可能搬移、備份或刪除工作池資料，不適合未隔離執行 | Runtime 驗證、資料安全 | 使用 recording filesystem／temporary fixture 驗證 `WorkPoolManager`、`DeliveryManager`；完整 root/model integration 仍不得指向真實 WorkPool | `tests/test_workpool_manager.py` 與 `tests/test_tcf_workpool_characterization.py` 已隔離 lifecycle；完整 root integration 尚未建立 | Open |
 | `KI-003` | Medium | 尚無完整模型／GPU／真實 WorkPool pipeline smoke test | 完整 runtime 驗證 | 使用 `python -m unittest discover -s tests` 執行 dependency-light suite；資料轉換另跑隔離 fixture | `.codex/workflows.md` 驗證矩陣；Phase 0 characterization tests | Open |
-| `KI-004` | Low | Repository-wide compileall 因六個已驗證、未修改的 syntax/indentation failures 而回傳 non-zero | 完整靜態編譯 gate | 對本次修改模組執行 `py_compile`，並如實回報 repository-wide compileall non-zero 結果 | 下方 `KI-004` 詳細資訊列出六個路徑；repository-wide compileall | Open |
 
 ## Issue Details
 
@@ -32,24 +31,12 @@
 - 修復條件：建立具隔離資料、模型與 WorkPool lifecycle 的可重現完整 smoke test。
 - 狀態：Open。
 
-### `KI-004` — Repository-wide compile gate 的既有語法錯誤
-
-- 最小重現方式：`python -m compileall TCFMain.py TCF_Params DatasetConverter BertScript text_category_profiler`。
-- 實際行為：repository-wide compileall 因下列六個已驗證、未修改的 syntax/indentation failures 而回傳 non-zero；不代表這些問題由 Phase 5 引入：
-  - `DatasetConverter/sampleHandler_InfoScoreTable.py`
-  - `BertScript/Dash-by-Plotly-master/Dash Components/Checklist/easy_challenge_solution.py`
-  - `BertScript/HK_PartCT.py`
-  - `BertScript/TRV_deploy/deploy-dash-with-gcp-master/TRV/PythonModule/utils/FTP_utils.py`
-  - `BertScript/TRV_deploy/deploy-dash-with-gcp-master/simple-dash-app-using-a-bucket/data/dataUpload.py`
-  - `text_category_profiler/integrations/FTP_utils.py`
-- Workaround：對本次修改的 Python 模組執行 `py_compile`，並如實回報 repository-wide compileall 的 non-zero 結果。
-- 狀態：Open。
-
 ## Recently Resolved
 
 | ID | 解決摘要 | 驗證 | 日期 | 相關變更／決策 |
 | --- | --- | --- | --- | --- |
 | `KI-001` | 已確認根目錄有 dependency-light smoke command | `python -m unittest discover -s tests` | 2026-09-15 | `.codex/workflows.md`、`tests/test_project_docs.py` |
+| `KI-004` | 修正 Python mapping 語法與部署範例 placeholder；將 CSS 與資料片段以真實副檔名重新分類，而非偽裝成 Python；移除 legacy FTP 範例的連線資料與 import-time 行為，改為明確拒絕網路操作的 inert compatibility stubs，未建立新網路功能 | `python -m compileall TCFMain.py TCF_Params DatasetConverter BertScript text_category_profiler` exits 0；`python -m unittest tests.test_repository_compile_gate` | 2026-09-17 | `tests/test_repository_compile_gate.py` 與 KI-004 blocker corrections |
 
 ## 記錄準則
 
