@@ -30,6 +30,44 @@ def converter_args(**overrides):
 
 
 class DataConverterStagePlanTests(unittest.TestCase):
+    def test_job_generator_resolves_empty_tokenizer_model_directory(self):
+        args = SimpleNamespace(ModelType="bert", MaxSeqLength=128)
+
+        with (
+            patch.object(DataConverter, "info") as info,
+            patch.object(
+                DataConverter,
+                "pick_dataset_directories",
+                return_value=("dataset", "resolved-model"),
+            ) as pick_dataset_directories,
+            patch.object(
+                DataConverter.DataConvertJobGenerater,
+                "BuildFileList",
+                return_value=[],
+            ),
+            patch.object(
+                DataConverter.DataConvertJobGenerater,
+                "BuildLabelConvertDict",
+                return_value={},
+            ),
+            patch.object(DataConverter.DataConvertJobGenerater, "show"),
+            patch.object(DataConverter, "key_values"),
+        ):
+            job = DataConverter.DataConvertJobGenerater(
+                fileList=["input.txt"],
+                tokenizationWrap=True,
+                modelDir="",
+                cli_args=args,
+                MPLOGGER=object(),
+            )
+
+        info.assert_called_once()
+        pick_dataset_directories.assert_called_once_with(
+            args=args,
+            ready_for_stage="DataConverter",
+        )
+        self.assertEqual(job.modelDir, "resolved-model")
+
     def test_normalization_returns_a_plan_without_runtime_activation(self):
         args = converter_args()
         settings = default_converter_settings()
