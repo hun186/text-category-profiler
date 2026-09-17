@@ -6,6 +6,23 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class ProjectDocumentationTests(unittest.TestCase):
+    def test_full_pipeline_smoke_profiles_are_current_and_issues_stay_open(self):
+        workflows = (ROOT / ".codex" / "workflows.md").read_text(encoding="utf-8")
+        known_issues = (ROOT / ".codex" / "known_issues.md").read_text(encoding="utf-8")
+        memory = (ROOT / ".codex" / "memory.md").read_text(encoding="utf-8")
+
+        for opt_in in ["TCP_RUN_FULL_PIPELINE_SMOKE", "TCP_RUN_REAL_PIPELINE_SMOKE"]:
+            self.assertIn(opt_in, workflows)
+        self.assertIn(
+            "python -m compileall TCFMain.py TCF_Params DatasetConverter BertScript text_category_profiler",
+            workflows,
+        )
+        for issue in ["KI-003", "KI-002"]:
+            self.assertIn(issue, known_issues)
+            self.assertIn(issue, memory)
+        self.assertRegex(known_issues, r"`KI-003`[^\n]*\| Open \|")
+        self.assertRegex(known_issues, r"`KI-002`[^\n]*\| Open \|")
+
     def test_known_issues_agrees_with_lightweight_smoke_command(self):
         known_issues = (ROOT / ".codex" / "known_issues.md").read_text(encoding="utf-8")
 
