@@ -6,7 +6,7 @@
 
 - 初始化狀態：`INITIALIZED`。
 - 維護 Python 文字分類、資料集轉換、BERTScript 結果分析工作區；不要沿用舊 README 的 FastAPI RAG 假設。
-- 未有安全的完整模型／GPU／真實 WorkPool smoke test；不得以 lightweight suite 宣稱完整 runtime 已驗證。
+- 已有 isolated real-root smoke profiles；在 post-merge real-model/H100 acceptance 完成前，不得宣稱完整 runtime 已驗證。
 
 ## Durable Outcomes
 
@@ -19,4 +19,4 @@
 7. Stage 3 以 `ResultCombinationPlan`／lifecycle boundary 擁有 canonical inputs、activation 與成功 handoff；pandas/SQLite computation 留在 compatibility entrypoint。
 8. Stage 4 以 `VisualizationPlan`／dependency-light lifecycle boundary 擁有 ready→running、hosted decision 與成功 running→spike-ready handoff；Dash layouts、callbacks 與 algorithms 留在 compatibility entrypoint。
 9. AST architecture guards保護 shared boundaries 不反向 import stage implementations、stages 不控制後續 stage、DatasetConverter split 與五個 legacy entrypoint paths。
-10. Repository-wide Python compile gate 已恢復並由無副作用語法 regression test 保護，`KI-004` 已解決；完整 pipeline smoke gap (`KI-003`) 仍維持 Open。
+10. Repository-wide Python compile gate (`python -m compileall TCFMain.py TCF_Params DatasetConverter BertScript text_category_profiler`) 維持 restored，isolated root smoke 已建立；`KI-003` 等待 post-merge real-runtime acceptance，且不涵蓋 WeiTech acquisition/delivery 的 `KI-002` 仍為 Open。

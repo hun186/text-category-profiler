@@ -10,7 +10,7 @@
 | Runtime 版本 | Python 版本待確認；BertScript 要求 TensorFlow >= 1.11.0 | `BertScript/requirements.txt` |
 | 套件管理器 | `pip` 可讀取根目錄 `requirements.txt`；尚無 lockfile | `requirements.txt`, `rg --files` 盤點 |
 | 必要本機服務 | 主要流程需要本機資料／模型／工作池；Elasticsearch 只在部分工具中出現 | `TCFMain.py`, `text_category_profiler/ES_ingest_txt_to_es.py` |
-| 必要環境變數 | 目前無根流程已確認必要環境變數；路徑多由 CLI args 傳入 | `text_category_profiler/TCF_utils.py` |
+| 必要環境變數 | 一般根流程無必要環境變數；完整 pipeline smoke profiles 由下列 opt-in 環境變數啟用 | `tests/test_full_pipeline_smoke.py`, `tests/test_full_pipeline_real_runtime.py` |
 
 ## Canonical Commands
 
@@ -25,7 +25,7 @@
 | Format | 待確認，禁止執行 | repository root | Unverified |
 | Lint | 待確認，禁止執行 | repository root | Unverified |
 | Type check | 待確認，禁止執行 | repository root | Unverified |
-| 最小 smoke test | `python -m unittest discover -s tests` | repository root | Verified for lightweight tests that do not require model/data/GPU |
+| 最小 smoke test | `python -m unittest discover -s tests` | repository root | Verified for dependency-light tests；亦會 discover Layer A／B modules，但未 opt in 時兩者明確 SKIP |
 | 完整 test suite | 待確認，禁止執行 | repository root | Unverified：未找到 CI 或 canonical test command |
 
 ## 驗證矩陣
@@ -39,6 +39,65 @@
 | 視覺化 lifecycle | `python -m unittest tests.test_visualization_stage tests.test_tcf_main_characterization tests.test_stage_commands`；`python -m py_compile BertScript/Test_result_Vis.py BertScript/visualization_stage.py` | layout、Dash callback 或部署設定改變時才需 browser/screenshot；lifecycle tests 不啟動 Dash server |
 | Architecture boundaries | `python -m unittest tests.test_package_layout tests.test_project_docs` | import arrows、legacy entrypoints、DatasetConverter boundaries 或 current-state docs 改變 |
 | 匯入外部服務 | 先以 dry-run 或 mock 明確標示；不得把真實 DB/ES 寫入當 smoke test | 會連線 SQL Server、Elasticsearch 或批次寫入資料 |
+
+## Full-pipeline smoke profiles
+
+兩個 profiles 都以 temporary WorkPool 隔離 mutable state，並使用 `-TRVHost False`；一般 `python -m unittest discover -s tests` 會 discover 兩個 runtime modules 並將它們明確報為 opt-in SKIP。
+
+### Layer A：隔離的 real-root smoke
+
+Layer A 執行真實 `TCFMain.py` 與 Stage 1–4 child entrypoints，僅以 PATH dispatcher 替代 inference child。POSIX：
+
+```bash
+TCP_RUN_FULL_PIPELINE_SMOKE=1 python -m unittest tests.test_full_pipeline_smoke
+```
+
+PowerShell：
+
+```powershell
+$env:TCP_RUN_FULL_PIPELINE_SMOKE='1'
+python -m unittest tests.test_full_pipeline_smoke
+```
+
+PASS 必須包含 root exit 0、唯一 classifier marker、final `*_rdy_for_Spike`、Stage 1–4 artifacts 與 `logs/Test_result_Vis.log`；這不是 real model/GPU acceptance。
+
+### Layer B：real-model/GPU acceptance profile
+
+Layer B 不安裝 inference interception；它透過 temporary writable model facade 讀取外部 checkpoint。啟用時必須明確提供以下變數，不得放入個人實際路徑或自動探測 production state：
+
+```text
+TCP_RUN_REAL_PIPELINE_SMOKE=1
+TCP_REAL_MODEL_DIR=<external model directory>
+TCP_REAL_FIXED_TEST_DIR=<external FixedTest Using directory>
+TCP_REAL_TOPIC_TREE_DIR=<external taxonomy directory>
+TCP_REAL_TOPIC_TREE_FILES=<comma-separated taxonomy files>
+TCP_REAL_MODEL_TYPE=PytorchXLM                       # optional
+TCP_REAL_PIPELINE_TIMEOUT_SECONDS=1800              # optional
+```
+
+POSIX：
+
+```bash
+TCP_RUN_REAL_PIPELINE_SMOKE=1 \
+TCP_REAL_MODEL_DIR='<model>' \
+TCP_REAL_FIXED_TEST_DIR='<fixed-test>' \
+TCP_REAL_TOPIC_TREE_DIR='<taxonomy>' \
+TCP_REAL_TOPIC_TREE_FILES='TopicTree.csv,TopicTree_AK4.csv' \
+python -m unittest tests.test_full_pipeline_real_runtime
+```
+
+PowerShell：
+
+```powershell
+$env:TCP_RUN_REAL_PIPELINE_SMOKE='1'
+$env:TCP_REAL_MODEL_DIR='<model>'
+$env:TCP_REAL_FIXED_TEST_DIR='<fixed-test>'
+$env:TCP_REAL_TOPIC_TREE_DIR='<taxonomy>'
+$env:TCP_REAL_TOPIC_TREE_FILES='TopicTree.csv,TopicTree_AK4.csv'
+python -m unittest tests.test_full_pipeline_real_runtime
+```
+
+Layer B 只有在 root exit 0、production classifier evidence、final `*_rdy_for_Spike`、外部 inputs unchanged 及預定 H100 acceptance 的 CUDA available/selected evidence 完整時才算 acceptance PASS。
 
 ## 測試資料與外部服務
 
