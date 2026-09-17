@@ -12,6 +12,12 @@
 
 ## Recent Outcomes
 
+### 2026-09-16 — Classifier and result-combination lifecycle seams
+
+- 目標：完成 Architecture Refactoring Phase 4，為 Stage 2／3 建立可獨立測試的 planning、activation、process-policy 與 filesystem handoff boundaries。
+- 結果：新增 classifier/result-combination frozen plans 與 lifecycle runners；canonical scripts 保留 computation、CLI 與 direct-script composition，且 stages 不直接 import後續 stage implementation。
+- 驗證：Stage 2／3 policy tests、既有 root compatibility tests、DatasetConverter fixture、完整 dependency-light unittest 與 `git diff --check` 通過；repository-wide compileall 仍被既有 `FTP_utils.py` syntax error 阻擋。
+
 ### 2026-09-16 — Root orchestration and WorkPool lifecycle boundaries
 
 - 目標：完成 Architecture Refactoring Phase 3，隔離 canonical stage sequencing 與 root filesystem lifecycle ownership。

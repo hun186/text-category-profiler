@@ -302,184 +302,194 @@ def SummarizePerformance():
     #SaveFigToPNG(fig, OFNM)
     plt.close('all')
 
-if __name__=='__main__':
-    setproctitle.setproctitle('CZJCombineTestResult')
-    if os.getcwd().split(os.path.sep)[-1] in [
-            "DatasetConverter","BertScript"]:
-        os.chdir("../")
-        print(f"Change working directory to {os.getcwd()}")
-    args = ClassfierOptionParser()
-    BertDatasetSubDir,outputDir = datasetDirOutputDirPickers(
-        args=args,rdy_for_stage="CombineTestResult").proc()
-    if BertDatasetSubDir == None:
-        MES = "-"*50+"\n"
-        MES += f"In {args.WorkPoolROOT}, There is no BertDatasetSubDir ready for CombineTestResult! ABORT!"
-        MPlogger().logW(MES)
-        raise Exception
+def _legacy_main(argv=None):
+
+        setproctitle.setproctitle('CZJCombineTestResult')
+        if os.getcwd().split(os.path.sep)[-1] in [
+                "DatasetConverter","BertScript"]:
+            os.chdir("../")
+            print(f"Change working directory to {os.getcwd()}")
+        args = ClassfierOptionParser(argv)
+        BertDatasetSubDir,outputDir = datasetDirOutputDirPickers(
+            args=args,rdy_for_stage="CombineTestResult").proc()
+        if BertDatasetSubDir == None:
+            MES = "-"*50+"\n"
+            MES += f"In {args.WorkPoolROOT}, There is no BertDatasetSubDir ready for CombineTestResult! ABORT!"
+            MPlogger().logW(MES)
+            raise Exception
 
 
-    NewBertDatasetSubDir = BertDatasetSubDir.replace(
-        "_rdy_for_CombineTestResult","_is_running_CombineTestResult")
-    #NewBertDatasetSubDir += BertDatasetSubDir + "_is_running_DataConverter"
-    os.rename(BertDatasetSubDir,NewBertDatasetSubDir)
-    stage_banner("CombineTestResult", detail=f"WorkDir: {NewBertDatasetSubDir}")
-    MES = f"CombineTestResult started. WorkDir is {NewBertDatasetSubDir}."
-    BertDatasetSubDir = NewBertDatasetSubDir
-    MPLOGGER = MPlogger(logSubDir=f"{BertDatasetSubDir}/logs")
-    MPLOGGER_TCFMain = MPlogger(logSubDir=f"{BertDatasetSubDir}/logs",logFile="TCFMain.log")
-    MPLOGGER_TCFMain.logW(MES, printOnScreen=False)
-    key_values("CombineTestResult workspace", [("workdir", NewBertDatasetSubDir)])
-    datasetDBDir = args.datasetDataBaseSubDir
+        NewBertDatasetSubDir = BertDatasetSubDir.replace(
+            "_rdy_for_CombineTestResult","_is_running_CombineTestResult")
+        #NewBertDatasetSubDir += BertDatasetSubDir + "_is_running_DataConverter"
+        os.rename(BertDatasetSubDir,NewBertDatasetSubDir)
+        stage_banner("CombineTestResult", detail=f"WorkDir: {NewBertDatasetSubDir}")
+        MES = f"CombineTestResult started. WorkDir is {NewBertDatasetSubDir}."
+        BertDatasetSubDir = NewBertDatasetSubDir
+        MPLOGGER = MPlogger(logSubDir=f"{BertDatasetSubDir}/logs")
+        MPLOGGER_TCFMain = MPlogger(logSubDir=f"{BertDatasetSubDir}/logs",logFile="TCFMain.log")
+        MPLOGGER_TCFMain.logW(MES, printOnScreen=False)
+        key_values("CombineTestResult workspace", [("workdir", NewBertDatasetSubDir)])
+        datasetDBDir = args.datasetDataBaseSubDir
 
-    datasetDir = BertDatasetSubDir
-    '''
-    args = ClassfierOptionParser()
-    if args.BertDatasetSubDir == "":
-        datasetDir, outputDir = datasetDirOutputDirPickers(args=args).proc()
-    else:
-        datasetDir = args.BertDatasetSubDir
-    '''
-    MES = "Analysis test_result of dataset {}".format(datasetDir)
-    MPLOGGER_TCFMain.logW(MES, printOnScreen=False)
-    '''
-    SrcLogFileList = [
-        os.path.join(datasetDir,datasetDBDir,"dataset_total_with_filename.sql3"),
-        os.path.join(datasetDir,datasetDBDir,"dataset_total_with_filename_FixedTest.sql3"),
-        os.path.join(datasetDir,datasetDBDir,"dataset_total_with_filename_ES.sql3"),
-        ]
-    '''
-    #dataset_total_with_filename.sql3,dataset_total_with_filename_ES.sql3,dataset_total_with_filename_FixedTest.sql3
-    SrcLogFileList = OSWALK(os.path.join(datasetDir,datasetDBDir),FNrePat=r"dataset_total_with_filename.*\.sql3")
-    if len(SrcLogFileList) == 0:
-        MES = f"When run CombineTestResult.py, there is no dataset_total_with_filename database found! Check the correctness of the datasetDB file pointer for {os.path.join(datasetDir,datasetDBDir)}."
-        MPLOGGER_TCFMain.logW(MES)
-    key_values("Result analysis inputs", [
-        ("dataset", datasetDir),
-        ("source db count", len(SrcLogFileList)),
-        ("source db preview", summarize_sequence(SrcLogFileList, limit=3)),
-    ])
-    '''
-    nProcess = mp.cpu_count()-1
-    nProcess = 10
-    '''
-    nProcess = multicoreJob().ComputeNProcess(log=False)
+        datasetDir = BertDatasetSubDir
+        '''
+        args = ClassfierOptionParser(argv)
+        if args.BertDatasetSubDir == "":
+            datasetDir, outputDir = datasetDirOutputDirPickers(args=args).proc()
+        else:
+            datasetDir = args.BertDatasetSubDir
+        '''
+        MES = "Analysis test_result of dataset {}".format(datasetDir)
+        MPLOGGER_TCFMain.logW(MES, printOnScreen=False)
+        '''
+        SrcLogFileList = [
+            os.path.join(datasetDir,datasetDBDir,"dataset_total_with_filename.sql3"),
+            os.path.join(datasetDir,datasetDBDir,"dataset_total_with_filename_FixedTest.sql3"),
+            os.path.join(datasetDir,datasetDBDir,"dataset_total_with_filename_ES.sql3"),
+            ]
+        '''
+        #dataset_total_with_filename.sql3,dataset_total_with_filename_ES.sql3,dataset_total_with_filename_FixedTest.sql3
+        SrcLogFileList = OSWALK(os.path.join(datasetDir,datasetDBDir),FNrePat=r"dataset_total_with_filename.*\.sql3")
+        if len(SrcLogFileList) == 0:
+            MES = f"When run CombineTestResult.py, there is no dataset_total_with_filename database found! Check the correctness of the datasetDB file pointer for {os.path.join(datasetDir,datasetDBDir)}."
+            MPLOGGER_TCFMain.logW(MES)
+        key_values("Result analysis inputs", [
+            ("dataset", datasetDir),
+            ("source db count", len(SrcLogFileList)),
+            ("source db preview", summarize_sequence(SrcLogFileList, limit=3)),
+        ])
+        '''
+        nProcess = mp.cpu_count()-1
+        nProcess = 10
+        '''
+        nProcess = multicoreJob().ComputeNProcess(log=False)
 
-    LabelFile = "TopicAnalysis_LabelList.txt"
+        LabelFile = "TopicAnalysis_LabelList.txt"
 
-    LabelFile = os.path.join(datasetDir,"TopicAnalysis_LabelList.txt")
-    #TypeList = ['体育', '娱乐', '家居', '彩票','房产', '教育', '时尚', '时政','星座',
-                #'游戏', '社会', '科技','股票', '财经']
-    #SPEC_TOPIC_LIST = ['PRC_OffDoc','South_Sea']
+        LabelFile = os.path.join(datasetDir,"TopicAnalysis_LabelList.txt")
+        #TypeList = ['体育', '娱乐', '家居', '彩票','房产', '教育', '时尚', '时政','星座',
+                    #'游戏', '社会', '科技','股票', '财经']
+        #SPEC_TOPIC_LIST = ['PRC_OffDoc','South_Sea']
 
-    TypeList = LabelListLoader.proc(LabelFile)
-    SPEC_TOPIC_LIST = TypeList
+        TypeList = LabelListLoader.proc(LabelFile)
+        SPEC_TOPIC_LIST = TypeList
 
-    labeltoType = {}
-    TypetoLabel = {}
-    for i,Type in enumerate(TypeList):
-        labeltoType[i] = Type
-        TypetoLabel[Type] = i
-    #print(indextoLabel)
+        labeltoType = {}
+        TypetoLabel = {}
+        for i,Type in enumerate(TypeList):
+            labeltoType[i] = Type
+            TypetoLabel[Type] = i
+        #print(indextoLabel)
 
-    #讀取test.tsv，內含label答案。
-    df_test = dfFromSQLite3(os.path.join(datasetDir,"test.sql3"))
-    for removeCol in ["index","ID"]:
-        if removeCol in df_test.columns:
-            df_test = df_test.drop([removeCol],axis=1)
-    df_test.columns = ["Type", "text"]
+        #讀取test.tsv，內含label答案。
+        df_test = dfFromSQLite3(os.path.join(datasetDir,"test.sql3"))
+        for removeCol in ["index","ID"]:
+            if removeCol in df_test.columns:
+                df_test = df_test.drop([removeCol],axis=1)
+        df_test.columns = ["Type", "text"]
 
-    #讀取test_results.tsv，內含模型預測機率值。
-    WatchedFN = os.path.join(datasetDir, 'test_results.tsv')
-    WaitUntilFileIsStable(WatchedFN)
-    #df_result = pd.read_csv(os.path.join(outputDir, 'test_results.tsv'),sep='\t', header=None)
-    df_result = pd.read_csv(WatchedFN,sep='\t', header=None)
-    if df_test.shape[0] != df_result.shape[0]:
-        MES = f"The number of test samples {df_test.shape[0]} is not the same as the number of result probability for test samples {df_result.shape[0]}"
-        MES += "\n There might be somehting wrong!"
-        MPLOGGER_TCFMain.logW(MES)
-
-
-    #create a new dataframe
-    if args.ModelType == "TF15Bert":
-        df_map_result = pd.DataFrame({'Type': df_test['Type'],
-            'text': df_test['text'],
-            'label': df_result.idxmax(axis=1)})
-        df_map_result['pred_Type'] = df_map_result['label'].apply(
-            lambda x:labeltoType[x])
-    elif args.ModelType in PYTORCH_MODEL_TYPES:
-        df_map_result = pd.DataFrame({'Type': df_test['Type'],
-            'text': df_test['text']})
-        df_map_result['pred_Type'] = df_result
-    else:
-        raise ValueError(f"Unsupported ModelType for result combination: {args.ModelType}")
-    MES = "Start to query the Src of texts."
-    MPLOGGER_TCFMain.logW(MES, printOnScreen=False)
-    key_values("Source lookup", [("processes", nProcess), ("rows", len(df_map_result))])
-    #print("Start to query the Src of texts.")
-    #df_map_result['Src'] = df_map_result['text'].apply(
-        #lambda x:searchSrc(x,SrcLogFile))
-
-    '''
-    paraResult = parallelize_on_rows(
-        df_map_result['text'],
-        TextInfoSearcher(SrcLogFileList,["file","PartNO"]).proc, num_of_processes=nProcess)
-    print("paraResult",paraResult)
-    print("paraResult.shape",paraResult.shape)
-    '''
-    kwargs = {"SrcLogFileList":SrcLogFileList}
-    df_map_result = parallel_apply(df_map_result, apply_compute, num_of_processes=nProcess,kwargs=kwargs)
-    #print("df_map_result",df_map_result)
-    #df_map_result[['Src','PartNO']]
-    #import time
-    #time.sleep(20)
-    #df_map_result['PartNO'] = parallelize_on_rows(
-        #df_map_result['text'],
-        #TextInfoSearcher(SrcLogFileList,"PartNO").proc, num_of_processes=nProcess)
-
-    #df_map_result['File'] = parallelize_on_rows(
-        #df_map_result['Src'],
-        #getFNFromFullPath, num_of_processes=nProcess)
-
-    #view sample rows of the newly created dataframe
-    df_map_result = df_map_result.reindex(
-        columns=['Type','pred_Type', 'text','Src', 'File','PartNO'])
+        #讀取test_results.tsv，內含模型預測機率值。
+        WatchedFN = os.path.join(datasetDir, 'test_results.tsv')
+        WaitUntilFileIsStable(WatchedFN)
+        #df_result = pd.read_csv(os.path.join(outputDir, 'test_results.tsv'),sep='\t', header=None)
+        df_result = pd.read_csv(WatchedFN,sep='\t', header=None)
+        if df_test.shape[0] != df_result.shape[0]:
+            MES = f"The number of test samples {df_test.shape[0]} is not the same as the number of result probability for test samples {df_result.shape[0]}"
+            MES += "\n There might be somehting wrong!"
+            MPLOGGER_TCFMain.logW(MES)
 
 
-    MES = "Finished querying the Src of texts."
-    MPLOGGER_TCFMain.logW(MES, printOnScreen=False)
-    key_values("Verification dataframe", [("sort by", ["Type", "pred_Type"]), ("rows", len(df_map_result))])
-    df_map_result = df_map_result.sort_values(by=['Type','pred_Type'])
-    #df_OutputMain(df_map_result, os.path.join(
-        #datasetDir,'test_results_verification'))
-    OUTPUTMAIN = os.path.join(datasetDir,'test_results_verification')
-    dfOutputer(df_map_result,
-               OUTPUTMAIN, IndexCols=["Src", 'File'],dtype={"PartNO":"INTEGER"}).run()
+        #create a new dataframe
+        if args.ModelType == "TF15Bert":
+            df_map_result = pd.DataFrame({'Type': df_test['Type'],
+                'text': df_test['text'],
+                'label': df_result.idxmax(axis=1)})
+            df_map_result['pred_Type'] = df_map_result['label'].apply(
+                lambda x:labeltoType[x])
+        elif args.ModelType in PYTORCH_MODEL_TYPES:
+            df_map_result = pd.DataFrame({'Type': df_test['Type'],
+                'text': df_test['text']})
+            df_map_result['pred_Type'] = df_result
+        else:
+            raise ValueError(f"Unsupported ModelType for result combination: {args.ModelType}")
+        MES = "Start to query the Src of texts."
+        MPLOGGER_TCFMain.logW(MES, printOnScreen=False)
+        key_values("Source lookup", [("processes", nProcess), ("rows", len(df_map_result))])
+        #print("Start to query the Src of texts.")
+        #df_map_result['Src'] = df_map_result['text'].apply(
+            #lambda x:searchSrc(x,SrcLogFile))
 
-    Matchdf = pd.DataFrame(
-        [df_map_result['Type'] == df_map_result['pred_Type']]).transpose()
-    Matchdf.columns = ["match"]
-    MatchCount = Matchdf.groupby('match').size()
-    match_count = int(MatchCount.get(True, 0))
-    mismatch_count = int(MatchCount.get(False, 0))
-    total_count = match_count + mismatch_count
-    accuracy = f"{match_count / total_count:.4f}" if total_count else "n/a"
-    sample_count_status = "normal" if len(df_map_result) == total_count else "WARNING: strange"
-    key_values("Match summary", [
-        ("matched", match_count),
-        ("mismatched", mismatch_count),
-        ("accuracy", accuracy),
-        ("sample count sum", sample_count_status),
-    ], icon="·")
+        '''
+        paraResult = parallelize_on_rows(
+            df_map_result['text'],
+            TextInfoSearcher(SrcLogFileList,["file","PartNO"]).proc, num_of_processes=nProcess)
+        print("paraResult",paraResult)
+        print("paraResult.shape",paraResult.shape)
+        '''
+        kwargs = {"SrcLogFileList":SrcLogFileList}
+        df_map_result = parallel_apply(df_map_result, apply_compute, num_of_processes=nProcess,kwargs=kwargs)
+        #print("df_map_result",df_map_result)
+        #df_map_result[['Src','PartNO']]
+        #import time
+        #time.sleep(20)
+        #df_map_result['PartNO'] = parallelize_on_rows(
+            #df_map_result['text'],
+            #TextInfoSearcher(SrcLogFileList,"PartNO").proc, num_of_processes=nProcess)
 
-    if args.SummarizePerformance == True:
-        SummarizePerformance()
-    #將目錄更名，以供下階段功能程式抓取。
-    NewBertDatasetSubDir = BertDatasetSubDir.replace(
-        "_is_running_CombineTestResult","_rdy_for_TestResultVis")
-    #os.rename(BertDatasetSubDir,NewBertDatasetSubDir)
-    RenameDir(SrcDir=BertDatasetSubDir,DesDir=NewBertDatasetSubDir)
-    stage_done("CombineTestResult")
-    MES = f"CombineTestResult is finished. Rename {BertDatasetSubDir} as {NewBertDatasetSubDir}"
-    key_values("CombineTestResult handoff", [("from", BertDatasetSubDir), ("to", NewBertDatasetSubDir)])
-    MPLOGGER_TCFMain = MPlogger(logSubDir=f"{NewBertDatasetSubDir}/logs")
-    MPLOGGER_TCFMain.logW(MES, printOnScreen=False)
+        #df_map_result['File'] = parallelize_on_rows(
+            #df_map_result['Src'],
+            #getFNFromFullPath, num_of_processes=nProcess)
+
+        #view sample rows of the newly created dataframe
+        df_map_result = df_map_result.reindex(
+            columns=['Type','pred_Type', 'text','Src', 'File','PartNO'])
+
+
+        MES = "Finished querying the Src of texts."
+        MPLOGGER_TCFMain.logW(MES, printOnScreen=False)
+        key_values("Verification dataframe", [("sort by", ["Type", "pred_Type"]), ("rows", len(df_map_result))])
+        df_map_result = df_map_result.sort_values(by=['Type','pred_Type'])
+        #df_OutputMain(df_map_result, os.path.join(
+            #datasetDir,'test_results_verification'))
+        OUTPUTMAIN = os.path.join(datasetDir,'test_results_verification')
+        dfOutputer(df_map_result,
+                   OUTPUTMAIN, IndexCols=["Src", 'File'],dtype={"PartNO":"INTEGER"}).run()
+
+        Matchdf = pd.DataFrame(
+            [df_map_result['Type'] == df_map_result['pred_Type']]).transpose()
+        Matchdf.columns = ["match"]
+        MatchCount = Matchdf.groupby('match').size()
+        match_count = int(MatchCount.get(True, 0))
+        mismatch_count = int(MatchCount.get(False, 0))
+        total_count = match_count + mismatch_count
+        accuracy = f"{match_count / total_count:.4f}" if total_count else "n/a"
+        sample_count_status = "normal" if len(df_map_result) == total_count else "WARNING: strange"
+        key_values("Match summary", [
+            ("matched", match_count),
+            ("mismatched", mismatch_count),
+            ("accuracy", accuracy),
+            ("sample count sum", sample_count_status),
+        ], icon="·")
+
+        if args.SummarizePerformance == True:
+            SummarizePerformance()
+        #將目錄更名，以供下階段功能程式抓取。
+        NewBertDatasetSubDir = BertDatasetSubDir.replace(
+            "_is_running_CombineTestResult","_rdy_for_TestResultVis")
+        #os.rename(BertDatasetSubDir,NewBertDatasetSubDir)
+        RenameDir(SrcDir=BertDatasetSubDir,DesDir=NewBertDatasetSubDir)
+        stage_done("CombineTestResult")
+        MES = f"CombineTestResult is finished. Rename {BertDatasetSubDir} as {NewBertDatasetSubDir}"
+        key_values("CombineTestResult handoff", [("from", BertDatasetSubDir), ("to", NewBertDatasetSubDir)])
+        MPLOGGER_TCFMain = MPlogger(logSubDir=f"{NewBertDatasetSubDir}/logs")
+        MPLOGGER_TCFMain.logW(MES, printOnScreen=False)
+
+
+def main(argv=None):
+    from BertScript import result_combination_stage
+    return result_combination_stage.main(argv, legacy_main=_legacy_main)
+
+
+if __name__ == "__main__":
+    main()

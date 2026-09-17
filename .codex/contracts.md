@@ -48,6 +48,7 @@
 - 權威定義：`DatasetConverter/DataConverter.py`、`BertScript/RunClassfier.py`、`TCFMain.py` 對檔名與目錄狀態的讀寫。
 - Producer／Owner：DatasetConverter stage。
 - Consumer：RunClassfier stage 與 root flow。
+- Lifecycle：Stage 2 planning 不搬移目錄；activation 保留 `_rdy_for_RunClassfier` → `_is_running_RunClassfier`，成功 test flow 在 artifact stability waits 後才交付 `_rdy_for_CombineTestResult`。Training 保留 running workspace 與背景 command marker。
 - 輸入：原始文字資料、固定測試資料、工作池任務與 label/topic metadata。
 - 輸出：至少一個 BERT dataset split（`train.tsv`、`dev.tsv`、`test.tsv`）與 `OnlyForRecord/`、`datasetDB/` 中間資料線索。
 - 驗證與約束：一般來源樣本在計算 split 比例前依 `OutLabel`／`text` 去重，避免相同分類樣本同時進入 train/dev/test；`DataAugmentationGoal` 在切分完成後只補足 train 中的少類 label，不得產生 dev/test 樣本；`TCFMain.py` 會檢查 dataset files 是否存在；RunClassfier 會查詢 `test.sql3`、`dataset_total_with_filename_FixedTest.sql3`、`dataset_total_with_filename_ES.sql3`。
@@ -62,6 +63,7 @@
 - 狀態：Draft
 - 權威定義：`BertScript/RunClassfier.py`、`BertScript/CombineTestResult.py`、`BertScript/Test_result_Vis.py`、`TCF_Params/TCFParameters.py` 的 output filename patterns。
 - Producer／Owner：RunClassfier 與 CombineTestResult stages。
+- Lifecycle：Stage 3 planning 記錄 canonical DB glob、label、test DB 與 result TSV；activation 保留 `_rdy_for_CombineTestResult` → `_is_running_CombineTestResult`，只有 computation 成功後才 rename 為 `_rdy_for_TestResultVis`。
 - Consumer：Test_result_Vis、BackupAndClean 與外部工作池 consumer。
 - 輸入：模型預測結果、label list、dataset DB。
 - 輸出：`DFPreambleCols_df_ALL*`、`dataset_total_with_filename_FixedTest.sql3`、`test.sql3`、`test.tsv`，SDSMS 任務另包含 `SDSMS.*` patterns。
