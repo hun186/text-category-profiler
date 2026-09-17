@@ -1,12 +1,13 @@
 import sys
 from pathlib import Path
-from BertScript import visualization_stage
 
 # Direct script execution keeps BertScript/ as the first import location; add
 # only the repository root instead of probing external legacy module paths.
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
+
+from BertScript import visualization_stage
 
 #import utilities_DB
 import numpy as np
@@ -3994,7 +3995,7 @@ def _run_visualization_application(running_workspace, plan):
         CMD += f" -SumPath {SumPath}"
         CMD += f" -SumOptPath {SumOptPath}"
         print("Generative Summary CMD:\n",CMD)
-        os.system(CMD)
+        visualization_stage.run_summary_command(CMD, os.system)
 
         MES = f"Finished summarizing the text in {SumPath} for {len(OSWALK(SumPath))} files"
         MPLOGGER.logW(MES=MES,logFile="Test_result_Vis.log")
