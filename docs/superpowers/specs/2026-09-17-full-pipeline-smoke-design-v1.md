@@ -12,7 +12,7 @@
 
 ## Problem Statement
 
-The repository now has strong dependency-light characterization and unit coverage, but that coverage does not prove that the real root command can launch the real child entrypoints and complete the filesystem handoff chain. The recent manual runtime sequence exposed this gap directly: lightweight tests passed while real execution found unresolved runtime bindings in `DatasetConverter.py` and later a module-scope/layout regression in `Test_result_Vis.py`.
+The repository now has strong dependency-light characterization and unit coverage, but that coverage does not prove that the real root command can launch the real child entrypoints and complete the filesystem handoff chain. Recent manual runtime execution exposed this gap directly: lightweight tests passed while real execution found unresolved runtime bindings in `DatasetConverter.py` and later a module-scope/layout regression in `Test_result_Vis.py`.
 
 The user has now successfully exercised the real command:
 
@@ -20,9 +20,9 @@ The user has now successfully exercised the real command:
 python TCFMain.py -p 8059 -ts y
 ```
 
-against a real FixedTest/model environment. That experience must be converted into a reproducible, isolated, automatable smoke test so the same class of regression is detected before manual runtime use.
+against a real FixedTest/model environment. That experience must become a reproducible, isolated, automatable smoke test so the same class of regression is detected before manual runtime use.
 
-Existing tests are necessary but insufficient:
+Existing tests remain necessary but insufficient:
 
 - `tests/test_tcf_main_characterization.py` proves root sequencing with fake subprocesses.
 - `tests/test_dataconverter_fixture_integration.py` proves a small Stage 1 worker/split/TSV flow.
@@ -33,11 +33,11 @@ None of those runs the canonical root command through all child Python entrypoin
 
 ## Goals
 
-1. Add a reproducible full-pipeline smoke profile that starts from the canonical root CLI and launches the canonical child scripts through the same shell boundaries used in production.
-2. Make the default smoke isolated from real WorkPool, production FixedTest directories, real model output directories, network services, and hosted Dash servers.
+1. Add a reproducible smoke profile that starts from the canonical root CLI and launches the canonical child scripts through the same shell boundaries used in production.
+2. Isolate the default smoke from real WorkPool, production FixedTest directories, real model output directories, network services, and hosted Dash servers.
 3. Keep DataConverter, RunClassfier, CombineTestResult, and Test_result_Vis entrypoints real. Do not replace those stages with mocks.
 4. Replace only the expensive/non-deterministic model inference child with a deterministic smoke classifier in the hermetic profile.
-5. Add a second opt-in real-runtime profile that uses a real model/GPU and a real FixedTest source while still writing all mutable pipeline state into a temporary WorkPool.
+5. Add a second opt-in real-runtime profile that uses a real model and FixedTest source while still writing mutable pipeline state into a temporary WorkPool.
 6. Treat any failure revealed by the real root/child pipeline as a genuine integration regression. Do not bypass a failure merely to make the smoke green.
 7. Provide explicit evidence gates for resolving `KI-003` while leaving `KI-002` open until isolated root-level WorkPool acquisition/delivery coverage exists.
 
@@ -61,7 +61,7 @@ This design does not:
 
 The smoke must preserve the boundaries that previously hid regressions.
 
-The required execution shape is:
+Required execution shape:
 
 ```text
 real subprocess
@@ -74,7 +74,7 @@ real subprocess
      -> root delivery/completion
 ```
 
-The hermetic profile may substitute only the model inference child invoked by RunClassfier. It must not directly call `PipelineOrchestrator.run()` with mocked stage functions, because that would repeat existing characterization coverage and would not catch direct-script/bootstrap/scope failures.
+Layer A may substitute only the model inference child invoked by RunClassfier. It must not directly call `PipelineOrchestrator.run()` with mocked stage functions.
 
 ## Two-Layer Smoke Architecture
 
@@ -85,88 +85,142 @@ Purpose: deterministic root-to-final-handoff integration verification without a 
 It runs the real root command and real Stage 1–4 entrypoint scripts. It uses:
 
 - a temporary WorkPool;
-- a tiny committed FixedTest fixture;
-- a tiny committed taxonomy fixture;
-- a tiny committed model-metadata fixture;
-- one process for normal work and one process for SPC work;
+- a committed tiny FixedTest fixture;
+- a committed tiny taxonomy fixture;
+- a committed tiny model-metadata fixture;
+- `nProcess=1` and `nProcessSPC=1`;
 - non-hosted visualization (`-TRVHost False`);
-- no cleanup/removal of the dataset during the assertion phase;
+- no dataset removal/backup cleanup before assertions;
 - no real network service;
-- a test harness Python-command shim that intercepts only the expensive `BertScript/TextClassification_transformers.py` child invocation.
+- a PATH-level Python-command shim that intercepts only `BertScript/TextClassification_transformers.py`.
 
 All other `python ...` child commands are forwarded to the same real interpreter used to start the smoke.
 
+Layer A is opt-in and executes only when:
+
+```text
+TCP_RUN_FULL_PIPELINE_SMOKE=1
+```
+
+Without that variable, `tests.test_full_pipeline_smoke` must be discovered as an explicit skip with an actionable message.
+
 ### Layer B — Opt-in real-runtime smoke
 
-Purpose: verify the same root pipeline with the real PytorchXLM classifier/model runtime.
+Purpose: verify the same root pipeline with the real Pytorch classifier/model runtime.
 
-This profile:
+It:
 
-- is skipped unless explicitly enabled;
-- uses the real root CLI;
-- uses real Stage 1–4 child scripts;
-- does not install the classifier interception shim;
-- accepts a real model directory and FixedTest directory from environment variables;
-- still uses a temporary WorkPool and non-hosted Stage 4;
-- forces `nProcess=1` and `nProcessSPC=1` for predictability;
-- records stdout/stderr and final artifacts;
+- executes only when `TCP_RUN_REAL_PIPELINE_SMOKE=1`;
+- uses the real root CLI and real Stage 1–4 child scripts;
+- installs no classifier interception shim;
+- uses a temporary WorkPool and non-hosted Stage 4;
+- forces `nProcess=1` and `nProcessSPC=1`;
+- captures stdout/stderr and final artifacts;
 - must terminate with root exit code 0 to count as successful evidence.
 
-The real-runtime profile formalizes the user’s successful manual experience rather than replacing it with mocks.
+Required environment variables:
+
+```text
+TCP_REAL_MODEL_DIR
+TCP_REAL_FIXED_TEST_DIR
+TCP_REAL_TOPIC_TREE_DIR
+TCP_REAL_TOPIC_TREE_FILES
+```
+
+Optional:
+
+```text
+TCP_REAL_MODEL_TYPE
+TCP_REAL_PIPELINE_TIMEOUT_SECONDS
+```
+
+Defaults:
+
+```text
+TCP_REAL_MODEL_TYPE=PytorchXLM
+TCP_REAL_PIPELINE_TIMEOUT_SECONDS=1800
+```
+
+`TCP_REAL_TOPIC_TREE_FILES` is the same comma-separated form accepted by `--TopicTreeFiles`, for example the user’s current `TopicTree.csv,TopicTree_AK4.csv` environment.
+
+The real-runtime profile formalizes the user’s successful manual run rather than replacing it with mocks.
+
+## Exact Test Infrastructure Files
+
+Create:
+
+```text
+tests/smoke/__init__.py
+tests/smoke/full_pipeline_harness.py
+tests/smoke/python_dispatch.py
+tests/smoke/smoke_classifier.py
+tests/test_full_pipeline_smoke.py
+tests/test_full_pipeline_real_runtime.py
+```
+
+Fixture root:
+
+```text
+tests/fixtures/full_pipeline_smoke/
+```
+
+Documentation updates:
+
+```text
+.codex/workflows.md
+.codex/known_issues.md
+.codex/memory.md
+```
+
+Production files should not change merely to make the smoke possible. If the smoke exposes a real integration defect, fix that defect separately with a focused RED test and the smallest relevant production change.
 
 ## Hermetic Test Harness
 
-Create a focused helper module under tests, conceptually:
-
-```text
-tests/smoke/full_pipeline_harness.py
-```
+`tests/smoke/full_pipeline_harness.py` owns smoke orchestration only. It must not import and invoke the four pipeline stages directly.
 
 Responsibilities:
 
-1. Create and clean a `TemporaryDirectory` for all mutable runtime state.
-2. Build the root command with explicit paths so it cannot select a real WorkPool, FixedTest directory, or model directory by discovery.
-3. Set isolation-oriented environment variables (`TEMP`, `TMP`, `TMPDIR`, `HOME`, Hugging Face cache variables where applicable) to temporary locations.
-4. Create a cross-platform `python` command shim at the front of `PATH`.
-5. Execute `TCFMain.py` with `subprocess.run(..., check=False, capture_output=True, text=True)` and a finite timeout.
-6. Return a structured smoke result containing exit code, stdout, stderr, temporary WorkPool path, and discovered final workspace/artifacts.
-7. On failure, preserve enough stdout/stderr in the assertion message to identify the failing stage and child command.
+1. Create a temporary runtime root and temporary WorkPool.
+2. Build the canonical root command with explicit FixedTest, taxonomy, model metadata, WorkPool, process-count, model-type, port, and execution-time values.
+3. Set isolation-oriented environment variables (`TEMP`, `TMP`, `TMPDIR`, `HOME`, Hugging Face cache variables) to temporary locations.
+4. Put a cross-platform `python` shim at the front of `PATH` for Layer A only.
+5. Execute `TCFMain.py` with `subprocess.run(..., check=False, capture_output=True, text=True)`.
+6. Use a Layer A timeout of 180 seconds.
+7. Return a structured result with command, exit code, stdout, stderr, temporary WorkPool, final workspace candidates, and artifact paths.
+8. Produce bounded failure diagnostics that identify the failing stage without dumping unbounded logs.
+9. Clean the runtime root after assertions.
 
-The harness must not import and call the four stages directly.
+Legacy shell rendering does not quote path arguments. The harness must therefore use a whitespace-free runtime root. It may use the system temp directory when that path is whitespace-free; otherwise it must create a temporary `.smoke-runtime` directory beneath the repository root, clean it after the test, and ensure that directory is ignored by Git.
 
-## Python Command Shim
+## PATH-Level Python Dispatch
 
-Production root/stage command specifications intentionally use the literal executable name `python`. The smoke should exploit that existing seam rather than changing production command rendering.
+`tests/smoke/python_dispatch.py` is invoked by the generated platform wrapper named `python`.
 
-The harness creates a temporary executable command named `python`:
+Wrapper forms:
 
-- POSIX: executable shell wrapper or equivalent launcher named `python`.
-- Windows: `python.cmd` (or another command form resolved by `cmd.exe`/`PATHEXT`).
+- POSIX: executable command named `python`.
+- Windows: `python.cmd`, relying on normal `PATHEXT` command resolution.
 
-Behavior:
+The wrapper forwards its argv to `python_dispatch.py` together with the absolute real interpreter path through a test-only environment variable.
+
+Dispatch behavior:
 
 ```text
-if requested script == BertScript/TextClassification_transformers.py:
-    run the deterministic smoke classifier with the forwarded classifier arguments
+if requested script normalizes to BertScript/TextClassification_transformers.py:
+    execute tests/smoke/smoke_classifier.py with the original classifier args
 else:
-    exec the real sys.executable with the original arguments unchanged
+    execute the real sys.executable with the original argv unchanged
 ```
 
-The shim must preserve child exit codes.
+The dispatcher must preserve child exit codes.
 
-The root process itself should be started with `sys.executable`, not the shim. The shim exists only because production child commands deliberately render `python ...`.
+The root process itself is started with `sys.executable`; it is not started through the shim.
 
-No production `SMOKE_MODE`, no production environment branch, and no alternate stage command renderer are introduced.
+No production `SMOKE_MODE`, production environment branch, alternate root renderer, or alternate Stage 2 renderer is introduced.
 
 ## Deterministic Smoke Classifier
 
-Create a test-only script, conceptually:
-
-```text
-tests/smoke/smoke_classifier.py
-```
-
-It accepts the subset of classifier CLI arguments needed from the existing Pytorch command, including at minimum:
+`tests/smoke/smoke_classifier.py` accepts the existing Pytorch classifier command arguments needed by the current renderer, including:
 
 ```text
 -ts
@@ -178,294 +232,279 @@ It accepts the subset of classifier CLI arguments needed from the existing Pytor
 -SaveOptimizer
 ```
 
+Unknown forwarded arguments that are part of the current classifier command should be parsed compatibly rather than causing the smoke backend to diverge from the production command surface.
+
 Behavior:
 
 1. Open the actual generated `<BertDataDir>/test.sql3`.
-2. Read the number/order of rows needed to produce a prediction for each test sample.
+2. Read the actual test-row order/count required for predictions.
 3. Read the actual `<BertDataDir>/TopicAnalysis_LabelList.txt` copied by RunClassfier.
-4. Produce the canonical `<BertDataDir>/test_results.tsv` with exactly one valid label per test row.
-5. Exit 0.
+4. Produce canonical `<BertDataDir>/test_results.tsv` with exactly one valid label for each test row. Deterministic cycling through the sorted label list is sufficient.
+5. Write a test-only invocation marker to the path supplied in `TCP_SMOKE_CLASSIFIER_MARKER` so the harness can prove the model child was intercepted exactly once.
+6. Exit 0.
 
-It must not fabricate downstream combined/visualization artifacts. Stage 3 and Stage 4 must create those themselves.
-
-The smoke classifier tests command/lifecycle integration, not model quality.
+It must not fabricate Stage 3 or Stage 4 artifacts.
 
 ## Committed Smoke Fixtures
 
-Add a small fixture tree under:
+### FixedTest
+
+Path:
 
 ```text
-tests/fixtures/full_pipeline_smoke/
+tests/fixtures/full_pipeline_smoke/fixed_test/Using/
 ```
 
-It contains:
+Use at least two valid production taxonomy labels and at least one short UTF-8 document per label. Prefer labels already represented by repository InfoScore data, such as labels proven by the current runtime taxonomy, rather than inventing test-only taxonomy semantics.
 
-### FixedTest fixture
+Each text must remain shorter than the smoke `MaxSeqLength` so the existing short-message tokenization path returns before loading a Hugging Face tokenizer.
 
-A minimal `Using` tree with at least two taxonomy labels and short UTF-8 documents. Texts must be shorter than the configured `MaxSeqLength` so the current short-message tokenization path can return without loading a Hugging Face tokenizer.
+### Taxonomy
 
-The labels must use the same filename/directory conventions that the real FixedTest loader expects.
+Path:
 
-### Taxonomy fixture
+```text
+tests/fixtures/full_pipeline_smoke/taxonomy/TopicTree_smoke.csv
+```
 
-A minimal topic-tree input accepted by the current production taxonomy loader and containing exactly the smoke labels required by the FixedTest fixture.
+The file must use the exact format accepted by the current production `ClassesTree` loader. Implementation derives the file shape by reading that loader/current taxonomy tests; it must not introduce a test-only taxonomy parser.
 
-The fixture is intentionally small and deterministic; implementation must derive the exact CSV/file shape from the current `ClassesTree` loader rather than introduce a new parser.
+It contains exactly the labels required by the smoke FixedTest plus any structural parent/root row the production loader requires.
 
-### Smoke model metadata fixture
+### Model metadata
 
-A read-only directory containing the metadata required by the real RunClassfier preparation path, especially `TopicAnalysis_LabelList.txt` with the smoke labels.
+Path:
 
-It does not contain real model weights or checkpoints because the expensive model child is intercepted in Layer A.
+```text
+tests/fixtures/full_pipeline_smoke/model/TopicAnalysis_LabelList.txt
+```
 
-## Canonical Hermetic Root Command
+It contains exactly the smoke classifier labels and no weights/checkpoints.
 
-The harness must build the equivalent of:
+## Canonical Layer A Root Command
+
+Use fixed smoke port:
+
+```text
+18059
+```
+
+Use fixed execution ID because every run has a unique temporary WorkPool:
+
+```text
+20990101000000
+```
+
+Equivalent root command:
 
 ```text
 <sys.executable> TCFMain.py
-  -p <reserved smoke port>
+  -p 18059
   -ts y
   -TRVHost False
   -WPRoot <temporary WorkPool>
-  -FTPath <fixture FixedTest/Using>
-  -TopicTreeDir <fixture taxonomy directory>
-  -TopicTreeFiles <fixture taxonomy filename>
-  -mdlDir <fixture smoke model metadata directory>
+  -FTPath <repo>/tests/fixtures/full_pipeline_smoke/fixed_test/Using
+  -TopicTreeDir <repo>/tests/fixtures/full_pipeline_smoke/taxonomy
+  -TopicTreeFiles TopicTree_smoke.csv
+  -mdlDir <repo>/tests/fixtures/full_pipeline_smoke/model
   -mdlType PytorchXLM
   -nProc 1
   -nProcSPC 1
   -RMBertData False
-  -exectime <unique deterministic-format smoke execution id>
+  -exectime 20990101000000
 ```
 
-The exact boolean spelling must match the current CLI parser.
+Boolean spelling must match the existing parser. The port is not opened because `TRVHost=False`; it remains part of the legacy dataset naming contract.
 
-The port must not matter for network serving because `TRVHost=False`; it remains present because the legacy dataset naming contract includes the port.
+## Required Layer A Assertions
 
-## Required Hermetic Assertions
-
-A successful hermetic smoke must prove all of the following:
+A PASS proves:
 
 1. Root process exits 0.
-2. stdout/stderr do not contain an uncaught traceback.
-3. DataConverter child actually ran and produced a non-empty `test.tsv` and `test.sql3` inside the temporary WorkPool.
-4. RunClassfier child actually ran; the smoke classifier child was invoked exactly once for the model inference command.
-5. `test_results.tsv` exists and contains one prediction per test row.
-6. CombineTestResult child actually ran and created its canonical verification/combined result artifacts.
-7. Test_result_Vis child actually ran in non-hosted mode.
-8. Final dataset workspace reaches the canonical `_rdy_for_Spike` suffix.
-9. No `_is_running_DataConverter`, `_is_running_RunClassfier`, `_is_running_CombineTestResult`, or `_is_running_TestResultVis` workspace remains after success.
-10. No mutable output is written into the real/default `WorkPool` selected by repository defaults.
-11. The test cleans its temporary workspace after assertions.
+2. stdout/stderr contain no uncaught traceback.
+3. DataConverter produced non-empty `test.tsv` and `test.sql3` under the temporary WorkPool.
+4. RunClassfier ran as a real child entrypoint.
+5. The classifier marker proves the smoke classifier intercepted exactly one model inference child.
+6. `test_results.tsv` contains exactly one prediction per test row.
+7. CombineTestResult created its canonical verification/combined output artifacts.
+8. Test_result_Vis ran in non-hosted mode.
+9. The final workspace ends with `_rdy_for_Spike`.
+10. No `_is_running_DataConverter`, `_is_running_RunClassfier`, `_is_running_CombineTestResult`, or `_is_running_TestResultVis` workspace remains.
+11. The repository default `WorkPool` directory has the same directory-entry snapshot before and after the smoke; the test must not create the smoke execution dataset there.
+12. The temporary runtime root is removed after assertions.
 
-Assertions should prefer canonical artifacts/suffixes over fragile log text. Log/stage text may be used only as supporting diagnostics.
+Assertions prefer canonical files and suffixes over log text. Log text is diagnostic support only.
 
 ## Root Double-Visualization Rule
 
-The current root compatibility contract deliberately renders/runs two visualization commands. The smoke must not bypass the second invocation.
+The current root compatibility contract renders and executes two visualization commands. The smoke must exercise both; it must not mock, skip, or special-case the second invocation.
 
-If a non-hosted root smoke reveals that the first Stage 4 invocation transitions the workspace to `_rdy_for_Spike` and the second invocation then fails, that is a real integration defect. The implementation must:
+If Layer A reveals that the first non-hosted visualization completes to `_rdy_for_Spike` and the second then fails, treat that as a genuine integration defect:
 
-1. capture the failure with a focused regression test;
-2. reconcile actual intended compatibility behavior;
-3. apply the smallest behavior-preserving correction;
-4. rerun the full root smoke.
+1. add a focused RED reproducing the actual root/runtime failure;
+2. determine the intended compatibility semantics from source/history;
+3. make the smallest behavior-preserving production correction;
+4. rerun Layer A.
 
-The test harness must not silently skip, mock, or special-case the second Stage 4 invocation just to make the smoke pass.
+The harness must never hide this failure.
 
-## Real-Runtime Profile
+## Layer B Root Command
 
-Create an opt-in unittest module conceptually:
+Layer B reuses the same harness without the PATH shim.
 
-```text
-tests/test_full_pipeline_real_runtime.py
-```
-
-Enable only when:
-
-```text
-TCP_RUN_REAL_PIPELINE_SMOKE=1
-```
-
-Required environment variables:
-
-```text
-TCP_REAL_MODEL_DIR
-TCP_REAL_FIXED_TEST_DIR
-```
-
-Optional environment variable:
-
-```text
-TCP_REAL_MODEL_TYPE
-```
-
-Default model type: `PytorchXLM`.
-
-This profile uses the same harness without the Python command shim. It uses the committed taxonomy fixture unless an implementation-proven reason requires an explicit taxonomy override.
-
-It must still use:
+It passes:
 
 ```text
 -TRVHost False
 -WPRoot <temporary WorkPool>
+-FTPath %TCP_REAL_FIXED_TEST_DIR%
+-TopicTreeDir %TCP_REAL_TOPIC_TREE_DIR%
+-TopicTreeFiles %TCP_REAL_TOPIC_TREE_FILES%
+-mdlDir %TCP_REAL_MODEL_DIR%
+-mdlType %TCP_REAL_MODEL_TYPE%
 -nProc 1
 -nProcSPC 1
 -RMBertData False
 ```
 
-The source FixedTest/model directories are read-only inputs from the perspective of the test.
+The source model, FixedTest, and taxonomy directories are inputs; pipeline datasets and stage handoffs remain under the temporary WorkPool.
 
-A real-runtime PASS requires:
+Layer B assertions are the Layer A assertions except there is no classifier interception marker. Instead, diagnostics must prove the production `TextClassification_transformers.py` command ran. Record whether PyTorch selected CUDA or CPU. For the intended H100 acceptance run, completion evidence must record CUDA execution.
 
-- root exit 0;
-- real model inference command executed rather than intercepted;
-- final `_rdy_for_Spike` workspace present;
-- expected classifier/combination/visualization artifacts present;
-- no mutation of the source FixedTest directory;
-- no pipeline dataset created under the repository’s default real WorkPool.
-
-GPU presence is runtime evidence, not an unconditional code prerequisite; the test records whether PyTorch selected CUDA or CPU. For the intended H100 verification, CUDA execution evidence should be included in the completion report.
+The test must snapshot the FixedTest source tree before/after and fail if the pipeline mutates it.
 
 ## Test Discovery Policy
 
-The hermetic full-pipeline smoke is an integration smoke, not a lightweight unit test.
-
-It should be explicitly runnable as:
+Layer A module:
 
 ```text
-python -m unittest tests.test_full_pipeline_smoke
+tests/test_full_pipeline_smoke.py
 ```
 
-To avoid making the normal lightweight suite unexpectedly expensive, the implementation may gate actual subprocess execution behind:
+Default discovery behavior: `SKIP` with message:
 
 ```text
-TCP_RUN_FULL_PIPELINE_SMOKE=1
+set TCP_RUN_FULL_PIPELINE_SMOKE=1 to run isolated root full-pipeline smoke
 ```
 
-If gated, the module must be discovered as a clear skip with an actionable message, not silently pass.
+Execution command:
 
-The project verification workflow must document the explicit command required for release/refactor runtime verification.
+```text
+TCP_RUN_FULL_PIPELINE_SMOKE=1 python -m unittest tests.test_full_pipeline_smoke
+```
 
-The real-runtime profile remains separately opt-in through `TCP_RUN_REAL_PIPELINE_SMOKE=1`.
+Layer B module:
+
+```text
+tests/test_full_pipeline_real_runtime.py
+```
+
+Default discovery behavior: `SKIP` with message explaining the required real-runtime environment variables.
+
+Execution is enabled only by:
+
+```text
+TCP_RUN_REAL_PIPELINE_SMOKE=1
+```
+
+The workflow documents PowerShell and POSIX forms separately.
 
 ## Failure Handling and Diagnostics
 
-The harness must use a finite timeout. A timeout is a smoke failure and must terminate the full subprocess tree as safely as the platform permits.
+Layer A timeout: 180 seconds.
 
-On non-zero root exit, the test report must include:
+Layer B timeout: `TCP_REAL_PIPELINE_TIMEOUT_SECONDS`, default 1800 seconds.
 
-- root command;
-- exit code;
-- tail or bounded sections of stdout/stderr;
-- temporary WorkPool path during test execution;
-- stage/workspace suffixes that remained.
+Timeout is a smoke failure. The harness must terminate the root process and its child process tree as safely as the platform permits.
 
-Do not swallow root fail-fast exceptions or convert non-zero stage results into a passing smoke.
+On failure, include:
+
+- root command with sensitive external paths reduced to diagnostic-safe forms where appropriate;
+- exit code or timeout;
+- bounded stdout/stderr tail;
+- temporary WorkPool path;
+- remaining stage/workspace suffixes;
+- discovered intermediate artifacts.
+
+Do not swallow root fail-fast exceptions or translate non-zero results into PASS.
 
 ## Isolation Guarantees
 
-Layer A and Layer B must both explicitly redirect mutable pipeline state to temporary locations.
+Both layers explicitly redirect mutable pipeline state.
 
-At minimum:
+Required:
 
 - WorkPool root: temporary;
-- execution-specific dataset directory: under temporary WorkPool;
+- dataset directories: under temporary WorkPool;
 - TEMP/TMP/TMPDIR: temporary;
-- HOME: temporary where safe for the platform;
-- Hugging Face caches: temporary for Layer A and preferably temporary for Layer B unless doing so would force a network download; Layer B may preserve an existing cache via an explicitly documented read-only/configured path;
+- HOME: temporary where platform-safe;
+- Hugging Face caches: temporary in Layer A;
 - hosted Dash server: disabled;
-- dataset removal/backup cleanup: disabled until after assertions.
+- dataset removal/backup cleanup: disabled through `-RMBertData False`;
+- Layer A FixedTest/taxonomy/model inputs: committed read-only fixtures;
+- Layer B FixedTest/taxonomy/model inputs: external inputs, not WorkPool destinations.
 
-The smoke must never auto-discover and use a developer’s production FixedTest or model directory in Layer A.
+Layer A must never auto-discover a developer’s production FixedTest or model directory.
 
 ## Documentation and Known-Issue Semantics
 
-Update `.codex/workflows.md` with two explicit commands:
+Update `.codex/workflows.md` with exact PowerShell and POSIX commands for Layer A and Layer B.
+
+### KI-003
+
+Do not resolve `KI-003` when only Layer A is implemented.
+
+Move `KI-003` to Recently Resolved only after all are true on a reviewed/merged baseline:
+
+1. Layer A passes.
+2. Layer B passes using a real model and FixedTest source.
+3. Layer B mutable pipeline state is isolated to a temporary WorkPool.
+4. Evidence records root exit 0 and final `_rdy_for_Spike` completion.
+5. For the intended H100 acceptance run, evidence records CUDA model execution.
+6. `.codex/workflows.md` contains repeatable commands for both layers.
+
+### KI-002
+
+`KI-002` remains Open unless separate work adds and proves isolated root-level WeiTech WorkPool acquisition plus processed-delivery lifecycle coverage.
+
+Layer A/B temporary WorkPool evidence is useful but does not exercise the destructive queue transitions described by KI-002.
+
+## Acceptance Criteria
+
+Implementation is accepted when:
+
+- Layer A executes the real root and all four canonical stage entrypoints as subprocesses;
+- only the model inference child is substituted in Layer A;
+- Layer A uses no production smoke flag/branch;
+- all Layer A mutable pipeline state is isolated;
+- Layer A reaches exit 0 and `_rdy_for_Spike` with canonical artifacts;
+- current double visualization behavior is exercised rather than hidden;
+- Layer B exists and can run the real model path without source edits;
+- both modules default to explicit actionable skips when their opt-in variables are absent;
+- workflows document exact commands;
+- `KI-003` closes only after reviewed Layer B PASS evidence;
+- `KI-002` stays Open unless separately proven.
+
+## Verification Strategy
+
+TDD applies at three levels:
+
+1. Harness tests: root command construction, whitespace-safe runtime root choice, PATH dispatch, timeout/failure diagnostics, artifact discovery, and default WorkPool non-mutation check.
+2. Layer A subprocess smoke with deterministic classifier.
+3. Layer B real-runtime smoke on the actual model/FixedTest/GPU host.
+
+Existing gates remain mandatory:
+
+```text
+python -m unittest discover -s tests
+python -m compileall TCFMain.py TCF_Params DatasetConverter BertScript text_category_profiler
+```
+
+Explicit smoke verification:
 
 ```text
 TCP_RUN_FULL_PIPELINE_SMOKE=1 python -m unittest tests.test_full_pipeline_smoke
 TCP_RUN_REAL_PIPELINE_SMOKE=1 ... python -m unittest tests.test_full_pipeline_real_runtime
 ```
 
-Platform-specific environment syntax may be shown for PowerShell and POSIX shells.
-
-### KI-003
-
-Do not mark `KI-003` resolved when only Layer A is implemented.
-
-`KI-003` can move to Recently Resolved only after all of these are true on a reviewed/merged baseline:
-
-1. Hermetic root full-pipeline smoke passes.
-2. Real-runtime opt-in smoke passes using a real model and FixedTest source.
-3. The real-runtime smoke writes mutable pipeline state only to a temporary WorkPool.
-4. Evidence records root exit 0 and final `_rdy_for_Spike` completion.
-5. The workflow documents how to repeat both profiles.
-
-### KI-002
-
-`KI-002` remains Open after KI-003 unless the implementation separately adds and proves isolated root-level WeiTech WorkPool acquisition and processed-delivery lifecycle coverage.
-
-The new temporary WorkPool smoke is useful evidence for root isolation, but it does not by itself exercise the destructive queue/processed transitions described by KI-002.
-
-## Expected File Shape
-
-Likely new files:
-
-```text
-tests/smoke/__init__.py
-tests/smoke/full_pipeline_harness.py
-tests/smoke/smoke_classifier.py
-tests/test_full_pipeline_smoke.py
-tests/test_full_pipeline_real_runtime.py
-tests/fixtures/full_pipeline_smoke/...
-```
-
-Likely documentation changes:
-
-```text
-.codex/workflows.md
-.codex/known_issues.md
-.codex/memory.md
-```
-
-Production files should not need changes merely to support the smoke.
-
-If the smoke exposes a real integration defect, that defect must be fixed in the smallest relevant production file with a focused RED test before the root smoke is made green.
-
-## Acceptance Criteria
-
-The implementation is accepted when:
-
-- Layer A executes the real root and all four canonical stage entrypoints as subprocesses;
-- only the model inference child is substituted in Layer A;
-- all mutable pipeline state is isolated under temporary paths;
-- Layer A reaches exit 0 and `_rdy_for_Spike` with canonical intermediate/final artifacts;
-- the existing root double-visualization behavior is exercised rather than hidden;
-- Layer B exists as an explicit opt-in real-model smoke using the same root path;
-- Layer B can be run on the user’s model/GPU host without editing source code;
-- documentation records exact repeatable commands;
-- `KI-003` is closed only after real-runtime PASS evidence exists;
-- `KI-002` remains Open unless separately proven.
-
-## Verification Strategy
-
-Implementation should use TDD at three levels:
-
-1. Harness unit tests for command construction, PATH shim dispatch, timeout/failure diagnostics, and artifact discovery.
-2. Hermetic subprocess smoke with deterministic classifier.
-3. Opt-in real-runtime smoke on a host with the actual model/FixedTest environment.
-
-The existing lightweight suite and canonical compile gate remain required regression gates.
-
-At minimum, final implementation verification includes:
-
-```text
-python -m unittest tests.test_full_pipeline_smoke
-python -m unittest tests.test_full_pipeline_real_runtime
-python -m unittest discover -s tests
-python -m compileall TCFMain.py TCF_Params DatasetConverter BertScript text_category_profiler
-```
-
-For the two smoke modules, the report must distinguish PASS from intentional SKIP caused by the opt-in environment variables.
+Completion reports must distinguish PASS from intentional SKIP and must not claim KI-003 resolved until Layer B evidence exists.
