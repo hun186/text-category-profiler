@@ -5,6 +5,7 @@ FixedTest/
 #datasets/
 corpus/
 WorkPool*/
+/.smoke-runtime/
 
 # 模型與訓練成果
 models/

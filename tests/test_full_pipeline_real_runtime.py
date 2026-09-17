@@ -1,9 +1,9 @@
 import os
 from pathlib import Path
-import shutil
 import unittest
 
 from tests.smoke.full_pipeline_harness import (
+    cleanup_runtime_root,
     config_from_real_runtime_environment,
     format_failure,
     run_full_pipeline,
@@ -50,7 +50,7 @@ class FullPipelineRealRuntimeTests(unittest.TestCase):
             for line in cuda_lines[-10:]:
                 print(f"  {line}")
         finally:
-            shutil.rmtree(result.runtime_root, ignore_errors=True)
+            cleanup_runtime_root(result.runtime_root, ROOT)
 
 
 if __name__ == "__main__":
