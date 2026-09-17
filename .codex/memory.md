@@ -1,79 +1,22 @@
 # Project Memory
 
-> 類型：Recent durable context。不是聊天紀錄或完整 changelog；只保存能讓後續任務少走彎路的近期成果。
+> 類型：Recent durable context。只保存能讓後續任務少走彎路的 current-state outcomes，不是 PR 流水帳。
 
 ## Current Focus
 
-- 初始化狀態：`INITIALIZED`
-- 目前工作焦點：維護 Python 文字分類／資料集轉換／BERTScript 結果分析工作區；不要沿用舊 README 的 FastAPI RAG 假設。
-- 最近確認可工作的路徑：文件與靜態盤點；runtime smoke test 尚未確認。
-- 需要延續的相容性／限制：未確認 fixture、模型、工作池與依賴前，不執行會搬移／刪除／批次寫入資料的流程命令。
-- README 判定：`NEEDS_UPDATE`；原文件有實質內容但描述另一個 FastAPI/Elasticsearch RAG agent，已局部改寫為目前 repo 可查證狀態。
+- 初始化狀態：`INITIALIZED`。
+- 維護 Python 文字分類、資料集轉換、BERTScript 結果分析工作區；不要沿用舊 README 的 FastAPI RAG 假設。
+- 未有安全的完整模型／GPU／真實 WorkPool smoke test；不得以 lightweight suite 宣稱完整 runtime 已驗證。
 
-## Recent Outcomes
+## Durable Outcomes
 
-### 2026-09-16 — Classifier and result-combination lifecycle seams
-
-- 目標：完成 Architecture Refactoring Phase 4，為 Stage 2／3 建立可獨立測試的 planning、activation、process-policy 與 filesystem handoff boundaries。
-- 結果：新增 classifier/result-combination frozen plans 與 lifecycle runners；canonical scripts 保留 computation、CLI 與 direct-script composition，且 stages 不直接 import後續 stage implementation。
-- 驗證：Stage 2／3 policy tests、既有 root compatibility tests、DatasetConverter fixture、完整 dependency-light unittest 與 `git diff --check` 通過；repository-wide compileall 仍被既有 `FTP_utils.py` syntax error 阻擋。
-
-### 2026-09-16 — Root orchestration and WorkPool lifecycle boundaries
-
-- 目標：完成 Architecture Refactoring Phase 3，隔離 canonical stage sequencing 與 root filesystem lifecycle ownership。
-- 結果：`PipelineOrchestrator` 只依賴 injected ports；root adapters 透過 frozen `WorkPoolPlan`、`WorkPoolManager`、`DeliveryManager` 與 `LegacyFileSystem` 保留 selection、delivery、ownership 與 final-move policies。
-- 驗證：orchestrator／WorkPool targeted tests、Phase 0–2 contracts、DatasetConverter fixture、完整 dependency-light unittest、compileall 與 `git diff --check`。
-
-### 2026-09-10 — DatasetConverter stage boundary extraction
-
-- 目標：縮小肥大的 canonical converter 單檔，讓 stage planning／activation 有明確模組邊界。
-- 結果：`StagePlan`、`StageContext`、normalization 與 side-effect activation 移至 `DatasetConverter/stage.py`，入口保留 compatibility re-export 與原 CLI orchestration。
-- 驗證：stage／entrypoint／import targeted tests、完整輕量 unittest、`py_compile` 與 `git diff --check`。
-
-### 2026-08-24 — DatasetConverter bounded WeiTech workspace configuration
-
-- 目標：推進 Phase 2，在 copy/rmtree 前正規化 WeiTech work-pool/work-ID path slice。
-- 結果：frozen `WorkspaceConfig` 要求 active work ID 有 pool且為單一安全 component，plan/context/main不再自行join mutable args；下一步是 FixedTest/WeiTech-format input paths。
-- 驗證：config/stage/entrypoint targeted tests、完整輕量 unittest、`py_compile`、isolated import與`git diff --check`。
-
-### 2026-08-24 — DatasetConverter normalized mode configuration
-
-- 目標：推進 Phase 2，將 source/WeiTech/extraction activation 從 mutable argparse namespace 正規化。
-- 結果：frozen `ModeConfig`／`WorkMode` 保留 source priority與ignored extraction-task compatibility，main以context mode啟用WeiTech/extraction；下一步是單一外部 path slice validation。
-- 驗證：config/stage/entrypoint targeted tests、完整輕量 unittest、`py_compile`、isolated import與`git diff --check`。
-
-### 2026-08-24 — DatasetConverter normalized runtime process configuration
-
-- 目標：推進 Phase 2，將 runtime discovery 產生的 process counts 正規化後注入 stage context。
-- 結果：frozen `RuntimeConfig` 驗證兩種 positive integer counts，activation在filesystem/logger前拒絕 invalid injection，main只從context使用 counts；下一步是 mode validation。
-- 驗證：config/stage/entrypoint targeted tests、完整輕量 unittest、`py_compile`、isolated import與`git diff --check`。
-
-### 2026-08-24 — DatasetConverter normalized output configuration
-
-- 目標：推進 Phase 2，停止 main 重複組合 canonical dataset artifact paths。
-- 結果：frozen `OutputConfig` 於 activation 前驗證 path components並產生 main/count/fixed-test stems，plan/context共同擁有；下一步是 dependency-light process configuration。
-- 驗證：config/stage/entrypoint targeted tests、完整輕量 unittest、`py_compile`、isolated import與`git diff --check`。
-
-### 2026-08-24 — DatasetConverter normalized split configuration
-
-- 目標：推進 Phase 2，讓 split ratios 由 normalized config 擁有並在 activation 前驗證。
-- 結果：`SplitConfig` 拒絕非有限、負數與非 unit-sum ratios，`ConverterConfig` 擁有 split slice，main 不再讀 module-level mutable ratio mapping；下一步是最小 typed output config。
-- 驗證：config/stage/entrypoint targeted tests、完整輕量 unittest、`py_compile`、isolated import與`git diff --check`。
-
-### 2026-08-24 — DatasetConverter immutable converter configuration
-
-- 目標：推進 Phase 2，停止 plan/context 擁有 mutable nested converter settings。
-- 結果：frozen `ConverterConfig` 擁有具名 core fields與 recursively frozen reader policies，legacy mapping每次 fresh thaw；normalization在activation前驗證 width/fixed-test bound；下一步是 split/output config與集中 validation。
-- 驗證：round-trip/ownership/validation tests、stage-plan compatibility tests、完整輕量 unittest、`py_compile`、isolated import與`git diff --check`。
-
-### 2026-08-24 — DatasetConverter typed source configuration
-
-- 目標：推進 Phase 2，停止 stage plan/context 直接擁有 mutable root/fixed-test lists。
-- 結果：frozen `SourceConfig`／`SourceMode` 集中 source routing state，plan/context 只以 copy properties提供 legacy lists；下一步是最小 typed converter-settings slice 與集中 validation。
-- 驗證：typed config immutability/mode tests、plan copy-ownership tests、targeted與完整輕量 unittest、`py_compile`、isolated import與`git diff --check`。
-
-### 2026-08-24 — DatasetConverter dependency-light root paths
-
-- 目標：完成上一批的優先事項，讓 stage plan normalization 不再載入 legacy application parameter bootstrap。
-- 結果：debug／DRN／platform／malicious-domain root policy 移至 dependency-light config 並可注入 platform；新增直接執行 normalization 的 side-effect characterization tests；下一步是 typed source config 與隔離 CLI exit-code boundary。
-- 驗證：config/plan/entrypoint targeted tests、isolated rejecting-finder import gate、完整輕量 unittest、`py_compile` 與 `git diff --check`。
+1. Root configuration 已由 frozen `PipelinePlan` 與明確 runtime activation 隔離，import 不解析 process argv 或啟動 filesystem/process runtime。
+2. Root execution 由 `LegacyShellProcessRunner` 保留 `shell=True` invocation，只有 root-owned `RootFailFastPolicy` 套用 fail-fast；Stage 2／4 call-site policies 刻意不同。
+3. `TCFMain.py` 是 compatibility composition root；dependency-light `PipelineOrchestrator` 只經 injected ports 擁有四 stage、可選 SDSMS merge 與 delivery 的順序。
+4. WorkPool lifecycle 由 `WorkPoolManager`／`DeliveryManager` 經 `LegacyFileSystem` 擁有；recording filesystem tests 不等於完整 root/model integration，`KI-002` 維持 Open。
+5. DatasetConverter 以 `StagePlan`／`StageContext`、typed immutable config、`core`／`sources`／`adapters` boundaries 保留 canonical converter 行為與 dependency-light planning。
+6. Stage 2 以 `ClassifierPlan`／lifecycle boundary 擁有 activation、authoritative command rendering、call-site failure policy 與成功 handoff；ML computation 留在 compatibility entrypoint。
+7. Stage 3 以 `ResultCombinationPlan`／lifecycle boundary 擁有 canonical inputs、activation 與成功 handoff；pandas/SQLite computation 留在 compatibility entrypoint。
+8. Stage 4 以 `VisualizationPlan`／dependency-light lifecycle boundary 擁有 ready→running、hosted decision 與成功 running→spike-ready handoff；Dash layouts、callbacks 與 algorithms 留在 compatibility entrypoint。
+9. AST architecture guards保護 shared boundaries 不反向 import stage implementations、stages 不控制後續 stage、DatasetConverter split 與五個 legacy entrypoint paths。
+10. Dependency-light unittest 與 DatasetConverter fixture 可重複執行；完整 pipeline smoke gap (`KI-003`) 與兩個既有 syntax defects 所造成的 compileall blocker (`KI-004`) 仍存在。

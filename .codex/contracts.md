@@ -63,12 +63,13 @@
 - 狀態：Draft
 - 權威定義：`BertScript/RunClassfier.py`、`BertScript/CombineTestResult.py`、`BertScript/Test_result_Vis.py`、`TCF_Params/TCFParameters.py` 的 output filename patterns。
 - Producer／Owner：RunClassfier 與 CombineTestResult stages。
-- Lifecycle：Stage 3 planning 記錄 canonical DB glob、label、test DB 與 result TSV；activation 保留 `_rdy_for_CombineTestResult` → `_is_running_CombineTestResult`，只有 computation 成功後才 rename 為 `_rdy_for_TestResultVis`。
+- Lifecycle：Stage 3 planning 記錄 canonical DB glob、label、test DB 與 result TSV；activation 保留 `_rdy_for_CombineTestResult` → `_is_running_CombineTestResult`，只有 computation 成功後才 rename 為 `_rdy_for_TestResultVis`。Stage 4 planning 不搬移目錄；activation 保留 `_rdy_for_TestResultVis` → `_is_running_TestResultVis`，application、可選 hosted server 與 validation 成功後才交付 `_rdy_for_Spike`。
 - Consumer：Test_result_Vis、BackupAndClean 與外部工作池 consumer。
 - 輸入：模型預測結果、label list、dataset DB。
 - 輸出：`DFPreambleCols_df_ALL*`、`dataset_total_with_filename_FixedTest.sql3`、`test.sql3`、`test.tsv`，SDSMS 任務另包含 `SDSMS.*` patterns。
 - 驗證與約束：每個 `PipelinePlan` 擁有 fresh immutable pattern tuple；legacy `FinalOfferedOutputFNrePatList` 保留為 import-safe compatibility list，activation 以當次內容更新。`BackupAndClean` 對一般任務使用 base patterns，對 SDSMS／SDSMS_Prediction 使用 base 加 `SDSMS.*`；修改需同步外部工作池 consumer。
 - 錯誤／失敗語意：備份／搬移失敗目前多為 print/log；完整 rollback 待確認。
+- Stage 4 runtime：`VisualizationPlan` 保存 workspace、host/port 與 lifecycle-relevant WeiTech options；non-hosted 仍執行 data/application processing但不啟動 server。Summary command returned non-zero 仍繼續 artifact processing，Python invocation exception 則傳播；upload callback `CommandExecutor` 仍內部捕捉 child non-zero，兩者都不套用 root `RootFailFastPolicy`。
 - 版本與相容性：無明確版本；破壞性檔名變更需 migration plan。
 - 安全與敏感資訊：輸出可能包含原文、預測、分數與內部任務 ID；不得提交真實輸出。
 - 契約測試：待建立 fixture。

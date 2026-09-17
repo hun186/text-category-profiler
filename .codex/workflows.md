@@ -36,7 +36,8 @@
 | CLI parser／參數 | 檢查 `text_category_profiler/TCF_utils.py` 與 `TCFMain.py` stage command 組裝一致 | 參數影響工作池、模型、輸出路徑或外部服務 |
 | 資料轉換 | `python -m unittest tests.test_dataconverter_fixture_integration`；使用 repository 小型 fixture、process workers 與 temporary output，不接觸真實工作池 | 變更 pandas／SQLite output adapter、完整 CLI bootstrap、fixed-test／ES 或 handoff 時仍需擴大驗證 |
 | 分類器 | 需要已確認模型／fixture 後執行 RunClassfier smoke test；目前待確認 | 影響模型格式、GPU/CPU resource gate 或 output contract |
-| 視覺化 | 靜態檢查＋若可執行再做 browser/screenshot；目前待確認 | layout、Dash callback 或部署設定改變 |
+| 視覺化 lifecycle | `python -m unittest tests.test_visualization_stage tests.test_tcf_main_characterization tests.test_stage_commands`；`python -m py_compile BertScript/Test_result_Vis.py BertScript/visualization_stage.py` | layout、Dash callback 或部署設定改變時才需 browser/screenshot；lifecycle tests 不啟動 Dash server |
+| Architecture boundaries | `python -m unittest tests.test_package_layout tests.test_project_docs` | import arrows、legacy entrypoints、DatasetConverter boundaries 或 current-state docs 改變 |
 | 匯入外部服務 | 先以 dry-run 或 mock 明確標示；不得把真實 DB/ES 寫入當 smoke test | 會連線 SQL Server、Elasticsearch 或批次寫入資料 |
 
 ## 測試資料與外部服務
@@ -52,6 +53,7 @@
 | --- | --- | --- | --- |
 | 缺少 pandas／模型等完整 runtime 依賴 | `python -m unittest tests.test_dataconverter_fixture_integration` | `python -m unittest discover -s tests` | 可證明隔離的 source → worker → split → TSV 契約，但不能證明完整 legacy CLI、pandas／SQLite 或工作池 handoff |
 | 流程命令可能搬移／刪除工作池資料 | 在隔離 fixture 中執行 | 僅檢查 command assembly 與 contract 文件 | 不能覆蓋 I/O side effects |
+| Repository-wide compile | `python -m compileall TCFMain.py TCF_Params DatasetConverter BertScript text_category_profiler` | 對修改模組另跑 `py_compile` | 目前會因未修改的 `DatasetConverter/sampleHandler_InfoScoreTable.py` 與 `text_category_profiler/integrations/FTP_utils.py` 既有 syntax errors 回傳 non-zero；不得誤報為通過 |
 
 ## 完成前檢查
 

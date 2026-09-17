@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+from BertScript import visualization_stage
 
 # Direct script execution keeps BertScript/ as the first import location; add
 # only the repository root instead of probing external legacy module paths.
@@ -3476,41 +3477,23 @@ def serve_layout():
 
 
 
-if __name__=='__main__':
-    setproctitle.setproctitle(f'CZJTestResultVis')
-    #print("=*50")
-    #print(os.getcwd().split(os.path.sep)[-1])
-    if os.getcwd().split(os.path.sep)[-1] in [
-            "DatasetConverter","BertScript"]:
-        os.chdir("../")
-        print(f"Change working directory to {os.getcwd()}")
-    args = ClassfierOptionParser()
-    BertDatasetSubDir,outputDir = datasetDirOutputDirPickers(
-        args=args,rdy_for_stage="TestResultVis").proc()
 
-    #raise Exception
-    #ClassTable
-    
-    if BertDatasetSubDir == None:
-        MES = "-"*50+"\n"
-        MES += f"In {args.WorkPoolROOT}, There is no BertDatasetSubDir ready for TestResultVis! ABORT!"
-        MPlogger().logW(MES)
-        raise Exception
-    NewBertDatasetSubDir = BertDatasetSubDir.replace(
-        "_rdy_for_TestResultVis","_is_running_TestResultVis")
-    #NewBertDatasetSubDir += BertDatasetSubDir + "_is_running_DataConverter"
-    os.rename(BertDatasetSubDir,NewBertDatasetSubDir)    
-    stage_banner("TestResultVis", detail=f"WorkDir: {NewBertDatasetSubDir}")
-    MES = f"TestResultVis started. WorkDir is {NewBertDatasetSubDir}."
-    BertDatasetSubDir = NewBertDatasetSubDir
+
+def _run_visualization_application(running_workspace, plan):
+    global ACPort, AutoISlbd, AutoISubd, AutoSelectSubTopics, BMKeys, BertDatasetSubDir, CMD, ColPosDict, ColorDF, ColorDF_json, ColorDict, Colortable_style_data_conditional, CountArticleComposition, CutRange, DF_ALL_OPTFN, DF_ALL_PreambleColsFN, DF_All_sql3File, ExemptLabelList, FN, FileLabelList, FileListPat, FilteredDF, FilteredDF_json, FixedTestDir, FixedTestFileBound, ISMarks, InfoScoreSumLowerBound, InfoScoreSumUpperBound, InfoScoreTable, Initial_InfoScore_Range_Bar, InputXLS, KeyWordDataArray, LabelList, LenSrcList, ListOnlyOccuringLabels, MES, MPLOGGER, MissionDataArray, OfferingDir, OnlyLettersDigitsLabels, PAGE_SIZE, ParTopicsDict, PatList, PiecesBound, PreambleCols, PreambleColsDefault, SelectedFNPatList, ShowingFile, SimilarityMethod, SrcList, SubTopicsDict, SumFileDict, SumOptPath, SumPath, SumText, SystemMessage, TextSummarization, TreeBaseFNList, TwinGroup, TwinsAfterSort, TwinsColorDict, TwinsHighScoreNoUBD, UploadedFilename, VDDFSortParams, VDT_DFBuilder, VisDatatable_page_action, VisSelfFinishedState, WeiTechFormatJob, args, cms, colorIndex, cols, controls1, controls2, ct, current_page, current_page_max, datasetDir, df, df_json, file, freeGPUmemReq, hide_dir_setting, hostIP, key, label, line, loadPreComputed_DF_ALL, logfile, misBin, mission, modelType, nFigs, nLeftFileChunk, nProcess, nSamples, nScoringSegUPD, new_WeiTechFormatInputPATH, new_WeiTechFormatOutputPATH, outputDir, page_current, query, r, selFLDir, selFLDirList, selFN, selFNList, selectedLabels, selectedLabels_json, sql3File, sqlCols, start_time, style_cell, style_cell_conditional, style_data_conditional, tN, tooltip_data, tpcTree, x, y
+    BertDatasetSubDir = running_workspace
+    outputDir = plan.output_dir
+    stage_banner("TestResultVis", detail=f"WorkDir: {BertDatasetSubDir}")
+    MES = f"TestResultVis started. WorkDir is {BertDatasetSubDir}."
+    BertDatasetSubDir = BertDatasetSubDir
     MPLOGGER = MPlogger(logSubDir=f"{BertDatasetSubDir}/logs")
     MPLOGGER.logW(MES)
-    
+
     datasetDir = BertDatasetSubDir
     #datasetDirDict = {
     #    "default":BertDatasetSubDir
     #    }
-    
+
     for logfile in ["similarity.log","similarity_Match.log",
                     "tokens result.txt",
                     "similarity_Match_TextSim.log",
@@ -3546,7 +3529,7 @@ if __name__=='__main__':
     if "linux" in platform.system().lower():
         loadPreComputed_DF_ALL = False    
     start_time = time.time()
-    
+
     nProcess = mp.cpu_count()-1
     nProcess = int(mp.cpu_count()/3)
     nProcess = multicoreJob().ComputeNProcess()
@@ -3621,9 +3604,9 @@ if __name__=='__main__':
     MKDIR(OfferingDir)
     #print("datasetDir",datasetDir)
     #raise Exception
-    
+
     sql3File = os.path.join(datasetDir,"test_results_verification.sql3")
-    
+
     #sql3File = "test_results_verification_Large.sql3"
     nFigs = 4
     page_current = 0
@@ -3636,7 +3619,7 @@ if __name__=='__main__':
     #UploadFinishedState = False
     UploadedFilename = ""
     AutoSelectSubTopics = "No"
-    
+
     '''
     DBTreeFile = "C:/Users/*/Documents/TACA/DB/ZMRAND/Imported/TopicTree.csv"
     if os.path.isfile(DBTreeFile) == True:
@@ -3646,11 +3629,11 @@ if __name__=='__main__':
     '''
     #設定是否轉換標籤，只留大小寫字母及數字
     OnlyLettersDigitsLabels = False
-    
+
     #TreeFile = GetTreeFilePath()
     #tpcTree = LoadTree(
         #TreeFile,OnlyLettersDigitsLabels= OnlyLettersDigitsLabels)
-    
+
     #InfoScoreTable = BuildInfoScoreTable(
         #TreeFile,OnlyLettersDigitsLabels,OutputPath = datasetDir)
 
@@ -3661,14 +3644,14 @@ if __name__=='__main__':
             OutputPath = BertDatasetSubDir)
     SubTopicsDict = BuildSubTopicsDict(tpcTree)
     ParTopicsDict = BuildSubTopicsDict([[y,x] for [x,y] in tpcTree])
-    
+
     #VisDatatable_page_action使用custom時，搭配filter_action=custom時，
     #跳頁可能會自動回到第一頁。
     #VisDatatable_page_action使用native時，
     #第二頁後的tooltip位置可能會出現異常，沒有更新到正確位置。
     VisDatatable_page_action = 'custom'
     #VisDatatable_page_action = 'native'
-    
+
     SrcList = GetSrcList(sql3File)
     sqlCols=['PartNO','pred_Type','text']
     LenSrcList = len(SrcList)
@@ -3677,10 +3660,10 @@ if __name__=='__main__':
         nLeftFileChunk = 120000//LenSrcList
     else:
         nLeftFileChunk = 0
-    
+
     '''
     nLeftFileChunk = 0
-    
+
     FixedTestDir = f"../FixedTest/FixedTest_{args.TRVPort}"
     selFLDirList = [FixedTestDir,datasetDir]
     selFNList = ["select.txt","ESselect.tsv"]
@@ -3699,7 +3682,7 @@ if __name__=='__main__':
     #print("In main init, BinMissionDict", BinMissionDict)
     #raise Exception
 
-    
+
     if os.path.isfile("證券報告.xlsx"):
         InputXLS = "證券報告.xlsx"
     elif os.path.isfile("BertScript/證券報告.xlsx"):
@@ -3739,12 +3722,12 @@ if __name__=='__main__':
         except Exception as e:
             MES = f"When loading mission {mission} in Test_result_Vis.py, the following error occurs:\n{e}\n"
             MPLOGGER.logW(MES,logFile="Exception.log")
-        
-        
+
+
     #print("MissionDataArray",MissionDataArray)
     key_values("Active mission bins", [("count", len(BinMissionDict)), ("keys", summarize_sequence(BinMissionDict.keys(), limit=12))], icon="·")
     #raise Exception
-    
+
     KeyWordDataArray = [{"Key Word":"一路"},]
 
     #移去BinMissionDict中active設定為False的部份，其餘的納入輸出。
@@ -3754,13 +3737,13 @@ if __name__=='__main__':
             continue
         PreambleCols.append(key)
         PreambleColsDefault[key] = ""
-        
+
 
     #偵測先前是否已有計算過此dataset的完整df之sql3存檔，有的話，直接載入，
     #沒有的話，進行計算，並存檔，供未來載用。
     DF_ALL_OPTFN = os.path.join(datasetDir,"DFPreambleCols_df_ALL")
     DF_ALL_PreambleColsFN = DF_ALL_OPTFN+".sql3"
-    
+
     if os.path.isfile(DF_ALL_PreambleColsFN) and loadPreComputed_DF_ALL:
         print("Found DFPreambleCols_df_ALL Files, loading.")
         df = dfFromSQLite3(DF_ALL_PreambleColsFN)
@@ -3842,11 +3825,11 @@ if __name__=='__main__':
             ExportDFAllToDatabase(
                 df,ExportDatabasePath = args.ExportDatabasePath,
                 ExecutionTime = args.ExecutionTime,nProcess=nProcess)
-    
+
 
     LabelList = []
     ExemptLabelList = [x for x in InfoScoreTable.keys() if x.startswith("Exempt-")]
-    
+
     CutRange = [0, 3]
     try:
         open("ThisIsAFileToTestWritablity.txt",'wt').close()
@@ -3860,9 +3843,9 @@ if __name__=='__main__':
         ("rows", len(df)),
         ("serialized in memory", df_json != '{}'),
     ], icon="·")
-    
+
     FilteredDF = df
-    
+
     current_page_max = len(FilteredDF)//PAGE_SIZE + (len(FilteredDF)%PAGE_SIZE !=0)
     #FilteredDF_OPTFN = ""
     #PartCol = PreambleCols+[str(i) for i in range(CutRange[0],CutRange[1])]
@@ -3878,7 +3861,7 @@ if __name__=='__main__':
             max=30, label="CutRange", step=1,
             value = CutRange),
     ]
-    
+
     Initial_InfoScore_Range_Bar = Build_InfoScore_Range_Bar(df)
     if args.AutoInfoScoreBound == True:
         AutoISlbd,AutoISubd,ISMarks = ISMarksAnalysis(df)
@@ -3891,7 +3874,7 @@ if __name__=='__main__':
         )
         dataframe_summary(df, label="Filtered results", max_rows=3)
         #dfOutputer(df[PreambleCols],DF_OPTFN).run()
-        
+
     MES = "As args.AutoInfoScoreBound is True, the df is refined with \n"
     MES += f"InfoScore Range=[{AutoISlbd}, {AutoISubd}]"
     MPLOGGER.logW(MES=MES,logFile="Test_result_Vis.log")
@@ -3912,12 +3895,12 @@ if __name__=='__main__':
         FileLabelList = sqlite3Query(
             sql3File, query = query,ListForm = True)
         LabelList.extend(FileLabelList)
-    
+
     #LabelList = sorted(set(LabelList), key=lambda L: (L.lower(), L))
         LabelList = sorted(set(LabelList), key=lambda L: L.lower())
     LabelList.extend(ExemptLabelList)
     print("LabelList", LabelList)
-    
+
     PiecesBound = [1, 100]
     controls2 = [
         rc.CustomRangeSlider(
@@ -3942,7 +3925,7 @@ if __name__=='__main__':
             colorIndex += 1
             colorIndex = colorIndex % len(cms)
     print("ColorDict", ColorDict)
-    
+
     #ColorDF = ColorDictToColorDF(ColorDict)
     #ColorDF = BuildColorDF(ColorDict,ClassTable)
     ColorDF,ColorDF_json,Colortable_style_data_conditional = \
@@ -3951,7 +3934,7 @@ if __name__=='__main__':
     if "Twins" in df.columns:
         TwinsColorDict = {}
         #print("df[Twins].unique()",df["Twins"].unique())
-        
+
         for ct,TwinGroup in enumerate(sorted(df["Twins"].unique())):
             if TwinGroup =="":
                 continue
@@ -3963,15 +3946,15 @@ if __name__=='__main__':
     selectedLabels_json = json.dumps(selectedLabels, indent = 4)
     style_data_conditional,style_cell_conditional,style_cell,tooltip_data \
         = Build_VisDatatable_style(df, ColorDict, BinMissionDict)
-        
-        
+
+
     from Test_result_Vis_layout import Build_Upload_Block
     from Test_result_Vis_layout import Build_Finished_Task_Block
 
     app.layout = serve_layout
     #app.layout = serve_layout(datasetDir)
-    
-    
+
+
     #args = ClassfierOptionParser()
     if args.public == True:
         hostIP = '0.0.0.0'
@@ -3987,7 +3970,7 @@ if __name__=='__main__':
         print(f"Running CMD: {KillOldServerPSCMD}")
         os.system(KillOldServerPSCMD)
     '''
-#%%針對已切好之高分文本，執行文本摘要功能，並反存回sqlite資料庫
+    #%%針對已切好之高分文本，執行文本摘要功能，並反存回sqlite資料庫
     if args.TextSummarization == True:
         SumPath = os.path.join(BertDatasetSubDir,"SummarizingSource")
         SumOptPath = os.path.join(BertDatasetSubDir,"Summary")
@@ -4005,14 +3988,14 @@ if __name__=='__main__':
             ).proc()
         #將工作目錄下的SumPath下的文本進行摘要。
         #SummarizingPathText(SummarizingSourcePath=SumPath,outputPath=BertDatasetSubDir)
-        
+
         CMD = f"python GenerativeLanguageModel/GenerativeSummary.py"
         #CMD += convert_to_args_str(args)
         CMD += f" -SumPath {SumPath}"
         CMD += f" -SumOptPath {SumOptPath}"
         print("Generative Summary CMD:\n",CMD)
         os.system(CMD)
-    
+
         MES = f"Finished summarizing the text in {SumPath} for {len(OSWALK(SumPath))} files"
         MPLOGGER.logW(MES=MES,logFile="Test_result_Vis.log")
         DF_All_sql3File = os.path.join(BertDatasetSubDir,"DFPreambleCols_df_ALL.sql3")
@@ -4044,34 +4027,61 @@ if __name__=='__main__':
             #print("query",query)
             sqlite3Query(DF_All_sql3File, query = query)
         df = dfFromSQLite3(DF_All_sql3File)
-#%%部署web服務   
-    MES = f"args.TRVWebHost is setted as {args.TRVWebHost}.\n"
-    if args.TRVWebHost == True:
-        is_windows = "windows" in platform.system().lower()
-        ssl_context = None if is_windows else "adhoc"
-        clearPort(process_name=f"TRV{args.TRVPort}")
-        time.sleep(2)
-        setproctitle.setproctitle(f'TRV{args.TRVPort}')
-        
-        # 定義統一的啟動函式，支援 Dash 新舊版本
-        run_app = app.run if hasattr(app, "run") else app.run_server
-        
-        # 使用統一函式啟動
-        run_app(debug=True, use_reloader=False, 
-                port = ACPort, host = hostIP,
-                ssl_context=ssl_context)
-        MES += f"The site is hosted on \n {hostIP}:{ACPort}."
-    else:        
-        MES = "PGM will only output Full_bar_df and not to host the web site."
-    MPLOGGER.logW(MES=MES,logFile="Test_result_Vis.log")
-    
-    NewBertDatasetSubDir = BertDatasetSubDir.replace(
-        "_is_running_TestResultVis","_rdy_for_Spike")
-    os.rename(BertDatasetSubDir,NewBertDatasetSubDir)    
+
+
+def _start_visualization_server(plan):
+    global MES
+    clearPort(process_name=plan.process_name)
+    time.sleep(2)
+    setproctitle.setproctitle(plan.process_name)
+    run_app = app.run if hasattr(app, "run") else app.run_server
+    run_app(
+        debug=plan.debug,
+        use_reloader=plan.use_reloader,
+        port=plan.port,
+        host=plan.host,
+        ssl_context=plan.ssl_context,
+    )
+    MES += f"The site is hosted on \n {plan.host}:{plan.port}."
+
+
+def _validate_visualization(_running_workspace):
+    return True
+
+
+def main(argv=None, stage_api=visualization_stage):
+    setproctitle.setproctitle('CZJTestResultVis')
+    if os.getcwd().split(os.path.sep)[-1] in ["DatasetConverter", "BertScript"]:
+        os.chdir("../")
+        print(f"Change working directory to {os.getcwd()}")
+    args = ClassfierOptionParser(argv) if argv is not None else ClassfierOptionParser()
+    ready_workspace, output_dir = datasetDirOutputDirPickers(
+        args=args, rdy_for_stage="TestResultVis").proc()
+    if ready_workspace is None:
+        message = "-" * 50 + "\n"
+        message += (f"In {args.WorkPoolROOT}, There is no BertDatasetSubDir "
+                    "ready for TestResultVis! ABORT!")
+        MPlogger().logW(message)
+        raise Exception
+    plan = stage_api.build_visualization_plan(args, ready_workspace, output_dir)
+    completed_workspace = stage_api.run_visualization_stage(
+        plan,
+        application=lambda running: _run_visualization_application(running, plan),
+        start_server=_start_visualization_server,
+        validate=_validate_visualization,
+    )
+    if not plan.hosted:
+        message = "PGM will only output Full_bar_df and not to host the web site."
+    else:
+        message = MES
+    MPLOGGER.logW(message, logFile="Test_result_Vis.log")
     stage_done("TestResultVis")
-    MES = f"TestResultVis is finished. Rename {BertDatasetSubDir} as {NewBertDatasetSubDir}"
-    MPLOGGER = MPlogger(logSubDir=f"{NewBertDatasetSubDir}/logs")
-    MPLOGGER.logW(MES)
-    #os.system("pause")
-    
-#項次 領域 項目 單位 日期 備註
+    message = (f"TestResultVis is finished. Rename {plan.running_workspace} "
+               f"as {completed_workspace}")
+    completion_logger = MPlogger(logSubDir=f"{completed_workspace}/logs")
+    completion_logger.logW(message)
+    return completed_workspace
+
+
+if __name__ == "__main__":
+    main()
