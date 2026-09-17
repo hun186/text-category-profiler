@@ -46,7 +46,7 @@
 
 ### Layer A：隔離的 real-root smoke
 
-Layer A 執行真實 `TCFMain.py` 與 Stage 1–4 child entrypoints，僅以 PATH dispatcher 替代 inference child。POSIX：
+Layer A 執行真實 `TCFMain.py` 與 Stage 1–4 child entrypoints，先將 committed model metadata 複製到 temporary writable runtime state，再僅以 PATH dispatcher 替代 inference child。POSIX：
 
 ```bash
 TCP_RUN_FULL_PIPELINE_SMOKE=1 python -m unittest tests.test_full_pipeline_smoke

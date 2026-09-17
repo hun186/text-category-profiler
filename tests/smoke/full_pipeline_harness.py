@@ -181,9 +181,12 @@ def run_full_pipeline(config: SmokeConfig, *, use_model_facade: bool = False) ->
     runtime_root = _runtime_root(config)
     workpool_root = runtime_root / "WorkPool"
     workpool_root.mkdir(parents=True)
-    if use_model_facade:
-        if config.intercept_classifier:
-            raise ValueError("a real-model facade cannot be used with classifier interception")
+    if config.intercept_classifier:
+        config = replace(
+            config,
+            model_dir=create_intercepted_model_copy(config.model_dir, runtime_root),
+        )
+    elif use_model_facade:
         config = replace(config, model_dir=create_model_facade(config.model_dir, runtime_root))
     marker = runtime_root / "classifier-invocations.jsonl" if config.intercept_classifier else None
     command = build_root_command(config, workpool_root)
@@ -220,6 +223,24 @@ def format_failure(result: SmokeResult, *, tail_lines: int = 120) -> str:
         "stdout (tail):\n" + _tail(result.stdout, tail_lines),
         "stderr (tail):\n" + _tail(result.stderr, tail_lines),
     ))
+
+
+def create_intercepted_model_copy(source_model_dir: Path, runtime_root: Path) -> Path:
+    """Copy Layer A model metadata into writable, disposable runtime state."""
+    destination = runtime_root / "model-fixture"
+    shutil.copytree(source_model_dir, destination)
+    return destination
+
+
+def cleanup_runtime_root(runtime_root: Path, repository_root: Path) -> None:
+    """Remove one smoke runtime and an empty repository fallback parent."""
+    shutil.rmtree(runtime_root, ignore_errors=True)
+    fallback_parent = repository_root / ".smoke-runtime"
+    if fallback_parent.is_dir():
+        try:
+            fallback_parent.rmdir()
+        except OSError:
+            pass
 
 
 def create_model_facade(source_model_dir: Path, runtime_root: Path) -> Path:

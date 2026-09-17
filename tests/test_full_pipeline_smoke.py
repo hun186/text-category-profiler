@@ -1,13 +1,14 @@
 import os
 from pathlib import Path
-import shutil
 import sqlite3
 import unittest
 
 from tests.smoke.full_pipeline_harness import (
     SmokeConfig,
+    cleanup_runtime_root,
     format_failure,
     run_full_pipeline,
+    snapshot_regular_files,
 )
 
 
@@ -33,6 +34,8 @@ class FullPipelineSmokeTests(unittest.TestCase):
     def test_real_root_pipeline_reaches_spike_handoff(self):
         default_workpool = ROOT / "WorkPool"
         before = _directory_entries(default_workpool)
+        source_model = FIXTURES / "model"
+        model_before = snapshot_regular_files(source_model)
         result = run_full_pipeline(
             SmokeConfig(
                 repository_root=ROOT,
@@ -83,7 +86,10 @@ class FullPipelineSmokeTests(unittest.TestCase):
             self.assertTrue(visualization_log.is_file(), diagnostics)
             self.assertEqual(_directory_entries(default_workpool), before, diagnostics)
         finally:
-            shutil.rmtree(result.runtime_root, ignore_errors=True)
+            try:
+                self.assertEqual(snapshot_regular_files(source_model), model_before)
+            finally:
+                cleanup_runtime_root(result.runtime_root, ROOT)
 
 
 if __name__ == "__main__":

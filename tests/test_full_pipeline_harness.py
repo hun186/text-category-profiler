@@ -12,7 +12,7 @@ from unittest import mock
 from tests.smoke.full_pipeline_harness import (
     RealRuntimeConfigurationError, SmokeConfig, SmokeResult,
     build_isolated_environment, build_root_command,
-    config_from_real_runtime_environment, create_model_facade,
+    cleanup_runtime_root, config_from_real_runtime_environment, create_model_facade,
     create_python_wrapper, format_failure, run_full_pipeline,
     snapshot_regular_files,
 )
@@ -81,8 +81,54 @@ class FullPipelineHarnessTests(unittest.TestCase):
                 result = run_full_pipeline(self.make_config(root, intercept_classifier=False))
             self.assertEqual(result.returncode, 0)
             self.assertTrue(result.runtime_root.is_relative_to(root / ".smoke-runtime"))
-            shutil.rmtree(result.runtime_root)
+            cleanup_runtime_root(result.runtime_root, root)
             self.assertFalse(result.runtime_root.exists())
+            self.assertFalse((root / ".smoke-runtime").exists())
+
+    def test_cleanup_runtime_root_preserves_nonempty_fallback_parent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            runtime_root = root / ".smoke-runtime" / "owned-runtime"
+            runtime_root.mkdir(parents=True)
+            unrelated = root / ".smoke-runtime" / "unrelated"
+            unrelated.write_text("keep", encoding="utf-8")
+
+            cleanup_runtime_root(runtime_root, root)
+
+            self.assertFalse(runtime_root.exists())
+            self.assertEqual(unrelated.read_text(encoding="utf-8"), "keep")
+
+    def test_intercepted_run_uses_writable_copy_without_mutating_source_model(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source_model = root / "model"
+            source_model.mkdir()
+            label_list = source_model / "TopicAnalysis_LabelList.txt"
+            label_list.write_text("Aloha\n", encoding="utf-8")
+            source_before = snapshot_regular_files(source_model)
+            (root / "TCFMain.py").write_text(
+                "import pathlib, sys\n"
+                "model = pathlib.Path(sys.argv[sys.argv.index('-mdlDir') + 1])\n"
+                "(model / 'UsingMark.txt').write_text('runtime', encoding='utf-8')\n",
+                encoding="utf-8",
+            )
+
+            result = run_full_pipeline(self.make_config(root, model_dir=source_model))
+            try:
+                effective_model = Path(
+                    result.command[result.command.index("-mdlDir") + 1]
+                )
+                self.assertFalse((source_model / "UsingMark.txt").exists())
+                self.assertEqual(snapshot_regular_files(source_model), source_before)
+                self.assertTrue(effective_model.is_relative_to(result.runtime_root))
+                self.assertEqual(
+                    (effective_model / "TopicAnalysis_LabelList.txt").read_text(
+                        encoding="utf-8"
+                    ),
+                    "Aloha\n",
+                )
+            finally:
+                cleanup_runtime_root(result.runtime_root, root)
 
     def _dispatch(self, root, child, classifier, *arguments):
         environment = os.environ.copy()
@@ -133,6 +179,7 @@ class FullPipelineHarnessTests(unittest.TestCase):
                 "time.sleep(60)\n", encoding="utf-8")
             result = run_full_pipeline(self.make_config(root, timeout_seconds=0.2,
                                                         intercept_classifier=False))
+            self.addCleanup(cleanup_runtime_root, result.runtime_root, root)
             self.assertTrue(result.timed_out)
             pid = int((result.workpool_root / "pid").read_text())
             process_status = Path(f"/proc/{pid}/status")
