@@ -85,6 +85,7 @@ from DatasetConverter.core.stage_utils import show_elapsed_time
 from DatasetConverter.core.stage_utils import split_list
 from DatasetConverter.core.stage_utils import walk_files
 from DatasetConverter.adapters.pipeline_source import connect_task
+from DatasetConverter.adapters.pipeline_source import pick_dataset_directories
 from DatasetConverter.adapters.pipeline_source import resolve_base_model_checkpoint
 from DatasetConverter.adapters.pipeline_source import restricted_labels
 
@@ -124,6 +125,7 @@ from DatasetConverter.adapters.runtime_source import create_logger as MPlogger
 from DatasetConverter.adapters.runtime_source import create_multicore_job as multicoreJob
 from DatasetConverter.adapters.runtime_source import dataframe_from_rows as DictRowsListToDF
 from DatasetConverter.adapters.runtime_source import fetch_elasticsearch_data as getESData
+from text_category_profiler.core.log_display import info
 from text_category_profiler.core.log_display import key_values
 from text_category_profiler.core.log_display import section
 from text_category_profiler.core.log_display import stage_done
