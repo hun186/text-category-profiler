@@ -302,34 +302,16 @@ def SummarizePerformance():
     #SaveFigToPNG(fig, OFNM)
     plt.close('all')
 
-def _legacy_main(argv=None):
-
-        setproctitle.setproctitle('CZJCombineTestResult')
-        if os.getcwd().split(os.path.sep)[-1] in [
-                "DatasetConverter","BertScript"]:
-            os.chdir("../")
-            print(f"Change working directory to {os.getcwd()}")
-        args = ClassfierOptionParser(argv)
-        BertDatasetSubDir,outputDir = datasetDirOutputDirPickers(
-            args=args,rdy_for_stage="CombineTestResult").proc()
-        if BertDatasetSubDir == None:
-            MES = "-"*50+"\n"
-            MES += f"In {args.WorkPoolROOT}, There is no BertDatasetSubDir ready for CombineTestResult! ABORT!"
-            MPlogger().logW(MES)
-            raise Exception
-
-
-        NewBertDatasetSubDir = BertDatasetSubDir.replace(
-            "_rdy_for_CombineTestResult","_is_running_CombineTestResult")
-        #NewBertDatasetSubDir += BertDatasetSubDir + "_is_running_DataConverter"
-        os.rename(BertDatasetSubDir,NewBertDatasetSubDir)
-        stage_banner("CombineTestResult", detail=f"WorkDir: {NewBertDatasetSubDir}")
-        MES = f"CombineTestResult started. WorkDir is {NewBertDatasetSubDir}."
-        BertDatasetSubDir = NewBertDatasetSubDir
+def _combine_results(active_plan, database_dir):
+        args = active_plan.args
+        BertDatasetSubDir = active_plan.dataset_dir
+        outputDir = active_plan.output_dir
+        stage_banner("CombineTestResult", detail=f"WorkDir: {BertDatasetSubDir}")
+        MES = f"CombineTestResult started. WorkDir is {BertDatasetSubDir}."
         MPLOGGER = MPlogger(logSubDir=f"{BertDatasetSubDir}/logs")
         MPLOGGER_TCFMain = MPlogger(logSubDir=f"{BertDatasetSubDir}/logs",logFile="TCFMain.log")
         MPLOGGER_TCFMain.logW(MES, printOnScreen=False)
-        key_values("CombineTestResult workspace", [("workdir", NewBertDatasetSubDir)])
+        key_values("CombineTestResult workspace", [("workdir", BertDatasetSubDir)])
         datasetDBDir = args.datasetDataBaseSubDir
 
         datasetDir = BertDatasetSubDir
@@ -474,21 +456,40 @@ def _legacy_main(argv=None):
 
         if args.SummarizePerformance == True:
             SummarizePerformance()
-        #將目錄更名，以供下階段功能程式抓取。
-        NewBertDatasetSubDir = BertDatasetSubDir.replace(
-            "_is_running_CombineTestResult","_rdy_for_TestResultVis")
-        #os.rename(BertDatasetSubDir,NewBertDatasetSubDir)
-        RenameDir(SrcDir=BertDatasetSubDir,DesDir=NewBertDatasetSubDir)
-        stage_done("CombineTestResult")
-        MES = f"CombineTestResult is finished. Rename {BertDatasetSubDir} as {NewBertDatasetSubDir}"
-        key_values("CombineTestResult handoff", [("from", BertDatasetSubDir), ("to", NewBertDatasetSubDir)])
-        MPLOGGER_TCFMain = MPlogger(logSubDir=f"{NewBertDatasetSubDir}/logs")
-        MPLOGGER_TCFMain.logW(MES, printOnScreen=False)
+def _result_combination_handoff(source, destination):
+    RenameDir(SrcDir=source, DesDir=destination)
+    stage_done("CombineTestResult")
+    message = f"CombineTestResult is finished. Rename {source} as {destination}"
+    key_values("CombineTestResult handoff", [("from", source), ("to", destination)])
+    MPlogger(logSubDir=f"{destination}/logs").logW(message, printOnScreen=False)
 
 
-def main(argv=None):
-    from BertScript import result_combination_stage
-    return result_combination_stage.main(argv, legacy_main=_legacy_main)
+def _build_result_combination_plan(argv, stage_api):
+    setproctitle.setproctitle('CZJCombineTestResult')
+    if os.getcwd().split(os.path.sep)[-1] in ["DatasetConverter", "BertScript"]:
+        os.chdir("../")
+        print(f"Change working directory to {os.getcwd()}")
+    args = ClassfierOptionParser(argv)
+    dataset_dir, output_dir = datasetDirOutputDirPickers(
+        args=args, rdy_for_stage="CombineTestResult").proc()
+    if dataset_dir is None:
+        message = ("-" * 50 + "\n" +
+                   f"In {args.WorkPoolROOT}, There is no BertDatasetSubDir ready for CombineTestResult! ABORT!")
+        MPlogger().logW(message)
+        raise Exception
+    plan = stage_api.ResultCombinationPlan(args, dataset_dir, output_dir)
+    return plan, {
+        "combine": _combine_results,
+        "activate_rename": os.rename,
+        "success_handoff": _result_combination_handoff,
+    }
+
+
+def main(argv=None, stage_api=None):
+    if stage_api is None:
+        from BertScript import result_combination_stage as stage_api
+    plan, adapters = _build_result_combination_plan(argv, stage_api)
+    return stage_api.run_result_combination_stage(plan, **adapters)
 
 
 if __name__ == "__main__":

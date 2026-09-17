@@ -22,10 +22,10 @@ BASE_PATTERNS = [
     "test.tsv",
 ]
 STAGE_HANDOFFS = {
-    "BertScript/RunClassfier.py": (
+    "BertScript/classifier_stage.py": (
         "_is_running_RunClassfier", "_rdy_for_CombineTestResult"
     ),
-    "BertScript/CombineTestResult.py": (
+    "BertScript/result_combination_stage.py": (
         "_is_running_CombineTestResult", "_rdy_for_TestResultVis"
     ),
     "BertScript/Test_result_Vis.py": (
@@ -169,6 +169,17 @@ class WorkpoolCharacterizationTests(unittest.TestCase):
                 )
             )
         }
+        constants = {
+            target.id: node.value.value
+            for node in tree.body
+            if isinstance(node, ast.Assign)
+            and isinstance(node.value, ast.Constant)
+            and isinstance(node.value.value, str)
+            for target in node.targets
+            if isinstance(target, ast.Name)
+        }
+        if "RUNNING_SUFFIX" in constants and "NEXT_SUFFIX" in constants:
+            observed.add((constants["RUNNING_SUFFIX"], constants["NEXT_SUFFIX"]))
         self.assertIn(expected, observed)
 
     def test_stage_2_to_4_sources_define_canonical_handoffs(self):

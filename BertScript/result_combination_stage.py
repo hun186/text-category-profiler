@@ -27,8 +27,12 @@ def activate_result_combination(plan, rename=os.rename):
 
 
 def run_result_combination_stage(plan, *, combine: Callable,
-                                 rename=os.rename, warn=lambda message: None):
-    active = activate_result_combination(plan, rename=rename)
+                                 rename=None, activate_rename=None,
+                                 success_handoff=None,
+                                 warn=lambda message: None):
+    activation = activate_rename or rename or os.rename
+    completion = success_handoff or rename or os.rename
+    active = activate_result_combination(plan, rename=activation)
     database_dir = os.path.join(active.dataset_dir,
                                 active.args.datasetDataBaseSubDir)
     try:
@@ -37,7 +41,7 @@ def run_result_combination_stage(plan, *, combine: Callable,
         # Deliberately leave the directory in its running state.
         raise
     destination = active.dataset_dir.replace(RUNNING_SUFFIX, NEXT_SUFFIX)
-    rename(active.dataset_dir, destination)
+    completion(active.dataset_dir, destination)
     return destination
 
 
