@@ -1,7 +1,9 @@
 import importlib
 import ast
+import os
 import subprocess
 import sys
+import tempfile
 import threading
 import types
 import unittest
@@ -29,6 +31,56 @@ class VisualizationStageTests(unittest.TestCase):
         self.assertEqual(plan.weitech_input_path, "input")
         self.assertEqual(plan.weitech_output_path, "output")
         self.assertTrue(plan.weitech_separate_work_pool)
+
+    def test_dataset_count_falls_back_from_model_to_active_workspace(self):
+        utility_path = Path("text_category_profiler/pipeline/TCF_utils.py")
+        visualization_path = Path("BertScript/Test_result_Vis.py")
+        load_dataset_count = next(
+            node for node in ast.parse(utility_path.read_text(encoding="utf-8")).body
+            if isinstance(node, ast.FunctionDef) and node.name == "LoadDatasetCount")
+        build_color_df = next(
+            node for node in ast.parse(
+                visualization_path.read_text(encoding="utf-8")).body
+            if isinstance(node, ast.FunctionDef) and node.name == "BuildColorDF")
+
+        with tempfile.TemporaryDirectory() as root:
+            model_dir = Path(root, "model")
+            workspace = Path(root, "dataset_workspace")
+            count_file = Path(
+                workspace, "datasetDB", "dataset_total_FixedTest_labels_count.sql3")
+            model_dir.mkdir()
+            count_file.parent.mkdir(parents=True)
+            count_file.touch()
+
+            count_frame = mock.MagicMock()
+            count_frame.set_index.return_value = count_frame
+            color_frame = mock.MagicMock()
+            class_table_frame = mock.MagicMock()
+            pandas = mock.Mock()
+            pandas.DataFrame.side_effect = [color_frame, class_table_frame]
+            namespace = {
+                "OSWALK": lambda directory: [
+                    os.path.join(path, filename)
+                    for path, _, filenames in os.walk(directory)
+                    for filename in filenames
+                ],
+                "getFNFromFullPath": os.path.basename,
+                "dfFromSQLite3": mock.Mock(return_value=count_frame),
+                "pd": pandas,
+                "InfoScoreTable": {},
+                "outputDir": str(model_dir),
+                "datasetDir": str(workspace),
+            }
+            module = ast.Module(
+                body=[load_dataset_count, build_color_df], type_ignores=[])
+            exec(compile(module, "Stage4DatasetCount.py", "exec"), namespace)
+
+            namespace["BuildColorDF"](
+                {"label": "#fff"},
+                {"label": {"CT": "Label", "Explaination": "Explanation"}},
+            )
+
+            namespace["dfFromSQLite3"].assert_called_once_with(str(count_file))
 
     def test_plan_creation_has_no_filesystem_side_effects(self):
         args = Namespace(TRVWebHost=False, public=True, TRVPort=80,

@@ -632,25 +632,30 @@ class freeModelDirConformer:
                 raise Exception
         return outputDir
 
-def LoadDatasetCount(outputDir):
+def LoadDatasetCount(outputDir, datasetDir=None):
     SQL3Files = (
         "dataset_total_labels_count.sql3",
         "dataset_total_FixedTest_labels_count.sql3",
     )
-    CountFiles = {}
-    for file in OSWALK(outputDir):
-        FileName = getFNFromFullPath(file)
-        if FileName in SQL3Files:
-            CountFiles[FileName] = file
+    SearchDirs = [outputDir]
+    if datasetDir is not None and datasetDir not in SearchDirs:
+        SearchDirs.append(datasetDir)
 
-    for SQL3File in SQL3Files:
-        if SQL3File in CountFiles:
-            df = dfFromSQLite3(CountFiles[SQL3File])
-            #df.rename(columns = {'index':'Label'}, inplace = True)
-            return df.set_index('index')
+    for SearchDir in SearchDirs:
+        CountFiles = {}
+        for file in OSWALK(SearchDir):
+            FileName = getFNFromFullPath(file)
+            if FileName in SQL3Files:
+                CountFiles[FileName] = file
+
+        for SQL3File in SQL3Files:
+            if SQL3File in CountFiles:
+                df = dfFromSQLite3(CountFiles[SQL3File])
+                #df.rename(columns = {'index':'Label'}, inplace = True)
+                return df.set_index('index')
 
     raise FileNotFoundError(
-        f"No dataset count database found in {outputDir!r}; expected "
+        f"No dataset count database found in {SearchDirs!r}; expected "
         f"{SQL3Files[0]!r} or {SQL3Files[1]!r}.")
 
 def get_finished_date_dir_dict(port,datasetDir_VisSelf = "WorkPool_VisSelfService"):

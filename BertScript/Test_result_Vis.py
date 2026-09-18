@@ -599,7 +599,7 @@ def BuildColorDF(ColorDict,ClassTable):
     ColorDF = pd.DataFrame(data=ColorDictTF)
     ColorDF['InfoScore'] = ColorDF['Label'].map(InfoScoreTable)
     ColorDF['InfoScore'] = ColorDF['InfoScore'].round().astype(int, errors='ignore')
-    df_datasetCount = LoadDatasetCount(outputDir)
+    df_datasetCount = LoadDatasetCount(outputDir, datasetDir)
     ClassTableDF = pd.DataFrame(ClassTable).transpose()
     ColorDF['Chinese'] = ColorDF['Label'].map(ClassTableDF["CT"])
     ColorDF['Explaination'] = ColorDF['Label'].map(ClassTableDF["Explaination"])
