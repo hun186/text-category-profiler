@@ -41,6 +41,10 @@ class DataConverterStagePlanTests(unittest.TestCase):
             (["--nProcess", "1", "--nProcessSPC", "1"], 1, 1, 1, 1),
             (["-nProc", "3"], 3, 1, 3, 4),
             (["-nProcSPC", "2"], 1, 2, 19, 2),
+            (["--nProcess=1", "--nProcessSPC=1"], 1, 1, 1, 1),
+            (["-nProc=1", "-nProcSPC=1"], 1, 1, 1, 1),
+            (["--nProcess=3"], 3, 1, 3, 4),
+            (["--nProcessSPC=2"], 1, 2, 19, 2),
         )
         for argv, parsed_workers, parsed_large, expected_workers, expected_large in cases:
             with self.subTest(argv=argv):

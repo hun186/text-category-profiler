@@ -68,21 +68,21 @@ class PipelineConfigurationTests(unittest.TestCase):
             ComputeSPCNProcess=lambda: 4,
         )
         cases = (
-            (["-ts", "y"], 19, 4),
-            (["-ts", "y", "-nProc", "1", "-nProcSPC", "1"], 1, 1),
-            (["-ts", "y", "-nProc", "3"], 3, 4),
-            (["-ts", "y", "-nProcSPC", "2"], 19, 2),
-            (["-ts", "y", "--nProcess", "5", "--nProcessSPC", "2"], 5, 2),
+            (["-ts", "y"], 1, 1, 19, 4),
+            (["-ts", "y", "-nProc", "1", "-nProcSPC", "1"], 1, 1, 1, 1),
+            (["-ts", "y", "-nProc", "3"], 3, 1, 3, 4),
+            (["-ts", "y", "-nProcSPC", "2"], 1, 2, 19, 2),
+            (["-ts", "y", "--nProcess", "5", "--nProcessSPC", "2"], 5, 2, 5, 2),
+            (["--nProcess=1", "--nProcessSPC=1"], 1, 1, 1, 1),
+            (["-nProc=1", "-nProcSPC=1"], 1, 1, 1, 1),
+            (["--nProcess=3"], 3, 1, 3, 4),
+            (["--nProcessSPC=2"], 1, 2, 19, 2),
         )
-        for argv, expected_workers, expected_large in cases:
+        for argv, parsed_workers, parsed_large, expected_workers, expected_large in cases:
             with self.subTest(argv=argv):
                 parsed = namespace(
-                    nProcess=int(argv[argv.index("-nProc") + 1]) if "-nProc" in argv
-                    else int(argv[argv.index("--nProcess") + 1]) if "--nProcess" in argv
-                    else 1,
-                    nProcessSPC=int(argv[argv.index("-nProcSPC") + 1]) if "-nProcSPC" in argv
-                    else int(argv[argv.index("--nProcessSPC") + 1]) if "--nProcessSPC" in argv
-                    else 1,
+                    nProcess=parsed_workers,
+                    nProcessSPC=parsed_large,
                 )
                 plan = configuration.build_pipeline_plan(
                     argv=argv,
