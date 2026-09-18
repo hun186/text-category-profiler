@@ -58,30 +58,12 @@ def combine_command(
     )
 
 
-def visualization_commands(
+def visualization_command(
     args, bert_classifier_path="BertScript", args_renderer=_forwarded_args
-) -> Tuple[StageCommand, StageCommand]:
-    forwarded_args = args_renderer(args)
-    base = StageCommand(
+) -> StageCommand:
+    return StageCommand(
         stage="Test_result_Vis",
         executable="python",
         script=f"{bert_classifier_path}/Test_result_Vis.py",
-        forwarded_args=forwarded_args,
+        forwarded_args=args_renderer(args),
     )
-    suffixes = tuple(
-        f" -{alias} {value}"
-        for value, alias in (
-            (args.WeiTechFormatInputPATH, "WTFInpPath"),
-            (args.WeiTechFormatOutputPATH, "WTFOptPath"),
-            (args.WeiTechFormatSepWorkPool, "WTFSepWorkPool"),
-        )
-        if value != ""
-    )
-    with_weitech_options = StageCommand(
-        stage="Test_result_Vis with WeiTech options",
-        executable=base.executable,
-        script=base.script,
-        forwarded_args=base.forwarded_args,
-        suffixes=suffixes,
-    )
-    return base, with_weitech_options

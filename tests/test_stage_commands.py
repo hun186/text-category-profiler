@@ -7,7 +7,7 @@ from text_category_profiler.pipeline.commands import (
     classifier_command,
     combine_command,
     dataset_command,
-    visualization_commands,
+    visualization_command,
 )
 
 
@@ -64,17 +64,14 @@ class StageCommandTests(unittest.TestCase):
             combine_command(forwarding_args()).render_shell(),
         )
 
-    def test_visualization_commands_preserve_empty_path_false_suffix_behavior(self):
-        commands = visualization_commands(forwarding_args())
-        self.assertIsInstance(commands, tuple)
-        self.assertEqual(2, len(commands))
-        base = "python BertScript/Test_result_Vis.py" + FORWARDED
-        self.assertEqual(base, commands[0].render_shell())
+    def test_visualization_command_forwards_namespace_once(self):
+        command = visualization_command(forwarding_args())
         self.assertEqual(
-            base + " -WTFSepWorkPool False", commands[1].render_shell()
+            "python BertScript/Test_result_Vis.py" + FORWARDED,
+            command.render_shell(),
         )
 
-    def test_visualization_suffixes_keep_alias_order_and_unquoted_spaces(self):
+    def test_visualization_command_forwards_weitech_options(self):
         args = forwarding_args(
             WeiTechFormatInputPATH="input path",
             WeiTechFormatOutputPATH="output path",
@@ -87,16 +84,10 @@ class StageCommandTests(unittest.TestCase):
             " --WeiTechFormatOutputPATH output path"
             " --WeiTechFormatSepWorkPool separate pool"
         )
-        commands = visualization_commands(args)
+        command = visualization_command(args)
         self.assertEqual(
             "python BertScript/Test_result_Vis.py" + forwarded,
-            commands[0].render_shell(),
-        )
-        self.assertEqual(
-            "python BertScript/Test_result_Vis.py" + forwarded
-            + " -WTFInpPath input path -WTFOptPath output path"
-            + " -WTFSepWorkPool separate pool",
-            commands[1].render_shell(),
+            command.render_shell(),
         )
 
 
