@@ -2,6 +2,7 @@ import argparse
 import contextlib
 import io
 from pathlib import Path
+import sys
 import tempfile
 import types
 import unittest
@@ -12,6 +13,7 @@ from text_category_profiler.diagnostics.checks import (
     check_fixed_test,
     check_model,
     check_topic_trees,
+    discover_model_dir,
     run_doctor,
 )
 from text_category_profiler.pipeline.defaults import DEFAULT_MODEL_TYPE
@@ -47,6 +49,47 @@ class ProductionDiagnosticsTests(unittest.TestCase):
                 self.args(modelDir=str(Path(directory) / "missing")), Path(directory)
             )
             self.assertIn("FAIL", [item.status for item in missing])
+
+    def test_auto_model_resolver_failure_becomes_contextual_diagnostic(self):
+        args = self.args(modelDir="", ModelType="PytorchMMBERT", TRVPort=8059)
+        production_utils = types.ModuleType(
+            "text_category_profiler.pipeline.TCF_utils"
+        )
+        production_utils.ClassfierOptionParser = mock.Mock(return_value=object())
+        production_utils.datasetDirOutputDirPickers = mock.Mock(
+            side_effect=TypeError(
+                "expected str, bytes or os.PathLike object, not NoneType"
+            )
+        )
+        with mock.patch.dict(sys.modules, {
+            "text_category_profiler.pipeline.TCF_utils": production_utils,
+        }):
+            results = check_model(args, Path.cwd())
+        self.assertEqual([result.status for result in results], ["FAIL"])
+        details = "\n".join(results[0].details)
+        self.assertIn("ModelType: PytorchMMBERT", details)
+        self.assertIn("TRVPort: 8059", details)
+
+    def test_auto_model_resolver_normalizes_picker_failure_and_restores_cwd(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository_root = Path(directory)
+            original_cwd = Path.cwd()
+            production_utils = types.ModuleType(
+                "text_category_profiler.pipeline.TCF_utils"
+            )
+            production_utils.ClassfierOptionParser = mock.Mock(return_value=object())
+            production_utils.datasetDirOutputDirPickers = mock.Mock(
+                side_effect=TypeError(
+                    "expected str, bytes or os.PathLike object, not NoneType"
+                )
+            )
+            with mock.patch.dict(sys.modules, {
+                "text_category_profiler.pipeline.TCF_utils": production_utils,
+            }), self.assertRaisesRegex(
+                RuntimeError, "PytorchMMBERT.*8059.*NoneType"
+            ):
+                discover_model_dir(repository_root, "PytorchMMBERT", 8059)
+            self.assertEqual(Path.cwd(), original_cwd)
 
     def test_fixed_test_found_and_missing(self):
         with tempfile.TemporaryDirectory() as directory:

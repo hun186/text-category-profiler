@@ -41,7 +41,13 @@ def discover_model_dir(repository_root: Path, model_type: str, port: int) -> Pat
     original_cwd = Path.cwd()
     try:
         os.chdir(repository_root)
-        _dataset_dir, model_dir = datasetDirOutputDirPickers(args=args).proc()
+        try:
+            _dataset_dir, model_dir = datasetDirOutputDirPickers(args=args).proc()
+        except (OSError, TypeError, ValueError, RuntimeError) as error:
+            raise RuntimeError(
+                "production model resolver failed for "
+                f"ModelType {model_type}, TRVPort {port}: {error}"
+            ) from error
         if not model_dir:
             raise FileNotFoundError(
                 f"no production model resolved for {model_type} at TRVPort {port}"
