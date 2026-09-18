@@ -6,7 +6,7 @@
 
 - 初始化狀態：`INITIALIZED`。
 - 維護 Python 文字分類、資料集轉換、BERTScript 結果分析工作區；不要沿用舊 README 的 FastAPI RAG 假設。
-- 已有 isolated real-root smoke profiles；在 post-merge real-model/H100 acceptance 完成前，不得宣稱完整 runtime 已驗證。
+- 已有 isolated real-root smoke profiles與 activation-free `python TCFMain.py --doctor`；在 H100 real-model acceptance 完成前，不得宣稱完整 runtime 已驗證。
 
 ## Durable Outcomes
 
@@ -19,4 +19,4 @@
 7. Stage 3 以 `ResultCombinationPlan`／lifecycle boundary 擁有 canonical inputs、activation 與成功 handoff；pandas/SQLite computation 留在 compatibility entrypoint。
 8. Stage 4 以 `VisualizationPlan`／dependency-light lifecycle boundary 擁有 ready→running、hosted decision 與成功 running→spike-ready handoff；Dash layouts、callbacks 與 algorithms 留在 compatibility entrypoint。
 9. AST architecture guards保護 shared boundaries 不反向 import stage implementations、stages 不控制後續 stage、DatasetConverter split 與五個 legacy entrypoint paths。
-10. Repository-wide Python compile gate (`python -m compileall TCFMain.py TCF_Params DatasetConverter BertScript text_category_profiler`) 維持 restored；Layer B configuration 透過 production model／FixedTest resolvers 自動探索來源並保留 optional overrides，但 `KI-003` 仍等待 post-merge real-runtime acceptance，且不涵蓋 WeiTech acquisition/delivery 的 `KI-002` 仍為 Open。
+10. Production default model 是 dependency-light `DEFAULT_MODEL_TYPE=PytorchMMBERT`；Layer B model discovery 同時傳遞 model type／TRVPort。Doctor 只 build plan 後執行 read-only resource/PyTorch/CUDA checks，不 activation 或執行 pipeline；Layer A PASS、Layer B NOT YET ACCEPTED、`KI-003` 與不涵蓋 WeiTech lifecycle 的 `KI-002` 均維持 Open。

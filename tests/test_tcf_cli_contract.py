@@ -92,7 +92,7 @@ EXPECTED_ACTIONS = [
     ("InfoScoreSumLowerBound", ("-ISlbd", "--InfoScoreSumLowerBound"), -999999999),
     ("InfoScoreSumUpperBound", ("-ISubd", "--InfoScoreSumUpperBound"), 99999999999),
     ("nScoringSegUPD", ("-nScoreUPD", "--nScoringSegUPD"), 100),
-    ("ModelType", ("-mdlType", "--ModelType"), "PytorchXLM"),
+    ("ModelType", ("-mdlType", "--ModelType"), "PytorchMMBERT"),
     ("ActiveHTCZeroshot", ("-ZeroShot", "--ActiveHTCZeroshot"), False),
     ("TwinsAfterSort", ("-TwinsAS", "--TwinsAfterSort"), False),
     ("SimilarityMethod", ("-SimMethod", "--SimilarityMethod"), "CountVectorCosine"),
@@ -103,6 +103,8 @@ EXPECTED_ACTIONS = [
     ("TextSummarization", ("-TextSum", "--TextSummarization"), False),
     ("nProcess", ("-nProc", "--nProcess"), 1),
     ("nProcessSPC", ("-nProcSPC", "--nProcessSPC"), 1),
+    ("doctor", ("--doctor",), False),
+    ("require_cuda", ("--require-cuda",), False),
 ]
 
 

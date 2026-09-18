@@ -11,6 +11,8 @@ import subprocess
 import sys
 import tempfile
 
+from text_category_profiler.pipeline.defaults import DEFAULT_MODEL_TYPE
+
 
 @dataclass(frozen=True)
 class SmokeConfig:
@@ -44,14 +46,16 @@ class RealRuntimeConfigurationError(ValueError):
     """Raised when the opt-in real runtime profile is incompletely configured."""
 
 
-def _discover_model_dir(repository_root: Path, model_type: str) -> Path:
+def _discover_model_dir(repository_root: Path, model_type: str, port: int) -> Path:
     """Perform one production-compatible model selection from the repository root."""
     from text_category_profiler.pipeline.TCF_utils import (
         ClassfierOptionParser,
         datasetDirOutputDirPickers,
     )
 
-    args = ClassfierOptionParser(["-mdlType", model_type])
+    args = ClassfierOptionParser(
+        ["-mdlType", model_type, "-p", str(port)]
+    )
     original_cwd = Path.cwd()
     try:
         os.chdir(repository_root)
@@ -100,7 +104,7 @@ def config_from_real_runtime_environment(
         return path
 
     repository_root = repository_root.resolve()
-    model_type = environment.get("TCP_REAL_MODEL_TYPE", "PytorchXLM")
+    model_type = environment.get("TCP_REAL_MODEL_TYPE", DEFAULT_MODEL_TYPE)
     try:
         port = int(environment.get("TCP_REAL_PORT", "8050"))
     except ValueError as error:
@@ -110,7 +114,7 @@ def config_from_real_runtime_environment(
 
     model_override = environment.get("TCP_REAL_MODEL_DIR")
     model_dir = directory("TCP_REAL_MODEL_DIR") if model_override else Path(
-        _discover_model_dir(repository_root, model_type)
+        _discover_model_dir(repository_root, model_type, port)
     ).resolve()
     if not model_dir.is_dir():
         raise RealRuntimeConfigurationError(

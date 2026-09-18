@@ -50,8 +50,7 @@ def multicoreJob():
     return source()
 
 
-def setArguments(argv=None):
-    """Compatibility entrypoint that plans and immediately activates a run."""
+def _plan_and_parsed_arguments(argv=None):
     parsed = None
 
     def parse_legacy_arguments(values):
@@ -64,6 +63,17 @@ def setArguments(argv=None):
         parser=parse_legacy_arguments,
         clock=timeNow,
     )
+    return plan, parsed
+
+
+def planArguments(argv=None):
+    """Build an activation-free plan using the compatibility parser and clock."""
+    plan, _parsed = _plan_and_parsed_arguments(argv)
+    return plan
+
+
+def activateArguments(plan):
+    """Activate a prepared plan and update legacy module-level compatibility state."""
     context = activate_pipeline_runtime(plan, process_source=multicoreJob)
     ROOTPATHList[:] = context.root_paths
     FinalOfferedOutputFNrePatList[:] = context.final_output_patterns
@@ -71,7 +81,14 @@ def setArguments(argv=None):
     print_once(
         f"Run in {context.run_mode} Mode, ROOTPATHList is set as {ROOTPATHList}"
     )
-    vars(parsed).update(vars(context.args))
+    return context.args
+
+
+def setArguments(argv=None):
+    """Compatibility entrypoint that plans and immediately activates a run."""
+    plan, parsed = _plan_and_parsed_arguments(argv)
+    activated = activateArguments(plan)
+    vars(parsed).update(vars(activated))
     return parsed
 '''
 if args.task == "SDSMS":

@@ -32,7 +32,7 @@
 - 權威定義：`text_category_profiler/pipeline/TCF_utils.py` 的 `ClassfierOptionParser(argv=None)`；未傳入 `argv` 時仍解析 process `sys.argv`。
 - Producer／Owner：共用 text_category_profiler parser。
 - Consumer：`TCFMain.py`、`DatasetConverter/DataConverter.py`、`BertScript/RunClassfier.py`、`BertScript/CombineTestResult.py`、`BertScript/Test_result_Vis.py` 等 stage scripts。
-- 輸入：`--train/-tr`、`--test/-ts`、`--task`、`--WorkPoolROOT/-WPRoot`、`--BertDatasetSubDir/-BertDataDir`、`--TopicTreeDir/-TopicTreeDir`、`--TopicTreeFiles/-TopicTreeFiles`、`--modelDir/-mdlDir`、`--FixedTestPATH/-FTPath`、`--SaveOptimizer/-SaveOptimizer`、WeiTech work pool 相關參數、model type 與視覺化參數等。`--SaveOptimizer` 預設為 `false`，因此 Hugging Face checkpoint 不保留 `optimizer.pt`；需要續訓狀態時可傳 `--SaveOptimizer true`。
+- 輸入：`--train/-tr`、`--test/-ts`、`--task`、`--WorkPoolROOT/-WPRoot`、`--BertDatasetSubDir/-BertDataDir`、`--TopicTreeDir/-TopicTreeDir`、`--TopicTreeFiles/-TopicTreeFiles`、`--modelDir/-mdlDir`、`--FixedTestPATH/-FTPath`、`--SaveOptimizer/-SaveOptimizer`、WeiTech work pool 相關參數、model type 與視覺化參數等。Production `ModelType` canonical default 為 `PytorchMMBERT`，仍可明確指定 `PytorchXLM`。`--doctor` 是 activation-free resource preflight，`--require-cuda` 可令 CUDA unavailable 成為 FAIL；兩者不轉送給 stage CLI。`--SaveOptimizer` 預設為 `false`，因此 Hugging Face checkpoint 不保留 `optimizer.pt`；需要續訓狀態時可傳 `--SaveOptimizer true`。
 - 輸出：argparse namespace；`args.train == False and args.test == False` 時 parser 會將 `args.test` 設為 `True`。
 - Root compatibility：`TCF_Params.TCFParameters.setArguments(argv=None)` 仍回傳 activated argparse namespace；其內部先建立 `PipelinePlan`，再明確 activation WeiTech filesystem 動作與 process counts。Import `TCFParameters` 本身不解析 process argv。
 - 驗證與約束：修改 parser 後需檢查所有 `convert_to_args_str(args)` consumer 與手動附加參數。
