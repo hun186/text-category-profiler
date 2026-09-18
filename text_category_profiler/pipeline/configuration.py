@@ -66,7 +66,11 @@ def _default_process_source():
 def process_option_explicit(argv, aliases):
     """Return whether one of ``aliases`` occurs in the effective CLI input."""
     values = sys.argv[1:] if argv is None else argv
-    return any(value in aliases for value in values)
+    return any(
+        value == alias or value.startswith(alias + "=")
+        for value in values
+        for alias in aliases
+    )
 
 
 def resolve_process_counts(args, argv, process_source):
