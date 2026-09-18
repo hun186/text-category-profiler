@@ -19,4 +19,4 @@
 7. Stage 3 以 `ResultCombinationPlan`／lifecycle boundary 擁有 canonical inputs、activation 與成功 handoff；pandas/SQLite computation 留在 compatibility entrypoint。
 8. Stage 4 以 `VisualizationPlan`／dependency-light lifecycle boundary 擁有 ready→running、hosted decision 與成功 running→spike-ready handoff；Dash layouts、callbacks 與 algorithms 留在 compatibility entrypoint。
 9. AST architecture guards保護 shared boundaries 不反向 import stage implementations、stages 不控制後續 stage、DatasetConverter split 與五個 legacy entrypoint paths。
-10. Repository-wide Python compile gate (`python -m compileall TCFMain.py TCF_Params DatasetConverter BertScript text_category_profiler`) 維持 restored，isolated root smoke 已建立；`KI-003` 等待 post-merge real-runtime acceptance，且不涵蓋 WeiTech acquisition/delivery 的 `KI-002` 仍為 Open。
+10. Repository-wide Python compile gate (`python -m compileall TCFMain.py TCF_Params DatasetConverter BertScript text_category_profiler`) 維持 restored；Layer B configuration 透過 production model／FixedTest resolvers 自動探索來源並保留 optional overrides，但 `KI-003` 仍等待 post-merge real-runtime acceptance，且不涵蓋 WeiTech acquisition/delivery 的 `KI-002` 仍為 Open。

@@ -63,26 +63,25 @@ PASS 必須包含 root exit 0、唯一 classifier marker、final `*_rdy_for_Spik
 
 ### Layer B：real-model/GPU acceptance profile
 
-Layer B 不安裝 inference interception；它透過 temporary writable model facade 讀取外部 checkpoint。啟用時必須明確提供以下變數，不得放入個人實際路徑或自動探測 production state：
+Layer B 不安裝 inference interception；它透過 temporary writable model facade 讀取 production resolver 選出的 checkpoint。啟用時只有 opt-in 變數是必要的；port、model type、timeout 與資源路徑都是 optional overrides：
 
 ```text
 TCP_RUN_REAL_PIPELINE_SMOKE=1
-TCP_REAL_MODEL_DIR=<external model directory>
-TCP_REAL_FIXED_TEST_DIR=<external FixedTest Using directory>
-TCP_REAL_TOPIC_TREE_DIR=<external taxonomy directory>
-TCP_REAL_TOPIC_TREE_FILES=<comma-separated taxonomy files>
+TCP_REAL_PORT=8050                                   # optional
 TCP_REAL_MODEL_TYPE=PytorchXLM                       # optional
-TCP_REAL_PIPELINE_TIMEOUT_SECONDS=1800              # optional
+TCP_REAL_PIPELINE_TIMEOUT_SECONDS=1800               # optional
+TCP_REAL_MODEL_DIR=<source model override>            # optional
+TCP_REAL_FIXED_TEST_DIR=<FixedTest Using override>    # optional
+TCP_REAL_TOPIC_TREE_DIR=<taxonomy directory override> # optional
+TCP_REAL_TOPIC_TREE_FILES=<taxonomy files override>   # optional
 ```
 
 POSIX：
 
 ```bash
 TCP_RUN_REAL_PIPELINE_SMOKE=1 \
-TCP_REAL_MODEL_DIR='<model>' \
-TCP_REAL_FIXED_TEST_DIR='<fixed-test>' \
-TCP_REAL_TOPIC_TREE_DIR='<taxonomy>' \
-TCP_REAL_TOPIC_TREE_FILES='TopicTree.csv,TopicTree_AK4.csv' \
+TCP_REAL_PORT=8059 \
+TCP_REAL_MODEL_TYPE=PytorchXLM \
 python -m unittest tests.test_full_pipeline_real_runtime
 ```
 
@@ -90,10 +89,8 @@ PowerShell：
 
 ```powershell
 $env:TCP_RUN_REAL_PIPELINE_SMOKE='1'
-$env:TCP_REAL_MODEL_DIR='<model>'
-$env:TCP_REAL_FIXED_TEST_DIR='<fixed-test>'
-$env:TCP_REAL_TOPIC_TREE_DIR='<taxonomy>'
-$env:TCP_REAL_TOPIC_TREE_FILES='TopicTree.csv,TopicTree_AK4.csv'
+$env:TCP_REAL_PORT='8059'
+$env:TCP_REAL_MODEL_TYPE='PytorchXLM'
 python -m unittest tests.test_full_pipeline_real_runtime
 ```
 
