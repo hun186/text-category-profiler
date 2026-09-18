@@ -4,6 +4,7 @@ import argparse
 import copy
 import os
 import platform
+import sys
 from dataclasses import dataclass
 from typing import Callable, Optional
 
@@ -24,6 +25,8 @@ class PipelinePlan:
     root_paths: tuple
     final_output_patterns: tuple
     run_mode: str
+    n_process_explicit: bool
+    n_process_spc_explicit: bool
 
 
 @dataclass(frozen=True)
@@ -58,6 +61,27 @@ def _default_clock():
 def _default_process_source():
     from text_category_profiler.concurrency.MP_utils import multicoreJob
     return multicoreJob()
+
+
+def process_option_explicit(argv, aliases):
+    """Return whether one of ``aliases`` occurs in the effective CLI input."""
+    values = sys.argv[1:] if argv is None else argv
+    return any(value in aliases for value in values)
+
+
+def resolve_process_counts(args, argv, process_source):
+    """Preserve explicit CLI counts and auto-detect only omitted counts."""
+    worker_explicit = process_option_explicit(argv, ("-nProc", "--nProcess"))
+    large_explicit = process_option_explicit(
+        argv, ("-nProcSPC", "--nProcessSPC")
+    )
+    workers = args.nProcess if worker_explicit else process_source.ComputeNProcess()
+    large = (
+        args.nProcessSPC
+        if large_explicit
+        else process_source.ComputeSPCNProcess()
+    )
+    return workers, large
 
 
 def _root_path_policy(args, platform_value):
@@ -108,6 +132,12 @@ def build_pipeline_plan(
         root_paths=root_paths,
         final_output_patterns=patterns,
         run_mode=run_mode,
+        n_process_explicit=process_option_explicit(
+            argv, ("-nProc", "--nProcess")
+        ),
+        n_process_spc_explicit=process_option_explicit(
+            argv, ("-nProcSPC", "--nProcessSPC")
+        ),
     )
 
 
@@ -128,8 +158,10 @@ def activate_pipeline_runtime(
         filesystem.make_directory(original)
         args.WeiTechFormatInputPATH = renamed
     processes = process_source()
-    args.nProcess = processes.ComputeNProcess()
-    args.nProcessSPC = processes.ComputeSPCNProcess()
+    if not plan.n_process_explicit:
+        args.nProcess = processes.ComputeNProcess()
+    if not plan.n_process_spc_explicit:
+        args.nProcessSPC = processes.ComputeSPCNProcess()
     return PipelineContext(
         args=args,
         root_paths=plan.root_paths,

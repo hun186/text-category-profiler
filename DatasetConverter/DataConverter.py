@@ -131,6 +131,7 @@ from text_category_profiler.core.log_display import section
 from text_category_profiler.core.log_display import stage_done
 from text_category_profiler.core.log_display import summarize_sequence
 from text_category_profiler.core.log_display import warning
+from text_category_profiler.pipeline.configuration import resolve_process_counts
 #from utilities_RAND import LoadTree
 #from utilities_RAND import RANDLoader
 
@@ -957,7 +958,7 @@ class DatasetGenerator:
                         ROOTPATHList = self.FixedTestPATHList,
                         RemoveDumpArticle = RemoveDumpArticle_FT,
                         OUTPUTMAIN = self.OUTPUTMAIN_FT,
-                        #nProcess = self.nProcess,
+                        nProcess = self.nProcess,
                         Count_SQL_table = "sampleCount_FixedTest",
                         sourceRole="fixed test source",
                         cli_args=self.cli_args,
@@ -984,7 +985,7 @@ class DatasetGenerator:
                         esJob = self.esJob,
                         RemoveDumpArticle = RemoveDumpArticle_FT,
                         OUTPUTMAIN = self.OUTPUTMAIN_es,
-                        #nProcess = self.nProcess,
+                        nProcess = self.nProcess,
                         Count_SQL_table = "sampleCount_Elasticsearch",
                         sourceRole="Elasticsearch source",
                         cli_args=self.cli_args,
@@ -1192,16 +1193,31 @@ def loadLabels(args, DCkwargs=None):
     return normalized_kwargs
     #return tpcTree,InfoScoreTable,LabelList,DCkwargs
       
+def resolve_runtime_config(args, argv, process_source=None):
+    """Resolve child process counts while preserving explicit CLI values."""
+    runtime = process_source or multicoreJob()
+    workers, large = resolve_process_counts(args, argv, runtime)
+    return RuntimeConfig(
+        worker_processes=workers,
+        large_output_processes=large,
+    )
+
+
 def main(argv=None):
     """Run the DatasetConverter CLI and return its successful exit status."""
     bootstrap_runtime()
-    runtime = multicoreJob()
-    runtime_config = RuntimeConfig(
-        worker_processes=runtime.ComputeNProcess(log=False),
-        large_output_processes=runtime.ComputeSPCNProcess(log=False),
-    )
     #解析並設定路徑相關參數。
     plan = normalize_stage_plan(default_converter_settings(), argv=argv)
+    runtime = multicoreJob()
+    # The legacy child process source accepts ``log=False`` while the shared
+    # root process source does not, so adapt that interface at this boundary.
+    process_source = type("ProcessSource", (), {
+        "ComputeNProcess": lambda self: runtime.ComputeNProcess(log=False),
+        "ComputeSPCNProcess": lambda self: runtime.ComputeSPCNProcess(log=False),
+    })()
+    runtime_config = resolve_runtime_config(
+        plan.args, argv, process_source=process_source
+    )
     context = activate_stage_context(plan, runtime_config=runtime_config)
     timings = {"stage_start_time": context.stage_start_time}
     args = context.args

@@ -384,9 +384,16 @@ class datasetDirOutputDirPickers:
 
     def Pick_datasetDirsROOT(self,
                         ):
+        candidates = []
+        if self.args.get("WorkPoolROOT"):
+            candidates.append(self.args["WorkPoolROOT"])
+        candidates.extend([
+            "./", "WorkPool", "./WorkPool", "../WorkPool",
+            "WorkPool_VisSelfService", "./WorkPool_VisSelfService",
+            "../WorkPool_VisSelfService",
+        ])
         CheckDict = {"pat": r"(^dataset_\d{12,16}_.*|^dataset_\d{12,16}$)",
-                        "cands":["./","WorkPool","./WorkPool","../WorkPool",
-                                 "WorkPool_VisSelfService","./WorkPool_VisSelfService","../WorkPool_VisSelfService"]}
+                        "cands": candidates}
         #if self.datasetDirsROOT == None:
         if self.args["WeiTechworkIDPath"] != "":
             CheckDict["cands"] = [os.path.join(

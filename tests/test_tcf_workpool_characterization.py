@@ -151,6 +151,31 @@ class WorkpoolCharacterizationTests(unittest.TestCase):
                                  WorkingDir=str(running)).proc()
             self.assertTrue(Path(str(dataset) + "_rdy_for_RunClassfier").is_dir())
 
+    def test_dataset_picker_searches_explicit_workpool_before_legacy_fallbacks(self):
+        module = load_tcf_utils()
+        with tempfile.TemporaryDirectory() as temp:
+            workpool = Path(temp) / "custom-workpool"
+            dataset = workpool / (
+                "dataset_20990101000000_PytorchXLM_pt18059_"
+                "rdy_for_RunClassfier"
+            )
+            dataset.mkdir(parents=True)
+            args = argparse.Namespace(
+                ExecutionTime="20990101000000", ModelType="PytorchXLM",
+                TRVPort=18059, train=False, WorkPoolROOT=str(workpool),
+                WeiTechworkIDPath="", WeiTechworkID="", BertDatasetSubDir="",
+                modelDir="",
+            )
+
+            picked_dataset, _ = module.datasetDirOutputDirPickers(
+                args=args,
+                rdy_for_stage="RunClassfier",
+                outputDirsROOT=str(workpool),
+                MPLOGGER=types.SimpleNamespace(logW=lambda *a, **k: None),
+            ).proc()
+
+            self.assertEqual(dataset, Path(picked_dataset))
+
 
     def assert_source_defines_handoff(self, source, expected):
         tree = ast.parse(source)
