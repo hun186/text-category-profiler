@@ -26,6 +26,7 @@ def default_args(**overrides):
         WeiTechFormatInputPATH="", WeiTechFormatOutputPATH="",
         WeiTechFormatSepWorkPool=False, TRVWebHost=True,
         RemoveBertDataDir=False,
+        doctor=False, require_cuda=False,
     )
     values.update(overrides)
     return argparse.Namespace(**values)
@@ -53,7 +54,7 @@ def fake_modules(args=None, completed_codes=None, trace=None):
         return types.SimpleNamespace(returncode=next(codes, 0))
 
     def forward(namespace):
-        ignored = {"_dataset_dir", "_output_dir"}
+        ignored = {"_dataset_dir", "_output_dir", "doctor", "require_cuda"}
         return "".join(f" --{key} {value}" for key, value in vars(namespace).items()
                        if value != "" and key not in ignored)
 
@@ -62,7 +63,9 @@ def fake_modules(args=None, completed_codes=None, trace=None):
         "setproctitle": _module("setproctitle", setproctitle=no_op),
         "subprocess": _module("subprocess", run=subprocess_run),
         "TCF_Params.TCFParameters": _module(
-            "TCFParameters", setArguments=lambda: args, WorkPoolROOT="WorkPool",
+            "TCFParameters", setArguments=lambda: args,
+            planArguments=lambda *unused: types.SimpleNamespace(args=args),
+            activateArguments=lambda plan: plan.args, WorkPoolROOT="WorkPool",
             BertClassfierPath="BertScript",
             FinalOfferedOutputFNrePatList=["^DFPreambleCols_df_ALL.*",
                                           "dataset_total_with_filename_FixedTest.sql3",
@@ -136,6 +139,23 @@ class RootPipelineCharacterizationTests(unittest.TestCase):
             "python BertScript/CombineTestResult.py",
             "python BertScript/Test_result_Vis.py",
         ], prefixes)
+
+    def test_doctor_exits_before_activation_and_pipeline_execution(self):
+        trace = []
+        args = default_args(doctor=True)
+        modules = fake_modules(args, trace=trace)
+        parameters = modules["TCF_Params.TCFParameters"]
+        parameters.activateArguments = lambda plan: self.fail(
+            "doctor must not activate pipeline runtime"
+        )
+        modules["text_category_profiler.diagnostics"] = _module(
+            "diagnostics", run_doctor=lambda selected: trace.append(
+                ("doctor", selected.ModelType if hasattr(selected, "ModelType") else "selected")
+            ) or 0,
+        )
+        with patch.dict(sys.modules, modules):
+            runpy.run_path(str(ROOT / "TCFMain.py"), run_name="__main__")
+        self.assertEqual([("doctor", "selected")], trace)
 
     def test_article_analysis_is_skipped_when_test_false(self):
         trace = []

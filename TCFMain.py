@@ -5,7 +5,8 @@
 #python TCFMain.py --WeiTechworkIDPath D:\shared\rawData\ABT\ProcLink\AutoBertClassify --WeiTechWorkPoolPATH D:\shared\TopicClassification\WTWorkPool -p 8099999 -TRVHost False
 
 
-from TCF_Params.TCFParameters import setArguments
+from TCF_Params.TCFParameters import activateArguments
+from TCF_Params.TCFParameters import planArguments
 from TCF_Params.TCFParameters import WorkPoolROOT
 from TCF_Params.TCFParameters import BertClassfierPath
 from TCF_Params.TCFParameters import FinalOfferedOutputFNrePatList
@@ -231,7 +232,11 @@ def main(argv=None):
     exeTimeDict = dict()
     exeTimeDict["start"] = time.time()
 #%%初始化，智慧化參數設定
-    args = setArguments() if argv is None else setArguments(argv)
+    plan = planArguments() if argv is None else planArguments(argv)
+    if plan.args.doctor:
+        from text_category_profiler.diagnostics import run_doctor
+        return run_doctor(plan.args)
+    args = activateArguments(plan)
     setproctitle.setproctitle(f'TCFMain{args.ExecutionTime[4:]}')
     HybridConformer(cpuUsageThreshold=90).proc()
 
@@ -253,7 +258,10 @@ def main(argv=None):
     orchestrator.run()
 
     info(f"各階段耗時摘要: {exeTimeDict}", icon="⏱️")
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    exit_code = main()
+    if exit_code:
+        raise SystemExit(exit_code)

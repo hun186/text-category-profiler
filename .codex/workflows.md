@@ -18,6 +18,8 @@
 | --- | --- | --- | --- |
 | 安裝／同步依賴 | `python -m pip install -r requirements.txt` | repository root | Command documented；未在容器執行，因會下載/安裝大量 ML dependencies |
 | 啟動主流程 | `python TCFMain.py --WeiTechworkIDPath <path> --WeiTechWorkPoolPATH <path> -p 8099999 -TRVHost False -task SDSMS_Prediction` | repository root | Command shape verified from `TCFMain.py` comments；會讀寫資料，初始化未執行 |
+| 生產資源診斷 | `python TCFMain.py --doctor` | repository root | Activation-free、read-only preflight；無 FAIL 時 exit 0，缺少本機模型／FixedTest／TopicTree／PyTorch 時會指出 failure boundary 並 non-zero |
+| CUDA 必要診斷 | `python TCFMain.py --doctor --require-cuda` | repository root | 與一般 Doctor 相同，但 CUDA unavailable 為 FAIL；availability 不等於 classifier GPU execution evidence |
 | 單獨資料轉換 | `python DatasetConverter/DataConverter.py ...` | repository root | Verified as stage command assembled by `TCFMain.py`；未 smoke test |
 | 單獨分類 | `python BertScript/RunClassfier.py ...` | repository root | Verified as stage command assembled by `TCFMain.py`；未 smoke test |
 | 單獨結果合併 | `python BertScript/CombineTestResult.py ...` | repository root | Verified as stage command assembled by `TCFMain.py`；未 smoke test |
@@ -68,7 +70,7 @@ Layer B 不安裝 inference interception；它透過 temporary writable model fa
 ```text
 TCP_RUN_REAL_PIPELINE_SMOKE=1
 TCP_REAL_PORT=8050                                   # optional
-TCP_REAL_MODEL_TYPE=PytorchXLM                       # optional
+TCP_REAL_MODEL_TYPE=PytorchMMBERT                    # optional; canonical default
 TCP_REAL_PIPELINE_TIMEOUT_SECONDS=1800               # optional
 TCP_REAL_MODEL_DIR=<source model override>            # optional
 TCP_REAL_FIXED_TEST_DIR=<FixedTest Using override>    # optional
@@ -95,6 +97,8 @@ python -m unittest tests.test_full_pipeline_real_runtime
 ```
 
 Layer B 只有在 root exit 0、production classifier evidence、final `*_rdy_for_Spike`、外部 inputs unchanged 及預定 H100 acceptance 的 CUDA available/selected evidence 完整時才算 acceptance PASS。
+
+詳細的 discovery、Doctor、failure interpretation、source-isolation 與 CUDA evidence 規則見 `docs/operations/pipeline-diagnostics-and-smoke-testing.md`。
 
 ## 測試資料與外部服務
 

@@ -25,7 +25,7 @@
 
 ## 主要資料流
 
-1. `TCFMain.main(argv=None)` 經 `TCF_Params.setArguments()` 建立並 activation root pipeline configuration，組裝 `PipelineOrchestrator` 的 stage/lifecycle ports；單純 import `TCFParameters` 不解析 process argv 或啟動 filesystem/process runtime。
+1. `TCFMain.main(argv=None)` 經 `TCF_Params.planArguments()` 建立 root plan；`--doctor` 在此 activation-free 邊界執行 read-only diagnostics 並退出，一般流程才以 `activateArguments()` activation 後組裝 `PipelineOrchestrator` 的 stage/lifecycle ports。`setArguments()` 保留 plan→activate 的 legacy compatibility 行為；單純 import `TCFParameters` 不解析 process argv 或啟動 filesystem/process runtime。
 2. Orchestrator 先呼叫 root `DataConvert()` adapter；該 adapter 必要時透過 `WorkPoolManager` 挑選 workID，再組出 `python DatasetConverter/DataConverter.py ...`，建立或定位 `_rdy_for_RunClassfier` handoff dataset。
 3. `RunClassfier()` 組出 `python BertScript/RunClassfier.py ...`，分類器讀取 dataset 與模型目錄，輸出預測結果。
 4. 若 `args.test == True`，orchestrator 依序執行結果合併、視覺化、可選 SDSMS merge，再呼叫 delivery port；任何 port exception 自然阻止後續 dependent ports。

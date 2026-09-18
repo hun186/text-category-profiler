@@ -22,6 +22,7 @@ from text_category_profiler.core.log_display import section
 from text_category_profiler.core.log_display import stage_done
 from text_category_profiler.core.log_display import summarize_sequence
 from text_category_profiler.core.log_display import warning
+from text_category_profiler.pipeline.defaults import DEFAULT_MODEL_TYPE
 
 PYTORCH_MODEL_TYPES = ["PytorchXLM", "PytorchRBTL3", "PytorchMMBERT"]
 BASE_MODEL_CHECKPOINTS = {
@@ -71,7 +72,12 @@ class TaskConnector:
 
 
 def ClassfierOptionParser(argv=None):
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description=(
+            "Run the text-category-profiler production pipeline. "
+            f"The default production ModelType is {DEFAULT_MODEL_TYPE}."
+        )
+    )
     parser.add_argument(
         "-debug", "--debugMode", help="Run in debug Mode",
         type=str2bool, default=False)
@@ -208,8 +214,10 @@ def ClassfierOptionParser(argv=None):
         "-nScoreUPD", "--nScoringSegUPD", help="The upper bound of number of pieces to count InfoScoreSum.",
         type=int, default=100)
     parser.add_argument(
-        "-mdlType", "--ModelType", help="The type of using model, TF15Bert, PytorchXLM(default), PytorchRBTL3, PytorchMMBERT",
-        type=str, default="PytorchXLM")
+        "-mdlType", "--ModelType",
+        help=("The model implementation to use. "
+              f"Production default: {DEFAULT_MODEL_TYPE}."),
+        type=str, default=DEFAULT_MODEL_TYPE)
     parser.add_argument(
         "-ZeroShot", "--ActiveHTCZeroshot", help="Active Zero-Shot Learning with Hierarchical Text Classification",
         type=str2bool, default=False)
@@ -244,6 +252,16 @@ def ClassfierOptionParser(argv=None):
     parser.add_argument(
         "-nProcSPC", "--nProcessSPC", help="Number of special multi-processing",
         type=int, default=1)
+
+    diagnostics = parser.add_argument_group("diagnostics")
+    diagnostics.add_argument(
+        "--doctor", action="store_true",
+        help="Check production resources without activating or running the pipeline.",
+    )
+    diagnostics.add_argument(
+        "--require-cuda", action="store_true",
+        help="With --doctor, treat unavailable CUDA as a failure.",
+    )
 
 
     args = parser.parse_args(argv)
@@ -323,6 +341,8 @@ def convert_to_args_str(args):
     args_str = ""
 
     for key in vars_args:
+        if key in {"doctor", "require_cuda"}:
+            continue
         val = vars_args[key]
         if val != '':
             args_str += f" --{key} {vars_args[key]}"

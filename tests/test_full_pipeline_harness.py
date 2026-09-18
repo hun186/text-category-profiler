@@ -18,6 +18,7 @@ from tests.smoke.full_pipeline_harness import (
     create_python_wrapper, format_failure, run_full_pipeline,
     snapshot_directories, snapshot_regular_files,
 )
+from text_category_profiler.pipeline.defaults import DEFAULT_MODEL_TYPE
 
 
 class FullPipelineHarnessTests(unittest.TestCase):
@@ -226,7 +227,9 @@ class FullPipelineHarnessTests(unittest.TestCase):
                     root, {"TCP_RUN_REAL_PIPELINE_SMOKE": "1"}
                 )
             launch.assert_not_called()
-            model_resolver.assert_called_once_with(root.resolve(), "PytorchXLM")
+            model_resolver.assert_called_once_with(
+                root.resolve(), DEFAULT_MODEL_TYPE, 8050
+            )
             fixed_resolver.assert_called_once_with(root.resolve(), 8050)
             self.assertEqual(config.model_dir, model.resolve())
             self.assertEqual(config.fixed_test_dirs, (fixed.resolve(),))
@@ -234,6 +237,7 @@ class FullPipelineHarnessTests(unittest.TestCase):
             self.assertIsNone(config.topic_tree_dir)
             self.assertIsNone(config.topic_tree_files)
             self.assertEqual(config.port, 8050)
+            self.assertEqual(config.model_type, DEFAULT_MODEL_TYPE)
             self.assertFalse(config.intercept_classifier)
 
     def test_real_runtime_configuration_validates_paths_and_disables_interception(self):
@@ -253,6 +257,7 @@ class FullPipelineHarnessTests(unittest.TestCase):
             })
             self.assertEqual(config.model_dir, model.resolve())
             self.assertEqual(config.fixed_test_dirs, (fixed.resolve(),))
+            self.assertEqual(config.model_type, "PytorchXLM")
             self.assertFalse(config.intercept_classifier)
             self.assertEqual(config.timeout_seconds, 37)
 
@@ -326,11 +331,32 @@ class FullPipelineHarnessTests(unittest.TestCase):
             with mock.patch.dict(sys.modules, {
                 "text_category_profiler.pipeline.TCF_utils": production_utils,
             }):
-                resolved = _discover_model_dir(root, "PytorchXLM")
+                resolved = _discover_model_dir(root, "PytorchXLM", 8059)
             self.assertEqual(Path.cwd(), original_cwd)
             self.assertEqual(resolved, model.resolve())
-            parser.assert_called_once_with(["-mdlType", "PytorchXLM"])
+            parser.assert_called_once_with(
+                ["-mdlType", "PytorchXLM", "-p", "8059"]
+            )
             picker.assert_called_once_with(args=args)
+
+    def test_model_discovery_restores_cwd_when_picker_fails(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            original_cwd = Path.cwd()
+            production_utils = types.ModuleType(
+                "text_category_profiler.pipeline.TCF_utils"
+            )
+            production_utils.ClassfierOptionParser = mock.Mock(return_value=object())
+            production_utils.datasetDirOutputDirPickers = mock.Mock(
+                side_effect=RuntimeError("resolver failed")
+            )
+            with mock.patch.dict(sys.modules, {
+                "text_category_profiler.pipeline.TCF_utils": production_utils,
+            }), self.assertRaisesRegex(
+                RealRuntimeConfigurationError, "resolver failed"
+            ):
+                _discover_model_dir(root, DEFAULT_MODEL_TYPE, 8059)
+            self.assertEqual(Path.cwd(), original_cwd)
 
     def test_fixed_test_discovery_wraps_production_adapter_with_port(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -40,7 +40,8 @@ def load_main(subprocess_run):
         "setproctitle": _module("setproctitle", setproctitle=no_op),
         "subprocess": _module("subprocess", run=subprocess_run),
         "TCF_Params.TCFParameters": _module(
-            "TCFParameters", setArguments=no_op, WorkPoolROOT="WorkPool",
+            "TCFParameters", setArguments=no_op, planArguments=no_op,
+            activateArguments=no_op, WorkPoolROOT="WorkPool",
             BertClassfierPath="BertScript", FinalOfferedOutputFNrePatList=[],
         ),
         "text_category_profiler.core.utilities": _module(
