@@ -4071,15 +4071,15 @@ def main(argv=None, stage_api=visualization_stage):
         start_server=_start_visualization_server,
         validate=_validate_visualization,
     )
+    completion_logger = MPlogger(logSubDir=f"{completed_workspace}/logs")
     if not plan.hosted:
         message = "PGM will only output Full_bar_df and not to host the web site."
     else:
         message = MES
-    MPLOGGER.logW(message, logFile="Test_result_Vis.log")
+    completion_logger.logW(message, logFile="Test_result_Vis.log")
     stage_done("TestResultVis")
     message = (f"TestResultVis is finished. Rename {plan.running_workspace} "
                f"as {completed_workspace}")
-    completion_logger = MPlogger(logSubDir=f"{completed_workspace}/logs")
     completion_logger.logW(message)
     return completed_workspace
 

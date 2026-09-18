@@ -263,6 +263,72 @@ assert namespace['visualization_stage'].__name__ == 'BertScript.visualization_st
         self.assertEqual([item[0] for item in received], ["build", "run"])
         self.assertIs(received[1][1], plan)
 
+    def test_post_completion_logging_does_not_recreate_running_workspace(self):
+        source = Path("BertScript/Test_result_Vis.py").read_text(encoding="utf-8")
+        main_node = next(
+            node for node in ast.parse(source).body
+            if isinstance(node, ast.FunctionDef) and node.name == "main")
+
+        with tempfile.TemporaryDirectory() as root:
+            ready_workspace = Path(root, "dataset_rdy_for_TestResultVis")
+            running_workspace = Path(root, "dataset_is_running_TestResultVis")
+            completed_workspace = Path(root, "dataset_rdy_for_Spike")
+            ready_workspace.mkdir()
+            plan = self.stage.VisualizationPlan(
+                ready_workspace=str(ready_workspace), output_dir="model",
+                hosted=False, host="0.0.0.0", port=9000,
+                weitech_separate_work_pool=False, weitech_input_path="in",
+                weitech_output_path="out", ssl_context="adhoc")
+
+            class FileLogger:
+                def __init__(self, logSubDir="logs", **_):
+                    self.log_dir = Path(logSubDir)
+
+                def logW(self, message=None, logFile="mp_processing_log.txt", **_):
+                    self.log_dir.mkdir(parents=True, exist_ok=True)
+                    Path(self.log_dir, logFile).write_text(str(message), encoding="utf-8")
+
+            class StageAPI:
+                @staticmethod
+                def build_visualization_plan(*_):
+                    return plan
+
+                @staticmethod
+                def run_visualization_stage(actual_plan, **adapters):
+                    ready_workspace.rename(running_workspace)
+                    adapters["application"](str(running_workspace))
+                    running_workspace.rename(completed_workspace)
+                    return actual_plan.completed_workspace
+
+            class Picker:
+                def proc(self):
+                    return plan.ready_workspace, plan.output_dir
+
+            namespace = {
+                "visualization_stage": StageAPI,
+                "setproctitle": mock.Mock(), "os": os,
+                "ClassfierOptionParser": lambda argv=None: mock.Mock(),
+                "datasetDirOutputDirPickers": lambda **_: Picker(),
+                "MPlogger": FileLogger,
+                "_start_visualization_server": mock.Mock(),
+                "_validate_visualization": mock.Mock(),
+                "MPLOGGER": FileLogger(), "stage_done": mock.Mock(), "MES": "hosted",
+            }
+
+            def configure_running_logger(running, _plan):
+                namespace["MPLOGGER"] = FileLogger(Path(running, "logs"))
+
+            namespace["_run_visualization_application"] = configure_running_logger
+            exec(compile(ast.Module(body=[main_node], type_ignores=[]),
+                         "Test_result_Vis.py", "exec"), namespace)
+
+            namespace["main"](stage_api=StageAPI)
+
+            self.assertTrue(completed_workspace.exists())
+            self.assertFalse(running_workspace.exists())
+            self.assertTrue(
+                Path(completed_workspace, "logs", "Test_result_Vis.log").exists())
+
     def test_layout_helpers_are_module_globals_when_canonical_layout_is_evaluated(self):
         source = Path("BertScript/Test_result_Vis.py").read_text(encoding="utf-8")
         tree = ast.parse(source)
