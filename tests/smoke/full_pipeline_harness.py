@@ -15,10 +15,11 @@ import tempfile
 @dataclass(frozen=True)
 class SmokeConfig:
     repository_root: Path
-    fixed_test_dir: Path
-    topic_tree_dir: Path
-    topic_tree_files: str
+    fixed_test_dir: Path | None
+    topic_tree_dir: Path | None
+    topic_tree_files: str | None
     model_dir: Path
+    fixed_test_dirs: tuple[Path, ...] = ()
     model_type: str = "PytorchXLM"
     port: int = 18059
     execution_time: str = "20990101000000"
@@ -43,32 +44,104 @@ class RealRuntimeConfigurationError(ValueError):
     """Raised when the opt-in real runtime profile is incompletely configured."""
 
 
+def _discover_model_dir(repository_root: Path, model_type: str) -> Path:
+    """Perform one production-compatible model selection from the repository root."""
+    from text_category_profiler.pipeline.TCF_utils import (
+        ClassfierOptionParser,
+        datasetDirOutputDirPickers,
+    )
+
+    args = ClassfierOptionParser(["-mdlType", model_type])
+    original_cwd = Path.cwd()
+    try:
+        os.chdir(repository_root)
+        try:
+            _dataset_dir, model_dir = datasetDirOutputDirPickers(args=args).proc()
+            resolved_model_dir = Path(model_dir).resolve() if model_dir else None
+        except Exception as error:
+            raise RealRuntimeConfigurationError(
+                f"production model resolver failed for {model_type}: {error}"
+            ) from error
+    finally:
+        os.chdir(original_cwd)
+    if resolved_model_dir is None:
+        raise RealRuntimeConfigurationError(
+            f"production model resolver found no usable model for {model_type}"
+        )
+    return resolved_model_dir
+
+
+def _discover_fixed_test_dirs(repository_root: Path, port: int) -> tuple[Path, ...]:
+    """Resolve every FixedTest source through the production adapter."""
+    from argparse import Namespace
+    from DatasetConverter.adapters.pipeline_source import fixed_test_paths
+
+    original_cwd = Path.cwd()
+    try:
+        os.chdir(repository_root)
+        try:
+            paths = fixed_test_paths(Namespace(TRVPort=port))
+            return tuple(Path(path).resolve() for path in paths)
+        except Exception as error:
+            raise RealRuntimeConfigurationError(
+                f"production FixedTest resolver failed for TRVPort {port}: {error}"
+            ) from error
+    finally:
+        os.chdir(original_cwd)
+
+
 def config_from_real_runtime_environment(
     repository_root: Path, environment: dict[str, str] | os._Environ[str]
 ) -> SmokeConfig:
-    required = (
-        "TCP_REAL_MODEL_DIR", "TCP_REAL_FIXED_TEST_DIR",
-        "TCP_REAL_TOPIC_TREE_DIR", "TCP_REAL_TOPIC_TREE_FILES",
-    )
-    for name in required:
-        if not environment.get(name):
-            raise RealRuntimeConfigurationError(f"missing required environment variable: {name}")
-
     def directory(name: str) -> Path:
         path = Path(environment[name]).expanduser().resolve()
         if not path.is_dir():
             raise RealRuntimeConfigurationError(f"{name} is not a directory: {path}")
         return path
 
-    model_dir = directory("TCP_REAL_MODEL_DIR")
-    fixed_test_dir = directory("TCP_REAL_FIXED_TEST_DIR")
-    topic_tree_dir = directory("TCP_REAL_TOPIC_TREE_DIR")
-    topic_tree_files = environment["TCP_REAL_TOPIC_TREE_FILES"]
-    for filename in (item.strip() for item in topic_tree_files.split(",")):
-        if not filename or not (topic_tree_dir / filename).is_file():
+    repository_root = repository_root.resolve()
+    model_type = environment.get("TCP_REAL_MODEL_TYPE", "PytorchXLM")
+    try:
+        port = int(environment.get("TCP_REAL_PORT", "8050"))
+    except ValueError as error:
+        raise RealRuntimeConfigurationError("TCP_REAL_PORT must be an integer") from error
+    if port <= 0:
+        raise RealRuntimeConfigurationError("TCP_REAL_PORT must be greater than zero")
+
+    model_override = environment.get("TCP_REAL_MODEL_DIR")
+    model_dir = directory("TCP_REAL_MODEL_DIR") if model_override else Path(
+        _discover_model_dir(repository_root, model_type)
+    ).resolve()
+    if not model_dir.is_dir():
+        raise RealRuntimeConfigurationError(
+            f"production model resolver returned a non-directory: {model_dir}"
+        )
+
+    fixed_test_override = environment.get("TCP_REAL_FIXED_TEST_DIR")
+    fixed_test_dir = directory("TCP_REAL_FIXED_TEST_DIR") if fixed_test_override else None
+    fixed_test_dirs = ((fixed_test_dir,) if fixed_test_dir else tuple(
+        Path(path).resolve() for path in _discover_fixed_test_dirs(repository_root, port)
+    ))
+    if not fixed_test_dirs or any(not path.is_dir() for path in fixed_test_dirs):
+        raise RealRuntimeConfigurationError(
+            f"production FixedTest resolver found no usable directories for TRVPort {port}"
+        )
+
+    topic_tree_dir = (directory("TCP_REAL_TOPIC_TREE_DIR")
+                      if environment.get("TCP_REAL_TOPIC_TREE_DIR") else None)
+    topic_tree_files = environment.get("TCP_REAL_TOPIC_TREE_FILES") or None
+    if topic_tree_files is not None:
+        filenames = tuple(item.strip() for item in topic_tree_files.split(","))
+        if not filenames or any(not filename for filename in filenames):
             raise RealRuntimeConfigurationError(
-                f"TCP_REAL_TOPIC_TREE_FILES entry does not exist: {filename!r}"
+                "TCP_REAL_TOPIC_TREE_FILES must contain comma-separated filenames"
             )
+        if topic_tree_dir is not None:
+            for filename in filenames:
+                if not (topic_tree_dir / filename).is_file():
+                    raise RealRuntimeConfigurationError(
+                        f"TCP_REAL_TOPIC_TREE_FILES entry does not exist: {filename!r}"
+                    )
     try:
         timeout_seconds = int(environment.get("TCP_REAL_PIPELINE_TIMEOUT_SECONDS", "1800"))
     except ValueError as error:
@@ -80,10 +153,11 @@ def config_from_real_runtime_environment(
             "TCP_REAL_PIPELINE_TIMEOUT_SECONDS must be greater than zero"
         )
     return SmokeConfig(
-        repository_root=repository_root.resolve(), fixed_test_dir=fixed_test_dir,
+        repository_root=repository_root, fixed_test_dir=fixed_test_dir,
+        fixed_test_dirs=fixed_test_dirs,
         topic_tree_dir=topic_tree_dir, topic_tree_files=topic_tree_files,
         model_dir=model_dir,
-        model_type=environment.get("TCP_REAL_MODEL_TYPE", "PytorchXLM"),
+        model_type=model_type, port=port,
         timeout_seconds=timeout_seconds, intercept_classifier=False,
     )
 
@@ -98,17 +172,29 @@ def snapshot_regular_files(root: Path) -> tuple[tuple[Path, int, int], ...]:
     return tuple(sorted(entries, key=lambda entry: entry[0].as_posix()))
 
 
+def snapshot_directories(
+    roots: tuple[Path, ...],
+) -> dict[Path, tuple[tuple[Path, int, int], ...]]:
+    """Snapshot every resolved source directory for later mutation checks."""
+    return {root: snapshot_regular_files(root) for root in roots}
+
+
 def build_root_command(config: SmokeConfig, workpool_root: Path) -> list[str]:
-    return [
+    command = [
         sys.executable, str((config.repository_root / "TCFMain.py").resolve()),
         "-p", str(config.port), "-ts", "y", "-TRVHost", "False",
-        "-WPRoot", str(workpool_root), "-FTPath", str(config.fixed_test_dir),
-        "-TopicTreeDir", str(config.topic_tree_dir),
-        "-TopicTreeFiles", config.topic_tree_files,
+        "-WPRoot", str(workpool_root),
         "-mdlDir", str(config.model_dir), "-mdlType", config.model_type,
         "-nProc", "1", "-nProcSPC", "1", "-RMBertData", "False",
         "-exectime", config.execution_time,
     ]
+    if config.fixed_test_dir is not None:
+        command.extend(("-FTPath", str(config.fixed_test_dir)))
+    if config.topic_tree_dir is not None:
+        command.extend(("-TopicTreeDir", str(config.topic_tree_dir)))
+    if config.topic_tree_files is not None:
+        command.extend(("-TopicTreeFiles", config.topic_tree_files))
+    return command
 
 
 def create_python_wrapper(config: SmokeConfig, runtime_root: Path) -> Path:

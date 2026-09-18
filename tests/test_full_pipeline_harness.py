@@ -5,16 +5,18 @@ import subprocess
 import sys
 import tempfile
 import time
+import types
 import unittest
 from pathlib import Path
 from unittest import mock
 
 from tests.smoke.full_pipeline_harness import (
     RealRuntimeConfigurationError, SmokeConfig, SmokeResult,
+    _discover_fixed_test_dirs, _discover_model_dir,
     build_isolated_environment, build_root_command,
     cleanup_runtime_root, config_from_real_runtime_environment, create_model_facade,
     create_python_wrapper, format_failure, run_full_pipeline,
-    snapshot_regular_files,
+    snapshot_directories, snapshot_regular_files,
 )
 
 
@@ -208,13 +210,31 @@ class FullPipelineHarnessTests(unittest.TestCase):
             self.assertFalse((source / "UsingMark.txt").exists())
 
     def test_real_runtime_configuration_names_missing_variable_before_launch(self):
-        with self.assertRaisesRegex(RealRuntimeConfigurationError, "TCP_REAL_MODEL_DIR"), \
-                mock.patch("subprocess.Popen") as launch:
-            config_from_real_runtime_environment(
-                Path(__file__).resolve().parents[1],
-                {"TCP_RUN_REAL_PIPELINE_SMOKE": "1"},
-            )
-        launch.assert_not_called()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            model, fixed = root / "model", root / "fixed"
+            model.mkdir()
+            fixed.mkdir()
+            with mock.patch(
+                "tests.smoke.full_pipeline_harness._discover_model_dir",
+                return_value=model,
+            ) as model_resolver, mock.patch(
+                "tests.smoke.full_pipeline_harness._discover_fixed_test_dirs",
+                return_value=(fixed,),
+            ) as fixed_resolver, mock.patch("subprocess.Popen") as launch:
+                config = config_from_real_runtime_environment(
+                    root, {"TCP_RUN_REAL_PIPELINE_SMOKE": "1"}
+                )
+            launch.assert_not_called()
+            model_resolver.assert_called_once_with(root.resolve(), "PytorchXLM")
+            fixed_resolver.assert_called_once_with(root.resolve(), 8050)
+            self.assertEqual(config.model_dir, model.resolve())
+            self.assertEqual(config.fixed_test_dirs, (fixed.resolve(),))
+            self.assertIsNone(config.fixed_test_dir)
+            self.assertIsNone(config.topic_tree_dir)
+            self.assertIsNone(config.topic_tree_files)
+            self.assertEqual(config.port, 8050)
+            self.assertFalse(config.intercept_classifier)
 
     def test_real_runtime_configuration_validates_paths_and_disables_interception(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -232,8 +252,159 @@ class FullPipelineHarnessTests(unittest.TestCase):
                 "TCP_REAL_PIPELINE_TIMEOUT_SECONDS": "37",
             })
             self.assertEqual(config.model_dir, model.resolve())
+            self.assertEqual(config.fixed_test_dirs, (fixed.resolve(),))
             self.assertFalse(config.intercept_classifier)
             self.assertEqual(config.timeout_seconds, 37)
+
+    def test_real_runtime_explicit_model_and_fixed_test_bypass_discovery(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            model, fixed = root / "model", root / "fixed"
+            model.mkdir()
+            fixed.mkdir()
+            with mock.patch(
+                "tests.smoke.full_pipeline_harness._discover_model_dir"
+            ) as model_resolver, mock.patch(
+                "tests.smoke.full_pipeline_harness._discover_fixed_test_dirs"
+            ) as fixed_resolver:
+                config = config_from_real_runtime_environment(root, {
+                    "TCP_REAL_MODEL_DIR": str(model),
+                    "TCP_REAL_FIXED_TEST_DIR": str(fixed),
+                    "TCP_REAL_PORT": "8059",
+                    "TCP_REAL_MODEL_TYPE": "PytorchXLM",
+                })
+            model_resolver.assert_not_called()
+            fixed_resolver.assert_not_called()
+            self.assertEqual(config.fixed_test_dir, fixed.resolve())
+            self.assertEqual(config.fixed_test_dirs, (fixed.resolve(),))
+            self.assertEqual(config.port, 8059)
+
+    def test_real_runtime_multiple_discovered_fixed_tests_are_retained(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            model = root / "model"
+            first, second = root / "first", root / "second"
+            for path in (model, first, second):
+                path.mkdir()
+            with mock.patch(
+                "tests.smoke.full_pipeline_harness._discover_model_dir",
+                return_value=model,
+            ), mock.patch(
+                "tests.smoke.full_pipeline_harness._discover_fixed_test_dirs",
+                return_value=(first, second),
+            ):
+                config = config_from_real_runtime_environment(root, {})
+            self.assertEqual(config.fixed_test_dirs, (first.resolve(), second.resolve()))
+
+    def test_every_resolved_fixed_test_directory_is_snapshotted(self):
+        first, second = Path("/fixed/first"), Path("/fixed/second")
+        with mock.patch(
+            "tests.smoke.full_pipeline_harness.snapshot_regular_files",
+            side_effect=(('first-before',), ('second-before',)),
+        ) as snapshot:
+            result = snapshot_directories((first, second))
+        self.assertEqual(result, {
+            first: ('first-before',), second: ('second-before',),
+        })
+        self.assertEqual(snapshot.call_args_list, [mock.call(first), mock.call(second)])
+
+    def test_model_discovery_wraps_production_picker_and_restores_cwd(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            model = root / "BertScript" / "output_model"
+            model.mkdir(parents=True)
+            args = object()
+            picker = mock.Mock()
+            picker.return_value.proc.return_value = (None, "BertScript/output_model")
+            original_cwd = Path.cwd()
+            parser = mock.Mock(return_value=args)
+            production_utils = types.ModuleType(
+                "text_category_profiler.pipeline.TCF_utils"
+            )
+            production_utils.ClassfierOptionParser = parser
+            production_utils.datasetDirOutputDirPickers = picker
+            with mock.patch.dict(sys.modules, {
+                "text_category_profiler.pipeline.TCF_utils": production_utils,
+            }):
+                resolved = _discover_model_dir(root, "PytorchXLM")
+            self.assertEqual(Path.cwd(), original_cwd)
+            self.assertEqual(resolved, model.resolve())
+            parser.assert_called_once_with(["-mdlType", "PytorchXLM"])
+            picker.assert_called_once_with(args=args)
+
+    def test_fixed_test_discovery_wraps_production_adapter_with_port(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixed = root / "FixedTest" / "FixedTest_8059" / "Using"
+            fixed.mkdir(parents=True)
+            original_cwd = Path.cwd()
+            with mock.patch(
+                "DatasetConverter.adapters.pipeline_source.fixed_test_paths",
+                return_value=["FixedTest/FixedTest_8059/Using"],
+            ) as resolver:
+                resolved = _discover_fixed_test_dirs(root, 8059)
+            self.assertEqual(Path.cwd(), original_cwd)
+            self.assertEqual(resolved, (fixed.resolve(),))
+            self.assertEqual(resolver.call_args.args[0].TRVPort, 8059)
+
+    def test_auto_mode_omits_optional_resource_arguments(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            command = build_root_command(self.make_config(
+                root, fixed_test_dir=None, topic_tree_dir=None, topic_tree_files=None,
+            ), root / "WorkPool")
+            self.assertNotIn("-FTPath", command)
+            self.assertNotIn("-TopicTreeDir", command)
+            self.assertNotIn("-TopicTreeFiles", command)
+            self.assertIn("-mdlDir", command)
+
+    def test_topic_tree_overrides_are_independent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            model, fixed, trees = root / "model", root / "fixed", root / "trees"
+            for path in (model, fixed, trees):
+                path.mkdir()
+            base = {"TCP_REAL_MODEL_DIR": str(model), "TCP_REAL_FIXED_TEST_DIR": str(fixed)}
+            files_config = config_from_real_runtime_environment(
+                root, {**base, "TCP_REAL_TOPIC_TREE_FILES": "custom.csv"}
+            )
+            directory_config = config_from_real_runtime_environment(
+                root, {**base, "TCP_REAL_TOPIC_TREE_DIR": str(trees)}
+            )
+            files_command = build_root_command(files_config, root / "wp-files")
+            directory_command = build_root_command(directory_config, root / "wp-directory")
+            self.assertIn("-TopicTreeFiles", files_command)
+            self.assertNotIn("-TopicTreeDir", files_command)
+            self.assertIn("-TopicTreeDir", directory_command)
+            self.assertNotIn("-TopicTreeFiles", directory_command)
+
+    def test_invalid_real_runtime_overrides_fail_before_launch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with mock.patch("subprocess.Popen") as launch, self.assertRaisesRegex(
+                RealRuntimeConfigurationError, "TCP_REAL_MODEL_DIR"
+            ):
+                config_from_real_runtime_environment(
+                    root, {"TCP_REAL_MODEL_DIR": str(root / "missing")}
+                )
+            launch.assert_not_called()
+
+    def test_invalid_real_runtime_timeout_fails_before_launch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            model, fixed = root / "model", root / "fixed"
+            model.mkdir()
+            fixed.mkdir()
+            with mock.patch("subprocess.Popen") as launch, self.assertRaisesRegex(
+                RealRuntimeConfigurationError,
+                "TCP_REAL_PIPELINE_TIMEOUT_SECONDS must be greater than zero",
+            ):
+                config_from_real_runtime_environment(root, {
+                    "TCP_REAL_MODEL_DIR": str(model),
+                    "TCP_REAL_FIXED_TEST_DIR": str(fixed),
+                    "TCP_REAL_PIPELINE_TIMEOUT_SECONDS": "0",
+                })
+            launch.assert_not_called()
 
     def test_regular_file_snapshot_records_relative_size_and_mtime(self):
         with tempfile.TemporaryDirectory() as directory:
