@@ -632,15 +632,31 @@ class freeModelDirConformer:
                 raise Exception
         return outputDir
 
-def LoadDatasetCount(outputDir):
-    SQL3File = "dataset_total_labels_count.sql3"
-    for file in OSWALK(outputDir):
-        if getFNFromFullPath(file) == SQL3File:
-            df = dfFromSQLite3(file)
-            #df.rename(columns = {'index':'Label'}, inplace = True)
-            df = df.set_index('index')
-            #print("df",df)
-    return df
+def LoadDatasetCount(outputDir, datasetDir=None):
+    SQL3Files = (
+        "dataset_total_labels_count.sql3",
+        "dataset_total_FixedTest_labels_count.sql3",
+    )
+    SearchDirs = [outputDir]
+    if datasetDir is not None and datasetDir not in SearchDirs:
+        SearchDirs.append(datasetDir)
+
+    for SearchDir in SearchDirs:
+        CountFiles = {}
+        for file in OSWALK(SearchDir):
+            FileName = getFNFromFullPath(file)
+            if FileName in SQL3Files:
+                CountFiles[FileName] = file
+
+        for SQL3File in SQL3Files:
+            if SQL3File in CountFiles:
+                df = dfFromSQLite3(CountFiles[SQL3File])
+                #df.rename(columns = {'index':'Label'}, inplace = True)
+                return df.set_index('index')
+
+    raise FileNotFoundError(
+        f"No dataset count database found in {SearchDirs!r}; expected "
+        f"{SQL3Files[0]!r} or {SQL3Files[1]!r}.")
 
 def get_finished_date_dir_dict(port,datasetDir_VisSelf = "WorkPool_VisSelfService"):
     r = re.compile(rf"^dataset_\d{{12,16}}_.*_pt{port}_rdy_for_Spike")#"|^dataset_\d{12,16}$)")
