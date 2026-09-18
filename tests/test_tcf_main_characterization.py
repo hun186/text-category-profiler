@@ -135,7 +135,6 @@ class RootPipelineCharacterizationTests(unittest.TestCase):
             "python BertScript/RunClassfier.py",
             "python BertScript/CombineTestResult.py",
             "python BertScript/Test_result_Vis.py",
-            "python BertScript/Test_result_Vis.py",
         ], prefixes)
 
     def test_article_analysis_is_skipped_when_test_false(self):
@@ -171,14 +170,20 @@ class RootPipelineCharacterizationTests(unittest.TestCase):
             "python BertScript/CombineTestResult.py" + forwarded,
         ], commands)
 
-    def test_visualization_runs_base_then_weitech_command_even_when_paths_empty(self):
+    def test_visualization_runs_once_and_forwards_weitech_arguments(self):
         trace = []
-        args = default_args()
+        args = default_args(
+            WeiTechFormatInputPATH="input-path",
+            WeiTechFormatOutputPATH="output-path",
+            WeiTechFormatSepWorkPool=True,
+        )
         module = load_main(args, trace=trace)
         module.TestResultVis(args, {"start": 0})
         commands = [entry[1] for entry in trace]
-        self.assertEqual(2, len(commands))
-        self.assertEqual(commands[0] + " -WTFSepWorkPool False", commands[1])
+        self.assertEqual(1, len(commands))
+        self.assertIn(" --WeiTechFormatInputPATH input-path", commands[0])
+        self.assertIn(" --WeiTechFormatOutputPATH output-path", commands[0])
+        self.assertIn(" --WeiTechFormatSepWorkPool True", commands[0])
 
     def test_nonzero_aborts_before_downstream_stage(self):
         trace = []
@@ -190,11 +195,11 @@ class RootPipelineCharacterizationTests(unittest.TestCase):
         self.assertEqual(1, sum(entry[0] == "command" for entry in trace))
 
     def test_contract_assertions_detect_controlled_trace_drift(self):
-        expected = ["DataConverter", "RunClassfier", "CombineTestResult", "Vis", "Vis"]
+        expected = ["DataConverter", "RunClassfier", "CombineTestResult", "Vis"]
         drifts = [
-            ["RunClassfier", "DataConverter", "CombineTestResult", "Vis", "Vis"],
-            ["DataConverter", "RunClassfier", "CombineTestResult", "Vis"],
-            ["DataConverter", "RunClassfier", "CombineChanged", "Vis", "Vis"],
+            ["RunClassfier", "DataConverter", "CombineTestResult", "Vis"],
+            ["DataConverter", "RunClassfier", "CombineTestResult", "Vis", "Vis"],
+            ["DataConverter", "RunClassfier", "CombineChanged", "Vis"],
         ]
         for drift in drifts:
             with self.subTest(drift=drift), self.assertRaises(AssertionError):

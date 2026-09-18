@@ -49,7 +49,7 @@ from text_category_profiler.pipeline.commands import (
     classifier_command,
     combine_command,
     dataset_command,
-    visualization_commands,
+    visualization_command,
 )
 from text_category_profiler.pipeline.configuration import PipelineContext
 from text_category_profiler.pipeline.orchestrator import PipelineOrchestrator
@@ -158,19 +158,16 @@ def CombineTestResult(args,exeTimeDict=dict()):
     stage_done("CombineTestResult", time.time()-stage_start_time)
 
 def TestResultVis(args,exeTimeDict=dict()):
-    base_command, weitech_command = visualization_commands(
+    command = visualization_command(
         args, BertClassfierPath, args_renderer=convert_to_args_str
     )
-    CMD = base_command.render_shell()
+    CMD = command.render_shell()
     stage_start_time = time.time()
     stage_banner("Test_result_Vis", detail="產生結果分析與視覺化網頁資料")
     print_args_summary(args)
     ShowElapsedTime(exeTimeDict["start"])
     print_command(CMD, label="TestResultVis command")
     run_stage_command(CMD, "Test_result_Vis")
-    run_stage_command(
-        weitech_command.render_shell(), "Test_result_Vis with WeiTech options"
-    )
     if args.TRVWebHost == False:
         BertDatasetSubDir,outputDir = datasetDirOutputDirPickers(
             args=args,rdy_for_stage="Spike").proc()
