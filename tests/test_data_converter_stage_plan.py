@@ -7,6 +7,7 @@ from DatasetConverter import DataConverter
 from DatasetConverter import stage
 from DatasetConverter.config import default_converter_settings
 from DatasetConverter.config import ConfigValidationError
+from DatasetConverter.config import RuntimeConfig
 
 
 def converter_args(**overrides):
@@ -30,6 +31,90 @@ def converter_args(**overrides):
 
 
 class DataConverterStagePlanTests(unittest.TestCase):
+    def test_runtime_process_policy_preserves_explicit_child_options(self):
+        process_source = SimpleNamespace(
+            ComputeNProcess=lambda log=False: 19,
+            ComputeSPCNProcess=lambda log=False: 4,
+        )
+        cases = (
+            ([], 1, 1, 19, 4),
+            (["--nProcess", "1", "--nProcessSPC", "1"], 1, 1, 1, 1),
+            (["-nProc", "3"], 3, 1, 3, 4),
+            (["-nProcSPC", "2"], 1, 2, 19, 2),
+        )
+        for argv, parsed_workers, parsed_large, expected_workers, expected_large in cases:
+            with self.subTest(argv=argv):
+                config = DataConverter.resolve_runtime_config(
+                    SimpleNamespace(
+                        nProcess=parsed_workers,
+                        nProcessSPC=parsed_large,
+                    ),
+                    argv,
+                    process_source=process_source,
+                )
+                self.assertEqual(
+                    RuntimeConfig(expected_workers, expected_large), config
+                )
+
+    def test_dataset_generator_propagates_processes_to_secondary_readers(self):
+        reader_calls = []
+
+        class FakeSeries:
+            def dropna(self):
+                return self
+
+            def nunique(self):
+                return 0
+
+        class FakeFrame:
+            shape = (0, 1)
+            empty = True
+
+            def __len__(self):
+                return 0
+
+            def __getitem__(self, key):
+                return FakeSeries()
+
+        def record_reader(**kwargs):
+            reader_calls.append((kwargs["sourceRole"], kwargs.get("nProcess", 1)))
+            return FakeFrame()
+
+        generator = DataConverter.DatasetGenerator(
+            df=FakeFrame(),
+            OUTPUTMAIN="output",
+            IndexCols=[],
+            datasetSubDir="dataset",
+            DatasetRatio={"Train": 0.7, "Validation": 0.2, "Test": 0.1},
+            FixedTestPATHList=["fixed"],
+            esJob={"indexname": "example"},
+            DCkwargs={},
+            nProcess=7,
+            MPLOGGER=object(),
+        )
+        with (
+            patch.object(DataConverter, "discover_source_spec", return_value=["fixed.txt"]),
+            patch.object(DataConverter, "deduplicate_dataset_rows", side_effect=lambda frame: frame),
+            patch.object(
+                DataConverter,
+                "iter_dataset_splits",
+                return_value=[("train", FakeFrame()), ("test", FakeFrame())],
+            ),
+            patch.object(DataConverter, "BuildSamplesDfFromPaths", side_effect=record_reader),
+            patch.object(DataConverter, "empty_dataframe", return_value=FakeFrame()),
+            patch.object(DataConverter, "concat_dataframes", return_value=FakeFrame()),
+            patch.object(DataConverter, "dfOutputer", return_value=SimpleNamespace(run=lambda: None)),
+            patch.object(DataConverter, "multicoreJob", return_value=SimpleNamespace(run=lambda: [])),
+            patch.object(DataConverter, "key_values"),
+            patch("builtins.open", unittest.mock.mock_open()),
+        ):
+            generator.run()
+
+        self.assertEqual(
+            [("fixed test source", 7), ("Elasticsearch source", 7)],
+            reader_calls,
+        )
+
     def test_job_generator_resolves_empty_tokenizer_model_directory(self):
         args = SimpleNamespace(ModelType="bert", MaxSeqLength=128)
 

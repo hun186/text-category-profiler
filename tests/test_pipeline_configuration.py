@@ -40,6 +40,8 @@ def namespace(**overrides):
         ExecutionTime="",
         task="",
         ExtractionConverterTask="",
+        nProcess=1,
+        nProcessSPC=1,
     )
     values.update(overrides)
     return argparse.Namespace(**values)
@@ -59,6 +61,62 @@ class RecordingFileSystem:
 
 
 class PipelineConfigurationTests(unittest.TestCase):
+    def test_process_policy_preserves_explicit_options_and_autodetects_omissions(self):
+        configuration = configuration_module()
+        processes = types.SimpleNamespace(
+            ComputeNProcess=lambda: 19,
+            ComputeSPCNProcess=lambda: 4,
+        )
+        cases = (
+            (["-ts", "y"], 19, 4),
+            (["-ts", "y", "-nProc", "1", "-nProcSPC", "1"], 1, 1),
+            (["-ts", "y", "-nProc", "3"], 3, 4),
+            (["-ts", "y", "-nProcSPC", "2"], 19, 2),
+            (["-ts", "y", "--nProcess", "5", "--nProcessSPC", "2"], 5, 2),
+        )
+        for argv, expected_workers, expected_large in cases:
+            with self.subTest(argv=argv):
+                parsed = namespace(
+                    nProcess=int(argv[argv.index("-nProc") + 1]) if "-nProc" in argv
+                    else int(argv[argv.index("--nProcess") + 1]) if "--nProcess" in argv
+                    else 1,
+                    nProcessSPC=int(argv[argv.index("-nProcSPC") + 1]) if "-nProcSPC" in argv
+                    else int(argv[argv.index("--nProcessSPC") + 1]) if "--nProcessSPC" in argv
+                    else 1,
+                )
+                plan = configuration.build_pipeline_plan(
+                    argv=argv,
+                    parser=lambda values, parsed=parsed: parsed,
+                    clock=lambda: "NOW",
+                    platform_name=lambda: "Linux",
+                )
+                context = configuration.activate_pipeline_runtime(
+                    plan, process_source=lambda: processes
+                )
+                self.assertEqual(expected_workers, context.args.nProcess)
+                self.assertEqual(expected_large, context.args.nProcessSPC)
+
+    def test_process_policy_uses_process_argv_when_argv_is_none(self):
+        configuration = configuration_module()
+        parsed = namespace(nProcess=1, nProcessSPC=1)
+        processes = types.SimpleNamespace(
+            ComputeNProcess=lambda: 19,
+            ComputeSPCNProcess=lambda: 4,
+        )
+        with patch.object(
+            sys, "argv", ["TCFMain.py", "-ts", "y", "-nProc", "1"]
+        ):
+            plan = configuration.build_pipeline_plan(
+                argv=None,
+                parser=lambda values: parsed,
+                clock=lambda: "NOW",
+                platform_name=lambda: "Linux",
+            )
+        context = configuration.activate_pipeline_runtime(
+            plan, process_source=lambda: processes
+        )
+        self.assertEqual((1, 4), (context.args.nProcess, context.args.nProcessSPC))
+
     def test_import_does_not_parse_process_argv(self):
         effects = []
         parser_module = _module(

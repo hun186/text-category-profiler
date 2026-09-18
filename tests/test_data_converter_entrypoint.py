@@ -226,7 +226,7 @@ class DataConverterEntrypointTests(unittest.TestCase):
             for node in ast.walk(main)
             if isinstance(node, ast.Call)
             and isinstance(node.func, ast.Name)
-            and node.func.id == "RuntimeConfig"
+            and node.func.id == "resolve_runtime_config"
         ]
         self.assertEqual(len(runtime_config_calls), 1)
 
