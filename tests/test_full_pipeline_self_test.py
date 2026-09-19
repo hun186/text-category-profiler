@@ -57,6 +57,55 @@ class FullPipelineSelfTestTests(unittest.TestCase):
                     runtime, "Model facade",
                 )
 
+    def test_real_model_facade_link_runtime_error_is_structured_and_cleans_runtime(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            model = root / "model"
+            fixed = root / "fixed"
+            (model / "checkpoint-1").mkdir(parents=True)
+            fixed.mkdir()
+            runtime = root / "runtime"
+            config = SmokeConfig(root, fixed, None, None, model,
+                                 fixed_test_dirs=(fixed,), intercept_classifier=False)
+            with mock.patch(
+                "text_category_profiler.diagnostics.full_pipeline.config_from_cli",
+                return_value=config,
+            ), mock.patch(
+                "text_category_profiler.diagnostics.full_pipeline._runtime_root",
+                return_value=runtime,
+            ), mock.patch(
+                "text_category_profiler.diagnostics.full_pipeline.create_model_facade",
+                side_effect=RuntimeError(
+                    f"cannot link model checkpoint {model / 'checkpoint-1'}"
+                ),
+            ):
+                self.assert_structured_setup_failure(
+                    lambda: run_self_test(self.self_test_args("real"), root),
+                    runtime, "Model facade",
+                )
+
+    def test_runtime_allocation_oserror_is_structured_for_both_profiles(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for profile in ("isolated", "real"):
+                with self.subTest(profile=profile), mock.patch(
+                    "text_category_profiler.diagnostics.full_pipeline._runtime_root",
+                    side_effect=OSError("cannot allocate temporary runtime"),
+                ), mock.patch(
+                    "text_category_profiler.diagnostics.full_pipeline.config_from_cli",
+                    return_value=SmokeConfig(
+                        root, root, None, None, root,
+                        fixed_test_dirs=(root,), intercept_classifier=False,
+                    ),
+                ):
+                    output = io.StringIO()
+                    with contextlib.redirect_stdout(output):
+                        returncode = run_self_test(self.self_test_args(profile), root)
+                    self.assertNotEqual(returncode, 0)
+                    self.assertIn("[FAIL] Runtime setup", output.getvalue())
+                    self.assertIn("cannot allocate temporary runtime", output.getvalue())
+                    self.assertIn("FINAL: FAIL", output.getvalue())
+
     def test_process_launch_failure_is_structured_and_cleans_runtime(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

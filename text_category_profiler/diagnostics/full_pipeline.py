@@ -53,11 +53,17 @@ class RealRuntimeConfigurationError(ValueError):
     """Raised when the opt-in real runtime profile is incompletely configured."""
 
 
+class ModelFacadeError(RuntimeError):
+    """Raised when a checkpoint cannot be safely exposed through the facade."""
+
+
 class SelfTestExecutionError(RuntimeError):
     """Expected setup/launch failure after disposable runtime allocation."""
 
-    def __init__(self, boundary: str, cause: BaseException, runtime_root: Path,
-                 workpool_root: Path, command: tuple[str, ...] = ()):
+    def __init__(self, boundary: str, cause: BaseException,
+                 runtime_root: Path | None = None,
+                 workpool_root: Path | None = None,
+                 command: tuple[str, ...] = ()):
         super().__init__(str(cause))
         self.boundary = boundary
         self.cause = cause
@@ -288,7 +294,10 @@ def _terminate_process_tree(process: subprocess.Popen[str]) -> None:
 
 
 def run_full_pipeline(config: SmokeConfig, *, use_model_facade: bool = False) -> SmokeResult:
-    runtime_root = _runtime_root(config)
+    try:
+        runtime_root = _runtime_root(config)
+    except OSError as error:
+        raise SelfTestExecutionError("Runtime setup", error) from error
     workpool_root = runtime_root / "WorkPool"
     command: tuple[str, ...] = ()
     try:
@@ -314,7 +323,15 @@ def run_full_pipeline(config: SmokeConfig, *, use_model_facade: bool = False) ->
             config = replace(
                 config, model_dir=create_model_facade(config.model_dir, runtime_root)
             )
-        except (OSError, ValueError) as error:
+        except (OSError, ValueError, RuntimeError) as error:
+            if (isinstance(error, RuntimeError)
+                    and not isinstance(error, ModelFacadeError)
+                    and not str(error).startswith((
+                        "cannot link model checkpoint ",
+                        "cannot safely link model checkpoint ",
+                    ))):
+                cleanup_runtime_root(runtime_root, config.repository_root)
+                raise
             cleanup_runtime_root(runtime_root, config.repository_root)
             raise SelfTestExecutionError(
                 "Model facade", error, runtime_root, workpool_root
@@ -403,11 +420,13 @@ def create_model_facade(source_model_dir: Path, runtime_root: Path) -> Path:
             target.symlink_to(checkpoint, target_is_directory=True)
         except OSError as error:
             if os.name != "nt":
-                raise RuntimeError(f"cannot link model checkpoint {checkpoint}: {error}") from error
+                raise ModelFacadeError(
+                    f"cannot link model checkpoint {checkpoint}: {error}"
+                ) from error
             result = subprocess.run(["cmd", "/c", "mklink", "/J", str(target), str(checkpoint)],
                                     capture_output=True, text=True, check=False)
             if result.returncode != 0:
-                raise RuntimeError(
+                raise ModelFacadeError(
                     f"cannot safely link model checkpoint {checkpoint}: {result.stderr.strip()}")
     return facade
 
@@ -541,7 +560,9 @@ def config_from_cli(repository_root: Path, args) -> SmokeConfig:
 
 
 def _render_execution_error(profile: str, error: SelfTestExecutionError) -> int:
-    details = [f"error: {error.cause}", f"temporary WorkPool: {error.workpool_root}"]
+    details = [f"error: {error.cause}"]
+    if error.workpool_root is not None:
+        details.append(f"temporary WorkPool: {error.workpool_root}")
     if error.command:
         details.append("command: " + " ".join(error.command))
     return render_self_test(profile, [_check("FAIL", error.boundary, *details)])
