@@ -2,10 +2,11 @@ import os
 from pathlib import Path
 import unittest
 
-from tests.smoke.full_pipeline_harness import (
+from text_category_profiler.diagnostics.full_pipeline import (
     cleanup_runtime_root,
     config_from_real_runtime_environment,
     format_failure,
+    parse_classifier_device,
     run_full_pipeline,
     snapshot_directories,
     snapshot_regular_files,
@@ -42,14 +43,10 @@ class FullPipelineRealRuntimeTests(unittest.TestCase):
             if log.is_file():
                 evidence += "\n" + log.read_text(encoding="utf-8", errors="replace")
             self.assertIn("TextClassification_transformers.py", evidence, diagnostics)
-            cuda_lines = [
-                line for line in evidence.splitlines()
-                if "cuda" in line.lower() or "gpu memory" in line.lower()
-            ]
-            selection = "CUDA selected" if cuda_lines else "CUDA selection not evidenced (CPU possible)"
-            print(f"real pipeline classifier device: {selection}")
-            for line in cuda_lines[-10:]:
-                print(f"  {line}")
+            device, cuda_available, gpu_name = parse_classifier_device(evidence)
+            self.assertIsNotNone(device, diagnostics)
+            print(f"real pipeline classifier device: {device}; "
+                  f"torch CUDA available: {cuda_available}; GPU: {gpu_name}")
         finally:
             cleanup_runtime_root(result.runtime_root, ROOT)
 

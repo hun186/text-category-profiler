@@ -236,6 +236,9 @@ def main(argv=None):
     if plan.args.doctor:
         from text_category_profiler.diagnostics import run_doctor
         return run_doctor(plan.args)
+    if plan.args.self_test:
+        from text_category_profiler.diagnostics import run_self_test
+        return run_self_test(plan.args)
     args = activateArguments(plan)
     setproctitle.setproctitle(f'TCFMain{args.ExecutionTime[4:]}')
     HybridConformer(cpuUsageThreshold=90).proc()

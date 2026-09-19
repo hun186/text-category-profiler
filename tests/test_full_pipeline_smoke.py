@@ -3,7 +3,7 @@ from pathlib import Path
 import sqlite3
 import unittest
 
-from tests.smoke.full_pipeline_harness import (
+from text_category_profiler.diagnostics.full_pipeline import (
     SmokeConfig,
     cleanup_runtime_root,
     format_failure,

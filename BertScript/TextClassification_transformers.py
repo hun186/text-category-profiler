@@ -44,6 +44,7 @@ from text_category_profiler.core.utilities import SortedDictWithValue
 from text_category_profiler.concurrency.MP_utils import MPlogger
 from text_category_profiler.concurrency.MP_utils import multicoreJob
 from text_category_profiler.pipeline.TCF_utils import ClassfierOptionParser
+from text_category_profiler.diagnostics.device import report_classifier_device
 from text_category_profiler.pipeline.TCF_utils import datasetDirOutputDirPickers
 from text_category_profiler.pipeline.TCF_utils import get_base_model_checkpoint
 from text_category_profiler.data.DB_utils import sqlite3Query
@@ -284,6 +285,7 @@ def PredictSamples(ActiveHTCZeroshot=False):
     finetuned_checkpoint = os.path.join(outputDir,finetuned_checkpoint)
     
     device = 0 if torch.cuda.is_available() else -1
+    report_classifier_device(torch)
     
     batch_size = 8
     if device >= 0:
