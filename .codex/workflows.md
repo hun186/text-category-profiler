@@ -20,6 +20,9 @@
 | 啟動主流程 | `python TCFMain.py --WeiTechworkIDPath <path> --WeiTechWorkPoolPATH <path> -p 8099999 -TRVHost False -task SDSMS_Prediction` | repository root | Command shape verified from `TCFMain.py` comments；會讀寫資料，初始化未執行 |
 | 生產資源診斷 | `python TCFMain.py --doctor` | repository root | Activation-free、read-only preflight；無 FAIL 時 exit 0，缺少本機模型／FixedTest／TopicTree／PyTorch 時會指出 failure boundary 並 non-zero |
 | CUDA 必要診斷 | `python TCFMain.py --doctor --require-cuda` | repository root | 與一般 Doctor 相同，但 CUDA unavailable 為 FAIL；availability 不等於 classifier GPU execution evidence |
+| 隔離完整流程自測 | `python TCFMain.py --self-test isolated` | repository root | Temporary WorkPool/model copy、PytorchXLM fixture、只攔截 inference；structured output |
+| 真實 runtime 自測 | `python TCFMain.py --self-test real -p 8059` | repository root | Production default PytorchMMBERT 與 real classifier；temporary mutable state |
+| CUDA classifier acceptance | `python TCFMain.py --self-test real -p 8059 --require-cuda` | repository root | 實際 classifier 必須明確回報 device=cuda:<n> |
 | 單獨資料轉換 | `python DatasetConverter/DataConverter.py ...` | repository root | Verified as stage command assembled by `TCFMain.py`；未 smoke test |
 | 單獨分類 | `python BertScript/RunClassfier.py ...` | repository root | Verified as stage command assembled by `TCFMain.py`；未 smoke test |
 | 單獨結果合併 | `python BertScript/CombineTestResult.py ...` | repository root | Verified as stage command assembled by `TCFMain.py`；未 smoke test |
@@ -43,6 +46,8 @@
 | 匯入外部服務 | 先以 dry-run 或 mock 明確標示；不得把真實 DB/ES 寫入當 smoke test | 會連線 SQL Server、Elasticsearch 或批次寫入資料 |
 
 ## Full-pipeline smoke profiles
+
+Production operator commands與 unittest profiles 共用 `text_category_profiler.diagnostics.full_pipeline`；production 不 import `tests.*`。
 
 兩個 profiles 都以 temporary WorkPool 隔離 mutable state，並使用 `-TRVHost False`；一般 `python -m unittest discover -s tests` 會 discover 兩個 runtime modules 並將它們明確報為 opt-in SKIP。
 

@@ -10,7 +10,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from tests.smoke.full_pipeline_harness import (
+from text_category_profiler.diagnostics.full_pipeline import (
     RealRuntimeConfigurationError, SmokeConfig, SmokeResult,
     _discover_fixed_test_dirs, _discover_model_dir,
     build_isolated_environment, build_root_command,
@@ -71,7 +71,7 @@ class FullPipelineHarnessTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             config = self.make_config(root)
-            with mock.patch("tests.smoke.full_pipeline_harness.os.name", "nt"):
+            with mock.patch("text_category_profiler.diagnostics.full_pipeline.os.name", "nt"):
                 wrapper = create_python_wrapper(config, root)
             self.assertEqual(wrapper.name, "python.cmd")
 
@@ -79,7 +79,7 @@ class FullPipelineHarnessTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "TCFMain.py").write_text("print('done')\n", encoding="utf-8")
-            with mock.patch("tests.smoke.full_pipeline_harness.tempfile.gettempdir",
+            with mock.patch("text_category_profiler.diagnostics.full_pipeline.tempfile.gettempdir",
                             return_value=str(root / "parent with spaces")):
                 result = run_full_pipeline(self.make_config(root, intercept_classifier=False))
             self.assertEqual(result.returncode, 0)
@@ -217,10 +217,10 @@ class FullPipelineHarnessTests(unittest.TestCase):
             model.mkdir()
             fixed.mkdir()
             with mock.patch(
-                "tests.smoke.full_pipeline_harness._discover_model_dir",
+                "text_category_profiler.diagnostics.full_pipeline._discover_model_dir",
                 return_value=model,
             ) as model_resolver, mock.patch(
-                "tests.smoke.full_pipeline_harness._discover_fixed_test_dirs",
+                "text_category_profiler.diagnostics.full_pipeline._discover_fixed_test_dirs",
                 return_value=(fixed,),
             ) as fixed_resolver, mock.patch("subprocess.Popen") as launch:
                 config = config_from_real_runtime_environment(
@@ -268,9 +268,9 @@ class FullPipelineHarnessTests(unittest.TestCase):
             model.mkdir()
             fixed.mkdir()
             with mock.patch(
-                "tests.smoke.full_pipeline_harness._discover_model_dir"
+                "text_category_profiler.diagnostics.full_pipeline._discover_model_dir"
             ) as model_resolver, mock.patch(
-                "tests.smoke.full_pipeline_harness._discover_fixed_test_dirs"
+                "text_category_profiler.diagnostics.full_pipeline._discover_fixed_test_dirs"
             ) as fixed_resolver:
                 config = config_from_real_runtime_environment(root, {
                     "TCP_REAL_MODEL_DIR": str(model),
@@ -292,10 +292,10 @@ class FullPipelineHarnessTests(unittest.TestCase):
             for path in (model, first, second):
                 path.mkdir()
             with mock.patch(
-                "tests.smoke.full_pipeline_harness._discover_model_dir",
+                "text_category_profiler.diagnostics.full_pipeline._discover_model_dir",
                 return_value=model,
             ), mock.patch(
-                "tests.smoke.full_pipeline_harness._discover_fixed_test_dirs",
+                "text_category_profiler.diagnostics.full_pipeline._discover_fixed_test_dirs",
                 return_value=(first, second),
             ):
                 config = config_from_real_runtime_environment(root, {})
@@ -304,7 +304,7 @@ class FullPipelineHarnessTests(unittest.TestCase):
     def test_every_resolved_fixed_test_directory_is_snapshotted(self):
         first, second = Path("/fixed/first"), Path("/fixed/second")
         with mock.patch(
-            "tests.smoke.full_pipeline_harness.snapshot_regular_files",
+            "text_category_profiler.diagnostics.full_pipeline.snapshot_regular_files",
             side_effect=(('first-before',), ('second-before',)),
         ) as snapshot:
             result = snapshot_directories((first, second))

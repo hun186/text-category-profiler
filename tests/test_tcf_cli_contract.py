@@ -104,6 +104,7 @@ EXPECTED_ACTIONS = [
     ("nProcess", ("-nProc", "--nProcess"), 1),
     ("nProcessSPC", ("-nProcSPC", "--nProcessSPC"), 1),
     ("doctor", ("--doctor",), False),
+    ("self_test", ("--self-test",), None),
     ("require_cuda", ("--require-cuda",), False),
 ]
 
@@ -138,6 +139,15 @@ class ClassifierCliContractTests(unittest.TestCase):
         args = self.module.ClassfierOptionParser(["--train", "false", "--test", "false"])
         self.assertFalse(args.train)
         self.assertTrue(args.test)
+
+    def test_self_test_modes_and_test_semantics(self):
+        self.assertEqual(self.module.ClassfierOptionParser(["--self-test", "isolated"]).self_test,
+                         "isolated")
+        self.assertEqual(self.module.ClassfierOptionParser(["--self-test", "real"]).self_test,
+                         "real")
+        with self.assertRaises(SystemExit):
+            self.module.ClassfierOptionParser(["--self-test", "invalid"])
+        self.assertTrue(self.module.ClassfierOptionParser(["--test", "true"]).test)
 
     def test_convert_to_args_str_preserves_legacy_iteration_and_filtering(self):
         args = argparse.Namespace(empty="", false=False, zero=0, none=None,

@@ -256,11 +256,17 @@ def ClassfierOptionParser(argv=None):
     diagnostics = parser.add_argument_group("diagnostics")
     diagnostics.add_argument(
         "--doctor", action="store_true",
-        help="Check production resources without activating or running the pipeline.",
+        help="Resource/environment preflight; does not execute the pipeline.",
+    )
+    diagnostics.add_argument(
+        "--self-test", choices=("isolated", "real"),
+        help=("Run a disposable full pipeline: isolated intercepts inference; "
+              "real uses the production model and classifier."),
     )
     diagnostics.add_argument(
         "--require-cuda", action="store_true",
-        help="With --doctor, treat unavailable CUDA as a failure.",
+        help=("Doctor: require CUDA availability. Real self-test: require explicit "
+              "actual classifier CUDA execution evidence."),
     )
 
 
@@ -341,7 +347,7 @@ def convert_to_args_str(args):
     args_str = ""
 
     for key in vars_args:
-        if key in {"doctor", "require_cuda"}:
+        if key in {"doctor", "self_test", "require_cuda"}:
             continue
         val = vars_args[key]
         if val != '':

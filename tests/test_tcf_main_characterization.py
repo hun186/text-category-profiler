@@ -26,7 +26,7 @@ def default_args(**overrides):
         WeiTechFormatInputPATH="", WeiTechFormatOutputPATH="",
         WeiTechFormatSepWorkPool=False, TRVWebHost=True,
         RemoveBertDataDir=False,
-        doctor=False, require_cuda=False,
+        doctor=False, self_test=None, require_cuda=False,
     )
     values.update(overrides)
     return argparse.Namespace(**values)
@@ -54,7 +54,7 @@ def fake_modules(args=None, completed_codes=None, trace=None):
         return types.SimpleNamespace(returncode=next(codes, 0))
 
     def forward(namespace):
-        ignored = {"_dataset_dir", "_output_dir", "doctor", "require_cuda"}
+        ignored = {"_dataset_dir", "_output_dir", "doctor", "self_test", "require_cuda"}
         return "".join(f" --{key} {value}" for key, value in vars(namespace).items()
                        if value != "" and key not in ignored)
 
@@ -156,6 +156,22 @@ class RootPipelineCharacterizationTests(unittest.TestCase):
         with patch.dict(sys.modules, modules):
             runpy.run_path(str(ROOT / "TCFMain.py"), run_name="__main__")
         self.assertEqual([("doctor", "selected")], trace)
+
+    def test_self_test_exits_before_activation_and_pipeline_execution(self):
+        for profile in ("isolated", "real"):
+            with self.subTest(profile=profile):
+                trace = []
+                args = default_args(self_test=profile)
+                modules = fake_modules(args, trace=trace)
+                modules["TCF_Params.TCFParameters"].activateArguments = lambda plan: self.fail(
+                    "self-test must not activate pipeline runtime")
+                modules["text_category_profiler.diagnostics"] = _module(
+                    "diagnostics", run_self_test=lambda selected: trace.append(
+                        ("self-test", selected.self_test)) or 0,
+                )
+                with patch.dict(sys.modules, modules):
+                    runpy.run_path(str(ROOT / "TCFMain.py"), run_name="__main__")
+                self.assertEqual([("self-test", profile)], trace)
 
     def test_article_analysis_is_skipped_when_test_false(self):
         trace = []

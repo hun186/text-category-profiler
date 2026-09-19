@@ -71,6 +71,26 @@ python TCFMain.py --doctor -mdlDir /path/to/model -FTPath /path/to/fixed-test
 python TCFMain.py --doctor --require-cuda
 ```
 
+## Production full-pipeline self-tests
+
+The production CLI exposes the same reusable runner used by the unittest profiles:
+
+```bash
+python TCFMain.py --self-test isolated
+python TCFMain.py --self-test real -p 8059
+python TCFMain.py --self-test real -p 8059 --require-cuda
+```
+
+Doctor is availability/preflight only. Isolated validates architecture and lifecycle
+with the committed `PytorchXLM` fixture and classifier interception. Real uses the
+production model, classifier, FixedTest, and taxonomy while keeping WorkPool and a
+writable model facade temporary; it defaults to `PytorchMMBERT`. Real plus
+`--require-cuda` accepts only explicit `TCF_CLASSIFIER_DEVICE device=cuda:<n>`
+evidence emitted by the actual classifier, never generic third-party CUDA logs.
+Normal `-mdlDir`, `-FTPath`, `-TopicTreeDir`, `-TopicTreeFiles`, `-p`, and
+`-mdlType` overrides are honored. Environment-based unittest commands remain the
+CI/developer alternatives.
+
 Each check is reported as:
 
 - `PASS`: the resource or runtime fact was resolved and validated;
@@ -153,6 +173,3 @@ WeiTech acquisition/delivery lifecycle, so `KI-002` remains **Open**.
 | CUDA warning/failure | PyTorch reports no available devices | Check the installed PyTorch build, driver visibility, and device allocation; then obtain classifier execution evidence. |
 | Layer A | Missing opt-in flag | Set `TCP_RUN_FULL_PIPELINE_SMOKE=1`; otherwise a skip is expected. |
 | Layer B | Resource override/discovery failure | Run Doctor with the same port/model/path configuration before opting in to Layer B. |
-
-There are no production `--self-test` commands in this release. Reusable
-self-test CLI aliases are reserved for later work after smoke-runner extraction.
