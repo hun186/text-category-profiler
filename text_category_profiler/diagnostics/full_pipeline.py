@@ -53,6 +53,19 @@ class RealRuntimeConfigurationError(ValueError):
     """Raised when the opt-in real runtime profile is incompletely configured."""
 
 
+class SelfTestExecutionError(RuntimeError):
+    """Expected setup/launch failure after disposable runtime allocation."""
+
+    def __init__(self, boundary: str, cause: BaseException, runtime_root: Path,
+                 workpool_root: Path, command: tuple[str, ...] = ()):
+        super().__init__(str(cause))
+        self.boundary = boundary
+        self.cause = cause
+        self.runtime_root = runtime_root
+        self.workpool_root = workpool_root
+        self.command = command
+
+
 def _discover_model_dir(repository_root: Path, model_type: str, port: int) -> Path:
     """Perform one production-compatible model selection from the repository root."""
     from text_category_profiler.pipeline.TCF_utils import (
@@ -277,25 +290,59 @@ def _terminate_process_tree(process: subprocess.Popen[str]) -> None:
 def run_full_pipeline(config: SmokeConfig, *, use_model_facade: bool = False) -> SmokeResult:
     runtime_root = _runtime_root(config)
     workpool_root = runtime_root / "WorkPool"
-    workpool_root.mkdir(parents=True)
+    command: tuple[str, ...] = ()
+    try:
+        workpool_root.mkdir(parents=True)
+    except OSError as error:
+        cleanup_runtime_root(runtime_root, config.repository_root)
+        raise SelfTestExecutionError(
+            "Runtime setup", error, runtime_root, workpool_root
+        ) from error
     if config.intercept_classifier:
-        config = replace(
-            config,
-            model_dir=create_intercepted_model_copy(config.model_dir, runtime_root),
-        )
+        try:
+            config = replace(
+                config,
+                model_dir=create_intercepted_model_copy(config.model_dir, runtime_root),
+            )
+        except OSError as error:
+            cleanup_runtime_root(runtime_root, config.repository_root)
+            raise SelfTestExecutionError(
+                "Runtime setup", error, runtime_root, workpool_root
+            ) from error
     elif use_model_facade:
-        config = replace(config, model_dir=create_model_facade(config.model_dir, runtime_root))
-    marker = runtime_root / "classifier-invocations.jsonl" if config.intercept_classifier else None
-    command = build_root_command(config, workpool_root)
-    environment = build_isolated_environment(config, runtime_root, marker)
+        try:
+            config = replace(
+                config, model_dir=create_model_facade(config.model_dir, runtime_root)
+            )
+        except (OSError, ValueError) as error:
+            cleanup_runtime_root(runtime_root, config.repository_root)
+            raise SelfTestExecutionError(
+                "Model facade", error, runtime_root, workpool_root
+            ) from error
+    marker = (runtime_root / "classifier-invocations.jsonl"
+              if config.intercept_classifier else None)
+    try:
+        command = tuple(build_root_command(config, workpool_root))
+        environment = build_isolated_environment(config, runtime_root, marker)
+    except OSError as error:
+        cleanup_runtime_root(runtime_root, config.repository_root)
+        raise SelfTestExecutionError(
+            "Runtime setup", error, runtime_root, workpool_root, command
+        ) from error
     popen_options: dict[str, object] = {}
     if os.name == "nt":
         popen_options["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
     else:
         popen_options["start_new_session"] = True
-    process = subprocess.Popen(command, cwd=config.repository_root, env=environment,
-                               stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                               text=True, **popen_options)
+    try:
+        process = subprocess.Popen(command, cwd=config.repository_root, env=environment,
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                   text=True, **popen_options)
+    except (OSError, subprocess.SubprocessError) as error:
+        cleanup_runtime_root(runtime_root, config.repository_root)
+        raise SelfTestExecutionError(
+            "Process launch", error, runtime_root, workpool_root, command
+        ) from error
     timed_out = False
     try:
         stdout, stderr = process.communicate(timeout=config.timeout_seconds)
@@ -303,7 +350,7 @@ def run_full_pipeline(config: SmokeConfig, *, use_model_facade: bool = False) ->
         timed_out = True
         _terminate_process_tree(process)
         stdout, stderr = process.communicate()
-    return SmokeResult(tuple(command), process.returncode, stdout, stderr, runtime_root,
+    return SmokeResult(command, process.returncode, stdout, stderr, runtime_root,
                        workpool_root, discover_workspaces(workpool_root), marker, timed_out)
 
 
@@ -435,7 +482,7 @@ def evaluate_real(result: SmokeResult, *, model_unchanged: bool,
             evidence += "\n" + log.read_text(encoding="utf-8", errors="replace")
     device, cuda_available, gpu_name = parse_classifier_device(evidence)
     finals = [p for p in result.workspaces if p.name.endswith("_rdy_for_Spike")]
-    if device and device.startswith("cuda:"):
+    if device and device.startswith("cuda:") and cuda_available is True:
         device_status = "PASS"
     elif require_cuda:
         device_status = "FAIL"
@@ -493,6 +540,13 @@ def config_from_cli(repository_root: Path, args) -> SmokeConfig:
     return config_from_real_runtime_environment(repository_root, environment)
 
 
+def _render_execution_error(profile: str, error: SelfTestExecutionError) -> int:
+    details = [f"error: {error.cause}", f"temporary WorkPool: {error.workpool_root}"]
+    if error.command:
+        details.append("command: " + " ".join(error.command))
+    return render_self_test(profile, [_check("FAIL", error.boundary, *details)])
+
+
 def run_self_test(args, repository_root: Path | None = None) -> int:
     """Run and report a disposable child root pipeline."""
     import sqlite3
@@ -505,7 +559,10 @@ def run_self_test(args, repository_root: Path | None = None) -> int:
         source_before = snapshot_regular_files(source_model)
         config = SmokeConfig(repository_root, fixtures / "fixed_test" / "Using",
                              fixtures / "taxonomy", "TopicTree_smoke.csv", source_model)
-        result = run_full_pipeline(config)
+        try:
+            result = run_full_pipeline(config)
+        except SelfTestExecutionError as error:
+            return _render_execution_error("isolated", error)
         try:
             finals = [p for p in result.workspaces if p.name.endswith("_rdy_for_Spike")]
             source_rows = result_rows = None
@@ -527,11 +584,17 @@ def run_self_test(args, repository_root: Path | None = None) -> int:
             cleanup_runtime_root(result.runtime_root, repository_root)
     try:
         config = config_from_cli(repository_root, args)
-    except Exception as error:
+    except (RealRuntimeConfigurationError, OSError) as error:
         return render_self_test("real", [_check("FAIL", "Configuration", str(error))])
-    model_before = snapshot_regular_files(config.model_dir)
-    fixed_before = snapshot_directories(config.fixed_test_dirs)
-    result = run_full_pipeline(config, use_model_facade=True)
+    try:
+        model_before = snapshot_regular_files(config.model_dir)
+        fixed_before = snapshot_directories(config.fixed_test_dirs)
+    except OSError as error:
+        return render_self_test("real", [_check("FAIL", "Source snapshot", str(error))])
+    try:
+        result = run_full_pipeline(config, use_model_facade=True)
+    except SelfTestExecutionError as error:
+        return _render_execution_error("real", error)
     try:
         evidence = result.stdout + result.stderr
         for workspace in result.workspaces:

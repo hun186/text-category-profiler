@@ -1,4 +1,6 @@
 import argparse
+import contextlib
+import io
 import tempfile
 import unittest
 from pathlib import Path
@@ -11,11 +13,91 @@ from text_category_profiler.diagnostics.full_pipeline import (
     evaluate_isolated,
     evaluate_real,
     parse_classifier_device,
+    run_self_test,
 )
 from text_category_profiler.diagnostics.device import report_classifier_device
 
 
 class FullPipelineSelfTestTests(unittest.TestCase):
+    def self_test_args(self, profile):
+        return argparse.Namespace(
+            self_test=profile, require_cuda=False, TRVPort=8059,
+            ModelType="PytorchMMBERT", modelDir="", FixedTestPATH="",
+            TopicTreeDir="", TopicTreeFiles="TopicTree.csv",
+        )
+
+    def assert_structured_setup_failure(self, invoke, runtime_root, boundary):
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            returncode = invoke()
+        self.assertNotEqual(returncode, 0)
+        self.assertIn(f"[FAIL] {boundary}", output.getvalue())
+        self.assertIn("FINAL: FAIL", output.getvalue())
+        self.assertFalse(runtime_root.exists())
+
+    def test_real_model_facade_failure_is_structured_and_cleans_runtime(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            model = root / "model"
+            fixed = root / "fixed"
+            model.mkdir()
+            fixed.mkdir()
+            runtime = root / "runtime"
+            config = SmokeConfig(root, fixed, None, None, model,
+                                 fixed_test_dirs=(fixed,), intercept_classifier=False)
+            with mock.patch(
+                "text_category_profiler.diagnostics.full_pipeline.config_from_cli",
+                return_value=config,
+            ), mock.patch(
+                "text_category_profiler.diagnostics.full_pipeline._runtime_root",
+                return_value=runtime,
+            ):
+                self.assert_structured_setup_failure(
+                    lambda: run_self_test(self.self_test_args("real"), root),
+                    runtime, "Model facade",
+                )
+
+    def test_process_launch_failure_is_structured_and_cleans_runtime(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            model = root / "model"
+            fixed = root / "fixed"
+            (model / "checkpoint-1").mkdir(parents=True)
+            fixed.mkdir()
+            runtime = root / "runtime"
+            config = SmokeConfig(root, fixed, None, None, model,
+                                 fixed_test_dirs=(fixed,), intercept_classifier=False)
+            with mock.patch(
+                "text_category_profiler.diagnostics.full_pipeline.config_from_cli",
+                return_value=config,
+            ), mock.patch(
+                "text_category_profiler.diagnostics.full_pipeline._runtime_root",
+                return_value=runtime,
+            ), mock.patch(
+                "text_category_profiler.diagnostics.full_pipeline.subprocess.Popen",
+                side_effect=OSError("cannot execute child"),
+            ):
+                self.assert_structured_setup_failure(
+                    lambda: run_self_test(self.self_test_args("real"), root),
+                    runtime, "Process launch",
+                )
+
+    def test_isolated_setup_failure_is_structured_and_cleans_runtime(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            runtime = root / "runtime"
+            with mock.patch(
+                "text_category_profiler.diagnostics.full_pipeline._runtime_root",
+                return_value=runtime,
+            ), mock.patch(
+                "text_category_profiler.diagnostics.full_pipeline.create_intercepted_model_copy",
+                side_effect=OSError("fixture copy denied"),
+            ):
+                self.assert_structured_setup_failure(
+                    lambda: run_self_test(self.self_test_args("isolated"), root),
+                    runtime, "Runtime setup",
+                )
+
     def test_device_reporter_emits_cpu_and_cuda_evidence(self):
         cpu = mock.Mock()
         cpu.cuda.is_available.return_value = False
@@ -116,6 +198,7 @@ class FullPipelineSelfTestTests(unittest.TestCase):
                 cuda, require_cuda=True, **common)))
             for evidence in (
                 "TCF_CLASSIFIER_DEVICE device=cpu torch_cuda_available=False",
+                "TCF_CLASSIFIER_DEVICE device=cuda:0 torch_cuda_available=False",
                 "CUDA SETUP GPU memory", "",
             ):
                 candidate = SmokeResult(**{**base.__dict__, "stdout": evidence})
