@@ -1835,7 +1835,7 @@ class VisDatatableDFBuilder:
         rowslist, InfoScoreTableList = zip(*MPresult)
         rowslist = flattenList(rowslist)
         del MPresult
-        print("rowslist[:3]",rowslist[:3])
+        key_values("Rows preview", [("rowslist[:3]", rowslist[:3])])
         ISPos = self.PreambleCols.index("InfoScoreSum")
         
         #rowslist = sorted(rowslist, key = lambda x:x[ISPos], reverse=True)
