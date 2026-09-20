@@ -62,6 +62,28 @@ class ModelDirectorySelectionTests(unittest.TestCase):
             self.assertEqual(selected_display["checkpoint"], "checkpoint-3")
             self.assertEqual(selected_display["model file"], "model.safetensors")
 
+    def test_selected_newest_candidate_is_not_invalidated_by_older_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            selected = self.candidate(
+                root, "20260919195120", "checkpoint-3", "model.safetensors"
+            )
+            older = self.candidate(root, "20260919194841")
+            original_inspector = self.module.inspect_pytorch_output_candidate
+
+            def inspect(output_dir):
+                if Path(output_dir) == older:
+                    raise OSError("older candidate became unreadable")
+                return original_inspector(output_dir)
+
+            with mock.patch.object(
+                self.module, "inspect_pytorch_output_candidate", side_effect=inspect
+            ) as inspector:
+                actual = self.make_picker(root).Pick_outputDir()
+
+            self.assertEqual(actual, str(selected))
+            inspector.assert_called_once_with(str(selected))
+
     def test_invalid_newest_is_rejected_and_older_binary_candidate_is_selected(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -120,8 +142,48 @@ class ModelDirectorySelectionTests(unittest.TestCase):
 
             sleep.assert_called_once_with(10)
             retry_message = self.logger.logW.call_args_list[0].args[0]
-            self.assertIn("no usable model directory was found", retry_message)
-            self.assertIn("matching candidates were inspected and rejected", retry_message)
+            self.assertIn(
+                "matching model directories were inspected but none contained a usable checkpoint",
+                retry_message,
+            )
+
+    def test_no_matching_candidate_has_distinct_retry_message(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            conformer = self.module.freeModelDirConformer(
+                args=self.args,
+                outputDirsROOT=str(root),
+                datasetDirsROOT=str(root),
+                RetryLimit=1,
+                MPLOGGER=self.logger,
+            )
+
+            with mock.patch.object(self.module.time, "sleep"), self.assertRaises(Exception):
+                conformer.proc()
+
+            retry_message = self.logger.logW.call_args_list[0].args[0]
+            self.assertIn(
+                "no matching model directories were found for PytorchMMBERT",
+                retry_message,
+            )
+
+    def test_tf15_candidate_summary_remains_visible(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            output = root / "output_20260919195120_TF15Bert"
+            output.mkdir()
+            (output / "model.meta").write_bytes(b"model")
+            self.args.ModelType = "TF15Bert"
+            displays = []
+            self.module.summarize_sequence = lambda values, limit: str(list(values))
+            self.module.key_values = lambda title, items, **_: displays.append(
+                (title, dict(items))
+            )
+
+            self.assertEqual(self.make_picker(root).Pick_outputDir(), str(output))
+
+            summary = dict(displays)["Model directory candidates"]
+            self.assertIn(output.name, summary["latest"])
 
     def test_explicit_model_override_remains_unchanged(self):
         with tempfile.TemporaryDirectory() as directory:

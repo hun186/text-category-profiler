@@ -21,6 +21,7 @@ from text_category_profiler.core.log_display import key_values
 
 from text_category_profiler.core.log_display import section
 from text_category_profiler.core.log_display import stage_done
+from text_category_profiler.core.log_display import summarize_sequence
 from text_category_profiler.core.log_display import warning
 from text_category_profiler.pipeline.defaults import DEFAULT_MODEL_TYPE
 
@@ -555,10 +556,14 @@ class datasetDirOutputDirPickers:
         #排除已標記為使用中的outputDir
         outputDirs = [x for x in outputDirs if "using" not in x.lower()]
         outputDirs = sorted(outputDirs, reverse=True)
+        self.last_output_candidate_count = len(outputDirs)
         #outputDir = outputDirs[0]
-        key_values("Model directory candidates", [
-            ("root", self.outputDirsROOT),
-        ], icon="·")
+        candidate_summary = [("root", self.outputDirsROOT)]
+        if self.args["ModelType"] == "TF15Bert":
+            candidate_summary.append(
+                ("latest", summarize_sequence(outputDirs[:3], limit=3))
+            )
+        key_values("Model directory candidates", candidate_summary, icon="·")
         #time.sleep(10)
         outputDir = ""
         #testResFile.append("UsingMark.txt")
@@ -585,20 +590,11 @@ class datasetDirOutputDirPickers:
                     #outputDir = outdir
                     #break
         elif self.args["ModelType"] in PYTORCH_MODEL_TYPES:
-            inspections = [
-                inspect_pytorch_output_candidate(outdir) for outdir in outputDirs
-            ]
-            selected = next(
-                (inspection for inspection in inspections if inspection.usable),
-                None,
-            )
-            for inspection in inspections:
+            for index, outdir in enumerate(outputDirs):
+                inspection = inspect_pytorch_output_candidate(outdir)
                 if inspection.usable:
-                    status = (
-                        "usable / SELECTED" if inspection is selected else "usable"
-                    )
                     details = [
-                        ("status", status),
+                        ("status", "usable / SELECTED"),
                         ("checkpoint", inspection.checkpoint),
                         ("model file", inspection.model_file),
                     ]
@@ -609,8 +605,13 @@ class datasetDirOutputDirPickers:
                     ]
                 key_values(os.path.basename(inspection.output_dir), details, icon="·")
 
-            if selected is not None:
-                return selected.output_dir
+                if inspection.usable:
+                    older_count = len(outputDirs) - index - 1
+                    if older_count:
+                        key_values("Model directory candidates", [
+                            ("additional older matches", older_count),
+                        ], icon="·")
+                    return inspection.output_dir
 
     def proc(
             self
@@ -687,19 +688,31 @@ class freeModelDirConformer:
         #檢查是否有空閒的模型目錄可用，否則再等10秒鐘。最多等10小時
         outputDir = ""
         retry = 0
+        failure_reason = "no usable model directory was found"
         while(outputDir == "" or outputDir is None):
             #print("os.cwd",os.getcwd())
-            datasetDir, outputDir = datasetDirOutputDirPickers(
+            picker = datasetDirOutputDirPickers(
                 args = self.args,
                 outputDirsROOT = self.outputDirsROOT,
                 datasetDirsROOT = self.datasetDirsROOT,
-                testResFile=self.testResFile).proc()
+                testResFile=self.testResFile)
+            datasetDir, outputDir = picker.proc()
 
             if outputDir == "" or outputDir is None:
+                candidate_count = getattr(picker, "last_output_candidate_count", 0)
+                if candidate_count:
+                    failure_reason = (
+                        "matching model directories were inspected but none "
+                        "contained a usable checkpoint"
+                    )
+                else:
+                    failure_reason = (
+                        "no matching model directories were found for "
+                        f"{self.args.ModelType}"
+                    )
                 MES = (
-                    "Using datasetDirOutputDirPickers, but no usable model "
-                    f"directory was found to test {datasetDir}; matching "
-                    "candidates were inspected and rejected. Wait 10 secs"
+                    "Using datasetDirOutputDirPickers, but "
+                    f"{failure_reason} to test {datasetDir}. Wait 10 secs"
                 )
                 #MPlogger().logW(MES,logFile="TCFMain.log")
                 self.MPLOGGER.logW(MES,logFile="TCFMain.log")
@@ -709,8 +722,7 @@ class freeModelDirConformer:
             if retry >= self.RetryLimit:
                 MES = (
                     f"It has been waiting for {self.EachWaitTime*self.RetryLimit/3600:.2f} "
-                    f"hour ({self.RetryLimit} times) and no usable model directory "
-                    "was found after matching candidates were inspected and rejected. Abort!"
+                    f"hour ({self.RetryLimit} times) and {failure_reason}. Abort!"
                 )
                 MPlogger().logW(MES,logFile="Exception.log",logSubDir="logs")
                 self.MPLOGGER.logW(MES,logFile="Exception.log")
