@@ -3,6 +3,7 @@ import ast
 import importlib.util
 import os
 from pathlib import Path
+import re
 import shutil
 import sys
 import tempfile
@@ -70,6 +71,84 @@ def load_parameters(task=""):
 
 
 class WorkpoolCharacterizationTests(unittest.TestCase):
+    def test_root_pipeline_acquires_and_completes_same_weitech_work_item(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            incoming = root / "AutoBertClassify"
+            processing = root / "AutoBertClassify_Processing"
+            processed = root / "AutoBertClassify_Processed"
+            pool = root / "WorkPool"
+            dataset = root / "dataset_rdy_for_Spike"
+            incoming.mkdir()
+            pool.mkdir()
+            dataset.mkdir()
+
+            for work_id in ("job-001", "job-003", "job-002"):
+                (incoming / work_id).mkdir()
+            for work_id in ("job-001", "job-002"):
+                (pool / work_id).mkdir()
+
+            offered_outputs = {
+                "DFPreambleCols_df_ALL.sql3": "combined",
+                "dataset_total_with_filename_FixedTest.sql3": "dataset",
+                "test.sql3": "prediction-db",
+                "test.tsv": "prediction-tsv",
+            }
+            for filename, content in offered_outputs.items():
+                (dataset / filename).write_text(content, encoding="utf-8")
+            (dataset / "not-offered.tmp").write_text("ignored", encoding="utf-8")
+
+            trace = []
+            args = default_args(
+                WeiTechworkIDPath=str(incoming),
+                WeiTechWorkPoolPATH=str(pool),
+                _dataset_dir=str(dataset),
+                _output_dir=str(root / "output"),
+            )
+            module = load_main(args, trace=trace)
+            module.MKDIR = lambda path: Path(path).mkdir(parents=True, exist_ok=True)
+            module.platform.system = lambda: "Windows"
+
+            def run_stage(command, stage_name):
+                trace.append(("stage", stage_name))
+                self.assertTrue(processing.joinpath("job-002").is_dir())
+                self.assertFalse(processed.joinpath("job-002").exists())
+
+            def backup(**kwargs):
+                trace.append(("delivery", args.WeiTechworkID))
+                destination = Path(kwargs["DesDir"])
+                destination.mkdir(parents=True, exist_ok=True)
+                for source in Path(kwargs["BertDatasetSubDir"]).iterdir():
+                    if any(re.match(pattern, source.name)
+                           for pattern in kwargs["BackFNrePatList"]):
+                        shutil.copy2(source, destination / source.name)
+
+            module.run_stage_command = run_stage
+            module.BackupAIPredictResultAndDelTempFile = backup
+
+            self.assertEqual(0, module.main([]))
+
+            self.assertEqual("job-002", args.WeiTechworkID)
+            self.assertTrue(incoming.joinpath("job-001").is_dir())
+            self.assertFalse(incoming.joinpath("job-002").exists())
+            self.assertEqual([
+                ("stage", "DataConverter"),
+                ("stage", "RunClassfier"),
+                ("stage", "CombineTestResult"),
+                ("stage", "Test_result_Vis"),
+                ("delivery", "job-002"),
+            ], trace)
+            delivered = pool / "job-002"
+            self.assertEqual(
+                offered_outputs,
+                {
+                    path.name: path.read_text(encoding="utf-8")
+                    for path in delivered.iterdir()
+                },
+            )
+            self.assertTrue(processed.joinpath("job-002").is_dir())
+            self.assertFalse(processing.joinpath("job-002").exists())
+
     def test_weitech_selects_newest_matching_id_and_moves_to_processing(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
