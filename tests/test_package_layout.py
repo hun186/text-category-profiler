@@ -372,6 +372,51 @@ class PackageLayoutTests(unittest.TestCase):
 
         self.assertEqual(violations, [])
 
+    def test_data_converter_combiner_has_cwd_independent_import_bootstrap(self):
+        path = REPOSITORY_ROOT / "DatasetConverter/DataConverter_Combiner.py"
+        tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+        imports = imported_modules(path.read_text(encoding="utf-8-sig"))
+
+        self.assertNotIn("PackageImport", imports)
+        self.assertNotIn("PackageImporter", imports)
+
+        module_scope_calls = []
+        pending = list(tree.body)
+        while pending:
+            node = pending.pop()
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                continue
+            if isinstance(node, ast.Call):
+                module_scope_calls.append(ast.unparse(node.func))
+            pending.extend(ast.iter_child_nodes(node))
+
+        self.assertNotIn("os.chdir", module_scope_calls)
+        self.assertNotIn("PackageImporter.proc", module_scope_calls)
+
+        assignments = {
+            target.id: ast.unparse(node.value)
+            for node in tree.body
+            if isinstance(node, ast.Assign)
+            for target in node.targets
+            if isinstance(target, ast.Name)
+        }
+        self.assertEqual(
+            assignments.get("REPOSITORY_ROOT"),
+            "Path(__file__).resolve().parents[1]",
+        )
+        path_bootstraps = [
+            node
+            for node in tree.body
+            if isinstance(node, ast.If)
+            and ast.unparse(node.test) == "str(REPOSITORY_ROOT) not in sys.path"
+        ]
+        self.assertEqual(len(path_bootstraps), 1)
+        self.assertEqual(
+            [ast.unparse(node) for node in path_bootstraps[0].body],
+            ["sys.path.insert(0, str(REPOSITORY_ROOT))"],
+        )
+        self.assertEqual(module_scope_calls.count("sys.path.insert"), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

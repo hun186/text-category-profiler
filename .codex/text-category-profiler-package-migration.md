@@ -100,6 +100,7 @@ text_category_profiler/
 - [x] 移除四個 canonical stage entry points（DataConverter、classifier runner、result combiner、visualization）中的 `PackageImporter.proc()`；各入口只由 `__file__` 推導 repository root，其他輔助／legacy scripts 另批處理。
 - [x] 移除 active PyTorch Transformers classifier backend 中的 `PackageImporter.proc()`；直接執行時只加入由 `__file__` 推導的 repository root。
 - [x] 移除 DatasetConverter tree adapter 主動載入的 `ClassesTree/ClassesTree_utils.py` 對 `PackageImporter.proc()` 的依賴；taxonomy/tree 行為與既有檔案解析策略維持不變。
+- [x] 移除 legacy/manual `DatasetConverter/DataConverter_Combiner.py` 的 import-time `chdir` 與 `PackageImporter.proc()`；repository 搜尋未發現 canonical production caller 或 active importer。直接執行時以 `__file__` 推導 repository root，並明確將相對的 WorkPool、來源資料、log 與輸出路徑解析至該 root，以保留舊有從 `DatasetConverter/` 啟動時的檔案位置而不改變 cwd。
 - [ ] 移除 active code 對目前 working directory 深度的 import 假設；不得在 import 階段 `chdir`。
 - [ ] 盤點 repository 內所有 `PackageImport.py`，區分 active、vendor、deployment snapshot 後逐一處理。
 - [ ] 確認同一程序中不可能從外部 `D:/shared/PythonModule` 或其他相對深度載入同名模組。

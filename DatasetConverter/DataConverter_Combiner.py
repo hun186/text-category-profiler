@@ -1,10 +1,10 @@
 import os
-if os.getcwd().split(os.path.sep)[-1] in [
-        "DatasetConverter","BertScript"]:
-    os.chdir("../")
-    print(f"Change working directory to {os.getcwd()}")
-from PackageImport import PackageImporter
-PackageImporter.proc()
+import sys
+from pathlib import Path
+
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+if str(REPOSITORY_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPOSITORY_ROOT))
 
 import setproctitle
 #載入DatasetConverter參數設定
@@ -17,8 +17,8 @@ from TCF_Params.TCFParameters import DatasetConverterROOT
 from TCF_Params.TCFParameters import BertClassfierPath
 
 from DatasetConverter.ConverterParameters_Combiner import CombinerROOTPATHList
+from DatasetConverter.combiner_paths import resolve_repository_path
 
-import sys
 import ntpath
 import pathlib
 import platform
@@ -32,7 +32,6 @@ from pandas.io import sql
 import re
 import glob
 import subprocess
-from pathlib import Path
 from collections import Counter
 import json
 
@@ -227,7 +226,16 @@ if __name__=='__main__':
     #if "windows" not in platform.system().lower():
         #nProcess = 200
     #nProcessSPC = multicoreJob().ComputeSPCNProcess()
-    MKDIR(WorkPoolROOT)
+    work_pool_root = resolve_repository_path(WorkPoolROOT, REPOSITORY_ROOT)
+    combiner_root_paths = [
+        resolve_repository_path(path, REPOSITORY_ROOT)
+        for path in CombinerROOTPATHList
+    ]
+    log_subdir = resolve_repository_path("logs", REPOSITORY_ROOT)
+    output_main = resolve_repository_path(
+        "DatasetConverter/train", REPOSITORY_ROOT
+    )
+    MKDIR(work_pool_root)
     inputMaxLen = 2048
     DCkwargs = {
         "inputMaxLen" : inputMaxLen, #輸入樣本最長度
@@ -238,15 +246,14 @@ if __name__=='__main__':
         }
 
     MPLOGGER_DCC = MPlogger(
-        logSubDir=f"logs",logFile="DataConveter_Combiner.log")
+        logSubDir=log_subdir,logFile="DataConveter_Combiner.log")
     #MPLOGGER_DCC.logW(MES)
 
     #依照目錄設定，由txt檔產製資料集檔案。
     MES = "開始產製資料集檔案。"
     MPLOGGER_DCC.logW(MES)
-    OUTPUTMAIN = os.path.join(os.getcwd(),"DatasetConverter/train")
     df = BuildSamplesDfFromPaths(
-        ROOTPATHList = CombinerROOTPATHList,
+        ROOTPATHList = combiner_root_paths,
         #OUTPUTMAIN = OUTPUTMAIN,
         #OUTPUTMAIN_Counter = OUTPUTMAIN_Counter,
         #nProcess = nProcess,
@@ -261,6 +268,6 @@ if __name__=='__main__':
     #輸出總表，包含所有樣本之label、text及檔名資訊
     DTBJobs = []
     IndexCols = ["text", "Src"]
-    dfOutputer(df, OUTPUTMAIN, IndexCols=IndexCols, TSVTextAdapter=True).run()
-    print(f"The combined data has been export to {OUTPUTMAIN}.sql3.")
+    dfOutputer(df, output_main, IndexCols=IndexCols, TSVTextAdapter=True).run()
+    print(f"The combined data has been export to {output_main}.sql3.")
     os.system("pause")
