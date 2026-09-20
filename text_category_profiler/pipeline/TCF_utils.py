@@ -6,6 +6,7 @@ import pathlib
 import argparse
 import datetime
 from multiprocessing import current_process
+from typing import NamedTuple
 #import wmi
 from text_category_profiler.concurrency.MP_utils import MPlogger
 from text_category_profiler.core.utilities import OSWALK
@@ -30,6 +31,50 @@ BASE_MODEL_CHECKPOINTS = {
     "PytorchRBTL3": "chinese_rbtl3_L-3_H-1024_A-16_Pytorch",
     "PytorchMMBERT": "mmBERT-base",
 }
+
+SUPPORTED_PYTORCH_MODEL_FILES = ("pytorch_model.bin", "model.safetensors")
+
+
+class PytorchOutputInspection(NamedTuple):
+    output_dir: str
+    checkpoint: str = ""
+    model_file: str = ""
+    rejection_reason: str = ""
+
+    @property
+    def usable(self):
+        return bool(self.checkpoint and self.model_file)
+
+
+def inspect_pytorch_output_candidate(output_dir):
+    """Inspect one output directory using the production checkpoint contract."""
+    checkpoint_pattern = re.compile(r"^checkpoint-\d{1,}")
+    checkpoint_dirs = sorted(
+        filter(checkpoint_pattern.match, os.listdir(output_dir)), reverse=True
+    )
+    if not checkpoint_dirs:
+        return PytorchOutputInspection(
+            output_dir=output_dir,
+            rejection_reason="no checkpoint-* directory found",
+        )
+
+    for checkpoint in checkpoint_dirs:
+        checkpoint_path = os.path.join(output_dir, checkpoint)
+        checkpoint_contents = os.listdir(checkpoint_path)
+        for model_file in SUPPORTED_PYTORCH_MODEL_FILES:
+            if model_file in checkpoint_contents:
+                return PytorchOutputInspection(
+                    output_dir=output_dir,
+                    checkpoint=checkpoint,
+                    model_file=model_file,
+                )
+
+    return PytorchOutputInspection(
+        output_dir=output_dir,
+        rejection_reason=(
+            "checkpoint directories contain no supported model file"
+        ),
+    )
 
 def get_base_model_checkpoint(ModelType):
     try:
@@ -511,11 +556,14 @@ class datasetDirOutputDirPickers:
         #排除已標記為使用中的outputDir
         outputDirs = [x for x in outputDirs if "using" not in x.lower()]
         outputDirs = sorted(outputDirs, reverse=True)
+        self.last_output_candidate_count = len(outputDirs)
         #outputDir = outputDirs[0]
-        key_values("Model directory candidates", [
-            ("root", self.outputDirsROOT),
-            ("latest", summarize_sequence(outputDirs[:3], limit=3)),
-        ], icon="·")
+        candidate_summary = [("root", self.outputDirsROOT)]
+        if self.args["ModelType"] == "TF15Bert":
+            candidate_summary.append(
+                ("latest", summarize_sequence(outputDirs[:3], limit=3))
+            )
+        key_values("Model directory candidates", candidate_summary, icon="·")
         #time.sleep(10)
         outputDir = ""
         #testResFile.append("UsingMark.txt")
@@ -542,24 +590,28 @@ class datasetDirOutputDirPickers:
                     #outputDir = outdir
                     #break
         elif self.args["ModelType"] in PYTORCH_MODEL_TYPES:
-            for outdir in outputDirs:
-                #outdir = os.path.join(outputDirsROOT,outdir)
-                r = re.compile(r"^checkpoint-\d{1,}")
-                ckptDirs = list(filter(r.match, os.listdir(outdir)))
-                ckptDirs = sorted(ckptDirs, reverse=True)
-                for ckDir in ckptDirs:
-                    subDir = os.path.join(outdir,ckDir)
-                    if any([file in os.listdir(subDir) for file in [
-                            "pytorch_model.bin",
-                            "model.safetensors",
-                            #"checkpoint_best_micro.pt"
-                            ]]):
-                        return outdir
-                        #outputDir = outdir
-                        #break
+            for index, outdir in enumerate(outputDirs):
+                inspection = inspect_pytorch_output_candidate(outdir)
+                if inspection.usable:
+                    details = [
+                        ("status", "usable / SELECTED"),
+                        ("checkpoint", inspection.checkpoint),
+                        ("model file", inspection.model_file),
+                    ]
                 else:
-                    continue  # only executed if the inner loop did NOT break
-                break  # only executed if the inner loop DID break
+                    details = [
+                        ("status", "rejected"),
+                        ("reason", inspection.rejection_reason),
+                    ]
+                key_values(os.path.basename(inspection.output_dir), details, icon="·")
+
+                if inspection.usable:
+                    older_count = len(outputDirs) - index - 1
+                    if older_count:
+                        key_values("Model directory candidates", [
+                            ("additional older matches", older_count),
+                        ], icon="·")
+                    return inspection.output_dir
 
     def proc(
             self
@@ -636,23 +688,42 @@ class freeModelDirConformer:
         #檢查是否有空閒的模型目錄可用，否則再等10秒鐘。最多等10小時
         outputDir = ""
         retry = 0
+        failure_reason = "no usable model directory was found"
         while(outputDir == "" or outputDir is None):
             #print("os.cwd",os.getcwd())
-            datasetDir, outputDir = datasetDirOutputDirPickers(
+            picker = datasetDirOutputDirPickers(
                 args = self.args,
                 outputDirsROOT = self.outputDirsROOT,
                 datasetDirsROOT = self.datasetDirsROOT,
-                testResFile=self.testResFile).proc()
+                testResFile=self.testResFile)
+            datasetDir, outputDir = picker.proc()
 
             if outputDir == "" or outputDir is None:
-                MES = f"Using datasetDirOutputDirPickers, but there is no available free outputDir found to test {datasetDir}! Wait 10 secs"
+                candidate_count = getattr(picker, "last_output_candidate_count", 0)
+                if candidate_count:
+                    failure_reason = (
+                        "matching model directories were inspected but none "
+                        "contained a usable checkpoint"
+                    )
+                else:
+                    failure_reason = (
+                        "no matching model directories were found for "
+                        f"{self.args.ModelType}"
+                    )
+                MES = (
+                    "Using datasetDirOutputDirPickers, but "
+                    f"{failure_reason} to test {datasetDir}. Wait 10 secs"
+                )
                 #MPlogger().logW(MES,logFile="TCFMain.log")
                 self.MPLOGGER.logW(MES,logFile="TCFMain.log")
                 time.sleep(10)
                 retry += 1
 
             if retry >= self.RetryLimit:
-                MES = f"It has been waiting for {self.EachWaitTime*self.RetryLimit/3600:.2f} hour ({self.RetryLimit} times) and there is no free ModelDir to use. Abort!"
+                MES = (
+                    f"It has been waiting for {self.EachWaitTime*self.RetryLimit/3600:.2f} "
+                    f"hour ({self.RetryLimit} times) and {failure_reason}. Abort!"
+                )
                 MPlogger().logW(MES,logFile="Exception.log",logSubDir="logs")
                 self.MPLOGGER.logW(MES,logFile="Exception.log")
                 raise Exception
