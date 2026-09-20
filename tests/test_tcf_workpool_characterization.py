@@ -107,7 +107,7 @@ class WorkpoolCharacterizationTests(unittest.TestCase):
             )
             module = load_main(args, trace=trace)
             module.MKDIR = lambda path: Path(path).mkdir(parents=True, exist_ok=True)
-            module.platform.system = lambda: "Windows"
+            original_platform_system = module.platform.system
 
             def run_stage(command, stage_name):
                 trace.append(("stage", stage_name))
@@ -126,10 +126,13 @@ class WorkpoolCharacterizationTests(unittest.TestCase):
             module.run_stage_command = run_stage
             module.BackupAIPredictResultAndDelTempFile = backup
 
-            self.assertEqual(0, module.main([]))
+            with patch.object(module.platform, "system", return_value="Windows"):
+                self.assertEqual(0, module.main([]))
+            self.assertIs(original_platform_system, module.platform.system)
 
             self.assertEqual("job-002", args.WeiTechworkID)
             self.assertTrue(incoming.joinpath("job-001").is_dir())
+            self.assertTrue(incoming.joinpath("job-003").is_dir())
             self.assertFalse(incoming.joinpath("job-002").exists())
             self.assertEqual([
                 ("stage", "DataConverter"),
