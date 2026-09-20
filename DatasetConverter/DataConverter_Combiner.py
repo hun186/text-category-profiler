@@ -1,10 +1,10 @@
 import os
-if os.getcwd().split(os.path.sep)[-1] in [
-        "DatasetConverter","BertScript"]:
-    os.chdir("../")
-    print(f"Change working directory to {os.getcwd()}")
-from PackageImport import PackageImporter
-PackageImporter.proc()
+import sys
+from pathlib import Path
+
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+if str(REPOSITORY_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPOSITORY_ROOT))
 
 import setproctitle
 #載入DatasetConverter參數設定
@@ -18,7 +18,6 @@ from TCF_Params.TCFParameters import BertClassfierPath
 
 from DatasetConverter.ConverterParameters_Combiner import CombinerROOTPATHList
 
-import sys
 import ntpath
 import pathlib
 import platform
@@ -32,7 +31,6 @@ from pandas.io import sql
 import re
 import glob
 import subprocess
-from pathlib import Path
 from collections import Counter
 import json
 
