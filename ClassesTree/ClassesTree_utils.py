@@ -1,6 +1,3 @@
-from PackageImport import PackageImporter
-PackageImporter.proc()
-
 import os
 import math
 import pandas as pd

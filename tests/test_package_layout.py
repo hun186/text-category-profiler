@@ -353,6 +353,25 @@ class PackageLayoutTests(unittest.TestCase):
 
         self.assertEqual(violations, [])
 
+    def test_active_classes_tree_boundary_does_not_import_legacy_path_injector(self):
+        path = REPOSITORY_ROOT / "ClassesTree/ClassesTree_utils.py"
+        tree = ast.parse(path.read_text(encoding="utf-8-sig"))
+        violations = []
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                if node.module == "PackageImport" or any(
+                    alias.name == "PackageImporter" for alias in node.names
+                ):
+                    violations.append(ast.unparse(node))
+            elif isinstance(node, ast.Import):
+                violations.extend(
+                    alias.name
+                    for alias in node.names
+                    if alias.name in {"PackageImport", "PackageImporter"}
+                )
+
+        self.assertEqual(violations, [])
+
 
 if __name__ == "__main__":
     unittest.main()
