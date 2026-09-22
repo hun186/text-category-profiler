@@ -63,8 +63,126 @@ STAGE_IMPLEMENTATION_MODULES = {
     "BertScript.Test_result_Vis",
 }
 
+PACKAGE_IMPORT_CONSUMERS = {
+    # Active support modules reached from canonical stages.
+    "BertScript/Test_result_Vis_layout.py": (True, True),
+    "DatasetConverter/EXTConverter/Combiner.py": (True, True),
+    "DatasetConverter/EXTConverter/ExtractionConverter.py": (True, True),
+    # Legacy/manual scripts.
+    "BertScript/TextClassification_XLM.py": (True, True),
+    "BertScript/writeto_tsv.py": (True, True),
+    "ClassesTree/Visualization/jaal/jaalViewer.py": (True, True),
+    "DatasetConverter/ConverterParameters.py": (True, True),
+    "DatasetConverter/CorpusMetadataManager.py": (True, True),
+    "DatasetConverter/DateChecker.py": (True, True),
+    "DatasetConverter/SMS/SMSMerger.py": (True, True),
+    "DatasetConverter/SummarizationExcels_Combiner.py": (True, True),
+    # Tests and experiments retained outside the unittest suite.
+    "DatasetConverter/Dataset Generator/ComponentGenerator/ComponentGenerator.py": (True, True),
+    "DatasetConverter/FreqAnalysis_dash.py": (True, True),
+    # Explicit copies/deprecated implementations.
+    "BertScript/TextClassification_XLM_Pred_deprecated.py": (True, True),
+    "BertScript/TextClassification_XLM_Train_deprecated.py": (True, True),
+    "DatasetConverter/EXTConverter/Combiner - 複製.py": (True, True),
+}
+
+DEPLOYMENT_PACKAGE_IMPORT_CONSUMERS = {
+    "BertScript/TRV_deploy/deploy-dash-with-gcp-master/TRV/main.py": (True, True),
+    "BertScript/TRV_deploy/deploy-dash-with-gcp-master/TRV/PythonModule/utils/Email_utils.py": (True, True),
+}
+
+PACKAGE_IMPORT_PROVIDERS = {
+    "BertScript/PackageImport.py",
+    "BertScript/TRV_deploy/deploy-dash-with-gcp-master/TRV/PackageImport.py",
+    "ClassesTree/PackageImport.py",
+    "ClassesTree/Visualization/jaal/PackageImport.py",
+    "DatasetConverter/Dataset Generator/ComponentGenerator/PackageImport.py",
+    "DatasetConverter/EXTConverter/PackageImport.py",
+    "DatasetConverter/PackageImport.py",
+    "PackageImport.py",
+    "TCF_Params/PackageImport.py",
+    "text_category_profiler/PackageImport.py",
+    "text_category_profiler/tulip_utils/PackageImport.py",
+}
+
+CANONICAL_ACTIVE_BOUNDARIES = {
+    "TCFMain.py",
+    "DatasetConverter/DataConverter.py",
+    "BertScript/RunClassfier.py",
+    "BertScript/CombineTestResult.py",
+    "BertScript/Test_result_Vis.py",
+    "BertScript/TextClassification_transformers.py",
+}
+
+
+def executable_package_import_consumers(*, include_deployment=False):
+    consumers = {}
+    roots = (
+        REPOSITORY_ROOT / "TCFMain.py",
+        REPOSITORY_ROOT / "TCF_Params",
+        REPOSITORY_ROOT / "ClassesTree",
+        REPOSITORY_ROOT / "DatasetConverter",
+        REPOSITORY_ROOT / "BertScript",
+        PACKAGE_ROOT,
+    )
+    for root in roots:
+        paths = [root] if root.is_file() else root.rglob("*.py")
+        for path in paths:
+            relative_path = path.relative_to(REPOSITORY_ROOT)
+            if path.name == "PackageImport.py":
+                continue
+            is_deployment = "TRV_deploy" in path.parts
+            if is_deployment != include_deployment:
+                continue
+            if "Dash-by-Plotly-master" in path.parts:
+                continue  # Explicit vendor boundary; it has no verified consumers.
+            source = path.read_text(encoding="utf-8-sig")
+            if "PackageImport" not in source:
+                continue
+            tree = ast.parse(source, filename=str(path))
+            has_import = any(
+                (
+                    isinstance(node, ast.ImportFrom)
+                    and node.module == "PackageImport"
+                )
+                or (
+                    isinstance(node, ast.Import)
+                    and any(alias.name == "PackageImport" for alias in node.names)
+                )
+                for node in ast.walk(tree)
+            )
+            has_proc = any(
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and node.func.attr == "proc"
+                and isinstance(node.func.value, ast.Name)
+                and node.func.value.id == "PackageImporter"
+                for node in ast.walk(tree)
+            )
+            if has_import or has_proc:
+                consumers[relative_path.as_posix()] = (has_import, has_proc)
+    return consumers
+
 
 class PackageLayoutTests(unittest.TestCase):
+    def test_package_import_consumers_match_reviewed_inventory(self):
+        self.assertEqual(executable_package_import_consumers(), PACKAGE_IMPORT_CONSUMERS)
+        self.assertTrue(CANONICAL_ACTIVE_BOUNDARIES.isdisjoint(PACKAGE_IMPORT_CONSUMERS))
+
+    def test_deployment_package_import_consumers_match_reviewed_inventory(self):
+        self.assertEqual(
+            executable_package_import_consumers(include_deployment=True),
+            DEPLOYMENT_PACKAGE_IMPORT_CONSUMERS,
+        )
+
+    def test_package_import_providers_match_reviewed_inventory(self):
+        providers = {
+            path.relative_to(REPOSITORY_ROOT).as_posix()
+            for path in REPOSITORY_ROOT.rglob("PackageImport.py")
+            if ".codex" not in path.parts
+        }
+        self.assertEqual(providers, PACKAGE_IMPORT_PROVIDERS)
+
     def test_shared_boundaries_do_not_import_stage_implementations(self):
         self.assertIn(
             "BertScript.RunClassfier",
