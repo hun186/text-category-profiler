@@ -56,3 +56,4 @@ BertScript/mmBERT-base/pytorch_model.bin
 
 BertScript/TRV_deploy
 DatasetConverter/EXTConverter/Output/CZJ_CorpusFile.sql3
+TextClassificationDatasetOptimization/ChatGPT提問模板/.~lock.2-1.TopicTree_old.csv\#

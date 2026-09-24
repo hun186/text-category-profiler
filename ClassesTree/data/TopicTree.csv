@@ -3116,3 +3116,14 @@ CN Intelligence And Espionage Against TW-Espionage Network Operations,CN Intelli
 CN Intelligence And Espionage Against TW-Espionage Network Operations,CN Intelligence And Espionage Against TW-Network Infrastructure Financing And Communication Channels,202609031701,contains,新增底層細緻類別；依間諜網絡運作機制區分掩護據點、組織基礎、資金移轉及通訊傳遞管道；目標類別：中共對臺情報蒐集與間諜網絡；＠ChatGPT
 CN Policy For TW,CN Intelligence And Espionage Against TW,202609031701,contains,新增結構型交叉父類別；補充中共對臺政策分類維度下之情報蒐集與間諜滲透工具；目標類別：中共對臺情報蒐集與間諜網絡；＠ChatGPT
 Cross-Strait Security,CN Intelligence And Espionage Against TW,202609031701,contains,新增檢索型主題包含；供台海安全上層向下展開取得中共對臺情報蒐集、滲透及間諜網絡資訊；目標類別：中共對臺情報蒐集與間諜網絡；＠ChatGPT
+UN Affairs,UN Governance And Reform,202609161228,contains,新增必要中間節點；建立聯合國事務下可持續擴充之治理與改革分類層；目標類別：聯合國財政危機與聯合國80改革；＠ChatGPT
+UN Governance And Reform,UN Financial Crisis And UN80 Reform,202609161228,contains,新增主要層級；建立聯合國財政危機與聯合國80改革核心主題；目標類別：聯合國財政危機與聯合國80改革；＠ChatGPT
+UN Financial Crisis And UN80 Reform,UN Financial Crisis And UN80 Reform-Financial Sustainability,202609161228,contains,新增必要中間節點；將財政危機分支聚合為財務永續、流動性與預算應對之分類軸；目標類別：聯合國財政危機與聯合國80改革；＠ChatGPT
+UN Financial Crisis And UN80 Reform-Financial Sustainability,UN Financial Crisis-Contributions Arrears And Liquidity,202609161228,contains,新增底層細緻類別；區分會員國會費、欠款、收款時點與流動性缺口；目標類別：聯合國財政危機與聯合國80改革；＠ChatGPT
+UN Financial Crisis And UN80 Reform-Financial Sustainability,UN Financial Crisis-Budget Cuts Cash Conservation And Financial Rule Reform,202609161228,contains,新增底層細緻類別；區分預算削減、現金節約措施與貸項退還等財務規則改革；目標類別：聯合國財政危機與聯合國80改革；＠ChatGPT
+UN Projects,UN Projects-UN80 Initiative,202609161228,contains,新增結構型交叉父類別；UN80為聯合國正式改革倡議，補充既有UN Projects分類維度；目標類別：聯合國財政危機與聯合國80改革；＠ChatGPT
+UN Financial Crisis And UN80 Reform,UN Projects-UN80 Initiative,202609161228,contains,新增檢索型主題包含；使聯合國財政危機與UN80改革主題向下展開時可穩定取得UN80改革資料；目標類別：聯合國財政危機與聯合國80改革；＠ChatGPT
+UN Projects-UN80 Initiative,UN80 Initiative-Secretariat Efficiency And Administrative Consolidation,202609161228,contains,新增底層細緻類別；依UN80工作流1聚焦秘書處效率、行政平台整併、共享服務與成本效率；目標類別：聯合國財政危機與聯合國80改革；＠ChatGPT
+UN Projects-UN80 Initiative,UN80 Initiative-Mandate Creation Implementation And Review,202609161228,contains,新增底層細緻類別；依UN80工作流2聚焦任務授權的建立、執行、檢視與生命週期改革；目標類別：聯合國財政危機與聯合國80改革；＠ChatGPT
+UN Projects-UN80 Initiative,UN80 Initiative-Structural Changes And Programme Realignment,202609161228,contains,新增底層細緻類別；依UN80工作流3聚焦組織結構變革、實體整併與方案調整；目標類別：聯合國財政危機與聯合國80改革；＠ChatGPT
+Global Governance,UN Governance And Reform,202609161228,contains,新增結構型交叉父類別；聯合國治理與改革亦屬全球治理之直接下位主題；目標類別：聯合國財政危機與聯合國80改革；＠ChatGPT
