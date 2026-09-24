@@ -6,7 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class ProjectDocumentationTests(unittest.TestCase):
-    def test_full_pipeline_smoke_profiles_are_current_and_issues_stay_open(self):
+    def test_full_pipeline_smoke_profiles_and_issue_statuses_are_current(self):
         workflows = (ROOT / ".codex" / "workflows.md").read_text(encoding="utf-8")
         known_issues = (ROOT / ".codex" / "known_issues.md").read_text(encoding="utf-8")
         memory = (ROOT / ".codex" / "memory.md").read_text(encoding="utf-8")
@@ -21,7 +21,8 @@ class ProjectDocumentationTests(unittest.TestCase):
             self.assertIn(issue, known_issues)
             self.assertIn(issue, memory)
         self.assertRegex(known_issues, r"`KI-003`[^\n]*\| Open \|")
-        self.assertRegex(known_issues, r"`KI-002`[^\n]*\| Open \|")
+        self.assertNotRegex(known_issues, r"`KI-002`[^\n]*\| Open \|")
+        self.assertRegex(known_issues, r"Recently Resolved[\s\S]*`KI-002`")
 
     def test_known_issues_agrees_with_lightweight_smoke_command(self):
         known_issues = (ROOT / ".codex" / "known_issues.md").read_text(encoding="utf-8")
