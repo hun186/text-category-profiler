@@ -136,9 +136,6 @@ STAGE_IMPLEMENTATION_MODULES = {
 }
 
 PACKAGE_IMPORT_CONSUMERS = {
-    # Active support modules reached from canonical stages.
-    "DatasetConverter/EXTConverter/Combiner.py": (True, True),
-    "DatasetConverter/EXTConverter/ExtractionConverter.py": (True, True),
     # Legacy/manual scripts.
     "BertScript/TextClassification_XLM.py": (True, True),
     "BertScript/writeto_tsv.py": (True, True),
