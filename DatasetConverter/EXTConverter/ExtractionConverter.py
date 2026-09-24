@@ -1,11 +1,11 @@
 import os
-if os.getcwd().split(os.path.sep)[-1] in [
-        #"DatasetConverter","BertScript",
-        "EXTConverter"]:
-    os.chdir("../../")
-    print(f"Change working directory to {os.getcwd()}")
-from PackageImport import PackageImporter
-PackageImporter.proc()
+import sys
+from pathlib import Path, PureWindowsPath
+
+if __name__ == "__main__":
+    REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+    if str(REPOSITORY_ROOT) not in sys.path:
+        sys.path.insert(0, str(REPOSITORY_ROOT))
 
 import math
 import re
@@ -22,7 +22,6 @@ from text_category_profiler.core.utilities import removeStrPrefix
 from text_category_profiler.core.utilities import removeStrSuffix
 from text_category_profiler.core.utilities import OSWALK
 from text_category_profiler.core.utilities import MKDIR
-from text_category_profiler.core.utilities import pathSpliter
 from text_category_profiler.core.utilities import fileNameNormalizer
 from text_category_profiler.core.utilities import getMFNFromFN
 from text_category_profiler.core.utilities import getFNFromFullPath
@@ -30,6 +29,34 @@ from text_category_profiler.core.utilities import RemoveIlleagalCharForFileName
 from text_category_profiler.core.utilities import DomainNameExtractor
 from text_category_profiler.data.df_utils import DictRowsListToDF
 from text_category_profiler.data.df_utils import dfOutputer
+
+
+def resolve_extraction_input_root(target, *, caller_cwd=None):
+    """Resolve a rule's input root without changing the process cwd.
+
+    Absolute Windows paths remain lexical on non-Windows hosts.  For a legacy
+    relative rule, reuse the matching leading path segment already present in
+    the caller cwd; otherwise resolve the whole rule below that cwd.
+    """
+
+    target = os.fspath(target)
+    if PureWindowsPath(target).is_absolute():
+        return target
+
+    target_path = Path(target)
+    if target_path.is_absolute():
+        return str(target_path)
+
+    cwd = Path(caller_cwd or os.getcwd()).resolve()
+    target_parts = target_path.parts
+    if not target_parts:
+        return str(cwd)
+
+    try:
+        matching_index = cwd.parts.index(target_parts[0])
+    except ValueError:
+        return str(cwd.joinpath(target_path))
+    return str(Path(*cwd.parts[: matching_index + 1], *target_parts[1:]))
 
 
 def ComputeOutputLabel(
@@ -116,18 +143,8 @@ def Extractor(task,FileNameInSQL3 = False, ExtractionRuleDict = dict(),
     if JobInfo == dict():
         JobInfo = ExtractionRuleDict[task]
     DirName = JobInfo.get("DirName","./")
-    if DirName != "":
-        cwdDir = os.getcwd()
-        cwdDirList = pathSpliter.proc(os.getcwd())
-        tarDirList = pathSpliter.proc(DirName)
-        tarRoot = tarDirList[0]       
-        while(len(cwdDirList)>0):
-            if cwdDirList[-1] != tarRoot:
-                cwdDirList.pop()
-            else:
-                break
-        os.chdir('/'.join(cwdDirList+tarDirList[1:]))
-    print("cwd",os.getcwd())
+    input_root = resolve_extraction_input_root(DirName)
+    print("input root",input_root)
     fileNames = JobInfo["fileNames"]
     #OUTPUTMAIN = JobInfo.get("OUTPUTMAIN","")
     #OverWriteOutput = JobInfo.get("OverWriteOutput",True)
@@ -151,7 +168,7 @@ def Extractor(task,FileNameInSQL3 = False, ExtractionRuleDict = dict(),
     
     nCount = dict()
     #for file in OSWALK(task):
-    for file in OSWALK("./"):
+    for file in OSWALK(input_root):
         #print("file",file)
         OUTPUTMAIN = JobInfo.get("OUTPUTMAIN","")
         skipHeader = JobInfo["header"]
@@ -260,6 +277,7 @@ def Extractor(task,FileNameInSQL3 = False, ExtractionRuleDict = dict(),
                     
                 except Exception as e:
                     print(f"when handling {line}, the following error occurs:\n{e}")
+            f.close()
             df = DictRowsListToDF(rows_list)
             print("-"*50)
             print("file",file)
@@ -286,8 +304,6 @@ def Extractor(task,FileNameInSQL3 = False, ExtractionRuleDict = dict(),
                 #import time
                 #time.sleep(30)
                 
-    os.chdir(cwdDir)        
-    
 if __name__=='__main__':
     for task in [
         #"Malicious URLs dataset",

@@ -1,14 +1,12 @@
 import os
 import glob
 import datetime
+import sys
+from pathlib import Path
 
-if os.getcwd().split(os.path.sep)[-1] in [
-        #"DatasetConverter","BertScript",
-        "EXTConverter"]:
-    os.chdir("../../")
-    print(f"Change working directory to {os.getcwd()}")
-from PackageImport import PackageImporter
-PackageImporter.proc()
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+if __name__ == "__main__" and str(REPOSITORY_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPOSITORY_ROOT))
 
 import math
 import os
@@ -96,7 +94,14 @@ class EmbassyPagesCombiner:
                 #cnt += 1
         df = DictRowsListToDF(rows_list)
         print("df.columns",df.columns)
-        OUTPUTMAIN = os.path.join("DatasetConverter","EXTConverter","Output","EmbassyPages","EmbassyPages")
+        OUTPUTMAIN = str(
+            REPOSITORY_ROOT
+            / "DatasetConverter"
+            / "EXTConverter"
+            / "Output"
+            / "EmbassyPages"
+            / "EmbassyPages"
+        )
         dfOutputer(df, OUTPUTMAIN).run()
 
 #%%#################初始化資料庫檔案#################
