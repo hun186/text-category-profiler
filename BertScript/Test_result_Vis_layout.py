@@ -1,6 +1,3 @@
-from PackageImport import PackageImporter
-PackageImporter.proc()
-
 import uuid
 import shutil
 import os
@@ -14,7 +11,7 @@ from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 import dash_pivottable
 import dash_uploader as du
-import reusable_components as rc  # see reusable_components.py
+from BertScript import reusable_components as rc
 from flask import request
 
 from text_category_profiler.core.utilities import timeNow
