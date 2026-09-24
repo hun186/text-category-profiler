@@ -98,6 +98,7 @@ text_category_profiler/
 - [x] 將 active code 的 `from utils...`／`import utils...` 改為 `from text_category_profiler...` 或明確 stage-local import。
 - [x] 移除 `text_category_profiler/` package 內部、`TCFMain.py` 與 `TCF_Params/` 對 `PackageImporter.proc()` 的依賴；package layout test 會阻止這些邊界重新匯入 legacy path injector。
 - [x] 移除四個 canonical stage entry points（DataConverter、classifier runner、result combiner、visualization）中的 `PackageImporter.proc()`；各入口只由 `__file__` 推導 repository root，其他輔助／legacy scripts 另批處理。
+- [x] 移除 visualization layout support module 的 `PackageImporter.proc()`，並以明確的 `from BertScript import reusable_components as rc` 保留既有 stage-local implementation；repository-root bootstrap 仍只由 canonical visualization entrypoint 負責。
 - [x] 移除 active PyTorch Transformers classifier backend 中的 `PackageImporter.proc()`；直接執行時只加入由 `__file__` 推導的 repository root。
 - [x] 移除 DatasetConverter tree adapter 主動載入的 `ClassesTree/ClassesTree_utils.py` 對 `PackageImporter.proc()` 的依賴；taxonomy/tree 行為與既有檔案解析策略維持不變。
 - [x] 移除 legacy/manual `DatasetConverter/DataConverter_Combiner.py` 的 import-time `chdir` 與 `PackageImporter.proc()`；repository 搜尋未發現 canonical production caller 或 active importer。直接執行時以 `__file__` 推導 repository root，並明確將相對的 WorkPool、來源資料、log 與輸出路徑解析至該 root，以保留舊有從 `DatasetConverter/` 啟動時的檔案位置而不改變 cwd。
@@ -105,13 +106,12 @@ text_category_profiler/
 - [ ] 盤點 repository 內所有 `PackageImport.py`，區分 active、vendor、deployment snapshot 後逐一處理。
 - [ ] 確認同一程序中不可能從外部 `D:/shared/PythonModule` 或其他相對深度載入同名模組。
 
-#### Phase 4 `PackageImport` inventory（`main@c6e65716`）
+#### Phase 4 `PackageImport` inventory（`main@ce9c4888` 加上本批變更）
 
-以下以 `rg` 找候選、再以 Python AST 排除註解與字串；`Graph_Builder.py` 的兩行註解因此不算 consumer。所有 18 個 consumer 都有 executable import、在 module import 時呼叫 `PackageImporter.proc()`，所以皆會改動 `sys.path`。Canonical active boundaries（`TCFMain.py`、DataConverter、RunClassfier、CombineTestResult、Test_result_Vis、Transformers classifier）目前為 **0** 個 consumer。
+以下以 `rg` 找候選、再以 Python AST 排除註解與字串；`Graph_Builder.py` 的兩行註解因此不算 consumer。剩餘 17 個 consumer 都有 executable import、在 module import 時呼叫 `PackageImporter.proc()`，所以皆會改動 `sys.path`。Canonical active boundaries（`TCFMain.py`、DataConverter、RunClassfier、CombineTestResult、Test_result_Vis、Transformers classifier）目前為 **0** 個 consumer。
 
 | Consumer | 分類 | 已知 caller／entrypoint | 額外 cwd／path side effect | 後續處置 |
 | --- | --- | --- | --- | --- |
-| `BertScript/Test_result_Vis_layout.py` | active support/module | `Test_result_Vis.py` 在建立 Dash app 時 import | `proc()` path injection | remove bootstrap |
 | `DatasetConverter/EXTConverter/ExtractionConverter.py` | active support/module | `adapters/extraction_source.py::run_extraction()`，只在 extraction mode 載入 | 從 `EXTConverter` 啟動會 `chdir`，另有 `proc()` | remove bootstrap |
 | `DatasetConverter/EXTConverter/Combiner.py` | active support/module | `adapters/extraction_source.py::build_czj_corpus()`，WeiTech conversion 才載入；亦可直接執行 | 從 `EXTConverter` 啟動會 `chdir`，另有 `proc()` | remove bootstrap |
 | `BertScript/TextClassification_XLM.py` | legacy/manual script | 無 active caller；目前 classifier runner 使用 `TextClassification_transformers.py` | `proc()` path injection | preserve as legacy for now |
@@ -130,7 +130,7 @@ text_category_profiler/
 | `BertScript/TRV_deploy/deploy-dash-with-gcp-master/TRV/main.py` | deployment snapshot | snapshot app entrypoint | `proc()` path injection | deployment boundary |
 | `BertScript/TRV_deploy/deploy-dash-with-gcp-master/TRV/PythonModule/utils/Email_utils.py` | deployment snapshot | snapshot utility；由 snapshot 自行維護 | `proc()` path injection | deployment boundary |
 
-分類計數：canonical active **0**、active support/module **3**、legacy/manual script **8**、test/experiment **2**、vendor **0**、deployment snapshot **2**、copy/deprecated **3**、unknown **0**。`tests/test_package_layout.py` 對 16 個 application debt consumers、2 個 deployment consumers 和 canonical-zero boundary 分別做 AST guard；vendor tree 是明示排除邊界，盤點時未發現 consumer，不是靜默忽略。
+分類計數：canonical active **0**、active support/module **2**、legacy/manual script **8**、test/experiment **2**、vendor **0**、deployment snapshot **2**、copy/deprecated **3**、unknown **0**。`tests/test_package_layout.py` 對 15 個 application debt consumers、2 個 deployment consumers 和 canonical-zero boundary 分別做 AST guard；vendor tree 是明示排除邊界，盤點時未發現 consumer，不是靜默忽略。
 
 | `PackageImport.py` provider | 狀態／consumer 關係 | 後續處置 |
 | --- | --- | --- |
@@ -146,7 +146,7 @@ text_category_profiler/
 | `text_category_profiler/tulip_utils/PackageImport.py` | 無 executable consumer；`Graph_Builder.py` 只有註解 | remove bootstrap |
 | `BertScript/TRV_deploy/deploy-dash-with-gcp-master/TRV/PackageImport.py` | deployment snapshot provider | deployment boundary |
 
-建議後續順序：先處理三個有 canonical caller 的 support modules（layout，再處理 extraction 的 Converter／Combiner 一批）；其次處理無 caller 且副作用較小的 legacy/manual scripts；再個別判定會在 import 時讀寫資料的 manual scripts；最後才處理 experiment、deprecated/copy 與無 consumer providers。Deployment snapshot 維持獨立 boundary；本批不移除任何 bootstrap 或 provider，Phase 4 與 `BL-001` 仍為進行中。
+建議後續順序：先處理剩餘兩個有 canonical caller 的 EXTConverter support modules（ExtractionConverter／Combiner 一批）；其次處理無 caller 且副作用較小的 legacy/manual scripts；再個別判定會在 import 時讀寫資料的 manual scripts；最後才處理 experiment、deprecated/copy 與無 consumer providers。Deployment snapshot 維持獨立 boundary；本批未移除任何 provider，Phase 4 與 `BL-001` 仍為進行中。
 
 ### Phase 5：刪除 legacy 容器並同步文件
 

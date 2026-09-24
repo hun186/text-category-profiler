@@ -56,6 +56,78 @@ def imported_modules(source):
     return modules
 
 
+def layout_boundary_violations(source):
+    tree = ast.parse(source)
+    violations = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module == "PackageImport":
+            violations.append("imports PackageImport")
+        elif isinstance(node, ast.Import) and any(
+            alias.name == "PackageImport" for alias in node.names
+        ):
+            violations.append("imports PackageImport")
+        elif isinstance(node, ast.Import) and any(
+            alias.name == "reusable_components" for alias in node.names
+        ):
+            violations.append("uses bare reusable_components import")
+
+    class ModuleScopeCallVisitor(ast.NodeVisitor):
+        def visit_FunctionDef(self, node):
+            return
+
+        visit_AsyncFunctionDef = visit_FunctionDef
+
+        def visit_ClassDef(self, node):
+            return
+
+        def visit_Lambda(self, node):
+            return
+
+        def visit_Call(self, node):
+            function = node.func
+            if (
+                isinstance(function, ast.Attribute)
+                and function.attr == "proc"
+                and isinstance(function.value, ast.Name)
+                and function.value.id == "PackageImporter"
+            ):
+                violations.append("calls PackageImporter.proc()")
+            elif (
+                isinstance(function, ast.Attribute)
+                and function.attr == "chdir"
+                and isinstance(function.value, ast.Name)
+                and function.value.id == "os"
+            ):
+                violations.append("calls os.chdir() at module scope")
+            elif (
+                isinstance(function, ast.Attribute)
+                and function.attr in {"append", "extend", "insert", "remove"}
+                and isinstance(function.value, ast.Attribute)
+                and function.value.attr == "path"
+                and isinstance(function.value.value, ast.Name)
+                and function.value.value.id == "sys"
+            ):
+                violations.append("mutates sys.path at module scope")
+            self.generic_visit(node)
+
+    ModuleScopeCallVisitor().visit(tree)
+
+    expected_import = any(
+        isinstance(node, ast.ImportFrom)
+        and node.module == "BertScript"
+        and any(
+            alias.name == "reusable_components" and alias.asname == "rc"
+            for alias in node.names
+        )
+        for node in tree.body
+    )
+    if not expected_import:
+        violations.append(
+            "does not import BertScript.reusable_components explicitly as rc"
+        )
+    return violations
+
+
 STAGE_IMPLEMENTATION_MODULES = {
     "DatasetConverter.DataConverter",
     "BertScript.RunClassfier",
@@ -65,7 +137,6 @@ STAGE_IMPLEMENTATION_MODULES = {
 
 PACKAGE_IMPORT_CONSUMERS = {
     # Active support modules reached from canonical stages.
-    "BertScript/Test_result_Vis_layout.py": (True, True),
     "DatasetConverter/EXTConverter/Combiner.py": (True, True),
     "DatasetConverter/EXTConverter/ExtractionConverter.py": (True, True),
     # Legacy/manual scripts.
@@ -165,6 +236,11 @@ def executable_package_import_consumers(*, include_deployment=False):
 
 
 class PackageLayoutTests(unittest.TestCase):
+    def test_visualization_layout_has_explicit_stage_local_boundary(self):
+        path = REPOSITORY_ROOT / "BertScript" / "Test_result_Vis_layout.py"
+        source = path.read_text(encoding="utf-8-sig")
+        self.assertEqual(layout_boundary_violations(source), [])
+
     def test_package_import_consumers_match_reviewed_inventory(self):
         self.assertEqual(executable_package_import_consumers(), PACKAGE_IMPORT_CONSUMERS)
         self.assertTrue(CANONICAL_ACTIVE_BOUNDARIES.isdisjoint(PACKAGE_IMPORT_CONSUMERS))
