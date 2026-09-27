@@ -144,7 +144,6 @@ PACKAGE_IMPORT_CONSUMERS = {
     "DatasetConverter/CorpusMetadataManager.py": (True, True),
     "DatasetConverter/DateChecker.py": (True, True),
     "DatasetConverter/SMS/SMSMerger.py": (True, True),
-    "DatasetConverter/SummarizationExcels_Combiner.py": (True, True),
     # Tests and experiments retained outside the unittest suite.
     "DatasetConverter/Dataset Generator/ComponentGenerator/ComponentGenerator.py": (True, True),
     "DatasetConverter/FreqAnalysis_dash.py": (True, True),

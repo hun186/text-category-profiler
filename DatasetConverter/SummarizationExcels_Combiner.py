@@ -1,6 +1,12 @@
 import os
-from PackageImport import PackageImporter
-PackageImporter.proc()
+import sys
+from pathlib import Path
+
+if __name__ == '__main__':
+    REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+    if str(REPOSITORY_ROOT) not in sys.path:
+        sys.path.insert(0, str(REPOSITORY_ROOT))
+
 import pandas as pd
 import setproctitle
 #載入摘要標註目錄參數設定
