@@ -137,7 +137,6 @@ STAGE_IMPLEMENTATION_MODULES = {
 
 PACKAGE_IMPORT_CONSUMERS = {
     # Legacy/manual scripts.
-    "BertScript/TextClassification_XLM.py": (True, True),
     "BertScript/writeto_tsv.py": (True, True),
     "ClassesTree/Visualization/jaal/jaalViewer.py": (True, True),
     "DatasetConverter/ConverterParameters.py": (True, True),
