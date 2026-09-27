@@ -5,7 +5,7 @@ import sys
 import tempfile
 import types
 import unittest
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from unittest import mock
 
 import pandas as pd
@@ -98,12 +98,13 @@ class ExtractionInputRootTests(unittest.TestCase):
                 )
 
     def test_posix_and_windows_absolute_paths_keep_their_lexical_contract(self):
-        self.assertEqual(
-            ExtractionConverter.resolve_extraction_input_root(
-                "/srv/work/item", caller_cwd=REPOSITORY_ROOT
-            ),
-            "/srv/work/item",
-        )
+        with mock.patch.object(ExtractionConverter, "Path", PureWindowsPath):
+            self.assertEqual(
+                ExtractionConverter.resolve_extraction_input_root(
+                    "/srv/work/item", caller_cwd=r"C:\caller"
+                ),
+                "/srv/work/item",
+            )
         self.assertEqual(
             ExtractionConverter.resolve_extraction_input_root(
                 r"D:\shared\work\item", caller_cwd=REPOSITORY_ROOT
@@ -131,6 +132,17 @@ class ExtractionInputRootTests(unittest.TestCase):
                 "incoming/files", caller_cwd=EXTCONVERTER_ROOT
             ),
             str(EXTCONVERTER_ROOT / "incoming" / "files"),
+        )
+
+    def test_relative_target_uses_nearest_repeated_cwd_segment(self):
+        caller_cwd = Path(
+            "/srv/TopicClassification/archive/TopicClassification"
+        )
+        self.assertEqual(
+            ExtractionConverter.resolve_extraction_input_root(
+                "TopicClassification/input", caller_cwd=caller_cwd
+            ),
+            "/srv/TopicClassification/archive/TopicClassification/input",
         )
 
     def test_extractor_scans_authoritative_root_and_writes_beside_input(self):

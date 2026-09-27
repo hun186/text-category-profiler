@@ -1,6 +1,6 @@
 import os
 import sys
-from pathlib import Path, PureWindowsPath
+from pathlib import Path, PurePosixPath, PureWindowsPath
 
 if __name__ == "__main__":
     REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -42,6 +42,8 @@ def resolve_extraction_input_root(target, *, caller_cwd=None):
     target = os.fspath(target)
     if PureWindowsPath(target).is_absolute():
         return target
+    if PurePosixPath(target).is_absolute():
+        return target
 
     target_path = Path(target)
     if target_path.is_absolute():
@@ -53,7 +55,11 @@ def resolve_extraction_input_root(target, *, caller_cwd=None):
         return str(cwd)
 
     try:
-        matching_index = cwd.parts.index(target_parts[0])
+        matching_index = max(
+            index
+            for index, part in enumerate(cwd.parts)
+            if part == target_parts[0]
+        )
     except ValueError:
         return str(cwd.joinpath(target_path))
     return str(Path(*cwd.parts[: matching_index + 1], *target_parts[1:]))
