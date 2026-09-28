@@ -1,7 +1,13 @@
-import random
 import os
-from PackageImport import PackageImporter
-PackageImporter.proc()
+import random
+import sys
+from pathlib import Path
+
+if __name__ == "__main__":
+    REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+    if str(REPOSITORY_ROOT) not in sys.path:
+        sys.path.insert(0, str(REPOSITORY_ROOT))
+
 from text_category_profiler.core.utilities import MKDIR
 
 #依照樣本數量取樣。
@@ -58,7 +64,6 @@ def WriteTo_tsv(THUCdir, trainSampleList, devSampleList, testSampleList):
 #THUCNews語料庫路徑
 THUCdir = "data_set_THUC"
 OutputDir = "THUC_txt"
-MKDIR("THUC_txt")
 #每則文章最多取max_length個字
 max_length = 128
 #定義訓練集、開發集與測試級每個類別要取的樣本數量
@@ -69,9 +74,15 @@ ntrain = 100
 ndev = 0
 ntest = 0
 
-#隨機選取文檔，分配至訓練集、開發集與測試集
-trainSampleList, devSampleList, testSampleList = PickSamples(THUCdir, ntrain, ndev, ntest)
-print("trainSampleList", trainSampleList[0:10])
-#raise Exception
-#創建tsv格式之訓練集、開發集與測試級
-WriteTo_tsv(THUCdir, trainSampleList, devSampleList, testSampleList)
+def main():
+    MKDIR("THUC_txt")
+    #隨機選取文檔，分配至訓練集、開發集與測試集
+    trainSampleList, devSampleList, testSampleList = PickSamples(THUCdir, ntrain, ndev, ntest)
+    print("trainSampleList", trainSampleList[0:10])
+    #raise Exception
+    #創建tsv格式之訓練集、開發集與測試級
+    WriteTo_tsv(THUCdir, trainSampleList, devSampleList, testSampleList)
+
+
+if __name__ == "__main__":
+    main()
