@@ -105,18 +105,18 @@ text_category_profiler/
 - [x] 移除 legacy/manual `DatasetConverter/SummarizationExcels_Combiner.py` 的 `PackageImporter.proc()`；repository 搜尋未發現 active caller/importer。只有 direct-script mode 會由 `__file__` 推導並加入 repository root，cwd 不變，因此輸出仍位於 caller cwd 下的 `SummarizationTrain`。
 - [x] 移除 legacy/manual `BertScript/TextClassification_XLM.py` 的 `PackageImporter.proc()`；repository 搜尋未發現 active caller/importer，canonical runner 仍使用 Transformers classifier。只有 direct-script mode 會由 `__file__` 推導並加入 repository root，cwd 與既有相對模型、dataset、output 路徑語意不變。
 - [x] 移除 legacy/manual `BertScript/writeto_tsv.py` 的 `PackageImporter.proc()`；repository 搜尋未發現 executable caller/importer。Module import 不再產生 dataset，只有 direct-script mode 會由 `__file__` 推導並加入 repository root，再執行既有 workflow；cwd 不變，`data_set_THUC` 與 `THUC_txt` 仍相對 caller cwd。
+- [x] 移除 legacy/manual `DatasetConverter/ConverterParameters.py` 的 `PackageImporter.proc()`；canonical `DataConverter.py` 的舊 import 只位於三引號歷史程式與註解，但 repository 搜尋確認 legacy/manual `DataConverter_Combiner.py` 仍有 `try` 內的 executable importer。只有 direct-script mode 會由 `__file__` 推導並加入 repository root，cwd 不變；module import 時的 GPUtil 與 process-count probes 原樣保留。
 - [ ] 移除 active code 對目前 working directory 深度的 import 假設；不得在 import 階段 `chdir`。
 - [ ] 盤點 repository 內所有 `PackageImport.py`，區分 active、vendor、deployment snapshot 後逐一處理。
 - [ ] 確認同一程序中不可能從外部 `D:/shared/PythonModule` 或其他相對深度載入同名模組。
 
-#### Phase 4 `PackageImport` inventory（`main@7f6e7f77abb8af312f54aa0cb4970ee5ad64ae1a` 加上本批變更）
+#### Phase 4 `PackageImport` inventory（`main@3d5137e96d8615c1a09d1c6f1581f186e2641eeb` 加上本批變更）
 
-以下以 `rg` 找候選、再以 Python AST 排除註解與字串；`Graph_Builder.py` 的兩行註解因此不算 consumer。剩餘 12 個 consumer 都有 executable import、在 module import 時呼叫 `PackageImporter.proc()`，所以皆會改動 `sys.path`。Canonical active boundaries（`TCFMain.py`、DataConverter、RunClassfier、CombineTestResult、Test_result_Vis、Transformers classifier）與 canonical stages 會載入的 active support modules 目前均為 **0** 個 consumer。
+以下以 `rg` 找候選、再以 Python AST 排除註解與字串；`Graph_Builder.py` 的兩行註解因此不算 consumer。剩餘 11 個 consumer 都有 executable import、在 module import 時呼叫 `PackageImporter.proc()`，所以皆會改動 `sys.path`。Canonical active boundaries（`TCFMain.py`、DataConverter、RunClassfier、CombineTestResult、Test_result_Vis、Transformers classifier）與 canonical stages 會載入的 active support modules 目前均為 **0** 個 consumer。
 
 | Consumer | 分類 | 已知 caller／entrypoint | 額外 cwd／path side effect | 後續處置 |
 | --- | --- | --- | --- | --- |
 | `ClassesTree/Visualization/jaal/jaalViewer.py` | legacy/manual script | `Test_result_Vis.py` 僅有註解 import；可直接啟動 Jaal viewer | `proc()` 後依 cwd 名稱無條件 `chdir` | preserve as legacy for now |
-| `DatasetConverter/ConverterParameters.py` | legacy/manual script | DataConverter 的舊 import 位於三引號字串／註解，另有 boundary test 禁止重新載入 | `proc()`；import 時偵測 GPU/process capacity | preserve as legacy for now |
 | `DatasetConverter/CorpusMetadataManager.py` | legacy/manual script | 無 repository caller | `proc()`；import 時掃檔、備份及開啟 SQLite | preserve as legacy for now |
 | `DatasetConverter/DateChecker.py` | legacy/manual script | 無 repository caller | 依 cwd `chdir`、`proc()`，並在 import 時讀 SQLite/text | preserve as legacy for now |
 | `DatasetConverter/SMS/SMSMerger.py` | legacy/manual script | 無 repository caller | `proc()`；import 時可執行 batch command 並讀寫結果 | preserve as legacy for now |
@@ -128,7 +128,7 @@ text_category_profiler/
 | `BertScript/TRV_deploy/deploy-dash-with-gcp-master/TRV/main.py` | deployment snapshot | snapshot app entrypoint | `proc()` path injection | deployment boundary |
 | `BertScript/TRV_deploy/deploy-dash-with-gcp-master/TRV/PythonModule/utils/Email_utils.py` | deployment snapshot | snapshot utility；由 snapshot 自行維護 | `proc()` path injection | deployment boundary |
 
-分類計數：canonical active **0**、active support/module **0**、legacy/manual script **5**、test/experiment **2**、vendor **0**、deployment snapshot **2**、copy/deprecated **3**、unknown **0**。`tests/test_package_layout.py` 對 10 個 application debt consumers、2 個 deployment consumers 和 canonical-zero boundary 分別做 AST guard；vendor tree 是明示排除邊界，盤點時未發現 consumer，不是靜默忽略。
+分類計數：canonical active **0**、active support/module **0**、legacy/manual script **4**、test/experiment **2**、vendor **0**、deployment snapshot **2**、copy/deprecated **3**、unknown **0**。`tests/test_package_layout.py` 對 9 個 application debt consumers、2 個 deployment consumers 和 canonical-zero boundary 分別做 AST guard；vendor tree 是明示排除邊界，盤點時未發現 consumer，不是靜默忽略。
 
 | `PackageImport.py` provider | 狀態／consumer 關係 | 後續處置 |
 | --- | --- | --- |
