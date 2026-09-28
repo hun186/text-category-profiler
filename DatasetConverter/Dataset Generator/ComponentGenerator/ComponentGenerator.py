@@ -1,19 +1,19 @@
 import os
-if os.getcwd().split(os.path.sep)[-1] in [
-        #"DatasetConverter","BertScript",
-        "EXTConverter"]:
-    os.chdir("../../")
-    print(f"Change working directory to {os.getcwd()}")
-print(f"cwd:{os.getcwd()}")
-from PackageImport import PackageImporter
-PackageImporter.proc()
-
+import sys
+from pathlib import Path
 import random
 import datetime
-from JobTitleGenerator.jobtitlegenerator import generate_job_title
-from faker import Faker
-import os
 import locale
+
+COMPONENT_DIR = Path(__file__).resolve().parent
+REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
+EMBASSY_DB = COMPONENT_DIR / "EmbassyPages" / "EmbassyPages.sql3"
+
+if __name__ == "__main__":
+    if str(REPOSITORY_ROOT) not in sys.path:
+        sys.path.insert(0, str(REPOSITORY_ROOT))
+
+from faker import Faker
 
 from text_category_profiler.core.utilities import MKDIR
 from text_category_profiler.data.df_utils import dfFromSQLite3
@@ -90,8 +90,7 @@ if nGen < nBigPool:
     nBigPool = nGen
 
 def LoadEmbassyEmails():
-    sql3File=os.path.join("EmbassyPages","EmbassyPages.sql3")
-    df = dfFromSQLite3(sql3File=sql3File)
+    df = dfFromSQLite3(sql3File=str(EMBASSY_DB))
     EmbassyEmails = []
     for term in df["Email"]:
         termSP = [x for x in term.split("\n") if len(x)>0]
@@ -101,7 +100,14 @@ def LoadEmbassyEmails():
         EmbassyEmails.extend(termSP)
     return EmbassyEmails
 
-EmbassyEmails = LoadEmbassyEmails()
+EmbassyEmails = None
+
+
+def GetEmbassyEmails():
+    global EmbassyEmails
+    if EmbassyEmails is None:
+        EmbassyEmails = LoadEmbassyEmails()
+    return EmbassyEmails
 
 #產生亂數選擇池
 def GeneratePool(LocaleName):
@@ -184,7 +190,7 @@ def UserEmailSets(label="Email Header-Email Address"):
     if label == "Email Header-Email Address":
         EmailList = CompanyEmails
     elif label == "Email Address-Embassy":
-        EmailList = EmbassyEmails
+        EmailList = GetEmbassyEmails()
     for (rge,term) in [((1,1),FromList),((1,5),MailtoList),((1,10),CCtoList)]:
         for i in range(random.randint(*rge)):
             userEmail = random.choice(EmailList)
