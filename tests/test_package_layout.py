@@ -138,7 +138,6 @@ STAGE_IMPLEMENTATION_MODULES = {
 PACKAGE_IMPORT_CONSUMERS = {
     # Legacy/manual scripts.
     "ClassesTree/Visualization/jaal/jaalViewer.py": (True, True),
-    "DatasetConverter/ConverterParameters.py": (True, True),
     "DatasetConverter/CorpusMetadataManager.py": (True, True),
     "DatasetConverter/DateChecker.py": (True, True),
     "DatasetConverter/SMS/SMSMerger.py": (True, True),

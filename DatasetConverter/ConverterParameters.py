@@ -1,5 +1,10 @@
-from PackageImport import PackageImporter
-PackageImporter.proc()
+import sys
+from pathlib import Path
+
+if __name__ == "__main__":
+    REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+    if str(REPOSITORY_ROOT) not in sys.path:
+        sys.path.insert(0, str(REPOSITORY_ROOT))
 
 #A = 'From: a23@cc.com(jusec), b2@cc.com(jomde), c四@dd.ne, e@ldfd.com cc:dmoed@twma.org Subjcet: eg3fd3m3k3lsag;agadi3jifj 一二二三 From: a@cc.com(jusec), b@cc.com(好棒棒), c@dd.ne, e@ldfd.com Subject: f3om 3o3mdlo3,gFroma23@cc.com(jusec), b2@cc.com(jomde), c四@dd.ne, e@ldfd.com cc:dmoed@twma.org Subjcet:今天@台北,play 3.gorfor a long time From:hello@get.org Subject:YOYOYOY Good Game'
 #re.findall("(?:\w{,20}@\w{1,20}?\.[^@]{2,12}){0,}(?:\w{,20}@\w{1,20}?\.[^@]{2,3})",A)
