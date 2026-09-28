@@ -1,16 +1,17 @@
-import os
-from PackageImport import PackageImporter
-PackageImporter.proc()
+from pathlib import Path
+import sys
 
-DirRouteList = os.getcwd().split(os.path.sep)
-os.chdir("/".join(DirRouteList[:DirRouteList.index("TopicClassification")+1]))
-print(f"Change working directory to {os.getcwd()}")
-#if os.getcwd().split(os.path.sep)[] in [
-        #"jaal"]:
-    #os.chdir("../../")
-    #print(f"Change working directory to {os.getcwd()}")
 
-#raise Exception
+REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
+TREE_SOURCE_DIR = REPOSITORY_ROOT / "ClassesTree" / "data"
+TREE_FILES = [
+    TREE_SOURCE_DIR / "TopicTree.csv",
+    TREE_SOURCE_DIR / "TopicTree_AK4.csv",
+]
+
+if __name__ == "__main__":
+    if str(REPOSITORY_ROOT) not in sys.path:
+        sys.path.insert(0, str(REPOSITORY_ROOT))
 
 from jaal.datasets import load_got
 import pandas as pd
@@ -58,8 +59,12 @@ def setCategoryOfTopic(topic,ancestors):
     catKey = sorted(ancestors[topic].keys())[-1:][0]
     return tuple(sorted(ancestors[topic][catKey]))
 
-def JaalViewMain(QueryRoot = "TW Affairs",createMode = False,hostIP='127.0.0.1'):
-    tpcTree = LoadTree(["TopicTree.csv","TopicTree_AK4.csv"],)
+def JaalViewMain(
+    QueryRoot="TW Affairs",
+    createMode=False,
+    hostIP="127.0.0.1",
+):
+    tpcTree = LoadTree([str(path) for path in TREE_FILES])
     #tpcTree = LoadTree(TreeFile,
                            #OnlyLettersDigitsLabels= OnlyLettersDigitsLabels)
     RootTopics = GetRoots(tpcTree)
