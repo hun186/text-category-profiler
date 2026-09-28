@@ -138,7 +138,6 @@ STAGE_IMPLEMENTATION_MODULES = {
 PACKAGE_IMPORT_CONSUMERS = {
     # Legacy/manual scripts.
     "ClassesTree/Visualization/jaal/jaalViewer.py": (True, True),
-    "DatasetConverter/CorpusMetadataManager.py": (True, True),
     "DatasetConverter/SMS/SMSMerger.py": (True, True),
     # Tests and experiments retained outside the unittest suite.
     "DatasetConverter/Dataset Generator/ComponentGenerator/ComponentGenerator.py": (True, True),
