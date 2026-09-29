@@ -315,7 +315,14 @@ def RowsFilter(df, ChunkUnit, Stride, RowConstraint = None):
     if ShowingDF.shape[0] > 0:
         ShowingDF['index'] = range(1, len(ShowingDF) + 1)
     if ShowingDF.shape[0] < 10000:
-        dfOutputer(ShowingDF[["text"]], "test").run()
+        dfOutputer(
+            ShowingDF[["text"]],
+            "test",
+            IndexCols=["text"],
+            MPLOGGER=MPLOGGER,
+            AutoAdjustColWidth=False,
+            AutoAdjustRowWidth=False,
+        ).run()
     return FilteredDF, ShowingDF
 
 df, ChunkParamsDF = build_ChunkDF(ChunkUnit, Stride, CutRange)

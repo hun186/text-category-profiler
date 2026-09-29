@@ -188,7 +188,14 @@ class FreqAnalysisDashPathContractTests(unittest.TestCase):
             if isinstance(node, ast.Call) and ast.unparse(node.func) == "dfOutputer"
         ]
         self.assertEqual(len(output_calls), 1)
-        self.assertEqual(ast.literal_eval(output_calls[0].args[1]), "test")
+        output_call = output_calls[0]
+        self.assertEqual(ast.literal_eval(output_call.args[1]), "test")
+        keywords = {keyword.arg: keyword.value for keyword in output_call.keywords}
+        self.assertEqual(ast.literal_eval(keywords["IndexCols"]), ["text"])
+        self.assertIsInstance(keywords["MPLOGGER"], ast.Name)
+        self.assertEqual(keywords["MPLOGGER"].id, "MPLOGGER")
+        self.assertIs(ast.literal_eval(keywords["AutoAdjustColWidth"]), False)
+        self.assertIs(ast.literal_eval(keywords["AutoAdjustRowWidth"]), False)
 
     def test_direct_script_bootstrap_from_supported_working_directories(self):
         probe = textwrap.dedent(
