@@ -136,8 +136,6 @@ STAGE_IMPLEMENTATION_MODULES = {
 }
 
 PACKAGE_IMPORT_CONSUMERS = {
-    # Tests and experiments retained outside the unittest suite.
-    "DatasetConverter/FreqAnalysis_dash.py": (True, True),
     # Explicit copies/deprecated implementations.
     "BertScript/TextClassification_XLM_Pred_deprecated.py": (True, True),
     "BertScript/TextClassification_XLM_Train_deprecated.py": (True, True),
