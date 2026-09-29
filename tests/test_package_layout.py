@@ -137,8 +137,6 @@ STAGE_IMPLEMENTATION_MODULES = {
 
 PACKAGE_IMPORT_CONSUMERS = {
     # Explicit copies/deprecated implementations.
-    "BertScript/TextClassification_XLM_Pred_deprecated.py": (True, True),
-    "BertScript/TextClassification_XLM_Train_deprecated.py": (True, True),
     "DatasetConverter/EXTConverter/Combiner - 複製.py": (True, True),
 }
 

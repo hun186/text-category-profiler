@@ -116,19 +116,21 @@ text_category_profiler/
 - [ ] 盤點 repository 內所有 `PackageImport.py`，區分 active、vendor、deployment snapshot 後逐一處理。
 - [ ] 確認同一程序中不可能從外部 `D:/shared/PythonModule` 或其他相對深度載入同名模組。
 
-#### Phase 4 `PackageImport` inventory（local baseline `main@82516825c1562a3dadb6e1c0136ae58f352bc677` 加上本批變更）
+#### Phase 4 `PackageImport` inventory（baseline `main@db0c6628dca7d419d513eaffd670abf05327c522` 加上本批變更）
 
-以下以 `rg` 找候選、再以 Python AST 排除註解與字串；`Graph_Builder.py` 的兩行註解因此不算 consumer。本批 actual AST scan 剩餘 5 個 consumer，都有 executable import、在 module import 時呼叫 `PackageImporter.proc()`，所以皆會改動 `sys.path`。Canonical active boundaries（`TCFMain.py`、DataConverter、RunClassfier、CombineTestResult、Test_result_Vis、Transformers classifier）、canonical stages 會載入的 active support modules、legacy/manual scripts 與 test/experiment scripts 目前均為 **0** 個 consumer。
+以下以 repository-wide `rg` 找 filename、model type 與可能呼叫形式，再以 Python AST 辨識 executable `PackageImport` import/call，而非把註解或文件字串當成 caller。Fresh caller scan 確認兩支 deprecated XLM copies 都沒有 executable repository caller、operator documentation 也沒有要求直接執行它們；`RunClassfier.py` 只有一行已註解的舊 `TextClassification_XLM_Pred.py` command。`dir.txt` 是 historical path inventory，而本文與 layout test 是 inventory/guard，都不是 runtime caller。
+
+Production PyTorch runner 由 `classifier_stage.py` 的 `PYTORCH_SCRIPT = "TextClassification_transformers.py"` 與 `render_pytorch_command(...)` dispatch `BertScript/TextClassification_transformers.py`。`BertScript/TextClassification_XLM.py` 是把舊的 train/predict 功能整合在同一 direct-run script 的較新 legacy/manual lineage，並非 production runner。比對 dataset selection、tokenizer/model setup、Trainer training、checkpoint discovery、pipeline inference 與 result output 後，沒有發現兩支 deprecated copies 提供仍被使用、但 active replacement 缺少的獨立必要 contract。因此本批直接刪除 `BertScript/TextClassification_XLM_Pred_deprecated.py` 與 `BertScript/TextClassification_XLM_Train_deprecated.py`，由 Git history 保存歷史，不建立 archive copy、wrapper 或 placeholder。
+
+本批 actual AST scan 剩餘 3 個 consumer，都有 executable import、在 module import 時呼叫 `PackageImporter.proc()`，所以皆會改動 `sys.path`。Canonical active boundaries（`TCFMain.py`、DataConverter、RunClassfier、CombineTestResult、Test_result_Vis、Transformers classifier）、canonical stages 會載入的 active support modules、legacy/manual scripts 與 test/experiment scripts 目前均為 **0** 個 consumer。
 
 | Consumer | 分類 | 已知 caller／entrypoint | 額外 cwd／path side effect | 後續處置 |
 | --- | --- | --- | --- | --- |
-| `BertScript/TextClassification_XLM_Pred_deprecated.py` | copy/deprecated | 無 active caller（runner 只留註解舊 command） | `proc()` path injection | investigate separately |
-| `BertScript/TextClassification_XLM_Train_deprecated.py` | copy/deprecated | 無 active caller | `proc()` path injection | investigate separately |
 | `DatasetConverter/EXTConverter/Combiner - 複製.py` | copy/deprecated | 無 repository caller | 依 cwd `chdir`、`proc()` | investigate separately |
 | `BertScript/TRV_deploy/deploy-dash-with-gcp-master/TRV/main.py` | deployment snapshot | snapshot app entrypoint | `proc()` path injection | deployment boundary |
 | `BertScript/TRV_deploy/deploy-dash-with-gcp-master/TRV/PythonModule/utils/Email_utils.py` | deployment snapshot | snapshot utility；由 snapshot 自行維護 | `proc()` path injection | deployment boundary |
 
-分類計數：canonical active **0**、active support/module **0**、legacy/manual script **0**、test/experiment **0**、vendor **0**、deployment snapshot **2**、copy/deprecated **3**、unknown **0**；application debt 是 **3**，total executable consumers 是 **5**。`tests/test_package_layout.py` 對 3 個 application debt consumers、2 個 deployment consumers 和 canonical-zero boundary 分別做 AST guard；vendor tree 是明示排除邊界，盤點時未發現 consumer，不是靜默忽略。
+分類計數：canonical active **0**、active support/module **0**、legacy/manual script **0**、test/experiment **0**、vendor **0**、deployment snapshot **2**、copy/deprecated **1**、unknown **0**；copy/deprecated consumer **3 → 1**、application debt **3 → 1**、total executable consumers **5 → 3**。`tests/test_package_layout.py` 對剩餘 1 個 application debt consumer、2 個 deployment consumers 和 canonical-zero boundary 分別做 AST guard；vendor tree 是明示排除邊界，盤點時未發現 consumer，不是靜默忽略。
 
 | `PackageImport.py` provider | 狀態／consumer 關係 | 後續處置 |
 | --- | --- | --- |
@@ -144,7 +146,7 @@ text_category_profiler/
 | `text_category_profiler/tulip_utils/PackageImport.py` | 無 executable consumer；`Graph_Builder.py` 只有註解 | remove bootstrap |
 | `BertScript/TRV_deploy/deploy-dash-with-gcp-master/TRV/PackageImport.py` | deployment snapshot provider | deployment boundary |
 
-Legacy/manual 與 test/experiment consumer inventory 均已降為 **0**；application debt 只剩三個 copy/deprecated consumers，另有兩個 deployment snapshot consumers，仍須分批處理 deprecated/copy、無 consumer providers 與 deployment boundary。`FreqAnalysis_dash.py` 的 package/path injection 已移除且 repository resources/providers 已 deterministic；legacy standalone Dash experiment 仍在 module load 執行既有 app/data initialization，未宣稱 ordinary import side-effect-free。Deployment snapshot 維持獨立 boundary；本批未移除任何 provider，Phase 4 與 `BL-001` 仍為 **In Progress**。`KI-002` 維持 **Resolved**，`KI-003` 維持 **Open**。
+Legacy/manual 與 test/experiment consumer inventory 均已降為 **0**；application debt 只剩 `DatasetConverter/EXTConverter/Combiner - 複製.py` 一個 copy/deprecated consumer，另有兩個未變更的 deployment snapshot consumers。後續仍須獨立處理該 copy 的 import-time cwd/chdir semantics、`PackageImport.py` provider inventory/deletion、deployment boundary 與 final path ambiguity verification。本批未移除任何 provider，Phase 4 與 `BL-001` 仍為 **In Progress**。`KI-002` 維持 **Resolved**，`KI-003` 維持 **Open**；本批沒有進行 H100/CUDA acceptance。
 
 ### Phase 5：刪除 legacy 容器並同步文件
 
