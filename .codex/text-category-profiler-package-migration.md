@@ -111,24 +111,24 @@ text_category_profiler/
 - [x] 移除 legacy/manual `DatasetConverter/SMS/SMSMerger.py` 的 `PackageImporter.proc()`；local repository 搜尋沒有 executable caller/importer。Direct-script SMS merge workflow 保留在 `main()`，module import 不再執行 batch、SQLite、CSV、DataFrame transformation 或 TSV output；資料與輸出路徑仍相對 caller cwd。`DatasetConverter/SMS/` 沒有 sibling `ClassTable.py`，但 repository authoritative provider 是 `BertScript/ClassTable.py`，因此 bare import 已改為 explicit `from BertScript.ClassTable import ClassTable`。
 - [x] 移除最後一個 legacy/manual consumer `ClassesTree/Visualization/jaal/jaalViewer.py` 的 `PackageImporter.proc()`、import-time cwd mutation 與依賴歷史祖先名稱 `TopicClassification` 的 bootstrap。Direct-script mode 只把由 `Path(__file__).resolve().parents[3]` 推導的 repository root 加入 `sys.path`；一般 import 不改 cwd 或 `sys.path`。Jaal taxonomy 明確使用 repository-absolute `ClassesTree/data/TopicTree.csv` 與 `ClassesTree/data/TopicTree_AK4.csv`，不受 caller cwd 同名檔 shadow。Local caller scan 只在 `BertScript/Test_result_Vis.py` 找到註解 import/calls，沒有 executable caller；Jaal-local `TopicTree.csv` 保留為 historical artifact，且該目錄沒有 `TopicTree_AK4.csv`，所以不作為 canonical pair。
 - [x] 移除 test/experiment `DatasetConverter/Dataset Generator/ComponentGenerator/ComponentGenerator.py` 的 `PackageImporter.proc()` 與歷史 EXTConverter cwd mutation。Direct-script mode 在第一個 repository-local import 前由 `Path(__file__).resolve().parents[3]` 加入 repository root；普通 import 不改 cwd 或 `sys.path`。Embassy SQLite input 明確綁定 component-local resource 並只在 embassy email 第一次使用時讀取及快取；generated outputs 仍相對 caller cwd。未使用且會讀取 bundled JSON 的 `generate_job_title` import 已移除；bundled implementation 未修改。
+- [x] 移除最後一個 test/experiment consumer `DatasetConverter/FreqAnalysis_dash.py` 的 `PackageImporter.proc()` 與 bare provider imports。Direct-script mode 在第一個 repository-local import 前由 `Path(__file__).resolve().parents[1]` 加入 repository root，普通 import 不改 `sys.path` 或 cwd。`reusable_components` 與 `dfOutputer` 分別明確綁定 canonical visualization/data packages；`StrDfFromJson` 以 target-local compatibility function 保留 legacy string/`"None"` semantics。Historical bare `MP_utils` provider was ambiguous；target 改用 repository canonical `MPlogger` instance，並以 `logSubDir=""`、`logFile="mp_processing_log.txt"`、`printOnScreen=False` 明確保留 caller-cwd log destination 與 silent logging behavior。`RandText.txt` input 固定為 DatasetConverter-local resource，而 `"test"` outputs 與 log 仍相對 caller cwd。既有 standalone Dash module-scope app/data initialization 原樣保留，app-factory modernization 不在本批範圍。
 - [ ] 移除 active code 對目前 working directory 深度的 import 假設；不得在 import 階段 `chdir`。
 - [ ] 盤點 repository 內所有 `PackageImport.py`，區分 active、vendor、deployment snapshot 後逐一處理。
 - [ ] 確認同一程序中不可能從外部 `D:/shared/PythonModule` 或其他相對深度載入同名模組。
 
-#### Phase 4 `PackageImport` inventory（authoritative baseline `main@5b3093c075c5e9cec3a5d4e0362e8805a0ba42f9` 加上本批變更）
+#### Phase 4 `PackageImport` inventory（local baseline `main@82516825c1562a3dadb6e1c0136ae58f352bc677` 加上本批變更）
 
-以下以 `rg` 找候選、再以 Python AST 排除註解與字串；`Graph_Builder.py` 的兩行註解因此不算 consumer。本批 actual AST scan 剩餘 6 個 consumer，都有 executable import、在 module import 時呼叫 `PackageImporter.proc()`，所以皆會改動 `sys.path`。Canonical active boundaries（`TCFMain.py`、DataConverter、RunClassfier、CombineTestResult、Test_result_Vis、Transformers classifier）、canonical stages 會載入的 active support modules與 legacy/manual scripts 目前均為 **0** 個 consumer。
+以下以 `rg` 找候選、再以 Python AST 排除註解與字串；`Graph_Builder.py` 的兩行註解因此不算 consumer。本批 actual AST scan 剩餘 5 個 consumer，都有 executable import、在 module import 時呼叫 `PackageImporter.proc()`，所以皆會改動 `sys.path`。Canonical active boundaries（`TCFMain.py`、DataConverter、RunClassfier、CombineTestResult、Test_result_Vis、Transformers classifier）、canonical stages 會載入的 active support modules、legacy/manual scripts 與 test/experiment scripts 目前均為 **0** 個 consumer。
 
 | Consumer | 分類 | 已知 caller／entrypoint | 額外 cwd／path side effect | 後續處置 |
 | --- | --- | --- | --- | --- |
-| `DatasetConverter/FreqAnalysis_dash.py` | test/experiment | 無 repository caller；獨立 Dash analysis | `proc()` path injection | investigate separately |
 | `BertScript/TextClassification_XLM_Pred_deprecated.py` | copy/deprecated | 無 active caller（runner 只留註解舊 command） | `proc()` path injection | investigate separately |
 | `BertScript/TextClassification_XLM_Train_deprecated.py` | copy/deprecated | 無 active caller | `proc()` path injection | investigate separately |
 | `DatasetConverter/EXTConverter/Combiner - 複製.py` | copy/deprecated | 無 repository caller | 依 cwd `chdir`、`proc()` | investigate separately |
 | `BertScript/TRV_deploy/deploy-dash-with-gcp-master/TRV/main.py` | deployment snapshot | snapshot app entrypoint | `proc()` path injection | deployment boundary |
 | `BertScript/TRV_deploy/deploy-dash-with-gcp-master/TRV/PythonModule/utils/Email_utils.py` | deployment snapshot | snapshot utility；由 snapshot 自行維護 | `proc()` path injection | deployment boundary |
 
-分類計數：canonical active **0**、active support/module **0**、legacy/manual script **0**、test/experiment **1**、vendor **0**、deployment snapshot **2**、copy/deprecated **3**、unknown **0**；application debt 是 **4**，total executable consumers 是 **6**。`tests/test_package_layout.py` 對 4 個 application debt consumers、2 個 deployment consumers 和 canonical-zero boundary 分別做 AST guard；vendor tree 是明示排除邊界，盤點時未發現 consumer，不是靜默忽略。
+分類計數：canonical active **0**、active support/module **0**、legacy/manual script **0**、test/experiment **0**、vendor **0**、deployment snapshot **2**、copy/deprecated **3**、unknown **0**；application debt 是 **3**，total executable consumers 是 **5**。`tests/test_package_layout.py` 對 3 個 application debt consumers、2 個 deployment consumers 和 canonical-zero boundary 分別做 AST guard；vendor tree 是明示排除邊界，盤點時未發現 consumer，不是靜默忽略。
 
 | `PackageImport.py` provider | 狀態／consumer 關係 | 後續處置 |
 | --- | --- | --- |
@@ -144,7 +144,7 @@ text_category_profiler/
 | `text_category_profiler/tulip_utils/PackageImport.py` | 無 executable consumer；`Graph_Builder.py` 只有註解 | remove bootstrap |
 | `BertScript/TRV_deploy/deploy-dash-with-gcp-master/TRV/PackageImport.py` | deployment snapshot provider | deployment boundary |
 
-Legacy/manual consumer inventory 已降為 **0**，test/experiment consumer 剩 **1**；仍須分批處理其餘 experiment、deprecated/copy、無 consumer providers 與 deployment boundary。`ComponentGenerator.py` 的 historical EXTConverter cwd mutation 已移除；repository input resources 從 `__file__` 解析，而 generated outputs 保持 caller-cwd-relative。Deployment snapshot 維持獨立 boundary；本批未移除任何 provider，Phase 4 與 `BL-001` 仍為 **In Progress**。`KI-002` 維持 **Resolved**，`KI-003` 維持 **Open**。
+Legacy/manual 與 test/experiment consumer inventory 均已降為 **0**；application debt 只剩三個 copy/deprecated consumers，另有兩個 deployment snapshot consumers，仍須分批處理 deprecated/copy、無 consumer providers 與 deployment boundary。`FreqAnalysis_dash.py` 的 package/path injection 已移除且 repository resources/providers 已 deterministic；legacy standalone Dash experiment 仍在 module load 執行既有 app/data initialization，未宣稱 ordinary import side-effect-free。Deployment snapshot 維持獨立 boundary；本批未移除任何 provider，Phase 4 與 `BL-001` 仍為 **In Progress**。`KI-002` 維持 **Resolved**，`KI-003` 維持 **Open**。
 
 ### Phase 5：刪除 legacy 容器並同步文件
 

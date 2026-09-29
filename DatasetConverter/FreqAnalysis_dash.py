@@ -1,21 +1,26 @@
-from PackageImport import PackageImporter
-PackageImporter.proc()
-
+import sys
 import time
-import pandas as pd
 import json
 import ast
+from pathlib import Path
 
-from MP_utils import MPlogger
-#from MP_utils import multicoreJob
+import numpy as np
+import pandas as pd
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+
+if __name__ == "__main__":
+    if str(REPOSITORY_ROOT) not in sys.path:
+        sys.path.insert(0, str(REPOSITORY_ROOT))
+
+from text_category_profiler.concurrency.MP_utils import MPlogger
 from text_category_profiler.core.utilities import wrap
 from text_category_profiler.core.utilities import ShowElapsedTime
 from text_category_profiler.core.utilities import OffsetWrap
 from text_category_profiler.core.utilities import UniqueList
-
-from df_utils import dfOutputer
-from df_utils import StrDfFromJson
+from text_category_profiler.data.df_utils import dfOutputer
+from text_category_profiler.visualization import reusable_components as rc
 
 import plotly.graph_objects as go
 #from plotly.offline import plot
@@ -27,8 +32,27 @@ import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
-import reusable_components as rc  # see reusable_components.py
 #from dash_utils import make_dash_table
+
+MPLOGGER = MPlogger(
+    logSubDir="",
+    logFile="mp_processing_log.txt",
+)
+
+
+def StrDfFromJson(df_json, orient="split"):
+    df = pd.read_json(
+        df_json,
+        orient=orient,
+        dtype=str,
+    )
+    df.replace(
+        "None",
+        np.nan,
+        inplace=True,
+    )
+    return df
+
 
 def init_ParamsDF():
     VisParamsDict = {
@@ -125,8 +149,8 @@ RowConstraint_json = json.dumps(RowConstraint, indent = 4)
 RowConstraintDF = pd.DataFrame(columns = ["POS", "Constraint"], data = RowConstraint)
 
 start_time = time.time()
-InputFile = "RandText_short.txt"
-InputFile = "RandText.txt"
+# InputFile = str(SCRIPT_DIR / "RandText_short.txt")
+InputFile = str(SCRIPT_DIR / "RandText.txt")
 #InputFile = "test_results_verification.tsv"
 #InputFile = "test_results_verification_Positive.tsv"
 #InputFile = "MP_log.txt"
@@ -143,7 +167,10 @@ class SeriesCounter():
         print("Series:", self.seri)
     def run(self,):
         MES = "Dealing Series {}.\n".format(self.seri)
-        MPlogger.logW(MES)
+        MPLOGGER.logW(
+            MES,
+            printOnScreen=False,
+        )
         return dict(self.seri.value_counts())
 
 
@@ -211,7 +238,10 @@ def build_visualizations(
     nCol = df.shape[1]
     while(nChosenFig < nFigs and ChunkPos < nCol):
         MES = "{} \n {}".format(ChunkPos, dict(df[ChunkPos].value_counts()))
-        MPlogger.logW(MES)
+        MPLOGGER.logW(
+            MES,
+            printOnScreen=False,
+        )
         DictCK = dict(df[ChunkPos].value_counts())
         DictCK = sorted(
             DictCK.items(), key = lambda kv:(kv[1], kv[0]), reverse = True)
