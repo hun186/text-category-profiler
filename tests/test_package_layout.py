@@ -135,10 +135,7 @@ STAGE_IMPLEMENTATION_MODULES = {
     "BertScript.Test_result_Vis",
 }
 
-PACKAGE_IMPORT_CONSUMERS = {
-    # Explicit copies/deprecated implementations.
-    "DatasetConverter/EXTConverter/Combiner - 複製.py": (True, True),
-}
+PACKAGE_IMPORT_CONSUMERS = {}
 
 DEPLOYMENT_PACKAGE_IMPORT_CONSUMERS = {
     "BertScript/TRV_deploy/deploy-dash-with-gcp-master/TRV/main.py": (True, True),
