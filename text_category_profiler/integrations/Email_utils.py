@@ -1,15 +1,3 @@
-import sys
-import glob
-ModPaths = []
-ModPaths.extend(glob.glob("C:/Users/*/Documents/PythonModule"))
-ModPaths.extend([
-    "D:/shared/PythonModule",
-    "Z:/shared/PythonModule"
-    "D:/shared/TopicClassification/PythonModule",
-    "Z:/shared/TopicClassification/PythonModule",
-    ])
-for ModulePath in ModPaths:
-    sys.path.append(ModulePath)
 import os
 import re
 import sys
