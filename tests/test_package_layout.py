@@ -155,6 +155,88 @@ CANONICAL_ACTIVE_BOUNDARIES = {
     "BertScript/TextClassification_transformers.py",
 }
 
+APPLICATION_ROOTS = (
+    REPOSITORY_ROOT / "TCFMain.py",
+    REPOSITORY_ROOT / "TCF_Params",
+    REPOSITORY_ROOT / "ClassesTree",
+    REPOSITORY_ROOT / "DatasetConverter",
+    REPOSITORY_ROOT / "BertScript",
+    PACKAGE_ROOT,
+)
+
+
+def application_python_paths():
+    for root in APPLICATION_ROOTS:
+        paths = [root] if root.is_file() else root.rglob("*.py")
+        for path in paths:
+            if {"TRV_deploy", "Dash-by-Plotly-master"}.intersection(path.parts):
+                continue
+            yield path
+
+
+def executable_string_literals(tree):
+    ignored = {
+        id(node.value)
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Expr)
+        and isinstance(node.value, ast.Constant)
+        and isinstance(node.value.value, str)
+    }
+    return [
+        node.value
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Constant)
+        and isinstance(node.value, str)
+        and id(node) not in ignored
+    ]
+
+
+def _is_main_guard(test):
+    try:
+        return ast.unparse(test) in {
+            "__name__ == '__main__'",
+            "'__main__' == __name__",
+        }
+    except Exception:
+        return False
+
+
+def import_time_chdir_calls(tree):
+    calls = []
+
+    class ImportTimeVisitor(ast.NodeVisitor):
+        def visit_FunctionDef(self, node):
+            return
+
+        visit_AsyncFunctionDef = visit_FunctionDef
+
+        def visit_ClassDef(self, node):
+            return
+
+        def visit_Lambda(self, node):
+            return
+
+        def visit_If(self, node):
+            if _is_main_guard(node.test):
+                for child in node.orelse:
+                    self.visit(child)
+                return
+            self.generic_visit(node)
+
+        def visit_Call(self, node):
+            function = node.func
+            if (
+                isinstance(function, ast.Attribute)
+                and function.attr == "chdir"
+                and isinstance(function.value, ast.Name)
+                and function.value.id == "os"
+            ):
+                calls.append(node.lineno)
+            self.generic_visit(node)
+
+    ImportTimeVisitor().visit(tree)
+    return calls
+
 
 def executable_package_import_consumers(*, include_deployment=False):
     consumers = {}
@@ -228,6 +310,73 @@ class PackageLayoutTests(unittest.TestCase):
             if ".codex" not in path.parts
         }
         self.assertEqual(providers, PACKAGE_IMPORT_PROVIDERS)
+
+    def test_application_tree_has_no_legacy_pythonmodule_paths(self):
+        violations = []
+        for path in application_python_paths():
+            try:
+                tree = ast.parse(
+                    path.read_text(encoding="utf-8-sig"),
+                    filename=str(path),
+                )
+            except (SyntaxError, UnicodeDecodeError):
+                continue
+            for value in executable_string_literals(tree):
+                normalized = value.replace("\\", "/")
+                if "PythonModule" in normalized.split("/"):
+                    violations.append(
+                        f"{path.relative_to(REPOSITORY_ROOT)}:{value}"
+                    )
+
+        self.assertEqual(violations, [])
+
+    def test_application_tree_does_not_import_deployment_snapshot(self):
+        violations = []
+        for path in application_python_paths():
+            try:
+                source = path.read_text(encoding="utf-8-sig")
+                tree = ast.parse(source, filename=str(path))
+            except (SyntaxError, UnicodeDecodeError):
+                continue
+            for module in imported_modules(source):
+                if "TRV_deploy" in module.split("."):
+                    violations.append(
+                        f"{path.relative_to(REPOSITORY_ROOT)}:{module}"
+                    )
+            for value in executable_string_literals(tree):
+                normalized = value.replace("\\", "/")
+                if "TRV_deploy" in normalized.split("/"):
+                    violations.append(
+                        f"{path.relative_to(REPOSITORY_ROOT)}:{value}"
+                    )
+
+        self.assertEqual(violations, [])
+        self.assertTrue(
+            all("TRV_deploy" in path for path in PACKAGE_IMPORT_PROVIDERS)
+        )
+        self.assertTrue(
+            all(
+                "TRV_deploy" in path
+                for path in DEPLOYMENT_PACKAGE_IMPORT_CONSUMERS
+            )
+        )
+
+    def test_application_tree_has_no_import_time_chdir(self):
+        violations = []
+        for path in application_python_paths():
+            try:
+                tree = ast.parse(
+                    path.read_text(encoding="utf-8-sig"),
+                    filename=str(path),
+                )
+            except (SyntaxError, UnicodeDecodeError):
+                continue
+            violations.extend(
+                f"{path.relative_to(REPOSITORY_ROOT)}:{lineno}"
+                for lineno in import_time_chdir_calls(tree)
+            )
+
+        self.assertEqual(violations, [])
 
     def test_shared_boundaries_do_not_import_stage_implementations(self):
         self.assertIn(
