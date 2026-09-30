@@ -239,6 +239,8 @@ def import_time_chdir_calls(tree):
                 self.visit(base)
             for keyword in node.keywords:
                 self.visit(keyword.value)
+            for child in node.body:
+                self.visit(child)
 
         def visit_Lambda(self, node):
             self._visit_arguments(node.args)
