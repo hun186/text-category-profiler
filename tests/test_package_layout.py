@@ -143,17 +143,7 @@ DEPLOYMENT_PACKAGE_IMPORT_CONSUMERS = {
 }
 
 PACKAGE_IMPORT_PROVIDERS = {
-    "BertScript/PackageImport.py",
     "BertScript/TRV_deploy/deploy-dash-with-gcp-master/TRV/PackageImport.py",
-    "ClassesTree/PackageImport.py",
-    "ClassesTree/Visualization/jaal/PackageImport.py",
-    "DatasetConverter/Dataset Generator/ComponentGenerator/PackageImport.py",
-    "DatasetConverter/EXTConverter/PackageImport.py",
-    "DatasetConverter/PackageImport.py",
-    "PackageImport.py",
-    "TCF_Params/PackageImport.py",
-    "text_category_profiler/PackageImport.py",
-    "text_category_profiler/tulip_utils/PackageImport.py",
 }
 
 CANONICAL_ACTIVE_BOUNDARIES = {

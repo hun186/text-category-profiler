@@ -113,7 +113,7 @@ text_category_profiler/
 - [x] 移除 test/experiment `DatasetConverter/Dataset Generator/ComponentGenerator/ComponentGenerator.py` 的 `PackageImporter.proc()` 與歷史 EXTConverter cwd mutation。Direct-script mode 在第一個 repository-local import 前由 `Path(__file__).resolve().parents[3]` 加入 repository root；普通 import 不改 cwd 或 `sys.path`。Embassy SQLite input 明確綁定 component-local resource 並只在 embassy email 第一次使用時讀取及快取；generated outputs 仍相對 caller cwd。未使用且會讀取 bundled JSON 的 `generate_job_title` import 已移除；bundled implementation 未修改。
 - [x] 移除最後一個 test/experiment consumer `DatasetConverter/FreqAnalysis_dash.py` 的 `PackageImporter.proc()` 與 bare provider imports。Direct-script mode 在第一個 repository-local import 前由 `Path(__file__).resolve().parents[1]` 加入 repository root，普通 import 不改 `sys.path` 或 cwd。`reusable_components` 與 `dfOutputer` 分別明確綁定 canonical visualization/data packages；`StrDfFromJson` 以 target-local compatibility function 保留 legacy string/`"None"` semantics。Historical bare `MP_utils` provider was ambiguous；target 改用 repository canonical `MPlogger` instance，並以 `logSubDir=""`、`logFile="mp_processing_log.txt"`、`printOnScreen=False` 明確保留 caller-cwd log destination 與 silent logging behavior。`RandText.txt` input 固定為 DatasetConverter-local resource，而 `"test"` outputs 與 log 仍相對 caller cwd；canonical `dfOutputer` 明確設定 `IndexCols=["text"]` 以保留 legacy SQLite `text_Index`，並停用 canonical Excel 自動欄寬與列高調整。既有 standalone Dash module-scope app/data initialization 原樣保留，app-factory modernization 不在本批範圍。
 - [ ] 移除 active code 對目前 working directory 深度的 import 假設；不得在 import 階段 `chdir`。
-- [ ] 盤點 repository 內所有 `PackageImport.py`，區分 active、vendor、deployment snapshot 後逐一處理。
+- [x] 盤點 repository 內所有 `PackageImport.py`；application-side providers 已確認零 consumer 並移除，僅保留獨立 `TRV_deploy` snapshot provider 作為 deployment boundary。
 - [ ] 確認同一程序中不可能從外部 `D:/shared/PythonModule` 或其他相對深度載入同名模組。
 
 #### Phase 4 `PackageImport` inventory（baseline `main@e8e6fa135a334a193c0e08f3106e89da7aa1f723` 加上本批變更）
@@ -135,19 +135,9 @@ Production PyTorch runner 由 `classifier_stage.py` 的 `PYTORCH_SCRIPT = "TextC
 
 | `PackageImport.py` provider | 狀態／consumer 關係 | 後續處置 |
 | --- | --- | --- |
-| `PackageImport.py` | root provider；沒有 canonical consumer，legacy scripts 的實際解析仍取決於啟動 cwd／`sys.path` | remove bootstrap（待 consumer 清空後） |
-| `BertScript/PackageImport.py` | BertScript legacy/support local provider | remove bootstrap |
-| `DatasetConverter/PackageImport.py` | DatasetConverter legacy local provider | remove bootstrap |
-| `DatasetConverter/EXTConverter/PackageImport.py` | EXTConverter support/copy local provider | remove bootstrap |
-| `ClassesTree/PackageImport.py` | ClassesTree legacy provider；目前無同目錄 executable consumer | investigate separately |
-| `ClassesTree/Visualization/jaal/PackageImport.py` | Jaal legacy local provider；本批移除其最後一個已知 executable consumer | provider inventory 後續批次處理 |
-| `DatasetConverter/Dataset Generator/ComponentGenerator/PackageImport.py` | generator experiment local provider；no remaining verified executable consumer | provider inventory 後續批次處理 |
-| `TCF_Params/PackageImport.py` | 無 verified consumer | remove bootstrap |
-| `text_category_profiler/PackageImport.py` | 無 verified consumer；shared package 已禁止重新引入 | remove bootstrap |
-| `text_category_profiler/tulip_utils/PackageImport.py` | 無 executable consumer；`Graph_Builder.py` 只有註解 | remove bootstrap |
-| `BertScript/TRV_deploy/deploy-dash-with-gcp-master/TRV/PackageImport.py` | deployment snapshot provider | deployment boundary |
+| `BertScript/TRV_deploy/deploy-dash-with-gcp-master/TRV/PackageImport.py` | deployment snapshot provider；只服務 snapshot 內既有 consumer | deployment boundary，主程式 migration 不修改 |
 
-Application、legacy/manual、test/experiment 與 copy/deprecated consumer inventory 均已降為 **0**；只剩兩個未變更的 deployment snapshot consumers。後續仍須獨立處理 `PackageImport.py` provider inventory/deletion、deployment boundary 與 final path ambiguity verification。本批未移除任何 provider，Phase 4 與 `BL-001` 仍為 **In Progress**。`KI-002` 維持 **Resolved**，`KI-003` 維持 **Open**；本批沒有進行 H100/CUDA acceptance。
+Provider inventory 在本批收斂：原有 **11** 個 provider 中，10 個非 deployment provider 都已沒有 application-side executable `PackageImport` consumer，因此直接刪除；其中 root `PackageImport.py` 雖另含 `set_working_dir_to` 與 `get_relative_path_from_root`，但 application inventory 沒有任何 `PackageImport` import，因此不存在 repository application caller 需要保留該 provider。Git history 作為歷史保存，不建立 wrapper、placeholder 或 archive copy。刪除後 repository 只保留 **1** 個 `TRV_deploy` snapshot provider；兩個 executable consumers 也都仍侷限在同一 deployment snapshot。Application、legacy/manual、test/experiment 與 copy/deprecated consumer inventory維持 **0**。後續仍須處理 deployment boundary 的最終隔離判定與 final path ambiguity verification；Phase 4 與 `BL-001` 仍為 **In Progress**。`KI-002` 維持 **Resolved**，`KI-003` 維持 **Open**；本批沒有進行 H100/CUDA acceptance。
 
 ### Phase 5：刪除 legacy 容器並同步文件
 
