@@ -1,15 +1,9 @@
-import os
-parentSubDir = os.getcwd().split(os.path.sep)[-1]
-if parentSubDir in [
-    "DatasetConverter","BertScript","GenerativeLanguageModel","ArticleClustering"
-    ]:
-    os.chdir("../")
-    print(f"Change working directory to {os.getcwd()}")
-elif parentSubDir in [
-    "text_category_profiler",
-    ]:
-    os.chdir("../../../")
-    print(f"Change working directory to {os.getcwd()}")
+import sys
+from pathlib import Path
+
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+if __name__ == "__main__" and str(REPOSITORY_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPOSITORY_ROOT))
 
 import re
 import numpy as np
