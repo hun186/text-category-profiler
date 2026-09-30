@@ -205,16 +205,43 @@ def import_time_chdir_calls(tree):
     calls = []
 
     class ImportTimeVisitor(ast.NodeVisitor):
+        def _visit_arguments(self, arguments):
+            for default in arguments.defaults:
+                self.visit(default)
+            for default in arguments.kw_defaults:
+                if default is not None:
+                    self.visit(default)
+            for argument in (
+                list(arguments.posonlyargs)
+                + list(arguments.args)
+                + list(arguments.kwonlyargs)
+            ):
+                if argument.annotation is not None:
+                    self.visit(argument.annotation)
+            if arguments.vararg is not None and arguments.vararg.annotation is not None:
+                self.visit(arguments.vararg.annotation)
+            if arguments.kwarg is not None and arguments.kwarg.annotation is not None:
+                self.visit(arguments.kwarg.annotation)
+
         def visit_FunctionDef(self, node):
-            return
+            for decorator in node.decorator_list:
+                self.visit(decorator)
+            self._visit_arguments(node.args)
+            if node.returns is not None:
+                self.visit(node.returns)
 
         visit_AsyncFunctionDef = visit_FunctionDef
 
         def visit_ClassDef(self, node):
-            return
+            for decorator in node.decorator_list:
+                self.visit(decorator)
+            for base in node.bases:
+                self.visit(base)
+            for keyword in node.keywords:
+                self.visit(keyword.value)
 
         def visit_Lambda(self, node):
-            return
+            self._visit_arguments(node.args)
 
         def visit_If(self, node):
             if _is_main_guard(node.test):
