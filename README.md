@@ -85,7 +85,7 @@ python TCFMain.py --WeiTechworkIDPath <path-to-work-id-root> --WeiTechWorkPoolPA
 
 ### 驗證
 
-目前已提供 dependency-light 的 `unittest` 測試，涵蓋 architecture/package boundaries、current-state 文件契約，以及小型 DataConverter fixture 等不需真實模型／工作池的檢查；Layer A／B full-pipeline profiles 未 opt in 時會明確 SKIP：
+目前已提供以 `unittest` discovery 為主的 lightweight 驗證入口，涵蓋 architecture/package boundaries、current-state 文件契約，以及小型 DataConverter fixture 等不需真實模型／工作池的檢查；Layer A／B full-pipeline profiles 未 opt in 時會明確 SKIP。**目前在僅依 `requirements.txt` 建立的乾淨環境中，完整 discovery 仍有 2 個已知 `GPUtil` dependency errors，因此這條命令尚不能視為 clean PASS gate**：
 
 ```bash
 python -m unittest discover -s tests
@@ -131,5 +131,5 @@ python -m py_compile <changed-python-files>
 ## 已知限制
 
 - 根 README 先前描述 FastAPI／Elasticsearch RAG 代理人，但目前根目錄盤點未找到對應 `api/`、`agent/`、FastAPI manifest 或 RAG runtime；本 README 已改為反映目前可由程式碼查證的文字分類工作區。
-- 根目錄已有 `requirements.txt` 與輕量 `unittest` 測試；但完整依賴版本仍需在目標主機依 Python/CUDA/模型條件確認。
+- 根目錄已有 `requirements.txt` 與 lightweight `unittest` 測試；但 `requirements.txt` 目前未涵蓋 `GPUtil`，所以 `python -m unittest discover -s tests` 在乾淨環境仍有 2 個已知 dependency errors，不能當作全綠 gate。完整依賴版本仍需在目標主機依 Python/CUDA/模型條件確認。
 - 多數 runnable 腳本可能讀寫本機資料、工作池或模型產物；未確認資料邊界前不要當作無副作用測試執行。
