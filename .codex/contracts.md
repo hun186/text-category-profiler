@@ -39,7 +39,7 @@
 - 錯誤／exit code／失敗語意：argparse 會處理未知／不合法參數；stage script 其他錯誤語意待確認。
 - 版本與相容性：無版本化機制；破壞性變更需文件同步與 migration note。
 - 安全與敏感資訊：路徑參數可能包含內部資料位置；不要在文件放真實敏感路徑或內容。
-- 契約測試：待確認；目前沒有 canonical CLI smoke test。
+- 契約測試：root-level diagnostics／smoke 已有 `python TCFMain.py --doctor`、`python TCFMain.py --self-test isolated` 與 `python TCFMain.py --self-test real -p <port>`；real profile 需要真實 model/runtime，CUDA acceptance 另依 `--require-cuda` 與 `KI-003` 判定。
 
 ### `CONTRACT-FILE-001` Classifier dataset directory
 
@@ -55,7 +55,7 @@
 - 錯誤／失敗語意：若找不到 dataset 或必要檔案，stage 可能 raise exception；完整 exit code 待確認。
 - 版本與相容性：無 schema/version marker；改名需同步所有 consumer。
 - 安全與敏感資訊：dataset 可能包含真實文本或個資；不可在測試輸出或 Codex 文件中貼全文。
-- 契約測試：待建立 fixture。
+- 契約測試：`python -m unittest tests.test_dataconverter_fixture_integration` 使用 `tests/fixtures/dataconverter_small/` 驗證小型 source → worker → split → TSV handoff；不代表完整 legacy CLI、SQLite 或真實工作池 acceptance。
 
 ### `CONTRACT-FILE-002` Prediction/result analysis artifacts
 
