@@ -38,7 +38,7 @@
 | 變更類型 | 最小必要檢查 | 需要擴大驗證的條件 |
 | --- | --- | --- |
 | 純文件 | `python -m unittest discover -s tests`；`git diff --check`；交叉閱讀 README、AGENTS Quickstart 與 `.codex/*.md` 一致性 | 文件新增可執行命令或改變資料邊界 |
-| CLI parser／參數 | 檢查 `text_category_profiler/TCF_utils.py` 與 `TCFMain.py` stage command 組裝一致 | 參數影響工作池、模型、輸出路徑或外部服務 |
+| CLI parser／參數 | 檢查 `text_category_profiler/pipeline/TCF_utils.py` 與 `TCFMain.py` stage command 組裝一致 | 參數影響工作池、模型、輸出路徑或外部服務 |
 | 資料轉換 | `python -m unittest tests.test_dataconverter_fixture_integration`；使用 repository 小型 fixture、process workers 與 temporary output，不接觸真實工作池 | 變更 pandas／SQLite output adapter、完整 CLI bootstrap、fixed-test／ES 或 handoff 時仍需擴大驗證 |
 | 分類器 | 需要已確認模型／fixture 後執行 RunClassfier smoke test；目前待確認 | 影響模型格式、GPU/CPU resource gate 或 output contract |
 | 視覺化 lifecycle | `python -m unittest tests.test_visualization_stage tests.test_tcf_main_characterization tests.test_stage_commands`；`python -m py_compile BertScript/Test_result_Vis.py BertScript/visualization_stage.py` | layout、Dash callback 或部署設定改變時才需 browser/screenshot；lifecycle tests 不啟動 Dash server |
