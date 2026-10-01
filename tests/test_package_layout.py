@@ -641,12 +641,16 @@ class PackageLayoutTests(unittest.TestCase):
                         for alias in node.names:
                             if (
                                 alias.name in legacy_prefixes
+                                or alias.name == "utils"
+                                or alias.name.startswith("utils.")
                                 or alias.name == "tcf_utils"
                                 or alias.name.startswith("tcf_utils.")
                             ):
                                 violations.append(f"{path.relative_to(REPOSITORY_ROOT)}:{alias.name}")
                     if (
                         module in legacy_prefixes
+                        or module == "utils"
+                        or (module and module.startswith("utils."))
                         or module == "tcf_utils"
                         or (module and module.startswith("tcf_utils."))
                     ):
