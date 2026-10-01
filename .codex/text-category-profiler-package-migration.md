@@ -2,7 +2,7 @@
 
 > 類型：可持續執行的重構工作清單。後續 Codex 任務應一次處理一個可驗證批次，完成後更新本檔核取方塊與 `.codex/backlog.md` 狀態。
 
-> 目前狀態：根目錄 package 已從泛用的 `utils/`、歷史縮寫 `tcf_utils/` 逐步改名為 `text_category_profiler/`，repository 的 active imports 已同步使用完整專案 namespace。下列清單仍追蹤內容分流、deployment 相容與 path injection 淘汰。
+> 目前狀態：application-side package namespace、path injection 與 deployment boundary 已收斂；`TRV_deploy` 保留為獨立 legacy snapshot。Phase 5 正在同步 current-state 文件與最後驗證；`BL-001` 仍待最新 hosted head 的 fresh dependency-light test suite 證據後才能標記 Done。
 
 ## 目標
 
@@ -14,7 +14,7 @@
 - 保留 `DatasetConverter/`、`BertScript/`、`ClassesTree/` 的既有 stage／領域責任；本計畫不要求一次重組所有 stage。
 - 只有至少兩個 active stage 使用、責任明確且適合重用的程式才進入 `text_category_profiler/`。
 - stage-specific 程式應留在或移回所屬 stage，不得為縮短 import 而塞進共用 package。
-- 先建立測試與相容層，再搬實作；最後才刪除 `PythonModule/` 與 `PackageImport.py`。
+- 先建立測試與相容層，再搬實作；application-side `PythonModule/` 與 `PackageImport.py` 最後移除。獨立 deployment snapshot 若仍需舊結構，必須有明確隔離 guard。
 
 ## 必須維持的不變條件
 
@@ -141,10 +141,10 @@ Provider inventory 已收斂：原有 **11** 個 provider 中，10 個非 deploy
 
 ### Phase 5：刪除 legacy 容器並同步文件
 
-- [ ] `rg` 確認 active code 與 tests 不再引用 `PythonModule`、頂層 `utils` 或 `PackageImporter`。
+- [x] 確認 application executable imports 不再使用 `PythonModule`、頂層 `utils`／`tcf_utils` 或 `PackageImporter`；`tests/test_package_layout.py` 保留這些名稱僅作 inventory／防退步 guard，deployment snapshot 明確排除。
 - [x] 確認部署副本若仍需舊結構，已有獨立且清楚的維護邊界，不會被主流程 import；recursive hosted tree 與 application import guard 將 `TRV_deploy` 固定為獨立 legacy island。
-- [ ] 刪除已清空的 `PythonModule/` 與不再需要的 compatibility shims。
-- [ ] 同步 README、`.codex/project.md`、`.codex/architecture.md`、`.codex/contracts.md` 與 `.codex/workflows.md` 的 current-state 路徑。
+- [x] Application tree 已無 `PythonModule/` container；唯一剩餘 `PythonModule/` 位於隔離的 `TRV_deploy` snapshot。Migrated package-root compatibility copies 由 layout guard 保證不存在，不另建立 placeholder／shim。
+- [x] 同步 README、AGENTS Quickstart、`.codex/project.md`、`.codex/architecture.md`、`.codex/contracts.md` 與 `.codex/workflows.md` 的 current-state 邊界；contracts/workflows 本批查核後無 path migration 必要變更。
 - [ ] 將 `.codex/backlog.md` 的 `BL-001` 標記為 `Done`，並在 `.codex/memory.md` 留下最終驗證摘要。
 
 ## 每批驗證清單
