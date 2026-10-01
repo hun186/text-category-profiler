@@ -5,7 +5,6 @@ esJobTemplate = {
         #"host" : "http://localhost:9200",
         "host" : "https://localhost:9200",
         "user" : "elastic",
-        #"password" :"Rhhl35kvMf6Xm0U*PTAH"
         "password" : os.environ.get("TCP_ELASTIC_PASSWORD")
     },
 	"indexnameTemplate" : "movies_%m",
