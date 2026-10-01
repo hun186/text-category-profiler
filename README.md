@@ -97,7 +97,7 @@ python -m unittest discover -s tests
 python -m py_compile <changed-python-files>
 ```
 
-完整 `python TCFMain.py ...` 流程仍需本機資料、模型與工作池，會讀寫產物；未確認測試 fixture 前不要當作無副作用驗證。
+完整 `python TCFMain.py ...` 流程仍需本機資料、模型與工作池，會讀寫產物；`tests/fixtures/dataconverter_small/` 只覆蓋 dependency-light DataConverter integration，不能據此把完整 pipeline／real-model 流程當作無副作用驗證。
 
 ## Repository 結構
 
@@ -118,7 +118,7 @@ python -m py_compile <changed-python-files>
 - 主要輸入：文字資料集、固定測試資料、工作池任務目錄與已訓練模型目錄。
 - 主要輸出：分類器資料集、SQLite 中間資料庫、預測結果、合併後分析資料與視覺化輸出。
 - 不應提交 Git：真實工作池資料、模型 checkpoint、大型資料集、logs、outputs、秘密、憑證與內部連線設定。
-- 最小測試資料：待確認；repository 內含若干 sample 檔案，但尚未確認可作為完整 smoke fixture。
+- 已確認的最小 dependency-light fixture：`tests/fixtures/dataconverter_small/`，用於 DataConverter source → worker → split → TSV integration。完整 pipeline／real-model smoke 仍依 opt-in profiles 與外部 runtime inputs 驗證，不把此小型 fixture 視為完整流程 fixture。
 
 ## 文件
 
