@@ -635,7 +635,7 @@ class PackageLayoutTests(unittest.TestCase):
                     continue
                 for node in ast.walk(tree):
                     module = None
-                    if isinstance(node, ast.ImportFrom):
+                    if isinstance(node, ast.ImportFrom) and node.level == 0:
                         module = node.module
                     elif isinstance(node, ast.Import):
                         for alias in node.names:
