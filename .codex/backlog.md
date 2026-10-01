@@ -6,7 +6,7 @@
 
 | ID | 優先度 | 狀態 | 項目 | 為何延後 | 完成條件 | 相依／阻擋 |
 | --- | --- | --- | --- | --- | --- | --- |
-| `BL-001` | High | In Progress | 繼續將已改名的 `text_category_profiler/` 收旂為職責明確的 application package；詳見 [`text-category-profiler-package-migration.md`](text-category-profiler-package-migration.md) | package namespace 與 active imports 已與 repository 名稱對齊；非共用內容分流、deployment snapshot、`PackageImporter` 與外部 legacy imports 仍需分批處理 | 達成本計畫的整體完成條件，移除 active code 對 `PackageImporter` 的依賴，且輕量測試通過 | 需盤點重複工具、vendor／deployment snapshot 與 repository 外部 legacy imports |
+| `BL-001` | High | In Progress | 將 `text_category_profiler/` 收斂為職責明確的 application package；詳見 [`text-category-profiler-package-migration.md`](text-category-profiler-package-migration.md) | Application-side path injection、legacy `PackageImport.py` providers、machine-specific `PythonModule` paths與 deployment 邊界已收斂；current-state 文件與 guards 正在完成最後同步 | 達成本計畫的整體完成條件，且在最新 hosted head 上取得 fresh dependency-light test suite 通過證據 | 目前只缺最新 head 的 fresh `python -m unittest discover -s tests` 執行證據；H100/CUDA acceptance 由 `KI-003` 獨立追蹤，不阻擋本項 source-layout closeout |
 
 ## Candidate Ideas
 
