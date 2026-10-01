@@ -5,8 +5,8 @@
 ## Metadata
 
 - 初始化狀態：`INITIALIZED`
-- 最後查證日期：`2026-08-05`
-- 查證基準：branch `work` at `f1f394d` plus current initialization diff
+- 最後查證日期：`2026-10-01`
+- 查證基準：hosted `main@9f91652018a19a9f1fc38965c21004fd849c9a10`
 - 維護責任：待確認
 
 ## 一句話目的
@@ -77,7 +77,7 @@
 
 - 應提交 Git：程式碼、非敏感範例設定、最小且已審核的 sample／fixture、Codex current-state 文件。
 - 不應提交 Git：真實工作池資料、模型 checkpoint、大型 datasets、logs、outputs、秘密、憑證、真實內部連線設定與個資。
-- 可供測試的最小 fixture：待確認；repository 內有 sample 檔案但未驗證可支援完整 smoke test。
+- 可供測試的最小 fixture：`tests/fixtures/dataconverter_small/`；用於 dependency-light DataConverter source → worker → split → TSV integration，完整模型流程另由 opt-in full-pipeline profiles 驗證。
 - 大型／敏感資料位置：`WorkPool*`、模型目錄、`rawData`、`logs`、`outputs` 與本機／網路掛載路徑應先視為不可提交或不可無副作用修改。
 
 ## 外部系統與相鄰專案
@@ -97,7 +97,6 @@
 ## 待確認事項
 
 - [ ] 實際支援的 Python 版本與完整依賴版本鎖定方式。
-- [ ] 可安全執行的最小 smoke test／fixture。
 - [ ] 哪些 sample/data 應留在 Git，哪些應移出或加入 ignore。
 - [ ] `BertScript/` 中第三方 BERT/Dash 範例內容與本專案維護邊界。
 - [ ] 是否仍需要 README 中原本描述的 SRA／RAG 專案資訊，或該內容屬於錯置文件。
