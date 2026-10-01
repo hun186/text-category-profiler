@@ -85,7 +85,7 @@ python TCFMain.py --WeiTechworkIDPath <path-to-work-id-root> --WeiTechWorkPoolPA
 
 ### 驗證
 
-目前已提供不依賴資料集、模型或 GPU 的輕量功能測試，優先用來保護 console display helper 與 repository 說明檔的基本契約：
+目前已提供以 `unittest` discovery 為主的 lightweight 驗證入口，涵蓋 architecture/package boundaries、current-state 文件契約，以及小型 DataConverter fixture 等不需真實模型／工作池的檢查；Layer A／B full-pipeline profiles 未 opt in 時會明確 SKIP。**目前在僅依 `requirements.txt` 建立的乾淨環境中，完整 discovery 仍有 2 個已知 `GPUtil` dependency errors，因此這條命令尚不能視為 clean PASS gate**：
 
 ```bash
 python -m unittest discover -s tests
@@ -97,7 +97,7 @@ python -m unittest discover -s tests
 python -m py_compile <changed-python-files>
 ```
 
-完整 `python TCFMain.py ...` 流程仍需本機資料、模型與工作池，會讀寫產物；未確認測試 fixture 前不要當作無副作用驗證。
+完整 `python TCFMain.py ...` 流程仍需本機資料、模型與工作池，會讀寫產物；`tests/fixtures/dataconverter_small/` 只覆蓋 dependency-light DataConverter integration，不能據此把完整 pipeline／real-model 流程當作無副作用驗證。
 
 ## Repository 結構
 
@@ -106,7 +106,7 @@ python -m py_compile <changed-python-files>
 | `TCFMain.py` | 根流程入口；串接 DataConverter、RunClassfier、CombineTestResult 與 Test_result_Vis。 |
 | `TCF_Params/` | 分類流程參數、工作池根目錄、BERTScript 路徑與任務預設值。 |
 | `DatasetConverter/` | 將原始文本／資料來源轉換為分類器使用的資料集、SQLite 與記錄檔。 |
-| `BertScript/` | BERT／XLM 分類、訓練／推論、結果合併與 Dash/Plotly 視覺化腳本；包含部分第三方 BERT/Dash 範例內容。 |
+| `BertScript/` | BERT／XLM 分類、訓練／推論、結果合併與 Dash/Plotly 視覺化腳本；包含部分第三方 BERT/Dash 範例內容。其 `TRV_deploy/` 為獨立 legacy deployment snapshot，不是 application import boundary。 |
 | `ClassesTree/` | 類別樹、標籤工具與視覺化實驗。 |
 | `TextClassificationDatasetOptimization/` | ChatGPT AI 代理人提示模板、taxonomy 擴充成果、來源索引、訓練集 PoC 與公開文章正文抓取工具。 |
 | `text_category_profiler/` | 與 repository 同名的 Python package，目前依 `core`、`data`、`concurrency`、`pipeline`、`text`、`visualization`、`integrations` 分流；程式以 `text_category_profiler.<domain>.<module>` 匯入。 |
@@ -118,7 +118,7 @@ python -m py_compile <changed-python-files>
 - 主要輸入：文字資料集、固定測試資料、工作池任務目錄與已訓練模型目錄。
 - 主要輸出：分類器資料集、SQLite 中間資料庫、預測結果、合併後分析資料與視覺化輸出。
 - 不應提交 Git：真實工作池資料、模型 checkpoint、大型資料集、logs、outputs、秘密、憑證與內部連線設定。
-- 最小測試資料：待確認；repository 內含若干 sample 檔案，但尚未確認可作為完整 smoke fixture。
+- 已確認的最小 dependency-light fixture：`tests/fixtures/dataconverter_small/`，用於 DataConverter source → worker → split → TSV integration。完整 pipeline／real-model smoke 仍依 opt-in profiles 與外部 runtime inputs 驗證，不把此小型 fixture 視為完整流程 fixture。
 
 ## 文件
 
@@ -131,5 +131,5 @@ python -m py_compile <changed-python-files>
 ## 已知限制
 
 - 根 README 先前描述 FastAPI／Elasticsearch RAG 代理人，但目前根目錄盤點未找到對應 `api/`、`agent/`、FastAPI manifest 或 RAG runtime；本 README 已改為反映目前可由程式碼查證的文字分類工作區。
-- 根目錄已有 `requirements.txt` 與輕量 `unittest` 測試；但完整依賴版本仍需在目標主機依 Python/CUDA/模型條件確認。
+- 根目錄已有 `requirements.txt` 與 lightweight `unittest` 測試；但 `requirements.txt` 目前未涵蓋 `GPUtil`，所以 `python -m unittest discover -s tests` 在乾淨環境仍有 2 個已知 dependency errors，不能當作全綠 gate。完整依賴版本仍需在目標主機依 Python/CUDA/模型條件確認。
 - 多數 runnable 腳本可能讀寫本機資料、工作池或模型產物；未確認資料邊界前不要當作無副作用測試執行。

@@ -19,7 +19,7 @@
 - 專案目的：Python 文字分類、資料集轉換、BERT／XLM 推論與結果分析工作區。
 - 主要技術：Python 腳本、TensorFlow BERT 相關程式、Dash/Plotly 視覺化、SQLite 中間資料。
 - 主要入口：`TCFMain.py` 串接 `DatasetConverter/DataConverter.py`、`BertScript/RunClassfier.py`、`BertScript/CombineTestResult.py` 與 `BertScript/Test_result_Vis.py`。
-- 最快驗證：純文件變更使用 Markdown／一致性檢查；目前沒有已確認的無副作用程式測試命令。
+- 最快驗證：`python -m unittest discover -s tests` 是目前的 lightweight discovery 入口；Layer A／B full-pipeline modules 未 opt in 時會明確 SKIP。但乾淨環境僅安裝 `requirements.txt` 時，`tests/test_df_utils.py` 目前仍會因缺少 `GPUtil` 產生 2 個已知 dependency errors，因此不得把這條命令描述為 clean PASS gate。純文件變更另做 Markdown／current-state 一致性檢查。
 <!-- END CODEX PROJECT QUICKSTART -->
 
 若狀態仍為 `UNINITIALIZED`：

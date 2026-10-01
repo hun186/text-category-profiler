@@ -30,15 +30,15 @@
 | Format | 待確認，禁止執行 | repository root | Unverified |
 | Lint | 待確認，禁止執行 | repository root | Unverified |
 | Type check | 待確認，禁止執行 | repository root | Unverified |
-| 最小 smoke test | `python -m unittest discover -s tests` | repository root | Verified for dependency-light tests；亦會 discover Layer A／B modules，但未 opt in 時兩者明確 SKIP |
+| Lightweight discovery | `python -m unittest discover -s tests` | repository root | Canonical discovery entry；Layer A／B modules 未 opt in 時明確 SKIP。乾淨環境僅依 `requirements.txt` 安裝時，目前會在 `tests/test_df_utils.py` 因缺少 `GPUtil` 產生 2 個已知 dependency errors，因此尚不是 clean PASS gate |
 | 完整 test suite | 待確認，禁止執行 | repository root | Unverified：未找到 CI 或 canonical test command |
 
 ## 驗證矩陣
 
 | 變更類型 | 最小必要檢查 | 需要擴大驗證的條件 |
 | --- | --- | --- |
-| 純文件 | `python -m unittest discover -s tests`；`git diff --check`；交叉閱讀 README、AGENTS Quickstart 與 `.codex/*.md` 一致性 | 文件新增可執行命令或改變資料邊界 |
-| CLI parser／參數 | 檢查 `text_category_profiler/TCF_utils.py` 與 `TCFMain.py` stage command 組裝一致 | 參數影響工作池、模型、輸出路徑或外部服務 |
+| 純文件 | 優先執行 `python -m unittest tests.test_project_docs tests.test_package_layout`；另做 `git diff --check` 與 README、AGENTS Quickstart、`.codex/*.md` 一致性檢查。Repository-wide discovery 可補跑，但目前有已知 `GPUtil` dependency errors | 文件新增可執行命令或改變資料邊界 |
+| CLI parser／參數 | 檢查 `text_category_profiler/pipeline/TCF_utils.py` 與 `TCFMain.py` stage command 組裝一致 | 參數影響工作池、模型、輸出路徑或外部服務 |
 | 資料轉換 | `python -m unittest tests.test_dataconverter_fixture_integration`；使用 repository 小型 fixture、process workers 與 temporary output，不接觸真實工作池 | 變更 pandas／SQLite output adapter、完整 CLI bootstrap、fixed-test／ES 或 handoff 時仍需擴大驗證 |
 | 分類器 | 需要已確認模型／fixture 後執行 RunClassfier smoke test；目前待確認 | 影響模型格式、GPU/CPU resource gate 或 output contract |
 | 視覺化 lifecycle | `python -m unittest tests.test_visualization_stage tests.test_tcf_main_characterization tests.test_stage_commands`；`python -m py_compile BertScript/Test_result_Vis.py BertScript/visualization_stage.py` | layout、Dash callback 或部署設定改變時才需 browser/screenshot；lifecycle tests 不啟動 Dash server |
@@ -116,7 +116,7 @@ Layer B 只有在 root exit 0、production classifier evidence、final `*_rdy_fo
 
 | 限制 | 首選驗證 | 安全替代 | 不足之處 |
 | --- | --- | --- | --- |
-| 缺少 pandas／模型等完整 runtime 依賴 | `python -m unittest tests.test_dataconverter_fixture_integration` | `python -m unittest discover -s tests` | 可證明隔離的 source → worker → split → TSV 契約，但不能證明完整 legacy CLI、pandas／SQLite 或工作池 handoff |
+| 缺少完整 runtime／test dependency | `python -m unittest tests.test_dataconverter_fixture_integration` | 依變更範圍執行 targeted dependency-light tests；repository-wide discovery 目前另有已知 `GPUtil` dependency errors | 可證明隔離的 source → worker → split → TSV 契約，但不能證明完整 legacy CLI、pandas／SQLite、工作池 handoff或 repository-wide clean PASS |
 | 流程命令可能搬移／刪除工作池資料 | 在隔離 fixture 中執行 | 僅檢查 command assembly 與 contract 文件 | 不能覆蓋 I/O side effects |
 | Repository-wide compile | `python -m compileall TCFMain.py TCF_Params DatasetConverter BertScript text_category_profiler` | 修改個別 Python 模組時可另跑 `py_compile` 作為 scoped verification | Repository-wide compile gate is expected to PASS；此 canonical command 不得縮小掃描範圍或加入排除項 |
 

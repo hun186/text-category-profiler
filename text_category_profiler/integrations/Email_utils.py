@@ -1,6 +1,5 @@
 import os
 import re
-import sys
 
 
 from text_category_profiler.core.utilities import textReader
