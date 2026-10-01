@@ -2,7 +2,7 @@
 
 > 類型：可持續執行的重構工作清單。後續 Codex 任務應一次處理一個可驗證批次，完成後更新本檔核取方塊與 `.codex/backlog.md` 狀態。
 
-> 目前狀態：application-side package namespace、path injection 與 deployment boundary 已收斂；`TRV_deploy` 保留為獨立 legacy snapshot。Phase 5 正在同步 current-state 文件與最後驗證；`BL-001` 仍待最新 hosted head 的 fresh dependency-light test suite 證據後才能標記 Done。
+> 目前狀態：application-side package namespace、path injection 與 deployment boundary 已收斂；`TRV_deploy` 保留為獨立 legacy snapshot。Phase 5 的 legacy path/container 與 current-state 文件同步已完成，但 `text_category_profiler/` root 仍有 Phase 0–3 所追蹤的 research/test/script/vendor/legacy artifact 候選需要逐批分類與分流；完成後還需 fresh dependency-light suite 才能將 `BL-001` 標記 Done。
 
 ## 目標
 
@@ -145,7 +145,7 @@ Provider inventory 已收斂：原有 **11** 個 provider 中，10 個非 deploy
 - [x] 確認部署副本若仍需舊結構，已有獨立且清楚的維護邊界，不會被主流程 import；recursive hosted tree 與 application import guard 將 `TRV_deploy` 固定為獨立 legacy island。
 - [x] Application tree 已無 `PythonModule/` container；唯一剩餘 `PythonModule/` 位於隔離的 `TRV_deploy` snapshot。Migrated package-root compatibility copies 由 layout guard 保證不存在，不另建立 placeholder／shim。
 - [x] 同步 README、AGENTS Quickstart、`.codex/project.md`、`.codex/architecture.md`、`.codex/contracts.md` 與 `.codex/workflows.md` 的 current-state 邊界；contracts/workflows 本批查核後無 path migration 必要變更。
-- [ ] 將 `.codex/backlog.md` 的 `BL-001` 標記為 `Done`，並在 `.codex/memory.md` 留下最終驗證摘要。
+- [ ] 完成 Phase 0–3 尚未收斂的 package-root residual inventory（research/test/script/vendor/legacy artifact），再取得 fresh dependency-light suite 證據；之後將 `.codex/backlog.md` 的 `BL-001` 標記為 `Done`，並在 `.codex/memory.md` 留下最終驗證摘要。
 
 ## 每批驗證清單
 
