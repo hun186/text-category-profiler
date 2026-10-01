@@ -85,7 +85,7 @@ python TCFMain.py --WeiTechworkIDPath <path-to-work-id-root> --WeiTechWorkPoolPA
 
 ### 驗證
 
-目前已提供不依賴資料集、模型或 GPU 的輕量功能測試，優先用來保護 console display helper 與 repository 說明檔的基本契約：
+目前已提供 dependency-light 的 `unittest` 測試，涵蓋 architecture/package boundaries、current-state 文件契約，以及小型 DataConverter fixture 等不需真實模型／工作池的檢查；Layer A／B full-pipeline profiles 未 opt in 時會明確 SKIP：
 
 ```bash
 python -m unittest discover -s tests
@@ -106,7 +106,7 @@ python -m py_compile <changed-python-files>
 | `TCFMain.py` | 根流程入口；串接 DataConverter、RunClassfier、CombineTestResult 與 Test_result_Vis。 |
 | `TCF_Params/` | 分類流程參數、工作池根目錄、BERTScript 路徑與任務預設值。 |
 | `DatasetConverter/` | 將原始文本／資料來源轉換為分類器使用的資料集、SQLite 與記錄檔。 |
-| `BertScript/` | BERT／XLM 分類、訓練／推論、結果合併與 Dash/Plotly 視覺化腳本；包含部分第三方 BERT/Dash 範例內容。 |
+| `BertScript/` | BERT／XLM 分類、訓練／推論、結果合併與 Dash/Plotly 視覺化腳本；包含部分第三方 BERT/Dash 範例內容。其 `TRV_deploy/` 為獨立 legacy deployment snapshot，不是 application import boundary。 |
 | `ClassesTree/` | 類別樹、標籤工具與視覺化實驗。 |
 | `TextClassificationDatasetOptimization/` | ChatGPT AI 代理人提示模板、taxonomy 擴充成果、來源索引、訓練集 PoC 與公開文章正文抓取工具。 |
 | `text_category_profiler/` | 與 repository 同名的 Python package，目前依 `core`、`data`、`concurrency`、`pipeline`、`text`、`visualization`、`integrations` 分流；程式以 `text_category_profiler.<domain>.<module>` 匯入。 |
