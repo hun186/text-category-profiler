@@ -1,10 +1,12 @@
+import os
+
 esJob = {
     "es_tokens" : {
         #"host" : "http://localhost:9200",
         "host" : "https://localhost:9200",
         "user" : "elastic",
         #"password" :"Rhhl35kvMf6Xm0U*PTAH"
-        "password" :"=lJg5OAxH_Oivzo1ZB-1"
+        "password" : os.environ.get("TCP_ELASTIC_PASSWORD")
     },
 	"indexname" : "movies",
 	"startDay" : "2022-12-01T00:00:00Z",
