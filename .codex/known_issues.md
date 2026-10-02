@@ -8,15 +8,15 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | `KI-003` | Medium | 已有隔離 root smoke，但尚缺 post-merge real-model/GPU acceptance evidence | 完整 runtime 驗證 | Layer A 啟用時必須 PASS；Layer B 留待明確 real-runtime inputs 與 H100/CUDA acceptance | `tests/test_full_pipeline_smoke.py`、`tests/test_full_pipeline_real_runtime.py`、`.codex/workflows.md` | Open |
 | `KI-005` | Low | 乾淨環境僅安裝根 `requirements.txt` 時，repository-wide unittest discovery 會因缺少 `GPUtil` 產生 2 個 dependency errors | lightweight repository-wide validation | 先跑與變更範圍相符的 targeted tests；不得把 full discovery 宣稱為 clean PASS gate | `tests/test_df_utils.py` → `text_category_profiler.data.df_utils` → `text_category_profiler.core.utilities`；Codex review of PR #119 | Open |
-| `KI-006` | High | Elasticsearch credential 曾硬編碼於 repository source；current source 已改為 `TCP_ELASTIC_PASSWORD`，但既有 Git 歷史仍可能包含舊值，外部輪替狀態尚未確認 | 仍接受舊 credential 的 Elasticsearch 環境 | 立即在 Elasticsearch 端輪替該 credential，部署時以 `TCP_ELASTIC_PASSWORD` 注入；不要把新 secret commit 到 Git | `text_category_profiler/ArtCluESJobTemplate.py`、`DatasetConverter/ESDataConfigFile.py` 的 current-source remediation；Git history 未重寫 | Open |
+| `KI-006` | High | Elasticsearch credential 曾硬編碼於 repository source/sample config/setup notes；current source 已移除 tracked credential literals，runtime config 改由 `TCP_ELASTIC_PASSWORD` 注入，但既有 Git 歷史仍可能包含舊值，外部輪替狀態尚未確認 | 仍接受舊 credential 的 Elasticsearch 環境 | 立即在 Elasticsearch 端輪替該 credential，部署時以 `TCP_ELASTIC_PASSWORD` 注入；不要把新 secret commit 到 Git | `tests/test_es_secret_config.py` 掃描 current tracked ES surfaces；Git history 未重寫 | Open |
 
 ## Issue Details
 
 ### `KI-006` — Elasticsearch credential 曾進入 Git history
 
 - 首次確認日期與環境：2026-10-02，BL-001 residual inventory 盤點。
-- 證據位置：`text_category_profiler/ArtCluESJobTemplate.py` 與 `DatasetConverter/ESDataConfigFile.py` 的 hosted `main` current source 曾包含硬編碼 Elasticsearch password。
-- Current-source remediation：兩個 config 保留既有 `es_tokens["password"]` contract，但值改由 `TCP_ELASTIC_PASSWORD` 環境變數提供；未設定時為 `None`，不再以 repository source 提供 secret fallback。
+- 證據位置：hosted source 曾在 `text_category_profiler/ArtCluESJobTemplate.py`、`DatasetConverter/ESDataConfigFile.py`、`DatasetConverter/elasticsearch/sampleBuilder.py`、sample INI 與 setup notes 中包含 Elasticsearch password / enrollment token 類 credential。
+- Current-source remediation：runtime config 保留既有 `es_tokens["password"]` contract，但值改由 `TCP_ELASTIC_PASSWORD` 環境變數提供；sample INI 與 setup notes 僅保留安全 placeholder/操作說明，current tracked ES surfaces 不再提供 credential fallback 或 enrollment token literal。`tests/test_es_secret_config.py` 會掃描相關 tracked source/config/documentation 防止回歸。
 - 剩餘風險：本批不改寫 Git history，因此舊 revision 仍可能含有已曝光的 credential；若 Elasticsearch 端仍接受舊值，風險仍存在。
 - 修復條件：在 Elasticsearch 端完成 credential rotation，確認舊 credential 已失效，部署改用 secret/environment injection，之後可將本項標記 Resolved。
 - 狀態：Open。
