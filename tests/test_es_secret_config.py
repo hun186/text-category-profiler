@@ -23,6 +23,17 @@ PASSWORD_ASSIGNMENT_RE = re.compile(
 ENROLLMENT_TOKEN_RE = re.compile(r"^\s*eyJ[A-Za-z0-9_-]{20,}={0,2}\s*$")
 LEGACY_HOST_PASSWORD_RE = re.compile(r"^\s*[HC]:(?![\\/])\S{8,}\s*$")
 
+ALLOWED_PASSWORD_EXPRESSIONS = {
+    "${TCP_ELASTIC_PASSWORD}",
+    'os.environ.get("TCP_ELASTIC_PASSWORD")',
+    "os.environ.get('TCP_ELASTIC_PASSWORD')",
+}
+
+
+def password_value_expression(rhs):
+    """Return only the assigned value, excluding commas and trailing comments."""
+    return rhs.split("#", 1)[0].strip().rstrip(",").strip()
+
 
 class ElasticsearchSecretConfigTests(unittest.TestCase):
     def _load_password(self, path, mapping_name):
@@ -53,6 +64,20 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 with self.subTest(path=path):
                     self.assertIsNone(self._load_password(path, mapping_name))
 
+    def test_password_guard_validates_value_before_trailing_comment(self):
+        hardcoded_with_hint = '"password": "real-secret"  # replace with TCP_ELASTIC_PASSWORD'
+        match = PASSWORD_ASSIGNMENT_RE.match(hardcoded_with_hint)
+
+        self.assertIsNotNone(match)
+        self.assertEqual(
+            password_value_expression(match.group(1)),
+            '"real-secret"',
+        )
+        self.assertNotIn(
+            password_value_expression(match.group(1)),
+            ALLOWED_PASSWORD_EXPRESSIONS,
+        )
+
     def test_tracked_elasticsearch_surfaces_do_not_embed_credentials(self):
         violations = []
         for path in self._secret_surface_paths():
@@ -60,8 +85,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             for line_number, line in enumerate(text.splitlines(), start=1):
                 match = PASSWORD_ASSIGNMENT_RE.match(line)
                 if match:
-                    rhs = match.group(1)
-                    if "TCP_ELASTIC_PASSWORD" not in rhs:
+                    value_expression = password_value_expression(match.group(1))
+                    if value_expression not in ALLOWED_PASSWORD_EXPRESSIONS:
                         violations.append(
                             f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:password"
                         )
