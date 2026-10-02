@@ -16,8 +16,13 @@ CONFIGS = (
 ELASTICSEARCH_SAMPLE_ROOT = REPOSITORY_ROOT / "DatasetConverter" / "elasticsearch"
 TEXT_SECRET_SUFFIXES = {".py", ".ini", ".txt", ".json"}
 
-PASSWORD_ASSIGNMENT_RE = re.compile(
-    r"""^\s*#?\s*["']?password["']?\s*[:=]\s*(.+?)\s*,?\s*$""",
+PASSWORD_VALUE_RE = re.compile(
+    r"""["']?password["']?\s*[:=]\s*("""
+    r"""\$\{TCP_ELASTIC_PASSWORD\}"""
+    r"""|os\.environ\.get\(\s*["']TCP_ELASTIC_PASSWORD["']\s*\)"""
+    r"""|["'][^"'\r\n]*["']"""
+    r"""|[^,}#\r\n]+"""
+    r""")""",
     re.IGNORECASE,
 )
 ENROLLMENT_TOKEN_RE = re.compile(r"^\s*eyJ[A-Za-z0-9_-]{20,}={0,2}\s*$")
@@ -30,9 +35,9 @@ ALLOWED_PASSWORD_EXPRESSIONS = {
 }
 
 
-def password_value_expression(rhs):
-    """Return only the assigned value, excluding commas and trailing comments."""
-    return rhs.split("#", 1)[0].strip().rstrip(",").strip()
+def password_value_expressions(line):
+    """Return password value expressions found anywhere in one source line."""
+    return [match.group(1).strip() for match in PASSWORD_VALUE_RE.finditer(line)]
 
 
 class ElasticsearchSecretConfigTests(unittest.TestCase):
@@ -66,26 +71,29 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
 
     def test_password_guard_validates_value_before_trailing_comment(self):
         hardcoded_with_hint = '"password": "real-secret"  # replace with TCP_ELASTIC_PASSWORD'
-        match = PASSWORD_ASSIGNMENT_RE.match(hardcoded_with_hint)
-
-        self.assertIsNotNone(match)
         self.assertEqual(
-            password_value_expression(match.group(1)),
-            '"real-secret"',
+            password_value_expressions(hardcoded_with_hint),
+            ['"real-secret"'],
         )
-        self.assertNotIn(
-            password_value_expression(match.group(1)),
-            ALLOWED_PASSWORD_EXPRESSIONS,
+
+    def test_password_guard_detects_inline_mapping_values(self):
+        inline_examples = (
+            'es_tokens = {"password": "real-secret"}',
+            '{"user": "elastic", "password": "real-secret"}',
         )
+        for line in inline_examples:
+            with self.subTest(line=line):
+                self.assertEqual(
+                    password_value_expressions(line),
+                    ['"real-secret"'],
+                )
 
     def test_tracked_elasticsearch_surfaces_do_not_embed_credentials(self):
         violations = []
         for path in self._secret_surface_paths():
             text = path.read_text(encoding="utf-8-sig")
             for line_number, line in enumerate(text.splitlines(), start=1):
-                match = PASSWORD_ASSIGNMENT_RE.match(line)
-                if match:
-                    value_expression = password_value_expression(match.group(1))
+                for value_expression in password_value_expressions(line):
                     if value_expression not in ALLOWED_PASSWORD_EXPRESSIONS:
                         violations.append(
                             f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:password"
