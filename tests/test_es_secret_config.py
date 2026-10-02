@@ -20,6 +20,10 @@ PASSWORD_KEY_RE = re.compile(r"""["\']?password["\']?\s*[:=]\s*""", re.IGNORECAS
 ENROLLMENT_TOKEN_RE = re.compile(
     r"(?<![A-Za-z0-9_-])eyJ[A-Za-z0-9_-]{20,}={0,2}(?![A-Za-z0-9_-])"
 )
+URL_USERINFO_RE = re.compile(
+    r"""https?://[^\s/"'@:]+:[^\s/"'@]+@""",
+    re.IGNORECASE,
+)
 LEGACY_HOST_PASSWORD_RE = re.compile(r"^\s*[HC]:(?![\\/])\S{8,}\s*$")
 
 ALLOWED_PASSWORD_EXPRESSIONS = {
@@ -188,6 +192,15 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             with self.subTest(line=line):
                 self.assertIsNotNone(ENROLLMENT_TOKEN_RE.search(line))
 
+    def test_url_userinfo_guard_detects_embedded_credentials(self):
+        credential_urls = (
+            '"host": "https://elastic:real-secret@localhost:9200"',
+            "ELASTICSEARCH_URL=http://elastic:real-secret@example.test:9200",
+        )
+        for line in credential_urls:
+            with self.subTest(line=line):
+                self.assertIsNotNone(URL_USERINFO_RE.search(line))
+
     def test_tracked_elasticsearch_surfaces_do_not_embed_credentials(self):
         violations = []
         for path in self._secret_surface_paths():
@@ -201,6 +214,10 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 if ENROLLMENT_TOKEN_RE.search(line):
                     violations.append(
                         f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:enrollment-token"
+                    )
+                if URL_USERINFO_RE.search(line):
+                    violations.append(
+                        f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:credential-url"
                     )
                 if (
                     path.name == "架站說明.txt"
