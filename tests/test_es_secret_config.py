@@ -17,7 +17,9 @@ ELASTICSEARCH_SAMPLE_ROOT = REPOSITORY_ROOT / "DatasetConverter" / "elasticsearc
 TEXT_SECRET_SUFFIXES = {".py", ".ini", ".txt", ".json"}
 
 PASSWORD_KEY_RE = re.compile(r"""["\']?password["\']?\s*[:=]\s*""", re.IGNORECASE)
-ENROLLMENT_TOKEN_RE = re.compile(r"^\s*eyJ[A-Za-z0-9_-]{20,}={0,2}\s*$")
+ENROLLMENT_TOKEN_RE = re.compile(
+    r"(?<![A-Za-z0-9_-])eyJ[A-Za-z0-9_-]{20,}={0,2}(?![A-Za-z0-9_-])"
+)
 LEGACY_HOST_PASSWORD_RE = re.compile(r"^\s*[HC]:(?![\\/])\S{8,}\s*$")
 
 ALLOWED_PASSWORD_EXPRESSIONS = {
@@ -33,8 +35,12 @@ def _password_value_expression(line, start):
     quote = None
     escaped = False
     paren_depth = 0
+    placeholder_depth = 0
+    index = start
 
-    for char in line[start:]:
+    while index < len(line):
+        char = line[index]
+
         if quote is not None:
             chars.append(char)
             if escaped:
@@ -43,27 +49,47 @@ def _password_value_expression(line, start):
                 escaped = True
             elif char == quote:
                 quote = None
+            index += 1
+            continue
+
+        if line.startswith("${", index):
+            chars.extend(["$", "{"])
+            placeholder_depth += 1
+            index += 2
+            continue
+
+        if placeholder_depth > 0:
+            chars.append(char)
+            if char == "{":
+                placeholder_depth += 1
+            elif char == "}":
+                placeholder_depth -= 1
+            index += 1
             continue
 
         if char in {'"', "'"}:
             quote = char
             chars.append(char)
+            index += 1
             continue
 
         if char == "(":
             paren_depth += 1
             chars.append(char)
+            index += 1
             continue
         if char == ")":
             if paren_depth > 0:
                 paren_depth -= 1
             chars.append(char)
+            index += 1
             continue
 
         if paren_depth == 0 and char in {",", "}", "#"}:
             break
 
         chars.append(char)
+        index += 1
 
     return "".join(chars).strip()
 
@@ -146,6 +172,22 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 self.assertEqual(len(values), 1)
                 self.assertIn(values[0], ALLOWED_PASSWORD_EXPRESSIONS)
 
+    def test_password_guard_preserves_environment_placeholder_closing_brace(self):
+        self.assertEqual(
+            password_value_expressions("password = ${TCP_ELASTIC_PASSWORD}"),
+            ["${TCP_ELASTIC_PASSWORD}"],
+        )
+
+    def test_enrollment_token_guard_detects_embedded_literals(self):
+        token = "eyJ" + ("A" * 24)
+        embedded_examples = (
+            f"ENROLLMENT_TOKEN={token}",
+            f'"token": "{token}"',
+        )
+        for line in embedded_examples:
+            with self.subTest(line=line):
+                self.assertIsNotNone(ENROLLMENT_TOKEN_RE.search(line))
+
     def test_tracked_elasticsearch_surfaces_do_not_embed_credentials(self):
         violations = []
         for path in self._secret_surface_paths():
@@ -156,7 +198,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         violations.append(
                             f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:password"
                         )
-                if ENROLLMENT_TOKEN_RE.match(line):
+                if ENROLLMENT_TOKEN_RE.search(line):
                     violations.append(
                         f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:enrollment-token"
                     )
