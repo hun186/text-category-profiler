@@ -125,25 +125,29 @@ def hardcoded_auth_tuple_lines(source):
     violations = []
 
     for node in ast.walk(tree):
-        value = None
-        line_number = getattr(node, "lineno", None)
+        candidates = []
 
         if isinstance(node, ast.keyword) and node.arg in AUTH_TUPLE_NAMES:
-            value = node.value
+            candidates.append((getattr(node, "lineno", None), node.value))
         elif isinstance(node, (ast.Assign, ast.AnnAssign)):
             targets = node.targets if isinstance(node, ast.Assign) else [node.target]
             if any(
                 isinstance(target, ast.Name) and target.id in AUTH_TUPLE_NAMES
                 for target in targets
             ):
-                value = node.value
+                candidates.append((getattr(node, "lineno", None), node.value))
+        elif isinstance(node, ast.Dict):
+            for key, value in zip(node.keys, node.values):
+                if _literal_string(key) in AUTH_TUPLE_NAMES:
+                    candidates.append((getattr(value, "lineno", getattr(node, "lineno", None)), value))
 
-        if not isinstance(value, (ast.Tuple, ast.List)) or len(value.elts) < 2:
-            continue
+        for line_number, value in candidates:
+            if not isinstance(value, (ast.Tuple, ast.List)) or len(value.elts) < 2:
+                continue
 
-        password = _literal_string(value.elts[1])
-        if password:
-            violations.append(line_number)
+            password = _literal_string(value.elts[1])
+            if password:
+                violations.append(line_number)
 
     return sorted(set(line for line in violations if line is not None))
 
@@ -275,6 +279,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             'Elasticsearch(host, http_auth=("elastic", "real-secret"))',
             'Elasticsearch(host, basic_auth=("elastic", "real-secret"))',
             'http_auth = ("elastic", "real-secret")',
+            'options = {"http_auth": ("elastic", "real-secret")}',
+            'options = {"basic_auth": ["elastic", "real-secret"]}',
         )
         for source in hardcoded_examples:
             with self.subTest(source=source):
@@ -285,6 +291,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             'Elasticsearch(host, http_auth=(es_tokens["user"], es_tokens["password"]))',
             'Elasticsearch(host, basic_auth=(user, os.environ.get("TCP_ELASTIC_PASSWORD")))',
             'http_auth = (user, password)',
+            'options = {"http_auth": (es_tokens["user"], es_tokens["password"])}',
+            'options = {"basic_auth": [user, os.environ.get("TCP_ELASTIC_PASSWORD")]}',
         )
         for source in safe_examples:
             with self.subTest(source=source):
