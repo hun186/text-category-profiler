@@ -1,3 +1,4 @@
+import ast
 import os
 import re
 import runpy
@@ -14,6 +15,7 @@ CONFIGS = (
 )
 
 ELASTICSEARCH_SAMPLE_ROOT = REPOSITORY_ROOT / "DatasetConverter" / "elasticsearch"
+DB_UTILS_PATH = REPOSITORY_ROOT / "text_category_profiler" / "data" / "DB_utils.py"
 TEXT_SECRET_SUFFIXES = {".py", ".ini", ".txt", ".json"}
 
 PASSWORD_KEY_RE = re.compile(r"""["\']?password["\']?\s*[:=]\s*""", re.IGNORECASE)
@@ -119,6 +121,33 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             if path.is_file() and path.suffix.lower() in TEXT_SECRET_SUFFIXES
         )
         return sorted(paths)
+
+    def test_db_utils_redaction_helper_masks_password_without_mutating_source(self):
+        source = DB_UTILS_PATH.read_text(encoding="utf-8-sig")
+        module = ast.parse(source)
+        helper = next(
+            node
+            for node in module.body
+            if isinstance(node, ast.FunctionDef)
+            and node.name == "_redact_es_job_for_logging"
+        )
+        namespace = {}
+        exec(compile(ast.Module(body=[helper], type_ignores=[]), str(DB_UTILS_PATH), "exec"), namespace)
+        redact = namespace["_redact_es_job_for_logging"]
+
+        job = {
+            "indexname": "sample",
+            "es_tokens": {
+                "host": "https://localhost:9200",
+                "user": "elastic",
+                "password": "sentinel-secret",
+            },
+        }
+        redacted = redact(job)
+
+        self.assertEqual(redacted["es_tokens"]["password"], "***REDACTED***")
+        self.assertEqual(job["es_tokens"]["password"], "sentinel-secret")
+        self.assertIsNot(redacted["es_tokens"], job["es_tokens"])
 
     def test_configs_read_password_from_environment(self):
         with patch.dict(os.environ, {"TCP_ELASTIC_PASSWORD": "sentinel-secret"}, clear=False):
