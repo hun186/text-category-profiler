@@ -45,7 +45,7 @@ def _password_value_expression(line, start):
                 quote = None
             continue
 
-        if char in {"\\"", "\'"}:
+        if char in {'"', "'"}:
             quote = char
             chars.append(char)
             continue
