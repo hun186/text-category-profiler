@@ -17,7 +17,7 @@ ELASTICSEARCH_SAMPLE_ROOT = REPOSITORY_ROOT / "DatasetConverter" / "elasticsearc
 TEXT_SECRET_SUFFIXES = {".py", ".ini", ".txt", ".json"}
 
 PASSWORD_ASSIGNMENT_RE = re.compile(
-    r"""^\s*["']?password["']?\s*[:=]\s*(.+?)\s*,?\s*$""",
+    r"""^\s*#?\s*["']?password["']?\s*[:=]\s*(.+?)\s*,?\s*$""",
     re.IGNORECASE,
 )
 ENROLLMENT_TOKEN_RE = re.compile(r"^\s*eyJ[A-Za-z0-9_-]{20,}={0,2}\s*$")
