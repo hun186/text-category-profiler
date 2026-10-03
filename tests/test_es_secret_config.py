@@ -38,6 +38,7 @@ ALLOWED_PASSWORD_EXPRESSIONS = {
     'os.environ.get("TCP_ELASTIC_PASSWORD")',
     "os.environ.get('TCP_ELASTIC_PASSWORD')",
 }
+REDACTED_PASSWORD_SENTINEL = "***REDACTED***"
 
 
 def _password_value_expression(line, start):
@@ -186,7 +187,7 @@ def hardcoded_password_literal_lines(source):
 
         for line_number, value in candidates:
             password = _literal_string(value)
-            if password:
+            if password and password != REDACTED_PASSWORD_SENTINEL:
                 violations.append(line_number)
 
     return sorted(set(line for line in violations if line is not None))
@@ -356,6 +357,16 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for source in hardcoded_examples:
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_password_literal_lines(source), [1])
+
+    def test_python_password_literal_guard_allows_exact_redaction_sentinel_only(self):
+        self.assertEqual(
+            hardcoded_password_literal_lines('password = "***REDACTED***"'),
+            [],
+        )
+        self.assertEqual(
+            hardcoded_password_literal_lines('password = "***REDACTED***-fallback"'),
+            [1],
+        )
 
     def test_python_password_literal_guard_allows_runtime_references(self):
         safe_examples = (
