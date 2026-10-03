@@ -16,6 +16,11 @@ CONFIGS = (
 
 ELASTICSEARCH_SAMPLE_ROOT = REPOSITORY_ROOT / "DatasetConverter" / "elasticsearch"
 DB_UTILS_PATH = REPOSITORY_ROOT / "text_category_profiler" / "data" / "DB_utils.py"
+RUNTIME_ES_MODULES = (
+    DB_UTILS_PATH,
+    REPOSITORY_ROOT / "DatasetConverter" / "adapters" / "elasticsearch_source.py",
+    REPOSITORY_ROOT / "text_category_profiler" / "ES_ingest_txt_to_es.py",
+)
 TEXT_SECRET_SUFFIXES = {".py", ".ini", ".txt", ".json"}
 
 PASSWORD_KEY_RE = re.compile(r"""["\']?password["\']?\s*[:=]\s*""", re.IGNORECASE)
@@ -152,6 +157,41 @@ def hardcoded_auth_tuple_lines(source):
     return sorted(set(line for line in violations if line is not None))
 
 
+def _is_password_target(node):
+    if isinstance(node, ast.Name):
+        return node.id == "password"
+    if isinstance(node, ast.Subscript):
+        return _literal_string(node.slice) == "password"
+    return False
+
+
+def hardcoded_password_literal_lines(source):
+    """Return Python line numbers that assign a literal password value."""
+    tree = ast.parse(source)
+    violations = []
+
+    for node in ast.walk(tree):
+        candidates = []
+
+        if isinstance(node, ast.keyword) and node.arg == "password":
+            candidates.append((getattr(node, "lineno", None), node.value))
+        elif isinstance(node, (ast.Assign, ast.AnnAssign)):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            if any(_is_password_target(target) for target in targets):
+                candidates.append((getattr(node, "lineno", None), node.value))
+        elif isinstance(node, ast.Dict):
+            for key, value in zip(node.keys, node.values):
+                if _literal_string(key) == "password":
+                    candidates.append((getattr(value, "lineno", getattr(node, "lineno", None)), value))
+
+        for line_number, value in candidates:
+            password = _literal_string(value)
+            if password:
+                violations.append(line_number)
+
+    return sorted(set(line for line in violations if line is not None))
+
+
 class ElasticsearchSecretConfigTests(unittest.TestCase):
     def _load_password(self, path, mapping_name):
         namespace = runpy.run_path(str(path))
@@ -159,12 +199,20 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
 
     def _secret_surface_paths(self):
         paths = {path for path, _ in CONFIGS}
+        paths.update(RUNTIME_ES_MODULES)
         paths.update(
             path
             for path in ELASTICSEARCH_SAMPLE_ROOT.rglob("*")
             if path.is_file() and path.suffix.lower() in TEXT_SECRET_SUFFIXES
         )
         return sorted(paths)
+
+    def test_secret_surface_paths_include_runtime_elasticsearch_modules(self):
+        surfaces = set(self._secret_surface_paths())
+        self.assertTrue(set(RUNTIME_ES_MODULES).issubset(surfaces))
+        for path in RUNTIME_ES_MODULES:
+            with self.subTest(path=path):
+                self.assertTrue(path.is_file())
 
     def test_db_utils_redaction_helper_masks_password_without_mutating_source(self):
         source = DB_UTILS_PATH.read_text(encoding="utf-8-sig")
@@ -298,6 +346,28 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_auth_tuple_lines(source), [])
 
+    def test_python_password_literal_guard_detects_runtime_literals(self):
+        hardcoded_examples = (
+            'password = "real-secret"',
+            'options = {"password": "real-secret"}',
+            'options["password"] = "real-secret"',
+            'connect(password="real-secret")',
+        )
+        for source in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_password_literal_lines(source), [1])
+
+    def test_python_password_literal_guard_allows_runtime_references(self):
+        safe_examples = (
+            'password = os.environ.get("TCP_ELASTIC_PASSWORD")',
+            'options = {"password": password}',
+            'options["password"] = password',
+            'connect(password=password)',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_password_literal_lines(source), [])
+
     def test_tracked_elasticsearch_surfaces_do_not_embed_credentials(self):
         violations = []
         for path in self._secret_surface_paths():
@@ -307,12 +377,18 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     violations.append(
                         f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:auth-tuple"
                     )
-            for line_number, line in enumerate(text.splitlines(), start=1):
-                for value_expression in password_value_expressions(line):
-                    if value_expression not in ALLOWED_PASSWORD_EXPRESSIONS:
+                if path in RUNTIME_ES_MODULES:
+                    for line_number in hardcoded_password_literal_lines(text):
                         violations.append(
-                            f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:password"
+                            f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:password-literal"
                         )
+            for line_number, line in enumerate(text.splitlines(), start=1):
+                if path not in RUNTIME_ES_MODULES:
+                    for value_expression in password_value_expressions(line):
+                        if value_expression not in ALLOWED_PASSWORD_EXPRESSIONS:
+                            violations.append(
+                                f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:password"
+                            )
                 if ENROLLMENT_TOKEN_RE.search(line):
                     violations.append(
                         f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:enrollment-token"
