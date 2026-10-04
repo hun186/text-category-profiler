@@ -559,10 +559,25 @@ def YearMonthsList(startDay,endDay, FMT="%Y%m"):
     month_list = [month.strftime(FMT) for month in month_list]
     return month_list
 
+def _redact_es_job_for_logging(es_job):
+    """Return a log-safe copy with Elasticsearch credentials redacted."""
+    safe_job = dict(es_job)
+    es_tokens = safe_job.get("es_tokens")
+    if isinstance(es_tokens, dict):
+        safe_tokens = dict(es_tokens)
+        if "password" in safe_tokens:
+            safe_tokens["password"] = "***REDACTED***"
+        safe_job["es_tokens"] = safe_tokens
+    return safe_job
+
+
 def BuildESJobList(
         esJobTemplate,startDay="20230901",endDay="20230901",
         freq="D",FMT = "%Y%m%d",periods=100):
-    print(f"Start to build esJob List with template {esJobTemplate}")
+    print(
+        "Start to build esJob List with template "
+        f"{_redact_es_job_for_logging(esJobTemplate)}"
+    )
     res = []
     #startMon = startDay[4:2]
     #endMon = endDay[4:2]
@@ -597,7 +612,7 @@ def BuildESJobList(
                 res.append(esJob.copy())
     print("The first two generated esJob are"),
     for esJob in res[:2]:
-        DictIndentPrint(esJob)
+        DictIndentPrint(_redact_es_job_for_logging(esJob))
     return res
 
 
@@ -843,6 +858,6 @@ if __name__ == '__main__':
     from ArtCluESJobTemplate import esJobTemplate
     esJobs = BuildESJobList(esJobTemplate,startDay="20230903",endDay="20240218")
     for esJob in esJobs[:2]:
-        DictIndentPrint(esJob)
+        DictIndentPrint(_redact_es_job_for_logging(esJob))
         
     SQLConcat(sql3FileList=OSWALK("SQLConcatenate"))

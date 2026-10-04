@@ -1,4 +1,5 @@
 import json
+import os
 
 
 def createIndex(es):
@@ -154,8 +155,7 @@ es_tokens = {
     "host" : "https://localhost:9200",
     #"host" : "http://localhost:9200",
     "user" : "elastic",
-    "password" :"=lJg5OAxH_Oivzo1ZB-1",
-    #"password" :"Rhhl35kvMf6Xm0U*PTAH"
+    "password" : os.environ.get("TCP_ELASTIC_PASSWORD"),
 }
 
 '''
