@@ -250,16 +250,12 @@ def _hardcoded_password_values(node, bindings, before_line, seen_names=None):
         )
 
     if isinstance(node, ast.JoinedStr):
-        if all(
-            isinstance(value, ast.Constant) and isinstance(value.value, str)
-            for value in node.values
-        ):
-            joined = "".join(value.value for value in node.values)
-            return [joined] if joined else []
-
         values = []
         for value in node.values:
-            if isinstance(value, ast.FormattedValue):
+            if isinstance(value, ast.Constant) and isinstance(value.value, str):
+                if value.value:
+                    values.append(value.value)
+            elif isinstance(value, ast.FormattedValue):
                 values.extend(
                     _hardcoded_password_values(
                         value.value,
@@ -600,6 +596,10 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 'options = {"basic_auth": AUTH}',
                 [2],
             ),
+            (
+                'Elasticsearch(host, http_auth=(user, f"real-secret-{suffix}"))',
+                [1],
+            ),
         )
         for source, expected in cases:
             with self.subTest(source=source):
@@ -655,6 +655,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
     def test_python_password_literal_guard_detects_fstrings_and_literal_aliases(self):
         cases = (
             ('password = f"real-secret"', [1]),
+            ('password = f"real-secret-{suffix}"', [1]),
             (
                 'ELASTIC_PASSWORD = "real-secret"\n'
                 'options = {"password": ELASTIC_PASSWORD}',
@@ -687,6 +688,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             'password = os.getenv("TCP_ELASTIC_PASSWORD")',
             'password = os.getenv("TCP_ELASTIC_PASSWORD", "")',
             'password = config.get("password")',
+            'password = f"{password_from_store}"',
             'ELASTIC_PASSWORD = os.environ.get("TCP_ELASTIC_PASSWORD")\npassword = ELASTIC_PASSWORD',
             'password = primary_password or secondary_password',
             'options = {"password": password}',
