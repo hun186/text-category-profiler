@@ -254,6 +254,8 @@ def hardcoded_password_literal_lines(source):
             targets = node.targets if isinstance(node, ast.Assign) else [node.target]
             if any(_is_password_target(target) for target in targets):
                 candidates.append((getattr(node, "lineno", None), node.value))
+        elif isinstance(node, ast.NamedExpr) and _is_password_target(node.target):
+            candidates.append((getattr(node, "lineno", None), node.value))
         elif isinstance(node, ast.Dict):
             for key, value in zip(node.keys, node.values):
                 if _literal_string(key) == "password":
