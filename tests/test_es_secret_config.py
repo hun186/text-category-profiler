@@ -20,6 +20,7 @@ RUNTIME_ES_MODULES = (
     DB_UTILS_PATH,
     REPOSITORY_ROOT / "DatasetConverter" / "adapters" / "elasticsearch_source.py",
     REPOSITORY_ROOT / "text_category_profiler" / "ES_ingest_txt_to_es.py",
+    REPOSITORY_ROOT / "text_category_profiler" / "integrations" / "ES_utils.py",
 )
 TEXT_SECRET_SUFFIXES = {".py", ".ini", ".txt", ".json"}
 
@@ -125,6 +126,49 @@ def _literal_string(node):
     return value if isinstance(value, str) else None
 
 
+def _environment_lookup_literal_default(node):
+    """Return a non-empty literal fallback from supported environment lookups."""
+    if not isinstance(node, ast.Call):
+        return None
+
+    func = node.func
+    is_os_getenv = (
+        isinstance(func, ast.Attribute)
+        and func.attr == "getenv"
+        and isinstance(func.value, ast.Name)
+        and func.value.id == "os"
+    )
+    is_os_environ_get = (
+        isinstance(func, ast.Attribute)
+        and func.attr == "get"
+        and isinstance(func.value, ast.Attribute)
+        and func.value.attr == "environ"
+        and isinstance(func.value.value, ast.Name)
+        and func.value.value.id == "os"
+    )
+    if not (is_os_getenv or is_os_environ_get):
+        return None
+
+    default = None
+    if len(node.args) >= 2:
+        default = node.args[1]
+    else:
+        for keyword in node.keywords:
+            if keyword.arg == "default":
+                default = keyword.value
+                break
+
+    value = _literal_string(default) if default is not None else None
+    return value if value else None
+
+
+def _hardcoded_password_value(node):
+    literal = _literal_string(node)
+    if literal:
+        return literal
+    return _environment_lookup_literal_default(node)
+
+
 def hardcoded_auth_tuple_lines(source):
     """Return line numbers whose auth tuple contains a literal password."""
     tree = ast.parse(source)
@@ -151,8 +195,8 @@ def hardcoded_auth_tuple_lines(source):
             if not isinstance(value, (ast.Tuple, ast.List)) or len(value.elts) < 2:
                 continue
 
-            password = _literal_string(value.elts[1])
-            if password:
+            password = _hardcoded_password_value(value.elts[1])
+            if password and password != REDACTED_PASSWORD_SENTINEL:
                 violations.append(line_number)
 
     return sorted(set(line for line in violations if line is not None))
@@ -186,7 +230,7 @@ def hardcoded_password_literal_lines(source):
                     candidates.append((getattr(value, "lineno", getattr(node, "lineno", None)), value))
 
         for line_number, value in candidates:
-            password = _literal_string(value)
+            password = _hardcoded_password_value(value)
             if password and password != REDACTED_PASSWORD_SENTINEL:
                 violations.append(line_number)
 
@@ -335,10 +379,20 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_auth_tuple_lines(source), [1])
 
+    def test_auth_tuple_guard_detects_environment_lookup_literal_fallbacks(self):
+        hardcoded_examples = (
+            'Elasticsearch(host, http_auth=(user, os.getenv("TCP_ELASTIC_PASSWORD", "real-secret")))',
+            'Elasticsearch(host, basic_auth=(user, os.environ.get("TCP_ELASTIC_PASSWORD", "real-secret")))',
+        )
+        for source in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_auth_tuple_lines(source), [1])
+
     def test_auth_tuple_guard_allows_runtime_password_references(self):
         safe_examples = (
             'Elasticsearch(host, http_auth=(es_tokens["user"], es_tokens["password"]))',
             'Elasticsearch(host, basic_auth=(user, os.environ.get("TCP_ELASTIC_PASSWORD")))',
+            'Elasticsearch(host, http_auth=(user, os.getenv("TCP_ELASTIC_PASSWORD")))',
             'http_auth = (user, password)',
             'options = {"http_auth": (es_tokens["user"], es_tokens["password"])}',
             'options = {"basic_auth": [user, os.environ.get("TCP_ELASTIC_PASSWORD")]}',
@@ -358,6 +412,17 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_password_literal_lines(source), [1])
 
+    def test_python_password_literal_guard_detects_environment_lookup_fallbacks(self):
+        hardcoded_examples = (
+            'password = os.getenv("TCP_ELASTIC_PASSWORD", "real-secret")',
+            'password = os.environ.get("TCP_ELASTIC_PASSWORD", "real-secret")',
+            'options = {"password": os.getenv("TCP_ELASTIC_PASSWORD", "real-secret")}',
+            'connect(password=os.environ.get("TCP_ELASTIC_PASSWORD", "real-secret"))',
+        )
+        for source in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_password_literal_lines(source), [1])
+
     def test_python_password_literal_guard_allows_exact_redaction_sentinel_only(self):
         self.assertEqual(
             hardcoded_password_literal_lines('password = "***REDACTED***"'),
@@ -371,6 +436,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
     def test_python_password_literal_guard_allows_runtime_references(self):
         safe_examples = (
             'password = os.environ.get("TCP_ELASTIC_PASSWORD")',
+            'password = os.getenv("TCP_ELASTIC_PASSWORD")',
+            'password = os.getenv("TCP_ELASTIC_PASSWORD", "")',
             'options = {"password": password}',
             'options["password"] = password',
             'connect(password=password)',
