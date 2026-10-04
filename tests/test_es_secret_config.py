@@ -473,7 +473,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             'password = os.getenv("TCP_ELASTIC_PASSWORD") or "real-secret"',
             'password = "real-" + "secret"',
             'password = "real-secret" if use_fallback else password_from_store',
-            'password := os.getenv("TCP_ELASTIC_PASSWORD") or "real-secret"',
+            '(password := os.getenv("TCP_ELASTIC_PASSWORD") or "real-secret")',
         )
         for source in hardcoded_examples:
             with self.subTest(source=source):
