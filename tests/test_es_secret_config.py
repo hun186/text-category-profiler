@@ -162,11 +162,38 @@ def _environment_lookup_literal_default(node):
     return value if value else None
 
 
-def _hardcoded_password_value(node):
+def _hardcoded_password_values(node):
+    """Return hardcoded string values from password fallback expressions."""
     literal = _literal_string(node)
     if literal:
-        return literal
-    return _environment_lookup_literal_default(node)
+        return [literal]
+
+    environment_default = _environment_lookup_literal_default(node)
+    if environment_default:
+        return [environment_default]
+
+    if isinstance(node, ast.BoolOp):
+        values = []
+        for value in node.values:
+            values.extend(_hardcoded_password_values(value))
+        return values
+
+    if isinstance(node, ast.IfExp):
+        return (
+            _hardcoded_password_values(node.body)
+            + _hardcoded_password_values(node.orelse)
+        )
+
+    if isinstance(node, ast.BinOp):
+        return (
+            _hardcoded_password_values(node.left)
+            + _hardcoded_password_values(node.right)
+        )
+
+    if isinstance(node, ast.NamedExpr):
+        return _hardcoded_password_values(node.value)
+
+    return []
 
 
 def hardcoded_auth_tuple_lines(source):
@@ -195,8 +222,11 @@ def hardcoded_auth_tuple_lines(source):
             if not isinstance(value, (ast.Tuple, ast.List)) or len(value.elts) < 2:
                 continue
 
-            password = _hardcoded_password_value(value.elts[1])
-            if password and password != REDACTED_PASSWORD_SENTINEL:
+            passwords = _hardcoded_password_values(value.elts[1])
+            if any(
+                password != REDACTED_PASSWORD_SENTINEL
+                for password in passwords
+            ):
                 violations.append(line_number)
 
     return sorted(set(line for line in violations if line is not None))
@@ -230,8 +260,11 @@ def hardcoded_password_literal_lines(source):
                     candidates.append((getattr(value, "lineno", getattr(node, "lineno", None)), value))
 
         for line_number, value in candidates:
-            password = _hardcoded_password_value(value)
-            if password and password != REDACTED_PASSWORD_SENTINEL:
+            passwords = _hardcoded_password_values(value)
+            if any(
+                password != REDACTED_PASSWORD_SENTINEL
+                for password in passwords
+            ):
                 violations.append(line_number)
 
     return sorted(set(line for line in violations if line is not None))
@@ -388,6 +421,16 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_auth_tuple_lines(source), [1])
 
+    def test_auth_tuple_guard_detects_composed_literal_fallbacks(self):
+        hardcoded_examples = (
+            'Elasticsearch(host, http_auth=(user, os.getenv("TCP_ELASTIC_PASSWORD") or "real-secret"))',
+            'Elasticsearch(host, basic_auth=(user, "real-" + "secret"))',
+            'Elasticsearch(host, http_auth=(user, "real-secret" if use_fallback else password))',
+        )
+        for source in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_auth_tuple_lines(source), [1])
+
     def test_auth_tuple_guard_allows_runtime_password_references(self):
         safe_examples = (
             'Elasticsearch(host, http_auth=(es_tokens["user"], es_tokens["password"]))',
@@ -423,6 +466,17 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_password_literal_lines(source), [1])
 
+    def test_python_password_literal_guard_detects_composed_fallbacks(self):
+        hardcoded_examples = (
+            'password = os.getenv("TCP_ELASTIC_PASSWORD") or "real-secret"',
+            'password = "real-" + "secret"',
+            'password = "real-secret" if use_fallback else password_from_store',
+            'password := os.getenv("TCP_ELASTIC_PASSWORD") or "real-secret"',
+        )
+        for source in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_password_literal_lines(source), [1])
+
     def test_python_password_literal_guard_allows_exact_redaction_sentinel_only(self):
         self.assertEqual(
             hardcoded_password_literal_lines('password = "***REDACTED***"'),
@@ -438,6 +492,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             'password = os.environ.get("TCP_ELASTIC_PASSWORD")',
             'password = os.getenv("TCP_ELASTIC_PASSWORD")',
             'password = os.getenv("TCP_ELASTIC_PASSWORD", "")',
+            'password = config.get("password")',
+            'password = primary_password or secondary_password',
             'options = {"password": password}',
             'options["password"] = password',
             'connect(password=password)',
