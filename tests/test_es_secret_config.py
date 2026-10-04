@@ -126,8 +126,8 @@ def _literal_string(node):
     return value if isinstance(value, str) else None
 
 
-def _environment_lookup_literal_default(node):
-    """Return a non-empty literal fallback from supported environment lookups."""
+def _environment_lookup_default_node(node):
+    """Return the fallback expression from supported environment lookups."""
     if not isinstance(node, ast.Call):
         return None
 
@@ -149,56 +149,187 @@ def _environment_lookup_literal_default(node):
     if not (is_os_getenv or is_os_environ_get):
         return None
 
-    default = None
     if len(node.args) >= 2:
-        default = node.args[1]
-    else:
-        for keyword in node.keywords:
-            if keyword.arg == "default":
-                default = keyword.value
-                break
+        return node.args[1]
 
-    value = _literal_string(default) if default is not None else None
-    return value if value else None
+    for keyword in node.keywords:
+        if keyword.arg == "default":
+            return keyword.value
+
+    return None
 
 
-def _hardcoded_password_values(node):
-    """Return hardcoded string values from password fallback expressions."""
+def _name_bindings(tree):
+    """Map simple variable names to their source-ordered assigned expressions."""
+    bindings = {}
+
+    def add_binding(target, value, line_number):
+        if isinstance(target, ast.Name):
+            bindings.setdefault(target.id, []).append((line_number, value))
+
+    for node in ast.walk(tree):
+        line_number = getattr(node, "lineno", 0)
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                add_binding(target, node.value, line_number)
+        elif isinstance(node, ast.AnnAssign):
+            add_binding(node.target, node.value, line_number)
+        elif isinstance(node, ast.NamedExpr):
+            add_binding(node.target, node.value, line_number)
+
+    for values in bindings.values():
+        values.sort(key=lambda item: item[0])
+    return bindings
+
+
+def _bound_name_value(name, bindings, before_line, seen_names):
+    if name in seen_names:
+        return None
+
+    candidates = [
+        (line_number, value)
+        for line_number, value in bindings.get(name, ())
+        if line_number <= before_line
+    ]
+    if not candidates:
+        return None
+
+    return candidates[-1][1]
+
+
+def _resolve_bound_node(node, bindings, before_line, seen_names=None):
+    """Resolve simple name aliases to their latest preceding expression."""
+    seen_names = set() if seen_names is None else set(seen_names)
+    current = node
+
+    while isinstance(current, ast.Name):
+        if current.id in seen_names:
+            break
+        seen_names.add(current.id)
+        bound = _bound_name_value(current.id, bindings, before_line, seen_names - {current.id})
+        if bound is None:
+            break
+        current = bound
+
+    return current
+
+
+def _hardcoded_password_values(node, bindings, before_line, seen_names=None):
+    """Return statically embedded password strings from one expression."""
+    seen_names = set() if seen_names is None else set(seen_names)
+
     literal = _literal_string(node)
     if literal:
         return [literal]
 
-    environment_default = _environment_lookup_literal_default(node)
-    if environment_default:
-        return [environment_default]
+    if isinstance(node, ast.Name):
+        if node.id in seen_names:
+            return []
+        bound = _bound_name_value(
+            node.id,
+            bindings,
+            before_line,
+            seen_names,
+        )
+        if bound is None:
+            return []
+        return _hardcoded_password_values(
+            bound,
+            bindings,
+            before_line,
+            seen_names | {node.id},
+        )
+
+    environment_default = _environment_lookup_default_node(node)
+    if environment_default is not None:
+        return _hardcoded_password_values(
+            environment_default,
+            bindings,
+            before_line,
+            seen_names,
+        )
+
+    if isinstance(node, ast.JoinedStr):
+        if all(
+            isinstance(value, ast.Constant) and isinstance(value.value, str)
+            for value in node.values
+        ):
+            joined = "".join(value.value for value in node.values)
+            return [joined] if joined else []
+
+        values = []
+        for value in node.values:
+            if isinstance(value, ast.FormattedValue):
+                values.extend(
+                    _hardcoded_password_values(
+                        value.value,
+                        bindings,
+                        before_line,
+                        seen_names,
+                    )
+                )
+        return values
 
     if isinstance(node, ast.BoolOp):
         values = []
         for value in node.values:
-            values.extend(_hardcoded_password_values(value))
+            values.extend(
+                _hardcoded_password_values(
+                    value,
+                    bindings,
+                    before_line,
+                    seen_names,
+                )
+            )
         return values
 
     if isinstance(node, ast.IfExp):
         return (
-            _hardcoded_password_values(node.body)
-            + _hardcoded_password_values(node.orelse)
+            _hardcoded_password_values(
+                node.body,
+                bindings,
+                before_line,
+                seen_names,
+            )
+            + _hardcoded_password_values(
+                node.orelse,
+                bindings,
+                before_line,
+                seen_names,
+            )
         )
 
     if isinstance(node, ast.BinOp):
         return (
-            _hardcoded_password_values(node.left)
-            + _hardcoded_password_values(node.right)
+            _hardcoded_password_values(
+                node.left,
+                bindings,
+                before_line,
+                seen_names,
+            )
+            + _hardcoded_password_values(
+                node.right,
+                bindings,
+                before_line,
+                seen_names,
+            )
         )
 
     if isinstance(node, ast.NamedExpr):
-        return _hardcoded_password_values(node.value)
+        return _hardcoded_password_values(
+            node.value,
+            bindings,
+            before_line,
+            seen_names,
+        )
 
     return []
 
 
 def hardcoded_auth_tuple_lines(source):
-    """Return line numbers whose auth tuple contains a literal password."""
+    """Return line numbers whose auth tuple contains a hardcoded password."""
     tree = ast.parse(source)
+    bindings = _name_bindings(tree)
     violations = []
 
     for node in ast.walk(tree):
@@ -216,20 +347,32 @@ def hardcoded_auth_tuple_lines(source):
         elif isinstance(node, ast.Dict):
             for key, value in zip(node.keys, node.values):
                 if _literal_string(key) in AUTH_TUPLE_NAMES:
-                    candidates.append((getattr(value, "lineno", getattr(node, "lineno", None)), value))
+                    candidates.append(
+                        (getattr(value, "lineno", getattr(node, "lineno", None)), value)
+                    )
 
         for line_number, value in candidates:
-            if not isinstance(value, (ast.Tuple, ast.List)) or len(value.elts) < 2:
+            if line_number is None:
+                continue
+            resolved_value = _resolve_bound_node(value, bindings, line_number)
+            if (
+                not isinstance(resolved_value, (ast.Tuple, ast.List))
+                or len(resolved_value.elts) < 2
+            ):
                 continue
 
-            passwords = _hardcoded_password_values(value.elts[1])
+            passwords = _hardcoded_password_values(
+                resolved_value.elts[1],
+                bindings,
+                line_number,
+            )
             if any(
                 password != REDACTED_PASSWORD_SENTINEL
                 for password in passwords
             ):
                 violations.append(line_number)
 
-    return sorted(set(line for line in violations if line is not None))
+    return sorted(set(violations))
 
 
 def _is_password_target(node):
@@ -241,8 +384,9 @@ def _is_password_target(node):
 
 
 def hardcoded_password_literal_lines(source):
-    """Return Python line numbers that assign a literal password value."""
+    """Return Python line numbers that assign a hardcoded password value."""
     tree = ast.parse(source)
+    bindings = _name_bindings(tree)
     violations = []
 
     for node in ast.walk(tree):
@@ -262,7 +406,13 @@ def hardcoded_password_literal_lines(source):
                     candidates.append((getattr(value, "lineno", getattr(node, "lineno", None)), value))
 
         for line_number, value in candidates:
-            passwords = _hardcoded_password_values(value)
+            if line_number is None:
+                continue
+            passwords = _hardcoded_password_values(
+                value,
+                bindings,
+                line_number,
+            )
             if any(
                 password != REDACTED_PASSWORD_SENTINEL
                 for password in passwords
@@ -433,12 +583,35 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_auth_tuple_lines(source), [1])
 
+    def test_auth_tuple_guard_detects_literal_aliases(self):
+        cases = (
+            (
+                'ELASTIC_PASSWORD = "real-secret"\n'
+                'Elasticsearch(host, http_auth=(user, ELASTIC_PASSWORD))',
+                [2],
+            ),
+            (
+                'AUTH = ("elastic", "real-secret")\n'
+                'Elasticsearch(host, http_auth=AUTH)',
+                [2],
+            ),
+            (
+                'AUTH = ["elastic", "real-secret"]\n'
+                'options = {"basic_auth": AUTH}',
+                [2],
+            ),
+        )
+        for source, expected in cases:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_auth_tuple_lines(source), expected)
+
     def test_auth_tuple_guard_allows_runtime_password_references(self):
         safe_examples = (
             'Elasticsearch(host, http_auth=(es_tokens["user"], es_tokens["password"]))',
             'Elasticsearch(host, basic_auth=(user, os.environ.get("TCP_ELASTIC_PASSWORD")))',
             'Elasticsearch(host, http_auth=(user, os.getenv("TCP_ELASTIC_PASSWORD")))',
             'http_auth = (user, password)',
+            'AUTH = (user, password)\nElasticsearch(host, http_auth=AUTH)',
             'options = {"http_auth": (es_tokens["user"], es_tokens["password"])}',
             'options = {"basic_auth": [user, os.environ.get("TCP_ELASTIC_PASSWORD")]}',
         )
@@ -479,6 +652,25 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_password_literal_lines(source), [1])
 
+    def test_python_password_literal_guard_detects_fstrings_and_literal_aliases(self):
+        cases = (
+            ('password = f"real-secret"', [1]),
+            (
+                'ELASTIC_PASSWORD = "real-secret"\n'
+                'options = {"password": ELASTIC_PASSWORD}',
+                [2],
+            ),
+            (
+                'FIRST = "real-secret"\n'
+                'SECOND = FIRST\n'
+                'password = SECOND',
+                [3],
+            ),
+        )
+        for source, expected in cases:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_password_literal_lines(source), expected)
+
     def test_python_password_literal_guard_allows_exact_redaction_sentinel_only(self):
         self.assertEqual(
             hardcoded_password_literal_lines('password = "***REDACTED***"'),
@@ -495,6 +687,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             'password = os.getenv("TCP_ELASTIC_PASSWORD")',
             'password = os.getenv("TCP_ELASTIC_PASSWORD", "")',
             'password = config.get("password")',
+            'ELASTIC_PASSWORD = os.environ.get("TCP_ELASTIC_PASSWORD")\npassword = ELASTIC_PASSWORD',
             'password = primary_password or secondary_password',
             'options = {"password": password}',
             'options["password"] = password',
