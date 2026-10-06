@@ -516,6 +516,8 @@ def hardcoded_password_literal_lines(source):
                 candidates.append((getattr(node, "lineno", None), node.value))
         elif isinstance(node, ast.NamedExpr) and _is_password_target(node.target):
             candidates.append((getattr(node, "lineno", None), node.value))
+        elif isinstance(node, ast.AugAssign) and _is_password_target(node.target):
+            candidates.append((getattr(node, "lineno", None), node.value))
         elif isinstance(node, ast.Dict):
             for key, value in zip(node.keys, node.values):
                 if _literal_string(key) == "password":
@@ -872,6 +874,26 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ),
             [],
         )
+
+    def test_python_password_literal_guard_detects_augmented_assignments(self):
+        cases = (
+            ('password = os.getenv("TCP_ELASTIC_PASSWORD")\npassword += "real-secret"', [2]),
+            ('settings.password += "real-secret"', [1]),
+            ('options["password"] += "real-secret"', [1]),
+        )
+        for source, expected in cases:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_password_literal_lines(source), expected)
+
+    def test_python_password_literal_guard_allows_runtime_augmented_assignments(self):
+        safe_examples = (
+            'password += suffix_from_store',
+            'settings.password += suffix_from_store',
+            'options["password"] += suffix_from_store',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_password_literal_lines(source), [])
 
     def test_python_password_literal_guard_detects_function_defaults(self):
         cases = (
