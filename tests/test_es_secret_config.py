@@ -520,6 +520,27 @@ def hardcoded_password_literal_lines(source):
             for key, value in zip(node.keys, node.values):
                 if _literal_string(key) == "password":
                     candidates.append((getattr(value, "lineno", getattr(node, "lineno", None)), value))
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            positional_args = list(node.args.posonlyargs) + list(node.args.args)
+            positional_defaults = list(node.args.defaults)
+            default_start = len(positional_args) - len(positional_defaults)
+            for argument, default in zip(
+                positional_args[default_start:],
+                positional_defaults,
+            ):
+                if argument.arg == "password":
+                    candidates.append(
+                        (getattr(default, "lineno", getattr(node, "lineno", None)), default)
+                    )
+
+            for argument, default in zip(
+                node.args.kwonlyargs,
+                node.args.kw_defaults,
+            ):
+                if argument.arg == "password" and default is not None:
+                    candidates.append(
+                        (getattr(default, "lineno", getattr(node, "lineno", None)), default)
+                    )
 
         for line_number, value in candidates:
             if line_number is None:
@@ -842,7 +863,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             '"password": "real-secret"}\n'
             'password = es_tokens["password"]'
         )
-        self.assertEqual(hardcoded_password_literal_lines(hardcoded_source), [2])
+        self.assertEqual(hardcoded_password_literal_lines(hardcoded_source), [1, 2])
 
     def test_python_password_literal_guard_leaves_dynamic_subscripts_unresolved(self):
         self.assertEqual(
@@ -851,6 +872,25 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ),
             [],
         )
+
+    def test_python_password_literal_guard_detects_function_defaults(self):
+        cases = (
+            ('def client(password="real-secret"):\n    return password', [1]),
+            ('def client(*, password="real-secret"):\n    return password', [1]),
+            ('async def client(password="real-secret"):\n    return password', [1]),
+        )
+        for source, expected in cases:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_password_literal_lines(source), expected)
+
+    def test_python_password_literal_guard_allows_runtime_function_defaults(self):
+        safe_examples = (
+            'def client(password=os.getenv("TCP_ELASTIC_PASSWORD")):\n    return password',
+            'def client(*, password=password_from_store):\n    return password',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_password_literal_lines(source), [])
 
     def test_python_password_literal_guard_detects_attribute_targets(self):
         cases = (
