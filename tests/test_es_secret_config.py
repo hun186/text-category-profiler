@@ -293,6 +293,40 @@ def _hardcoded_password_values(node, bindings, before_line, seen_names=None):
             )
         return values
 
+    if isinstance(node, ast.Subscript):
+        return _hardcoded_password_values(
+            node.value,
+            bindings,
+            before_line,
+            seen_names,
+        )
+
+    if isinstance(node, (ast.Tuple, ast.List, ast.Set)):
+        values = []
+        for element in node.elts:
+            values.extend(
+                _hardcoded_password_values(
+                    element,
+                    bindings,
+                    before_line,
+                    seen_names,
+                )
+            )
+        return values
+
+    if isinstance(node, ast.Dict):
+        values = []
+        for value in node.values:
+            values.extend(
+                _hardcoded_password_values(
+                    value,
+                    bindings,
+                    before_line,
+                    seen_names,
+                )
+            )
+        return values
+
     if isinstance(node, ast.JoinedStr):
         values = []
         for value in node.values:
@@ -420,6 +454,8 @@ def _is_password_target(node):
         return node.id == "password"
     if isinstance(node, ast.Subscript):
         return _literal_string(node.slice) == "password"
+    if isinstance(node, ast.Attribute):
+        return node.attr == "password"
     return False
 
 
@@ -632,6 +668,15 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_auth_tuple_lines(source), expected)
 
+    def test_auth_tuple_guard_detects_indexed_container_passwords(self):
+        cases = (
+            ('Elasticsearch(host, http_auth=(user, ("real-secret",)[0]))', [1]),
+            ('Elasticsearch(host, basic_auth=(user, ["real-secret"][0]))', [1]),
+        )
+        for source, expected in cases:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_auth_tuple_lines(source), expected)
+
     def test_auth_tuple_guard_detects_literal_aliases(self):
         cases = (
             (
@@ -715,6 +760,25 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_password_literal_lines(source), expected)
 
+    def test_python_password_literal_guard_detects_indexed_containers(self):
+        cases = (
+            ('password = ("real-secret",)[0]', [1]),
+            ('password = ["real-secret"][0]', [1]),
+            ('password = {"value": "real-secret"}["value"]', [1]),
+        )
+        for source, expected in cases:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_password_literal_lines(source), expected)
+
+    def test_python_password_literal_guard_detects_attribute_targets(self):
+        cases = (
+            ('settings.password = "real-secret"', [1]),
+            ('client.credentials.password = "real-secret"', [1]),
+        )
+        for source, expected in cases:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_password_literal_lines(source), expected)
+
     def test_python_password_literal_guard_detects_fstrings_and_literal_aliases(self):
         cases = (
             ('password = f"real-secret"', [1]),
@@ -752,6 +816,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             'password = os.getenv("TCP_ELASTIC_PASSWORD", "")',
             'password = config.get("password")',
             'password = config.get("password", password_from_store)',
+            'password = passwords[0]',
+            'settings.password = password_from_store',
             'password = f"{password_from_store}"',
             'ELASTIC_PASSWORD = os.environ.get("TCP_ELASTIC_PASSWORD")\npassword = ELASTIC_PASSWORD',
             'password = primary_password or secondary_password',
