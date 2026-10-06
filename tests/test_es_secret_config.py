@@ -126,27 +126,33 @@ def _literal_string(node):
     return value if isinstance(value, str) else None
 
 
-def _environment_lookup_default_node(node):
-    """Return the fallback expression from supported environment lookups."""
+def _is_environment_lookup_call(node):
     if not isinstance(node, ast.Call):
-        return None
+        return False
 
     func = node.func
-    is_os_getenv = (
+    return (
         isinstance(func, ast.Attribute)
-        and func.attr == "getenv"
-        and isinstance(func.value, ast.Name)
-        and func.value.id == "os"
+        and (
+            (
+                func.attr == "getenv"
+                and isinstance(func.value, ast.Name)
+                and func.value.id == "os"
+            )
+            or (
+                func.attr == "get"
+                and isinstance(func.value, ast.Attribute)
+                and func.value.attr == "environ"
+                and isinstance(func.value.value, ast.Name)
+                and func.value.value.id == "os"
+            )
+        )
     )
-    is_os_environ_get = (
-        isinstance(func, ast.Attribute)
-        and func.attr == "get"
-        and isinstance(func.value, ast.Attribute)
-        and func.value.attr == "environ"
-        and isinstance(func.value.value, ast.Name)
-        and func.value.value.id == "os"
-    )
-    if not (is_os_getenv or is_os_environ_get):
+
+
+def _environment_lookup_default_node(node):
+    """Return the fallback expression from supported environment lookups."""
+    if not _is_environment_lookup_call(node):
         return None
 
     if len(node.args) >= 2:
@@ -248,6 +254,44 @@ def _hardcoded_password_values(node, bindings, before_line, seen_names=None):
             before_line,
             seen_names,
         )
+
+    if isinstance(node, ast.Call):
+        if _is_environment_lookup_call(node):
+            return []
+
+        values = []
+        positional_args = node.args
+        if isinstance(node.func, ast.Attribute):
+            values.extend(
+                _hardcoded_password_values(
+                    node.func.value,
+                    bindings,
+                    before_line,
+                    seen_names,
+                )
+            )
+            if node.func.attr == "get":
+                positional_args = node.args[1:]
+
+        for argument in positional_args:
+            values.extend(
+                _hardcoded_password_values(
+                    argument,
+                    bindings,
+                    before_line,
+                    seen_names,
+                )
+            )
+        for keyword in node.keywords:
+            values.extend(
+                _hardcoded_password_values(
+                    keyword.value,
+                    bindings,
+                    before_line,
+                    seen_names,
+                )
+            )
+        return values
 
     if isinstance(node, ast.JoinedStr):
         values = []
@@ -579,6 +623,15 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_auth_tuple_lines(source), [1])
 
+    def test_auth_tuple_guard_detects_literals_in_call_expressions(self):
+        cases = (
+            ('Elasticsearch(host, http_auth=(user, "real-secret".strip()))', [1]),
+            ('Elasticsearch(host, basic_auth=(user, normalize("real-secret")))', [1]),
+        )
+        for source, expected in cases:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_auth_tuple_lines(source), expected)
+
     def test_auth_tuple_guard_detects_literal_aliases(self):
         cases = (
             (
@@ -652,6 +705,16 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_password_literal_lines(source), [1])
 
+    def test_python_password_literal_guard_detects_literals_in_call_expressions(self):
+        cases = (
+            ('password = "real-secret".strip()', [1]),
+            ('password = normalize("real-secret")', [1]),
+            ('password = config.get("password", "real-secret")', [1]),
+        )
+        for source, expected in cases:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_password_literal_lines(source), expected)
+
     def test_python_password_literal_guard_detects_fstrings_and_literal_aliases(self):
         cases = (
             ('password = f"real-secret"', [1]),
@@ -688,6 +751,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             'password = os.getenv("TCP_ELASTIC_PASSWORD")',
             'password = os.getenv("TCP_ELASTIC_PASSWORD", "")',
             'password = config.get("password")',
+            'password = config.get("password", password_from_store)',
             'password = f"{password_from_store}"',
             'ELASTIC_PASSWORD = os.environ.get("TCP_ELASTIC_PASSWORD")\npassword = ELASTIC_PASSWORD',
             'password = primary_password or secondary_password',
