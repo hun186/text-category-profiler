@@ -464,6 +464,27 @@ def hardcoded_auth_tuple_lines(source):
                     candidates.append(
                         (getattr(value, "lineno", getattr(node, "lineno", None)), value)
                     )
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            positional_args = list(node.args.posonlyargs) + list(node.args.args)
+            positional_defaults = list(node.args.defaults)
+            default_start = len(positional_args) - len(positional_defaults)
+            for argument, default in zip(
+                positional_args[default_start:],
+                positional_defaults,
+            ):
+                if argument.arg in AUTH_TUPLE_NAMES:
+                    candidates.append(
+                        (getattr(default, "lineno", getattr(node, "lineno", None)), default)
+                    )
+
+            for argument, default in zip(
+                node.args.kwonlyargs,
+                node.args.kw_defaults,
+            ):
+                if argument.arg in AUTH_TUPLE_NAMES and default is not None:
+                    candidates.append(
+                        (getattr(default, "lineno", getattr(node, "lineno", None)), default)
+                    )
 
         for line_number, value in candidates:
             if line_number is None:
@@ -782,6 +803,25 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for source, expected in cases:
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_auth_tuple_lines(source), expected)
+
+    def test_auth_tuple_guard_detects_function_defaults(self):
+        cases = (
+            ('def client(http_auth=("elastic", "real-secret")):\n    return http_auth', [1]),
+            ('def client(*, basic_auth=("elastic", "real-secret")):\n    return basic_auth', [1]),
+            ('async def client(http_auth=("elastic", "real-secret")):\n    return http_auth', [1]),
+        )
+        for source, expected in cases:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_auth_tuple_lines(source), expected)
+
+    def test_auth_tuple_guard_allows_runtime_function_defaults(self):
+        safe_examples = (
+            'def client(http_auth=("elastic", password_from_store)):\n    return http_auth',
+            'def client(*, basic_auth=("elastic", os.getenv("TCP_ELASTIC_PASSWORD"))):\n    return basic_auth',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_auth_tuple_lines(source), [])
 
     def test_auth_tuple_guard_allows_runtime_password_references(self):
         safe_examples = (
