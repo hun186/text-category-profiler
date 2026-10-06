@@ -220,6 +220,43 @@ def _resolve_bound_node(node, bindings, before_line, seen_names=None):
     return current
 
 
+def _literal_subscript_key(node):
+    try:
+        value = ast.literal_eval(node)
+    except (ValueError, TypeError):
+        return None
+    return value if isinstance(value, (str, int)) else None
+
+
+def _resolve_constant_subscript(node, bindings, before_line):
+    """Resolve a constant dict/list/tuple subscript to only its selected value."""
+    if not isinstance(node, ast.Subscript):
+        return None
+
+    key = _literal_subscript_key(node.slice)
+    if key is None:
+        return None
+
+    container = _resolve_bound_node(node.value, bindings, before_line)
+
+    if isinstance(container, (ast.Tuple, ast.List)) and isinstance(key, int):
+        try:
+            return container.elts[key]
+        except IndexError:
+            return None
+
+    if isinstance(container, ast.Dict):
+        for dict_key, dict_value in zip(container.keys, container.values):
+            try:
+                candidate = ast.literal_eval(dict_key)
+            except (ValueError, TypeError):
+                continue
+            if candidate == key:
+                return dict_value
+
+    return None
+
+
 def _hardcoded_password_values(node, bindings, before_line, seen_names=None):
     """Return statically embedded password strings from one expression."""
     seen_names = set() if seen_names is None else set(seen_names)
@@ -294,8 +331,11 @@ def _hardcoded_password_values(node, bindings, before_line, seen_names=None):
         return values
 
     if isinstance(node, ast.Subscript):
+        selected = _resolve_constant_subscript(node, bindings, before_line)
+        if selected is None:
+            return []
         return _hardcoded_password_values(
-            node.value,
+            selected,
             bindings,
             before_line,
             seen_names,
@@ -677,6 +717,23 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_auth_tuple_lines(source), expected)
 
+    def test_auth_tuple_guard_resolves_only_password_mapping_key(self):
+        safe_source = (
+            'es_tokens = {"host": "https://localhost:9200", '
+            '"user": "elastic", '
+            '"password": os.environ.get("TCP_ELASTIC_PASSWORD")}\n'
+            'Elasticsearch(host, http_auth=(es_tokens["user"], es_tokens["password"]))'
+        )
+        self.assertEqual(hardcoded_auth_tuple_lines(safe_source), [])
+
+        hardcoded_source = (
+            'es_tokens = {"host": "https://localhost:9200", '
+            '"user": "elastic", '
+            '"password": "real-secret"}\n'
+            'Elasticsearch(host, http_auth=(es_tokens["user"], es_tokens["password"]))'
+        )
+        self.assertEqual(hardcoded_auth_tuple_lines(hardcoded_source), [2])
+
     def test_auth_tuple_guard_detects_literal_aliases(self):
         cases = (
             (
@@ -769,6 +826,31 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for source, expected in cases:
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_password_literal_lines(source), expected)
+
+    def test_python_password_literal_guard_resolves_only_selected_subscript_value(self):
+        safe_source = (
+            'es_tokens = {"host": "https://localhost:9200", '
+            '"user": "elastic", '
+            '"password": os.environ.get("TCP_ELASTIC_PASSWORD")}\n'
+            'password = es_tokens["password"]'
+        )
+        self.assertEqual(hardcoded_password_literal_lines(safe_source), [])
+
+        hardcoded_source = (
+            'es_tokens = {"host": "https://localhost:9200", '
+            '"user": "elastic", '
+            '"password": "real-secret"}\n'
+            'password = es_tokens["password"]'
+        )
+        self.assertEqual(hardcoded_password_literal_lines(hardcoded_source), [2])
+
+    def test_python_password_literal_guard_leaves_dynamic_subscripts_unresolved(self):
+        self.assertEqual(
+            hardcoded_password_literal_lines(
+                'values = {"primary": "real-secret"}\npassword = values[key]'
+            ),
+            [],
+        )
 
     def test_python_password_literal_guard_detects_attribute_targets(self):
         cases = (
