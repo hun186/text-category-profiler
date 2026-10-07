@@ -32,6 +32,14 @@ SCALAR_AUTH_KEY_RE = re.compile(
     r"""["\']?(api_key|bearer_auth)["\']?\s*[:=]\s*""",
     re.IGNORECASE,
 )
+AUTH_TUPLE_KEY_RE = re.compile(
+    r"""["\']?(http_auth|basic_auth)["\']?\s*[:=]\s*""",
+    re.IGNORECASE,
+)
+AUTHORIZATION_KEY_RE = re.compile(
+    r"""["\']?Authorization["\']?\s*[:=]\s*""",
+    re.IGNORECASE,
+)
 AUTHORIZATION_VALUE_RE = re.compile(
     r"^\s*(ApiKey|Bearer|Basic)\s+(.+?)\s*$",
     re.IGNORECASE,
@@ -148,6 +156,22 @@ def scalar_auth_value_expressions(line):
     return [
         (match.group(1).lower(), _password_value_expression(line, match.end()))
         for match in SCALAR_AUTH_KEY_RE.finditer(line)
+    ]
+
+
+def auth_tuple_value_expressions(line):
+    """Return auth-tuple value expressions found anywhere in one line."""
+    return [
+        (match.group(1).lower(), _password_value_expression(line, match.end()))
+        for match in AUTH_TUPLE_KEY_RE.finditer(line)
+    ]
+
+
+def authorization_value_expressions(line):
+    """Return Authorization-header value expressions found anywhere in one line."""
+    return [
+        _password_value_expression(line, match.end())
+        for match in AUTHORIZATION_KEY_RE.finditer(line)
     ]
 
 
@@ -1685,6 +1709,50 @@ def hardcoded_password_literal_lines(source):
     return sorted(set(line for line in violations if line is not None))
 
 
+def _disabled_payload_text_has_secret(payload):
+    """Inspect syntax-error fallback text for credential-bearing mapping fragments."""
+    for line in payload.splitlines():
+        if any(
+            expression not in ALLOWED_PASSWORD_EXPRESSIONS
+            for expression in password_value_expressions(line)
+        ):
+            return True
+
+        for _name, expression in scalar_auth_value_expressions(line):
+            stripped = expression.strip()
+            if not stripped:
+                continue
+            try:
+                parsed = ast.parse(stripped, mode="eval").body
+            except SyntaxError:
+                continue
+            if _hardcoded_comment_scalar_value(parsed):
+                return True
+
+        for name, expression in auth_tuple_value_expressions(line):
+            stripped = expression.strip()
+            if not stripped:
+                continue
+            try:
+                if hardcoded_auth_tuple_lines(f"{name}={stripped}"):
+                    return True
+            except SyntaxError:
+                continue
+
+        for expression in authorization_value_expressions(line):
+            stripped = expression.strip()
+            if not stripped:
+                continue
+            try:
+                snippet = f'headers={{"Authorization": {stripped}}}'
+                if hardcoded_authorization_header_lines(snippet):
+                    return True
+            except SyntaxError:
+                continue
+
+    return False
+
+
 def python_disabled_code_secret_lines(source):
     """Return standalone string-block lines that contain disabled secret-bearing code."""
     tree = ast.parse(source)
@@ -1703,9 +1771,11 @@ def python_disabled_code_secret_lines(source):
             continue
 
         parseable_snippets = []
+        fallback_text_has_secret = False
         try:
             ast.parse(payload)
         except SyntaxError:
+            fallback_text_has_secret = _disabled_payload_text_has_secret(payload)
             for line in payload.splitlines():
                 snippet = line.strip()
                 if not snippet:
@@ -1718,8 +1788,10 @@ def python_disabled_code_secret_lines(source):
         else:
             parseable_snippets.append(payload)
 
-        has_secret = False
+        has_secret = fallback_text_has_secret
         for snippet in parseable_snippets:
+            if has_secret:
+                break
             if (
                 hardcoded_password_literal_lines(snippet)
                 or hardcoded_auth_tuple_lines(snippet)
@@ -1889,6 +1961,30 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 "Elasticsearch(host, http_auth=AUTH)\n"
                 "'''"
             ),
+            (
+                "'''\n"
+                "setup notes:\n"
+                "options = {\n"
+                "    \"password\": \"hardcoded-secret\",\n"
+                "}\n"
+                "'''"
+            ),
+            (
+                "'''\n"
+                "setup notes:\n"
+                "options = {\n"
+                "    \"http_auth\": (\"elastic\", \"hardcoded-secret\"),\n"
+                "}\n"
+                "'''"
+            ),
+            (
+                "'''\n"
+                "setup notes:\n"
+                "headers = {\n"
+                "    \"Authorization\": \"Bearer hardcoded-token\",\n"
+                "}\n"
+                "'''"
+            ),
         )
         for source in hardcoded_examples:
             with self.subTest(source=source):
@@ -1899,6 +1995,15 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             "'''password = password_from_store'''",
             "'''http_auth=(\"elastic\", os.getenv(\"TCP_ELASTIC_PASSWORD\"))'''",
             "'''headers={\"Authorization\": f\"Bearer {token}\"}'''",
+            (
+                "'''\n"
+                "setup notes:\n"
+                "options = {\n"
+                "    \"password\": os.environ.get(\"TCP_ELASTIC_PASSWORD\"),\n"
+                "    \"http_auth\": (\"elastic\", password_from_store),\n"
+                "}\n"
+                "'''"
+            ),
             'disabled_text = \'\'\'password = "hardcoded-secret"\'\'\'',
             "'''ordinary documentation text'''",
         )
