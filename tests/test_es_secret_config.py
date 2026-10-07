@@ -155,6 +155,27 @@ def _literal_string(node):
     return value if isinstance(value, str) else None
 
 
+def _auth_target_key(node):
+    """Return a stable key for a supported auth target expression."""
+    if not _is_auth_tuple_target(node):
+        return None
+    if isinstance(node, ast.Name):
+        return ("name", node.id)
+    if isinstance(node, ast.Attribute):
+        return (
+            "attribute",
+            ast.dump(node.value, include_attributes=False),
+            node.attr,
+        )
+    if isinstance(node, ast.Subscript):
+        return (
+            "subscript",
+            ast.dump(node.value, include_attributes=False),
+            _literal_string(node.slice),
+        )
+    return None
+
+
 def _is_environment_lookup_call(node):
     if not isinstance(node, ast.Call):
         return False
@@ -287,6 +308,69 @@ def _resolve_bound_node(node, bindings, before_line, seen_names=None):
         current = bound
 
     return current
+
+
+def _latest_auth_binding(key, bindings, before_line):
+    candidates = [
+        (line_number, value)
+        for line_number, value in bindings.get(key, ())
+        if line_number <= before_line
+    ]
+    if not candidates:
+        return None
+    return candidates[-1][1]
+
+
+def _auth_bindings(tree, name_bindings):
+    """Track source-ordered auth tuple/list values, including += concatenation."""
+    bindings = {}
+    nodes = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign))
+    ]
+    nodes.sort(
+        key=lambda node: (
+            getattr(node, "lineno", 0),
+            getattr(node, "col_offset", 0),
+        )
+    )
+
+    def add_binding(target, value, line_number):
+        key = _auth_target_key(target)
+        if key is not None:
+            bindings.setdefault(key, []).append((line_number, value))
+
+    for node in nodes:
+        line_number = getattr(node, "lineno", 0)
+        if isinstance(node, ast.Assign):
+            value = _resolve_bound_node(node.value, name_bindings, line_number)
+            for target in node.targets:
+                add_binding(target, value, line_number)
+        elif isinstance(node, ast.AnnAssign):
+            value = _resolve_bound_node(node.value, name_bindings, line_number)
+            add_binding(node.target, value, line_number)
+        elif isinstance(node, ast.AugAssign):
+            key = _auth_target_key(node.target)
+            if key is None or not isinstance(node.op, ast.Add):
+                continue
+            previous = _latest_auth_binding(key, bindings, line_number - 1)
+            appended = _resolve_bound_node(
+                node.value,
+                name_bindings,
+                line_number,
+            )
+            if not isinstance(previous, (ast.Tuple, ast.List)):
+                continue
+            if not isinstance(appended, (ast.Tuple, ast.List)):
+                continue
+            combined = ast.Tuple(
+                elts=[*previous.elts, *appended.elts],
+                ctx=ast.Load(),
+            )
+            add_binding(node.target, combined, line_number)
+
+    return bindings
 
 
 def _literal_subscript_key(node):
@@ -513,6 +597,7 @@ def hardcoded_auth_tuple_lines(source):
     """Return line numbers whose auth tuple contains a hardcoded password."""
     tree = ast.parse(source)
     bindings = _name_bindings(tree)
+    auth_bindings = _auth_bindings(tree, bindings)
     violations = []
 
     for node in ast.walk(tree):
@@ -526,26 +611,15 @@ def hardcoded_auth_tuple_lines(source):
                 candidates.append((getattr(node, "lineno", None), node.value))
         elif isinstance(node, ast.AugAssign) and _is_auth_tuple_target(node.target):
             line_number = getattr(node, "lineno", None)
-            if isinstance(node.target, ast.Name):
-                combined = _bound_name_value(
-                    node.target.id,
-                    bindings,
+            key = _auth_target_key(node.target)
+            if line_number is not None and key is not None:
+                combined = _latest_auth_binding(
+                    key,
+                    auth_bindings,
                     line_number,
-                    set(),
                 )
                 if combined is not None:
                     candidates.append((line_number, combined))
-            else:
-                hardcoded_values = _hardcoded_password_values(
-                    node.value,
-                    bindings,
-                    line_number,
-                )
-                if any(
-                    value != REDACTED_PASSWORD_SENTINEL
-                    for value in hardcoded_values
-                ):
-                    violations.append(line_number)
         elif isinstance(node, ast.Dict):
             for key, value in zip(node.keys, node.values):
                 if _literal_string(key) in AUTH_TUPLE_NAMES:
@@ -578,6 +652,14 @@ def hardcoded_auth_tuple_lines(source):
             if line_number is None:
                 continue
             resolved_value = _resolve_bound_node(value, bindings, line_number)
+            if not isinstance(resolved_value, (ast.Tuple, ast.List)):
+                key = _auth_target_key(resolved_value)
+                if key is not None:
+                    resolved_value = _latest_auth_binding(
+                        key,
+                        auth_bindings,
+                        line_number,
+                    )
             if (
                 not isinstance(resolved_value, (ast.Tuple, ast.List))
                 or len(resolved_value.elts) < 2
@@ -898,6 +980,18 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             (
                 'settings.basic_auth = (user,)\n'
                 'settings.basic_auth += (os.getenv("TCP_ELASTIC_PASSWORD"),)'
+            ),
+            (
+                'options["http_auth"] = ()\n'
+                'options["http_auth"] += ("elastic",)\n'
+                'options["http_auth"] += (password_from_store,)\n'
+                'Elasticsearch(host, http_auth=options["http_auth"])'
+            ),
+            (
+                'settings.basic_auth = ()\n'
+                'settings.basic_auth += ("elastic",)\n'
+                'settings.basic_auth += (password_from_store,)\n'
+                'Elasticsearch(host, basic_auth=settings.basic_auth)'
             ),
         )
         for source in safe_examples:
