@@ -226,6 +226,7 @@ def _annotate_binding_scopes(tree):
     class ScopeVisitor(ast.NodeVisitor):
         def __init__(self):
             self.scope_stack = [module_scope]
+            self.control_path = []
 
         @property
         def current_scope(self):
@@ -233,6 +234,21 @@ def _annotate_binding_scopes(tree):
 
         def _mark(self, node):
             node._binding_scope = self.current_scope
+            node._binding_control_path = tuple(self.control_path)
+
+        def _branch_token(self, node, label):
+            return (
+                type(node).__name__,
+                getattr(node, "lineno", 0),
+                getattr(node, "col_offset", 0),
+                label,
+            )
+
+        def _visit_branch(self, owner, label, statements):
+            self.control_path.append(self._branch_token(owner, label))
+            for statement in statements:
+                self.visit(statement)
+            self.control_path.pop()
 
         def _new_scope(self, node, parent_scope):
             scope_parents[node] = parent_scope
@@ -334,6 +350,82 @@ def _annotate_binding_scopes(tree):
                 self.visit(statement)
             self.scope_stack.pop()
 
+        def visit_If(self, node):
+            self._mark(node)
+            self.visit(node.test)
+            self._visit_branch(node, "body", node.body)
+            self._visit_branch(node, "orelse", node.orelse)
+
+        def _visit_loop(self, node):
+            self._mark(node)
+            if hasattr(node, "iter"):
+                self.visit(node.iter)
+            else:
+                self.visit(node.test)
+            self.control_path.append(self._branch_token(node, "body"))
+            if hasattr(node, "target"):
+                self.visit(node.target)
+            for statement in node.body:
+                self.visit(statement)
+            self.control_path.pop()
+            self._visit_branch(node, "orelse", node.orelse)
+
+        def visit_For(self, node):
+            self._visit_loop(node)
+
+        def visit_AsyncFor(self, node):
+            self._visit_loop(node)
+
+        def visit_While(self, node):
+            self._visit_loop(node)
+
+        def _visit_with(self, node):
+            self._mark(node)
+            for item in node.items:
+                self.visit(item.context_expr)
+            self.control_path.append(self._branch_token(node, "body"))
+            for item in node.items:
+                if item.optional_vars is not None:
+                    self.visit(item.optional_vars)
+            for statement in node.body:
+                self.visit(statement)
+            self.control_path.pop()
+
+        def visit_With(self, node):
+            self._visit_with(node)
+
+        def visit_AsyncWith(self, node):
+            self._visit_with(node)
+
+        def _visit_try(self, node):
+            self._mark(node)
+            self._visit_branch(node, "body", node.body)
+            for index, handler in enumerate(node.handlers):
+                self.control_path.append(
+                    self._branch_token(node, f"handler-{index}")
+                )
+                self.visit(handler)
+                self.control_path.pop()
+            self._visit_branch(node, "orelse", node.orelse)
+            for statement in node.finalbody:
+                self.visit(statement)
+
+        def visit_Try(self, node):
+            self._visit_try(node)
+
+        def visit_TryStar(self, node):
+            self._visit_try(node)
+
+        def visit_Match(self, node):
+            self._mark(node)
+            self.visit(node.subject)
+            for index, case in enumerate(node.cases):
+                self.control_path.append(
+                    self._branch_token(node, f"case-{index}")
+                )
+                self.visit(case)
+                self.control_path.pop()
+
         def visit_Name(self, node):
             self._mark(node)
             if isinstance(node.ctx, ast.Store):
@@ -431,6 +523,33 @@ def _position_before(node):
     return (line_number, column_number - 1)
 
 
+def _node_control_path(node):
+    return tuple(getattr(node, "_binding_control_path", ()))
+
+
+def _control_path_is_prefix(prefix, path):
+    return len(prefix) <= len(path) and path[: len(prefix)] == prefix
+
+
+def _reaching_values(candidates, use_node):
+    """Return conservative reaching values for one binding at a use site."""
+    use_path = _node_control_path(use_node)
+    reaching = []
+
+    for _position, value in candidates:
+        value_path = _node_control_path(value)
+        if _control_path_is_prefix(value_path, use_path):
+            # This assignment is unavoidable on the path to this use, so it
+            # supersedes earlier values.
+            reaching = [value]
+        else:
+            # A branch-local assignment may or may not execute before a use
+            # outside that branch, so keep both possibilities.
+            reaching.append(value)
+
+    return reaching
+
+
 def _name_bindings(tree):
     """Map simple variable names to source-ordered expressions per lexical scope."""
     metadata = _annotate_binding_scopes(tree)
@@ -500,6 +619,12 @@ def _name_bindings(tree):
                 elts=[*previous.elts, *appended.elts],
                 ctx=ast.Load(),
             )
+            combined._binding_scope = getattr(
+                node,
+                "_binding_scope",
+                bindings["metadata"]["module"],
+            )
+            combined._binding_control_path = _node_control_path(node)
             add_binding(node.target, combined, position)
 
     return bindings
@@ -512,10 +637,10 @@ def _binding_name_token(name, bindings, use_node):
     return (binding_scope, name)
 
 
-def _bound_name_value(name, bindings, before_position, seen_names, use_node):
+def _bound_name_values(name, bindings, before_position, seen_names, use_node):
     token = _binding_name_token(name, bindings, use_node)
     if token in seen_names:
-        return None
+        return []
 
     binding_scope, binding_name = token
     candidates = [
@@ -525,38 +650,67 @@ def _bound_name_value(name, bindings, before_position, seen_names, use_node):
         .get(binding_name, ())
         if position <= before_position
     ]
-    if not candidates:
-        return None
+    return _reaching_values(candidates, use_node)
 
-    return candidates[-1][1]
+
+def _bound_name_value(name, bindings, before_position, seen_names, use_node):
+    values = _bound_name_values(
+        name,
+        bindings,
+        before_position,
+        seen_names,
+        use_node,
+    )
+    return values[-1] if values else None
+
+
+def _resolve_bound_nodes(node, bindings, before_position=None, seen_names=None):
+    """Resolve all conservative reaching aliases visible at one use site."""
+    seen_names = set() if seen_names is None else set(seen_names)
+    before_position = _node_position(node) if before_position is None else before_position
+
+    if not isinstance(node, ast.Name):
+        return [node]
+
+    token = _binding_name_token(node.id, bindings, node)
+    if token in seen_names:
+        return [node]
+
+    bound_values = _bound_name_values(
+        node.id,
+        bindings,
+        before_position,
+        seen_names,
+        node,
+    )
+    if not bound_values:
+        return [node]
+
+    resolved = []
+    for bound in bound_values:
+        resolved.extend(
+            _resolve_bound_nodes(
+                bound,
+                bindings,
+                before_position,
+                seen_names | {token},
+            )
+        )
+    return resolved
 
 
 def _resolve_bound_node(node, bindings, before_position=None, seen_names=None):
-    """Resolve aliases using lexical scope and full source position."""
-    seen_names = set() if seen_names is None else set(seen_names)
-    before_position = _node_position(node) if before_position is None else before_position
-    current = node
-
-    while isinstance(current, ast.Name):
-        token = _binding_name_token(current.id, bindings, current)
-        if token in seen_names:
-            break
-        bound = _bound_name_value(
-            current.id,
-            bindings,
-            before_position,
-            seen_names,
-            current,
-        )
-        if bound is None:
-            break
-        seen_names.add(token)
-        current = bound
-
-    return current
+    """Resolve the latest conservative alias value for compatibility helpers."""
+    resolved = _resolve_bound_nodes(
+        node,
+        bindings,
+        before_position,
+        seen_names,
+    )
+    return resolved[-1] if resolved else node
 
 
-def _latest_auth_binding(key, bindings, before_position, use_node):
+def _reaching_auth_binding_values(key, bindings, before_position, use_node):
     metadata = bindings["metadata"]
     lexical_scope = getattr(use_node, "_binding_scope", metadata["module"])
 
@@ -584,9 +738,19 @@ def _latest_auth_binding(key, bindings, before_position, use_node):
             if position <= before_position
         ]
         if candidates:
-            return candidates[-1][1]
+            return _reaching_values(candidates, use_node)
 
-    return None
+    return []
+
+
+def _latest_auth_binding(key, bindings, before_position, use_node):
+    values = _reaching_auth_binding_values(
+        key,
+        bindings,
+        before_position,
+        use_node,
+    )
+    return values[-1] if values else None
 
 
 def _auth_bindings(tree, name_bindings):
@@ -664,6 +828,12 @@ def _auth_bindings(tree, name_bindings):
                 elts=[*previous.elts, *appended.elts],
                 ctx=ast.Load(),
             )
+            combined._binding_scope = getattr(
+                node,
+                "_binding_scope",
+                bindings["metadata"]["module"],
+            )
+            combined._binding_control_path = _node_control_path(node)
             add_binding(node.target, combined, position)
 
     return bindings
@@ -718,21 +888,24 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
         token = _binding_name_token(node.id, bindings, node)
         if token in seen_names:
             return []
-        bound = _bound_name_value(
+        bound_values = _bound_name_values(
             node.id,
             bindings,
             before_position,
             seen_names,
             node,
         )
-        if bound is None:
-            return []
-        return _hardcoded_password_values(
-            bound,
-            bindings,
-            before_position,
-            seen_names | {token},
-        )
+        values = []
+        for bound in bound_values:
+            values.extend(
+                _hardcoded_password_values(
+                    bound,
+                    bindings,
+                    before_position,
+                    seen_names | {token},
+                )
+            )
+        return values
 
     environment_default = _environment_lookup_default_node(node)
     if environment_default is not None:
@@ -980,36 +1153,45 @@ def hardcoded_auth_tuple_lines(source):
         for line_number, use_position, value in candidates:
             if line_number is None:
                 continue
-            resolved_value = _resolve_bound_node(
+
+            resolved_values = _resolve_bound_nodes(
                 value,
                 bindings,
                 use_position,
             )
-            if not isinstance(resolved_value, (ast.Tuple, ast.List)):
+            expanded_values = []
+
+            for resolved_value in resolved_values:
+                if isinstance(resolved_value, (ast.Tuple, ast.List)):
+                    expanded_values.append(resolved_value)
+                    continue
+
                 key = _auth_target_key(resolved_value)
                 if key is not None:
-                    resolved_value = _latest_auth_binding(
-                        key,
-                        auth_bindings,
-                        use_position,
-                        resolved_value,
+                    expanded_values.extend(
+                        _reaching_auth_binding_values(
+                            key,
+                            auth_bindings,
+                            use_position,
+                            resolved_value,
+                        )
                     )
-            if (
-                not isinstance(resolved_value, (ast.Tuple, ast.List))
-                or len(resolved_value.elts) < 2
-            ):
-                continue
 
-            passwords = _hardcoded_password_values(
-                resolved_value.elts[1],
-                bindings,
-                use_position,
-            )
-            if any(
-                password != REDACTED_PASSWORD_SENTINEL
-                for password in passwords
-            ):
-                violations.append(line_number)
+            for resolved_value in expanded_values:
+                if len(resolved_value.elts) < 2:
+                    continue
+
+                passwords = _hardcoded_password_values(
+                    resolved_value.elts[1],
+                    bindings,
+                    use_position,
+                )
+                if any(
+                    password != REDACTED_PASSWORD_SENTINEL
+                    for password in passwords
+                ):
+                    violations.append(line_number)
+                    break
 
     return sorted(set(violations))
 
@@ -1464,6 +1646,40 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         )
         self.assertEqual(hardcoded_auth_tuple_lines(augmented_alias), [1])
 
+    def test_auth_tuple_guard_tracks_conditional_reassignments(self):
+        hardcoded_then_conditional_safe = (
+            'AUTH = ("elastic", "embedded-value")\n'
+            'if enabled:\n'
+            '    AUTH = ("elastic", os.getenv("TCP_ELASTIC_PASSWORD"))\n'
+            'Elasticsearch(host, http_auth=AUTH)'
+        )
+        self.assertEqual(
+            hardcoded_auth_tuple_lines(hardcoded_then_conditional_safe),
+            [4],
+        )
+
+        safe_then_conditional_hardcoded = (
+            'AUTH = ("elastic", os.getenv("TCP_ELASTIC_PASSWORD"))\n'
+            'if enabled:\n'
+            '    AUTH = ("elastic", "embedded-value")\n'
+            'Elasticsearch(host, http_auth=AUTH)'
+        )
+        self.assertEqual(
+            hardcoded_auth_tuple_lines(safe_then_conditional_hardcoded),
+            [3, 4],
+        )
+
+        conditional_local_use = (
+            'AUTH = ("elastic", "embedded-value")\n'
+            'if enabled:\n'
+            '    AUTH = ("elastic", os.getenv("TCP_ELASTIC_PASSWORD"))\n'
+            '    Elasticsearch(host, http_auth=AUTH)'
+        )
+        self.assertEqual(
+            hardcoded_auth_tuple_lines(conditional_local_use),
+            [1],
+        )
+
     def test_auth_tuple_guard_detects_function_defaults(self):
         cases = (
             ('def client(http_auth=("elastic", "real-secret")):\n    return http_auth', [1]),
@@ -1555,6 +1771,40 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         )
         self.assertEqual(
             hardcoded_password_literal_lines(safe_then_hardcoded),
+            [],
+        )
+
+    def test_python_password_literal_guard_tracks_conditional_reassignments(self):
+        hardcoded_then_conditional_safe = (
+            'SECRET = "embedded-value"\n'
+            'if enabled:\n'
+            '    SECRET = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+            'connect(password=SECRET)'
+        )
+        self.assertEqual(
+            hardcoded_password_literal_lines(hardcoded_then_conditional_safe),
+            [4],
+        )
+
+        safe_then_conditional_hardcoded = (
+            'SECRET = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+            'if enabled:\n'
+            '    SECRET = "embedded-value"\n'
+            'connect(password=SECRET)'
+        )
+        self.assertEqual(
+            hardcoded_password_literal_lines(safe_then_conditional_hardcoded),
+            [4],
+        )
+
+        conditional_local_use = (
+            'SECRET = "embedded-value"\n'
+            'if enabled:\n'
+            '    SECRET = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+            '    connect(password=SECRET)'
+        )
+        self.assertEqual(
+            hardcoded_password_literal_lines(conditional_local_use),
             [],
         )
 
