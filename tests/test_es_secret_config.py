@@ -418,12 +418,25 @@ def _assignment_binding_scope(name, lexical_scope, metadata):
     return scope
 
 
+def _node_position(node):
+    """Return a source-order key that distinguishes statements on one line."""
+    return (
+        getattr(node, "lineno", 0),
+        getattr(node, "col_offset", 0),
+    )
+
+
+def _position_before(node):
+    line_number, column_number = _node_position(node)
+    return (line_number, column_number - 1)
+
+
 def _name_bindings(tree):
     """Map simple variable names to source-ordered expressions per lexical scope."""
     metadata = _annotate_binding_scopes(tree)
     values = {}
 
-    def add_binding(target, value, line_number):
+    def add_binding(target, value, position):
         if not isinstance(target, ast.Name):
             return
         lexical_scope = getattr(target, "_binding_scope", metadata["module"])
@@ -433,7 +446,7 @@ def _name_bindings(tree):
             metadata,
         )
         values.setdefault(binding_scope, {}).setdefault(target.id, []).append(
-            (line_number, value)
+            (position, value)
         )
 
     binding_nodes = [
@@ -441,12 +454,7 @@ def _name_bindings(tree):
         for node in ast.walk(tree)
         if isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign, ast.NamedExpr))
     ]
-    binding_nodes.sort(
-        key=lambda node: (
-            getattr(node, "lineno", 0),
-            getattr(node, "col_offset", 0),
-        )
-    )
+    binding_nodes.sort(key=_node_position)
 
     bindings = {
         "values": values,
@@ -454,21 +462,21 @@ def _name_bindings(tree):
     }
 
     for node in binding_nodes:
-        line_number = getattr(node, "lineno", 0)
+        position = _node_position(node)
         if isinstance(node, ast.Assign):
             for target in node.targets:
-                add_binding(target, node.value, line_number)
+                add_binding(target, node.value, position)
         elif isinstance(node, ast.AnnAssign):
-            add_binding(node.target, node.value, line_number)
+            add_binding(node.target, node.value, position)
         elif isinstance(node, ast.NamedExpr):
-            add_binding(node.target, node.value, line_number)
+            add_binding(node.target, node.value, position)
         elif isinstance(node, ast.AugAssign) and isinstance(node.target, ast.Name):
             if not isinstance(node.op, ast.Add):
                 continue
             previous = _bound_name_value(
                 node.target.id,
                 bindings,
-                line_number - 1,
+                _position_before(node),
                 set(),
                 node.target,
             )
@@ -477,12 +485,12 @@ def _name_bindings(tree):
             previous = _resolve_bound_node(
                 previous,
                 bindings,
-                line_number - 1,
+                _position_before(node),
             )
             appended = _resolve_bound_node(
                 node.value,
                 bindings,
-                line_number,
+                _node_position(node.value),
             )
             if not isinstance(previous, (ast.Tuple, ast.List)):
                 continue
@@ -492,7 +500,7 @@ def _name_bindings(tree):
                 elts=[*previous.elts, *appended.elts],
                 ctx=ast.Load(),
             )
-            add_binding(node.target, combined, line_number)
+            add_binding(node.target, combined, position)
 
     return bindings
 
@@ -504,18 +512,18 @@ def _binding_name_token(name, bindings, use_node):
     return (binding_scope, name)
 
 
-def _bound_name_value(name, bindings, before_line, seen_names, use_node):
+def _bound_name_value(name, bindings, before_position, seen_names, use_node):
     token = _binding_name_token(name, bindings, use_node)
     if token in seen_names:
         return None
 
     binding_scope, binding_name = token
     candidates = [
-        (line_number, value)
-        for line_number, value in bindings["values"]
+        (position, value)
+        for position, value in bindings["values"]
         .get(binding_scope, {})
         .get(binding_name, ())
-        if line_number <= before_line
+        if position <= before_position
     ]
     if not candidates:
         return None
@@ -523,9 +531,10 @@ def _bound_name_value(name, bindings, before_line, seen_names, use_node):
     return candidates[-1][1]
 
 
-def _resolve_bound_node(node, bindings, before_line, seen_names=None):
-    """Resolve simple name aliases within the lexical scope visible to the use."""
+def _resolve_bound_node(node, bindings, before_position=None, seen_names=None):
+    """Resolve aliases using lexical scope and full source position."""
     seen_names = set() if seen_names is None else set(seen_names)
+    before_position = _node_position(node) if before_position is None else before_position
     current = node
 
     while isinstance(current, ast.Name):
@@ -535,7 +544,7 @@ def _resolve_bound_node(node, bindings, before_line, seen_names=None):
         bound = _bound_name_value(
             current.id,
             bindings,
-            before_line,
+            before_position,
             seen_names,
             current,
         )
@@ -547,7 +556,7 @@ def _resolve_bound_node(node, bindings, before_line, seen_names=None):
     return current
 
 
-def _latest_auth_binding(key, bindings, before_line, use_node):
+def _latest_auth_binding(key, bindings, before_position, use_node):
     metadata = bindings["metadata"]
     lexical_scope = getattr(use_node, "_binding_scope", metadata["module"])
 
@@ -568,11 +577,11 @@ def _latest_auth_binding(key, bindings, before_line, use_node):
 
     for scope in scopes:
         candidates = [
-            (line_number, value)
-            for line_number, value in bindings["values"]
+            (position, value)
+            for position, value in bindings["values"]
             .get(scope, {})
             .get(key, ())
-            if line_number <= before_line
+            if position <= before_position
         ]
         if candidates:
             return candidates[-1][1]
@@ -589,19 +598,14 @@ def _auth_bindings(tree, name_bindings):
         for node in ast.walk(tree)
         if isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign))
     ]
-    nodes.sort(
-        key=lambda node: (
-            getattr(node, "lineno", 0),
-            getattr(node, "col_offset", 0),
-        )
-    )
+    nodes.sort(key=_node_position)
 
     bindings = {
         "values": values,
         "metadata": metadata,
     }
 
-    def add_binding(target, value, line_number):
+    def add_binding(target, value, position):
         key = _auth_target_key(target)
         if key is None:
             return
@@ -617,18 +621,26 @@ def _auth_bindings(tree, name_bindings):
             binding_scope = lexical_scope
 
         values.setdefault(binding_scope, {}).setdefault(key, []).append(
-            (line_number, value)
+            (position, value)
         )
 
     for node in nodes:
-        line_number = getattr(node, "lineno", 0)
+        position = _node_position(node)
         if isinstance(node, ast.Assign):
-            value = _resolve_bound_node(node.value, name_bindings, line_number)
+            value = _resolve_bound_node(
+                node.value,
+                name_bindings,
+                _node_position(node.value),
+            )
             for target in node.targets:
-                add_binding(target, value, line_number)
+                add_binding(target, value, position)
         elif isinstance(node, ast.AnnAssign):
-            value = _resolve_bound_node(node.value, name_bindings, line_number)
-            add_binding(node.target, value, line_number)
+            value = _resolve_bound_node(
+                node.value,
+                name_bindings,
+                _node_position(node.value),
+            )
+            add_binding(node.target, value, position)
         elif isinstance(node, ast.AugAssign):
             key = _auth_target_key(node.target)
             if key is None or not isinstance(node.op, ast.Add):
@@ -636,13 +648,13 @@ def _auth_bindings(tree, name_bindings):
             previous = _latest_auth_binding(
                 key,
                 bindings,
-                line_number - 1,
+                _position_before(node),
                 node.target,
             )
             appended = _resolve_bound_node(
                 node.value,
                 name_bindings,
-                line_number,
+                _node_position(node.value),
             )
             if not isinstance(previous, (ast.Tuple, ast.List)):
                 continue
@@ -652,7 +664,7 @@ def _auth_bindings(tree, name_bindings):
                 elts=[*previous.elts, *appended.elts],
                 ctx=ast.Load(),
             )
-            add_binding(node.target, combined, line_number)
+            add_binding(node.target, combined, position)
 
     return bindings
 
@@ -665,7 +677,7 @@ def _literal_subscript_key(node):
     return value if isinstance(value, (str, int)) else None
 
 
-def _resolve_constant_subscript(node, bindings, before_line):
+def _resolve_constant_subscript(node, bindings, before_position):
     """Resolve a constant dict/list/tuple subscript to only its selected value."""
     if not isinstance(node, ast.Subscript):
         return None
@@ -674,7 +686,7 @@ def _resolve_constant_subscript(node, bindings, before_line):
     if key is None:
         return None
 
-    container = _resolve_bound_node(node.value, bindings, before_line)
+    container = _resolve_bound_node(node.value, bindings, before_position)
 
     if isinstance(container, (ast.Tuple, ast.List)) and isinstance(key, int):
         try:
@@ -694,7 +706,7 @@ def _resolve_constant_subscript(node, bindings, before_line):
     return None
 
 
-def _hardcoded_password_values(node, bindings, before_line, seen_names=None):
+def _hardcoded_password_values(node, bindings, before_position, seen_names=None):
     """Return statically embedded password strings from one expression."""
     seen_names = set() if seen_names is None else set(seen_names)
 
@@ -709,7 +721,7 @@ def _hardcoded_password_values(node, bindings, before_line, seen_names=None):
         bound = _bound_name_value(
             node.id,
             bindings,
-            before_line,
+            before_position,
             seen_names,
             node,
         )
@@ -718,7 +730,7 @@ def _hardcoded_password_values(node, bindings, before_line, seen_names=None):
         return _hardcoded_password_values(
             bound,
             bindings,
-            before_line,
+            before_position,
             seen_names | {token},
         )
 
@@ -727,7 +739,7 @@ def _hardcoded_password_values(node, bindings, before_line, seen_names=None):
         return _hardcoded_password_values(
             environment_default,
             bindings,
-            before_line,
+            before_position,
             seen_names,
         )
 
@@ -742,7 +754,7 @@ def _hardcoded_password_values(node, bindings, before_line, seen_names=None):
                 _hardcoded_password_values(
                     node.func.value,
                     bindings,
-                    before_line,
+                    before_position,
                     seen_names,
                 )
             )
@@ -754,7 +766,7 @@ def _hardcoded_password_values(node, bindings, before_line, seen_names=None):
                 _hardcoded_password_values(
                     argument,
                     bindings,
-                    before_line,
+                    before_position,
                     seen_names,
                 )
             )
@@ -763,20 +775,20 @@ def _hardcoded_password_values(node, bindings, before_line, seen_names=None):
                 _hardcoded_password_values(
                     keyword.value,
                     bindings,
-                    before_line,
+                    before_position,
                     seen_names,
                 )
             )
         return values
 
     if isinstance(node, ast.Subscript):
-        selected = _resolve_constant_subscript(node, bindings, before_line)
+        selected = _resolve_constant_subscript(node, bindings, before_position)
         if selected is None:
             return []
         return _hardcoded_password_values(
             selected,
             bindings,
-            before_line,
+            before_position,
             seen_names,
         )
 
@@ -787,7 +799,7 @@ def _hardcoded_password_values(node, bindings, before_line, seen_names=None):
                 _hardcoded_password_values(
                     element,
                     bindings,
-                    before_line,
+                    before_position,
                     seen_names,
                 )
             )
@@ -800,7 +812,7 @@ def _hardcoded_password_values(node, bindings, before_line, seen_names=None):
                 _hardcoded_password_values(
                     value,
                     bindings,
-                    before_line,
+                    before_position,
                     seen_names,
                 )
             )
@@ -817,7 +829,7 @@ def _hardcoded_password_values(node, bindings, before_line, seen_names=None):
                     _hardcoded_password_values(
                         value.value,
                         bindings,
-                        before_line,
+                        before_position,
                         seen_names,
                     )
                 )
@@ -830,7 +842,7 @@ def _hardcoded_password_values(node, bindings, before_line, seen_names=None):
                 _hardcoded_password_values(
                     value,
                     bindings,
-                    before_line,
+                    before_position,
                     seen_names,
                 )
             )
@@ -841,13 +853,13 @@ def _hardcoded_password_values(node, bindings, before_line, seen_names=None):
             _hardcoded_password_values(
                 node.body,
                 bindings,
-                before_line,
+                before_position,
                 seen_names,
             )
             + _hardcoded_password_values(
                 node.orelse,
                 bindings,
-                before_line,
+                before_position,
                 seen_names,
             )
         )
@@ -857,13 +869,13 @@ def _hardcoded_password_values(node, bindings, before_line, seen_names=None):
             _hardcoded_password_values(
                 node.left,
                 bindings,
-                before_line,
+                before_position,
                 seen_names,
             )
             + _hardcoded_password_values(
                 node.right,
                 bindings,
-                before_line,
+                before_position,
                 seen_names,
             )
         )
@@ -872,7 +884,7 @@ def _hardcoded_password_values(node, bindings, before_line, seen_names=None):
         return _hardcoded_password_values(
             node.value,
             bindings,
-            before_line,
+            before_position,
             seen_names,
         )
 
@@ -902,7 +914,7 @@ def hardcoded_auth_tuple_lines(source):
                 combined = _latest_auth_binding(
                     key,
                     auth_bindings,
-                    line_number,
+                    _node_position(node),
                     node.target,
                 )
                 if combined is not None:
@@ -938,14 +950,18 @@ def hardcoded_auth_tuple_lines(source):
         for line_number, value in candidates:
             if line_number is None:
                 continue
-            resolved_value = _resolve_bound_node(value, bindings, line_number)
+            resolved_value = _resolve_bound_node(
+                value,
+                bindings,
+                _node_position(value),
+            )
             if not isinstance(resolved_value, (ast.Tuple, ast.List)):
                 key = _auth_target_key(resolved_value)
                 if key is not None:
                     resolved_value = _latest_auth_binding(
                         key,
                         auth_bindings,
-                        line_number,
+                        _node_position(resolved_value),
                         resolved_value,
                     )
             if (
@@ -957,7 +973,7 @@ def hardcoded_auth_tuple_lines(source):
             passwords = _hardcoded_password_values(
                 resolved_value.elts[1],
                 bindings,
-                line_number,
+                _node_position(value),
             )
             if any(
                 password != REDACTED_PASSWORD_SENTINEL
@@ -1029,7 +1045,7 @@ def hardcoded_password_literal_lines(source):
             passwords = _hardcoded_password_values(
                 value,
                 bindings,
-                line_number,
+                _node_position(value),
             )
             if any(
                 password != REDACTED_PASSWORD_SENTINEL
@@ -1395,6 +1411,21 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         )
         self.assertEqual(hardcoded_auth_tuple_lines(hardcoded_local), [4])
 
+    def test_auth_tuple_guard_preserves_same_line_statement_order(self):
+        hardcoded_then_safe = (
+            'AUTH = ("elastic", "embedded-value"); '
+            'Elasticsearch(host, http_auth=AUTH); '
+            'AUTH = ("elastic", os.getenv("TCP_ELASTIC_PASSWORD"))'
+        )
+        self.assertEqual(hardcoded_auth_tuple_lines(hardcoded_then_safe), [1])
+
+        safe_then_hardcoded = (
+            'AUTH = ("elastic", os.getenv("TCP_ELASTIC_PASSWORD")); '
+            'Elasticsearch(host, http_auth=AUTH); '
+            'AUTH = ("elastic", "embedded-value")'
+        )
+        self.assertEqual(hardcoded_auth_tuple_lines(safe_then_hardcoded), [])
+
     def test_auth_tuple_guard_detects_function_defaults(self):
         cases = (
             ('def client(http_auth=("elastic", "real-secret")):\n    return http_auth', [1]),
@@ -1467,6 +1498,27 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             '    return connect(password=SECRET)'
         )
         self.assertEqual(hardcoded_password_literal_lines(hardcoded_local), [4])
+
+    def test_python_password_literal_guard_preserves_same_line_statement_order(self):
+        hardcoded_then_safe = (
+            'SECRET = "embedded-value"; '
+            'connect(password=SECRET); '
+            'SECRET = os.getenv("TCP_ELASTIC_PASSWORD")'
+        )
+        self.assertEqual(
+            hardcoded_password_literal_lines(hardcoded_then_safe),
+            [1],
+        )
+
+        safe_then_hardcoded = (
+            'SECRET = os.getenv("TCP_ELASTIC_PASSWORD"); '
+            'connect(password=SECRET); '
+            'SECRET = "embedded-value"'
+        )
+        self.assertEqual(
+            hardcoded_password_literal_lines(safe_then_hardcoded),
+            [],
+        )
 
     def test_python_password_literal_guard_detects_environment_lookup_fallbacks(self):
         hardcoded_examples = (
