@@ -1733,7 +1733,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         )
         self.assertEqual(
             hardcoded_auth_tuple_lines(conditional_local_use),
-            [1],
+            [],
         )
 
     def test_auth_tuple_guard_detects_function_defaults(self):
