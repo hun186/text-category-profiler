@@ -215,13 +215,226 @@ def _environment_lookup_default_node(node):
     return None
 
 
+def _annotate_binding_scopes(tree):
+    """Annotate AST nodes with lexical scopes used by credential resolution."""
+    module_scope = tree
+    scope_parents = {module_scope: None}
+    scope_locals = {module_scope: set()}
+    scope_globals = {module_scope: set()}
+    scope_nonlocals = {module_scope: set()}
+
+    class ScopeVisitor(ast.NodeVisitor):
+        def __init__(self):
+            self.scope_stack = [module_scope]
+
+        @property
+        def current_scope(self):
+            return self.scope_stack[-1]
+
+        def _mark(self, node):
+            node._binding_scope = self.current_scope
+
+        def _new_scope(self, node, parent_scope):
+            scope_parents[node] = parent_scope
+            scope_locals[node] = set()
+            scope_globals[node] = set()
+            scope_nonlocals[node] = set()
+
+        def _function_parent_scope(self):
+            parent = self.current_scope
+            while isinstance(parent, ast.ClassDef):
+                parent = scope_parents[parent]
+            return parent
+
+        def _visit_argument_annotations(self, arguments):
+            all_args = (
+                list(arguments.posonlyargs)
+                + list(arguments.args)
+                + list(arguments.kwonlyargs)
+            )
+            for argument in all_args:
+                if argument.annotation is not None:
+                    self.visit(argument.annotation)
+            if arguments.vararg is not None and arguments.vararg.annotation is not None:
+                self.visit(arguments.vararg.annotation)
+            if arguments.kwarg is not None and arguments.kwarg.annotation is not None:
+                self.visit(arguments.kwarg.annotation)
+
+        def _add_function_arguments(self, scope, arguments):
+            all_args = (
+                list(arguments.posonlyargs)
+                + list(arguments.args)
+                + list(arguments.kwonlyargs)
+            )
+            scope_locals[scope].update(argument.arg for argument in all_args)
+            if arguments.vararg is not None:
+                scope_locals[scope].add(arguments.vararg.arg)
+            if arguments.kwarg is not None:
+                scope_locals[scope].add(arguments.kwarg.arg)
+
+        def _visit_function(self, node):
+            self._mark(node)
+            scope_locals[self.current_scope].add(node.name)
+
+            for decorator in node.decorator_list:
+                self.visit(decorator)
+            self._visit_argument_annotations(node.args)
+            for default in node.args.defaults:
+                self.visit(default)
+            for default in node.args.kw_defaults:
+                if default is not None:
+                    self.visit(default)
+            if node.returns is not None:
+                self.visit(node.returns)
+            for type_param in getattr(node, "type_params", ()):
+                self.visit(type_param)
+
+            self._new_scope(node, self._function_parent_scope())
+            self._add_function_arguments(node, node.args)
+            self.scope_stack.append(node)
+            for statement in node.body:
+                self.visit(statement)
+            self.scope_stack.pop()
+
+        def visit_FunctionDef(self, node):
+            self._visit_function(node)
+
+        def visit_AsyncFunctionDef(self, node):
+            self._visit_function(node)
+
+        def visit_Lambda(self, node):
+            self._mark(node)
+            for default in node.args.defaults:
+                self.visit(default)
+            for default in node.args.kw_defaults:
+                if default is not None:
+                    self.visit(default)
+
+            self._new_scope(node, self._function_parent_scope())
+            self._add_function_arguments(node, node.args)
+            self.scope_stack.append(node)
+            self.visit(node.body)
+            self.scope_stack.pop()
+
+        def visit_ClassDef(self, node):
+            self._mark(node)
+            scope_locals[self.current_scope].add(node.name)
+            for decorator in node.decorator_list:
+                self.visit(decorator)
+            for base in node.bases:
+                self.visit(base)
+            for keyword in node.keywords:
+                self.visit(keyword.value)
+            for type_param in getattr(node, "type_params", ()):
+                self.visit(type_param)
+
+            self._new_scope(node, self.current_scope)
+            self.scope_stack.append(node)
+            for statement in node.body:
+                self.visit(statement)
+            self.scope_stack.pop()
+
+        def visit_Name(self, node):
+            self._mark(node)
+            if isinstance(node.ctx, ast.Store):
+                scope_locals[self.current_scope].add(node.id)
+
+        def visit_Global(self, node):
+            self._mark(node)
+            scope_globals[self.current_scope].update(node.names)
+
+        def visit_Nonlocal(self, node):
+            self._mark(node)
+            scope_nonlocals[self.current_scope].update(node.names)
+
+        def visit_Import(self, node):
+            self._mark(node)
+            for alias in node.names:
+                scope_locals[self.current_scope].add(
+                    alias.asname or alias.name.split(".", 1)[0]
+                )
+
+        def visit_ImportFrom(self, node):
+            self._mark(node)
+            for alias in node.names:
+                if alias.name != "*":
+                    scope_locals[self.current_scope].add(alias.asname or alias.name)
+
+        def generic_visit(self, node):
+            self._mark(node)
+            super().generic_visit(node)
+
+    ScopeVisitor().visit(tree)
+    return {
+        "module": module_scope,
+        "parents": scope_parents,
+        "locals": scope_locals,
+        "globals": scope_globals,
+        "nonlocals": scope_nonlocals,
+    }
+
+
+def _enclosing_binding_scope(name, lexical_scope, metadata):
+    """Return the Python lexical scope that owns one referenced name."""
+    module_scope = metadata["module"]
+    scope = lexical_scope or module_scope
+
+    if name in metadata["globals"].get(scope, ()):
+        return module_scope
+
+    if name in metadata["nonlocals"].get(scope, ()):
+        scope = metadata["parents"].get(scope)
+        while scope is not None:
+            if name in metadata["locals"].get(scope, ()):
+                return scope
+            scope = metadata["parents"].get(scope)
+        return module_scope
+
+    while scope is not None:
+        if name in metadata["globals"].get(scope, ()):
+            return module_scope
+        if name in metadata["locals"].get(scope, ()):
+            return scope
+        scope = metadata["parents"].get(scope)
+
+    return module_scope
+
+
+def _assignment_binding_scope(name, lexical_scope, metadata):
+    module_scope = metadata["module"]
+    scope = lexical_scope or module_scope
+
+    if name in metadata["globals"].get(scope, ()):
+        return module_scope
+
+    if name in metadata["nonlocals"].get(scope, ()):
+        parent = metadata["parents"].get(scope)
+        while parent is not None:
+            if name in metadata["locals"].get(parent, ()):
+                return parent
+            parent = metadata["parents"].get(parent)
+        return module_scope
+
+    return scope
+
+
 def _name_bindings(tree):
-    """Map simple variable names to their source-ordered assigned expressions."""
-    bindings = {}
+    """Map simple variable names to source-ordered expressions per lexical scope."""
+    metadata = _annotate_binding_scopes(tree)
+    values = {}
 
     def add_binding(target, value, line_number):
-        if isinstance(target, ast.Name):
-            bindings.setdefault(target.id, []).append((line_number, value))
+        if not isinstance(target, ast.Name):
+            return
+        lexical_scope = getattr(target, "_binding_scope", metadata["module"])
+        binding_scope = _assignment_binding_scope(
+            target.id,
+            lexical_scope,
+            metadata,
+        )
+        values.setdefault(binding_scope, {}).setdefault(target.id, []).append(
+            (line_number, value)
+        )
 
     binding_nodes = [
         node
@@ -234,6 +447,11 @@ def _name_bindings(tree):
             getattr(node, "col_offset", 0),
         )
     )
+
+    bindings = {
+        "values": values,
+        "metadata": metadata,
+    }
 
     for node in binding_nodes:
         line_number = getattr(node, "lineno", 0)
@@ -252,6 +470,7 @@ def _name_bindings(tree):
                 bindings,
                 line_number - 1,
                 set(),
+                node.target,
             )
             if previous is None:
                 continue
@@ -278,13 +497,24 @@ def _name_bindings(tree):
     return bindings
 
 
-def _bound_name_value(name, bindings, before_line, seen_names):
-    if name in seen_names:
+def _binding_name_token(name, bindings, use_node):
+    metadata = bindings["metadata"]
+    lexical_scope = getattr(use_node, "_binding_scope", metadata["module"])
+    binding_scope = _enclosing_binding_scope(name, lexical_scope, metadata)
+    return (binding_scope, name)
+
+
+def _bound_name_value(name, bindings, before_line, seen_names, use_node):
+    token = _binding_name_token(name, bindings, use_node)
+    if token in seen_names:
         return None
 
+    binding_scope, binding_name = token
     candidates = [
         (line_number, value)
-        for line_number, value in bindings.get(name, ())
+        for line_number, value in bindings["values"]
+        .get(binding_scope, {})
+        .get(binding_name, ())
         if line_number <= before_line
     ]
     if not candidates:
@@ -294,36 +524,66 @@ def _bound_name_value(name, bindings, before_line, seen_names):
 
 
 def _resolve_bound_node(node, bindings, before_line, seen_names=None):
-    """Resolve simple name aliases to their latest preceding expression."""
+    """Resolve simple name aliases within the lexical scope visible to the use."""
     seen_names = set() if seen_names is None else set(seen_names)
     current = node
 
     while isinstance(current, ast.Name):
-        if current.id in seen_names:
+        token = _binding_name_token(current.id, bindings, current)
+        if token in seen_names:
             break
-        seen_names.add(current.id)
-        bound = _bound_name_value(current.id, bindings, before_line, seen_names - {current.id})
+        bound = _bound_name_value(
+            current.id,
+            bindings,
+            before_line,
+            seen_names,
+            current,
+        )
         if bound is None:
             break
+        seen_names.add(token)
         current = bound
 
     return current
 
 
-def _latest_auth_binding(key, bindings, before_line):
-    candidates = [
-        (line_number, value)
-        for line_number, value in bindings.get(key, ())
-        if line_number <= before_line
-    ]
-    if not candidates:
-        return None
-    return candidates[-1][1]
+def _latest_auth_binding(key, bindings, before_line, use_node):
+    metadata = bindings["metadata"]
+    lexical_scope = getattr(use_node, "_binding_scope", metadata["module"])
+
+    if key[0] == "name":
+        scopes = [
+            _enclosing_binding_scope(
+                key[1],
+                lexical_scope,
+                metadata,
+            )
+        ]
+    else:
+        scopes = []
+        scope = lexical_scope
+        while scope is not None:
+            scopes.append(scope)
+            scope = metadata["parents"].get(scope)
+
+    for scope in scopes:
+        candidates = [
+            (line_number, value)
+            for line_number, value in bindings["values"]
+            .get(scope, {})
+            .get(key, ())
+            if line_number <= before_line
+        ]
+        if candidates:
+            return candidates[-1][1]
+
+    return None
 
 
 def _auth_bindings(tree, name_bindings):
-    """Track source-ordered auth tuple/list values, including += concatenation."""
-    bindings = {}
+    """Track auth tuple/list values per lexical scope, including += concatenation."""
+    metadata = name_bindings["metadata"]
+    values = {}
     nodes = [
         node
         for node in ast.walk(tree)
@@ -336,10 +596,29 @@ def _auth_bindings(tree, name_bindings):
         )
     )
 
+    bindings = {
+        "values": values,
+        "metadata": metadata,
+    }
+
     def add_binding(target, value, line_number):
         key = _auth_target_key(target)
-        if key is not None:
-            bindings.setdefault(key, []).append((line_number, value))
+        if key is None:
+            return
+
+        lexical_scope = getattr(target, "_binding_scope", metadata["module"])
+        if isinstance(target, ast.Name):
+            binding_scope = _assignment_binding_scope(
+                target.id,
+                lexical_scope,
+                metadata,
+            )
+        else:
+            binding_scope = lexical_scope
+
+        values.setdefault(binding_scope, {}).setdefault(key, []).append(
+            (line_number, value)
+        )
 
     for node in nodes:
         line_number = getattr(node, "lineno", 0)
@@ -354,7 +633,12 @@ def _auth_bindings(tree, name_bindings):
             key = _auth_target_key(node.target)
             if key is None or not isinstance(node.op, ast.Add):
                 continue
-            previous = _latest_auth_binding(key, bindings, line_number - 1)
+            previous = _latest_auth_binding(
+                key,
+                bindings,
+                line_number - 1,
+                node.target,
+            )
             appended = _resolve_bound_node(
                 node.value,
                 name_bindings,
@@ -419,13 +703,15 @@ def _hardcoded_password_values(node, bindings, before_line, seen_names=None):
         return [literal]
 
     if isinstance(node, ast.Name):
-        if node.id in seen_names:
+        token = _binding_name_token(node.id, bindings, node)
+        if token in seen_names:
             return []
         bound = _bound_name_value(
             node.id,
             bindings,
             before_line,
             seen_names,
+            node,
         )
         if bound is None:
             return []
@@ -433,7 +719,7 @@ def _hardcoded_password_values(node, bindings, before_line, seen_names=None):
             bound,
             bindings,
             before_line,
-            seen_names | {node.id},
+            seen_names | {token},
         )
 
     environment_default = _environment_lookup_default_node(node)
@@ -617,6 +903,7 @@ def hardcoded_auth_tuple_lines(source):
                     key,
                     auth_bindings,
                     line_number,
+                    node.target,
                 )
                 if combined is not None:
                     candidates.append((line_number, combined))
@@ -659,6 +946,7 @@ def hardcoded_auth_tuple_lines(source):
                         key,
                         auth_bindings,
                         line_number,
+                        resolved_value,
                     )
             if (
                 not isinstance(resolved_value, (ast.Tuple, ast.List))
@@ -1078,6 +1366,35 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_auth_tuple_lines(source), expected)
 
+    def test_auth_tuple_guard_keeps_aliases_in_lexical_scope(self):
+        hardcoded_global = (
+            'AUTH = ("elastic", "embedded-value")\n'
+            'def helper():\n'
+            '    AUTH = ("elastic", os.getenv("TCP_ELASTIC_PASSWORD"))\n'
+            '    return AUTH\n'
+            'def client():\n'
+            '    return Elasticsearch(host, http_auth=AUTH)'
+        )
+        self.assertEqual(hardcoded_auth_tuple_lines(hardcoded_global), [6])
+
+        safe_global = (
+            'AUTH = ("elastic", os.getenv("TCP_ELASTIC_PASSWORD"))\n'
+            'def helper():\n'
+            '    AUTH = ("elastic", "embedded-value")\n'
+            '    return AUTH\n'
+            'def client():\n'
+            '    return Elasticsearch(host, http_auth=AUTH)'
+        )
+        self.assertEqual(hardcoded_auth_tuple_lines(safe_global), [])
+
+        hardcoded_local = (
+            'AUTH = ("elastic", os.getenv("TCP_ELASTIC_PASSWORD"))\n'
+            'def client():\n'
+            '    AUTH = ("elastic", "embedded-value")\n'
+            '    return Elasticsearch(host, http_auth=AUTH)'
+        )
+        self.assertEqual(hardcoded_auth_tuple_lines(hardcoded_local), [4])
+
     def test_auth_tuple_guard_detects_function_defaults(self):
         cases = (
             ('def client(http_auth=("elastic", "real-secret")):\n    return http_auth', [1]),
@@ -1121,6 +1438,35 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for source in hardcoded_examples:
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_password_literal_lines(source), [1])
+
+    def test_python_password_literal_guard_keeps_aliases_in_lexical_scope(self):
+        hardcoded_global = (
+            'SECRET = "embedded-value"\n'
+            'def helper():\n'
+            '    SECRET = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+            '    return SECRET\n'
+            'def client():\n'
+            '    return connect(password=SECRET)'
+        )
+        self.assertEqual(hardcoded_password_literal_lines(hardcoded_global), [6])
+
+        safe_global = (
+            'SECRET = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+            'def helper():\n'
+            '    SECRET = "embedded-value"\n'
+            '    return SECRET\n'
+            'def client():\n'
+            '    return connect(password=SECRET)'
+        )
+        self.assertEqual(hardcoded_password_literal_lines(safe_global), [])
+
+        hardcoded_local = (
+            'SECRET = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+            'def client():\n'
+            '    SECRET = "embedded-value"\n'
+            '    return connect(password=SECRET)'
+        )
+        self.assertEqual(hardcoded_password_literal_lines(hardcoded_local), [4])
 
     def test_python_password_literal_guard_detects_environment_lookup_fallbacks(self):
         hardcoded_examples = (
