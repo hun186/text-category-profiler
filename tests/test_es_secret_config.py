@@ -1400,11 +1400,27 @@ def hardcoded_auth_tuple_lines(source):
     return sorted(set(violations))
 
 
+def _is_password_environment_target(node):
+    if not isinstance(node, ast.Subscript):
+        return False
+    if _literal_string(node.slice) != "TCP_ELASTIC_PASSWORD":
+        return False
+    return (
+        isinstance(node.value, ast.Attribute)
+        and node.value.attr == "environ"
+        and isinstance(node.value.value, ast.Name)
+        and node.value.value.id == "os"
+    )
+
+
 def _is_password_target(node):
     if isinstance(node, ast.Name):
         return node.id == "password"
     if isinstance(node, ast.Subscript):
-        return _literal_string(node.slice) == "password"
+        return (
+            _literal_string(node.slice) == "password"
+            or _is_password_environment_target(node)
+        )
     if isinstance(node, ast.Attribute):
         return node.attr == "password"
     return False
@@ -2300,6 +2316,41 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ),
             [],
         )
+
+    def test_python_password_literal_guard_detects_environment_target_assignments(self):
+        hardcoded_examples = (
+            (
+                'os.environ["TCP_ELASTIC_PASSWORD"] = "embedded-value"',
+                [1],
+            ),
+            (
+                'SECRET = "embedded-value"\n'
+                'os.environ["TCP_ELASTIC_PASSWORD"] = SECRET',
+                [2],
+            ),
+            (
+                "os.environ['TCP_ELASTIC_PASSWORD'] += 'embedded-value'",
+                [1],
+            ),
+        )
+        for source, expected in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    hardcoded_password_literal_lines(source),
+                    expected,
+                )
+
+    def test_python_password_literal_guard_allows_runtime_environment_target_assignments(self):
+        safe_examples = (
+            'os.environ["TCP_ELASTIC_PASSWORD"] = password_from_store',
+            'SECRET = password_from_store\n'
+            'os.environ["TCP_ELASTIC_PASSWORD"] = SECRET',
+            "os.environ['TCP_ELASTIC_PASSWORD'] += suffix_from_store",
+            'os.environ["OTHER_ENV"] = "embedded-value"',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_password_literal_lines(source), [])
 
     def test_python_password_literal_guard_detects_augmented_assignments(self):
         cases = (
