@@ -2087,6 +2087,18 @@ def _password_environment_update_values(
     for keyword in node.keywords:
         if keyword.arg == "TCP_ELASTIC_PASSWORD":
             values.append(keyword.value)
+            continue
+
+        if keyword.arg is None:
+            candidates = [keyword.value]
+            if bindings is not None:
+                candidates = _resolve_bound_nodes(
+                    keyword.value,
+                    bindings,
+                    before_position,
+                )
+            for candidate in candidates:
+                inspect_mapping(candidate)
 
     return values
 
@@ -2143,7 +2155,7 @@ def hardcoded_password_literal_lines(source):
             ):
                 candidates.append(
                     (
-                        getattr(value, "lineno", getattr(node, "lineno", None)),
+                        getattr(node, "lineno", getattr(value, "lineno", None)),
                         value,
                     )
                 )
@@ -3571,6 +3583,15 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 [3],
             ),
             (
+                'os.environ.update(**{"TCP_ELASTIC_PASSWORD": "hardcoded-secret"})',
+                [1],
+            ),
+            (
+                'values = {"TCP_ELASTIC_PASSWORD": "hardcoded-secret"}\n'
+                'os.environ.update(**values)',
+                [2],
+            ),
+            (
                 'os.environ.setdefault("TCP_ELASTIC_PASSWORD", "hardcoded-secret")',
                 [1],
             ),
@@ -3592,6 +3613,11 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             (
                 'values = {"TCP_ELASTIC_PASSWORD": password_from_store}\n'
                 'os.environ.update(values)'
+            ),
+            'os.environ.update(**{"TCP_ELASTIC_PASSWORD": password_from_store})',
+            (
+                'values = {"TCP_ELASTIC_PASSWORD": password_from_store}\n'
+                'os.environ.update(**values)'
             ),
             'os.environ.update({"TCP_ELASTIC_PASSWORD": password_from_store})',
             'os.environ.update(TCP_ELASTIC_PASSWORD=password_from_store)',
