@@ -1494,6 +1494,15 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertTrue(path.is_file())
 
+    def test_secret_surface_paths_include_python_elasticsearch_samples(self):
+        sample_python_paths = [
+            path
+            for path in self._secret_surface_paths()
+            if path.parent == ELASTICSEARCH_SAMPLE_ROOT
+            and path.suffix.lower() == ".py"
+        ]
+        self.assertTrue(sample_python_paths)
+
     def test_db_utils_redaction_helper_masks_password_without_mutating_source(self):
         source = DB_UTILS_PATH.read_text(encoding="utf-8-sig")
         module = ast.parse(source)
@@ -2399,11 +2408,11 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     violations.append(
                         f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:auth-tuple"
                     )
+                for line_number in hardcoded_single_auth_lines(text):
+                    violations.append(
+                        f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:client-auth-literal"
+                    )
                 if path in RUNTIME_ES_MODULES:
-                    for line_number in hardcoded_single_auth_lines(text):
-                        violations.append(
-                            f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:client-auth-literal"
-                        )
                     for line_number in hardcoded_password_literal_lines(text):
                         violations.append(
                             f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:password-literal"
