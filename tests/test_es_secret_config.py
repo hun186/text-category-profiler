@@ -1,7 +1,9 @@
 import ast
+import io
 import os
 import re
 import runpy
+import tokenize
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -115,7 +117,34 @@ def password_value_expressions(line):
     ]
 
 
+def python_comment_password_lines(source):
+    """Return Python comment lines that embed a disallowed password value."""
+    violations = []
+    tokens = tokenize.generate_tokens(io.StringIO(source).readline)
+
+    for token in tokens:
+        if token.type != tokenize.COMMENT:
+            continue
+        if any(
+            value_expression not in ALLOWED_PASSWORD_EXPRESSIONS
+            for value_expression in password_value_expressions(token.string)
+        ):
+            violations.append(token.start[0])
+
+    return sorted(set(violations))
+
+
 AUTH_TUPLE_NAMES = {"http_auth", "basic_auth"}
+
+
+def _is_auth_tuple_target(node):
+    if isinstance(node, ast.Name):
+        return node.id in AUTH_TUPLE_NAMES
+    if isinstance(node, ast.Subscript):
+        return _literal_string(node.slice) in AUTH_TUPLE_NAMES
+    if isinstance(node, ast.Attribute):
+        return node.attr in AUTH_TUPLE_NAMES
+    return False
 
 
 def _literal_string(node):
@@ -453,10 +482,7 @@ def hardcoded_auth_tuple_lines(source):
             candidates.append((getattr(node, "lineno", None), node.value))
         elif isinstance(node, (ast.Assign, ast.AnnAssign)):
             targets = node.targets if isinstance(node, ast.Assign) else [node.target]
-            if any(
-                isinstance(target, ast.Name) and target.id in AUTH_TUPLE_NAMES
-                for target in targets
-            ):
+            if any(_is_auth_tuple_target(target) for target in targets):
                 candidates.append((getattr(node, "lineno", None), node.value))
         elif isinstance(node, ast.Dict):
             for key, value in zip(node.keys, node.values):
@@ -712,6 +738,25 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             with self.subTest(line=line):
                 self.assertIsNotNone(URL_USERINFO_RE.search(line))
 
+    def test_python_comment_password_guard_detects_commented_literals(self):
+        hardcoded_examples = (
+            '# "password": "embedded-value"',
+            'value = 1  # password = "embedded-value"',
+        )
+        for source in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(python_comment_password_lines(source), [1])
+
+    def test_python_comment_password_guard_ignores_code_and_safe_comments(self):
+        safe_examples = (
+            'password = password_from_store',
+            'text = \'# "password": "embedded-value"\'',
+            '# "password": os.environ.get("TCP_ELASTIC_PASSWORD")',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(python_comment_password_lines(source), [])
+
     def test_auth_tuple_guard_detects_literal_passwords(self):
         hardcoded_examples = (
             'Elasticsearch(host, http_auth=("elastic", "real-secret"))',
@@ -723,6 +768,24 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for source in hardcoded_examples:
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_auth_tuple_lines(source), [1])
+
+    def test_auth_tuple_guard_detects_container_and_attribute_targets(self):
+        hardcoded_examples = (
+            'options["http_auth"] = ("elastic", "embedded-value")',
+            'settings.basic_auth = ("elastic", "embedded-value")',
+        )
+        for source in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_auth_tuple_lines(source), [1])
+
+    def test_auth_tuple_guard_allows_runtime_container_and_attribute_targets(self):
+        safe_examples = (
+            'options["http_auth"] = ("elastic", password_from_store)',
+            'settings.basic_auth = ("elastic", os.getenv("TCP_ELASTIC_PASSWORD"))',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_auth_tuple_lines(source), [])
 
     def test_auth_tuple_guard_detects_environment_lookup_literal_fallbacks(self):
         hardcoded_examples = (
@@ -1026,6 +1089,10 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     for line_number in hardcoded_password_literal_lines(text):
                         violations.append(
                             f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:password-literal"
+                        )
+                    for line_number in python_comment_password_lines(text):
+                        violations.append(
+                            f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:password-comment"
                         )
             for line_number, line in enumerate(text.splitlines(), start=1):
                 if path not in RUNTIME_ES_MODULES:
