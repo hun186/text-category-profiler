@@ -27,6 +27,14 @@ RUNTIME_ES_MODULES = (
 TEXT_SECRET_SUFFIXES = {".py", ".ini", ".txt", ".json"}
 
 PASSWORD_KEY_RE = re.compile(r"""["\']?password["\']?\s*[:=]\s*""", re.IGNORECASE)
+SCALAR_AUTH_KEY_RE = re.compile(
+    r"""["\']?(api_key|bearer_auth)["\']?\s*[:=]\s*""",
+    re.IGNORECASE,
+)
+AUTHORIZATION_VALUE_RE = re.compile(
+    r"^\s*(ApiKey|Bearer|Basic)\s+(.+?)\s*$",
+    re.IGNORECASE,
+)
 ENROLLMENT_TOKEN_RE = re.compile(
     r"(?<![A-Za-z0-9_-])eyJ[A-Za-z0-9_-]{20,}={0,2}(?![A-Za-z0-9_-])"
 )
@@ -134,6 +142,39 @@ def python_comment_password_lines(source):
     return sorted(set(violations))
 
 
+def scalar_auth_value_expressions(line):
+    """Return scalar-auth value expressions found anywhere in one line."""
+    return [
+        (match.group(1).lower(), _password_value_expression(line, match.end()))
+        for match in SCALAR_AUTH_KEY_RE.finditer(line)
+    ]
+
+
+def python_comment_scalar_auth_lines(source):
+    """Return Python comment lines that embed scalar auth literals."""
+    violations = []
+    tokens = tokenize.generate_tokens(io.StringIO(source).readline)
+
+    for token in tokens:
+        if token.type != tokenize.COMMENT:
+            continue
+
+        for _name, expression in scalar_auth_value_expressions(token.string):
+            stripped = expression.strip()
+            if not stripped:
+                continue
+            try:
+                parsed = ast.parse(stripped, mode="eval").body
+            except SyntaxError:
+                violations.append(token.start[0])
+                continue
+
+            if _hardcoded_comment_scalar_value(parsed):
+                violations.append(token.start[0])
+
+    return sorted(set(violations))
+
+
 AUTH_TUPLE_NAMES = {"http_auth", "basic_auth"}
 SINGLE_VALUE_AUTH_NAMES = {"api_key", "bearer_auth"}
 
@@ -164,6 +205,54 @@ def _literal_string(node):
     except (ValueError, TypeError):
         return None
     return value if isinstance(value, str) else None
+
+
+def _hardcoded_comment_scalar_value(node):
+    literal = _literal_string(node)
+    if literal is not None:
+        return bool(literal and literal != REDACTED_PASSWORD_SENTINEL)
+
+    if _is_environment_lookup_call(node):
+        return _environment_lookup_default_node(node) is not None
+
+    if isinstance(node, ast.Name):
+        return False
+
+    if isinstance(node, ast.Call):
+        values = list(node.args) + [keyword.value for keyword in node.keywords]
+        return any(_hardcoded_comment_scalar_value(value) for value in values)
+
+    if isinstance(node, (ast.BoolOp, ast.Tuple, ast.List, ast.Set)):
+        values = node.values if isinstance(node, ast.BoolOp) else node.elts
+        return any(_hardcoded_comment_scalar_value(value) for value in values)
+
+    if isinstance(node, ast.IfExp):
+        return (
+            _hardcoded_comment_scalar_value(node.body)
+            or _hardcoded_comment_scalar_value(node.orelse)
+        )
+
+    if isinstance(node, ast.BinOp):
+        return (
+            _hardcoded_comment_scalar_value(node.left)
+            or _hardcoded_comment_scalar_value(node.right)
+        )
+
+    if isinstance(node, ast.JoinedStr):
+        return any(
+            (
+                isinstance(value, ast.Constant)
+                and isinstance(value.value, str)
+                and bool(value.value)
+            )
+            or (
+                isinstance(value, ast.FormattedValue)
+                and _hardcoded_comment_scalar_value(value.value)
+            )
+            for value in node.values
+        )
+
+    return False
 
 
 def _auth_target_key(node):
@@ -1100,6 +1189,86 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
     return []
 
 
+def _is_authorization_target(node):
+    if isinstance(node, ast.Subscript):
+        key = _literal_string(node.slice)
+        return isinstance(key, str) and key.lower() == "authorization"
+    if isinstance(node, ast.Attribute):
+        return node.attr.lower() == "authorization"
+    return False
+
+
+def _hardcoded_authorization_payloads(node, bindings, before_position):
+    payloads = []
+    for value in _hardcoded_password_values(
+        node,
+        bindings,
+        before_position,
+    ):
+        match = AUTHORIZATION_VALUE_RE.match(value)
+        if not match:
+            continue
+        payload = match.group(2).strip()
+        if payload and payload != REDACTED_PASSWORD_SENTINEL:
+            payloads.append(payload)
+    return payloads
+
+
+def hardcoded_authorization_header_lines(source):
+    """Return lines whose Authorization header embeds a credential."""
+    tree = ast.parse(source)
+    bindings = _name_bindings(tree)
+    violations = []
+
+    for node in ast.walk(tree):
+        candidates = []
+
+        if isinstance(node, ast.Dict):
+            for key, value in zip(node.keys, node.values):
+                literal_key = _literal_string(key)
+                if (
+                    isinstance(literal_key, str)
+                    and literal_key.lower() == "authorization"
+                ):
+                    candidates.append(
+                        (
+                            getattr(value, "lineno", getattr(node, "lineno", None)),
+                            _node_position(value),
+                            value,
+                        )
+                    )
+        elif isinstance(node, (ast.Assign, ast.AnnAssign)):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            if any(_is_authorization_target(target) for target in targets):
+                candidates.append(
+                    (
+                        getattr(node, "lineno", None),
+                        _node_position(node.value),
+                        node.value,
+                    )
+                )
+        elif isinstance(node, ast.AugAssign) and _is_authorization_target(node.target):
+            candidates.append(
+                (
+                    getattr(node, "lineno", None),
+                    _node_position(node.value),
+                    node.value,
+                )
+            )
+
+        for line_number, use_position, value in candidates:
+            if line_number is None:
+                continue
+            if _hardcoded_authorization_payloads(
+                value,
+                bindings,
+                use_position,
+            ):
+                violations.append(line_number)
+
+    return sorted(set(violations))
+
+
 def hardcoded_single_auth_lines(source):
     """Return line numbers whose scalar client auth credential is hardcoded."""
     tree = ast.parse(source)
@@ -1645,6 +1814,72 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for source in safe_examples:
             with self.subTest(source=source):
                 self.assertEqual(python_comment_password_lines(source), [])
+
+    def test_python_comment_scalar_auth_guard_detects_literals(self):
+        hardcoded_examples = (
+            '# api_key = "hardcoded-api-key-value"',
+            '# bearer_auth = "hardcoded-bearer-token"',
+            'value = 1  # "api_key": "hardcoded-api-key-value"',
+            '# api_key = os.getenv("TCP_ES_API_KEY", "hardcoded-api-key-value")',
+        )
+        for source in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(python_comment_scalar_auth_lines(source), [1])
+
+    def test_python_comment_scalar_auth_guard_allows_runtime_references(self):
+        safe_examples = (
+            '# api_key = os.getenv("TCP_ES_API_KEY")',
+            '# bearer_auth = token_from_store',
+            '# api_key = "***REDACTED***"',
+            'text = \'# api_key = "hardcoded-api-key-value"\'',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(python_comment_scalar_auth_lines(source), [])
+
+    def test_authorization_header_guard_detects_embedded_credentials(self):
+        hardcoded_examples = (
+            (
+                'Elasticsearch(host, headers={"Authorization": '
+                '"ApiKey hardcoded-api-key-value"})',
+                [1],
+            ),
+            (
+                'headers = {"authorization": "Bearer hardcoded-bearer-token"}\n'
+                'Elasticsearch(host, headers=headers)',
+                [1],
+            ),
+            (
+                'AUTH = "Basic hardcoded-basic-value"\n'
+                'options = {"headers": {"Authorization": AUTH}}\n'
+                'Elasticsearch(host, **options)',
+                [2],
+            ),
+            (
+                'headers["Authorization"] = "Bearer hardcoded-bearer-token"',
+                [1],
+            ),
+        )
+        for source, expected in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    hardcoded_authorization_header_lines(source),
+                    expected,
+                )
+
+    def test_authorization_header_guard_allows_runtime_credentials(self):
+        safe_examples = (
+            'Elasticsearch(host, headers={"Authorization": f"Bearer {token}"})',
+            'headers = {"Authorization": "Bearer " + token_from_store}',
+            'headers["Authorization"] = authorization_from_store',
+            'headers = {"Authorization": "Bearer ***REDACTED***"}',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    hardcoded_authorization_header_lines(source),
+                    [],
+                )
 
     def test_single_auth_guard_detects_api_key_and_bearer_literals(self):
         hardcoded_examples = (
@@ -2462,6 +2697,14 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 for line_number in hardcoded_single_auth_lines(text):
                     violations.append(
                         f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:client-auth-literal"
+                    )
+                for line_number in hardcoded_authorization_header_lines(text):
+                    violations.append(
+                        f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:authorization-header"
+                    )
+                for line_number in python_comment_scalar_auth_lines(text):
+                    violations.append(
+                        f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:client-auth-comment"
                     )
                 if path in RUNTIME_ES_MODULES:
                     for line_number in hardcoded_password_literal_lines(text):
