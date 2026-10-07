@@ -4,6 +4,7 @@ import os
 import re
 import runpy
 import tokenize
+import textwrap
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -1684,6 +1685,59 @@ def hardcoded_password_literal_lines(source):
     return sorted(set(line for line in violations if line is not None))
 
 
+def python_disabled_code_secret_lines(source):
+    """Return standalone string-block lines that contain disabled secret-bearing code."""
+    tree = ast.parse(source)
+    violations = []
+
+    for node in ast.walk(tree):
+        if not (
+            isinstance(node, ast.Expr)
+            and isinstance(node.value, ast.Constant)
+            and isinstance(node.value.value, str)
+        ):
+            continue
+
+        payload = textwrap.dedent(node.value.value).strip()
+        if not payload:
+            continue
+
+        parseable_snippets = []
+        try:
+            ast.parse(payload)
+        except SyntaxError:
+            for line in payload.splitlines():
+                snippet = line.strip()
+                if not snippet:
+                    continue
+                try:
+                    ast.parse(snippet)
+                except SyntaxError:
+                    continue
+                parseable_snippets.append(snippet)
+        else:
+            parseable_snippets.append(payload)
+
+        has_secret = False
+        for snippet in parseable_snippets:
+            if (
+                hardcoded_password_literal_lines(snippet)
+                or hardcoded_auth_tuple_lines(snippet)
+                or hardcoded_single_auth_lines(snippet)
+                or hardcoded_authorization_header_lines(snippet)
+                or python_comment_password_lines(snippet)
+                or python_comment_scalar_auth_lines(snippet)
+                or python_comment_structured_auth_lines(snippet)
+            ):
+                has_secret = True
+                break
+
+        if has_secret:
+            violations.append(getattr(node, "lineno", None))
+
+    return sorted(set(line for line in violations if line is not None))
+
+
 class ElasticsearchSecretConfigTests(unittest.TestCase):
     def _load_password(self, path, mapping_name):
         namespace = runpy.run_path(str(path))
@@ -1822,6 +1876,35 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for line in credential_urls:
             with self.subTest(line=line):
                 self.assertIsNotNone(URL_USERINFO_RE.search(line))
+
+    def test_python_disabled_code_guard_detects_secret_bearing_blocks(self):
+        hardcoded_examples = (
+            "'''password = \"hardcoded-secret\"'''",
+            "'''http_auth=(\"elastic\", \"hardcoded-secret\")'''",
+            "'''api_key = \"hardcoded-api-key-value\"'''",
+            "'''headers={\"Authorization\": \"Bearer hardcoded-token\"}'''",
+            (
+                "'''\n"
+                "AUTH = (\"elastic\", \"hardcoded-secret\")\n"
+                "Elasticsearch(host, http_auth=AUTH)\n"
+                "'''"
+            ),
+        )
+        for source in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(python_disabled_code_secret_lines(source), [1])
+
+    def test_python_disabled_code_guard_allows_safe_or_data_strings(self):
+        safe_examples = (
+            "'''password = password_from_store'''",
+            "'''http_auth=(\"elastic\", os.getenv(\"TCP_ELASTIC_PASSWORD\"))'''",
+            "'''headers={\"Authorization\": f\"Bearer {token}\"}'''",
+            'disabled_text = \'\'\'password = "hardcoded-secret"\'\'\'',
+            "'''ordinary documentation text'''",
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(python_disabled_code_secret_lines(source), [])
 
     def test_python_comment_password_guard_detects_commented_literals(self):
         hardcoded_examples = (
@@ -2766,6 +2849,10 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 for line_number in python_comment_structured_auth_lines(text):
                     violations.append(
                         f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:structured-auth-comment"
+                    )
+                for line_number in python_disabled_code_secret_lines(text):
+                    violations.append(
+                        f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:disabled-code-secret"
                     )
                 if path in RUNTIME_ES_MODULES:
                     for line_number in hardcoded_password_literal_lines(text):
