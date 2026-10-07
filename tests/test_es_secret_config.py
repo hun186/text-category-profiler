@@ -1912,13 +1912,23 @@ def _is_os_environ_expression(node):
 
 
 def _password_environment_update_values(node):
-    """Return TCP_ELASTIC_PASSWORD values written through os.environ.update()."""
+    """Return TCP_ELASTIC_PASSWORD values written through os.environ mutations."""
     if not (
         isinstance(node, ast.Call)
         and isinstance(node.func, ast.Attribute)
-        and node.func.attr == "update"
         and _is_os_environ_expression(node.func.value)
     ):
+        return []
+
+    if node.func.attr == "setdefault":
+        if (
+            len(node.args) >= 2
+            and _literal_string(node.args[0]) == "TCP_ELASTIC_PASSWORD"
+        ):
+            return [node.args[1]]
+        return []
+
+    if node.func.attr != "update":
         return []
 
     values = []
@@ -3342,6 +3352,15 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 'os.environ.update(dict(TCP_ELASTIC_PASSWORD="hardcoded-secret"))',
                 [1],
             ),
+            (
+                'os.environ.setdefault("TCP_ELASTIC_PASSWORD", "hardcoded-secret")',
+                [1],
+            ),
+            (
+                'SECRET = "hardcoded-secret"\n'
+                'os.environ.setdefault("TCP_ELASTIC_PASSWORD", SECRET)',
+                [2],
+            ),
         )
         for source, expected in hardcoded_examples:
             with self.subTest(source=source):
@@ -3354,11 +3373,27 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         safe_examples = (
             'os.environ.update({"TCP_ELASTIC_PASSWORD": password_from_store})',
             'os.environ.update(TCP_ELASTIC_PASSWORD=password_from_store)',
+            'os.environ.setdefault("TCP_ELASTIC_PASSWORD", password_from_store)',
+            'os.environ.setdefault("OTHER_ENV", "hardcoded-secret")',
             'os.environ.update({"OTHER_ENV": "hardcoded-secret"})',
         )
         for source in safe_examples:
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_password_literal_lines(source), [])
+
+    def test_python_password_literal_guard_detects_direct_subscript_assignment(self):
+        self.assertEqual(
+            hardcoded_password_literal_lines(
+                'es_tokens["password"] = "hardcoded-secret"'
+            ),
+            [1],
+        )
+        self.assertEqual(
+            hardcoded_password_literal_lines(
+                'es_tokens["password"] = password_from_store'
+            ),
+            [],
+        )
 
     def test_python_password_literal_guard_detects_augmented_assignments(self):
         cases = (
@@ -3487,11 +3522,11 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     violations.append(
                         f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:disabled-code-secret"
                     )
+                for line_number in hardcoded_password_literal_lines(text):
+                    violations.append(
+                        f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:password-literal"
+                    )
                 if path in RUNTIME_ES_MODULES:
-                    for line_number in hardcoded_password_literal_lines(text):
-                        violations.append(
-                            f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:password-literal"
-                        )
                     for line_number in python_comment_password_lines(text):
                         violations.append(
                             f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:password-comment"
