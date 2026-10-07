@@ -202,7 +202,19 @@ def _name_bindings(tree):
         if isinstance(target, ast.Name):
             bindings.setdefault(target.id, []).append((line_number, value))
 
-    for node in ast.walk(tree):
+    binding_nodes = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign, ast.NamedExpr))
+    ]
+    binding_nodes.sort(
+        key=lambda node: (
+            getattr(node, "lineno", 0),
+            getattr(node, "col_offset", 0),
+        )
+    )
+
+    for node in binding_nodes:
         line_number = getattr(node, "lineno", 0)
         if isinstance(node, ast.Assign):
             for target in node.targets:
@@ -211,9 +223,37 @@ def _name_bindings(tree):
             add_binding(node.target, node.value, line_number)
         elif isinstance(node, ast.NamedExpr):
             add_binding(node.target, node.value, line_number)
+        elif isinstance(node, ast.AugAssign) and isinstance(node.target, ast.Name):
+            if not isinstance(node.op, ast.Add):
+                continue
+            previous = _bound_name_value(
+                node.target.id,
+                bindings,
+                line_number - 1,
+                set(),
+            )
+            if previous is None:
+                continue
+            previous = _resolve_bound_node(
+                previous,
+                bindings,
+                line_number - 1,
+            )
+            appended = _resolve_bound_node(
+                node.value,
+                bindings,
+                line_number,
+            )
+            if not isinstance(previous, (ast.Tuple, ast.List)):
+                continue
+            if not isinstance(appended, (ast.Tuple, ast.List)):
+                continue
+            combined = ast.Tuple(
+                elts=[*previous.elts, *appended.elts],
+                ctx=ast.Load(),
+            )
+            add_binding(node.target, combined, line_number)
 
-    for values in bindings.values():
-        values.sort(key=lambda item: item[0])
     return bindings
 
 
@@ -484,6 +524,28 @@ def hardcoded_auth_tuple_lines(source):
             targets = node.targets if isinstance(node, ast.Assign) else [node.target]
             if any(_is_auth_tuple_target(target) for target in targets):
                 candidates.append((getattr(node, "lineno", None), node.value))
+        elif isinstance(node, ast.AugAssign) and _is_auth_tuple_target(node.target):
+            line_number = getattr(node, "lineno", None)
+            if isinstance(node.target, ast.Name):
+                combined = _bound_name_value(
+                    node.target.id,
+                    bindings,
+                    line_number,
+                    set(),
+                )
+                if combined is not None:
+                    candidates.append((line_number, combined))
+            else:
+                hardcoded_values = _hardcoded_password_values(
+                    node.value,
+                    bindings,
+                    line_number,
+                )
+                if any(
+                    value != REDACTED_PASSWORD_SENTINEL
+                    for value in hardcoded_values
+                ):
+                    violations.append(line_number)
         elif isinstance(node, ast.Dict):
             for key, value in zip(node.keys, node.values):
                 if _literal_string(key) in AUTH_TUPLE_NAMES:
@@ -782,6 +844,61 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         safe_examples = (
             'options["http_auth"] = ("elastic", password_from_store)',
             'settings.basic_auth = ("elastic", os.getenv("TCP_ELASTIC_PASSWORD"))',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_auth_tuple_lines(source), [])
+
+    def test_auth_tuple_guard_detects_augmented_assignments(self):
+        cases = (
+            (
+                'http_auth = (user,)\n'
+                'http_auth += ("embedded-value",)\n'
+                'Elasticsearch(host, http_auth=http_auth)',
+                [2, 3],
+            ),
+            (
+                'AUTH_PASSWORD = ("embedded-value",)\n'
+                'basic_auth = (user,)\n'
+                'basic_auth += AUTH_PASSWORD\n'
+                'Elasticsearch(host, basic_auth=basic_auth)',
+                [3, 4],
+            ),
+            (
+                'options["http_auth"] = (user,)\n'
+                'options["http_auth"] += ("embedded-value",)',
+                [2],
+            ),
+            (
+                'settings.basic_auth = (user,)\n'
+                'settings.basic_auth += ("embedded-value",)',
+                [2],
+            ),
+        )
+        for source, expected in cases:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_auth_tuple_lines(source), expected)
+
+    def test_auth_tuple_guard_allows_runtime_augmented_assignments(self):
+        safe_examples = (
+            (
+                'http_auth = (user,)\n'
+                'http_auth += (password_from_store,)\n'
+                'Elasticsearch(host, http_auth=http_auth)'
+            ),
+            (
+                'basic_auth = (user,)\n'
+                'basic_auth += (os.getenv("TCP_ELASTIC_PASSWORD"),)\n'
+                'Elasticsearch(host, basic_auth=basic_auth)'
+            ),
+            (
+                'options["http_auth"] = (user,)\n'
+                'options["http_auth"] += (password_from_store,)'
+            ),
+            (
+                'settings.basic_auth = (user,)\n'
+                'settings.basic_auth += (os.getenv("TCP_ELASTIC_PASSWORD"),)'
+            ),
         )
         for source in safe_examples:
             with self.subTest(source=source):
