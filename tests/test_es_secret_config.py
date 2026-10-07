@@ -1250,9 +1250,141 @@ def _is_authorization_target(node):
     return False
 
 
+def _static_string_values(
+    node,
+    bindings,
+    before_position,
+    seen_names=None,
+):
+    """Return complete string values that can be reconstructed statically."""
+    seen_names = set() if seen_names is None else set(seen_names)
+
+    literal = _literal_string(node)
+    if literal is not None:
+        return [literal]
+
+    if isinstance(node, ast.Name):
+        token = _binding_name_token(node.id, bindings, node)
+        if token in seen_names:
+            return []
+        values = []
+        for bound in _bound_name_values(
+            node.id,
+            bindings,
+            before_position,
+            seen_names,
+            node,
+        ):
+            values.extend(
+                _static_string_values(
+                    bound,
+                    bindings,
+                    before_position,
+                    seen_names | {token},
+                )
+            )
+        return values
+
+    environment_default = _environment_lookup_default_node(node)
+    if environment_default is not None:
+        return _static_string_values(
+            environment_default,
+            bindings,
+            before_position,
+            seen_names,
+        )
+    if _is_environment_lookup_call(node):
+        return []
+
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        left_values = _static_string_values(
+            node.left,
+            bindings,
+            before_position,
+            seen_names,
+        )
+        right_values = _static_string_values(
+            node.right,
+            bindings,
+            before_position,
+            seen_names,
+        )
+        if not left_values or not right_values:
+            return []
+        return [
+            left + right
+            for left in left_values
+            for right in right_values
+        ]
+
+    if isinstance(node, ast.JoinedStr):
+        combinations = [""]
+        for part in node.values:
+            if isinstance(part, ast.Constant) and isinstance(part.value, str):
+                part_values = [part.value]
+            elif isinstance(part, ast.FormattedValue):
+                part_values = _static_string_values(
+                    part.value,
+                    bindings,
+                    before_position,
+                    seen_names,
+                )
+            else:
+                return []
+
+            if not part_values:
+                return []
+
+            combinations = [
+                prefix + value
+                for prefix in combinations
+                for value in part_values
+            ]
+        return combinations
+
+    if isinstance(node, ast.BoolOp):
+        values = []
+        for value in node.values:
+            values.extend(
+                _static_string_values(
+                    value,
+                    bindings,
+                    before_position,
+                    seen_names,
+                )
+            )
+        return values
+
+    if isinstance(node, ast.IfExp):
+        return (
+            _static_string_values(
+                node.body,
+                bindings,
+                before_position,
+                seen_names,
+            )
+            + _static_string_values(
+                node.orelse,
+                bindings,
+                before_position,
+                seen_names,
+            )
+        )
+
+    if isinstance(node, ast.NamedExpr):
+        return _static_string_values(
+            node.value,
+            bindings,
+            before_position,
+            seen_names,
+        )
+
+    return []
+
+
 def _hardcoded_authorization_payloads(node, bindings, before_position):
     payloads = []
-    for value in _hardcoded_password_values(
+    for value in _static_string_values(
         node,
         bindings,
         before_position,
@@ -1287,6 +1419,27 @@ def hardcoded_authorization_header_lines(source):
                             getattr(value, "lineno", getattr(node, "lineno", None)),
                             _node_position(value),
                             value,
+                        )
+                    )
+        elif (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "dict"
+        ):
+            for keyword in node.keywords:
+                if (
+                    keyword.arg is not None
+                    and keyword.arg.lower() == "authorization"
+                ):
+                    candidates.append(
+                        (
+                            getattr(
+                                keyword.value,
+                                "lineno",
+                                getattr(node, "lineno", None),
+                            ),
+                            _node_position(keyword.value),
+                            keyword.value,
                         )
                     )
         elif isinstance(node, (ast.Assign, ast.AnnAssign)):
@@ -2081,6 +2234,83 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for source in safe_examples:
             with self.subTest(source=source):
                 self.assertEqual(python_comment_scalar_auth_lines(source), [])
+
+    def test_authorization_header_guard_reconstructs_composed_values(self):
+        hardcoded_examples = (
+            (
+                'TOKEN = "hardcoded-token"\n'
+                'headers = {"Authorization": "Bearer " + TOKEN}',
+                [2],
+            ),
+            (
+                'TOKEN = "hardcoded-token"\n'
+                'headers = {"Authorization": f"Bearer {TOKEN}"}',
+                [2],
+            ),
+            (
+                'PREFIX = "ApiKey "\n'
+                'TOKEN = "hardcoded-token"\n'
+                'headers = {"Authorization": PREFIX + TOKEN}',
+                [3],
+            ),
+        )
+        for source, expected in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    hardcoded_authorization_header_lines(source),
+                    expected,
+                )
+
+    def test_authorization_header_guard_allows_dynamic_composed_values(self):
+        safe_examples = (
+            'headers = {"Authorization": "Bearer " + token_from_store}',
+            'headers = {"Authorization": f"Bearer {token_from_store}"}',
+            'PREFIX = "Bearer "\n'
+            'headers = {"Authorization": PREFIX + token_from_store}',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    hardcoded_authorization_header_lines(source),
+                    [],
+                )
+
+    def test_authorization_header_guard_detects_dict_constructor_values(self):
+        hardcoded_examples = (
+            (
+                'headers = dict(Authorization="Bearer hardcoded-token")',
+                [1],
+            ),
+            (
+                'TOKEN = "hardcoded-token"\n'
+                'headers = dict(Authorization="ApiKey " + TOKEN)',
+                [2],
+            ),
+            (
+                'Elasticsearch(host, headers=dict('
+                'Authorization="Basic hardcoded-basic-value"))',
+                [1],
+            ),
+        )
+        for source, expected in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    hardcoded_authorization_header_lines(source),
+                    expected,
+                )
+
+    def test_authorization_header_guard_allows_runtime_dict_constructor_values(self):
+        safe_examples = (
+            'headers = dict(Authorization=authorization_from_store)',
+            'headers = dict(Authorization="Bearer " + token_from_store)',
+            'Elasticsearch(host, headers=dict(Authorization=f"Bearer {token}"))',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    hardcoded_authorization_header_lines(source),
+                    [],
+                )
 
     def test_authorization_header_guard_detects_embedded_credentials(self):
         hardcoded_examples = (
