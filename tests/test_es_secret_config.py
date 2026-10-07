@@ -1193,6 +1193,72 @@ def hardcoded_single_auth_lines(source):
     return sorted(set(violations))
 
 
+def _normalized_auth_sequences(
+    node,
+    bindings,
+    before_position,
+    seen_names=None,
+):
+    """Return statically constructible tuple/list auth sequences."""
+    seen_names = set() if seen_names is None else set(seen_names)
+
+    if isinstance(node, ast.Name):
+        token = _binding_name_token(node.id, bindings, node)
+        if token in seen_names:
+            return []
+        resolved = []
+        for bound in _bound_name_values(
+            node.id,
+            bindings,
+            before_position,
+            seen_names,
+            node,
+        ):
+            resolved.extend(
+                _normalized_auth_sequences(
+                    bound,
+                    bindings,
+                    before_position,
+                    seen_names | {token},
+                )
+            )
+        return resolved
+
+    if isinstance(node, (ast.Tuple, ast.List)):
+        return [node]
+
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        left_sequences = _normalized_auth_sequences(
+            node.left,
+            bindings,
+            before_position,
+            seen_names,
+        )
+        right_sequences = _normalized_auth_sequences(
+            node.right,
+            bindings,
+            before_position,
+            seen_names,
+        )
+        combined = []
+        for left in left_sequences:
+            for right in right_sequences:
+                sequence = ast.Tuple(
+                    elts=[*left.elts, *right.elts],
+                    ctx=ast.Load(),
+                )
+                sequence._binding_scope = getattr(
+                    node,
+                    "_binding_scope",
+                    bindings["metadata"]["module"],
+                )
+                sequence._binding_control_path = _node_control_path(node)
+                combined.append(sequence)
+        return combined
+
+    return []
+
+
 def hardcoded_auth_tuple_lines(source):
     """Return line numbers whose auth tuple contains a hardcoded password."""
     tree = ast.parse(source)
@@ -1291,20 +1357,29 @@ def hardcoded_auth_tuple_lines(source):
             expanded_values = []
 
             for resolved_value in resolved_values:
-                if isinstance(resolved_value, (ast.Tuple, ast.List)):
-                    expanded_values.append(resolved_value)
-                    continue
+                expanded_values.extend(
+                    _normalized_auth_sequences(
+                        resolved_value,
+                        bindings,
+                        use_position,
+                    )
+                )
 
                 key = _auth_target_key(resolved_value)
                 if key is not None:
-                    expanded_values.extend(
-                        _reaching_auth_binding_values(
-                            key,
-                            auth_bindings,
-                            use_position,
-                            resolved_value,
+                    for auth_value in _reaching_auth_binding_values(
+                        key,
+                        auth_bindings,
+                        use_position,
+                        resolved_value,
+                    ):
+                        expanded_values.extend(
+                            _normalized_auth_sequences(
+                                auth_value,
+                                bindings,
+                                use_position,
+                            )
                         )
-                    )
 
             for resolved_value in expanded_values:
                 if len(resolved_value.elts) < 2:
@@ -1651,6 +1726,48 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for source in safe_examples:
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_single_auth_lines(source), [])
+
+    def test_auth_tuple_guard_normalizes_constructed_sequences(self):
+        hardcoded_examples = (
+            (
+                'Elasticsearch(host, http_auth=(user,) + ("embedded-value",))',
+                [1],
+            ),
+            (
+                'AUTH = (user,) + ("embedded-value",)\n'
+                'Elasticsearch(host, http_auth=AUTH)',
+                [2],
+            ),
+            (
+                'LEFT = (user,)\n'
+                'RIGHT = ("embedded-value",)\n'
+                'AUTH = LEFT + RIGHT\n'
+                'Elasticsearch(host, basic_auth=AUTH)',
+                [4],
+            ),
+            (
+                'http_auth = (user,) + ("embedded-value",)\n'
+                'Elasticsearch(host, http_auth=http_auth)',
+                [1, 2],
+            ),
+        )
+        for source, expected in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_auth_tuple_lines(source), expected)
+
+    def test_auth_tuple_guard_allows_runtime_constructed_sequences(self):
+        safe_examples = (
+            'Elasticsearch(host, http_auth=(user,) + (password_from_store,))',
+            'AUTH = (user,) + (os.getenv("TCP_ELASTIC_PASSWORD"),)\n'
+            'Elasticsearch(host, http_auth=AUTH)',
+            'LEFT = (user,)\n'
+            'RIGHT = (password_from_store,)\n'
+            'AUTH = LEFT + RIGHT\n'
+            'Elasticsearch(host, basic_auth=AUTH)',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_auth_tuple_lines(source), [])
 
     def test_auth_tuple_guard_detects_literal_passwords(self):
         hardcoded_examples = (
