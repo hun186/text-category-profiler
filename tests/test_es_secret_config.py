@@ -138,6 +138,16 @@ AUTH_TUPLE_NAMES = {"http_auth", "basic_auth"}
 SINGLE_VALUE_AUTH_NAMES = {"api_key", "bearer_auth"}
 
 
+def _is_single_auth_target(node):
+    if isinstance(node, ast.Name):
+        return node.id in SINGLE_VALUE_AUTH_NAMES
+    if isinstance(node, ast.Subscript):
+        return _literal_string(node.slice) in SINGLE_VALUE_AUTH_NAMES
+    if isinstance(node, ast.Attribute):
+        return node.attr in SINGLE_VALUE_AUTH_NAMES
+    return False
+
+
 def _is_auth_tuple_target(node):
     if isinstance(node, ast.Name):
         return node.id in AUTH_TUPLE_NAMES
@@ -1097,23 +1107,88 @@ def hardcoded_single_auth_lines(source):
     violations = []
 
     for node in ast.walk(tree):
-        if not isinstance(node, ast.keyword) or node.arg not in SINGLE_VALUE_AUTH_NAMES:
-            continue
+        candidates = []
 
-        line_number = getattr(node, "lineno", None)
-        if line_number is None:
-            continue
+        if isinstance(node, ast.keyword) and node.arg in SINGLE_VALUE_AUTH_NAMES:
+            candidates.append(
+                (
+                    getattr(node, "lineno", None),
+                    _node_position(node.value),
+                    node.value,
+                )
+            )
+        elif isinstance(node, (ast.Assign, ast.AnnAssign)):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            if any(_is_single_auth_target(target) for target in targets):
+                candidates.append(
+                    (
+                        getattr(node, "lineno", None),
+                        _node_position(node.value),
+                        node.value,
+                    )
+                )
+        elif isinstance(node, ast.AugAssign) and _is_single_auth_target(node.target):
+            candidates.append(
+                (
+                    getattr(node, "lineno", None),
+                    _node_position(node.value),
+                    node.value,
+                )
+            )
+        elif isinstance(node, ast.Dict):
+            for key, value in zip(node.keys, node.values):
+                if _literal_string(key) in SINGLE_VALUE_AUTH_NAMES:
+                    candidates.append(
+                        (
+                            getattr(value, "lineno", getattr(node, "lineno", None)),
+                            _node_position(value),
+                            value,
+                        )
+                    )
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            positional_args = list(node.args.posonlyargs) + list(node.args.args)
+            positional_defaults = list(node.args.defaults)
+            default_start = len(positional_args) - len(positional_defaults)
+            for argument, default in zip(
+                positional_args[default_start:],
+                positional_defaults,
+            ):
+                if argument.arg in SINGLE_VALUE_AUTH_NAMES:
+                    candidates.append(
+                        (
+                            getattr(default, "lineno", getattr(node, "lineno", None)),
+                            _node_position(default),
+                            default,
+                        )
+                    )
 
-        values = _hardcoded_password_values(
-            node.value,
-            bindings,
-            _node_position(node.value),
-        )
-        if any(
-            value != REDACTED_PASSWORD_SENTINEL
-            for value in values
-        ):
-            violations.append(line_number)
+            for argument, default in zip(
+                node.args.kwonlyargs,
+                node.args.kw_defaults,
+            ):
+                if argument.arg in SINGLE_VALUE_AUTH_NAMES and default is not None:
+                    candidates.append(
+                        (
+                            getattr(default, "lineno", getattr(node, "lineno", None)),
+                            _node_position(default),
+                            default,
+                        )
+                    )
+
+        for line_number, use_position, value in candidates:
+            if line_number is None:
+                continue
+
+            values = _hardcoded_password_values(
+                value,
+                bindings,
+                use_position,
+            )
+            if any(
+                candidate != REDACTED_PASSWORD_SENTINEL
+                for candidate in values
+            ):
+                violations.append(line_number)
 
     return sorted(set(violations))
 
@@ -1506,6 +1581,72 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             'Elasticsearch(host, api_key=API_KEY)',
             'TOKEN = token_from_store\n'
             'Elasticsearch(host, bearer_auth=TOKEN)',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_single_auth_lines(source), [])
+
+    def test_single_auth_guard_detects_option_mappings_and_container_targets(self):
+        hardcoded_examples = (
+            (
+                'options = {"api_key": "hardcoded-api-key-value"}\n'
+                'Elasticsearch(host, **options)',
+                [1],
+            ),
+            (
+                'options = {"bearer_auth": "hardcoded-bearer-token"}\n'
+                'Elasticsearch(host, **options)',
+                [1],
+            ),
+            (
+                'API_KEY = "hardcoded-api-key-value"\n'
+                'options = {"api_key": API_KEY}\n'
+                'Elasticsearch(host, **options)',
+                [2],
+            ),
+            (
+                'options["api_key"] = "hardcoded-api-key-value"',
+                [1],
+            ),
+            (
+                'settings.bearer_auth = "hardcoded-bearer-token"',
+                [1],
+            ),
+        )
+        for source, expected in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_single_auth_lines(source), expected)
+
+    def test_single_auth_guard_allows_runtime_option_mappings_and_targets(self):
+        safe_examples = (
+            (
+                'options = {"api_key": os.getenv("TCP_ES_API_KEY")}\n'
+                'Elasticsearch(host, **options)'
+            ),
+            (
+                'options = {"bearer_auth": token_from_store}\n'
+                'Elasticsearch(host, **options)'
+            ),
+            'options["api_key"] = os.getenv("TCP_ES_API_KEY")',
+            'settings.bearer_auth = token_from_store',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_single_auth_lines(source), [])
+
+    def test_single_auth_guard_detects_function_defaults(self):
+        hardcoded_examples = (
+            'def client(api_key="hardcoded-api-key-value"):\n    return api_key',
+            'def client(*, bearer_auth="hardcoded-bearer-token"):\n    return bearer_auth',
+        )
+        for source in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_single_auth_lines(source), [1])
+
+    def test_single_auth_guard_allows_runtime_function_defaults(self):
+        safe_examples = (
+            'def client(api_key=os.getenv("TCP_ES_API_KEY")):\n    return api_key',
+            'def client(*, bearer_auth=token_from_store):\n    return bearer_auth',
         )
         for source in safe_examples:
             with self.subTest(source=source):
