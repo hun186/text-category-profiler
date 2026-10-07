@@ -1296,6 +1296,69 @@ def _static_string_values(
     if _is_environment_lookup_call(node):
         return []
 
+    if (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "format"
+    ):
+        format_values = _static_string_values(
+            node.func.value,
+            bindings,
+            before_position,
+            seen_names,
+        )
+        if not format_values:
+            return []
+
+        positional_combinations = [()]
+        for argument in node.args:
+            argument_values = _static_string_values(
+                argument,
+                bindings,
+                before_position,
+                seen_names,
+            )
+            if not argument_values:
+                return []
+            positional_combinations = [
+                prefix + (value,)
+                for prefix in positional_combinations
+                for value in argument_values
+            ]
+
+        keyword_combinations = [{}]
+        for keyword in node.keywords:
+            if keyword.arg is None:
+                return []
+            keyword_values = _static_string_values(
+                keyword.value,
+                bindings,
+                before_position,
+                seen_names,
+            )
+            if not keyword_values:
+                return []
+            keyword_combinations = [
+                {**prefix, keyword.arg: value}
+                for prefix in keyword_combinations
+                for value in keyword_values
+            ]
+
+        results = []
+        for format_value in format_values:
+            for positional in positional_combinations:
+                for keyword_values in keyword_combinations:
+                    try:
+                        results.append(
+                            format_value.format(
+                                *positional,
+                                **keyword_values,
+                            )
+                        )
+                    except (IndexError, KeyError, ValueError, AttributeError):
+                        continue
+        return results
+
     if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
         left_values = _static_string_values(
             node.left,
@@ -1316,6 +1379,71 @@ def _static_string_values(
             for left in left_values
             for right in right_values
         ]
+
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Mod):
+        format_values = _static_string_values(
+            node.left,
+            bindings,
+            before_position,
+            seen_names,
+        )
+        if not format_values:
+            return []
+
+        operands = []
+        if isinstance(node.right, (ast.Tuple, ast.List)):
+            combinations = [()]
+            for element in node.right.elts:
+                element_values = _static_string_values(
+                    element,
+                    bindings,
+                    before_position,
+                    seen_names,
+                )
+                if not element_values:
+                    return []
+                combinations = [
+                    prefix + (value,)
+                    for prefix in combinations
+                    for value in element_values
+                ]
+            operands = combinations
+        elif isinstance(node.right, ast.Dict):
+            combinations = [{}]
+            for key, value in zip(node.right.keys, node.right.values):
+                literal_key = _literal_string(key)
+                if literal_key is None:
+                    return []
+                value_candidates = _static_string_values(
+                    value,
+                    bindings,
+                    before_position,
+                    seen_names,
+                )
+                if not value_candidates:
+                    return []
+                combinations = [
+                    {**prefix, literal_key: candidate}
+                    for prefix in combinations
+                    for candidate in value_candidates
+                ]
+            operands = combinations
+        else:
+            operands = _static_string_values(
+                node.right,
+                bindings,
+                before_position,
+                seen_names,
+            )
+
+        results = []
+        for format_value in format_values:
+            for operand in operands:
+                try:
+                    results.append(format_value % operand)
+                except (TypeError, ValueError, KeyError):
+                    continue
+        return results
 
     if isinstance(node, ast.JoinedStr):
         combinations = [""]
@@ -1519,7 +1647,7 @@ def hardcoded_single_auth_lines(source):
                             value,
                         )
                     )
-        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
             positional_args = list(node.args.posonlyargs) + list(node.args.args)
             positional_defaults = list(node.args.defaults)
             default_start = len(positional_args) - len(positional_defaults)
@@ -1689,7 +1817,7 @@ def hardcoded_auth_tuple_lines(source):
                             value,
                         )
                     )
-        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
             positional_args = list(node.args.posonlyargs) + list(node.args.args)
             positional_defaults = list(node.args.defaults)
             default_start = len(positional_args) - len(positional_defaults)
@@ -1774,17 +1902,53 @@ def hardcoded_auth_tuple_lines(source):
     return sorted(set(violations))
 
 
+def _is_os_environ_expression(node):
+    return (
+        isinstance(node, ast.Attribute)
+        and node.attr == "environ"
+        and isinstance(node.value, ast.Name)
+        and node.value.id == "os"
+    )
+
+
+def _password_environment_update_values(node):
+    """Return TCP_ELASTIC_PASSWORD values written through os.environ.update()."""
+    if not (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "update"
+        and _is_os_environ_expression(node.func.value)
+    ):
+        return []
+
+    values = []
+    for argument in node.args:
+        if isinstance(argument, ast.Dict):
+            for key, value in zip(argument.keys, argument.values):
+                if _literal_string(key) == "TCP_ELASTIC_PASSWORD":
+                    values.append(value)
+        elif (
+            isinstance(argument, ast.Call)
+            and isinstance(argument.func, ast.Name)
+            and argument.func.id == "dict"
+        ):
+            for keyword in argument.keywords:
+                if keyword.arg == "TCP_ELASTIC_PASSWORD":
+                    values.append(keyword.value)
+
+    for keyword in node.keywords:
+        if keyword.arg == "TCP_ELASTIC_PASSWORD":
+            values.append(keyword.value)
+
+    return values
+
+
 def _is_password_environment_target(node):
     if not isinstance(node, ast.Subscript):
         return False
     if _literal_string(node.slice) != "TCP_ELASTIC_PASSWORD":
         return False
-    return (
-        isinstance(node.value, ast.Attribute)
-        and node.value.attr == "environ"
-        and isinstance(node.value.value, ast.Name)
-        and node.value.value.id == "os"
-    )
+    return _is_os_environ_expression(node.value)
 
 
 def _is_password_target(node):
@@ -1823,7 +1987,15 @@ def hardcoded_password_literal_lines(source):
             for key, value in zip(node.keys, node.values):
                 if _literal_string(key) == "password":
                     candidates.append((getattr(value, "lineno", getattr(node, "lineno", None)), value))
-        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        elif isinstance(node, ast.Call):
+            for value in _password_environment_update_values(node):
+                candidates.append(
+                    (
+                        getattr(value, "lineno", getattr(node, "lineno", None)),
+                        value,
+                    )
+                )
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
             positional_args = list(node.args.posonlyargs) + list(node.args.args)
             positional_defaults = list(node.args.defaults)
             default_start = len(positional_args) - len(positional_defaults)
@@ -2261,6 +2433,49 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     expected,
                 )
 
+    def test_authorization_header_guard_reconstructs_format_calls(self):
+        hardcoded_examples = (
+            (
+                'TOKEN = "hardcoded-token"\n'
+                'headers = {"Authorization": "{} {}".format("Bearer", TOKEN)}',
+                [2],
+            ),
+            (
+                'TOKEN = "hardcoded-token"\n'
+                'headers = {"Authorization": "Bearer {}".format(TOKEN)}',
+                [2],
+            ),
+            (
+                'headers = {"Authorization": "%s %s" % '
+                '("Bearer", "hardcoded-token")}',
+                [1],
+            ),
+            (
+                'TOKEN = "hardcoded-token"\n'
+                'headers = {"Authorization": "ApiKey %s" % TOKEN}',
+                [2],
+            ),
+        )
+        for source, expected in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    hardcoded_authorization_header_lines(source),
+                    expected,
+                )
+
+    def test_authorization_header_guard_allows_dynamic_format_calls(self):
+        safe_examples = (
+            'headers = {"Authorization": "Bearer {}".format(token_from_store)}',
+            'headers = {"Authorization": "%s %s" % ("Bearer", token_from_store)}',
+            'headers = {"Authorization": "ApiKey %s" % token_from_store}',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    hardcoded_authorization_header_lines(source),
+                    [],
+                )
+
     def test_authorization_header_guard_allows_dynamic_composed_values(self):
         safe_examples = (
             'headers = {"Authorization": "Bearer " + token_from_store}',
@@ -2443,6 +2658,52 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for source in safe_examples:
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_single_auth_lines(source), [])
+
+    def test_credential_guards_detect_lambda_defaults(self):
+        self.assertEqual(
+            hardcoded_password_literal_lines(
+                'client = lambda password="hardcoded-secret": password'
+            ),
+            [1],
+        )
+        self.assertEqual(
+            hardcoded_auth_tuple_lines(
+                'client = lambda http_auth=("elastic", "hardcoded-secret"): http_auth'
+            ),
+            [1],
+        )
+        self.assertEqual(
+            hardcoded_single_auth_lines(
+                'client = lambda api_key="hardcoded-api-key-value": api_key'
+            ),
+            [1],
+        )
+        self.assertEqual(
+            hardcoded_single_auth_lines(
+                'client = lambda *, bearer_auth="hardcoded-bearer-token": bearer_auth'
+            ),
+            [1],
+        )
+
+    def test_credential_guards_allow_runtime_lambda_defaults(self):
+        self.assertEqual(
+            hardcoded_password_literal_lines(
+                'client = lambda password=password_from_store: password'
+            ),
+            [],
+        )
+        self.assertEqual(
+            hardcoded_auth_tuple_lines(
+                'client = lambda http_auth=("elastic", password_from_store): http_auth'
+            ),
+            [],
+        )
+        self.assertEqual(
+            hardcoded_single_auth_lines(
+                'client = lambda api_key=api_key_from_store: api_key'
+            ),
+            [],
+        )
 
     def test_single_auth_guard_detects_function_defaults(self):
         hardcoded_examples = (
@@ -3057,6 +3318,43 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             'os.environ["TCP_ELASTIC_PASSWORD"] = SECRET',
             "os.environ['TCP_ELASTIC_PASSWORD'] += suffix_from_store",
             'os.environ["OTHER_ENV"] = "embedded-value"',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_password_literal_lines(source), [])
+
+    def test_python_password_literal_guard_detects_environment_updates(self):
+        hardcoded_examples = (
+            (
+                'os.environ.update({"TCP_ELASTIC_PASSWORD": "hardcoded-secret"})',
+                [1],
+            ),
+            (
+                'SECRET = "hardcoded-secret"\n'
+                'os.environ.update({"TCP_ELASTIC_PASSWORD": SECRET})',
+                [2],
+            ),
+            (
+                'os.environ.update(TCP_ELASTIC_PASSWORD="hardcoded-secret")',
+                [1],
+            ),
+            (
+                'os.environ.update(dict(TCP_ELASTIC_PASSWORD="hardcoded-secret"))',
+                [1],
+            ),
+        )
+        for source, expected in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    hardcoded_password_literal_lines(source),
+                    expected,
+                )
+
+    def test_python_password_literal_guard_allows_runtime_environment_updates(self):
+        safe_examples = (
+            'os.environ.update({"TCP_ELASTIC_PASSWORD": password_from_store})',
+            'os.environ.update(TCP_ELASTIC_PASSWORD=password_from_store)',
+            'os.environ.update({"OTHER_ENV": "hardcoded-secret"})',
         )
         for source in safe_examples:
             with self.subTest(source=source):
