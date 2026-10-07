@@ -200,29 +200,57 @@ def python_comment_scalar_auth_lines(source):
     return sorted(set(violations))
 
 
+def _python_comment_blocks(source):
+    """Return contiguous Python comment blocks with their source line numbers."""
+    comments = [
+        token
+        for token in tokenize.generate_tokens(io.StringIO(source).readline)
+        if token.type == tokenize.COMMENT
+    ]
+    blocks = []
+    current = []
+
+    for token in comments:
+        if current and token.start[0] != current[-1].start[0] + 1:
+            blocks.append(current)
+            current = []
+        current.append(token)
+
+    if current:
+        blocks.append(current)
+
+    return blocks
+
+
+def _comment_payload(token):
+    payload = token.string[1:]
+    if payload.startswith(" "):
+        payload = payload[1:]
+    return payload
+
+
 def python_comment_structured_auth_lines(source):
     """Return comment lines embedding auth tuples or Authorization headers."""
     violations = []
-    tokens = tokenize.generate_tokens(io.StringIO(source).readline)
 
-    for token in tokens:
-        if token.type != tokenize.COMMENT:
-            continue
-
-        payload = token.string[1:].strip()
-        if not payload:
+    for block in _python_comment_blocks(source):
+        payloads = [_comment_payload(token) for token in block]
+        block_source = textwrap.dedent("\n".join(payloads)).strip()
+        if not block_source:
             continue
 
         try:
-            ast.parse(payload)
+            ast.parse(block_source)
         except SyntaxError:
-            continue
+            has_secret = _disabled_payload_text_has_secret(block_source)
+        else:
+            has_secret = bool(
+                hardcoded_auth_tuple_lines(block_source)
+                or hardcoded_authorization_header_lines(block_source)
+            )
 
-        if (
-            hardcoded_auth_tuple_lines(payload)
-            or hardcoded_authorization_header_lines(payload)
-        ):
-            violations.append(token.start[0])
+        if has_secret:
+            violations.append(block[0].start[0])
 
     return sorted(set(violations))
 
@@ -1250,6 +1278,87 @@ def _is_authorization_target(node):
     return False
 
 
+def _authorization_target_key(node):
+    if not _is_authorization_target(node):
+        return None
+    if isinstance(node, ast.Attribute):
+        return (
+            "authorization-attribute",
+            ast.dump(node.value, include_attributes=False),
+            node.attr.lower(),
+        )
+    if isinstance(node, ast.Subscript):
+        return (
+            "authorization-subscript",
+            ast.dump(node.value, include_attributes=False),
+            str(_literal_string(node.slice)).lower(),
+        )
+    return None
+
+
+def _authorization_bindings(tree, name_bindings):
+    """Track Authorization target values, including += string assembly."""
+    metadata = name_bindings["metadata"]
+    values = {}
+    bindings = {
+        "values": values,
+        "metadata": metadata,
+    }
+
+    def add_binding(target, value, position):
+        key = _authorization_target_key(target)
+        if key is None:
+            return
+        lexical_scope = getattr(target, "_binding_scope", metadata["module"])
+        values.setdefault(lexical_scope, {}).setdefault(key, []).append(
+            (position, value)
+        )
+
+    nodes = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign))
+    ]
+    nodes.sort(key=_node_position)
+
+    for node in nodes:
+        position = _node_position(node)
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                add_binding(target, node.value, position)
+        elif isinstance(node, ast.AnnAssign):
+            add_binding(node.target, node.value, position)
+        elif (
+            isinstance(node, ast.AugAssign)
+            and isinstance(node.op, ast.Add)
+        ):
+            key = _authorization_target_key(node.target)
+            if key is None:
+                continue
+            previous = _latest_auth_binding(
+                key,
+                bindings,
+                _position_before(node),
+                node.target,
+            )
+            if previous is None:
+                continue
+            combined = ast.BinOp(
+                left=previous,
+                op=ast.Add(),
+                right=node.value,
+            )
+            combined._binding_scope = getattr(
+                node,
+                "_binding_scope",
+                metadata["module"],
+            )
+            combined._binding_control_path = _node_control_path(node)
+            add_binding(node.target, combined, position)
+
+    return bindings
+
+
 def _static_string_values(
     node,
     bindings,
@@ -1530,6 +1639,7 @@ def hardcoded_authorization_header_lines(source):
     """Return lines whose Authorization header embeds a credential."""
     tree = ast.parse(source)
     bindings = _name_bindings(tree)
+    authorization_bindings = _authorization_bindings(tree, bindings)
     violations = []
 
     for node in ast.walk(tree):
@@ -1581,13 +1691,25 @@ def hardcoded_authorization_header_lines(source):
                     )
                 )
         elif isinstance(node, ast.AugAssign) and _is_authorization_target(node.target):
-            candidates.append(
-                (
-                    getattr(node, "lineno", None),
-                    _node_position(node.value),
-                    node.value,
+            key = _authorization_target_key(node.target)
+            combined = (
+                _latest_auth_binding(
+                    key,
+                    authorization_bindings,
+                    _node_position(node),
+                    node.target,
                 )
+                if key is not None
+                else None
             )
+            if combined is not None:
+                candidates.append(
+                    (
+                        getattr(node, "lineno", None),
+                        _node_position(node),
+                        combined,
+                    )
+                )
 
         for line_number, use_position, value in candidates:
             if line_number is None:
@@ -1911,7 +2033,11 @@ def _is_os_environ_expression(node):
     )
 
 
-def _password_environment_update_values(node):
+def _password_environment_update_values(
+    node,
+    bindings=None,
+    before_position=None,
+):
     """Return TCP_ELASTIC_PASSWORD values written through os.environ mutations."""
     if not (
         isinstance(node, ast.Call)
@@ -1932,19 +2058,31 @@ def _password_environment_update_values(node):
         return []
 
     values = []
-    for argument in node.args:
-        if isinstance(argument, ast.Dict):
-            for key, value in zip(argument.keys, argument.values):
+
+    def inspect_mapping(mapping):
+        if isinstance(mapping, ast.Dict):
+            for key, value in zip(mapping.keys, mapping.values):
                 if _literal_string(key) == "TCP_ELASTIC_PASSWORD":
                     values.append(value)
         elif (
-            isinstance(argument, ast.Call)
-            and isinstance(argument.func, ast.Name)
-            and argument.func.id == "dict"
+            isinstance(mapping, ast.Call)
+            and isinstance(mapping.func, ast.Name)
+            and mapping.func.id == "dict"
         ):
-            for keyword in argument.keywords:
+            for keyword in mapping.keywords:
                 if keyword.arg == "TCP_ELASTIC_PASSWORD":
                     values.append(keyword.value)
+
+    for argument in node.args:
+        candidates = [argument]
+        if bindings is not None:
+            candidates = _resolve_bound_nodes(
+                argument,
+                bindings,
+                before_position,
+            )
+        for candidate in candidates:
+            inspect_mapping(candidate)
 
     for keyword in node.keywords:
         if keyword.arg == "TCP_ELASTIC_PASSWORD":
@@ -1998,7 +2136,11 @@ def hardcoded_password_literal_lines(source):
                 if _literal_string(key) == "password":
                     candidates.append((getattr(value, "lineno", getattr(node, "lineno", None)), value))
         elif isinstance(node, ast.Call):
-            for value in _password_environment_update_values(node):
+            for value in _password_environment_update_values(
+                node,
+                bindings,
+                _node_position(node),
+            ):
                 candidates.append(
                     (
                         getattr(value, "lineno", getattr(node, "lineno", None)),
@@ -2380,6 +2522,40 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     [1],
                 )
 
+    def test_python_comment_structured_auth_guard_reassembles_multiline_blocks(self):
+        hardcoded_examples = (
+            (
+                '# options = {\n'
+                '#     "http_auth": ("elastic", "hardcoded-secret"),\n'
+                '# }',
+                [1],
+            ),
+            (
+                '# headers = {\n'
+                '#     "Authorization": "Bearer hardcoded-token",\n'
+                '# }',
+                [1],
+            ),
+        )
+        for source, expected in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    python_comment_structured_auth_lines(source),
+                    expected,
+                )
+
+    def test_python_comment_structured_auth_guard_allows_safe_multiline_blocks(self):
+        safe_source = (
+            '# options = {\n'
+            '#     "http_auth": ("elastic", password_from_store),\n'
+            '#     "headers": {"Authorization": f"Bearer {token}"},\n'
+            '# }'
+        )
+        self.assertEqual(
+            python_comment_structured_auth_lines(safe_source),
+            [],
+        )
+
     def test_python_comment_structured_auth_guard_allows_runtime_references(self):
         safe_examples = (
             '# http_auth=("elastic", password_from_store)',
@@ -2442,6 +2618,37 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     hardcoded_authorization_header_lines(source),
                     expected,
                 )
+
+    def test_authorization_header_guard_reconstructs_augmented_values(self):
+        hardcoded_examples = (
+            (
+                'headers["Authorization"] = "Bearer "\n'
+                'headers["Authorization"] += "hardcoded-token"',
+                [2],
+            ),
+            (
+                'TOKEN = "hardcoded-token"\n'
+                'headers["Authorization"] = "ApiKey "\n'
+                'headers["Authorization"] += TOKEN',
+                [3],
+            ),
+        )
+        for source, expected in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    hardcoded_authorization_header_lines(source),
+                    expected,
+                )
+
+    def test_authorization_header_guard_allows_runtime_augmented_values(self):
+        safe_source = (
+            'headers["Authorization"] = "Bearer "\n'
+            'headers["Authorization"] += token_from_store'
+        )
+        self.assertEqual(
+            hardcoded_authorization_header_lines(safe_source),
+            [],
+        )
 
     def test_authorization_header_guard_reconstructs_format_calls(self):
         hardcoded_examples = (
@@ -3353,6 +3560,17 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 [1],
             ),
             (
+                'values = {"TCP_ELASTIC_PASSWORD": "hardcoded-secret"}\n'
+                'os.environ.update(values)',
+                [2],
+            ),
+            (
+                'BASE = {"TCP_ELASTIC_PASSWORD": "hardcoded-secret"}\n'
+                'values = BASE\n'
+                'os.environ.update(values)',
+                [3],
+            ),
+            (
                 'os.environ.setdefault("TCP_ELASTIC_PASSWORD", "hardcoded-secret")',
                 [1],
             ),
@@ -3371,6 +3589,10 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
 
     def test_python_password_literal_guard_allows_runtime_environment_updates(self):
         safe_examples = (
+            (
+                'values = {"TCP_ELASTIC_PASSWORD": password_from_store}\n'
+                'os.environ.update(values)'
+            ),
             'os.environ.update({"TCP_ELASTIC_PASSWORD": password_from_store})',
             'os.environ.update(TCP_ELASTIC_PASSWORD=password_from_store)',
             'os.environ.setdefault("TCP_ELASTIC_PASSWORD", password_from_store)',
