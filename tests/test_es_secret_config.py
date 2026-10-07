@@ -902,11 +902,23 @@ def hardcoded_auth_tuple_lines(source):
         candidates = []
 
         if isinstance(node, ast.keyword) and node.arg in AUTH_TUPLE_NAMES:
-            candidates.append((getattr(node, "lineno", None), node.value))
+            candidates.append(
+                (
+                    getattr(node, "lineno", None),
+                    _node_position(node.value),
+                    node.value,
+                )
+            )
         elif isinstance(node, (ast.Assign, ast.AnnAssign)):
             targets = node.targets if isinstance(node, ast.Assign) else [node.target]
             if any(_is_auth_tuple_target(target) for target in targets):
-                candidates.append((getattr(node, "lineno", None), node.value))
+                candidates.append(
+                    (
+                        getattr(node, "lineno", None),
+                        _node_position(node.value),
+                        node.value,
+                    )
+                )
         elif isinstance(node, ast.AugAssign) and _is_auth_tuple_target(node.target):
             line_number = getattr(node, "lineno", None)
             key = _auth_target_key(node.target)
@@ -918,12 +930,22 @@ def hardcoded_auth_tuple_lines(source):
                     node.target,
                 )
                 if combined is not None:
-                    candidates.append((line_number, combined))
+                    candidates.append(
+                        (
+                            line_number,
+                            _node_position(node.value),
+                            combined,
+                        )
+                    )
         elif isinstance(node, ast.Dict):
             for key, value in zip(node.keys, node.values):
                 if _literal_string(key) in AUTH_TUPLE_NAMES:
                     candidates.append(
-                        (getattr(value, "lineno", getattr(node, "lineno", None)), value)
+                        (
+                            getattr(value, "lineno", getattr(node, "lineno", None)),
+                            _node_position(value),
+                            value,
+                        )
                     )
         elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             positional_args = list(node.args.posonlyargs) + list(node.args.args)
@@ -935,7 +957,11 @@ def hardcoded_auth_tuple_lines(source):
             ):
                 if argument.arg in AUTH_TUPLE_NAMES:
                     candidates.append(
-                        (getattr(default, "lineno", getattr(node, "lineno", None)), default)
+                        (
+                            getattr(default, "lineno", getattr(node, "lineno", None)),
+                            _node_position(default),
+                            default,
+                        )
                     )
 
             for argument, default in zip(
@@ -944,16 +970,20 @@ def hardcoded_auth_tuple_lines(source):
             ):
                 if argument.arg in AUTH_TUPLE_NAMES and default is not None:
                     candidates.append(
-                        (getattr(default, "lineno", getattr(node, "lineno", None)), default)
+                        (
+                            getattr(default, "lineno", getattr(node, "lineno", None)),
+                            _node_position(default),
+                            default,
+                        )
                     )
 
-        for line_number, value in candidates:
+        for line_number, use_position, value in candidates:
             if line_number is None:
                 continue
             resolved_value = _resolve_bound_node(
                 value,
                 bindings,
-                _node_position(value),
+                use_position,
             )
             if not isinstance(resolved_value, (ast.Tuple, ast.List)):
                 key = _auth_target_key(resolved_value)
@@ -961,7 +991,7 @@ def hardcoded_auth_tuple_lines(source):
                     resolved_value = _latest_auth_binding(
                         key,
                         auth_bindings,
-                        _node_position(resolved_value),
+                        use_position,
                         resolved_value,
                     )
             if (
@@ -973,7 +1003,7 @@ def hardcoded_auth_tuple_lines(source):
             passwords = _hardcoded_password_values(
                 resolved_value.elts[1],
                 bindings,
-                _node_position(value),
+                use_position,
             )
             if any(
                 password != REDACTED_PASSWORD_SENTINEL
@@ -1425,6 +1455,14 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             'AUTH = ("elastic", "embedded-value")'
         )
         self.assertEqual(hardcoded_auth_tuple_lines(safe_then_hardcoded), [])
+
+        augmented_alias = (
+            'SECRET = ("embedded-value",); '
+            'basic_auth = (user,); '
+            'basic_auth += SECRET; '
+            'SECRET = (os.getenv("TCP_ELASTIC_PASSWORD"),)'
+        )
+        self.assertEqual(hardcoded_auth_tuple_lines(augmented_alias), [1])
 
     def test_auth_tuple_guard_detects_function_defaults(self):
         cases = (
