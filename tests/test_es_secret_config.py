@@ -135,6 +135,7 @@ def python_comment_password_lines(source):
 
 
 AUTH_TUPLE_NAMES = {"http_auth", "basic_auth"}
+SINGLE_VALUE_AUTH_NAMES = {"api_key", "bearer_auth"}
 
 
 def _is_auth_tuple_target(node):
@@ -1089,6 +1090,34 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
     return []
 
 
+def hardcoded_single_auth_lines(source):
+    """Return line numbers whose scalar client auth credential is hardcoded."""
+    tree = ast.parse(source)
+    bindings = _name_bindings(tree)
+    violations = []
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.keyword) or node.arg not in SINGLE_VALUE_AUTH_NAMES:
+            continue
+
+        line_number = getattr(node, "lineno", None)
+        if line_number is None:
+            continue
+
+        values = _hardcoded_password_values(
+            node.value,
+            bindings,
+            _node_position(node.value),
+        )
+        if any(
+            value != REDACTED_PASSWORD_SENTINEL
+            for value in values
+        ):
+            violations.append(line_number)
+
+    return sorted(set(violations))
+
+
 def hardcoded_auth_tuple_lines(source):
     """Return line numbers whose auth tuple contains a hardcoded password."""
     tree = ast.parse(source)
@@ -1441,6 +1470,46 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for source in safe_examples:
             with self.subTest(source=source):
                 self.assertEqual(python_comment_password_lines(source), [])
+
+    def test_single_auth_guard_detects_api_key_and_bearer_literals(self):
+        hardcoded_examples = (
+            'Elasticsearch(host, api_key="hardcoded-api-key-value")',
+            'Elasticsearch(host, bearer_auth="hardcoded-bearer-token")',
+            'API_KEY = "hardcoded-api-key-value"\n'
+            'Elasticsearch(host, api_key=API_KEY)',
+            'TOKEN = "hardcoded-bearer-token"\n'
+            'Elasticsearch(host, bearer_auth=TOKEN)',
+        )
+        for source in hardcoded_examples:
+            with self.subTest(source=source):
+                expected_line = 2 if "\n" in source else 1
+                self.assertEqual(
+                    hardcoded_single_auth_lines(source),
+                    [expected_line],
+                )
+
+    def test_single_auth_guard_detects_fallbacks_and_composed_literals(self):
+        hardcoded_examples = (
+            'Elasticsearch(host, api_key=os.getenv("TCP_ES_API_KEY", "hardcoded-api-key-value"))',
+            'Elasticsearch(host, bearer_auth=os.getenv("TCP_ES_BEARER_TOKEN") or "hardcoded-bearer-token")',
+            'Elasticsearch(host, api_key="hardcoded-" + "api-key")',
+        )
+        for source in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_single_auth_lines(source), [1])
+
+    def test_single_auth_guard_allows_runtime_credentials(self):
+        safe_examples = (
+            'Elasticsearch(host, api_key=os.getenv("TCP_ES_API_KEY"))',
+            'Elasticsearch(host, bearer_auth=os.getenv("TCP_ES_BEARER_TOKEN"))',
+            'API_KEY = os.getenv("TCP_ES_API_KEY")\n'
+            'Elasticsearch(host, api_key=API_KEY)',
+            'TOKEN = token_from_store\n'
+            'Elasticsearch(host, bearer_auth=TOKEN)',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_single_auth_lines(source), [])
 
     def test_auth_tuple_guard_detects_literal_passwords(self):
         hardcoded_examples = (
@@ -2073,6 +2142,10 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:auth-tuple"
                     )
                 if path in RUNTIME_ES_MODULES:
+                    for line_number in hardcoded_single_auth_lines(text):
+                        violations.append(
+                            f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:client-auth-literal"
+                        )
                     for line_number in hardcoded_password_literal_lines(text):
                         violations.append(
                             f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:password-literal"
