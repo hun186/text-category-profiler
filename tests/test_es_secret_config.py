@@ -175,6 +175,33 @@ def python_comment_scalar_auth_lines(source):
     return sorted(set(violations))
 
 
+def python_comment_structured_auth_lines(source):
+    """Return comment lines embedding auth tuples or Authorization headers."""
+    violations = []
+    tokens = tokenize.generate_tokens(io.StringIO(source).readline)
+
+    for token in tokens:
+        if token.type != tokenize.COMMENT:
+            continue
+
+        payload = token.string[1:].strip()
+        if not payload:
+            continue
+
+        try:
+            ast.parse(payload)
+        except SyntaxError:
+            continue
+
+        if (
+            hardcoded_auth_tuple_lines(payload)
+            or hardcoded_authorization_header_lines(payload)
+        ):
+            violations.append(token.start[0])
+
+    return sorted(set(violations))
+
+
 AUTH_TUPLE_NAMES = {"http_auth", "basic_auth"}
 SINGLE_VALUE_AUTH_NAMES = {"api_key", "bearer_auth"}
 
@@ -1815,6 +1842,36 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             with self.subTest(source=source):
                 self.assertEqual(python_comment_password_lines(source), [])
 
+    def test_python_comment_structured_auth_guard_detects_literals(self):
+        hardcoded_examples = (
+            '# http_auth=("elastic", "hardcoded-secret")',
+            '# basic_auth=("elastic", "hardcoded-secret")',
+            '# headers={"Authorization": "Bearer hardcoded-token"}',
+            '# AUTH=("elastic", "hardcoded-secret"); http_auth=AUTH',
+            '# AUTH="ApiKey hardcoded-token"; headers={"Authorization": AUTH}',
+        )
+        for source in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    python_comment_structured_auth_lines(source),
+                    [1],
+                )
+
+    def test_python_comment_structured_auth_guard_allows_runtime_references(self):
+        safe_examples = (
+            '# http_auth=("elastic", password_from_store)',
+            '# basic_auth=("elastic", os.getenv("TCP_ELASTIC_PASSWORD"))',
+            '# headers={"Authorization": f"Bearer {token}"}',
+            '# AUTH="Bearer " + token_from_store; headers={"Authorization": AUTH}',
+            "text = '# http_auth=(\"elastic\", \"hardcoded-secret\")'",
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    python_comment_structured_auth_lines(source),
+                    [],
+                )
+
     def test_python_comment_scalar_auth_guard_detects_literals(self):
         hardcoded_examples = (
             '# api_key = "hardcoded-api-key-value"',
@@ -2705,6 +2762,10 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 for line_number in python_comment_scalar_auth_lines(text):
                     violations.append(
                         f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:client-auth-comment"
+                    )
+                for line_number in python_comment_structured_auth_lines(text):
+                    violations.append(
+                        f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:structured-auth-comment"
                     )
                 if path in RUNTIME_ES_MODULES:
                     for line_number in hardcoded_password_literal_lines(text):
