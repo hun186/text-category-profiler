@@ -556,8 +556,33 @@ def _name_bindings(tree):
     values = {}
 
     def add_binding(target, value, position):
+        if isinstance(target, (ast.Tuple, ast.List)):
+            resolved_values = _resolve_bound_nodes(
+                value,
+                bindings,
+                position,
+            )
+            containers = [
+                candidate
+                for candidate in resolved_values
+                if isinstance(candidate, (ast.Tuple, ast.List))
+                and len(candidate.elts) == len(target.elts)
+            ]
+            for container in containers:
+                for child_target, child_value in zip(
+                    target.elts,
+                    container.elts,
+                ):
+                    add_binding(child_target, child_value, position)
+            return
+
+        if isinstance(target, ast.Starred):
+            add_binding(target.value, value, position)
+            return
+
         if not isinstance(target, ast.Name):
             return
+
         lexical_scope = getattr(target, "_binding_scope", metadata["module"])
         binding_scope = _assignment_binding_scope(
             target.id,
@@ -1594,6 +1619,37 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_auth_tuple_lines(source), expected)
 
+    def test_auth_tuple_guard_resolves_destructured_bindings(self):
+        hardcoded_examples = (
+            (
+                'user, password = ("elastic", "embedded-value")\n'
+                'Elasticsearch(host, http_auth=(user, password))',
+                [2],
+            ),
+            (
+                '(user, password), suffix = '
+                '(("elastic", "embedded-value"), "ignored")\n'
+                'Elasticsearch(host, basic_auth=(user, password))',
+                [2],
+            ),
+            (
+                'credentials = ("elastic", "embedded-value")\n'
+                'user, password = credentials\n'
+                'Elasticsearch(host, http_auth=(user, password))',
+                [3],
+            ),
+        )
+        for source, expected in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_auth_tuple_lines(source), expected)
+
+        safe_source = (
+            'user, password = '
+            '("elastic", os.getenv("TCP_ELASTIC_PASSWORD"))\n'
+            'Elasticsearch(host, http_auth=(user, password))'
+        )
+        self.assertEqual(hardcoded_auth_tuple_lines(safe_source), [])
+
     def test_auth_tuple_guard_keeps_aliases_in_lexical_scope(self):
         hardcoded_global = (
             'AUTH = ("elastic", "embedded-value")\n'
@@ -1666,7 +1722,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         )
         self.assertEqual(
             hardcoded_auth_tuple_lines(safe_then_conditional_hardcoded),
-            [3, 4],
+            [4],
         )
 
         conditional_local_use = (
@@ -1807,6 +1863,40 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             hardcoded_password_literal_lines(conditional_local_use),
             [],
         )
+
+    def test_python_password_literal_guard_resolves_destructured_bindings(self):
+        hardcoded_examples = (
+            (
+                'user, password = ("elastic", "embedded-value")\n'
+                'connect(password=password)',
+                [2],
+            ),
+            (
+                '(user, password), suffix = '
+                '(("elastic", "embedded-value"), "ignored")\n'
+                'connect(password=password)',
+                [2],
+            ),
+            (
+                'credentials = ("elastic", "embedded-value")\n'
+                'user, password = credentials\n'
+                'connect(password=password)',
+                [3],
+            ),
+        )
+        for source, expected in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    hardcoded_password_literal_lines(source),
+                    expected,
+                )
+
+        safe_source = (
+            'user, password = '
+            '("elastic", os.getenv("TCP_ELASTIC_PASSWORD"))\n'
+            'connect(password=password)'
+        )
+        self.assertEqual(hardcoded_password_literal_lines(safe_source), [])
 
     def test_python_password_literal_guard_detects_environment_lookup_fallbacks(self):
         hardcoded_examples = (
