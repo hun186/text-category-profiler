@@ -2189,7 +2189,7 @@ def _password_environment_update_values(
     ):
         return []
 
-    if node.func.attr == "setdefault":
+    if node.func.attr in {"setdefault", "__setitem__"}:
         if (
             len(node.args) >= 2
             and _literal_string(node.args[0]) == "TCP_ELASTIC_PASSWORD"
@@ -3805,6 +3805,15 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 'os.environ.setdefault("TCP_ELASTIC_PASSWORD", SECRET)',
                 [2],
             ),
+            (
+                'os.environ.__setitem__("TCP_ELASTIC_PASSWORD", "hardcoded-secret")',
+                [1],
+            ),
+            (
+                'SECRET = "hardcoded-secret"\n'
+                'os.environ.__setitem__("TCP_ELASTIC_PASSWORD", SECRET)',
+                [2],
+            ),
         )
         for source, expected in hardcoded_examples:
             with self.subTest(source=source):
@@ -3827,6 +3836,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             'os.environ.update({"TCP_ELASTIC_PASSWORD": password_from_store})',
             'os.environ.update(TCP_ELASTIC_PASSWORD=password_from_store)',
             'os.environ.setdefault("TCP_ELASTIC_PASSWORD", password_from_store)',
+            'os.environ.__setitem__("TCP_ELASTIC_PASSWORD", password_from_store)',
+            'os.environ.__setitem__("OTHER_ENV", "hardcoded-secret")',
             'os.environ.setdefault("OTHER_ENV", "hardcoded-secret")',
             'os.environ.update({"OTHER_ENV": "hardcoded-secret"})',
         )
