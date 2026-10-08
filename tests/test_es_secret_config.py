@@ -25,6 +25,18 @@ RUNTIME_ES_MODULES = (
     REPOSITORY_ROOT / "text_category_profiler" / "ES_ingest_txt_to_es.py",
     REPOSITORY_ROOT / "text_category_profiler" / "integrations" / "ES_utils.py",
 )
+ES_RUNTIME_DISCOVERY_ROOTS = (
+    REPOSITORY_ROOT / "DatasetConverter",
+    REPOSITORY_ROOT / "text_category_profiler",
+)
+ES_RUNTIME_MARKERS = (
+    "elasticsearch",
+    "es_tokens",
+    "esjob",
+    "create_elasticsearch_client",
+    "esdataconfigfile",
+    "artcluesjobtemplate",
+)
 TEXT_SECRET_SUFFIXES = {".py", ".ini", ".txt", ".json", ".yml", ".yaml"}
 
 PASSWORD_KEY_RE = re.compile(r"""["\']?password["\']?\s*[:=]\s*""", re.IGNORECASE)
@@ -2744,9 +2756,27 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         namespace = runpy.run_path(str(path))
         return namespace[mapping_name]["es_tokens"]["password"]
 
+    def _runtime_es_module_paths(self):
+        paths = set(RUNTIME_ES_MODULES)
+
+        for root in ES_RUNTIME_DISCOVERY_ROOTS:
+            if not root.is_dir():
+                continue
+            for path in root.rglob("*.py"):
+                if not path.is_file():
+                    continue
+                source = path.read_text(
+                    encoding="utf-8-sig",
+                    errors="ignore",
+                ).lower()
+                if any(marker in source for marker in ES_RUNTIME_MARKERS):
+                    paths.add(path)
+
+        return sorted(paths)
+
     def _secret_surface_paths(self):
         paths = {path for path, _ in CONFIGS}
-        paths.update(RUNTIME_ES_MODULES)
+        paths.update(self._runtime_es_module_paths())
         paths.update(
             path
             for path in ELASTICSEARCH_SAMPLE_ROOT.rglob("*")
@@ -2756,8 +2786,21 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
 
     def test_secret_surface_paths_include_runtime_elasticsearch_modules(self):
         surfaces = set(self._secret_surface_paths())
+        runtime_modules = set(self._runtime_es_module_paths())
         self.assertTrue(set(RUNTIME_ES_MODULES).issubset(surfaces))
+        self.assertTrue(set(RUNTIME_ES_MODULES).issubset(runtime_modules))
         for path in RUNTIME_ES_MODULES:
+            with self.subTest(path=path):
+                self.assertTrue(path.is_file())
+
+    def test_runtime_discovery_includes_elasticsearch_consumers(self):
+        runtime_modules = set(self._runtime_es_module_paths())
+        expected_consumers = {
+            REPOSITORY_ROOT / "DatasetConverter" / "DataConverter.py",
+            REPOSITORY_ROOT / "DatasetConverter" / "sampleHandler.py",
+        }
+        self.assertTrue(expected_consumers.issubset(runtime_modules))
+        for path in expected_consumers:
             with self.subTest(path=path):
                 self.assertTrue(path.is_file())
 
@@ -4548,6 +4591,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
 
     def test_tracked_elasticsearch_surfaces_do_not_embed_credentials(self):
         violations = []
+        runtime_es_modules = set(self._runtime_es_module_paths())
         for path in self._secret_surface_paths():
             text = path.read_text(encoding="utf-8-sig")
             if path.suffix.lower() == ".py":
@@ -4583,13 +4627,13 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     violations.append(
                         f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:credential-url-composed"
                     )
-                if path in RUNTIME_ES_MODULES:
+                if path in runtime_es_modules:
                     for line_number in python_comment_password_lines(text):
                         violations.append(
                             f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:password-comment"
                         )
             for line_number, line in enumerate(text.splitlines(), start=1):
-                if path not in RUNTIME_ES_MODULES:
+                if path not in runtime_es_modules:
                     for value_expression in password_value_expressions(line):
                         if value_expression not in ALLOWED_PASSWORD_EXPRESSIONS:
                             violations.append(
