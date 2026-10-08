@@ -3325,7 +3325,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 'values = {"api_key": "hardcoded-api-key-value"}\n'
                 'options = {}\n'
                 'options.update(values)',
-                [3],
+                [1, 3],
             ),
             (
                 'options = {}\n'
