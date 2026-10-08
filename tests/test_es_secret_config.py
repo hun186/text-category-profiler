@@ -1734,20 +1734,18 @@ def hardcoded_authorization_header_lines(source):
             and isinstance(node.func, ast.Name)
             and node.func.id == "dict"
         ):
-            for keyword in node.keywords:
-                if (
-                    keyword.arg is not None
-                    and keyword.arg.lower() == "authorization"
+            for key_name in ("Authorization", "authorization"):
+                for value in _mapping_key_values(
+                    node,
+                    key_name,
+                    bindings,
+                    _node_position(node),
                 ):
                     candidates.append(
                         (
-                            getattr(
-                                keyword.value,
-                                "lineno",
-                                getattr(node, "lineno", None),
-                            ),
-                            _node_position(keyword.value),
-                            keyword.value,
+                            getattr(node, "lineno", getattr(value, "lineno", None)),
+                            _node_position(node),
+                            value,
                         )
                     )
         elif isinstance(node, ast.Call):
@@ -2135,11 +2133,37 @@ def _mapping_key_values(
             for key, value in zip(candidate.keys, candidate.values):
                 if _literal_string(key) == key_name:
                     values.append(value)
+        elif isinstance(candidate, (ast.List, ast.Tuple, ast.Set)):
+            for element in candidate.elts:
+                pair_candidates = [element]
+                if bindings is not None and isinstance(element, ast.Name):
+                    pair_candidates = _resolve_bound_nodes(
+                        element,
+                        bindings,
+                        before_position,
+                    )
+                for pair in pair_candidates:
+                    if (
+                        isinstance(pair, (ast.Tuple, ast.List))
+                        and len(pair.elts) >= 2
+                        and _literal_string(pair.elts[0]) == key_name
+                    ):
+                        values.append(pair.elts[1])
         elif (
             isinstance(candidate, ast.Call)
             and isinstance(candidate.func, ast.Name)
             and candidate.func.id == "dict"
         ):
+            for argument in candidate.args:
+                values.extend(
+                    _mapping_key_values(
+                        argument,
+                        key_name,
+                        bindings,
+                        before_position,
+                        seen_nodes,
+                    )
+                )
             for keyword in candidate.keywords:
                 if keyword.arg == key_name:
                     values.append(keyword.value)
@@ -2787,6 +2811,46 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 self.assertEqual(
                     hardcoded_authorization_header_lines(source),
                     expected,
+                )
+
+    def test_authorization_header_guard_detects_positional_dict_constructors(self):
+        hardcoded_examples = (
+            (
+                'headers = dict([("Authorization", "Bearer hardcoded-token")])',
+                [1],
+            ),
+            (
+                'pairs = [("Authorization", "ApiKey hardcoded-token")]\n'
+                'headers = dict(pairs)',
+                [2],
+            ),
+            (
+                'PAIR = ("Authorization", "Basic hardcoded-token")\n'
+                'pairs = [PAIR]\n'
+                'headers = dict(pairs)',
+                [3],
+            ),
+        )
+        for source, expected in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    hardcoded_authorization_header_lines(source),
+                    expected,
+                )
+
+    def test_authorization_header_guard_allows_runtime_positional_dict_constructors(self):
+        safe_examples = (
+            'headers = dict([("Authorization", authorization_from_store)])',
+            (
+                'pairs = [("Authorization", "Bearer " + token_from_store)]\n'
+                'headers = dict(pairs)'
+            ),
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    hardcoded_authorization_header_lines(source),
+                    [],
                 )
 
     def test_authorization_header_guard_detects_mapping_mutations(self):
@@ -3777,6 +3841,10 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 [1],
             ),
             (
+                'os.environ.update(dict([("TCP_ELASTIC_PASSWORD", "hardcoded-secret")]))',
+                [1],
+            ),
+            (
                 'values = {"TCP_ELASTIC_PASSWORD": "hardcoded-secret"}\n'
                 'os.environ.update(values)',
                 [2],
@@ -3835,6 +3903,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ),
             'os.environ.update({"TCP_ELASTIC_PASSWORD": password_from_store})',
             'os.environ.update(TCP_ELASTIC_PASSWORD=password_from_store)',
+            'os.environ.update(dict([("TCP_ELASTIC_PASSWORD", password_from_store)]))',
             'os.environ.setdefault("TCP_ELASTIC_PASSWORD", password_from_store)',
             'os.environ.__setitem__("TCP_ELASTIC_PASSWORD", password_from_store)',
             'os.environ.__setitem__("OTHER_ENV", "hardcoded-secret")',
