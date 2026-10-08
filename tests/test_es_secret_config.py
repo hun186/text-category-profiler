@@ -2165,6 +2165,7 @@ def _mapping_key_values(
                         bindings,
                         before_position,
                         seen_nodes,
+                        case_insensitive,
                     )
                 )
             for keyword in candidate.keywords:
@@ -2699,7 +2700,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
     def test_python_comment_structured_auth_guard_detects_password_subscripts(self):
         hardcoded_examples = (
             '# options["password"] = "hardcoded-secret"',
-            '# es_tokens["password"] = SECRET\n# SECRET = "hardcoded-secret"',
+            '# SECRET = "hardcoded-secret"\n# es_tokens["password"] = SECRET',
         )
         for source in hardcoded_examples:
             with self.subTest(source=source):
