@@ -25,7 +25,7 @@ RUNTIME_ES_MODULES = (
     REPOSITORY_ROOT / "text_category_profiler" / "ES_ingest_txt_to_es.py",
     REPOSITORY_ROOT / "text_category_profiler" / "integrations" / "ES_utils.py",
 )
-TEXT_SECRET_SUFFIXES = {".py", ".ini", ".txt", ".json"}
+TEXT_SECRET_SUFFIXES = {".py", ".ini", ".txt", ".json", ".yml", ".yaml"}
 
 PASSWORD_KEY_RE = re.compile(r"""["\']?password["\']?\s*[:=]\s*""", re.IGNORECASE)
 SCALAR_AUTH_KEY_RE = re.compile(
@@ -1676,6 +1676,35 @@ def _authorization_mapping_mutation_values(
     return values
 
 
+def hardcoded_url_userinfo_lines(source):
+    """Return lines whose statically reconstructed URL embeds userinfo credentials."""
+    tree = ast.parse(source)
+    bindings = _name_bindings(tree)
+    violations = []
+
+    for node in ast.walk(tree):
+        is_format_call = (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "format"
+        )
+        if not (
+            isinstance(node, (ast.BinOp, ast.JoinedStr))
+            or is_format_call
+        ):
+            continue
+
+        values = _static_string_values(
+            node,
+            bindings,
+            _node_position(node),
+        )
+        if any(URL_USERINFO_RE.search(value) for value in values):
+            violations.append(getattr(node, "lineno", None))
+
+    return sorted(set(line for line in violations if line is not None))
+
+
 def _hardcoded_authorization_payloads(node, bindings, before_position):
     payloads = []
     for value in _static_string_values(
@@ -2628,6 +2657,17 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertTrue(path.is_file())
 
+    def test_secret_surface_paths_include_yaml_elasticsearch_samples(self):
+        yaml_paths = [
+            path
+            for path in self._secret_surface_paths()
+            if path.parent == ELASTICSEARCH_SAMPLE_ROOT
+            and path.suffix.lower() in {".yml", ".yaml"}
+        ]
+        expected_yaml = ELASTICSEARCH_SAMPLE_ROOT / "elasticsearch.yml"
+        if expected_yaml.is_file():
+            self.assertIn(expected_yaml, yaml_paths)
+
     def test_secret_surface_paths_include_python_elasticsearch_samples(self):
         sample_python_paths = [
             path
@@ -2744,6 +2784,53 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for line in credential_urls:
             with self.subTest(line=line):
                 self.assertIsNotNone(URL_USERINFO_RE.search(line))
+
+    def test_python_url_userinfo_guard_reconstructs_composed_credentials(self):
+        hardcoded_examples = (
+            (
+                'ES_PASSWORD = "hardcoded-secret"\n'
+                'host = "https://elastic:" + ES_PASSWORD + "@localhost:9200"',
+                [2],
+            ),
+            (
+                'PREFIX = "https://elastic:"\n'
+                'ES_PASSWORD = "hardcoded-secret"\n'
+                'host = PREFIX + ES_PASSWORD + "@localhost:9200"',
+                [3],
+            ),
+            (
+                'ES_PASSWORD = "hardcoded-secret"\n'
+                'host = f"https://elastic:{ES_PASSWORD}@localhost:9200"',
+                [2],
+            ),
+            (
+                'ES_PASSWORD = "hardcoded-secret"\n'
+                'host = "https://elastic:{}@localhost:9200".format(ES_PASSWORD)',
+                [2],
+            ),
+        )
+        for source, expected in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    hardcoded_url_userinfo_lines(source),
+                    expected,
+                )
+
+    def test_python_url_userinfo_guard_allows_runtime_credentials(self):
+        safe_examples = (
+            (
+                'ES_PASSWORD = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+                'host = "https://elastic:" + ES_PASSWORD + "@localhost:9200"'
+            ),
+            'host = f"https://elastic:{password_from_store}@localhost:9200"',
+            (
+                'ES_PASSWORD = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+                'host = "https://elastic:{}@localhost:9200".format(ES_PASSWORD)'
+            ),
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_url_userinfo_lines(source), [])
 
     def test_python_disabled_code_guard_detects_secret_bearing_blocks(self):
         hardcoded_examples = (
@@ -4317,6 +4404,10 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 for line_number in hardcoded_password_literal_lines(text):
                     violations.append(
                         f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:password-literal"
+                    )
+                for line_number in hardcoded_url_userinfo_lines(text):
+                    violations.append(
+                        f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:credential-url-composed"
                     )
                 if path in RUNTIME_ES_MODULES:
                     for line_number in python_comment_password_lines(text):
