@@ -223,22 +223,97 @@ def text_structured_auth_line_has_secret(line):
         if payload and not _is_allowed_secret_placeholder(payload):
             return True
 
-    for name, expression in auth_tuple_value_expressions(line):
+    for _name, expression in auth_tuple_value_expressions(line):
         value = expression.strip()
         if not value:
             continue
+
         try:
-            if hardcoded_auth_tuple_lines(f"{name}={value}"):
-                return True
+            parsed = ast.parse(value, mode="eval").body
         except SyntaxError:
             placeholders = re.findall(r"\$\{[^}]+\}", value)
-            if not placeholders or not all(
+            if placeholders and all(
                 _is_allowed_secret_placeholder(token)
                 for token in placeholders
             ):
-                return True
+                continue
+            return True
+
+        if isinstance(parsed, (ast.Tuple, ast.List)) and len(parsed.elts) >= 2:
+            password_node = parsed.elts[1]
+            if isinstance(password_node, ast.Constant) and isinstance(
+                password_node.value,
+                str,
+            ):
+                if not _is_allowed_secret_placeholder(password_node.value):
+                    return True
+                continue
+
+        if hardcoded_auth_tuple_lines(f"http_auth={value}"):
+            return True
 
     return False
+
+
+def _config_scalar_value(line):
+    value = line.strip()
+    if value.startswith("-"):
+        value = value[1:].strip()
+    if "#" in value:
+        value = value.split("#", 1)[0].rstrip()
+    return _strip_text_scalar(value)
+
+
+def text_structured_auth_secret_lines(text):
+    """Return non-Python config lines containing structured auth credentials."""
+    lines = text.splitlines()
+    violations = set()
+
+    for index, line in enumerate(lines):
+        line_number = index + 1
+        if text_structured_auth_line_has_secret(line):
+            violations.add(line_number)
+
+        matches = list(AUTH_TUPLE_KEY_RE.finditer(line))
+        if not matches:
+            continue
+
+        for match in matches:
+            expression = _password_value_expression(line, match.end()).strip()
+            if expression:
+                continue
+
+            key_indent = len(line) - len(line.lstrip())
+            continuation = []
+            cursor = index + 1
+            while cursor < len(lines):
+                next_line = lines[cursor]
+                stripped = next_line.strip()
+                if not stripped:
+                    cursor += 1
+                    continue
+
+                indent = len(next_line) - len(next_line.lstrip())
+                is_list_item = stripped.startswith("-")
+                if indent <= key_indent and not is_list_item:
+                    break
+
+                continuation.append((cursor + 1, _config_scalar_value(next_line)))
+                cursor += 1
+
+            scalar_values = [
+                (candidate_line, value)
+                for candidate_line, value in continuation
+                if value
+            ]
+            if len(scalar_values) < 2:
+                continue
+
+            credential_line, credential_value = scalar_values[1]
+            if not _is_allowed_secret_placeholder(credential_value):
+                violations.add(credential_line)
+
+    return sorted(violations)
 
 
 def text_url_userinfo_has_secret(text):
@@ -3363,6 +3438,42 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             with self.subTest(line=line):
                 self.assertFalse(text_structured_auth_line_has_secret(line))
 
+    def test_text_structured_auth_guard_detects_multiline_auth_blocks(self):
+        hardcoded_examples = (
+            (
+                'http_auth:\n'
+                '  - elastic\n'
+                '  - hardcoded-secret',
+                [3],
+            ),
+            (
+                'basic_auth:\n'
+                '  - "elastic"\n'
+                '  - "hardcoded-secret"',
+                [3],
+            ),
+        )
+        for text, expected in hardcoded_examples:
+            with self.subTest(text=text):
+                self.assertEqual(text_structured_auth_secret_lines(text), expected)
+
+    def test_text_structured_auth_guard_allows_multiline_placeholders(self):
+        safe_examples = (
+            (
+                'http_auth:\n'
+                '  - elastic\n'
+                '  - ${TCP_ELASTIC_PASSWORD}'
+            ),
+            (
+                'basic_auth:\n'
+                '  - "elastic"\n'
+                '  - "${TCP_ELASTIC_PASSWORD}"'
+            ),
+        )
+        for text in safe_examples:
+            with self.subTest(text=text):
+                self.assertEqual(text_structured_auth_secret_lines(text), [])
+
     def test_text_url_userinfo_guard_allows_environment_placeholders(self):
         self.assertFalse(
             text_url_userinfo_has_secret(
@@ -5096,6 +5207,11 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         runtime_es_modules = set(self._runtime_es_module_paths())
         for path in self._secret_surface_paths():
             text = path.read_text(encoding="utf-8-sig")
+            if path.suffix.lower() != ".py":
+                for line_number in text_structured_auth_secret_lines(text):
+                    violations.append(
+                        f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:structured-auth"
+                    )
             if path.suffix.lower() == ".py":
                 for line_number in hardcoded_auth_tuple_lines(text):
                     violations.append(
@@ -5141,10 +5257,6 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             violations.append(
                                 f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:password"
                             )
-                if path.suffix.lower() != ".py" and text_structured_auth_line_has_secret(line):
-                    violations.append(
-                        f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:structured-auth"
-                    )
                 if ENROLLMENT_TOKEN_RE.search(line):
                     violations.append(
                         f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:enrollment-token"
