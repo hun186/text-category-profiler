@@ -369,33 +369,169 @@ def _auth_target_key(node):
     return None
 
 
-def _is_environment_lookup_call(node):
+def _is_os_module_expression(
+    node,
+    bindings=None,
+    before_position=None,
+    seen_names=None,
+):
+    seen_names = set() if seen_names is None else set(seen_names)
+
+    if isinstance(node, ast.Name) and node.id == "os":
+        return True
+    if not isinstance(node, ast.Name) or bindings is None:
+        return False
+
+    token = _binding_name_token(node.id, bindings, node)
+    if token in seen_names:
+        return False
+
+    for resolved in _resolve_bound_nodes(
+        node,
+        bindings,
+        before_position,
+        seen_names,
+    ):
+        if isinstance(resolved, ast.Name) and resolved.id == node.id:
+            continue
+        if _is_os_module_expression(
+            resolved,
+            bindings,
+            before_position,
+            seen_names | {token},
+        ):
+            return True
+    return False
+
+
+def _is_os_environ_expression(
+    node,
+    bindings=None,
+    before_position=None,
+    seen_names=None,
+):
+    seen_names = set() if seen_names is None else set(seen_names)
+
+    if (
+        isinstance(node, ast.Attribute)
+        and node.attr == "environ"
+        and _is_os_module_expression(
+            node.value,
+            bindings,
+            before_position,
+            seen_names,
+        )
+    ):
+        return True
+
+    if not isinstance(node, ast.Name) or bindings is None:
+        return False
+
+    token = _binding_name_token(node.id, bindings, node)
+    if token in seen_names:
+        return False
+
+    for resolved in _resolve_bound_nodes(
+        node,
+        bindings,
+        before_position,
+        seen_names,
+    ):
+        if isinstance(resolved, ast.Name) and resolved.id == node.id:
+            continue
+        if _is_os_environ_expression(
+            resolved,
+            bindings,
+            before_position,
+            seen_names | {token},
+        ):
+            return True
+    return False
+
+
+def _is_os_getenv_function(
+    node,
+    bindings=None,
+    before_position=None,
+    seen_names=None,
+):
+    seen_names = set() if seen_names is None else set(seen_names)
+
+    if (
+        isinstance(node, ast.Attribute)
+        and node.attr == "getenv"
+        and _is_os_module_expression(
+            node.value,
+            bindings,
+            before_position,
+            seen_names,
+        )
+    ):
+        return True
+
+    if not isinstance(node, ast.Name) or bindings is None:
+        return False
+
+    token = _binding_name_token(node.id, bindings, node)
+    if token in seen_names:
+        return False
+
+    for resolved in _resolve_bound_nodes(
+        node,
+        bindings,
+        before_position,
+        seen_names,
+    ):
+        if isinstance(resolved, ast.Name) and resolved.id == node.id:
+            continue
+        if _is_os_getenv_function(
+            resolved,
+            bindings,
+            before_position,
+            seen_names | {token},
+        ):
+            return True
+    return False
+
+
+def _is_environment_lookup_call(
+    node,
+    bindings=None,
+    before_position=None,
+):
     if not isinstance(node, ast.Call):
         return False
 
     func = node.func
     return (
-        isinstance(func, ast.Attribute)
-        and (
-            (
-                func.attr == "getenv"
-                and isinstance(func.value, ast.Name)
-                and func.value.id == "os"
-            )
-            or (
-                func.attr == "get"
-                and isinstance(func.value, ast.Attribute)
-                and func.value.attr == "environ"
-                and isinstance(func.value.value, ast.Name)
-                and func.value.value.id == "os"
+        _is_os_getenv_function(
+            func,
+            bindings,
+            before_position,
+        )
+        or (
+            isinstance(func, ast.Attribute)
+            and func.attr == "get"
+            and _is_os_environ_expression(
+                func.value,
+                bindings,
+                before_position,
             )
         )
     )
 
 
-def _environment_lookup_default_node(node):
+def _environment_lookup_default_node(
+    node,
+    bindings=None,
+    before_position=None,
+):
     """Return the fallback expression from supported environment lookups."""
-    if not _is_environment_lookup_call(node):
+    if not _is_environment_lookup_call(
+        node,
+        bindings,
+        before_position,
+    ):
         return None
 
     if len(node.args) >= 2:
@@ -789,7 +925,17 @@ def _name_bindings(tree):
     binding_nodes = [
         node
         for node in ast.walk(tree)
-        if isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign, ast.NamedExpr))
+        if isinstance(
+            node,
+            (
+                ast.Assign,
+                ast.AnnAssign,
+                ast.AugAssign,
+                ast.NamedExpr,
+                ast.Import,
+                ast.ImportFrom,
+            ),
+        )
     ]
     binding_nodes.sort(key=_node_position)
 
@@ -807,6 +953,38 @@ def _name_bindings(tree):
             add_binding(node.target, node.value, position)
         elif isinstance(node, ast.NamedExpr):
             add_binding(node.target, node.value, position)
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name != "os":
+                    continue
+                target = ast.Name(id=alias.asname or "os", ctx=ast.Store())
+                target._binding_scope = getattr(
+                    node,
+                    "_binding_scope",
+                    metadata["module"],
+                )
+                target._binding_control_path = _node_control_path(node)
+                add_binding(target, ast.Name(id="os", ctx=ast.Load()), position)
+        elif isinstance(node, ast.ImportFrom) and node.module == "os":
+            for alias in node.names:
+                if alias.name not in {"getenv", "environ"}:
+                    continue
+                target = ast.Name(
+                    id=alias.asname or alias.name,
+                    ctx=ast.Store(),
+                )
+                target._binding_scope = getattr(
+                    node,
+                    "_binding_scope",
+                    metadata["module"],
+                )
+                target._binding_control_path = _node_control_path(node)
+                value = ast.Attribute(
+                    value=ast.Name(id="os", ctx=ast.Load()),
+                    attr=alias.name,
+                    ctx=ast.Load(),
+                )
+                add_binding(target, value, position)
         elif isinstance(node, ast.AugAssign) and isinstance(node.target, ast.Name):
             if not isinstance(node.op, ast.Add):
                 continue
@@ -1125,7 +1303,11 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
             )
         return values
 
-    environment_default = _environment_lookup_default_node(node)
+    environment_default = _environment_lookup_default_node(
+        node,
+        bindings,
+        before_position,
+    )
     if environment_default is not None:
         return _hardcoded_password_values(
             environment_default,
@@ -1135,7 +1317,11 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
         )
 
     if isinstance(node, ast.Call):
-        if _is_environment_lookup_call(node):
+        if _is_environment_lookup_call(
+            node,
+            bindings,
+            before_position,
+        ):
             return []
 
         values = []
@@ -1407,7 +1593,11 @@ def _static_string_values(
             )
         return values
 
-    environment_default = _environment_lookup_default_node(node)
+    environment_default = _environment_lookup_default_node(
+        node,
+        bindings,
+        before_position,
+    )
     if environment_default is not None:
         return _static_string_values(
             environment_default,
@@ -1415,7 +1605,11 @@ def _static_string_values(
             before_position,
             seen_names,
         )
-    if _is_environment_lookup_call(node):
+    if _is_environment_lookup_call(
+        node,
+        bindings,
+        before_position,
+    ):
         return []
 
     if (
@@ -2357,15 +2551,6 @@ def _mapping_key_values(
     return values
 
 
-def _is_os_environ_expression(node):
-    return (
-        isinstance(node, ast.Attribute)
-        and node.attr == "environ"
-        and isinstance(node.value, ast.Name)
-        and node.value.id == "os"
-    )
-
-
 def _password_environment_update_values(
     node,
     bindings=None,
@@ -2375,7 +2560,11 @@ def _password_environment_update_values(
     if not (
         isinstance(node, ast.Call)
         and isinstance(node.func, ast.Attribute)
-        and _is_os_environ_expression(node.func.value)
+        and _is_os_environ_expression(
+            node.func.value,
+            bindings,
+            before_position,
+        )
     ):
         return []
 
@@ -2427,7 +2616,11 @@ def _password_environment_merge_values(
     if not (
         isinstance(node, ast.AugAssign)
         and isinstance(node.op, ast.BitOr)
-        and _is_os_environ_expression(node.target)
+        and _is_os_environ_expression(
+            node.target,
+            bindings,
+            before_position,
+        )
     ):
         return []
 
@@ -2439,21 +2632,37 @@ def _password_environment_merge_values(
     )
 
 
-def _is_password_environment_target(node):
+def _is_password_environment_target(
+    node,
+    bindings=None,
+    before_position=None,
+):
     if not isinstance(node, ast.Subscript):
         return False
     if _literal_string(node.slice) != "TCP_ELASTIC_PASSWORD":
         return False
-    return _is_os_environ_expression(node.value)
+    return _is_os_environ_expression(
+        node.value,
+        bindings,
+        before_position,
+    )
 
 
-def _is_password_target(node):
+def _is_password_target(
+    node,
+    bindings=None,
+    before_position=None,
+):
     if isinstance(node, ast.Name):
         return node.id == "password"
     if isinstance(node, ast.Subscript):
         return (
             _literal_string(node.slice) == "password"
-            or _is_password_environment_target(node)
+            or _is_password_environment_target(
+                node,
+                bindings,
+                before_position,
+            )
         )
     if isinstance(node, ast.Attribute):
         return node.attr == "password"
@@ -2555,11 +2764,32 @@ def hardcoded_password_literal_lines(source):
             candidates.append((getattr(node, "lineno", None), node.value))
         elif isinstance(node, (ast.Assign, ast.AnnAssign)):
             targets = node.targets if isinstance(node, ast.Assign) else [node.target]
-            if any(_is_password_target(target) for target in targets):
+            if any(
+                _is_password_target(
+                    target,
+                    bindings,
+                    _node_position(node),
+                )
+                for target in targets
+            ):
                 candidates.append((getattr(node, "lineno", None), node.value))
-        elif isinstance(node, ast.NamedExpr) and _is_password_target(node.target):
+        elif (
+            isinstance(node, ast.NamedExpr)
+            and _is_password_target(
+                node.target,
+                bindings,
+                _node_position(node),
+            )
+        ):
             candidates.append((getattr(node, "lineno", None), node.value))
-        elif isinstance(node, ast.AugAssign) and _is_password_target(node.target):
+        elif (
+            isinstance(node, ast.AugAssign)
+            and _is_password_target(
+                node.target,
+                bindings,
+                _node_position(node),
+            )
+        ):
             candidates.append((getattr(node, "lineno", None), node.value))
         elif isinstance(node, ast.AugAssign):
             merge_values = []
@@ -4180,6 +4410,55 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         )
         self.assertEqual(hardcoded_password_literal_lines(safe_source), [])
 
+    def test_python_password_literal_guard_allows_imported_environment_lookups(self):
+        safe_examples = (
+            (
+                'from os import getenv\n'
+                'password = getenv("TCP_ELASTIC_PASSWORD")'
+            ),
+            (
+                'from os import getenv as read_env\n'
+                'password = read_env("TCP_ELASTIC_PASSWORD")'
+            ),
+            (
+                'import os as operating_system\n'
+                'password = operating_system.getenv("TCP_ELASTIC_PASSWORD")'
+            ),
+            (
+                'from os import environ\n'
+                'password = environ.get("TCP_ELASTIC_PASSWORD")'
+            ),
+            (
+                'import os\n'
+                'env = os.environ\n'
+                'password = env.get("TCP_ELASTIC_PASSWORD")'
+            ),
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_password_literal_lines(source), [])
+
+    def test_python_password_literal_guard_detects_imported_environment_fallbacks(self):
+        hardcoded_examples = (
+            (
+                'from os import getenv\n'
+                'password = getenv("TCP_ELASTIC_PASSWORD", "hardcoded-secret")'
+            ),
+            (
+                'import os as operating_system\n'
+                'password = operating_system.getenv('
+                '"TCP_ELASTIC_PASSWORD", "hardcoded-secret")'
+            ),
+            (
+                'from os import environ\n'
+                'password = environ.get('
+                '"TCP_ELASTIC_PASSWORD", "hardcoded-secret")'
+            ),
+        )
+        for source in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_password_literal_lines(source), [2])
+
     def test_python_password_literal_guard_detects_environment_lookup_fallbacks(self):
         hardcoded_examples = (
             'password = os.getenv("TCP_ELASTIC_PASSWORD", "real-secret")',
@@ -4269,6 +4548,63 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     hardcoded_password_literal_lines(source),
                     expected,
                 )
+
+    def test_python_password_literal_guard_detects_environment_receiver_aliases(self):
+        hardcoded_examples = (
+            (
+                'import os as operating_system\n'
+                'operating_system.environ["TCP_ELASTIC_PASSWORD"] = '
+                '"hardcoded-secret"',
+                [2],
+            ),
+            (
+                'from os import environ\n'
+                'environ["TCP_ELASTIC_PASSWORD"] = "hardcoded-secret"',
+                [2],
+            ),
+            (
+                'import os\n'
+                'env = os.environ\n'
+                'env["TCP_ELASTIC_PASSWORD"] = "hardcoded-secret"',
+                [3],
+            ),
+            (
+                'from os import environ as env\n'
+                'env.update({"TCP_ELASTIC_PASSWORD": "hardcoded-secret"})',
+                [2],
+            ),
+        )
+        for source, expected in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    hardcoded_password_literal_lines(source),
+                    expected,
+                )
+
+    def test_python_password_literal_guard_allows_runtime_environment_receiver_aliases(self):
+        safe_examples = (
+            (
+                'import os as operating_system\n'
+                'operating_system.environ["TCP_ELASTIC_PASSWORD"] = '
+                'password_from_store'
+            ),
+            (
+                'from os import environ\n'
+                'environ["TCP_ELASTIC_PASSWORD"] = password_from_store'
+            ),
+            (
+                'import os\n'
+                'env = os.environ\n'
+                'env["TCP_ELASTIC_PASSWORD"] = password_from_store'
+            ),
+            (
+                'from os import environ as env\n'
+                'env.update({"TCP_ELASTIC_PASSWORD": password_from_store})'
+            ),
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_password_literal_lines(source), [])
 
     def test_python_password_literal_guard_allows_runtime_environment_target_assignments(self):
         safe_examples = (
