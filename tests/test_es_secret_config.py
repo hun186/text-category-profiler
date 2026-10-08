@@ -1792,6 +1792,99 @@ def hardcoded_authorization_header_lines(source):
     return sorted(set(violations))
 
 
+def _single_auth_mapping_call_values(
+    node,
+    bindings,
+    before_position,
+):
+    """Return scalar auth values written by mapping constructors or mutations."""
+    values = []
+
+    if (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "dict"
+    ):
+        for auth_name in SINGLE_VALUE_AUTH_NAMES:
+            values.extend(
+                _mapping_key_values(
+                    node,
+                    auth_name,
+                    bindings,
+                    before_position,
+                )
+            )
+        return values
+
+    if not (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+    ):
+        return []
+
+    if node.func.attr in {"setdefault", "__setitem__"}:
+        if (
+            len(node.args) >= 2
+            and _literal_string(node.args[0]) in SINGLE_VALUE_AUTH_NAMES
+        ):
+            return [node.args[1]]
+        return []
+
+    if node.func.attr != "update":
+        return []
+
+    for auth_name in SINGLE_VALUE_AUTH_NAMES:
+        for argument in node.args:
+            values.extend(
+                _mapping_key_values(
+                    argument,
+                    auth_name,
+                    bindings,
+                    before_position,
+                )
+            )
+
+        for keyword in node.keywords:
+            if keyword.arg == auth_name:
+                values.append(keyword.value)
+            elif keyword.arg is None:
+                values.extend(
+                    _mapping_key_values(
+                        keyword.value,
+                        auth_name,
+                        bindings,
+                        before_position,
+                    )
+                )
+
+    return values
+
+
+def _single_auth_mapping_merge_values(
+    node,
+    bindings,
+    before_position,
+):
+    """Return scalar auth values merged through mapping |= operations."""
+    if not (
+        isinstance(node, ast.AugAssign)
+        and isinstance(node.op, ast.BitOr)
+    ):
+        return []
+
+    values = []
+    for auth_name in SINGLE_VALUE_AUTH_NAMES:
+        values.extend(
+            _mapping_key_values(
+                node.value,
+                auth_name,
+                bindings,
+                before_position,
+            )
+        )
+    return values
+
+
 def hardcoded_single_auth_lines(source):
     """Return line numbers whose scalar client auth credential is hardcoded."""
     tree = ast.parse(source)
@@ -1827,6 +1920,19 @@ def hardcoded_single_auth_lines(source):
                     node.value,
                 )
             )
+        elif isinstance(node, ast.AugAssign):
+            for value in _single_auth_mapping_merge_values(
+                node,
+                bindings,
+                _node_position(node),
+            ):
+                candidates.append(
+                    (
+                        getattr(node, "lineno", getattr(value, "lineno", None)),
+                        _node_position(node),
+                        value,
+                    )
+                )
         elif isinstance(node, ast.Dict):
             for key, value in zip(node.keys, node.values):
                 if _literal_string(key) in SINGLE_VALUE_AUTH_NAMES:
@@ -1837,6 +1943,19 @@ def hardcoded_single_auth_lines(source):
                             value,
                         )
                     )
+        elif isinstance(node, ast.Call):
+            for value in _single_auth_mapping_call_values(
+                node,
+                bindings,
+                _node_position(node),
+            ):
+                candidates.append(
+                    (
+                        getattr(node, "lineno", getattr(value, "lineno", None)),
+                        _node_position(node),
+                        value,
+                    )
+                )
         elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
             positional_args = list(node.args.posonlyargs) + list(node.args.args)
             positional_defaults = list(node.args.defaults)
@@ -3179,6 +3298,74 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for source, expected in hardcoded_examples:
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_single_auth_lines(source), expected)
+
+    def test_single_auth_guard_detects_mapping_mutations(self):
+        hardcoded_examples = (
+            (
+                'options = {}\n'
+                'options.setdefault("api_key", "hardcoded-api-key-value")',
+                [2],
+            ),
+            (
+                'options = {}\n'
+                'options.__setitem__("bearer_auth", "hardcoded-bearer-token")',
+                [2],
+            ),
+            (
+                'options = {}\n'
+                'options.update(api_key="hardcoded-api-key-value")',
+                [2],
+            ),
+            (
+                'options = {}\n'
+                'options.update({"bearer_auth": "hardcoded-bearer-token"})',
+                [2],
+            ),
+            (
+                'values = {"api_key": "hardcoded-api-key-value"}\n'
+                'options = {}\n'
+                'options.update(values)',
+                [3],
+            ),
+            (
+                'options = {}\n'
+                'options |= {"bearer_auth": "hardcoded-bearer-token"}',
+                [2],
+            ),
+            (
+                'options = dict([("api_key", "hardcoded-api-key-value")])',
+                [1],
+            ),
+        )
+        for source, expected in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    hardcoded_single_auth_lines(source),
+                    expected,
+                )
+
+    def test_single_auth_guard_allows_runtime_mapping_mutations(self):
+        safe_examples = (
+            'options = {}\n'
+            'options.setdefault("api_key", api_key_from_store)',
+            'options = {}\n'
+            'options.__setitem__("bearer_auth", bearer_from_store)',
+            'options = {}\n'
+            'options.update(api_key=api_key_from_store)',
+            'options = {}\n'
+            'options.update({"bearer_auth": bearer_from_store})',
+            (
+                'values = {"api_key": api_key_from_store}\n'
+                'options = {}\n'
+                'options.update(values)'
+            ),
+            'options = {}\n'
+            'options |= {"bearer_auth": bearer_from_store}',
+            'options = dict([("api_key", api_key_from_store)])',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_single_auth_lines(source), [])
 
     def test_single_auth_guard_allows_runtime_option_mappings_and_targets(self):
         safe_examples = (
