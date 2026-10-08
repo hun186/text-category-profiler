@@ -1895,7 +1895,7 @@ def hardcoded_url_userinfo_lines(source):
             and node.func.attr == "format"
         )
         if not (
-            isinstance(node, (ast.BinOp, ast.JoinedStr))
+            isinstance(node, (ast.Constant, ast.BinOp, ast.JoinedStr))
             or is_format_call
         ):
             continue
@@ -3192,6 +3192,24 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     hardcoded_url_userinfo_lines(source),
                     expected,
                 )
+
+    def test_python_url_userinfo_guard_detects_implicit_literal_concatenation(self):
+        source = (
+            'host = (\n'
+            '    "https://elastic:"\n'
+            '    "hardcoded-secret@localhost:9200"\n'
+            ')'
+        )
+        self.assertEqual(hardcoded_url_userinfo_lines(source), [2])
+
+    def test_python_url_userinfo_guard_allows_noncredential_string_constants(self):
+        safe_examples = (
+            'host = ("https://localhost:" "9200")',
+            'message = "elastic:hardcoded-secret@localhost"',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_url_userinfo_lines(source), [])
 
     def test_python_url_userinfo_guard_allows_runtime_credentials(self):
         safe_examples = (
