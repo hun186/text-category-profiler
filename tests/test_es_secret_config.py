@@ -1619,6 +1619,76 @@ def _static_string_values(
     return []
 
 
+def _authorization_mapping_mutation_values(
+    node,
+    bindings,
+    before_position,
+):
+    """Return Authorization values written through mapping update/setdefault calls."""
+    if not (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+    ):
+        return []
+
+    if node.func.attr == "setdefault":
+        if (
+            len(node.args) >= 2
+            and isinstance(_literal_string(node.args[0]), str)
+            and _literal_string(node.args[0]).lower() == "authorization"
+        ):
+            return [node.args[1]]
+        return []
+
+    if node.func.attr != "update":
+        return []
+
+    values = []
+    for argument in node.args:
+        values.extend(
+            _mapping_key_values(
+                argument,
+                "Authorization",
+                bindings,
+                before_position,
+            )
+        )
+        values.extend(
+            _mapping_key_values(
+                argument,
+                "authorization",
+                bindings,
+                before_position,
+            )
+        )
+
+    for keyword in node.keywords:
+        if (
+            keyword.arg is not None
+            and keyword.arg.lower() == "authorization"
+        ):
+            values.append(keyword.value)
+        elif keyword.arg is None:
+            values.extend(
+                _mapping_key_values(
+                    keyword.value,
+                    "Authorization",
+                    bindings,
+                    before_position,
+                )
+            )
+            values.extend(
+                _mapping_key_values(
+                    keyword.value,
+                    "authorization",
+                    bindings,
+                    before_position,
+                )
+            )
+
+    return values
+
+
 def _hardcoded_authorization_payloads(node, bindings, before_position):
     payloads = []
     for value in _static_string_values(
@@ -1680,6 +1750,19 @@ def hardcoded_authorization_header_lines(source):
                             keyword.value,
                         )
                     )
+        elif isinstance(node, ast.Call):
+            for value in _authorization_mapping_mutation_values(
+                node,
+                bindings,
+                _node_position(node),
+            ):
+                candidates.append(
+                    (
+                        getattr(node, "lineno", getattr(value, "lineno", None)),
+                        _node_position(node),
+                        value,
+                    )
+                )
         elif isinstance(node, (ast.Assign, ast.AnnAssign)):
             targets = node.targets if isinstance(node, ast.Assign) else [node.target]
             if any(_is_authorization_target(target) for target in targets):
@@ -2024,6 +2107,66 @@ def hardcoded_auth_tuple_lines(source):
     return sorted(set(violations))
 
 
+def _mapping_key_values(
+    mapping,
+    key_name,
+    bindings=None,
+    before_position=None,
+    seen_nodes=None,
+):
+    """Return values for one literal mapping key, resolving simple aliases."""
+    seen_nodes = set() if seen_nodes is None else set(seen_nodes)
+    marker = id(mapping)
+    if marker in seen_nodes:
+        return []
+    seen_nodes.add(marker)
+
+    candidates = [mapping]
+    if bindings is not None and isinstance(mapping, ast.Name):
+        candidates = _resolve_bound_nodes(
+            mapping,
+            bindings,
+            before_position,
+        )
+
+    values = []
+    for candidate in candidates:
+        if isinstance(candidate, ast.Dict):
+            for key, value in zip(candidate.keys, candidate.values):
+                if _literal_string(key) == key_name:
+                    values.append(value)
+        elif (
+            isinstance(candidate, ast.Call)
+            and isinstance(candidate.func, ast.Name)
+            and candidate.func.id == "dict"
+        ):
+            for keyword in candidate.keywords:
+                if keyword.arg == key_name:
+                    values.append(keyword.value)
+                elif keyword.arg is None:
+                    values.extend(
+                        _mapping_key_values(
+                            keyword.value,
+                            key_name,
+                            bindings,
+                            before_position,
+                            seen_nodes,
+                        )
+                    )
+        elif isinstance(candidate, ast.Name) and bindings is not None:
+            values.extend(
+                _mapping_key_values(
+                    candidate,
+                    key_name,
+                    bindings,
+                    before_position,
+                    seen_nodes,
+                )
+            )
+
+    return values
+
+
 def _is_os_environ_expression(node):
     return (
         isinstance(node, ast.Attribute)
@@ -2059,48 +2202,51 @@ def _password_environment_update_values(
 
     values = []
 
-    def inspect_mapping(mapping):
-        if isinstance(mapping, ast.Dict):
-            for key, value in zip(mapping.keys, mapping.values):
-                if _literal_string(key) == "TCP_ELASTIC_PASSWORD":
-                    values.append(value)
-        elif (
-            isinstance(mapping, ast.Call)
-            and isinstance(mapping.func, ast.Name)
-            and mapping.func.id == "dict"
-        ):
-            for keyword in mapping.keywords:
-                if keyword.arg == "TCP_ELASTIC_PASSWORD":
-                    values.append(keyword.value)
-
     for argument in node.args:
-        candidates = [argument]
-        if bindings is not None:
-            candidates = _resolve_bound_nodes(
+        values.extend(
+            _mapping_key_values(
                 argument,
+                "TCP_ELASTIC_PASSWORD",
                 bindings,
                 before_position,
             )
-        for candidate in candidates:
-            inspect_mapping(candidate)
+        )
 
     for keyword in node.keywords:
         if keyword.arg == "TCP_ELASTIC_PASSWORD":
             values.append(keyword.value)
-            continue
-
-        if keyword.arg is None:
-            candidates = [keyword.value]
-            if bindings is not None:
-                candidates = _resolve_bound_nodes(
+        elif keyword.arg is None:
+            values.extend(
+                _mapping_key_values(
                     keyword.value,
+                    "TCP_ELASTIC_PASSWORD",
                     bindings,
                     before_position,
                 )
-            for candidate in candidates:
-                inspect_mapping(candidate)
+            )
 
     return values
+
+
+def _password_environment_merge_values(
+    node,
+    bindings=None,
+    before_position=None,
+):
+    """Return TCP_ELASTIC_PASSWORD values merged through os.environ |= mapping."""
+    if not (
+        isinstance(node, ast.AugAssign)
+        and isinstance(node.op, ast.BitOr)
+        and _is_os_environ_expression(node.target)
+    ):
+        return []
+
+    return _mapping_key_values(
+        node.value,
+        "TCP_ELASTIC_PASSWORD",
+        bindings,
+        before_position,
+    )
 
 
 def _is_password_environment_target(node):
@@ -2143,6 +2289,18 @@ def hardcoded_password_literal_lines(source):
             candidates.append((getattr(node, "lineno", None), node.value))
         elif isinstance(node, ast.AugAssign) and _is_password_target(node.target):
             candidates.append((getattr(node, "lineno", None), node.value))
+        elif isinstance(node, ast.AugAssign):
+            for value in _password_environment_merge_values(
+                node,
+                bindings,
+                _node_position(node),
+            ):
+                candidates.append(
+                    (
+                        getattr(node, "lineno", getattr(value, "lineno", None)),
+                        value,
+                    )
+                )
         elif isinstance(node, ast.Dict):
             for key, value in zip(node.keys, node.values):
                 if _literal_string(key) == "password":
@@ -2629,6 +2787,53 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 self.assertEqual(
                     hardcoded_authorization_header_lines(source),
                     expected,
+                )
+
+    def test_authorization_header_guard_detects_mapping_mutations(self):
+        hardcoded_examples = (
+            (
+                'headers = {}\n'
+                'headers.update(Authorization="Bearer hardcoded-token")',
+                [2],
+            ),
+            (
+                'headers = {}\n'
+                'headers.update({"Authorization": "ApiKey hardcoded-token"})',
+                [2],
+            ),
+            (
+                'headers = {}\n'
+                'headers.setdefault("Authorization", "Basic hardcoded-token")',
+                [2],
+            ),
+            (
+                'AUTH = "Bearer hardcoded-token"\n'
+                'headers = {}\n'
+                'headers.update(Authorization=AUTH)',
+                [3],
+            ),
+        )
+        for source, expected in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    hardcoded_authorization_header_lines(source),
+                    expected,
+                )
+
+    def test_authorization_header_guard_allows_runtime_mapping_mutations(self):
+        safe_examples = (
+            'headers = {}\n'
+            'headers.update(Authorization=authorization_from_store)',
+            'headers = {}\n'
+            'headers.update({"Authorization": "Bearer " + token_from_store})',
+            'headers = {}\n'
+            'headers.setdefault("Authorization", authorization_from_store)',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    hardcoded_authorization_header_lines(source),
+                    [],
                 )
 
     def test_authorization_header_guard_reconstructs_augmented_values(self):
@@ -3624,6 +3829,38 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             'os.environ.setdefault("TCP_ELASTIC_PASSWORD", password_from_store)',
             'os.environ.setdefault("OTHER_ENV", "hardcoded-secret")',
             'os.environ.update({"OTHER_ENV": "hardcoded-secret"})',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_password_literal_lines(source), [])
+
+    def test_python_password_literal_guard_detects_environment_mapping_merges(self):
+        hardcoded_examples = (
+            (
+                'os.environ |= {"TCP_ELASTIC_PASSWORD": "hardcoded-secret"}',
+                [1],
+            ),
+            (
+                'values = {"TCP_ELASTIC_PASSWORD": "hardcoded-secret"}\n'
+                'os.environ |= values',
+                [2],
+            ),
+        )
+        for source, expected in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    hardcoded_password_literal_lines(source),
+                    expected,
+                )
+
+    def test_python_password_literal_guard_allows_runtime_environment_mapping_merges(self):
+        safe_examples = (
+            'os.environ |= {"TCP_ELASTIC_PASSWORD": password_from_store}',
+            (
+                'values = {"TCP_ELASTIC_PASSWORD": password_from_store}\n'
+                'os.environ |= values'
+            ),
+            'other |= {"TCP_ELASTIC_PASSWORD": "hardcoded-secret"}',
         )
         for source in safe_examples:
             with self.subTest(source=source):
