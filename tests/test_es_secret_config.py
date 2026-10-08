@@ -2448,6 +2448,88 @@ def _is_password_target(node):
     return False
 
 
+def _password_mapping_call_values(
+    node,
+    bindings,
+    before_position,
+):
+    """Return password values written by generic mapping constructors or mutations."""
+    if (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "dict"
+    ):
+        return _mapping_key_values(
+            node,
+            "password",
+            bindings,
+            before_position,
+        )
+
+    if not (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+    ):
+        return []
+
+    if node.func.attr in {"setdefault", "__setitem__"}:
+        if (
+            len(node.args) >= 2
+            and _literal_string(node.args[0]) == "password"
+        ):
+            return [node.args[1]]
+        return []
+
+    if node.func.attr != "update":
+        return []
+
+    values = []
+    for argument in node.args:
+        values.extend(
+            _mapping_key_values(
+                argument,
+                "password",
+                bindings,
+                before_position,
+            )
+        )
+
+    for keyword in node.keywords:
+        if keyword.arg == "password":
+            values.append(keyword.value)
+        elif keyword.arg is None:
+            values.extend(
+                _mapping_key_values(
+                    keyword.value,
+                    "password",
+                    bindings,
+                    before_position,
+                )
+            )
+
+    return values
+
+
+def _password_mapping_merge_values(
+    node,
+    bindings,
+    before_position,
+):
+    """Return password values merged through generic mapping |= operations."""
+    if not (
+        isinstance(node, ast.AugAssign)
+        and isinstance(node.op, ast.BitOr)
+    ):
+        return []
+
+    return _mapping_key_values(
+        node.value,
+        "password",
+        bindings,
+        before_position,
+    )
+
+
 def hardcoded_password_literal_lines(source):
     """Return Python line numbers that assign a hardcoded password value."""
     tree = ast.parse(source)
@@ -2468,11 +2550,22 @@ def hardcoded_password_literal_lines(source):
         elif isinstance(node, ast.AugAssign) and _is_password_target(node.target):
             candidates.append((getattr(node, "lineno", None), node.value))
         elif isinstance(node, ast.AugAssign):
-            for value in _password_environment_merge_values(
-                node,
-                bindings,
-                _node_position(node),
-            ):
+            merge_values = []
+            merge_values.extend(
+                _password_environment_merge_values(
+                    node,
+                    bindings,
+                    _node_position(node),
+                )
+            )
+            merge_values.extend(
+                _password_mapping_merge_values(
+                    node,
+                    bindings,
+                    _node_position(node),
+                )
+            )
+            for value in merge_values:
                 candidates.append(
                     (
                         getattr(node, "lineno", getattr(value, "lineno", None)),
@@ -2484,11 +2577,22 @@ def hardcoded_password_literal_lines(source):
                 if _literal_string(key) == "password":
                     candidates.append((getattr(value, "lineno", getattr(node, "lineno", None)), value))
         elif isinstance(node, ast.Call):
-            for value in _password_environment_update_values(
-                node,
-                bindings,
-                _node_position(node),
-            ):
+            call_values = []
+            call_values.extend(
+                _password_environment_update_values(
+                    node,
+                    bindings,
+                    _node_position(node),
+                )
+            )
+            call_values.extend(
+                _password_mapping_call_values(
+                    node,
+                    bindings,
+                    _node_position(node),
+                )
+            )
+            for value in call_values:
                 candidates.append(
                     (
                         getattr(node, "lineno", getattr(value, "lineno", None)),
@@ -4255,6 +4359,76 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 'os.environ |= values'
             ),
             'other |= {"TCP_ELASTIC_PASSWORD": "hardcoded-secret"}',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_password_literal_lines(source), [])
+
+    def test_python_password_literal_guard_detects_mapping_constructors_and_mutations(self):
+        hardcoded_examples = (
+            (
+                'options = dict([("password", "hardcoded-secret")])',
+                [1],
+            ),
+            (
+                'pairs = [("password", "hardcoded-secret")]\n'
+                'options = dict(pairs)',
+                [2],
+            ),
+            (
+                'options = {}\n'
+                'options.setdefault("password", "hardcoded-secret")',
+                [2],
+            ),
+            (
+                'options = {}\n'
+                'options.__setitem__("password", "hardcoded-secret")',
+                [2],
+            ),
+            (
+                'options = {}\n'
+                'options.update(password="hardcoded-secret")',
+                [2],
+            ),
+            (
+                'values = {"password": "hardcoded-secret"}\n'
+                'options = {}\n'
+                'options.update(values)',
+                [1, 3],
+            ),
+            (
+                'options = {}\n'
+                'options |= {"password": "hardcoded-secret"}',
+                [2],
+            ),
+        )
+        for source, expected in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    hardcoded_password_literal_lines(source),
+                    expected,
+                )
+
+    def test_python_password_literal_guard_allows_runtime_mapping_constructors_and_mutations(self):
+        safe_examples = (
+            'options = dict([("password", password_from_store)])',
+            (
+                'pairs = [("password", password_from_store)]\n'
+                'options = dict(pairs)'
+            ),
+            'options = {}\n'
+            'options.setdefault("password", password_from_store)',
+            'options = {}\n'
+            'options.__setitem__("password", password_from_store)',
+            'options = {}\n'
+            'options.update(password=password_from_store)',
+            (
+                'values = {"password": password_from_store}\n'
+                'options = {}\n'
+                'options.update(values)'
+            ),
+            'options = {}\n'
+            'options |= {"password": password_from_store}',
         )
         for source in safe_examples:
             with self.subTest(source=source):
