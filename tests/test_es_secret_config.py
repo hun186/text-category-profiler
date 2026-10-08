@@ -230,7 +230,7 @@ def _comment_payload(token):
 
 
 def python_comment_structured_auth_lines(source):
-    """Return comment lines embedding auth tuples or Authorization headers."""
+    """Return comment lines embedding structured password or auth credentials."""
     violations = []
 
     for block in _python_comment_blocks(source):
@@ -245,7 +245,8 @@ def python_comment_structured_auth_lines(source):
             has_secret = _disabled_payload_text_has_secret(block_source)
         else:
             has_secret = bool(
-                hardcoded_auth_tuple_lines(block_source)
+                hardcoded_password_literal_lines(block_source)
+                or hardcoded_auth_tuple_lines(block_source)
                 or hardcoded_authorization_header_lines(block_source)
             )
 
@@ -1651,14 +1652,7 @@ def _authorization_mapping_mutation_values(
                 "Authorization",
                 bindings,
                 before_position,
-            )
-        )
-        values.extend(
-            _mapping_key_values(
-                argument,
-                "authorization",
-                bindings,
-                before_position,
+                case_insensitive=True,
             )
         )
 
@@ -1675,14 +1669,7 @@ def _authorization_mapping_mutation_values(
                     "Authorization",
                     bindings,
                     before_position,
-                )
-            )
-            values.extend(
-                _mapping_key_values(
-                    keyword.value,
-                    "authorization",
-                    bindings,
-                    before_position,
+                    case_insensitive=True,
                 )
             )
 
@@ -1734,20 +1721,20 @@ def hardcoded_authorization_header_lines(source):
             and isinstance(node.func, ast.Name)
             and node.func.id == "dict"
         ):
-            for key_name in ("Authorization", "authorization"):
-                for value in _mapping_key_values(
-                    node,
-                    key_name,
-                    bindings,
-                    _node_position(node),
-                ):
-                    candidates.append(
-                        (
-                            getattr(node, "lineno", getattr(value, "lineno", None)),
-                            _node_position(node),
-                            value,
-                        )
+            for value in _mapping_key_values(
+                node,
+                "Authorization",
+                bindings,
+                _node_position(node),
+                case_insensitive=True,
+            ):
+                candidates.append(
+                    (
+                        getattr(node, "lineno", getattr(value, "lineno", None)),
+                        _node_position(node),
+                        value,
                     )
+                )
         elif isinstance(node, ast.Call):
             for value in _authorization_mapping_mutation_values(
                 node,
@@ -2111,6 +2098,7 @@ def _mapping_key_values(
     bindings=None,
     before_position=None,
     seen_nodes=None,
+    case_insensitive=False,
 ):
     """Return values for one literal mapping key, resolving simple aliases."""
     seen_nodes = set() if seen_nodes is None else set(seen_nodes)
@@ -2127,11 +2115,26 @@ def _mapping_key_values(
             before_position,
         )
 
+    def key_matches(candidate_key):
+        literal = _literal_string(candidate_key)
+        if not isinstance(literal, str):
+            return literal == key_name
+        if case_insensitive:
+            return literal.lower() == str(key_name).lower()
+        return literal == key_name
+
+    def keyword_matches(keyword_name):
+        if keyword_name is None:
+            return False
+        if case_insensitive:
+            return keyword_name.lower() == str(key_name).lower()
+        return keyword_name == key_name
+
     values = []
     for candidate in candidates:
         if isinstance(candidate, ast.Dict):
             for key, value in zip(candidate.keys, candidate.values):
-                if _literal_string(key) == key_name:
+                if key_matches(key):
                     values.append(value)
         elif isinstance(candidate, (ast.List, ast.Tuple, ast.Set)):
             for element in candidate.elts:
@@ -2146,7 +2149,7 @@ def _mapping_key_values(
                     if (
                         isinstance(pair, (ast.Tuple, ast.List))
                         and len(pair.elts) >= 2
-                        and _literal_string(pair.elts[0]) == key_name
+                        and key_matches(pair.elts[0])
                     ):
                         values.append(pair.elts[1])
         elif (
@@ -2165,7 +2168,7 @@ def _mapping_key_values(
                     )
                 )
             for keyword in candidate.keywords:
-                if keyword.arg == key_name:
+                if keyword_matches(keyword.arg):
                     values.append(keyword.value)
                 elif keyword.arg is None:
                     values.extend(
@@ -2175,6 +2178,7 @@ def _mapping_key_values(
                             bindings,
                             before_position,
                             seen_nodes,
+                            case_insensitive,
                         )
                     )
         elif isinstance(candidate, ast.Name) and bindings is not None:
@@ -2185,6 +2189,7 @@ def _mapping_key_values(
                     bindings,
                     before_position,
                     seen_nodes,
+                    case_insensitive,
                 )
             )
 
@@ -2691,6 +2696,30 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             with self.subTest(source=source):
                 self.assertEqual(python_comment_password_lines(source), [1])
 
+    def test_python_comment_structured_auth_guard_detects_password_subscripts(self):
+        hardcoded_examples = (
+            '# options["password"] = "hardcoded-secret"',
+            '# es_tokens["password"] = SECRET\n# SECRET = "hardcoded-secret"',
+        )
+        for source in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    python_comment_structured_auth_lines(source),
+                    [1],
+                )
+
+    def test_python_comment_structured_auth_guard_allows_runtime_password_subscripts(self):
+        safe_examples = (
+            '# options["password"] = password_from_store',
+            '# es_tokens["password"] = os.getenv("TCP_ELASTIC_PASSWORD")',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    python_comment_structured_auth_lines(source),
+                    [],
+                )
+
     def test_python_comment_password_guard_ignores_code_and_safe_comments(self):
         safe_examples = (
             'password = password_from_store',
@@ -2820,6 +2849,14 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 [1],
             ),
             (
+                'headers = dict(AUTHORIZATION="Bearer hardcoded-token")',
+                [1],
+            ),
+            (
+                'headers = dict([("AUTHORIZATION", "Bearer hardcoded-token")])',
+                [1],
+            ),
+            (
                 'pairs = [("Authorization", "ApiKey hardcoded-token")]\n'
                 'headers = dict(pairs)',
                 [2],
@@ -2841,6 +2878,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
     def test_authorization_header_guard_allows_runtime_positional_dict_constructors(self):
         safe_examples = (
             'headers = dict([("Authorization", authorization_from_store)])',
+            'headers = dict(AUTHORIZATION=authorization_from_store)',
+            'headers = dict([("AUTHORIZATION", authorization_from_store)])',
             (
                 'pairs = [("Authorization", "Bearer " + token_from_store)]\n'
                 'headers = dict(pairs)'
