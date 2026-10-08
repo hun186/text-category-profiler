@@ -60,9 +60,10 @@ ENROLLMENT_TOKEN_RE = re.compile(
     r"(?<![A-Za-z0-9_-])eyJ[A-Za-z0-9_-]{20,}={0,2}(?![A-Za-z0-9_-])"
 )
 URL_USERINFO_RE = re.compile(
-    r"""https?://[^\s/"'@:]+:[^\s/"'@]+@""",
+    r"""https?://[^\s/"'@:]+:(?P<password>[^\s/"'@]+)@""",
     re.IGNORECASE,
 )
+ENV_PLACEHOLDER_RE = re.compile(r"^\$\{[A-Za-z_][A-Za-z0-9_]*\}$")
 LEGACY_HOST_PASSWORD_RE = re.compile(r"^\s*[HC]:(?![\\/])\S{8,}\s*$")
 
 ALLOWED_PASSWORD_EXPRESSIONS = {
@@ -185,6 +186,68 @@ def authorization_value_expressions(line):
         _password_value_expression(line, match.end())
         for match in AUTHORIZATION_KEY_RE.finditer(line)
     ]
+
+
+def _strip_text_scalar(expression):
+    value = expression.strip().rstrip(",").strip()
+    if (
+        len(value) >= 2
+        and value[0] == value[-1]
+        and value[0] in {'"', "'"}
+    ):
+        value = value[1:-1].strip()
+    return value
+
+
+def _is_allowed_secret_placeholder(value):
+    normalized = _strip_text_scalar(value)
+    return bool(
+        ENV_PLACEHOLDER_RE.fullmatch(normalized)
+        or normalized == REDACTED_PASSWORD_SENTINEL
+    )
+
+
+def text_structured_auth_line_has_secret(line):
+    """Return whether a non-Python config line embeds a structured credential."""
+    for _name, expression in scalar_auth_value_expressions(line):
+        value = _strip_text_scalar(expression)
+        if value and not _is_allowed_secret_placeholder(value):
+            return True
+
+    for expression in authorization_value_expressions(line):
+        value = _strip_text_scalar(expression)
+        match = AUTHORIZATION_VALUE_RE.match(value)
+        if not match:
+            continue
+        payload = _strip_text_scalar(match.group(2))
+        if payload and not _is_allowed_secret_placeholder(payload):
+            return True
+
+    for name, expression in auth_tuple_value_expressions(line):
+        value = expression.strip()
+        if not value:
+            continue
+        try:
+            if hardcoded_auth_tuple_lines(f"{name}={value}"):
+                return True
+        except SyntaxError:
+            placeholders = re.findall(r"\$\{[^}]+\}", value)
+            if not placeholders or not all(
+                _is_allowed_secret_placeholder(token)
+                for token in placeholders
+            ):
+                return True
+
+    return False
+
+
+def text_url_userinfo_has_secret(text):
+    """Return whether URL userinfo contains a literal rather than env placeholder."""
+    for match in URL_USERINFO_RE.finditer(text):
+        password = match.group("password")
+        if not _is_allowed_secret_placeholder(password):
+            return True
+    return False
 
 
 def python_comment_scalar_auth_lines(source):
@@ -1934,7 +1997,7 @@ def hardcoded_url_userinfo_lines(source):
             bindings,
             _node_position(node),
         )
-        if any(URL_USERINFO_RE.search(value) for value in values):
+        if any(text_url_userinfo_has_secret(value) for value in values):
             violations.append(getattr(node, "lineno", None))
 
     return sorted(set(line for line in violations if line is not None))
@@ -3274,6 +3337,43 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for source in safe_examples:
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_url_userinfo_lines(source), [])
+
+    def test_text_structured_auth_guard_detects_non_python_credentials(self):
+        hardcoded_lines = (
+            'api_key: hardcoded-api-key-value',
+            'bearer_auth = hardcoded-bearer-token',
+            'Authorization: Bearer hardcoded-token',
+            'Authorization = "ApiKey hardcoded-token"',
+            'http_auth: ("elastic", "hardcoded-secret")',
+            'basic_auth = ["elastic", "hardcoded-secret"]',
+        )
+        for line in hardcoded_lines:
+            with self.subTest(line=line):
+                self.assertTrue(text_structured_auth_line_has_secret(line))
+
+    def test_text_structured_auth_guard_allows_environment_placeholders(self):
+        safe_lines = (
+            'api_key: ${TCP_ES_API_KEY}',
+            'bearer_auth = ${TCP_ES_BEARER_TOKEN}',
+            'Authorization: Bearer ${TCP_ES_BEARER_TOKEN}',
+            'Authorization = "ApiKey ${TCP_ES_API_KEY}"',
+            'http_auth: ("elastic", "${TCP_ELASTIC_PASSWORD}")',
+        )
+        for line in safe_lines:
+            with self.subTest(line=line):
+                self.assertFalse(text_structured_auth_line_has_secret(line))
+
+    def test_text_url_userinfo_guard_allows_environment_placeholders(self):
+        self.assertFalse(
+            text_url_userinfo_has_secret(
+                'url: https://elastic:${TCP_ELASTIC_PASSWORD}@localhost:9200'
+            )
+        )
+        self.assertTrue(
+            text_url_userinfo_has_secret(
+                'url: https://elastic:hardcoded-secret@localhost:9200'
+            )
+        )
 
     def test_python_disabled_code_guard_detects_secret_bearing_blocks(self):
         hardcoded_examples = (
@@ -5041,11 +5141,15 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             violations.append(
                                 f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:password"
                             )
+                if path.suffix.lower() != ".py" and text_structured_auth_line_has_secret(line):
+                    violations.append(
+                        f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:structured-auth"
+                    )
                 if ENROLLMENT_TOKEN_RE.search(line):
                     violations.append(
                         f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:enrollment-token"
                     )
-                if URL_USERINFO_RE.search(line):
+                if text_url_userinfo_has_secret(line):
                     violations.append(
                         f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:credential-url"
                     )
