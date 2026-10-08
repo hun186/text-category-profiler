@@ -1886,7 +1886,34 @@ def hardcoded_url_userinfo_lines(source):
     """Return lines whose statically reconstructed URL embeds userinfo credentials."""
     tree = ast.parse(source)
     bindings = _name_bindings(tree)
+    parents = {
+        child: parent
+        for parent in ast.walk(tree)
+        for child in ast.iter_child_nodes(parent)
+    }
     violations = []
+
+    def is_dynamic_format_template_constant(node):
+        if not isinstance(node, ast.Constant):
+            return False
+
+        parent = parents.get(node)
+        if (
+            isinstance(parent, ast.Attribute)
+            and parent.value is node
+            and parent.attr in {"format", "format_map"}
+        ):
+            grandparent = parents.get(parent)
+            return (
+                isinstance(grandparent, ast.Call)
+                and grandparent.func is parent
+            )
+
+        return (
+            isinstance(parent, ast.BinOp)
+            and parent.left is node
+            and isinstance(parent.op, ast.Mod)
+        )
 
     for node in ast.walk(tree):
         is_format_call = (
@@ -1898,6 +1925,8 @@ def hardcoded_url_userinfo_lines(source):
             isinstance(node, (ast.Constant, ast.BinOp, ast.JoinedStr))
             or is_format_call
         ):
+            continue
+        if is_dynamic_format_template_constant(node):
             continue
 
         values = _static_string_values(
@@ -3206,6 +3235,25 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         safe_examples = (
             'host = ("https://localhost:" "9200")',
             'message = "elastic:hardcoded-secret@localhost"',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_url_userinfo_lines(source), [])
+
+    def test_python_url_userinfo_guard_skips_dynamic_format_templates(self):
+        safe_examples = (
+            (
+                'ES_PASSWORD = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+                'host = "https://elastic:{}@localhost:9200".format(ES_PASSWORD)'
+            ),
+            (
+                'ES_PASSWORD = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+                'host = "https://elastic:%s@localhost:9200" % ES_PASSWORD'
+            ),
+            (
+                'values = {"password": password_from_store}\n'
+                'host = "https://elastic:{password}@localhost:9200".format_map(values)'
+            ),
         )
         for source in safe_examples:
             with self.subTest(source=source):
