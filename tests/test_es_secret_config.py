@@ -264,6 +264,39 @@ def _config_scalar_value(line):
     return _strip_text_scalar(value)
 
 
+def _is_yaml_block_scalar_marker(value):
+    return bool(re.fullmatch(r"[>|](?:[+-]?\d?|\d?[+-]?)", value.strip()))
+
+
+def _yaml_block_scalar_value(lines, index):
+    """Return (line number, folded value) for an indented YAML block scalar."""
+    key_line = lines[index]
+    key_indent = len(key_line) - len(key_line.lstrip())
+    parts = []
+    first_line = None
+    cursor = index + 1
+
+    while cursor < len(lines):
+        next_line = lines[cursor]
+        stripped = next_line.strip()
+        if not stripped:
+            cursor += 1
+            continue
+
+        indent = len(next_line) - len(next_line.lstrip())
+        if indent <= key_indent:
+            break
+
+        value = _config_scalar_value(next_line)
+        if value:
+            if first_line is None:
+                first_line = cursor + 1
+            parts.append(value)
+        cursor += 1
+
+    return first_line, " ".join(parts)
+
+
 def text_structured_auth_secret_lines(text):
     """Return non-Python config lines containing structured auth credentials."""
     lines = text.splitlines()
@@ -274,13 +307,42 @@ def text_structured_auth_secret_lines(text):
         if text_structured_auth_line_has_secret(line):
             violations.add(line_number)
 
-        matches = list(AUTH_TUPLE_KEY_RE.finditer(line))
-        if not matches:
-            continue
+        structured_matches = [
+            *[(match, "scalar") for match in SCALAR_AUTH_KEY_RE.finditer(line)],
+            *[(match, "authorization") for match in AUTHORIZATION_KEY_RE.finditer(line)],
+            *[(match, "tuple") for match in AUTH_TUPLE_KEY_RE.finditer(line)],
+        ]
 
-        for match in matches:
+        for match, kind in structured_matches:
             expression = _password_value_expression(line, match.end()).strip()
-            if expression:
+
+            if _is_yaml_block_scalar_marker(expression):
+                credential_line, block_value = _yaml_block_scalar_value(
+                    lines,
+                    index,
+                )
+                if credential_line is None or not block_value:
+                    continue
+
+                if kind == "scalar":
+                    if not _is_allowed_secret_placeholder(block_value):
+                        violations.add(credential_line)
+                elif kind == "authorization":
+                    auth_match = AUTHORIZATION_VALUE_RE.match(block_value)
+                    if auth_match:
+                        payload = _strip_text_scalar(auth_match.group(2))
+                        if (
+                            payload
+                            and not _is_allowed_secret_placeholder(payload)
+                        ):
+                            violations.add(credential_line)
+                else:
+                    synthetic = f"http_auth: {block_value}"
+                    if text_structured_auth_line_has_secret(synthetic):
+                        violations.add(credential_line)
+                continue
+
+            if kind != "tuple" or expression:
                 continue
 
             key_indent = len(line) - len(line.lstrip())
@@ -3456,6 +3518,52 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for text, expected in hardcoded_examples:
             with self.subTest(text=text):
                 self.assertEqual(text_structured_auth_secret_lines(text), expected)
+
+    def test_text_structured_auth_guard_detects_yaml_block_scalars(self):
+        hardcoded_examples = (
+            (
+                'Authorization: >-\n'
+                '  Bearer hardcoded-token',
+                [2],
+            ),
+            (
+                'Authorization: |\n'
+                '  ApiKey hardcoded-token',
+                [2],
+            ),
+            (
+                'api_key: >\n'
+                '  hardcoded-api-key-value',
+                [2],
+            ),
+            (
+                'http_auth: >-\n'
+                '  ("elastic", "hardcoded-secret")',
+                [2],
+            ),
+        )
+        for text, expected in hardcoded_examples:
+            with self.subTest(text=text):
+                self.assertEqual(text_structured_auth_secret_lines(text), expected)
+
+    def test_text_structured_auth_guard_allows_yaml_block_scalar_placeholders(self):
+        safe_examples = (
+            (
+                'Authorization: >-\n'
+                '  Bearer ${TCP_ES_BEARER_TOKEN}'
+            ),
+            (
+                'api_key: |\n'
+                '  ${TCP_ES_API_KEY}'
+            ),
+            (
+                'http_auth: >-\n'
+                '  ("elastic", "${TCP_ELASTIC_PASSWORD}")'
+            ),
+        )
+        for text in safe_examples:
+            with self.subTest(text=text):
+                self.assertEqual(text_structured_auth_secret_lines(text), [])
 
     def test_text_structured_auth_guard_allows_multiline_placeholders(self):
         safe_examples = (
