@@ -1126,6 +1126,11 @@ def _name_bindings(tree):
             lexical_scope,
             metadata,
         )
+        # A simple alias copies its referent at assignment time. Keep that
+        # position on the RHS Name so later rebinding of its source cannot
+        # retroactively change either string keys or callable aliases.
+        if isinstance(value, ast.Name):
+            value._alias_captured_at = position
         values.setdefault(binding_scope, {}).setdefault(target.id, []).append(
             (position, value)
         )
@@ -1175,34 +1180,47 @@ def _name_bindings(tree):
             add_binding(target, node, position)
         elif isinstance(node, ast.Import):
             for alias in node.names:
-                if alias.name != "os":
+                local_name = alias.asname or alias.name.split(".", 1)[0]
+                if alias.name != "os" and local_name != "str":
                     continue
-                target = ast.Name(id=alias.asname or "os", ctx=ast.Store())
+                target = ast.Name(id=local_name, ctx=ast.Store())
                 target._binding_scope = getattr(
                     node,
                     "_binding_scope",
                     metadata["module"],
                 )
                 target._binding_control_path = _node_control_path(node)
-                add_binding(target, ast.Name(id="os", ctx=ast.Load()), position)
-        elif isinstance(node, ast.ImportFrom) and node.module == "os":
+                # A name imported as str shadows the builtin only after the
+                # import executes; an opaque sentinel cannot be a transform.
+                value = (
+                    ast.Name(id="os", ctx=ast.Load())
+                    if alias.name == "os"
+                    else ast.Constant(value=None)
+                )
+                add_binding(target, value, position)
+        elif isinstance(node, ast.ImportFrom):
             for alias in node.names:
-                if alias.name not in {"getenv", "environ"}:
+                local_name = alias.asname or alias.name
+                if alias.name == "*" or not (
+                    (node.module == "os" and alias.name in {"getenv", "environ"})
+                    or local_name == "str"
+                ):
                     continue
-                target = ast.Name(
-                    id=alias.asname or alias.name,
-                    ctx=ast.Store(),
-                )
+                target = ast.Name(id=local_name, ctx=ast.Store())
                 target._binding_scope = getattr(
                     node,
                     "_binding_scope",
                     metadata["module"],
                 )
                 target._binding_control_path = _node_control_path(node)
-                value = ast.Attribute(
-                    value=ast.Name(id="os", ctx=ast.Load()),
-                    attr=alias.name,
-                    ctx=ast.Load(),
+                value = (
+                    ast.Attribute(
+                        value=ast.Name(id="os", ctx=ast.Load()),
+                        attr=alias.name,
+                        ctx=ast.Load(),
+                    )
+                    if node.module == "os" and alias.name in {"getenv", "environ"}
+                    else ast.Constant(value=None)
                 )
                 add_binding(target, value, position)
         elif isinstance(node, ast.AugAssign) and isinstance(node.target, ast.Name):
@@ -1257,6 +1275,13 @@ def _bound_name_values(name, bindings, before_position, seen_names, use_node):
     token = _binding_name_token(name, bindings, use_node)
     if token in seen_names:
         return []
+
+    # The RHS of an earlier alias assignment denotes the value observed at
+    # that assignment, not at the later use of the alias. This also works
+    # through alias chains without discarding conservative reaching branches.
+    captured_at = getattr(use_node, "_alias_captured_at", None)
+    if captured_at is not None:
+        before_position = min(before_position, captured_at)
 
     binding_scope, binding_name = token
     candidates = [
@@ -1512,7 +1537,23 @@ def _is_transparent_string_transform_call(node, bindings, before_position):
         if not isinstance(name_node, ast.Name) or name_node.id != "str":
             return False
         scope, _name = _binding_name_token("str", bindings, name_node)
-        return "str" not in metadata["locals"].get(scope, ())
+        # At module scope a later assignment/import does not affect an
+        # earlier call. Inside a function, a local binding anywhere makes
+        # the name local, so an unbound reference is not the builtin.
+        if _bound_name_values(
+            "str", bindings, before_position, set(), name_node
+        ):
+            return False
+        if scope is not metadata["module"]:
+            return "str" not in metadata["locals"].get(scope, ())
+        lexical_scope = getattr(name_node, "_binding_scope", metadata["module"])
+        if (
+            lexical_scope is not metadata["module"]
+            and "str" in metadata["locals"].get(scope, ())
+        ):
+            # Module globals in function bodies are late-bound at runtime.
+            return False
+        return True
 
     def is_transparent_body(body, parameter_name):
         if isinstance(body, ast.Name):
@@ -5230,6 +5271,82 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             'KEY = runtime_key\n'
             'config = {"elastic_secret": "hardcoded-secret"}\n'
             'password = config.get(KEY)',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_password_literal_lines(source), [])
+
+    def test_python_password_literal_guard_preserves_mapping_alias_capture(self):
+        hardcoded_source = (
+            'BASE = "elastic_secret"\n'
+            'KEY = BASE\n'
+            'BASE = "user"\n'
+            'config = {"elastic_secret": "hardcoded-secret", "user": runtime_user}\n'
+            'password = config.get(KEY)'
+        )
+        self.assertEqual(hardcoded_password_literal_lines(hardcoded_source), [5])
+
+        safe_source = (
+            'BASE = "user"\n'
+            'KEY = BASE\n'
+            'BASE = "elastic_secret"\n'
+            'config = {"elastic_secret": "hardcoded-secret", "user": runtime_user}\n'
+            'password = config.get(KEY)'
+        )
+        self.assertEqual(hardcoded_password_literal_lines(safe_source), [])
+
+    def test_python_password_literal_guard_preserves_callable_alias_capture(self):
+        hardcoded_sources = (
+            'normalize = lambda value: value\n'
+            'transform = normalize\n'
+            'normalize = secret_manager.read\n'
+            'password = transform("hardcoded-secret")',
+            'normalize = lambda value: value.strip()\n'
+            'first = normalize\n'
+            'transform = first\n'
+            'normalize = vault.read\n'
+            'password = transform("hardcoded-secret")',
+            'transform = str\n'
+            'str = secret_manager.read\n'
+            'password = transform("hardcoded-secret")',
+        )
+        for source in hardcoded_sources:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    hardcoded_password_literal_lines(source),
+                    [len(source.splitlines())],
+                )
+
+        safe_sources = (
+            'normalize = secret_manager.read\n'
+            'transform = normalize\n'
+            'normalize = lambda value: value\n'
+            'password = transform("credential-profile-name")',
+            'str = vault.read\n'
+            'transform = str\n'
+            'str = lambda value: value\n'
+            'password = transform("secret/es/password")',
+        )
+        for source in safe_sources:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_password_literal_lines(source), [])
+
+    def test_python_password_literal_guard_handles_builtin_str_source_order(self):
+        hardcoded_examples = (
+            'password = str("real-secret")\nstr = vault.read',
+            'password = str("real-secret")\nfrom secrets_provider import str',
+        )
+        for source in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_password_literal_lines(source), [1])
+
+        safe_examples = (
+            'str = vault.read\npassword = str("secret/es/password")',
+            'from secrets_provider import str\npassword = str("secret/es/password")',
+            'import secrets_provider as str\npassword = str("secret/es/password")',
+            'def read_password():\n'
+            '    password = str("lookup-key")\n'
+            '    str = vault.read',
         )
         for source in safe_examples:
             with self.subTest(source=source):
