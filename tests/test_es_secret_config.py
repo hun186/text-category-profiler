@@ -1576,6 +1576,22 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
                 seen_names,
             )
 
+        # These known string transformations preserve a supplied credential
+        # literal; unlike secret providers, their input is the output's value.
+        # Keep the list narrow: an arbitrary call argument may only name a
+        # secret to retrieve (e.g. vault.read("secret/path")).
+        if (
+            isinstance(node.func, ast.Name)
+            and node.func.id in {"normalize", "str"}
+            and node.args
+        ):
+            return _hardcoded_password_values(
+                node.args[0],
+                bindings,
+                before_position,
+                seen_names,
+            )
+
         # Unknown/runtime provider calls may accept lookup identifiers, prompts,
         # paths, or options. Their arguments are not statically returned password
         # values, so scanning them creates false positives.
@@ -4612,10 +4628,26 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         cases = (
             ('Elasticsearch(host, http_auth=(user, "real-secret".strip()))', [1]),
             ('Elasticsearch(host, basic_auth=(user, normalize("real-secret")))', [1]),
+            ('Elasticsearch(host, basic_auth=(user, str("real-secret")))', [1]),
+            (
+                'literal = "real-secret"\n'
+                'Elasticsearch(host, basic_auth=(user, normalize(literal)))',
+                [2],
+            ),
         )
         for source, expected in cases:
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_auth_tuple_lines(source), expected)
+
+    def test_auth_tuple_guard_allows_runtime_secret_provider_calls(self):
+        safe_examples = (
+            'Elasticsearch(host, basic_auth=(user, secret_manager.read("real-secret")))',
+            'Elasticsearch(host, http_auth=(user, getpass.getpass("Password: ")))',
+            'Elasticsearch(host, basic_auth=(user, vault.read("secret/es/password")))',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_auth_tuple_lines(source), [])
 
     def test_auth_tuple_guard_detects_indexed_container_passwords(self):
         cases = (
@@ -5022,6 +5054,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
     def test_python_password_literal_guard_detects_static_call_results(self):
         cases = (
             ('password = "real-secret".strip()', [1]),
+            ('password = normalize("real-secret")', [1]),
+            ('password = str("real-secret")', [1]),
             ('password = config.get("password", "real-secret")', [1]),
         )
         for source, expected in cases:
@@ -5049,7 +5083,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             'password = secret_manager.read("elasticsearch-password")',
             'password = getpass.getpass("Password: ")',
             'password = vault.read(path="secret/elasticsearch")',
-            'password = normalize("credential-profile-name")',
+            'password = provider.lookup("credential-profile-name")',
         )
         for source in safe_examples:
             with self.subTest(source=source):
