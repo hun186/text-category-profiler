@@ -211,11 +211,15 @@ def text_structured_auth_line_has_secret(line):
     """Return whether a non-Python config line embeds a structured credential."""
     for _name, expression in scalar_auth_value_expressions(line):
         value = _strip_text_scalar(expression)
+        if _is_yaml_block_scalar_marker(value):
+            continue
         if value and not _is_allowed_secret_placeholder(value):
             return True
 
     for expression in authorization_value_expressions(line):
         value = _strip_text_scalar(expression)
+        if _is_yaml_block_scalar_marker(value):
+            continue
         match = AUTHORIZATION_VALUE_RE.match(value)
         if not match:
             continue
@@ -225,7 +229,7 @@ def text_structured_auth_line_has_secret(line):
 
     for _name, expression in auth_tuple_value_expressions(line):
         value = expression.strip()
-        if not value:
+        if not value or _is_yaml_block_scalar_marker(value):
             continue
 
         try:
@@ -3518,6 +3522,18 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for text, expected in hardcoded_examples:
             with self.subTest(text=text):
                 self.assertEqual(text_structured_auth_secret_lines(text), expected)
+
+    def test_text_structured_auth_line_guard_skips_yaml_block_markers(self):
+        safe_markers = (
+            'api_key: >',
+            'bearer_auth: |-',
+            'Authorization: >-',
+            'http_auth: |2',
+            'basic_auth: >+',
+        )
+        for line in safe_markers:
+            with self.subTest(line=line):
+                self.assertFalse(text_structured_auth_line_has_secret(line))
 
     def test_text_structured_auth_guard_detects_yaml_block_scalars(self):
         hardcoded_examples = (
