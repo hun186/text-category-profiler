@@ -1528,6 +1528,39 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
         ):
             return []
 
+        if (
+            isinstance(node.func, ast.Attribute)
+            and node.func.attr == "get"
+            and node.args
+        ):
+            selected_key = _literal_string(node.args[0])
+            values = []
+            if selected_key == "password":
+                for selected in _mapping_key_values(
+                    node.func.value,
+                    "password",
+                    bindings,
+                    before_position,
+                ):
+                    values.extend(
+                        _hardcoded_password_values(
+                            selected,
+                            bindings,
+                            before_position,
+                            seen_names,
+                        )
+                    )
+            if len(node.args) >= 2:
+                values.extend(
+                    _hardcoded_password_values(
+                        node.args[1],
+                        bindings,
+                        before_position,
+                        seen_names,
+                    )
+                )
+            return values
+
         values = []
         positional_args = node.args
         if isinstance(node.func, ast.Attribute):
@@ -1539,8 +1572,6 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
                     seen_names,
                 )
             )
-            if node.func.attr == "get":
-                positional_args = node.args[1:]
 
         for argument in positional_args:
             values.extend(
@@ -2584,6 +2615,19 @@ def hardcoded_auth_tuple_lines(source):
                             combined,
                         )
                     )
+        elif isinstance(node, ast.AugAssign):
+            for value in _auth_tuple_mapping_merge_values(
+                node,
+                bindings,
+                _node_position(node),
+            ):
+                candidates.append(
+                    (
+                        getattr(node, "lineno", getattr(value, "lineno", None)),
+                        _node_position(node),
+                        value,
+                    )
+                )
         elif isinstance(node, ast.Dict):
             for key, value in zip(node.keys, node.values):
                 if _literal_string(key) in AUTH_TUPLE_NAMES:
@@ -2594,6 +2638,19 @@ def hardcoded_auth_tuple_lines(source):
                             value,
                         )
                     )
+        elif isinstance(node, ast.Call):
+            for value in _auth_tuple_mapping_call_values(
+                node,
+                bindings,
+                _node_position(node),
+            ):
+                candidates.append(
+                    (
+                        getattr(node, "lineno", getattr(value, "lineno", None)),
+                        _node_position(node),
+                        value,
+                    )
+                )
         elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
             positional_args = list(node.args.posonlyargs) + list(node.args.args)
             positional_defaults = list(node.args.defaults)
@@ -2781,6 +2838,98 @@ def _mapping_key_values(
                 )
             )
 
+    return values
+
+
+def _auth_tuple_mapping_call_values(
+    node,
+    bindings,
+    before_position,
+):
+    """Return auth tuple values written by mapping constructors or mutations."""
+    values = []
+
+    if (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "dict"
+    ):
+        for auth_name in AUTH_TUPLE_NAMES:
+            values.extend(
+                _mapping_key_values(
+                    node,
+                    auth_name,
+                    bindings,
+                    before_position,
+                )
+            )
+        return values
+
+    if not (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+    ):
+        return []
+
+    if node.func.attr in {"setdefault", "__setitem__"}:
+        if (
+            len(node.args) >= 2
+            and _literal_string(node.args[0]) in AUTH_TUPLE_NAMES
+        ):
+            return [node.args[1]]
+        return []
+
+    if node.func.attr != "update":
+        return []
+
+    for auth_name in AUTH_TUPLE_NAMES:
+        for argument in node.args:
+            values.extend(
+                _mapping_key_values(
+                    argument,
+                    auth_name,
+                    bindings,
+                    before_position,
+                )
+            )
+        for keyword in node.keywords:
+            if keyword.arg == auth_name:
+                values.append(keyword.value)
+            elif keyword.arg is None:
+                values.extend(
+                    _mapping_key_values(
+                        keyword.value,
+                        auth_name,
+                        bindings,
+                        before_position,
+                    )
+                )
+
+    return values
+
+
+def _auth_tuple_mapping_merge_values(
+    node,
+    bindings,
+    before_position,
+):
+    """Return auth tuple values merged through mapping |= operations."""
+    if not (
+        isinstance(node, ast.AugAssign)
+        and isinstance(node.op, ast.BitOr)
+    ):
+        return []
+
+    values = []
+    for auth_name in AUTH_TUPLE_NAMES:
+        values.extend(
+            _mapping_key_values(
+                node.value,
+                auth_name,
+                bindings,
+                before_position,
+            )
+        )
     return values
 
 
@@ -5305,6 +5454,73 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             hardcoded_password_literal_lines('password = "***REDACTED***-fallback"'),
             [1],
         )
+
+    def test_auth_tuple_guard_detects_mapping_mutations(self):
+        hardcoded_examples = (
+            (
+                'options = {}\n'
+                'options.setdefault("http_auth", ("elastic", "hardcoded-secret"))',
+                [2],
+            ),
+            (
+                'options = {}\n'
+                'options.__setitem__("basic_auth", ("elastic", "hardcoded-secret"))',
+                [2],
+            ),
+            (
+                'options = {}\n'
+                'options.update(http_auth=("elastic", "hardcoded-secret"))',
+                [2],
+            ),
+            (
+                'values = {"basic_auth": ("elastic", "hardcoded-secret")}\n'
+                'options = {}\n'
+                'options.update(values)',
+                [1, 3],
+            ),
+            (
+                'options = {}\n'
+                'options |= {"http_auth": ("elastic", "hardcoded-secret")}',
+                [2],
+            ),
+        )
+        for source, expected in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_auth_tuple_lines(source), expected)
+
+    def test_auth_tuple_guard_allows_runtime_mapping_mutations(self):
+        safe_examples = (
+            'options = {}\n'
+            'options.setdefault("http_auth", ("elastic", password_from_store))',
+            'options = {}\n'
+            'options.__setitem__("basic_auth", ("elastic", password_from_store))',
+            'options = {}\n'
+            'options.update(http_auth=("elastic", password_from_store))',
+            'options = {}\n'
+            'options |= {"basic_auth": ("elastic", password_from_store)}',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_auth_tuple_lines(source), [])
+
+    def test_python_password_literal_guard_mapping_get_reads_selected_key_only(self):
+        safe_source = (
+            'config = {"host": "localhost"}\n'
+            'password = config.get("password")'
+        )
+        self.assertEqual(hardcoded_password_literal_lines(safe_source), [])
+
+        hardcoded_source = (
+            'config = {"host": "localhost", "password": "hardcoded-secret"}\n'
+            'password = config.get("password")'
+        )
+        self.assertEqual(hardcoded_password_literal_lines(hardcoded_source), [1, 2])
+
+        fallback_source = (
+            'config = {"host": "localhost"}\n'
+            'password = config.get("password", "hardcoded-secret")'
+        )
+        self.assertEqual(hardcoded_password_literal_lines(fallback_source), [2])
 
     def test_python_password_literal_guard_allows_runtime_references(self):
         safe_examples = (
