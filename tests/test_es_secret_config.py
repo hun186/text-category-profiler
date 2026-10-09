@@ -1142,6 +1142,8 @@ def _name_bindings(tree):
                 ast.NamedExpr,
                 ast.Import,
                 ast.ImportFrom,
+                ast.FunctionDef,
+                ast.AsyncFunctionDef,
             ),
         )
     ]
@@ -1161,6 +1163,16 @@ def _name_bindings(tree):
             add_binding(node.target, node.value, position)
         elif isinstance(node, ast.NamedExpr):
             add_binding(node.target, node.value, position)
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            # A named local function is a source-ordered callable binding.
+            # Only explicitly transparent functions are later considered
+            # credential transformations.
+            target = ast.Name(id=node.name, ctx=ast.Store())
+            target._binding_scope = getattr(
+                node, "_binding_scope", metadata["module"]
+            )
+            target._binding_control_path = _node_control_path(node)
+            add_binding(target, node, position)
         elif isinstance(node, ast.Import):
             for alias in node.names:
                 if alias.name != "os":
@@ -1480,6 +1492,77 @@ def _resolve_constant_subscript(node, bindings, before_position):
     return None
 
 
+def _is_transparent_string_transform_call(node, bindings, before_position):
+    """Recognize only callable bindings known to preserve their input string.
+
+    An opaque call's argument could be a vault path, lookup key, or prompt;
+    the argument must not be treated as the resulting credential.
+    """
+    if not (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and len(node.args) == 1
+        and not node.keywords
+    ):
+        return False
+
+    metadata = bindings["metadata"]
+
+    def is_unshadowed_builtin_str(name_node):
+        if not isinstance(name_node, ast.Name) or name_node.id != "str":
+            return False
+        scope, _name = _binding_name_token("str", bindings, name_node)
+        return "str" not in metadata["locals"].get(scope, ())
+
+    def is_transparent_body(body, parameter_name):
+        if isinstance(body, ast.Name):
+            return body.id == parameter_name
+        return (
+            isinstance(body, ast.Call)
+            and isinstance(body.func, ast.Attribute)
+            and isinstance(body.func.value, ast.Name)
+            and body.func.value.id == parameter_name
+            and body.func.attr
+            in {"strip", "lstrip", "rstrip", "lower", "upper", "casefold"}
+            and not body.args
+            and not body.keywords
+        )
+
+    for resolved in _resolve_bound_nodes(
+        node.func, bindings, before_position
+    ):
+        if is_unshadowed_builtin_str(resolved):
+            return True
+        if isinstance(resolved, ast.FunctionDef):
+            if resolved.decorator_list or len(resolved.body) != 1:
+                continue
+            body = resolved.body[0]
+            if not isinstance(body, ast.Return):
+                continue
+            arguments = resolved.args
+        elif isinstance(resolved, ast.Lambda):
+            body = resolved.body
+            arguments = resolved.args
+        else:
+            continue
+
+        positional = [*arguments.posonlyargs, *arguments.args]
+        if (
+            len(positional) != 1
+            or arguments.vararg is not None
+            or arguments.kwarg is not None
+            or arguments.kwonlyargs
+            or arguments.defaults
+            or any(value is not None for value in arguments.kw_defaults)
+        ):
+            continue
+        return_value = body.value if isinstance(body, ast.Return) else body
+        if is_transparent_body(return_value, positional[0].arg):
+            return True
+
+    return False
+
+
 def _hardcoded_password_values(node, bindings, before_position, seen_names=None):
     """Return statically embedded password strings from one expression."""
     seen_names = set() if seen_names is None else set(seen_names)
@@ -1537,9 +1620,15 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
             and node.func.attr == "get"
             and node.args
         ):
-            selected_key = _literal_string(node.args[0])
+            # Resolve literal and aliased keys through source-ordered bindings.
+            # Never inspect unrelated entries in the receiver mapping.
+            selected_keys = _static_string_values(
+                node.args[0],
+                bindings,
+                before_position,
+            )
             values = []
-            if selected_key is not None:
+            for selected_key in selected_keys:
                 for selected in _mapping_key_values(
                     node.func.value,
                     selected_key,
@@ -1576,14 +1665,11 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
                 seen_names,
             )
 
-        # These known string transformations preserve a supplied credential
-        # literal; unlike secret providers, their input is the output's value.
-        # Keep the list narrow: an arbitrary call argument may only name a
-        # secret to retrieve (e.g. vault.read("secret/path")).
-        if (
-            isinstance(node.func, ast.Name)
-            and node.func.id in {"normalize", "str"}
-            and node.args
+        # Only follow an argument when source-visible callable semantics
+        # prove it becomes the result (or unshadowed built-in str). A name
+        # such as normalize may instead be rebound to secret_manager.read.
+        if _is_transparent_string_transform_call(
+            node, bindings, before_position
         ):
             return _hardcoded_password_values(
                 node.args[0],
@@ -4627,11 +4713,23 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
     def test_auth_tuple_guard_detects_literals_in_call_expressions(self):
         cases = (
             ('Elasticsearch(host, http_auth=(user, "real-secret".strip()))', [1]),
-            ('Elasticsearch(host, basic_auth=(user, normalize("real-secret")))', [1]),
+            (
+                'def normalize(value):\n'
+                '    return value.strip()\n'
+                'Elasticsearch(host, basic_auth=(user, normalize("real-secret")))',
+                [3],
+            ),
             ('Elasticsearch(host, basic_auth=(user, str("real-secret")))', [1]),
             (
+                'def normalize(value):\n'
+                '    return value.strip()\n'
                 'literal = "real-secret"\n'
                 'Elasticsearch(host, basic_auth=(user, normalize(literal)))',
+                [4],
+            ),
+            (
+                'normalize = lambda value: value.strip()\n'
+                'Elasticsearch(host, basic_auth=(user, normalize("real-secret")))',
                 [2],
             ),
         )
@@ -4644,6 +4742,21 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             'Elasticsearch(host, basic_auth=(user, secret_manager.read("real-secret")))',
             'Elasticsearch(host, http_auth=(user, getpass.getpass("Password: ")))',
             'Elasticsearch(host, basic_auth=(user, vault.read("secret/es/password")))',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_auth_tuple_lines(source), [])
+
+    def test_auth_tuple_guard_allows_rebound_callable_providers(self):
+        safe_examples = (
+            'normalize = secret_manager.read\n'
+            'Elasticsearch(host, basic_auth=(user, normalize("credential-profile-name")))',
+            'str = vault.read\n'
+            'Elasticsearch(host, basic_auth=(user, str("secret/es/password")))',
+            'from my_module import normalize\n'
+            'Elasticsearch(host, basic_auth=(user, normalize("credential-profile-name")))',
+            'def connect(normalize):\n'
+            '    return Elasticsearch(host, basic_auth=(user, normalize("lookup-key")))',
         )
         for source in safe_examples:
             with self.subTest(source=source):
@@ -5054,8 +5167,14 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
     def test_python_password_literal_guard_detects_static_call_results(self):
         cases = (
             ('password = "real-secret".strip()', [1]),
-            ('password = normalize("real-secret")', [1]),
+            (
+                'def normalize(value):\n'
+                '    return value.strip()\n'
+                'password = normalize("real-secret")',
+                [3],
+            ),
             ('password = str("real-secret")', [1]),
+            ('normalize = str\npassword = normalize("real-secret")', [2]),
             ('password = config.get("password", "real-secret")', [1]),
         )
         for source, expected in cases:
@@ -5077,6 +5196,59 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             'password = config.get("elastic_secret")'
         )
         self.assertEqual(hardcoded_password_literal_lines(safe_source), [])
+
+    def test_python_password_literal_guard_resolves_mapping_get_key_aliases(self):
+        hardcoded_examples = (
+            (
+                'KEY = "elastic_secret"\n'
+                'config = {"elastic_secret": "hardcoded-secret"}\n'
+                'password = config.get(KEY)'
+            ),
+            (
+                'BASE_KEY = "elastic_secret"\n'
+                'KEY = BASE_KEY\n'
+                'base = {"elastic_secret": "hardcoded-secret"}\n'
+                'config = base\n'
+                'password = config.get(KEY)'
+            ),
+        )
+        for source in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    hardcoded_password_literal_lines(source),
+                    [len(source.splitlines())],
+                )
+
+        safe_examples = (
+            'KEY = "elastic_secret"\n'
+            'config = {"elastic_secret": password_from_store}\n'
+            'password = config.get(KEY)',
+            'KEY = "elastic_secret"\n'
+            'KEY = "user"\n'
+            'config = {"elastic_secret": "hardcoded-secret", "user": runtime_user}\n'
+            'password = config.get(KEY)',
+            'KEY = runtime_key\n'
+            'config = {"elastic_secret": "hardcoded-secret"}\n'
+            'password = config.get(KEY)',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_password_literal_lines(source), [])
+
+    def test_python_password_literal_guard_allows_rebound_transform_names(self):
+        safe_examples = (
+            'normalize = secret_manager.read\n'
+            'password = normalize("credential-profile-name")',
+            'str = vault.read\n'
+            'password = str("secret/es/password")',
+            'from helpers import normalize\n'
+            'password = normalize("credential-profile-name")',
+            'def build(normalize):\n'
+            '    password = normalize("lookup-key")',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_password_literal_lines(source), [])
 
     def test_python_password_literal_guard_allows_runtime_provider_lookup_arguments(self):
         safe_examples = (
