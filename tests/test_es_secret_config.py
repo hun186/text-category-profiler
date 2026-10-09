@@ -516,8 +516,12 @@ def _hardcoded_comment_scalar_value(node):
         return False
 
     if isinstance(node, ast.Call):
-        values = list(node.args) + [keyword.value for keyword in node.keywords]
-        return any(_hardcoded_comment_scalar_value(value) for value in values)
+        if (
+            isinstance(node.func, ast.Attribute)
+            and node.func.attr in {"strip", "lstrip", "rstrip", "lower", "upper", "casefold"}
+        ):
+            return _hardcoded_comment_scalar_value(node.func.value)
+        return False
 
     if isinstance(node, (ast.BoolOp, ast.Tuple, ast.List, ast.Set)):
         values = node.values if isinstance(node, ast.BoolOp) else node.elts
@@ -1535,10 +1539,10 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
         ):
             selected_key = _literal_string(node.args[0])
             values = []
-            if selected_key == "password":
+            if selected_key is not None:
                 for selected in _mapping_key_values(
                     node.func.value,
-                    "password",
+                    selected_key,
                     bindings,
                     before_position,
                 ):
@@ -1561,37 +1565,21 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
                 )
             return values
 
-        values = []
-        positional_args = node.args
-        if isinstance(node.func, ast.Attribute):
-            values.extend(
-                _hardcoded_password_values(
-                    node.func.value,
-                    bindings,
-                    before_position,
-                    seen_names,
-                )
+        if (
+            isinstance(node.func, ast.Attribute)
+            and node.func.attr in {"strip", "lstrip", "rstrip", "lower", "upper", "casefold"}
+        ):
+            return _hardcoded_password_values(
+                node.func.value,
+                bindings,
+                before_position,
+                seen_names,
             )
 
-        for argument in positional_args:
-            values.extend(
-                _hardcoded_password_values(
-                    argument,
-                    bindings,
-                    before_position,
-                    seen_names,
-                )
-            )
-        for keyword in node.keywords:
-            values.extend(
-                _hardcoded_password_values(
-                    keyword.value,
-                    bindings,
-                    before_position,
-                    seen_names,
-                )
-            )
-        return values
+        # Unknown/runtime provider calls may accept lookup identifiers, prompts,
+        # paths, or options. Their arguments are not statically returned password
+        # values, so scanning them creates false positives.
+        return []
 
     if isinstance(node, ast.Subscript):
         selected = _resolve_constant_subscript(node, bindings, before_position)
@@ -5031,15 +5019,41 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_password_literal_lines(source), [1])
 
-    def test_python_password_literal_guard_detects_literals_in_call_expressions(self):
+    def test_python_password_literal_guard_detects_static_call_results(self):
         cases = (
             ('password = "real-secret".strip()', [1]),
-            ('password = normalize("real-secret")', [1]),
             ('password = config.get("password", "real-secret")', [1]),
         )
         for source, expected in cases:
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_password_literal_lines(source), expected)
+
+    def test_python_password_literal_guard_resolves_mapping_get_selected_key(self):
+        hardcoded_source = (
+            'config = {"elastic_secret": "hardcoded-secret"}\n'
+            'password = config.get("elastic_secret")'
+        )
+        self.assertEqual(
+            hardcoded_password_literal_lines(hardcoded_source),
+            [2],
+        )
+
+        safe_source = (
+            'config = {"elastic_secret": password_from_store}\n'
+            'password = config.get("elastic_secret")'
+        )
+        self.assertEqual(hardcoded_password_literal_lines(safe_source), [])
+
+    def test_python_password_literal_guard_allows_runtime_provider_lookup_arguments(self):
+        safe_examples = (
+            'password = secret_manager.read("elasticsearch-password")',
+            'password = getpass.getpass("Password: ")',
+            'password = vault.read(path="secret/elasticsearch")',
+            'password = normalize("credential-profile-name")',
+        )
+        for source in safe_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_password_literal_lines(source), [])
 
     def test_python_password_literal_guard_detects_indexed_containers(self):
         cases = (
