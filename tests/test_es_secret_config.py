@@ -1068,6 +1068,28 @@ def _control_path_is_prefix(prefix, path):
     return len(prefix) <= len(path) and path[: len(prefix)] == prefix
 
 
+def _control_paths_mutually_exclusive(binding_path, use_path):
+    """Exclude assignments confined to an opposing if/else or match arm."""
+    for binding_step, use_step in zip(binding_path, use_path):
+        if binding_step == use_step:
+            continue
+        if binding_step[:3] != use_step[:3]:
+            break
+        if (
+            binding_step[0] == "If"
+            and {binding_step[3], use_step[3]} == {"body", "orelse"}
+        ):
+            return True
+        if (
+            binding_step[0] == "Match"
+            and binding_step[3].startswith("case-")
+            and use_step[3].startswith("case-")
+        ):
+            return True
+        break
+    return False
+
+
 def _reaching_values(candidates, use_node):
     """Return conservative reaching values for one binding at a use site."""
     use_path = _node_control_path(use_node)
@@ -1075,6 +1097,8 @@ def _reaching_values(candidates, use_node):
 
     for _position, value in candidates:
         value_path = _node_control_path(value)
+        if _control_paths_mutually_exclusive(value_path, use_path):
+            continue
         if _control_path_is_prefix(value_path, use_path):
             # This assignment is unavoidable on the path to this use, so it
             # supersedes earlier values.
@@ -1091,6 +1115,23 @@ def _name_bindings(tree):
     """Map simple variable names to source-ordered expressions per lexical scope."""
     metadata = _annotate_binding_scopes(tree)
     values = {}
+
+    def capture_eager_expression_names(node, position, lexical_scope):
+        """Freeze names evaluated as part of an assigned RHS at write time."""
+        if isinstance(
+            node,
+            (ast.Lambda, ast.GeneratorExp, ast.ListComp, ast.SetComp, ast.DictComp),
+        ):
+            # A deferred body has its own execution time and possibly scope.
+            return
+        if (
+            isinstance(node, ast.Name)
+            and isinstance(node.ctx, ast.Load)
+            and getattr(node, "_binding_scope", lexical_scope) is lexical_scope
+        ):
+            node._alias_captured_at = position
+        for child in ast.iter_child_nodes(node):
+            capture_eager_expression_names(child, position, lexical_scope)
 
     def add_binding(target, value, position):
         if isinstance(target, (ast.Tuple, ast.List)):
@@ -1126,11 +1167,10 @@ def _name_bindings(tree):
             lexical_scope,
             metadata,
         )
-        # A simple alias copies its referent at assignment time. Keep that
-        # position on the RHS Name so later rebinding of its source cannot
-        # retroactively change either string keys or callable aliases.
-        if isinstance(value, ast.Name):
-            value._alias_captured_at = position
+        # Evaluate eager nested expressions (f-strings, joins, formatting,
+        # lookups) when the target is assigned, not at a later use. Do not
+        # freeze lambda/comprehension bodies that execute in other scopes.
+        capture_eager_expression_names(value, position, lexical_scope)
         values.setdefault(binding_scope, {}).setdefault(target.id, []).append(
             (position, value)
         )
@@ -5295,6 +5335,46 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         )
         self.assertEqual(hardcoded_password_literal_lines(safe_source), [])
 
+    def test_python_password_literal_guard_preserves_composed_key_capture(self):
+        hardcoded_examples = (
+            (
+                'BASE = "elastic_secret"\n'
+                'KEY = f"{BASE}"\n'
+                'BASE = "user"\n'
+                'config = {"elastic_secret": "hardcoded-secret", "user": runtime_user}\n'
+                'password = config.get(KEY)'
+            ),
+            (
+                'BASE = "elastic_secret"\n'
+                'KEY = "{}".format(BASE)\n'
+                'BASE = "user"\n'
+                'config = {"elastic_secret": "hardcoded-secret", "user": runtime_user}\n'
+                'password = config.get(KEY)'
+            ),
+            (
+                'BASE = "elastic_secret"\n'
+                'KEY = BASE + ""\n'
+                'BASE = "user"\n'
+                'config = {"elastic_secret": "hardcoded-secret", "user": runtime_user}\n'
+                'password = config.get(KEY)'
+            ),
+        )
+        for source in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    hardcoded_password_literal_lines(source),
+                    [len(source.splitlines())],
+                )
+
+        safe_source = (
+            'BASE = "user"\n'
+            'KEY = f"{BASE}"\n'
+            'BASE = "elastic_secret"\n'
+            'config = {"elastic_secret": "hardcoded-secret", "user": runtime_user}\n'
+            'password = config.get(KEY)'
+        )
+        self.assertEqual(hardcoded_password_literal_lines(safe_source), [])
+
     def test_python_password_literal_guard_preserves_callable_alias_capture(self):
         hardcoded_sources = (
             'normalize = lambda value: value\n'
@@ -5351,6 +5431,45 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for source in safe_examples:
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_password_literal_lines(source), [])
+
+    def test_python_password_literal_guard_respects_mutually_exclusive_str(self):
+        hardcoded_examples = (
+            (
+                'if use_provider:\n'
+                '    str = vault.read\n'
+                'else:\n'
+                '    password = str("hardcoded-secret")',
+                [4],
+            ),
+            (
+                'if use_provider:\n'
+                '    str = vault.read\n'
+                'else:\n'
+                '    if another_flag:\n'
+                '        password = str("hardcoded-secret")',
+                [5],
+            ),
+            (
+                'match provider:\n'
+                '    case "external":\n'
+                '        str = vault.read\n'
+                '    case "builtin":\n'
+                '        password = str("hardcoded-secret")',
+                [5],
+            ),
+        )
+        for source, expected in hardcoded_examples:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_password_literal_lines(source), expected)
+
+        safe_source = (
+            'str = vault.read\n'
+            'if use_provider:\n'
+            '    str = another_provider.read\n'
+            'else:\n'
+            '    password = str("secret/es/password")'
+        )
+        self.assertEqual(hardcoded_password_literal_lines(safe_source), [])
 
     def test_python_password_literal_guard_allows_rebound_transform_names(self):
         safe_examples = (
