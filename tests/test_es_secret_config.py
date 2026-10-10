@@ -1118,6 +1118,8 @@ def _name_bindings(tree):
 
     def capture_eager_expression_names(node, position, lexical_scope):
         """Freeze names evaluated as part of an assigned RHS at write time."""
+        if node is None:
+            return
         if isinstance(
             node,
             (ast.Lambda, ast.GeneratorExp, ast.ListComp, ast.SetComp, ast.DictComp),
@@ -1134,6 +1136,10 @@ def _name_bindings(tree):
             capture_eager_expression_names(child, position, lexical_scope)
 
     def add_binding(target, value, position):
+        # Annotation-only statements (e.g. password: str) do not bind a
+        # runtime value; their AnnAssign.value is None.
+        if value is None:
+            return
         if isinstance(target, (ast.Tuple, ast.List)):
             resolved_values = _resolve_bound_nodes(
                 value,
@@ -5315,6 +5321,29 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for source in safe_examples:
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_password_literal_lines(source), [])
+
+
+    def test_python_password_literal_guard_allows_annotation_only_bindings(self):
+        safe_sources = (
+            'password: str',
+            'api_key: str',
+            'password: str\\nclient = Elasticsearch(host)',
+            'if enabled:\\n    password: str',
+        )
+        for source in safe_sources:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_password_literal_lines(source), [])
+                self.assertEqual(hardcoded_auth_tuple_lines(source), [])
+                self.assertEqual(hardcoded_authorization_header_lines(source), [])
+
+        hardcoded_sources = (
+            ('password: str = "hardcoded-secret"', [1]),
+            ('password: str\\npassword = "hardcoded-secret"', [2]),
+            ('password: str\\nElasticsearch(host, basic_auth=("elastic", "hardcoded-secret"))', [2]),
+        )
+        for source, expected in hardcoded_sources:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_password_literal_lines(source), expected)
 
     def test_python_password_literal_guard_preserves_mapping_alias_capture(self):
         hardcoded_source = (
