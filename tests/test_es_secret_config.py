@@ -5327,8 +5327,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         safe_sources = (
             'password: str',
             'api_key: str',
-            'password: str\\nclient = Elasticsearch(host)',
-            'if enabled:\\n    password: str',
+            'password: str\nclient = Elasticsearch(host)',
+            'if enabled:\n    password: str',
         )
         for source in safe_sources:
             with self.subTest(source=source):
@@ -5338,12 +5338,17 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
 
         hardcoded_sources = (
             ('password: str = "hardcoded-secret"', [1]),
-            ('password: str\\npassword = "hardcoded-secret"', [2]),
-            ('password: str\\nElasticsearch(host, basic_auth=("elastic", "hardcoded-secret"))', [2]),
+            ('password: str\npassword = "hardcoded-secret"', [2]),
         )
         for source, expected in hardcoded_sources:
             with self.subTest(source=source):
                 self.assertEqual(hardcoded_password_literal_lines(source), expected)
+
+        auth_source = (
+            'password: str\n'
+            'Elasticsearch(host, basic_auth=("elastic", "hardcoded-secret"))'
+        )
+        self.assertEqual(hardcoded_auth_tuple_lines(auth_source), [2])
 
     def test_python_password_literal_guard_preserves_mapping_alias_capture(self):
         hardcoded_source = (
