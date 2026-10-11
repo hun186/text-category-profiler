@@ -1094,6 +1094,64 @@ def _annotate_binding_scopes(tree):
                 found.extend(reaching_callables(value.id, value, seen | {token}))
         return found
 
+    # Distinguish a callback retained beyond its activation record from an
+    # ordinary list/dict used and invoked solely inside that record. Track
+    # which local containers reach an outward-facing sink, following copies
+    # such as "alias = callbacks; return alias".
+    escaping_container_names = set()
+    local_container_copies = []
+
+    def exposed_names(expression, scope):
+        if expression is None:
+            return set()
+        if isinstance(expression, ast.Name):
+            if (
+                isinstance(expression.ctx, ast.Load)
+                and getattr(expression, "_binding_scope", module_scope) is scope
+            ):
+                return {(scope, expression.id)}
+            return set()
+        if isinstance(expression, ast.Lambda):
+            return set()  # Only the callback escapes, not names in its body.
+        if isinstance(expression, ast.Call):
+            # A function invoked at this point is not itself retained.
+            children = [*expression.args, *[kw.value for kw in expression.keywords]]
+        else:
+            children = ast.iter_child_nodes(expression)
+        names = set()
+        for child in children:
+            names.update(exposed_names(child, scope))
+        return names
+
+    for node in ast.walk(tree):
+        owner = getattr(node, "_binding_scope", module_scope)
+        if isinstance(node, (ast.Return, ast.Yield, ast.YieldFrom)):
+            escaping_container_names.update(exposed_names(node.value, owner))
+        elif isinstance(node, (ast.Assign, ast.AnnAssign, ast.NamedExpr)):
+            if node.value is None:
+                continue
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            if any(isinstance(t, (ast.Attribute, ast.Subscript)) for t in targets):
+                escaping_container_names.update(exposed_names(node.value, owner))
+            for target in targets:
+                if isinstance(target, ast.Name) and isinstance(node.value, ast.Name):
+                    local_container_copies.append(
+                        ((owner, target.id), (owner, node.value.id))
+                    )
+        elif isinstance(node, ast.Call):
+            for argument in node.args:
+                escaping_container_names.update(exposed_names(argument, owner))
+            for keyword in node.keywords:
+                escaping_container_names.update(exposed_names(keyword.value, owner))
+
+    changed = True
+    while changed:
+        changed = False
+        for target, source in local_container_copies:
+            if target in escaping_container_names and source not in escaping_container_names:
+                escaping_container_names.add(source)
+                changed = True
+
     escaping_functions = set()
 
     def mark_escaping_expression(node):
@@ -1142,9 +1200,20 @@ def _annotate_binding_scopes(tree):
             and isinstance(node.op, (ast.Add, ast.BitOr))
             and isinstance(node.value, (ast.Dict, ast.List, ast.Tuple, ast.Set))
         ):
-            # Callbacks appended/merged into an existing collection can be
-            # invoked in a different function invocation after key rebinding.
-            mark_escaping_expression(node.value)
+            owner = getattr(node, "_binding_scope", module_scope)
+            target = node.target
+            is_shared = owner is module_scope or not isinstance(target, ast.Name)
+            if isinstance(target, ast.Name) and owner is not module_scope:
+                is_shared = (
+                    target.id in scope_globals.get(owner, ())
+                    or target.id in scope_nonlocals.get(owner, ())
+                    or (owner, target.id) in escaping_container_names
+                )
+            # A truly local list/dict consumed before return is not escaped;
+            # module/global/nonlocal containers or locals that leave the
+            # frame may retain their callbacks across later invocations.
+            if is_shared:
+                mark_escaping_expression(node.value)
         elif isinstance(node, ast.Call):
             # A callback passed to an opaque call can be retained; invoking
             # a function without passing it is not by itself an escape.
@@ -6208,11 +6277,33 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 self.assertEqual(scanner(source), [])
 
         hardcoded_cases = (
-            (hardcoded_password_literal_lines, "callbacks = []\nKEY = \"username\"\ndef configure(flag):\n    global KEY, callbacks\n    if flag:\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n    else:\n        KEY = \"password\"\nconfigure(True)\nconfigure(False)\ncallbacks[0]()", [5]),
-            (hardcoded_password_literal_lines, "callbacks = {}\nKEY = \"username\"\ndef configure(flag):\n    global KEY, callbacks\n    if flag:\n        callbacks |= {\"build\": lambda: options.__setitem__(KEY, \"hardcoded-secret\")}\n    else:\n        KEY = \"password\"\nconfigure(True)\nconfigure(False)\ncallbacks[\"build\"]()", [5]),
-            (hardcoded_single_auth_lines, "callbacks = []\nKEY = \"username\"\ndef configure(flag):\n    global KEY, callbacks\n    if flag:\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-token\")]\n    else:\n        KEY = \"api_key\"\nconfigure(True)\nconfigure(False)\ncallbacks[0]()", [5]),
-            (hardcoded_auth_tuple_lines, "callbacks = {}\nKEY = \"username\"\ndef configure(flag):\n    global KEY, callbacks\n    if flag:\n        callbacks |= {\"build\": lambda: options.__setitem__(KEY, (\"elastic\", \"hardcoded-secret\"))}\n    else:\n        KEY = \"basic_auth\"\nconfigure(True)\nconfigure(False)\ncallbacks[\"build\"]()", [5]),
-            (hardcoded_authorization_header_lines, "callbacks = []\nKEY = \"x-trace\"\ndef configure(flag):\n    global KEY, callbacks\n    if flag:\n        callbacks += [lambda: headers.setdefault(KEY, \"Bearer hardcoded-token\")]\n    else:\n        KEY = \"Authorization\"\nconfigure(True)\nconfigure(False)\ncallbacks[0]()", [5]),
+            (hardcoded_password_literal_lines, "callbacks = []\nKEY = \"username\"\ndef configure(flag):\n    global KEY, callbacks\n    if flag:\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n    else:\n        KEY = \"password\"\nconfigure(True)\nconfigure(False)\ncallbacks[0]()", [6]),
+            (hardcoded_password_literal_lines, "callbacks = {}\nKEY = \"username\"\ndef configure(flag):\n    global KEY, callbacks\n    if flag:\n        callbacks |= {\"build\": lambda: options.__setitem__(KEY, \"hardcoded-secret\")}\n    else:\n        KEY = \"password\"\nconfigure(True)\nconfigure(False)\ncallbacks[\"build\"]()", [6]),
+            (hardcoded_single_auth_lines, "callbacks = []\nKEY = \"username\"\ndef configure(flag):\n    global KEY, callbacks\n    if flag:\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-token\")]\n    else:\n        KEY = \"api_key\"\nconfigure(True)\nconfigure(False)\ncallbacks[0]()", [6]),
+            (hardcoded_auth_tuple_lines, "callbacks = {}\nKEY = \"username\"\ndef configure(flag):\n    global KEY, callbacks\n    if flag:\n        callbacks |= {\"build\": lambda: options.__setitem__(KEY, (\"elastic\", \"hardcoded-secret\"))}\n    else:\n        KEY = \"basic_auth\"\nconfigure(True)\nconfigure(False)\ncallbacks[\"build\"]()", [6]),
+            (hardcoded_authorization_header_lines, "callbacks = []\nKEY = \"x-trace\"\ndef configure(flag):\n    global KEY, callbacks\n    if flag:\n        callbacks += [lambda: headers.setdefault(KEY, \"Bearer hardcoded-token\")]\n    else:\n        KEY = \"Authorization\"\nconfigure(True)\nconfigure(False)\ncallbacks[0]()", [6]),
+        )
+        for scanner, source, expected in hardcoded_cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), expected)
+
+    def test_augmented_callbacks_only_escape_with_their_container(self):
+        safe_cases = (
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        callbacks[0]()\n    else:\n        KEY = \"password\"\nconfigure(True)"),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = {}\n        callbacks |= {\"build\": lambda: options.__setitem__(KEY, \"hardcoded-secret\")}\n        callbacks[\"build\"]()\n    else:\n        KEY = \"password\"\nconfigure(True)"),
+            (hardcoded_single_auth_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-api-key\")]\n        callbacks[0]()\n    else:\n        KEY = \"api_key\"\nconfigure(True)"),
+            (hardcoded_authorization_header_lines, "KEY = \"x-trace\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = {}\n        callbacks |= {\"build\": lambda: headers.setdefault(KEY, \"Bearer hardcoded-token\")}\n        callbacks[\"build\"]()\n    else:\n        KEY = \"Authorization\"\nconfigure(True)"),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        return callbacks[0]()\n    else:\n        KEY = \"password\"\nconfigure(True)"),
+        )
+        for scanner, source in safe_cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), [])
+
+        hardcoded_cases = (
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        return callbacks\n    else:\n        KEY = \"password\"\ncallbacks = configure(True)\nconfigure(False)\ncallbacks[0]()", [6]),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        alias = callbacks\n        return alias\n    else:\n        KEY = \"password\"\ncallbacks = configure(True)\nconfigure(False)\ncallbacks[0]()", [6]),
+            (hardcoded_single_auth_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = {}\n        callbacks |= {\"build\": lambda: options.__setitem__(KEY, \"hardcoded-api-key\")}\n        return callbacks\n    else:\n        KEY = \"api_key\"\ncallbacks = configure(True)\nconfigure(False)\ncallbacks[\"build\"]()", [6]),
+            (hardcoded_authorization_header_lines, "KEY = \"x-trace\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        callbacks += [lambda: headers.setdefault(KEY, \"Bearer hardcoded-token\")]\n        holder.saved = callbacks\n    else:\n        KEY = \"Authorization\"\nconfigure(True)\nconfigure(False)\nholder.saved[0]()", [6]),
         )
         for scanner, source, expected in hardcoded_cases:
             with self.subTest(scanner=scanner.__name__, source=source):
