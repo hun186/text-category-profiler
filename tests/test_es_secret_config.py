@@ -6058,7 +6058,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 'def configure(flag):\n'
                 '    global KEY\n'
                 '    if flag:\n'
-                '        build = lambda: headers.__setitem__(KEY, "Bearer hardcoded-token")\n'
+                '        build = lambda: headers.setdefault(KEY, "Bearer hardcoded-token")\n'
                 '        return build\n'
                 '    else:\n'
                 '        KEY = "Authorization"\n'
@@ -6076,6 +6076,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         safe_cases = (
             (
                 hardcoded_password_literal_lines,
+                'KEY = "username"\n'
                 'def configure(flag):\n'
                 '    global KEY\n'
                 '    if flag:\n'
@@ -6091,6 +6092,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ),
             (
                 hardcoded_password_literal_lines,
+                'KEY = "username"\n'
                 'def configure(flag):\n'
                 '    global KEY\n'
                 '    if flag:\n'
