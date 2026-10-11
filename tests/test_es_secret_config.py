@@ -1354,21 +1354,39 @@ def _bound_name_values(name, bindings, before_position, seen_names, use_node):
     if token in seen_names:
         return []
 
-    # The RHS of an earlier alias assignment denotes the value observed at
-    # that assignment, not at the later use of the alias. This also works
-    # through alias chains without discarding conservative reaching branches.
+    binding_scope, binding_name = token
+    metadata = bindings["metadata"]
+    lexical_scope = getattr(use_node, "_binding_scope", metadata["module"])
+
+    # A function/lambda reads an outer name when it *runs*, not when its
+    # source body is defined. At a use site inside that deferred scope,
+    # source order alone cannot rule out later outer assignments: retain
+    # all potential outer binding values for conservative credential scans.
+    scope = lexical_scope
+    deferred_outer_lookup = False
+    while scope is not None and scope is not binding_scope:
+        if isinstance(scope, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
+            deferred_outer_lookup = True
+        scope = metadata["parents"].get(scope)
+
+    # Eager aliases instead capture their RHS at assignment time. Continue
+    # to apply that bound for ordinary source-ordered local/module lookups.
     captured_at = getattr(use_node, "_alias_captured_at", None)
-    if captured_at is not None:
+    if captured_at is not None and not deferred_outer_lookup:
         before_position = min(before_position, captured_at)
 
-    binding_scope, binding_name = token
     candidates = [
         (position, value)
         for position, value in bindings["values"]
         .get(binding_scope, {})
         .get(binding_name, ())
-        if position <= before_position
+        if deferred_outer_lookup or position <= before_position
     ]
+    if deferred_outer_lookup:
+        # Multiple outer values may be observed at different call times.
+        # Keep the possibilities instead of selecting the last by source
+        # position; this avoids missed credentials across later rebindings.
+        return [value for _position, value in candidates]
     return _reaching_values(candidates, use_node)
 
 
@@ -5549,6 +5567,127 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             (
                 hardcoded_authorization_header_lines,
                 'KEY = "x-trace"\nheaders[KEY] = "Bearer hardcoded-token"',
+            ),
+        )
+        for scanner, source in safe_cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), [])
+
+    def test_credential_guards_resolve_deferred_outer_key_rebindings(self):
+        hardcoded_cases = (
+            (
+                hardcoded_password_literal_lines,
+                'KEY = "username"\n'
+                'def build():\n'
+                '    options[KEY] = "hardcoded-secret"\n'
+                'KEY = "password"\n'
+                'build()',
+                [3],
+            ),
+            (
+                hardcoded_password_literal_lines,
+                'KEY = "username"\n'
+                'def build():\n'
+                '    local_key = f"{KEY}"\n'
+                '    options[local_key] = "hardcoded-secret"\n'
+                'KEY = "password"\n'
+                'build()',
+                [4],
+            ),
+            (
+                hardcoded_password_literal_lines,
+                'def outer():\n'
+                '    KEY = "username"\n'
+                '    def build():\n'
+                '        options[KEY] = "hardcoded-secret"\n'
+                '    KEY = "password"\n'
+                '    build()\n'
+                'outer()',
+                [4],
+            ),
+            (
+                hardcoded_single_auth_lines,
+                'KEY = "username"\n'
+                'def build():\n'
+                '    options[KEY] = "hardcoded-api-key"\n'
+                'KEY = "api_key"\n'
+                'build()',
+                [3],
+            ),
+            (
+                hardcoded_auth_tuple_lines,
+                'KEY = "username"\n'
+                'def build():\n'
+                '    options[KEY] = ("elastic", "hardcoded-secret")\n'
+                'KEY = "basic_auth"\n'
+                'build()',
+                [3],
+            ),
+            (
+                hardcoded_authorization_header_lines,
+                'KEY = "x-trace"\n'
+                'def build():\n'
+                '    headers[KEY] = "Bearer hardcoded-token"\n'
+                'KEY = "Authorization"\n'
+                'build()',
+                [3],
+            ),
+            (
+                hardcoded_password_literal_lines,
+                'KEY = "username"\n'
+                'def build():\n'
+                '    os.environ[KEY] = "hardcoded-secret"\n'
+                'KEY = "TCP_ELASTIC_PASSWORD"\n'
+                'build()',
+                [3],
+            ),
+        )
+        for scanner, source, expected in hardcoded_cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), expected)
+
+        safe_cases = (
+            (
+                hardcoded_password_literal_lines,
+                'KEY = "username"\n'
+                'def build():\n'
+                '    options[KEY] = "hardcoded-secret"\n'
+                'build()',
+            ),
+            (
+                hardcoded_password_literal_lines,
+                'KEY = "password"\n'
+                'def build():\n'
+                '    KEY = "username"\n'
+                '    options[KEY] = "hardcoded-secret"\n'
+                'build()',
+            ),
+            (
+                hardcoded_password_literal_lines,
+                'def build(KEY):\n'
+                '    options[KEY] = "hardcoded-secret"\n'
+                'build(runtime_key)',
+            ),
+            (
+                hardcoded_single_auth_lines,
+                'KEY = "username"\n'
+                'def build():\n'
+                '    options[KEY] = "hardcoded-api-key"\n'
+                'build()',
+            ),
+            (
+                hardcoded_auth_tuple_lines,
+                'KEY = "username"\n'
+                'def build():\n'
+                '    options[KEY] = ("elastic", "hardcoded-secret")\n'
+                'build()',
+            ),
+            (
+                hardcoded_authorization_header_lines,
+                'KEY = "x-trace"\n'
+                'def build():\n'
+                '    headers[KEY] = "Bearer hardcoded-token"\n'
+                'build()',
             ),
         )
         for scanner, source in safe_cases:
