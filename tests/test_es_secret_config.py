@@ -1035,19 +1035,71 @@ def _annotate_binding_scopes(tree):
         for parent in ast.walk(tree)
         for child in ast.iter_child_nodes(parent)
     }
-    nested_by_parent = {}
-    for scope, parent in scope_parents.items():
-        if isinstance(scope, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            nested_by_parent.setdefault((parent, scope.name), []).append(scope)
+    # Record callable values by their real source-ordered bindings, rather
+    # than treating every definition with a matching name as one function.
+    # Include lambda assignments and noncallable rebindings (which mask the
+    # earlier function at later uses).
+    callable_bindings = {}
+
+    def record_callable_binding(owner, name, node, value):
+        callable_bindings.setdefault((owner, name), []).append(
+            (_node_position(node), value)
+        )
+
+    for node in ast.walk(tree):
+        owner = getattr(node, "_binding_scope", module_scope)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            record_callable_binding(owner, node.name, node, node)
+        elif isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name):
+                    record_callable_binding(owner, target.id, node, node.value)
+        elif isinstance(node, ast.AnnAssign):
+            if node.value is not None and isinstance(node.target, ast.Name):
+                record_callable_binding(owner, node.target.id, node, node.value)
+        elif isinstance(node, ast.NamedExpr) and isinstance(node.target, ast.Name):
+            record_callable_binding(owner, node.target.id, node, node.value)
+
+    for entries in callable_bindings.values():
+        entries.sort(key=lambda item: item[0])
+
+    def reaching_callables(name, use_node, seen=None):
+        seen = set() if seen is None else set(seen)
+        owner = getattr(use_node, "_binding_scope", module_scope)
+        while owner is not None:
+            token = (owner, name)
+            if token in seen:
+                return []
+            if token in callable_bindings:
+                break
+            if name in scope_locals.get(owner, ()):
+                return []
+            owner = scope_parents.get(owner)
+        if owner is None:
+            return []
+
+        reaching = _reaching_values(
+            [
+                (position, value)
+                for position, value in callable_bindings[token]
+                if position <= _node_position(use_node)
+            ],
+            use_node,
+        )
+        found = []
+        for value in reaching:
+            if isinstance(value, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
+                found.append(value)
+            elif isinstance(value, ast.Name):
+                found.extend(reaching_callables(value.id, value, seen | {token}))
+        return found
 
     escaping_functions = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
-            owner = getattr(node, "_binding_scope", module_scope)
-            possible_functions = nested_by_parent.get((owner, node.id), ())
             parent = ast_parents.get(node)
             if not (isinstance(parent, ast.Call) and parent.func is node):
-                escaping_functions.update(possible_functions)
+                escaping_functions.update(reaching_callables(node.id, node))
         elif isinstance(node, ast.Lambda):
             parent = ast_parents.get(node)
             if isinstance(parent, (ast.Return, ast.Yield, ast.YieldFrom)):
@@ -5951,6 +6003,125 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             'build()'
         )
         self.assertEqual(hardcoded_password_literal_lines(safe_source), [])
+
+    def test_escaped_lambda_alias_reaches_later_sibling_global_binding(self):
+        hardcoded_cases = (
+            (
+                hardcoded_password_literal_lines,
+                'KEY = "username"\n'
+                'def configure(flag):\n'
+                '    global KEY\n'
+                '    if flag:\n'
+                '        build = lambda: options.__setitem__(KEY, "hardcoded-secret")\n'
+                '        return build\n'
+                '    else:\n'
+                '        KEY = "password"\n'
+                'build = configure(True)\n'
+                'configure(False)\n'
+                'build()',
+                [5],
+            ),
+            (
+                hardcoded_password_literal_lines,
+                'KEY = "username"\n'
+                'def configure(flag):\n'
+                '    global KEY\n'
+                '    if flag:\n'
+                '        build = lambda: options.__setitem__(KEY, "hardcoded-secret")\n'
+                '        alias = build\n'
+                '        return alias\n'
+                '    else:\n'
+                '        KEY = "password"\n'
+                'build = configure(True)\n'
+                'configure(False)\n'
+                'build()',
+                [5],
+            ),
+            (
+                hardcoded_single_auth_lines,
+                'KEY = "username"\n'
+                'def configure(flag):\n'
+                '    global KEY\n'
+                '    if flag:\n'
+                '        build = lambda: options.__setitem__(KEY, "hardcoded-token")\n'
+                '        return build\n'
+                '    else:\n'
+                '        KEY = "api_key"\n'
+                'build = configure(True)\n'
+                'configure(False)\n'
+                'build()',
+                [5],
+            ),
+            (
+                hardcoded_authorization_header_lines,
+                'KEY = "x-trace"\n'
+                'def configure(flag):\n'
+                '    global KEY\n'
+                '    if flag:\n'
+                '        build = lambda: headers.__setitem__(KEY, "Bearer hardcoded-token")\n'
+                '        return build\n'
+                '    else:\n'
+                '        KEY = "Authorization"\n'
+                'build = configure(True)\n'
+                'configure(False)\n'
+                'build()',
+                [5],
+            ),
+        )
+        for scanner, source, expected in hardcoded_cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), expected)
+
+    def test_escape_tracking_uses_reaching_same_name_definition(self):
+        safe_cases = (
+            (
+                hardcoded_password_literal_lines,
+                'def configure(flag):\n'
+                '    global KEY\n'
+                '    if flag:\n'
+                '        def build():\n'
+                '            options[KEY] = "hardcoded-secret"\n'
+                '        build()\n'
+                '    else:\n'
+                '        KEY = "password"\n'
+                '        def build():\n'
+                '            pass\n'
+                '        return build\n'
+                'configure(True)',
+            ),
+            (
+                hardcoded_password_literal_lines,
+                'def configure(flag):\n'
+                '    global KEY\n'
+                '    if flag:\n'
+                '        build = lambda: options.__setitem__(KEY, "hardcoded-secret")\n'
+                '        build()\n'
+                '    else:\n'
+                '        KEY = "password"\n'
+                '        build = lambda: None\n'
+                '        return build\n'
+                'configure(True)',
+            ),
+        )
+        for scanner, source in safe_cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), [])
+
+        hardcoded_source = (
+            'def configure(flag):\n'
+            '    global KEY\n'
+            '    if flag:\n'
+            '        KEY = "username"\n'
+            '        def build():\n'
+            '            pass\n'
+            '    else:\n'
+            '        KEY = "password"\n'
+            '        def build():\n'
+            '            options[KEY] = "hardcoded-secret"\n'
+            '        return build\n'
+            'configure(False)'
+        )
+        self.assertEqual(hardcoded_password_literal_lines(hardcoded_source), [10])
 
     def test_python_password_literal_guard_preserves_mapping_alias_capture(self):
         hardcoded_source = (
