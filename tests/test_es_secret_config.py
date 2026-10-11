@@ -1383,10 +1383,18 @@ def _bound_name_values(name, bindings, before_position, seen_names, use_node):
         if deferred_outer_lookup or position <= before_position
     ]
     if deferred_outer_lookup:
-        # Multiple outer values may be observed at different call times.
-        # Keep the possibilities instead of selecting the last by source
-        # position; this avoids missed credentials across later rebindings.
-        return [value for _position, value in candidates]
+        # The body may execute after later outer assignments, but a binding
+        # in a mutually exclusive if/else or match arm cannot reach this use.
+        # Preserve all remaining possible call-time values instead of
+        # selecting only the last source-ordered assignment.
+        use_path = _node_control_path(use_node)
+        return [
+            value
+            for _position, value in candidates
+            if not _control_paths_mutually_exclusive(
+                _node_control_path(value), use_path
+            )
+        ]
     return _reaching_values(candidates, use_node)
 
 
@@ -5693,6 +5701,126 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for scanner, source in safe_cases:
             with self.subTest(scanner=scanner.__name__, source=source):
                 self.assertEqual(scanner(source), [])
+
+    def test_deferred_key_lookup_excludes_mutually_exclusive_branches(self):
+        safe_cases = (
+            (
+                hardcoded_password_literal_lines,
+                'if flag:\n'
+                '    KEY = "password"\n'
+                'else:\n'
+                '    KEY = "username"\n'
+                '    def build():\n'
+                '        options[KEY] = "hardcoded-secret"\n'
+                '    build()',
+            ),
+            (
+                hardcoded_password_literal_lines,
+                'match mode:\n'
+                '    case "secret":\n'
+                '        KEY = "password"\n'
+                '    case "safe":\n'
+                '        KEY = "username"\n'
+                '        def build():\n'
+                '            options[KEY] = "hardcoded-secret"\n'
+                '        build()',
+            ),
+            (
+                hardcoded_single_auth_lines,
+                'if flag:\n'
+                '    KEY = "api_key"\n'
+                'else:\n'
+                '    KEY = "username"\n'
+                '    def build():\n'
+                '        options[KEY] = "hardcoded-api-key"\n'
+                '    build()',
+            ),
+            (
+                hardcoded_auth_tuple_lines,
+                'if flag:\n'
+                '    KEY = "basic_auth"\n'
+                'else:\n'
+                '    KEY = "username"\n'
+                '    def build():\n'
+                '        options[KEY] = ("elastic", "hardcoded-secret")\n'
+                '    build()',
+            ),
+            (
+                hardcoded_authorization_header_lines,
+                'if flag:\n'
+                '    KEY = "Authorization"\n'
+                'else:\n'
+                '    KEY = "x-trace"\n'
+                '    def build():\n'
+                '        headers[KEY] = "Bearer hardcoded-token"\n'
+                '    build()',
+            ),
+        )
+        for scanner, source in safe_cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), [])
+
+        hardcoded_cases = (
+            (
+                hardcoded_password_literal_lines,
+                'if flag:\n'
+                '    KEY = "username"\n'
+                'else:\n'
+                '    KEY = "password"\n'
+                '    def build():\n'
+                '        options[KEY] = "hardcoded-secret"\n'
+                '    build()',
+                [6],
+            ),
+            (
+                hardcoded_password_literal_lines,
+                'if flag:\n'
+                '    KEY = "username"\n'
+                'else:\n'
+                '    KEY = "username"\n'
+                '    def build():\n'
+                '        options[KEY] = "hardcoded-secret"\n'
+                '    KEY = "password"\n'
+                '    build()',
+                [6],
+            ),
+            (
+                hardcoded_single_auth_lines,
+                'if flag:\n'
+                '    KEY = "username"\n'
+                'else:\n'
+                '    KEY = "api_key"\n'
+                '    def build():\n'
+                '        options[KEY] = "hardcoded-api-key"\n'
+                '    build()',
+                [6],
+            ),
+            (
+                hardcoded_auth_tuple_lines,
+                'if flag:\n'
+                '    KEY = "username"\n'
+                'else:\n'
+                '    KEY = "basic_auth"\n'
+                '    def build():\n'
+                '        options[KEY] = ("elastic", "hardcoded-secret")\n'
+                '    build()',
+                [6],
+            ),
+            (
+                hardcoded_authorization_header_lines,
+                'if flag:\n'
+                '    KEY = "x-trace"\n'
+                'else:\n'
+                '    KEY = "Authorization"\n'
+                '    def build():\n'
+                '        headers[KEY] = "Bearer hardcoded-token"\n'
+                '    build()',
+                [6],
+            ),
+        )
+        for scanner, source, expected in hardcoded_cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), expected)
 
     def test_python_password_literal_guard_preserves_mapping_alias_capture(self):
         hardcoded_source = (
