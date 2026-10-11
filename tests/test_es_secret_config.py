@@ -1110,6 +1110,15 @@ def _annotate_binding_scopes(tree):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             escaping_functions.add(node)
             return
+        if isinstance(node, ast.Call):
+            # The callable is invoked here: its result may escape, not the
+            # function object. Only callback-valued arguments can be retained
+            # by that invocation or its consumer.
+            for argument in node.args:
+                mark_escaping_expression(argument)
+            for keyword in node.keywords:
+                mark_escaping_expression(keyword.value)
+            return
         for child in ast.iter_child_nodes(node):
             mark_escaping_expression(child)
 
@@ -1128,6 +1137,14 @@ def _annotate_binding_scopes(tree):
             elif isinstance(node.value, (ast.Dict, ast.List, ast.Tuple, ast.Set)):
                 # A collection retaining callbacks may escape the frame.
                 mark_escaping_expression(node.value)
+        elif (
+            isinstance(node, ast.AugAssign)
+            and isinstance(node.op, (ast.Add, ast.BitOr))
+            and isinstance(node.value, (ast.Dict, ast.List, ast.Tuple, ast.Set))
+        ):
+            # Callbacks appended/merged into an existing collection can be
+            # invoked in a different function invocation after key rebinding.
+            mark_escaping_expression(node.value)
         elif isinstance(node, ast.Call):
             # A callback passed to an opaque call can be retained; invoking
             # a function without passing it is not by itself an escape.
@@ -6178,6 +6195,28 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for scanner, source in safe_cases:
             with self.subTest(scanner=scanner.__name__, source=source):
                 self.assertEqual(scanner(source), [])
+
+    def test_callable_results_do_not_escape_and_augmented_containers_do(self):
+        safe_cases = (
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        def build():\n            options[KEY] = \"hardcoded-secret\"\n        return build()\n    else:\n        KEY = \"password\"\nconfigure(True)"),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        def build():\n            options[KEY] = \"hardcoded-secret\"\n        consume(build())\n    else:\n        KEY = \"password\"\nconfigure(True)"),
+            (hardcoded_single_auth_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        build = lambda: options.__setitem__(KEY, \"hardcoded-token\")\n        return build()\n    else:\n        KEY = \"api_key\"\nconfigure(True)"),
+            (hardcoded_authorization_header_lines, "KEY = \"x-trace\"\ndef configure(flag):\n    global KEY\n    if flag:\n        build = lambda: headers.setdefault(KEY, \"Bearer hardcoded-token\")\n        consume(build())\n    else:\n        KEY = \"Authorization\"\nconfigure(True)"),
+        )
+        for scanner, source in safe_cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), [])
+
+        hardcoded_cases = (
+            (hardcoded_password_literal_lines, "callbacks = []\nKEY = \"username\"\ndef configure(flag):\n    global KEY, callbacks\n    if flag:\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n    else:\n        KEY = \"password\"\nconfigure(True)\nconfigure(False)\ncallbacks[0]()", [5]),
+            (hardcoded_password_literal_lines, "callbacks = {}\nKEY = \"username\"\ndef configure(flag):\n    global KEY, callbacks\n    if flag:\n        callbacks |= {\"build\": lambda: options.__setitem__(KEY, \"hardcoded-secret\")}\n    else:\n        KEY = \"password\"\nconfigure(True)\nconfigure(False)\ncallbacks[\"build\"]()", [5]),
+            (hardcoded_single_auth_lines, "callbacks = []\nKEY = \"username\"\ndef configure(flag):\n    global KEY, callbacks\n    if flag:\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-token\")]\n    else:\n        KEY = \"api_key\"\nconfigure(True)\nconfigure(False)\ncallbacks[0]()", [5]),
+            (hardcoded_auth_tuple_lines, "callbacks = {}\nKEY = \"username\"\ndef configure(flag):\n    global KEY, callbacks\n    if flag:\n        callbacks |= {\"build\": lambda: options.__setitem__(KEY, (\"elastic\", \"hardcoded-secret\"))}\n    else:\n        KEY = \"basic_auth\"\nconfigure(True)\nconfigure(False)\ncallbacks[\"build\"]()", [5]),
+            (hardcoded_authorization_header_lines, "callbacks = []\nKEY = \"x-trace\"\ndef configure(flag):\n    global KEY, callbacks\n    if flag:\n        callbacks += [lambda: headers.setdefault(KEY, \"Bearer hardcoded-token\")]\n    else:\n        KEY = \"Authorization\"\nconfigure(True)\nconfigure(False)\ncallbacks[0]()", [5]),
+        )
+        for scanner, source, expected in hardcoded_cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), expected)
 
     def test_python_password_literal_guard_preserves_mapping_alias_capture(self):
         hardcoded_source = (
