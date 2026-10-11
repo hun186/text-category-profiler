@@ -5430,6 +5430,131 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         )
         self.assertEqual(hardcoded_auth_tuple_lines(auth_source), [2])
 
+    def test_annotation_only_auth_bindings_do_not_reset_augmented_values(self):
+        auth_tuple_source = (
+            'basic_auth = (runtime_user,)\n'
+            'basic_auth: tuple\n'
+            'basic_auth += ("hardcoded-secret",)'
+        )
+        self.assertEqual(hardcoded_auth_tuple_lines(auth_tuple_source), [3])
+
+        authorization_source = (
+            'headers.Authorization = "Bearer "\n'
+            'headers.Authorization: str\n'
+            'headers.Authorization += "hardcoded-token"'
+        )
+        self.assertEqual(
+            hardcoded_authorization_header_lines(authorization_source),
+            [3],
+        )
+
+    def test_credential_guards_resolve_aliases_used_as_mapping_keys(self):
+        hardcoded_cases = (
+            (
+                hardcoded_password_literal_lines,
+                'KEY = "password"\noptions = {}\n'
+                'options[KEY] = "hardcoded-secret"',
+                [3],
+            ),
+            (
+                hardcoded_password_literal_lines,
+                'KEY = "password"\noptions = {KEY: "hardcoded-secret"}',
+                [2],
+            ),
+            (
+                hardcoded_password_literal_lines,
+                'KEY = "password"\noptions.setdefault(KEY, "hardcoded-secret")',
+                [2],
+            ),
+            (
+                hardcoded_password_literal_lines,
+                'KEY = "password"\noptions.__setitem__(KEY, "hardcoded-secret")',
+                [2],
+            ),
+            (
+                hardcoded_password_literal_lines,
+                'KEY = "password"\nALIAS = KEY\nKEY = "username"\n'
+                'options[ALIAS] = "hardcoded-secret"',
+                [4],
+            ),
+            (
+                hardcoded_single_auth_lines,
+                'KEY = "api_key"\noptions[KEY] = "hardcoded-api-key"',
+                [2],
+            ),
+            (
+                hardcoded_single_auth_lines,
+                'KEY = "bearer_auth"\n'
+                'options.setdefault(KEY, "hardcoded-bearer")',
+                [2],
+            ),
+            (
+                hardcoded_auth_tuple_lines,
+                'KEY = "basic_auth"\n'
+                'options[KEY] = ("elastic", "hardcoded-secret")',
+                [2],
+            ),
+            (
+                hardcoded_auth_tuple_lines,
+                'KEY = "http_auth"\n'
+                'options.setdefault(KEY, ("elastic", "hardcoded-secret"))',
+                [2],
+            ),
+            (
+                hardcoded_authorization_header_lines,
+                'KEY = "Authorization"\n'
+                'headers[KEY] = "Bearer hardcoded-token"',
+                [2],
+            ),
+            (
+                hardcoded_authorization_header_lines,
+                'KEY = "authorization"\n'
+                'headers.setdefault(KEY, "ApiKey hardcoded-token")',
+                [2],
+            ),
+            (
+                hardcoded_password_literal_lines,
+                'KEY = "TCP_ELASTIC_PASSWORD"\n'
+                'os.environ[KEY] = "hardcoded-secret"',
+                [2],
+            ),
+        )
+        for scanner, source, expected in hardcoded_cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), expected)
+
+        safe_cases = (
+            (
+                hardcoded_password_literal_lines,
+                'KEY = "username"\noptions[KEY] = "hardcoded-secret"',
+            ),
+            (
+                hardcoded_password_literal_lines,
+                'KEY = "password"\nKEY = "username"\n'
+                'options[KEY] = "hardcoded-secret"',
+            ),
+            (
+                hardcoded_password_literal_lines,
+                'KEY = dynamic_key\noptions[KEY] = "hardcoded-secret"',
+            ),
+            (
+                hardcoded_single_auth_lines,
+                'KEY = "username"\noptions[KEY] = "hardcoded-api-key"',
+            ),
+            (
+                hardcoded_auth_tuple_lines,
+                'KEY = "username"\n'
+                'options[KEY] = ("elastic", "hardcoded-secret")',
+            ),
+            (
+                hardcoded_authorization_header_lines,
+                'KEY = "x-trace"\nheaders[KEY] = "Bearer hardcoded-token"',
+            ),
+        )
+        for scanner, source in safe_cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), [])
+
     def test_python_password_literal_guard_preserves_mapping_alias_capture(self):
         hardcoded_source = (
             'BASE = "elastic_secret"\n'
