@@ -1026,12 +1026,40 @@ def _annotate_binding_scopes(tree):
             super().generic_visit(node)
 
     ScopeVisitor().visit(tree)
+
+    # A nested function can outlive the path that defined it, for example
+    # when it is returned and called after a later invocation of its parent.
+    # Direct calls in the same lexical scope do not themselves escape.
+    ast_parents = {
+        child: parent
+        for parent in ast.walk(tree)
+        for child in ast.iter_child_nodes(parent)
+    }
+    nested_by_parent = {}
+    for scope, parent in scope_parents.items():
+        if isinstance(scope, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            nested_by_parent.setdefault((parent, scope.name), []).append(scope)
+
+    escaping_functions = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
+            owner = getattr(node, "_binding_scope", module_scope)
+            possible_functions = nested_by_parent.get((owner, node.id), ())
+            parent = ast_parents.get(node)
+            if not (isinstance(parent, ast.Call) and parent.func is node):
+                escaping_functions.update(possible_functions)
+        elif isinstance(node, ast.Lambda):
+            parent = ast_parents.get(node)
+            if isinstance(parent, (ast.Return, ast.Yield, ast.YieldFrom)):
+                escaping_functions.add(node)
+
     return {
         "module": module_scope,
         "parents": scope_parents,
         "locals": scope_locals,
         "globals": scope_globals,
         "nonlocals": scope_nonlocals,
+        "escaping_functions": escaping_functions,
     }
 
 
@@ -1383,15 +1411,29 @@ def _bound_name_values(name, bindings, before_position, seen_names, use_node):
         if deferred_outer_lookup or position <= before_position
     ]
     if deferred_outer_lookup:
-        # The body may execute after later outer assignments, but a binding
-        # in a mutually exclusive if/else or match arm cannot reach this use.
-        # Preserve all remaining possible call-time values instead of
-        # selecting only the last source-ordered assignment.
+        # A returned/exported nested function can run after a *different*
+        # invocation of its parent mutates an outer/shared name in a sibling
+        # branch. Its definition path cannot exclude those later writes.
+        # A local variable owned by that very parent instead belongs to a
+        # distinct frame on each invocation, so keep branch filtering there.
+        scope = lexical_scope
+        escaped_shared_lookup = False
+        while scope is not None and scope is not binding_scope:
+            parent = metadata["parents"].get(scope)
+            if (
+                scope in metadata["escaping_functions"]
+                and parent is not binding_scope
+            ):
+                escaped_shared_lookup = True
+                break
+            scope = parent
+
         use_path = _node_control_path(use_node)
         return [
             value
             for _position, value in candidates
-            if not _control_paths_mutually_exclusive(
+            if escaped_shared_lookup
+            or not _control_paths_mutually_exclusive(
                 _node_control_path(value), use_path
             )
         ]
@@ -5821,6 +5863,94 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for scanner, source, expected in hardcoded_cases:
             with self.subTest(scanner=scanner.__name__, source=source):
                 self.assertEqual(scanner(source), expected)
+
+    def test_escaped_closure_reaches_shared_sibling_branch_bindings(self):
+        hardcoded_cases = (
+            (
+                hardcoded_password_literal_lines,
+                'KEY = "username"\n'
+                'def configure(flag):\n'
+                '    global KEY\n'
+                '    if flag:\n'
+                '        def build():\n'
+                '            options[KEY] = "hardcoded-secret"\n'
+                '        return build\n'
+                '    else:\n'
+                '        KEY = "password"\n'
+                'build = configure(True)\n'
+                'configure(False)\n'
+                'build()',
+                [6],
+            ),
+            (
+                hardcoded_single_auth_lines,
+                'KEY = "username"\n'
+                'def configure(flag):\n'
+                '    global KEY\n'
+                '    if flag:\n'
+                '        def build():\n'
+                '            options[KEY] = "hardcoded-api-key"\n'
+                '        return build\n'
+                '    else:\n'
+                '        KEY = "api_key"\n'
+                'build = configure(True)\n'
+                'configure(False)\n'
+                'build()',
+                [6],
+            ),
+            (
+                hardcoded_auth_tuple_lines,
+                'KEY = "username"\n'
+                'def configure(flag):\n'
+                '    global KEY\n'
+                '    if flag:\n'
+                '        def build():\n'
+                '            options[KEY] = ("elastic", "hardcoded-secret")\n'
+                '        return build\n'
+                '    else:\n'
+                '        KEY = "basic_auth"\n'
+                'build = configure(True)\n'
+                'configure(False)\n'
+                'build()',
+                [6],
+            ),
+            (
+                hardcoded_authorization_header_lines,
+                'KEY = "x-trace"\n'
+                'def configure(flag):\n'
+                '    global KEY\n'
+                '    if flag:\n'
+                '        def build():\n'
+                '            headers[KEY] = "Bearer hardcoded-token"\n'
+                '        return build\n'
+                '    else:\n'
+                '        KEY = "Authorization"\n'
+                'build = configure(True)\n'
+                'configure(False)\n'
+                'build()',
+                [6],
+            ),
+        )
+        for scanner, source, expected in hardcoded_cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), expected)
+
+        # A closure retains its own configure() frame for local variables;
+        # rebinding a sibling path during another call cannot affect it.
+        safe_source = (
+            'def configure(flag):\n'
+            '    KEY = "username"\n'
+            '    if flag:\n'
+            '        def build():\n'
+            '            options[KEY] = "hardcoded-secret"\n'
+            '        return build\n'
+            '    else:\n'
+            '        KEY = "password"\n'
+            'build = configure(True)\n'
+            'configure(False)\n'
+            'build()'
+        )
+        self.assertEqual(hardcoded_password_literal_lines(safe_source), [])
 
     def test_python_password_literal_guard_preserves_mapping_alias_capture(self):
         hardcoded_source = (
