@@ -476,21 +476,25 @@ AUTH_TUPLE_NAMES = {"http_auth", "basic_auth"}
 SINGLE_VALUE_AUTH_NAMES = {"api_key", "bearer_auth"}
 
 
-def _is_single_auth_target(node):
+def _is_single_auth_target(node, bindings=None, before_position=None):
     if isinstance(node, ast.Name):
         return node.id in SINGLE_VALUE_AUTH_NAMES
     if isinstance(node, ast.Subscript):
-        return _literal_string(node.slice) in SINGLE_VALUE_AUTH_NAMES
+        return _static_key_matches(
+            node.slice, SINGLE_VALUE_AUTH_NAMES, bindings, before_position
+        )
     if isinstance(node, ast.Attribute):
         return node.attr in SINGLE_VALUE_AUTH_NAMES
     return False
 
 
-def _is_auth_tuple_target(node):
+def _is_auth_tuple_target(node, bindings=None, before_position=None):
     if isinstance(node, ast.Name):
         return node.id in AUTH_TUPLE_NAMES
     if isinstance(node, ast.Subscript):
-        return _literal_string(node.slice) in AUTH_TUPLE_NAMES
+        return _static_key_matches(
+            node.slice, AUTH_TUPLE_NAMES, bindings, before_position
+        )
     if isinstance(node, ast.Attribute):
         return node.attr in AUTH_TUPLE_NAMES
     return False
@@ -502,6 +506,30 @@ def _literal_string(node):
     except (ValueError, TypeError):
         return None
     return value if isinstance(value, str) else None
+
+
+def _static_key_strings(node, bindings=None, before_position=None):
+    """Resolve a mapping key only when it is statically reconstructible."""
+    if node is None:
+        return []
+    if bindings is None:
+        literal = _literal_string(node)
+        return [literal] if literal is not None else []
+    if before_position is None:
+        before_position = _node_position(node)
+    return _static_string_values(node, bindings, before_position)
+
+
+def _static_key_matches(
+    node, names, bindings=None, before_position=None, case_insensitive=False
+):
+    candidates = _static_key_strings(node, bindings, before_position)
+    if isinstance(names, str):
+        names = {names}
+    if case_insensitive:
+        allowed = {name.lower() for name in names}
+        return any(key.lower() in allowed for key in candidates)
+    return any(key in names for key in candidates)
 
 
 def _hardcoded_comment_scalar_value(node):
@@ -556,9 +584,9 @@ def _hardcoded_comment_scalar_value(node):
     return False
 
 
-def _auth_target_key(node):
+def _auth_target_key(node, bindings=None, before_position=None):
     """Return a stable key for a supported auth target expression."""
-    if not _is_auth_tuple_target(node):
+    if not _is_auth_tuple_target(node, bindings, before_position):
         return None
     if isinstance(node, ast.Name):
         return ("name", node.id)
@@ -569,11 +597,15 @@ def _auth_target_key(node):
             node.attr,
         )
     if isinstance(node, ast.Subscript):
+        keys = [
+            key for key in _static_key_strings(node.slice, bindings, before_position)
+            if key in AUTH_TUPLE_NAMES
+        ]
         return (
             "subscript",
             ast.dump(node.value, include_attributes=False),
-            _literal_string(node.slice),
-        )
+            keys[0],
+        ) if keys else None
     return None
 
 
@@ -1457,7 +1489,9 @@ def _auth_bindings(tree, name_bindings):
     }
 
     def add_binding(target, value, position):
-        key = _auth_target_key(target)
+        if value is None:
+            return
+        key = _auth_target_key(target, name_bindings, position)
         if key is None:
             return
 
@@ -1486,6 +1520,8 @@ def _auth_bindings(tree, name_bindings):
             for target in node.targets:
                 add_binding(target, value, position)
         elif isinstance(node, ast.AnnAssign):
+            if node.value is None:
+                continue
             value = _resolve_bound_node(
                 node.value,
                 name_bindings,
@@ -1493,7 +1529,7 @@ def _auth_bindings(tree, name_bindings):
             )
             add_binding(node.target, value, position)
         elif isinstance(node, ast.AugAssign):
-            key = _auth_target_key(node.target)
+            key = _auth_target_key(node.target, name_bindings, position)
             if key is None or not isinstance(node.op, ast.Add):
                 continue
             previous = _latest_auth_binding(
@@ -1880,17 +1916,19 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
     return []
 
 
-def _is_authorization_target(node):
+def _is_authorization_target(node, bindings=None, before_position=None):
     if isinstance(node, ast.Subscript):
-        key = _literal_string(node.slice)
-        return isinstance(key, str) and key.lower() == "authorization"
+        return _static_key_matches(
+            node.slice, "authorization", bindings, before_position,
+            case_insensitive=True,
+        )
     if isinstance(node, ast.Attribute):
         return node.attr.lower() == "authorization"
     return False
 
 
-def _authorization_target_key(node):
-    if not _is_authorization_target(node):
+def _authorization_target_key(node, bindings=None, before_position=None):
+    if not _is_authorization_target(node, bindings, before_position):
         return None
     if isinstance(node, ast.Attribute):
         return (
@@ -1902,7 +1940,7 @@ def _authorization_target_key(node):
         return (
             "authorization-subscript",
             ast.dump(node.value, include_attributes=False),
-            str(_literal_string(node.slice)).lower(),
+            "authorization",
         )
     return None
 
@@ -1917,7 +1955,9 @@ def _authorization_bindings(tree, name_bindings):
     }
 
     def add_binding(target, value, position):
-        key = _authorization_target_key(target)
+        if value is None:
+            return
+        key = _authorization_target_key(target, name_bindings, position)
         if key is None:
             return
         lexical_scope = getattr(target, "_binding_scope", metadata["module"])
@@ -1938,12 +1978,13 @@ def _authorization_bindings(tree, name_bindings):
             for target in node.targets:
                 add_binding(target, node.value, position)
         elif isinstance(node, ast.AnnAssign):
-            add_binding(node.target, node.value, position)
+            if node.value is not None:
+                add_binding(node.target, node.value, position)
         elif (
             isinstance(node, ast.AugAssign)
             and isinstance(node.op, ast.Add)
         ):
-            key = _authorization_target_key(node.target)
+            key = _authorization_target_key(node.target, name_bindings, position)
             if key is None:
                 continue
             previous = _latest_auth_binding(
@@ -2253,8 +2294,10 @@ def _authorization_mapping_mutation_values(
     if node.func.attr == "setdefault":
         if (
             len(node.args) >= 2
-            and isinstance(_literal_string(node.args[0]), str)
-            and _literal_string(node.args[0]).lower() == "authorization"
+            and _static_key_matches(
+                node.args[0], "authorization", bindings, before_position,
+                case_insensitive=True,
+            )
         ):
             return [node.args[1]]
         return []
@@ -2380,10 +2423,9 @@ def hardcoded_authorization_header_lines(source):
 
         if isinstance(node, ast.Dict):
             for key, value in zip(node.keys, node.values):
-                literal_key = _literal_string(key)
-                if (
-                    isinstance(literal_key, str)
-                    and literal_key.lower() == "authorization"
+                if _static_key_matches(
+                    key, "authorization", bindings, _node_position(node),
+                    case_insensitive=True,
                 ):
                     candidates.append(
                         (
@@ -2426,7 +2468,10 @@ def hardcoded_authorization_header_lines(source):
                 )
         elif isinstance(node, (ast.Assign, ast.AnnAssign)):
             targets = node.targets if isinstance(node, ast.Assign) else [node.target]
-            if any(_is_authorization_target(target) for target in targets):
+            if node.value is not None and any(
+                _is_authorization_target(target, bindings, _node_position(node))
+                for target in targets
+            ):
                 candidates.append(
                     (
                         getattr(node, "lineno", None),
@@ -2434,8 +2479,10 @@ def hardcoded_authorization_header_lines(source):
                         node.value,
                     )
                 )
-        elif isinstance(node, ast.AugAssign) and _is_authorization_target(node.target):
-            key = _authorization_target_key(node.target)
+        elif isinstance(node, ast.AugAssign) and _is_authorization_target(
+            node.target, bindings, _node_position(node)
+        ):
+            key = _authorization_target_key(node.target, bindings, _node_position(node))
             combined = (
                 _latest_auth_binding(
                     key,
@@ -2501,7 +2548,9 @@ def _single_auth_mapping_call_values(
     if node.func.attr in {"setdefault", "__setitem__"}:
         if (
             len(node.args) >= 2
-            and _literal_string(node.args[0]) in SINGLE_VALUE_AUTH_NAMES
+            and _static_key_matches(
+                node.args[0], SINGLE_VALUE_AUTH_NAMES, bindings, before_position
+            )
         ):
             return [node.args[1]]
         return []
@@ -2580,7 +2629,10 @@ def hardcoded_single_auth_lines(source):
             )
         elif isinstance(node, (ast.Assign, ast.AnnAssign)):
             targets = node.targets if isinstance(node, ast.Assign) else [node.target]
-            if any(_is_single_auth_target(target) for target in targets):
+            if node.value is not None and any(
+                _is_single_auth_target(target, bindings, _node_position(node))
+                for target in targets
+            ):
                 candidates.append(
                     (
                         getattr(node, "lineno", None),
@@ -2588,7 +2640,9 @@ def hardcoded_single_auth_lines(source):
                         node.value,
                     )
                 )
-        elif isinstance(node, ast.AugAssign) and _is_single_auth_target(node.target):
+        elif isinstance(node, ast.AugAssign) and _is_single_auth_target(
+            node.target, bindings, _node_position(node)
+        ):
             candidates.append(
                 (
                     getattr(node, "lineno", None),
@@ -2611,7 +2665,9 @@ def hardcoded_single_auth_lines(source):
                 )
         elif isinstance(node, ast.Dict):
             for key, value in zip(node.keys, node.values):
-                if _literal_string(key) in SINGLE_VALUE_AUTH_NAMES:
+                if _static_key_matches(
+                    key, SINGLE_VALUE_AUTH_NAMES, bindings, _node_position(node)
+                ):
                     candidates.append(
                         (
                             getattr(value, "lineno", getattr(node, "lineno", None)),
@@ -2766,7 +2822,10 @@ def hardcoded_auth_tuple_lines(source):
             )
         elif isinstance(node, (ast.Assign, ast.AnnAssign)):
             targets = node.targets if isinstance(node, ast.Assign) else [node.target]
-            if any(_is_auth_tuple_target(target) for target in targets):
+            if node.value is not None and any(
+                _is_auth_tuple_target(target, bindings, _node_position(node))
+                for target in targets
+            ):
                 candidates.append(
                     (
                         getattr(node, "lineno", None),
@@ -2774,9 +2833,11 @@ def hardcoded_auth_tuple_lines(source):
                         node.value,
                     )
                 )
-        elif isinstance(node, ast.AugAssign) and _is_auth_tuple_target(node.target):
+        elif isinstance(node, ast.AugAssign) and _is_auth_tuple_target(
+            node.target, bindings, _node_position(node)
+        ):
             line_number = getattr(node, "lineno", None)
-            key = _auth_target_key(node.target)
+            key = _auth_target_key(node.target, bindings, _node_position(node))
             if line_number is not None and key is not None:
                 combined = _latest_auth_binding(
                     key,
@@ -2807,7 +2868,9 @@ def hardcoded_auth_tuple_lines(source):
                 )
         elif isinstance(node, ast.Dict):
             for key, value in zip(node.keys, node.values):
-                if _literal_string(key) in AUTH_TUPLE_NAMES:
+                if _static_key_matches(
+                    key, AUTH_TUPLE_NAMES, bindings, _node_position(node)
+                ):
                     candidates.append(
                         (
                             getattr(value, "lineno", getattr(node, "lineno", None)),
@@ -2878,7 +2941,7 @@ def hardcoded_auth_tuple_lines(source):
                     )
                 )
 
-                key = _auth_target_key(resolved_value)
+                key = _auth_target_key(resolved_value, bindings, use_position)
                 if key is not None:
                     for auth_value in _reaching_auth_binding_values(
                         key,
@@ -2937,6 +3000,11 @@ def _mapping_key_values(
         )
 
     def key_matches(candidate_key):
+        if bindings is not None:
+            return _static_key_matches(
+                candidate_key, key_name, bindings, before_position,
+                case_insensitive=case_insensitive,
+            )
         literal = _literal_string(candidate_key)
         if not isinstance(literal, str):
             return literal == key_name
@@ -3051,7 +3119,9 @@ def _auth_tuple_mapping_call_values(
     if node.func.attr in {"setdefault", "__setitem__"}:
         if (
             len(node.args) >= 2
-            and _literal_string(node.args[0]) in AUTH_TUPLE_NAMES
+            and _static_key_matches(
+                node.args[0], AUTH_TUPLE_NAMES, bindings, before_position
+            )
         ):
             return [node.args[1]]
         return []
@@ -3130,7 +3200,9 @@ def _password_environment_update_values(
     if node.func.attr in {"setdefault", "__setitem__"}:
         if (
             len(node.args) >= 2
-            and _literal_string(node.args[0]) == "TCP_ELASTIC_PASSWORD"
+            and _static_key_matches(
+                node.args[0], "TCP_ELASTIC_PASSWORD", bindings, before_position
+            )
         ):
             return [node.args[1]]
         return []
@@ -3198,7 +3270,9 @@ def _is_password_environment_target(
 ):
     if not isinstance(node, ast.Subscript):
         return False
-    if _literal_string(node.slice) != "TCP_ELASTIC_PASSWORD":
+    if not _static_key_matches(
+        node.slice, "TCP_ELASTIC_PASSWORD", bindings, before_position
+    ):
         return False
     return _is_os_environ_expression(
         node.value,
@@ -3216,7 +3290,9 @@ def _is_password_target(
         return node.id == "password"
     if isinstance(node, ast.Subscript):
         return (
-            _literal_string(node.slice) == "password"
+            _static_key_matches(
+                node.slice, "password", bindings, before_position
+            )
             or _is_password_environment_target(
                 node,
                 bindings,
@@ -3255,7 +3331,9 @@ def _password_mapping_call_values(
     if node.func.attr in {"setdefault", "__setitem__"}:
         if (
             len(node.args) >= 2
-            and _literal_string(node.args[0]) == "password"
+            and _static_key_matches(
+                node.args[0], "password", bindings, before_position
+            )
         ):
             return [node.args[1]]
         return []
@@ -3375,7 +3453,9 @@ def hardcoded_password_literal_lines(source):
                 )
         elif isinstance(node, ast.Dict):
             for key, value in zip(node.keys, node.values):
-                if _literal_string(key) == "password":
+                if _static_key_matches(
+                    key, "password", bindings, _node_position(node)
+                ):
                     candidates.append((getattr(value, "lineno", getattr(node, "lineno", None)), value))
         elif isinstance(node, ast.Call):
             call_values = []
