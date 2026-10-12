@@ -6982,8 +6982,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
 
     def test_builtin_empty_container_constructors_keep_local_mutators_private(self):
         safe_cases = (
-            (hardcoded_password_literal_lines, "KEY = \"username\"\\ndef configure(flag):\\n    global KEY\\n    if flag:\\n        source = list()\\n        source.append(lambda: options.__setitem__(KEY, \"hardcoded-secret\"))\\n        source[0]()\\n    else:\\n        KEY = \"password\"\\nconfigure(True)"),
-            (hardcoded_password_literal_lines, "KEY = \"username\"\\ndef configure(flag):\\n    global KEY\\n    if flag:\\n        source = dict()\\n        source.setdefault(\"cb\", lambda: options.__setitem__(KEY, \"hardcoded-secret\"))\\n        source[\"cb\"]()\\n    else:\\n        KEY = \"password\"\\nconfigure(True)"),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        source = list()\n        source.append(lambda: options.__setitem__(KEY, \"hardcoded-secret\"))\n        source[0]()\n    else:\n        KEY = \"password\"\nconfigure(True)"),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        source = dict()\n        source.setdefault(\"cb\", lambda: options.__setitem__(KEY, \"hardcoded-secret\"))\n        source[\"cb\"]()\n    else:\n        KEY = \"password\"\nconfigure(True)"),
         )
         for scanner, source in safe_cases:
             with self.subTest(scanner=scanner.__name__, source=source):
