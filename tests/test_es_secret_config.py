@@ -8068,15 +8068,18 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 )
                 changed = safe.replace(
                     '        source["exported"] = lambda: None\n',
+                    '        original = source\n'
                     '        source = right\n'
                     '        source["exported"] = lambda: None\n',
+                ).replace(
+                    'return source["exported"]',
+                    'return original["exported"]',
                 )
                 with self.subTest(scanner=scanner.__name__, update=use_update):
                     self.assertEqual(scanner(safe), [])
-                    # If the alias is rebound between writes, the credential
-                    # callback may still be returned by the original object.
-                    # The existing distinct-receiver regression covers that
-                    # branch explicitly.
+                    # A reassignment between the two writes changes which
+                    # dictionary is modified, so suppression would be unsafe.
+                    self.assertEqual(scanner(changed), [11])
     def test_python_password_literal_guard_preserves_mapping_alias_capture(self):
         hardcoded_source = (
             'BASE = "elastic_secret"\n'
