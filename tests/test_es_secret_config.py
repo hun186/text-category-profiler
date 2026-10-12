@@ -1246,6 +1246,10 @@ def _annotate_binding_scopes(tree):
         """Find retained container values without walking callable bodies."""
         if expression is None or isinstance(expression, ast.Lambda):
             return set()
+        if isinstance(expression, ast.Subscript):
+            # Returning a selected value does not export the whole source.
+            # Selected callback and child containers are handled below.
+            return set()
         if isinstance(expression, ast.Name):
             if isinstance(expression.ctx, ast.Load):
                 return reaching_containers(expression)
@@ -1365,11 +1369,6 @@ def _annotate_binding_scopes(tree):
                 record_escaping_copies(keyword.value)
 
     escaping_functions = set()
-    # Temporary targeted diagnostic for the new constant-key regression.
-    _debug_extraction = any(
-        isinstance(item, ast.Constant) and item.value == "exported"
-        for item in ast.walk(tree)
-    )
 
     def reaching_assigned_values(name_node):
         """Look through local aliases when an extracted callback reaches a sink."""
@@ -1502,6 +1501,10 @@ def _annotate_binding_scopes(tree):
                 if isinstance(binding, (ast.List, ast.Tuple, ast.Dict, ast.Set)):
                     for value in selected_elements(binding, selected):
                         mark_escaping_expression(value, seen)
+                        escaping_container_bindings.update(
+                            exposed_container_bindings(value)
+                        )
+                        record_escaping_copies(value)
 
             for store in ast.walk(tree):
                 if _control_paths_mutually_exclusive(
@@ -1583,9 +1586,6 @@ def _annotate_binding_scopes(tree):
             return
         seen = seen | {node}
         if isinstance(node, ast.Lambda):
-            if _debug_extraction and "hardcoded-secret" in ast.unparse(node):
-                import traceback
-                print("ESCAPE_DEBUG lambda", node.lineno, "".join(traceback.format_stack(limit=7)))
             escaping_functions.add(node)
             return  # Its body runs later, not during the store.
         if isinstance(node, ast.Name):
@@ -1714,8 +1714,6 @@ def _annotate_binding_scopes(tree):
                 retained.add(child)
         return retained
 
-    if _debug_extraction:
-        print("ESCAPE_DEBUG initial containers", [(type(c).__name__, c.lineno) for c in escaping_container_bindings])
     changed = True
     while changed:
         before = (
@@ -7397,7 +7395,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 '        source = {"private": lambda: options.__setitem__(KEY, "hardcoded-secret"), '
                 '"exported": lambda: None}\n'
                 '        return ' + accessor + '\n'
-                '    KEY = "password"\n'
+                '    else:\n'
+                '        KEY = "password"\n'
                 'saved = configure(True)\n'
                 'configure(False)\n'
                 'saved()'
@@ -7413,7 +7412,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             '        source = {"private": lambda: None, '
             '"exported": lambda: options.__setitem__(KEY, "hardcoded-secret")}\n'
             '        return source["exported"]\n'
-            '    KEY = "password"\n'
+            '    else:\n'
+                '        KEY = "password"\n'
             'saved = configure(True)\n'
             'configure(False)\n'
             'saved()'
@@ -7430,7 +7430,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             '        source.update(private=lambda: options.__setitem__(KEY, "hardcoded-secret"))\n'
             '        source["exported"] = lambda: None\n'
             '        return source.get("exported")\n'
-            '    KEY = "password"\n'
+            '    else:\n'
+                '        KEY = "password"\n'
             'saved = configure(True)\n'
             'configure(False)\n'
             'saved()'
