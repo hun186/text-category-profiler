@@ -3402,13 +3402,22 @@ def _authorization_mapping_mutation_values(
     before_position,
 ):
     """Return Authorization values written through mapping mutator calls."""
-    if not (
-        isinstance(node, ast.Call)
-        and isinstance(node.func, ast.Attribute)
-    ):
+    if not isinstance(node, ast.Call):
         return []
 
-    if node.func.attr in {"setdefault", "__setitem__"}:
+    # A bound mapping method can be stored in a local alias, including an
+    # alias of another alias. Resolve through the same source-ordered bindings
+    # used for credential expressions, not just a direct ast.Attribute call.
+    methods = [
+        candidate.attr
+        for candidate in _resolve_bound_nodes(node.func, bindings, before_position)
+        if isinstance(candidate, ast.Attribute)
+    ]
+    if not methods:
+        return []
+
+    values = []
+    if any(method in {"setdefault", "__setitem__"} for method in methods):
         if (
             len(node.args) >= 2
             and _static_key_matches(
@@ -3416,13 +3425,11 @@ def _authorization_mapping_mutation_values(
                 case_insensitive=True,
             )
         ):
-            return [node.args[1]]
-        return []
+            values.append(node.args[1])
 
-    if node.func.attr != "update":
-        return []
+    if "update" not in methods:
+        return values
 
-    values = []
     for argument in node.args:
         values.extend(
             _mapping_key_values(
@@ -8080,6 +8087,19 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     # A reassignment between the two writes changes which
                     # dictionary is modified, so suppression would be unsafe.
                     self.assertEqual(scanner(changed), [11])
+    def test_authorization_method_aliases_are_not_missed(self):
+        cases = (
+            ('put = headers.__setitem__\nput("Authorization", "Bearer hardcoded-token")', [2]),
+            ('put = headers.__setitem__\nwriter = put\nwriter("Authorization", "Bearer hardcoded-token")', [3]),
+            ('put = headers.setdefault\nput("AUTHORIZATION", "Bearer hardcoded-token")', [2]),
+            ('put = headers.update\nput({"Authorization": "Bearer hardcoded-token"})', [2]),
+            ('put = headers.__setitem__\nput("Authorization", runtime_token)', []),
+            ('put = headers.__setitem__\nput("X-Trace", "Bearer hardcoded-token")', []),
+        )
+        for source, expected in cases:
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_authorization_header_lines(source), expected)
+
     def test_python_password_literal_guard_preserves_mapping_alias_capture(self):
         hardcoded_source = (
             'BASE = "elastic_secret"\n'
