@@ -1360,6 +1360,28 @@ def _annotate_binding_scopes(tree):
         and isinstance(node.value, (ast.Dict, ast.List, ast.Tuple, ast.Set))
     ]
 
+    def contained_container_bindings(parent):
+        """Resolve existing child container identities of a retained parent.
+
+        A shallow copy snapshots the outer slots but keeps references to
+        nested mutable containers. Names in those slots must be resolved to
+        their reaching initialization nodes, not retained as ast.Name nodes.
+        """
+        if isinstance(parent, (ast.Tuple, ast.List, ast.Set)):
+            children = parent.elts
+        elif isinstance(parent, ast.Dict):
+            children = [value for value in parent.values if value is not None]
+        else:
+            return set()
+
+        retained = set()
+        for child in children:
+            if isinstance(child, ast.Name):
+                retained.update(reaching_containers(child))
+            elif isinstance(child, (ast.Tuple, ast.List, ast.Set, ast.Dict)):
+                retained.add(child)
+        return retained
+
     changed = True
     while changed:
         before = (
@@ -1367,16 +1389,17 @@ def _annotate_binding_scopes(tree):
             len(escaping_container_bindings),
             len(copied_container_snapshots),
         )
-        # If a parent tuple/list/dict escapes by reference, its existing
-        # child containers are still reachable and can be modified later
-        # through an unpacked local alias.
+        # Both a live exported parent and a shallow copy of its slots keep
+        # *existing children* alive by reference. Mutations of those children
+        # after the copy are visible; later insertions into the parent are not.
         for parent in tuple(escaping_container_bindings):
-            if isinstance(parent, (ast.Tuple, ast.List, ast.Set)):
-                escaping_container_bindings.update(parent.elts)
-            elif isinstance(parent, ast.Dict):
-                escaping_container_bindings.update(
-                    item for item in parent.values if item is not None
-                )
+            escaping_container_bindings.update(
+                contained_container_bindings(parent)
+            )
+        for parent, _copy_call in tuple(copied_container_snapshots):
+            escaping_container_bindings.update(
+                contained_container_bindings(parent)
+            )
         for function in tuple(escaping_functions):
             # Default expressions are evaluated in the *enclosing* frame
             # when a function/lambda is created, then retained on the escaped
@@ -6629,6 +6652,36 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for scanner, source, expected in hardcoded_cases:
             with self.subTest(scanner=scanner.__name__, source=source):
                 self.assertEqual(scanner(source), expected)
+
+    def test_shallow_copy_keeps_existing_named_child_containers(self):
+        hardcoded_cases = (
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        parent = [callbacks]\n        def dispatch(saved=parent.copy()):\n            saved[0][0]()\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        return dispatch\n    else:\n        KEY = \"password\"\ndispatch = configure(True)\nconfigure(False)\ndispatch()", [9]),
+            (hardcoded_single_auth_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        parent = [callbacks]\n        dispatch = lambda saved=parent.copy(): saved[0][0]()\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-api-key\")]\n        return dispatch\n    else:\n        KEY = \"api_key\"\ndispatch = configure(True)\nconfigure(False)\ndispatch()", [8]),
+            (hardcoded_authorization_header_lines, "KEY = \"x-trace\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        parent = {\"callbacks\": callbacks}\n        def dispatch(saved=parent.copy()):\n            saved[\"callbacks\"][0]()\n        callbacks += [lambda: headers.setdefault(KEY, \"Bearer hardcoded-token\")]\n        return dispatch\n    else:\n        KEY = \"Authorization\"\ndispatch = configure(True)\nconfigure(False)\ndispatch()", [9]),
+        )
+        for scanner, source, expected in hardcoded_cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), expected)
+
+    def test_exported_parent_resolves_named_child_container_bindings(self):
+        hardcoded_cases = (
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        pair = [callbacks, None]\n        holder.pair = pair\n        child, _ = pair\n        child += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n    else:\n        KEY = \"password\"\nconfigure(True)\nconfigure(False)\nholder.pair[0][0]()", [9]),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        pair = (callbacks, None)\n        holder.pair = pair\n        alias = pair\n        child, _ = alias\n        child += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n    else:\n        KEY = \"password\"\nconfigure(True)\nconfigure(False)\nholder.pair[0][0]()", [10]),
+            (hardcoded_single_auth_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        pair = [callbacks, None]\n        holder.pair = pair\n        child, _ = pair\n        child += [lambda: options.__setitem__(KEY, \"hardcoded-api-key\")]\n    else:\n        KEY = \"api_key\"\nconfigure(True)\nconfigure(False)\nholder.pair[0][0]()", [9]),
+            (hardcoded_authorization_header_lines, "KEY = \"x-trace\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        pair = [callbacks, None]\n        holder.pair = pair\n        child, _ = pair\n        child += [lambda: headers.setdefault(KEY, \"Bearer hardcoded-token\")]\n    else:\n        KEY = \"Authorization\"\nconfigure(True)\nconfigure(False)\nholder.pair[0][0]()", [9]),
+        )
+        for scanner, source, expected in hardcoded_cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), expected)
+
+    def test_shallow_copy_does_not_retain_later_parent_or_name_rebindings(self):
+        safe_cases = (
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        parent = [callbacks]\n        def dispatch(saved=parent.copy()):\n            return len(saved[0])\n        callbacks = []\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        callbacks[0]()\n        return dispatch\n    else:\n        KEY = \"password\"\ndispatch = configure(True)\nconfigure(False)\ndispatch()"),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        parent = []\n        def dispatch(saved=parent.copy()):\n            return len(saved)\n        parent += [callbacks]\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        callbacks[0]()\n        return dispatch\n    else:\n        KEY = \"password\"\ndispatch = configure(True)\nconfigure(False)\ndispatch()"),
+        )
+        for scanner, source in safe_cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), [])
 
     def test_python_password_literal_guard_preserves_mapping_alias_capture(self):
         hardcoded_source = (
