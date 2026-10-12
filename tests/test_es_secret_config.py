@@ -1387,7 +1387,18 @@ def _annotate_binding_scopes(tree):
                 else:
                     iterable_bindings = set()
                 for iterable in iterable_bindings:
-                    retained.update(contained_container_bindings(iterable))
+                    if isinstance(iterable, ast.Dict):
+                        # Iterating a dict (e.g. [*source]) yields *keys*.
+                        # Its values, including callbacks, are not copied.
+                        for key in iterable.keys:
+                            if isinstance(key, ast.Name):
+                                retained.update(reaching_containers(key))
+                            elif isinstance(
+                                key, (ast.Tuple, ast.List, ast.Set, ast.Dict)
+                            ):
+                                retained.add(key)
+                    else:
+                        retained.update(contained_container_bindings(iterable))
             elif isinstance(child, ast.Name):
                 retained.update(reaching_containers(child))
             elif isinstance(child, (ast.Tuple, ast.List, ast.Set, ast.Dict)):
@@ -6714,6 +6725,18 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        first = []\n        source = [first]\n        parent = [*source]\n        holder.parent = parent\n        callbacks = []\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        callbacks[0]()\n    else:\n        KEY = \"password\"\nconfigure(True)"),
             (hardcoded_single_auth_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        source = []\n        parent = [*source]\n        holder.parent = parent\n        source += [callbacks]\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-api-key\")]\n        callbacks[0]()\n    else:\n        KEY = \"api_key\"\nconfigure(True)"),
             (hardcoded_authorization_header_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        source = []\n        parent = [*source]\n        holder.parent = parent\n        source += [callbacks]\n        callbacks += [lambda: headers.setdefault(KEY, \"Bearer hardcoded-token\")]\n        callbacks[0]()\n    else:\n        KEY = \"Authorization\"\nconfigure(True)"),
+        )
+        for scanner, source in safe_cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), [])
+
+    def test_dict_starred_expansion_keeps_keys_not_callback_values(self):
+        safe_cases = (
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        source = {\"callbacks\": callbacks}\n        parent = [*source]\n        holder.parent = parent\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        callbacks[0]()\n    else:\n        KEY = \"password\"\nconfigure(True)"),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        source = {\"callbacks\": callbacks}\n        parent = (*source,)\n        holder.parent = parent\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        callbacks[0]()\n    else:\n        KEY = \"password\"\nconfigure(True)"),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        source = {\"callbacks\": callbacks}\n        alias = source\n        parent = [*alias]\n        holder.parent = parent\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        callbacks[0]()\n    else:\n        KEY = \"password\"\nconfigure(True)"),
+            (hardcoded_single_auth_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        source = {\"callbacks\": callbacks}\n        parent = [*source]\n        holder.parent = parent\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-api-key\")]\n        callbacks[0]()\n    else:\n        KEY = \"api_key\"\nconfigure(True)"),
+            (hardcoded_authorization_header_lines, "KEY = \"x-trace\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        source = {\"callbacks\": callbacks}\n        parent = [*source]\n        holder.parent = parent\n        callbacks += [lambda: headers.setdefault(KEY, \"Bearer hardcoded-token\")]\n        callbacks[0]()\n    else:\n        KEY = \"Authorization\"\nconfigure(True)"),
         )
         for scanner, source in safe_cases:
             with self.subTest(scanner=scanner.__name__, source=source):
