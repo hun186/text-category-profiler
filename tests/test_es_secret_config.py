@@ -1599,6 +1599,36 @@ def _annotate_binding_scopes(tree):
                         )
                         record_escaping_copies(value)
 
+            # A later direct assignment to a known slot in the same straight-
+            # line block definitely supersedes its prior callback value.
+            statement = node
+            while statement in ast_parents and not isinstance(statement, ast.stmt):
+                statement = ast_parents[statement]
+            block = ast_parents.get(statement)
+
+            def fixed_slot_write(store):
+                if selected is unknown_selection or not isinstance(
+                    store, (ast.Assign, ast.AnnAssign, ast.NamedExpr)
+                ):
+                    return False
+                targets = store.targets if isinstance(store, ast.Assign) else [store.target]
+                return any(
+                    isinstance(t, ast.Subscript)
+                    and isinstance(t.value, ast.Name)
+                    and bool(reaching_containers(t.value) & containers)
+                    and static_selection(t.slice) == selected
+                    for t in targets
+                )
+
+            known_writes = [
+                candidate for candidate in ast.walk(tree)
+                if fixed_slot_write(candidate)
+                and ast_parents.get(candidate) is block
+                and getattr(candidate, "_binding_scope", module_scope)
+                    is getattr(node, "_binding_scope", module_scope)
+                and _node_position(candidate) < _node_position(node)
+            ]
+
             for store in ast.walk(tree):
                 if _control_paths_mutually_exclusive(
                     _node_control_path(store), _node_control_path(node)
@@ -1669,7 +1699,15 @@ def _annotate_binding_scopes(tree):
                             or stored_key == selected
                         ):
                             matches = True
-                    if matches:
+                    superseded = (
+                        fixed_slot_write(store)
+                        and ast_parents.get(store) is block
+                        and any(
+                            _node_position(next_store) > _node_position(store)
+                            for next_store in known_writes
+                        )
+                    )
+                    if matches and not superseded:
                         mark_escaping_expression(store.value, seen)
                 elif isinstance(store, ast.AugAssign):
                     if (
@@ -7769,6 +7807,46 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             'saved()'
         )
         self.assertEqual(hardcoded_password_literal_lines(nested), [])
+
+    def test_repeated_selected_dict_slots_honor_definite_overwrite(self):
+        for scanner, key, value in (
+            (hardcoded_password_literal_lines, "password", "hardcoded-secret"),
+            (hardcoded_single_auth_lines, "api_key", "hardcoded-api-key"),
+            (hardcoded_authorization_header_lines, "Authorization", "Bearer hardcoded-token"),
+        ):
+            dangerous = (
+                'headers.setdefault(KEY, "' + value + '")'
+                if key == "Authorization"
+                else 'options.__setitem__(KEY, "' + value + '")'
+            )
+
+            def snippet(first, last, uncertain=False):
+                middle = (
+                    '        if uncertain:\n'
+                    '            source["exported"] = lambda: ' + last + '\n'
+                    if uncertain else
+                    '        source["exported"] = lambda: ' + last + '\n'
+                )
+                return (
+                    'KEY = "username"\n'
+                    'def configure(flag, uncertain=False):\n'
+                    '    global KEY\n'
+                    '    if flag:\n'
+                    '        source = {}\n'
+                    '        source["exported"] = lambda: ' + first + '\n'
+                    + middle +
+                    '        return source["exported"]\n'
+                    '    else:\n'
+                    '        KEY = "' + key + '"\n'
+                    'saved = configure(True)\n'
+                    'configure(False)\n'
+                    'saved()'
+                )
+
+            with self.subTest(scanner=scanner.__name__):
+                self.assertEqual(scanner(snippet(dangerous, "None")), [])
+                self.assertEqual(scanner(snippet("None", dangerous)), [7])
+                self.assertEqual(scanner(snippet(dangerous, "None", True)), [6])
 
     def test_python_password_literal_guard_preserves_mapping_alias_capture(self):
         hardcoded_source = (
