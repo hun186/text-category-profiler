@@ -5,6 +5,7 @@ import re
 import runpy
 import tokenize
 import textwrap
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -4749,8 +4750,58 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         namespace = runpy.run_path(str(path))
         return namespace[mapping_name]["es_tokens"]["password"]
 
+    def _local_imported_python_paths(self, importing_path, source):
+        """Resolve static project-local imports without executing modules."""
+        try:
+            tree = ast.parse(source)
+        except SyntaxError:
+            return set()
+        resolved = set()
+
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                modules = [(alias.name, 0) for alias in node.names]
+            elif isinstance(node, ast.ImportFrom):
+                modules = [(node.module, node.level)]
+                # from package import provider can load package/provider.py.
+                modules.extend(
+                    ((node.module + "." if node.module else "") + alias.name, node.level)
+                    for alias in node.names if alias.name != "*"
+                )
+            else:
+                continue
+
+            for name, level in modules:
+                if not name:
+                    continue
+                if level:
+                    try:
+                        bases = [importing_path.parents[level - 1]]
+                    except IndexError:
+                        continue
+                else:
+                    bases = [
+                        importing_path.parent,
+                        REPOSITORY_ROOT,
+                        *ES_RUNTIME_DISCOVERY_ROOTS,
+                    ]
+                parts = name.split(".")
+                if not all(part.isidentifier() for part in parts):
+                    continue
+                for base in bases:
+                    stem = base.joinpath(*parts)
+                    for candidate in (stem.with_suffix(".py"), stem / "__init__.py"):
+                        if not candidate.is_file():
+                            continue
+                        try:
+                            candidate.resolve().relative_to(REPOSITORY_ROOT.resolve())
+                        except ValueError:
+                            continue
+                        resolved.add(candidate.resolve())
+        return resolved
+
     def _runtime_es_module_paths(self):
-        paths = set(RUNTIME_ES_MODULES)
+        paths = {path.resolve() for path in RUNTIME_ES_MODULES}
 
         for root in ES_RUNTIME_DISCOVERY_ROOTS:
             if not root.is_dir():
@@ -4763,9 +4814,57 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     errors="ignore",
                 ).lower()
                 if any(marker in source for marker in ES_RUNTIME_MARKERS):
-                    paths.add(path)
+                    paths.add(path.resolve())
+
+        # A consumer may import credentials from a module that has no ES
+        # marker. Include transitive project-local imports, with visited-path
+        # deduplication, instead of silently accepting those imported values.
+        pending = list(paths)
+        while pending:
+            path = pending.pop()
+            if not path.is_file():
+                continue
+            source = path.read_text(encoding="utf-8-sig", errors="ignore")
+            for dependency in self._local_imported_python_paths(path, source):
+                if dependency not in paths:
+                    paths.add(dependency)
+                    pending.append(dependency)
 
         return sorted(paths)
+
+    def _module_uppercase_credential_literals(self, source):
+        """Catch imported providers exporting a literal credential constant."""
+        try:
+            tree = ast.parse(source)
+        except SyntaxError:
+            return []
+        bindings = _name_bindings(tree)
+        violations = []
+        for statement in tree.body:
+            if isinstance(statement, ast.Assign):
+                targets = statement.targets
+            elif isinstance(statement, ast.AnnAssign) and statement.value is not None:
+                targets = [statement.target]
+            else:
+                continue
+            for target in targets:
+                if not isinstance(target, ast.Name):
+                    continue
+                key = target.id
+                if not (
+                    key.isupper()
+                    and re.search(
+                        r"(?:^|_)(?:PASSWORD|PASSWD|API_KEY|BEARER_AUTH|AUTH_TOKEN)$",
+                        key,
+                    )
+                ):
+                    continue
+                values = _hardcoded_password_values(
+                    statement.value, bindings, _node_position(statement)
+                )
+                if any(value != REDACTED_PASSWORD_SENTINEL for value in values):
+                    violations.append(statement.lineno)
+        return sorted(set(violations))
 
     def _secret_surface_paths(self):
         paths = {path for path, _ in CONFIGS}
@@ -4796,6 +4895,46 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for path in expected_consumers:
             with self.subTest(path=path):
                 self.assertTrue(path.is_file())
+
+    def test_runtime_discovery_checks_local_imported_password_providers(self):
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory)
+            consumer = project / "es_consumer.py"
+            provider = project / "credential_provider.py"
+            consumer.write_text(
+                'from credential_provider import PASSWORD\n'
+                'from elasticsearch import Elasticsearch\n'
+                'Elasticsearch("localhost", basic_auth=("elastic", PASSWORD))\n',
+                encoding="utf-8",
+            )
+            provider.write_text('PASSWORD = "hardcoded-secret"\n', encoding="utf-8")
+
+            with (
+                patch.dict(globals(), {
+                    "REPOSITORY_ROOT": project,
+                    "ES_RUNTIME_DISCOVERY_ROOTS": (project,),
+                    "RUNTIME_ES_MODULES": (),
+                }),
+            ):
+                modules = set(self._runtime_es_module_paths())
+                self.assertIn(consumer.resolve(), modules)
+                self.assertIn(provider.resolve(), modules)
+                self.assertEqual(
+                    self._module_uppercase_credential_literals(
+                        provider.read_text(encoding="utf-8")
+                    ),
+                    [1],
+                )
+                provider.write_text(
+                    'import os\nPASSWORD = os.getenv("TCP_ELASTIC_PASSWORD")\n',
+                    encoding="utf-8",
+                )
+                self.assertEqual(
+                    self._module_uppercase_credential_literals(
+                        provider.read_text(encoding="utf-8")
+                    ),
+                    [],
+                )
 
     def test_secret_surface_paths_include_yaml_elasticsearch_samples(self):
         yaml_paths = [
@@ -8793,6 +8932,11 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:structured-auth"
                     )
             if path.suffix.lower() == ".py":
+                if path in runtime_es_modules:
+                    for line_number in self._module_uppercase_credential_literals(text):
+                        violations.append(
+                            f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:imported-credential-literal"
+                        )
                 for line_number in hardcoded_auth_tuple_lines(text):
                     violations.append(
                         f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:auth-tuple"
