@@ -1094,63 +1094,124 @@ def _annotate_binding_scopes(tree):
                 found.extend(reaching_callables(value.id, value, seen | {token}))
         return found
 
-    # Distinguish a callback retained beyond its activation record from an
-    # ordinary list/dict used and invoked solely inside that record. Track
-    # which local containers reach an outward-facing sink, following copies
-    # such as "alias = callbacks; return alias".
-    escaping_container_names = set()
-    local_container_copies = []
-
-    def exposed_names(expression, scope):
-        if expression is None:
-            return set()
-        if isinstance(expression, ast.Name):
-            if (
-                isinstance(expression.ctx, ast.Load)
-                and getattr(expression, "_binding_scope", module_scope) is scope
-            ):
-                return {(scope, expression.id)}
-            return set()
-        if isinstance(expression, ast.Lambda):
-            return set()  # Only the callback escapes, not names in its body.
-        if isinstance(expression, ast.Call):
-            # A function invoked at this point is not itself retained.
-            children = [*expression.args, *[kw.value for kw in expression.keywords]]
-        else:
-            children = ast.iter_child_nodes(expression)
-        names = set()
-        for child in children:
-            names.update(exposed_names(child, scope))
-        return names
+    # Use the reaching container *binding* rather than just (scope, name).
+    # Branches may rebind the same local variable to unrelated collections.
+    container_bindings = {}
 
     for node in ast.walk(tree):
         owner = getattr(node, "_binding_scope", module_scope)
-        if isinstance(node, (ast.Return, ast.Yield, ast.YieldFrom)):
-            escaping_container_names.update(exposed_names(node.value, owner))
-        elif isinstance(node, (ast.Assign, ast.AnnAssign, ast.NamedExpr)):
-            if node.value is None:
+        if isinstance(node, ast.Assign):
+            targets, value = node.targets, node.value
+        elif isinstance(node, (ast.AnnAssign, ast.NamedExpr)):
+            targets, value = [node.target], node.value
+        else:
+            continue
+        if value is None:
+            continue
+        for target in targets:
+            if isinstance(target, ast.Name):
+                container_bindings.setdefault((owner, target.id), []).append(
+                    (_node_position(node), value)
+                )
+    for entries in container_bindings.values():
+        entries.sort(key=lambda item: item[0])
+
+    def container_binding_owner(name, scope):
+        """Locate the frame owning a container reference."""
+        current = scope
+        while current is not None:
+            if name in scope_globals.get(current, ()):
+                return module_scope
+            if name in scope_nonlocals.get(current, ()):
+                current = scope_parents.get(current)
                 continue
+            if name in scope_locals.get(current, ()):
+                return current
+            current = scope_parents.get(current)
+        return module_scope
+
+    def reaching_containers(name_node, seen=None):
+        """Resolve container identities along the reachable assignment path."""
+        seen = set() if seen is None else set(seen)
+        scope = getattr(name_node, "_binding_scope", module_scope)
+        owner = container_binding_owner(name_node.id, scope)
+        token = (owner, name_node.id)
+        if token in seen:
+            return set()
+
+        candidates = container_bindings.get(token, ())
+        if scope is owner:
+            reaching = _reaching_values(
+                [
+                    (position, value)
+                    for position, value in candidates
+                    if position <= _node_position(name_node)
+                ],
+                name_node,
+            )
+        else:
+            # A closure can read its captured container after its source
+            # definition. Its read path still excludes conflicting arms.
+            use_path = _node_control_path(name_node)
+            reaching = [
+                value
+                for _position, value in candidates
+                if not _control_paths_mutually_exclusive(
+                    _node_control_path(value), use_path
+                )
+            ]
+        resolved = set()
+        for value in reaching:
+            if isinstance(value, ast.Name):
+                resolved.update(reaching_containers(value, seen | {token}))
+            else:
+                resolved.add(value)
+        return resolved
+
+    def exposed_container_bindings(expression):
+        """Find retained container values without walking callable bodies."""
+        if expression is None or isinstance(expression, ast.Lambda):
+            return set()
+        if isinstance(expression, ast.Name):
+            if isinstance(expression.ctx, ast.Load):
+                return reaching_containers(expression)
+            return set()
+        if isinstance(expression, ast.Call):
+            # The invoked function is not itself passed to the sink.
+            children = [*expression.args, *[kw.value for kw in expression.keywords]]
+        else:
+            children = ast.iter_child_nodes(expression)
+        retained = set()
+        for child in children:
+            retained.update(exposed_container_bindings(child))
+        return retained
+
+    # Returned containers, values passed to opaque consumers and values
+    # written to object/mapping slots can all outlive the current frame.
+    escaping_container_bindings = set()
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Return, ast.Yield, ast.YieldFrom)):
+            escaping_container_bindings.update(
+                exposed_container_bindings(node.value)
+            )
+        elif isinstance(node, (ast.Assign, ast.AnnAssign, ast.NamedExpr)):
             targets = node.targets if isinstance(node, ast.Assign) else [node.target]
-            if any(isinstance(t, (ast.Attribute, ast.Subscript)) for t in targets):
-                escaping_container_names.update(exposed_names(node.value, owner))
-            for target in targets:
-                if isinstance(target, ast.Name) and isinstance(node.value, ast.Name):
-                    local_container_copies.append(
-                        ((owner, target.id), (owner, node.value.id))
-                    )
+            if node.value is not None and any(
+                isinstance(target, (ast.Attribute, ast.Subscript))
+                for target in targets
+            ):
+                escaping_container_bindings.update(
+                    exposed_container_bindings(node.value)
+                )
         elif isinstance(node, ast.Call):
             for argument in node.args:
-                escaping_container_names.update(exposed_names(argument, owner))
+                escaping_container_bindings.update(
+                    exposed_container_bindings(argument)
+                )
             for keyword in node.keywords:
-                escaping_container_names.update(exposed_names(keyword.value, owner))
-
-    changed = True
-    while changed:
-        changed = False
-        for target, source in local_container_copies:
-            if target in escaping_container_names and source not in escaping_container_names:
-                escaping_container_names.add(source)
-                changed = True
+                escaping_container_bindings.update(
+                    exposed_container_bindings(keyword.value)
+                )
 
     escaping_functions = set()
 
@@ -1195,25 +1256,6 @@ def _annotate_binding_scopes(tree):
             elif isinstance(node.value, (ast.Dict, ast.List, ast.Tuple, ast.Set)):
                 # A collection retaining callbacks may escape the frame.
                 mark_escaping_expression(node.value)
-        elif (
-            isinstance(node, ast.AugAssign)
-            and isinstance(node.op, (ast.Add, ast.BitOr))
-            and isinstance(node.value, (ast.Dict, ast.List, ast.Tuple, ast.Set))
-        ):
-            owner = getattr(node, "_binding_scope", module_scope)
-            target = node.target
-            is_shared = owner is module_scope or not isinstance(target, ast.Name)
-            if isinstance(target, ast.Name) and owner is not module_scope:
-                is_shared = (
-                    target.id in scope_globals.get(owner, ())
-                    or target.id in scope_nonlocals.get(owner, ())
-                    or (owner, target.id) in escaping_container_names
-                )
-            # A truly local list/dict consumed before return is not escaped;
-            # module/global/nonlocal containers or locals that leave the
-            # frame may retain their callbacks across later invocations.
-            if is_shared:
-                mark_escaping_expression(node.value)
         elif isinstance(node, ast.Call):
             # A callback passed to an opaque call can be retained; invoking
             # a function without passing it is not by itself an escape.
@@ -1221,6 +1263,56 @@ def _annotate_binding_scopes(tree):
                 mark_escaping_expression(argument)
             for keyword in node.keywords:
                 mark_escaping_expression(keyword.value)
+
+    # Escaping closures keep their enclosing frame's captured containers
+    # alive. Mark those exact bindings, then revisit augmented callback
+    # stores; the newly escaped callback may itself capture a container.
+    augmented_stores = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.AugAssign)
+        and isinstance(node.op, (ast.Add, ast.BitOr))
+        and isinstance(node.value, (ast.Dict, ast.List, ast.Tuple, ast.Set))
+    ]
+
+    changed = True
+    while changed:
+        before = (len(escaping_functions), len(escaping_container_bindings))
+        for function in tuple(escaping_functions):
+            for read in ast.walk(function):
+                if not (
+                    isinstance(read, ast.Name)
+                    and isinstance(read.ctx, ast.Load)
+                    and getattr(read, "_binding_scope", module_scope) is function
+                ):
+                    continue
+                owner = container_binding_owner(read.id, function)
+                if owner is not function and owner is not module_scope:
+                    escaping_container_bindings.update(reaching_containers(read))
+
+        for node in augmented_stores:
+            owner = getattr(node, "_binding_scope", module_scope)
+            target = node.target
+            shared = owner is module_scope or not isinstance(target, ast.Name)
+            if isinstance(target, ast.Name) and owner is not module_scope:
+                shared = (
+                    target.id in scope_globals.get(owner, ())
+                    or target.id in scope_nonlocals.get(owner, ())
+                )
+                if not shared:
+                    reaching = reaching_containers(target)
+                    # Without a resolvable local initialization, do not
+                    # assume a passed-in container is frame-private.
+                    shared = (
+                        not reaching
+                        or bool(reaching & escaping_container_bindings)
+                    )
+            if shared:
+                mark_escaping_expression(node.value)
+
+        changed = before != (
+            len(escaping_functions), len(escaping_container_bindings)
+        )
 
     return {
         "module": module_scope,
@@ -6304,6 +6396,28 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        alias = callbacks\n        return alias\n    else:\n        KEY = \"password\"\ncallbacks = configure(True)\nconfigure(False)\ncallbacks[0]()", [6]),
             (hardcoded_single_auth_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = {}\n        callbacks |= {\"build\": lambda: options.__setitem__(KEY, \"hardcoded-api-key\")}\n        return callbacks\n    else:\n        KEY = \"api_key\"\ncallbacks = configure(True)\nconfigure(False)\ncallbacks[\"build\"]()", [6]),
             (hardcoded_authorization_header_lines, "KEY = \"x-trace\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        callbacks += [lambda: headers.setdefault(KEY, \"Bearer hardcoded-token\")]\n        holder.saved = callbacks\n    else:\n        KEY = \"Authorization\"\nconfigure(True)\nconfigure(False)\nholder.saved[0]()", [6]),
+        )
+        for scanner, source, expected in hardcoded_cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), expected)
+
+    def test_augmented_container_binding_and_escaping_closure_capture(self):
+        safe_cases = (
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        callbacks[0]()\n    else:\n        callbacks = []\n        KEY = \"password\"\n        consume(callbacks)\nconfigure(True)"),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = {}\n        callbacks |= {\"build\": lambda: options.__setitem__(KEY, \"hardcoded-secret\")}\n        callbacks[\"build\"]()\n    else:\n        callbacks = {}\n        KEY = \"password\"\n        consume(callbacks)\nconfigure(True)"),
+            (hardcoded_single_auth_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-api-key\")]\n        callbacks[0]()\n    else:\n        callbacks = []\n        KEY = \"api_key\"\n        consume(callbacks)\nconfigure(True)"),
+        )
+        for scanner, source in safe_cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), [])
+
+        hardcoded_cases = (
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        def dispatch():\n            callbacks[0]()\n        return dispatch\n    else:\n        KEY = \"password\"\ndispatch = configure(True)\nconfigure(False)\ndispatch()", [6]),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = {}\n        callbacks |= {\"build\": lambda: options.__setitem__(KEY, \"hardcoded-secret\")}\n        def dispatch():\n            callbacks[\"build\"]()\n        return dispatch\n    else:\n        KEY = \"password\"\ndispatch = configure(True)\nconfigure(False)\ndispatch()", [6]),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        dispatch = lambda: callbacks[0]()\n        return dispatch\n    else:\n        KEY = \"password\"\ndispatch = configure(True)\nconfigure(False)\ndispatch()", [6]),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        def dispatch():\n            callbacks[0]()\n        return dispatch\n    else:\n        callbacks = []\n        KEY = \"password\"\n        consume(callbacks)\ndispatch = configure(True)\nconfigure(False)\ndispatch()", [6]),
+            (hardcoded_single_auth_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-api-key\")]\n        def dispatch():\n            callbacks[0]()\n        return dispatch\n    else:\n        KEY = \"api_key\"\ndispatch = configure(True)\nconfigure(False)\ndispatch()", [6]),
+            (hardcoded_authorization_header_lines, "KEY = \"x-trace\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        callbacks += [lambda: headers.setdefault(KEY, \"Bearer hardcoded-token\")]\n        def dispatch():\n            callbacks[0]()\n        return dispatch\n    else:\n        KEY = \"Authorization\"\ndispatch = configure(True)\nconfigure(False)\ndispatch()", [6]),
         )
         for scanner, source, expected in hardcoded_cases:
             with self.subTest(scanner=scanner.__name__, source=source):
