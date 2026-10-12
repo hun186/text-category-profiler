@@ -1270,6 +1270,29 @@ def _annotate_binding_scopes(tree):
         ast.Dict: frozenset(("update", "setdefault")),
     }
 
+    def known_container_mutator_type(binding):
+        if isinstance(binding, tuple(mutator_methods)):
+            return type(binding)
+        # Empty built-in constructors produce new private containers, just
+        # like literals. Only trust their identity if the built-in name is not
+        # shadowed by any lexical binding.
+        constructors = {"list": ast.List, "dict": ast.Dict, "set": ast.Set}
+        if not (
+            isinstance(binding, ast.Call)
+            and isinstance(binding.func, ast.Name)
+            and binding.func.id in constructors
+            and not binding.args
+            and not binding.keywords
+        ):
+            return None
+        name = binding.func.id
+        scope = getattr(binding, "_binding_scope", module_scope)
+        while scope is not None:
+            if name in scope_locals.get(scope, ()):
+                return None
+            scope = scope_parents.get(scope)
+        return constructors[name]
+
     def known_container_mutator_bindings(call):
         if not (
             isinstance(call.func, ast.Attribute)
@@ -1278,8 +1301,8 @@ def _annotate_binding_scopes(tree):
             return None
         bindings = reaching_containers(call.func.value)
         if not bindings or any(
-            not isinstance(binding, tuple(mutator_methods))
-            or call.func.attr not in mutator_methods[type(binding)]
+            (kind := known_container_mutator_type(binding)) is None
+            or call.func.attr not in mutator_methods[kind]
             for binding in bindings
         ):
             return None
@@ -6952,6 +6975,15 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             (hardcoded_authorization_header_lines, "KEY = \"x-trace\"\ndef configure(flag):\n    global KEY\n    if flag:\n        source = {}\n        source.update(cb=lambda: headers.setdefault(KEY, \"Bearer hardcoded-token\"))\n        source[\"cb\"]()\n    else:\n        KEY = \"Authorization\"\nconfigure(True)"),
             (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        source = []\n        alias = source\n        alias.append(lambda: options.__setitem__(KEY, \"hardcoded-secret\"))\n        alias[0]()\n    else:\n        KEY = \"password\"\nconfigure(True)"),
             (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        source = []\n        holder.source = source.copy()\n        source.append(lambda: options.__setitem__(KEY, \"hardcoded-secret\"))\n        source[0]()\n    else:\n        KEY = \"password\"\nconfigure(True)"),
+        )
+        for scanner, source in safe_cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), [])
+
+    def test_builtin_empty_container_constructors_keep_local_mutators_private(self):
+        safe_cases = (
+            (hardcoded_password_literal_lines, "KEY = \"username\"\\ndef configure(flag):\\n    global KEY\\n    if flag:\\n        source = list()\\n        source.append(lambda: options.__setitem__(KEY, \"hardcoded-secret\"))\\n        source[0]()\\n    else:\\n        KEY = \"password\"\\nconfigure(True)"),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\\ndef configure(flag):\\n    global KEY\\n    if flag:\\n        source = dict()\\n        source.setdefault(\"cb\", lambda: options.__setitem__(KEY, \"hardcoded-secret\"))\\n        source[\"cb\"]()\\n    else:\\n        KEY = \"password\"\\nconfigure(True)"),
         )
         for scanner, source in safe_cases:
             with self.subTest(scanner=scanner.__name__, source=source):
