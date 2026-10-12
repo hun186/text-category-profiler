@@ -1153,6 +1153,26 @@ def _annotate_binding_scopes(tree):
                     child_target, child_value, owner, position
                 )
 
+    def record_destructured_callable_assignment(target, value, owner, position):
+        """Bind callable-valued tuple/list elements to their actual target names.
+
+        A bound collection accessor can be exported after unpacking, e.g.
+        `extract, unused = source.pop, None`. Resolve only known, matching
+        unpack shapes and preserve source order and each value's branch path.
+        """
+        if not isinstance(target, (ast.Tuple, ast.List)):
+            return
+        choices = statically_unpacked_values(value, owner)
+        if len(choices) != 1 or len(choices[0].elts) != len(target.elts):
+            return
+        for child_target, child_value in zip(target.elts, choices[0].elts):
+            if isinstance(child_target, ast.Name):
+                record_callable_binding(owner, child_target.id, target, child_value)
+            else:
+                record_destructured_callable_assignment(
+                    child_target, child_value, owner, position
+                )
+
     assignment_nodes = sorted(
         (
             node
@@ -1170,7 +1190,12 @@ def _annotate_binding_scopes(tree):
             record_container_assignment(
                 target, node.value, owner, _node_position(node)
             )
+            record_destructured_callable_assignment(
+                target, node.value, owner, _node_position(node)
+            )
     for entries in container_bindings.values():
+        entries.sort(key=lambda item: item[0])
+    for entries in callable_bindings.values():
         entries.sort(key=lambda item: item[0])
 
     def container_binding_owner(name, scope):
@@ -1468,13 +1493,33 @@ def _annotate_binding_scopes(tree):
                     values.append(entry_value)
             return values
         if isinstance(container, (ast.List, ast.Tuple)):
+            if any(isinstance(item, ast.Starred) for item in container.elts):
+                # Spread elements change the runtime positions; indexing the
+                # raw AST elements can silently miss the actual callback.
+                # Fall back conservatively, including elements from known
+                # local spread sources, rather than asserting one index.
+                candidates = []
+                for item in container.elts:
+                    if not isinstance(item, ast.Starred):
+                        candidates.append(item)
+                        continue
+                    candidates.append(item.value)
+                    if isinstance(item.value, (ast.List, ast.Tuple, ast.Set)):
+                        candidates.extend(item.value.elts)
+                    elif isinstance(item.value, ast.Name):
+                        for binding in reaching_containers(item.value):
+                            if isinstance(binding, (ast.List, ast.Tuple, ast.Set)):
+                                candidates.extend(binding.elts)
+                            elif isinstance(binding, ast.Dict):
+                                candidates.extend(k for k in binding.keys if k is not None)
+                return candidates
             if (
                 isinstance(key, int) and not isinstance(key, bool)
                 and -len(container.elts) <= key < len(container.elts)
             ):
                 return [container.elts[key]]
             if key is not unknown_selection:
-                return [] if container.elts else []
+                return []
             return container.elts
         if isinstance(container, ast.Set):
             return container.elts
@@ -1530,15 +1575,25 @@ def _annotate_binding_scopes(tree):
                     elif method == "update" and selected is not unknown_selection and all(
                         isinstance(binding, ast.Dict) for binding in stored_in
                     ):
-                        values = []
-                        for arg in store.args:
-                            if isinstance(arg, ast.Dict):
-                                values.extend(selected_elements(arg, selected))
-                            else:
-                                values.append(arg)
-                        for keyword in store.keywords:
-                            if keyword.arg is None or keyword.arg == selected:
-                                values.append(keyword.value)
+                        # A concrete keyword overrides a positional mapping
+                        # entry with the same key *within this update call*.
+                        selected_keyword = next(
+                            (kw.value for kw in reversed(store.keywords)
+                             if kw.arg == selected),
+                            None,
+                        )
+                        if selected_keyword is not None:
+                            values = [selected_keyword]
+                        else:
+                            values = []
+                            for arg in store.args:
+                                if isinstance(arg, ast.Dict):
+                                    values.extend(selected_elements(arg, selected))
+                                else:
+                                    values.append(arg)
+                            for keyword in store.keywords:
+                                if keyword.arg is None:
+                                    values.append(keyword.value)
                     else:
                         values = [
                             *store.args,
@@ -7446,6 +7501,124 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             'source.update(private=lambda: None)',
         )
         self.assertEqual(hardcoded_password_literal_lines(positive), [7])
+
+    def test_destructured_accessor_aliases_escape_from_private_collections(self):
+        cases = (
+            (hardcoded_password_literal_lines, "password", "hardcoded-secret"),
+            (hardcoded_single_auth_lines, "api_key", "hardcoded-api-key"),
+            (hardcoded_authorization_header_lines, "Authorization", "Bearer hardcoded-token"),
+        )
+        for scanner, rebound, value in cases:
+            expression = (
+                'headers.setdefault(KEY, "' + value + '")'
+                if rebound == "Authorization"
+                else 'options.__setitem__(KEY, "' + value + '")'
+            )
+            source = (
+                'KEY = "username"\n'
+                'def configure(flag):\n'
+                '    global KEY\n'
+                '    if flag:\n'
+                '        source = []\n'
+                '        source.append(lambda: ' + expression + ')\n'
+                '        extract, unused = source.pop, None\n'
+                '        return extract()\n'
+                '    else:\n'
+                '        KEY = "' + rebound + '"\n'
+                'saved = configure(True)\n'
+                'configure(False)\n'
+                'saved()'
+            )
+            with self.subTest(scanner=scanner.__name__):
+                self.assertEqual(scanner(source), [6])
+
+        safe = (
+            'KEY = "username"\n'
+            'def configure(flag):\n'
+            '    global KEY\n'
+            '    if flag:\n'
+            '        source = []\n'
+            '        source.append(lambda: options.__setitem__(KEY, "hardcoded-secret"))\n'
+            '        extract, unused = source.pop, None\n'
+            '        extract()()\n'
+            '    else:\n'
+            '        KEY = "password"\n'
+            'configure(True)'
+        )
+        self.assertEqual(hardcoded_password_literal_lines(safe), [])
+
+    def test_starred_list_extraction_does_not_miss_shifted_indices(self):
+        cases = (
+            (hardcoded_password_literal_lines, "password", "hardcoded-secret"),
+            (hardcoded_single_auth_lines, "api_key", "hardcoded-api-key"),
+            (hardcoded_authorization_header_lines, "Authorization", "Bearer hardcoded-token"),
+        )
+        for scanner, rebound, value in cases:
+            expression = (
+                'headers.setdefault(KEY, "' + value + '")'
+                if rebound == "Authorization"
+                else 'options.__setitem__(KEY, "' + value + '")'
+            )
+            source = (
+                'KEY = "username"\n'
+                'def configure(flag):\n'
+                '    global KEY\n'
+                '    if flag:\n'
+                '        source = [*[], lambda: ' + expression + ']\n'
+                '        return source[0]\n'
+                '    else:\n'
+                '        KEY = "' + rebound + '"\n'
+                'saved = configure(True)\n'
+                'configure(False)\n'
+                'saved()'
+            )
+            with self.subTest(scanner=scanner.__name__):
+                self.assertEqual(scanner(source), [5])
+
+        safe = (
+            'KEY = "username"\n'
+            'def configure(flag):\n'
+            '    global KEY\n'
+            '    if flag:\n'
+            '        source = [*[], lambda: options.__setitem__(KEY, "hardcoded-secret")]\n'
+            '        source[0]()\n'
+            '    else:\n'
+            '        KEY = "password"\n'
+            'configure(True)'
+        )
+        self.assertEqual(hardcoded_password_literal_lines(safe), [])
+
+    def test_selected_dict_update_keyword_overrides_mapping_callback(self):
+        cases = (
+            (hardcoded_password_literal_lines, "password", "hardcoded-secret"),
+            (hardcoded_single_auth_lines, "api_key", "hardcoded-api-key"),
+            (hardcoded_authorization_header_lines, "Authorization", "Bearer hardcoded-token"),
+        )
+        for scanner, rebound, value in cases:
+            expression = (
+                'headers.setdefault(KEY, "' + value + '")'
+                if rebound == "Authorization"
+                else 'options.__setitem__(KEY, "' + value + '")'
+            )
+            def build(mapping_expr, keyword_expr):
+                return (
+                    'KEY = "username"\n'
+                    'def configure(flag):\n'
+                    '    global KEY\n'
+                    '    if flag:\n'
+                    '        source = {}\n'
+                    '        source.update({"exported": lambda: ' + mapping_expr
+                    + '}, exported=lambda: ' + keyword_expr + ')\n'
+                    '        return source["exported"]\n'
+                    '    else:\n'
+                    '        KEY = "' + rebound + '"\n'
+                    'saved = configure(True)\n'
+                    'configure(False)\n'
+                    'saved()'
+                )
+            with self.subTest(scanner=scanner.__name__):
+                self.assertEqual(scanner(build(expression, 'None')), [])
+                self.assertEqual(scanner(build('None', expression)), [6])
 
     def test_python_password_literal_guard_preserves_mapping_alias_capture(self):
         hardcoded_source = (
