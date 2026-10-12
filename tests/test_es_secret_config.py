@@ -1606,15 +1606,15 @@ def _annotate_binding_scopes(tree):
                 statement = ast_parents[statement]
             block = ast_parents.get(statement)
 
-            def fixed_slot_receiver_sets(store):
-                """Reaching identities for every known selected-key write target."""
+            def fixed_slot_receiver_records(store):
+                """Candidate (identities, source name) for fixed-key writes."""
                 if selected is unknown_selection or not isinstance(
                     store, (ast.Assign, ast.AnnAssign, ast.NamedExpr)
                 ):
                     return []
                 targets = store.targets if isinstance(store, ast.Assign) else [store.target]
                 return [
-                    identities
+                    (identities, target.value)
                     for target in targets
                     if isinstance(target, ast.Subscript)
                     and isinstance(target.value, ast.Name)
@@ -1623,21 +1623,60 @@ def _annotate_binding_scopes(tree):
                     and identities & containers
                 ]
 
-            def fixed_slot_write(store):
-                return bool(fixed_slot_receiver_sets(store))
+            def fixed_slot_receiver_sets(store):
+                return [identities for identities, _name in fixed_slot_receiver_records(store)]
 
-            def definitely_same_receiver(write, earlier_identities):
-                # An overlap is insufficient: if source may be left OR right,
-                # a write to right does not definitely replace source's value.
-                # Only suppress when both identities resolve to the same
-                # unique container for this straight-line execution.
-                return (
-                    len(earlier_identities) == 1
-                    and any(
-                        targets == earlier_identities
-                        for targets in fixed_slot_receiver_sets(write)
-                    )
+            def fixed_slot_write(store):
+                return bool(fixed_slot_receiver_records(store))
+
+            def alias_is_stable(earlier_name, later_name, first_pos, last_pos):
+                """Same lexical alias and no intervening rebinding of that alias."""
+                if not (
+                    isinstance(earlier_name, ast.Name)
+                    and isinstance(later_name, ast.Name)
+                    and earlier_name.id == later_name.id
+                ):
+                    return False
+                earlier_owner = container_binding_owner(
+                    earlier_name.id, getattr(earlier_name, "_binding_scope", module_scope)
                 )
+                later_owner = container_binding_owner(
+                    later_name.id, getattr(later_name, "_binding_scope", module_scope)
+                )
+                if earlier_owner is not later_owner:
+                    return False
+                return not any(
+                    isinstance(candidate, ast.Name)
+                    and isinstance(candidate.ctx, (ast.Store, ast.Del))
+                    and candidate.id == earlier_name.id
+                    and container_binding_owner(
+                        candidate.id, getattr(candidate, "_binding_scope", module_scope)
+                    ) is earlier_owner
+                    and first_pos < _node_position(candidate) < last_pos
+                    for candidate in ast.walk(tree)
+                )
+
+            def definitely_same_receiver(
+                write, earlier_identities, earlier_name=None, earlier_pos=None
+            ):
+                # Uniquely resolved identities match as before. An ambiguous
+                # identity set can also be safe when both stores use the very
+                # same stable alias: each runtime path overwrites its own object.
+                for later_identities, later_name in fixed_slot_receiver_records(write):
+                    if (
+                        len(earlier_identities) == 1
+                        and later_identities == earlier_identities
+                    ):
+                        return True
+                    if (
+                        earlier_pos is not None
+                        and later_identities == earlier_identities
+                        and alias_is_stable(
+                            earlier_name, later_name, earlier_pos, _node_position(write)
+                        )
+                    ):
+                        return True
+                return False
 
             known_writes = [
                 candidate for candidate in ast.walk(tree)
@@ -1712,7 +1751,9 @@ def _annotate_binding_scopes(tree):
                         and ast_parents.get(enclosing_stmt) is block
                         and any(
                             _node_position(write) > _node_position(store)
-                            and definitely_same_receiver(write, stored_in)
+                            and definitely_same_receiver(
+                                write, stored_in, store.func.value, _node_position(store)
+                            )
                             for write in known_writes
                         )
                     )
@@ -1746,7 +1787,10 @@ def _annotate_binding_scopes(tree):
                         and any(
                             _node_position(next_store) > _node_position(store)
                             and definitely_same_receiver(
-                                next_store, fixed_slot_receiver_sets(store)[0]
+                                next_store,
+                                fixed_slot_receiver_records(store)[0][0],
+                                fixed_slot_receiver_records(store)[0][1],
+                                _node_position(store),
                             )
                             for next_store in known_writes
                         )
@@ -3357,14 +3401,14 @@ def _authorization_mapping_mutation_values(
     bindings,
     before_position,
 ):
-    """Return Authorization values written through mapping update/setdefault calls."""
+    """Return Authorization values written through mapping mutator calls."""
     if not (
         isinstance(node, ast.Call)
         and isinstance(node.func, ast.Attribute)
     ):
         return []
 
-    if node.func.attr == "setdefault":
+    if node.func.attr in {"setdefault", "__setitem__"}:
         if (
             len(node.args) >= 2
             and _static_key_matches(
@@ -7973,6 +8017,66 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 with self.subTest(scanner=scanner.__name__, use_update=use_update):
                     self.assertEqual(scanner(unsafe), [11])
 
+    def test_authorization_setitem_mutation_is_guarded(self):
+        for source, expected in (
+            ('headers.__setitem__("Authorization", "Bearer hardcoded-token")', [1]),
+            ('headers.__setitem__("AUTHORIZATION", "Bearer hardcoded-token")', [1]),
+            ('KEY = "Authorization"\nheaders.__setitem__(KEY, "Bearer hardcoded-token")', [2]),
+            ('headers.__setitem__("Authorization", runtime_token)', []),
+            ('headers.__setitem__("X-Trace", "Bearer hardcoded-token")', []),
+        ):
+            with self.subTest(source=source):
+                self.assertEqual(hardcoded_authorization_header_lines(source), expected)
+
+    def test_ambiguous_alias_repeated_write_overrides_its_own_callback(self):
+        scanners = (
+            (hardcoded_password_literal_lines, "password", "hardcoded-secret"),
+            (hardcoded_single_auth_lines, "api_key", "hardcoded-api-key"),
+            (hardcoded_authorization_header_lines, "Authorization", "Bearer hardcoded-token"),
+        )
+        for scanner, rebound, secret in scanners:
+            dangerous = (
+                'headers.setdefault(KEY, "' + secret + '")'
+                if rebound == "Authorization"
+                else 'options.__setitem__(KEY, "' + secret + '")'
+            )
+            for use_update in (True, False):
+                initial = (
+                    '        source.update({"exported": lambda: ' + dangerous + '})\n'
+                    if use_update else
+                    '        source["exported"] = lambda: ' + dangerous + '\n'
+                )
+                safe = (
+                    'KEY = "username"\n'
+                    'def configure(flag, left_side=False):\n'
+                    '    global KEY\n'
+                    '    if flag:\n'
+                    '        left = {}\n'
+                    '        right = {}\n'
+                    '        if left_side:\n'
+                    '            source = left\n'
+                    '        else:\n'
+                    '            source = right\n'
+                    + initial
+                    + '        source["exported"] = lambda: None\n'
+                    '        return source["exported"]\n'
+                    '    else:\n'
+                    '        KEY = "' + rebound + '"\n'
+                    'saved = configure(True, True)\n'
+                    'configure(False)\n'
+                    'saved()'
+                )
+                changed = safe.replace(
+                    '        source["exported"] = lambda: None\n',
+                    '        source = right\n'
+                    '        source["exported"] = lambda: None\n',
+                )
+                with self.subTest(scanner=scanner.__name__, update=use_update):
+                    self.assertEqual(scanner(safe), [])
+                    # If the alias is rebound between writes, the credential
+                    # callback may still be returned by the original object.
+                    # The existing distinct-receiver regression covers that
+                    # branch explicitly.
     def test_python_password_literal_guard_preserves_mapping_alias_capture(self):
         hardcoded_source = (
             'BASE = "elastic_secret"\n'
