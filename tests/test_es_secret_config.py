@@ -1606,18 +1606,37 @@ def _annotate_binding_scopes(tree):
                 statement = ast_parents[statement]
             block = ast_parents.get(statement)
 
-            def fixed_slot_write(store):
+            def fixed_slot_receiver_sets(store):
+                """Reaching identities for every known selected-key write target."""
                 if selected is unknown_selection or not isinstance(
                     store, (ast.Assign, ast.AnnAssign, ast.NamedExpr)
                 ):
-                    return False
+                    return []
                 targets = store.targets if isinstance(store, ast.Assign) else [store.target]
-                return any(
-                    isinstance(t, ast.Subscript)
-                    and isinstance(t.value, ast.Name)
-                    and bool(reaching_containers(t.value) & containers)
-                    and static_selection(t.slice) == selected
-                    for t in targets
+                return [
+                    identities
+                    for target in targets
+                    if isinstance(target, ast.Subscript)
+                    and isinstance(target.value, ast.Name)
+                    and static_selection(target.slice) == selected
+                    if (identities := reaching_containers(target.value))
+                    and identities & containers
+                ]
+
+            def fixed_slot_write(store):
+                return bool(fixed_slot_receiver_sets(store))
+
+            def definitely_same_receiver(write, earlier_identities):
+                # An overlap is insufficient: if source may be left OR right,
+                # a write to right does not definitely replace source's value.
+                # Only suppress when both identities resolve to the same
+                # unique container for this straight-line execution.
+                return (
+                    len(earlier_identities) == 1
+                    and any(
+                        targets == earlier_identities
+                        for targets in fixed_slot_receiver_sets(write)
+                    )
                 )
 
             known_writes = [
@@ -1693,6 +1712,7 @@ def _annotate_binding_scopes(tree):
                         and ast_parents.get(enclosing_stmt) is block
                         and any(
                             _node_position(write) > _node_position(store)
+                            and definitely_same_receiver(write, stored_in)
                             for write in known_writes
                         )
                     )
@@ -1722,8 +1742,12 @@ def _annotate_binding_scopes(tree):
                     superseded = (
                         fixed_slot_write(store)
                         and ast_parents.get(store) is block
+                        and len(fixed_slot_receiver_sets(store)) == 1
                         and any(
                             _node_position(next_store) > _node_position(store)
+                            and definitely_same_receiver(
+                                next_store, fixed_slot_receiver_sets(store)[0]
+                            )
                             for next_store in known_writes
                         )
                     )
@@ -7908,6 +7932,46 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 )
                 with self.subTest(scanner=scanner.__name__, conditional=conditional, expected=expected):
                     self.assertEqual(scanner(source), expected)
+
+    def test_fixed_key_overwrites_require_identical_receiver_bindings(self):
+        for scanner, rebound, literal in (
+            (hardcoded_password_literal_lines, "password", "hardcoded-secret"),
+            (hardcoded_single_auth_lines, "api_key", "hardcoded-api-key"),
+            (hardcoded_authorization_header_lines, "Authorization", "Bearer hardcoded-token"),
+        ):
+            callback = (
+                'headers.setdefault(KEY, "' + literal + '")'
+                if rebound == "Authorization"
+                else 'options.__setitem__(KEY, "' + literal + '")'
+            )
+            for use_update in (True, False):
+                store = (
+                    '        source.update({"exported": lambda: ' + callback + '})\n'
+                    if use_update else
+                    '        source["exported"] = lambda: ' + callback + '\n'
+                )
+                unsafe = (
+                    'KEY = "username"\n'
+                    'def configure(flag, choose_left=False):\n'
+                    '    global KEY\n'
+                    '    if flag:\n'
+                    '        left = {}\n'
+                    '        right = {}\n'
+                    '        if choose_left:\n'
+                    '            source = left\n'
+                    '        else:\n'
+                    '            source = right\n'
+                    + store
+                    + '        right["exported"] = lambda: None\n'
+                    '        return source["exported"]\n'
+                    '    else:\n'
+                    '        KEY = "' + rebound + '"\n'
+                    'saved = configure(True, True)\n'
+                    'configure(False)\n'
+                    'saved()'
+                )
+                with self.subTest(scanner=scanner.__name__, use_update=use_update):
+                    self.assertEqual(scanner(unsafe), [10 if use_update else 10])
 
     def test_python_password_literal_guard_preserves_mapping_alias_capture(self):
         hardcoded_source = (
