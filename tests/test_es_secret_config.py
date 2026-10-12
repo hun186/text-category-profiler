@@ -1098,6 +1098,24 @@ def _annotate_binding_scopes(tree):
     # Branches may rebind the same local variable to unrelated collections.
     container_bindings = {}
 
+    def record_container_assignment(target, value, owner, position):
+        """Keep each destructured local's own initializer and branch path."""
+        if isinstance(target, ast.Name):
+            container_bindings.setdefault((owner, target.id), []).append(
+                (position, value)
+            )
+        elif (
+            isinstance(target, (ast.Tuple, ast.List))
+            and isinstance(value, (ast.Tuple, ast.List))
+            and len(target.elts) == len(value.elts)
+        ):
+            # Tuple/list unpacking initializes the elements independently:
+            # "callbacks, unused = [], None" must bind callbacks to [].
+            for child_target, child_value in zip(target.elts, value.elts):
+                record_container_assignment(
+                    child_target, child_value, owner, position
+                )
+
     for node in ast.walk(tree):
         owner = getattr(node, "_binding_scope", module_scope)
         if isinstance(node, ast.Assign):
@@ -1109,10 +1127,9 @@ def _annotate_binding_scopes(tree):
         if value is None:
             continue
         for target in targets:
-            if isinstance(target, ast.Name):
-                container_bindings.setdefault((owner, target.id), []).append(
-                    (_node_position(node), value)
-                )
+            record_container_assignment(
+                target, value, owner, _node_position(node)
+            )
     for entries in container_bindings.values():
         entries.sort(key=lambda item: item[0])
 
@@ -1279,6 +1296,22 @@ def _annotate_binding_scopes(tree):
     while changed:
         before = (len(escaping_functions), len(escaping_container_bindings))
         for function in tuple(escaping_functions):
+            # Default expressions are evaluated in the *enclosing* frame
+            # when a function/lambda is created, then retained on the escaped
+            # callable. They are not annotated with the callable's own scope.
+            defaults = (
+                list(function.args.defaults)
+                + [
+                    default
+                    for default in function.args.kw_defaults
+                    if default is not None
+                ]
+            )
+            for default in defaults:
+                escaping_container_bindings.update(
+                    exposed_container_bindings(default)
+                )
+
             for read in ast.walk(function):
                 if not (
                     isinstance(read, ast.Name)
@@ -6422,6 +6455,32 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for scanner, source, expected in hardcoded_cases:
             with self.subTest(scanner=scanner.__name__, source=source):
                 self.assertEqual(scanner(source), expected)
+
+    def test_escaped_function_defaults_capture_augmented_containers(self):
+        hardcoded_cases = (
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        def dispatch(saved=callbacks):\n            saved[0]()\n        return dispatch\n    else:\n        KEY = \"password\"\ndispatch = configure(True)\nconfigure(False)\ndispatch()", [6]),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        def dispatch(*, saved=callbacks):\n            saved[0]()\n        return dispatch\n    else:\n        KEY = \"password\"\ndispatch = configure(True)\nconfigure(False)\ndispatch()", [6]),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        dispatch = lambda saved=callbacks: saved[0]()\n        return dispatch\n    else:\n        KEY = \"password\"\ndispatch = configure(True)\nconfigure(False)\ndispatch()", [6]),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        alias = callbacks\n        def dispatch(saved=alias):\n            saved[0]()\n        return dispatch\n    else:\n        KEY = \"password\"\ndispatch = configure(True)\nconfigure(False)\ndispatch()", [6]),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks, unused = [], None\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        def dispatch(saved=callbacks):\n            saved[0]()\n        return dispatch\n    else:\n        KEY = \"password\"\ndispatch = configure(True)\nconfigure(False)\ndispatch()", [6]),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        [callbacks, unused] = [[], None]\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        def dispatch(saved=callbacks):\n            saved[0]()\n        return dispatch\n    else:\n        KEY = \"password\"\ndispatch = configure(True)\nconfigure(False)\ndispatch()", [6]),
+            (hardcoded_single_auth_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-api-key\")]\n        def dispatch(saved=callbacks):\n            saved[0]()\n        return dispatch\n    else:\n        KEY = \"api_key\"\ndispatch = configure(True)\nconfigure(False)\ndispatch()", [6]),
+            (hardcoded_authorization_header_lines, "KEY = \"x-trace\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        callbacks += [lambda: headers.setdefault(KEY, \"Bearer hardcoded-token\")]\n        def dispatch(saved=callbacks):\n            saved[0]()\n        return dispatch\n    else:\n        KEY = \"Authorization\"\ndispatch = configure(True)\nconfigure(False)\ndispatch()", [6]),
+        )
+        for scanner, source, expected in hardcoded_cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), expected)
+
+    def test_destructured_local_callback_containers_remain_frame_local(self):
+        safe_cases = (
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks, unused = [], None\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        callbacks[0]()\n    else:\n        KEY = \"password\"\nconfigure(True)"),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        [callbacks, unused] = [[], None]\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        callbacks[0]()\n    else:\n        KEY = \"password\"\nconfigure(True)"),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks, unused = [], None\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        callbacks[0]()\n    else:\n        callbacks = []\n        KEY = \"password\"\n        consume(callbacks)\nconfigure(True)"),
+            (hardcoded_authorization_header_lines, "KEY = \"x-trace\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks, unused = [], None\n        callbacks += [lambda: headers.setdefault(KEY, \"Bearer hardcoded-token\")]\n        callbacks[0]()\n    else:\n        KEY = \"Authorization\"\nconfigure(True)"),
+        )
+        for scanner, source in safe_cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), [])
 
     def test_python_password_literal_guard_preserves_mapping_alias_capture(self):
         hardcoded_source = (
