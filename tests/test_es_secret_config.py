@@ -4816,19 +4816,26 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 if any(marker in source for marker in ES_RUNTIME_MARKERS):
                     paths.add(path.resolve())
 
-        # A consumer may import credentials from a module that has no ES
-        # marker. Include transitive project-local imports, with visited-path
-        # deduplication, instead of silently accepting those imported values.
+        # Walk the local import graph to find credential-provider modules,
+        # without broadening this *ES* guard to unrelated library functions
+        # (which can contain test-only or non-ES credential examples).
         pending = list(paths)
+        visited = set(paths)
         while pending:
             path = pending.pop()
             if not path.is_file():
                 continue
             source = path.read_text(encoding="utf-8-sig", errors="ignore")
             for dependency in self._local_imported_python_paths(path, source):
-                if dependency not in paths:
+                if dependency in visited:
+                    continue
+                visited.add(dependency)
+                provider_source = dependency.read_text(
+                    encoding="utf-8-sig", errors="ignore"
+                )
+                if self._module_uppercase_credential_literals(provider_source):
                     paths.add(dependency)
-                    pending.append(dependency)
+                pending.append(dependency)
 
         return sorted(paths)
 
