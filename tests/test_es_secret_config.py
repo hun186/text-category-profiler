@@ -1677,8 +1677,28 @@ def _annotate_binding_scopes(tree):
                             *store.args,
                             *(keyword.value for keyword in store.keywords),
                         ]
-                    for value in values:
-                        mark_escaping_expression(value, seen)
+                    # A straight-line write to the same fixed key after
+                    # update() supersedes the update's callback value.
+                    # Conditional writes must not suppress possible escape.
+                    enclosing_stmt = store
+                    while enclosing_stmt in ast_parents and not isinstance(
+                        enclosing_stmt, ast.stmt
+                    ):
+                        enclosing_stmt = ast_parents[enclosing_stmt]
+                    superseded_update = (
+                        method == "update"
+                        and selected is not unknown_selection
+                        and isinstance(enclosing_stmt, ast.Expr)
+                        and enclosing_stmt.value is store
+                        and ast_parents.get(enclosing_stmt) is block
+                        and any(
+                            _node_position(write) > _node_position(store)
+                            for write in known_writes
+                        )
+                    )
+                    if not superseded_update:
+                        for value in values:
+                            mark_escaping_expression(value, seen)
                 elif isinstance(store, (ast.Assign, ast.AnnAssign, ast.NamedExpr)):
                     targets = (
                         store.targets if isinstance(store, ast.Assign)
@@ -7847,6 +7867,47 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 self.assertEqual(scanner(snippet(dangerous, "None")), [])
                 self.assertEqual(scanner(snippet("None", dangerous)), [7])
                 self.assertEqual(scanner(snippet(dangerous, "None", True)), [6])
+
+    def test_fixed_key_update_callbacks_respect_later_definite_write(self):
+        scanners = (
+            (hardcoded_password_literal_lines, "password", "hardcoded-secret"),
+            (hardcoded_single_auth_lines, "api_key", "hardcoded-api-key"),
+            (hardcoded_authorization_header_lines, "Authorization", "Bearer hardcoded-token"),
+        )
+        for scanner, rebound, secret in scanners:
+            write = (
+                'headers.setdefault(KEY, "' + secret + '")'
+                if rebound == "Authorization"
+                else 'options.__setitem__(KEY, "' + secret + '")'
+            )
+            for update_callback, replacement, conditional, expected in (
+                (write, "None", False, []),
+                ("None", write, False, [7]),
+                (write, "None", True, [6]),
+            ):
+                assignment = (
+                    '        if uncertain:\n'
+                    '            source["exported"] = lambda: ' + replacement + '\n'
+                    if conditional
+                    else '        source["exported"] = lambda: ' + replacement + '\n'
+                )
+                source = (
+                    'KEY = "username"\n'
+                    'def configure(flag, uncertain=False):\n'
+                    '    global KEY\n'
+                    '    if flag:\n'
+                    '        source = {}\n'
+                    '        source.update({"exported": lambda: ' + update_callback + '})\n'
+                    + assignment
+                    + '        return source["exported"]\n'
+                    '    else:\n'
+                    '        KEY = "' + rebound + '"\n'
+                    'saved = configure(True)\n'
+                    'configure(False)\n'
+                    'saved()'
+                )
+                with self.subTest(scanner=scanner.__name__, conditional=conditional, expected=expected):
+                    self.assertEqual(scanner(source), expected)
 
     def test_python_password_literal_guard_preserves_mapping_alias_capture(self):
         hardcoded_source = (
