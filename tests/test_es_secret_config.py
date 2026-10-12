@@ -1098,37 +1098,77 @@ def _annotate_binding_scopes(tree):
     # Branches may rebind the same local variable to unrelated collections.
     container_bindings = {}
 
+    def statically_unpacked_values(value, owner, seen=None):
+        """Resolve source-ordered tuple/list aliases before destructuring."""
+        if isinstance(value, (ast.Tuple, ast.List)):
+            return [value]
+        if not isinstance(value, ast.Name):
+            return []
+        seen = set() if seen is None else set(seen)
+        binding_owner = (
+            module_scope
+            if value.id in scope_globals.get(owner, ())
+            else owner
+        )
+        token = (binding_owner, value.id)
+        if token in seen:
+            return []
+        candidates = [
+            (position, candidate)
+            for position, candidate in container_bindings.get(token, ())
+            if position < _node_position(value)
+        ]
+        reaching = _reaching_values(candidates, value)
+        # If a name could refer to a non-container or to different shapes,
+        # do not assert that any particular destructured local is private.
+        if not reaching:
+            return []
+        resolved = []
+        for candidate in reaching:
+            choices = statically_unpacked_values(
+                candidate, binding_owner, seen | {token}
+            )
+            if len(choices) != 1:
+                return []
+            resolved.extend(choices)
+        return resolved
+
     def record_container_assignment(target, value, owner, position):
-        """Keep each destructured local's own initializer and branch path."""
+        """Keep each destructured local's initializer and control path."""
         if isinstance(target, ast.Name):
             container_bindings.setdefault((owner, target.id), []).append(
                 (position, value)
             )
-        elif (
-            isinstance(target, (ast.Tuple, ast.List))
-            and isinstance(value, (ast.Tuple, ast.List))
-            and len(target.elts) == len(value.elts)
-        ):
-            # Tuple/list unpacking initializes the elements independently:
-            # "callbacks, unused = [], None" must bind callbacks to [].
-            for child_target, child_value in zip(target.elts, value.elts):
+        elif isinstance(target, (ast.Tuple, ast.List)):
+            choices = statically_unpacked_values(value, owner)
+            if len(choices) != 1:
+                return
+            container = choices[0]
+            if len(target.elts) != len(container.elts):
+                return
+            for child_target, child_value in zip(
+                target.elts, container.elts
+            ):
                 record_container_assignment(
                     child_target, child_value, owner, position
                 )
 
-    for node in ast.walk(tree):
+    assignment_nodes = sorted(
+        (
+            node
+            for node in ast.walk(tree)
+            if isinstance(node, (ast.Assign, ast.AnnAssign, ast.NamedExpr))
+        ),
+        key=_node_position,
+    )
+    for node in assignment_nodes:
         owner = getattr(node, "_binding_scope", module_scope)
-        if isinstance(node, ast.Assign):
-            targets, value = node.targets, node.value
-        elif isinstance(node, (ast.AnnAssign, ast.NamedExpr)):
-            targets, value = [node.target], node.value
-        else:
-            continue
-        if value is None:
+        targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+        if node.value is None:
             continue
         for target in targets:
             record_container_assignment(
-                target, value, owner, _node_position(node)
+                target, node.value, owner, _node_position(node)
             )
     for entries in container_bindings.values():
         entries.sort(key=lambda item: item[0])
@@ -1194,8 +1234,17 @@ def _annotate_binding_scopes(tree):
                 return reaching_containers(expression)
             return set()
         if isinstance(expression, ast.Call):
-            # The invoked function is not itself passed to the sink.
+            # Calling a function doesn't retain its function object.
             children = [*expression.args, *[kw.value for kw in expression.keywords]]
+            if (
+                isinstance(expression.func, ast.Attribute)
+                and expression.func.attr == "copy"
+                and not expression.args
+                and not expression.keywords
+            ):
+                # A captured shallow container copy also retains callbacks
+                # already present on the original receiver at copy time.
+                children.append(expression.func.value)
         else:
             children = ast.iter_child_nodes(expression)
         retained = set()
@@ -6481,6 +6530,37 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for scanner, source in safe_cases:
             with self.subTest(scanner=scanner.__name__, source=source):
                 self.assertEqual(scanner(source), [])
+
+    def test_shallow_copy_defaults_capture_retained_callbacks(self):
+        hardcoded_cases = (
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        def dispatch(saved=callbacks.copy()):\n            saved[0]()\n        return dispatch\n    else:\n        KEY = \"password\"\ndispatch = configure(True)\nconfigure(False)\ndispatch()", [6]),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        dispatch = lambda saved=callbacks.copy(): saved[0]()\n        return dispatch\n    else:\n        KEY = \"password\"\ndispatch = configure(True)\nconfigure(False)\ndispatch()", [6]),
+            (hardcoded_single_auth_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-api-key\")]\n        def dispatch(saved=callbacks.copy()):\n            saved[0]()\n        return dispatch\n    else:\n        KEY = \"api_key\"\ndispatch = configure(True)\nconfigure(False)\ndispatch()", [6]),
+            (hardcoded_authorization_header_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        callbacks = []\n        callbacks += [lambda: headers.setdefault(KEY, \"Bearer hardcoded-token\")]\n        def dispatch(*, saved=callbacks.copy()):\n            saved[0]()\n        return dispatch\n    else:\n        KEY = \"Authorization\"\ndispatch = configure(True)\nconfigure(False)\ndispatch()", [6]),
+        )
+        for scanner, source, expected in hardcoded_cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), expected)
+
+    def test_alias_unpacking_respects_local_and_escaped_containers(self):
+        safe_cases = (
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        pair = ([], None)\n        callbacks, unused = pair\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        callbacks[0]()\n    else:\n        KEY = \"password\"\nconfigure(True)"),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        pair = ([], None)\n        alias = pair\n        callbacks, unused = alias\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        callbacks[0]()\n    else:\n        KEY = \"password\"\nconfigure(True)"),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        pair = [[], None]\n        [callbacks, unused] = pair\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        callbacks[0]()\n    else:\n        KEY = \"password\"\nconfigure(True)"),
+            (hardcoded_single_auth_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        pair = ([], None)\n        callbacks, unused = pair\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-api-key\")]\n        callbacks[0]()\n    else:\n        KEY = \"api_key\"\nconfigure(True)"),
+            (hardcoded_authorization_header_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        pair = ([], None)\n        callbacks, unused = pair\n        callbacks += [lambda: headers.setdefault(KEY, \"Bearer hardcoded-token\")]\n        callbacks[0]()\n    else:\n        KEY = \"Authorization\"\nconfigure(True)"),
+        )
+        for scanner, source in safe_cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), [])
+
+        hardcoded_cases = (
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        pair = ([], None)\n        callbacks, unused = pair\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        return callbacks\n    else:\n        KEY = \"password\"\ncallbacks = configure(True)\nconfigure(False)\ncallbacks[0]()", [7]),
+            (hardcoded_single_auth_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        pair = [[], None]\n        callbacks, unused = pair\n        callbacks += [lambda: options.__setitem__(KEY, \"hardcoded-api-key\")]\n        return callbacks\n    else:\n        KEY = \"api_key\"\ncallbacks = configure(True)\nconfigure(False)\ncallbacks[0]()", [7]),
+        )
+        for scanner, source, expected in hardcoded_cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), expected)
 
     def test_python_password_literal_guard_preserves_mapping_alias_capture(self):
         hardcoded_source = (
