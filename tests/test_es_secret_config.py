@@ -1526,7 +1526,7 @@ def _annotate_binding_scopes(tree):
                     binding = next(iter(bindings))
                     if binding in seen:
                         return None
-                    return expanded_items(binding, seen | {binding})
+                    return expanded_items(binding, seen)
                 if not isinstance(value, (ast.List, ast.Tuple)):
                     return None
                 if value in seen:
@@ -7715,9 +7715,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             '            extract()()\n'
             '        else:\n'
             '            KEY = "password"\n'
-            '    return configure\n'
-            'configure = outer()\n'
-            'configure(True)'
+            '    configure(True)\n'
+            'outer()'
         )
         self.assertEqual(hardcoded_password_literal_lines(safe), [])
 
