@@ -1388,70 +1388,184 @@ def _annotate_binding_scopes(tree):
             )
         ]
 
-    def extracted_receiver(node):
-        """Only collection accessors that yield a stored value, not a copy."""
+    # An extracted value can escape while its source collection stays private.
+    # Accessor method objects may themselves be aliased before they are called.
+    def extracted_accesses(node):
         if isinstance(node, ast.Subscript):
+            return [(node.value, node.slice)]
+        if not isinstance(node, ast.Call):
+            return []
+
+        def bound_accessors(function, seen=None):
+            if isinstance(function, ast.Attribute):
+                if function.attr in {"pop", "popitem", "get", "__getitem__"}:
+                    return [(function.value, function.attr)]
+                return []
+            if not isinstance(function, ast.Name):
+                return []
+            seen = set() if seen is None else seen
+            scope = getattr(function, "_binding_scope", module_scope)
+            token = (container_binding_owner(function.id, scope), function.id)
+            if token in seen:
+                return []
+            found = []
+            for value in reaching_assigned_values(function):
+                found.extend(bound_accessors(value, seen | {token}))
+            return found
+
+        accesses = []
+        for receiver, method in bound_accessors(node.func):
+            # A no-argument pop() has a position-dependent element. Keep the
+            # conservative fallback rather than invent a static selection.
+            key = (
+                node.args[0]
+                if method in {"pop", "get", "__getitem__"} and node.args
+                else None
+            )
+            accesses.append((receiver, key))
+        return accesses
+
+    unknown_selection = object()
+
+    def static_selection(node, seen=None):
+        """Resolve a literal dict key/list index through reaching local aliases."""
+        if isinstance(node, ast.Constant) and isinstance(node.value, (str, int)):
             return node.value
-        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
-            if node.func.attr in {"pop", "popitem", "get", "__getitem__"}:
-                return node.func.value
-        return None
+        if not isinstance(node, ast.Name):
+            return unknown_selection
+        seen = set() if seen is None else seen
+        scope = getattr(node, "_binding_scope", module_scope)
+        token = (container_binding_owner(node.id, scope), node.id)
+        if token in seen:
+            return unknown_selection
+        candidates = reaching_assigned_values(node)
+        if not candidates:
+            return unknown_selection
+        values = [
+            static_selection(value, seen | {token}) for value in candidates
+        ]
+        if any(value is unknown_selection or value != values[0] for value in values):
+            return unknown_selection
+        return values[0]
+
+    def selected_elements(container, key):
+        """Select only provably reachable literal elements for a fixed key."""
+        if isinstance(container, ast.Dict):
+            values = []
+            for entry_key, entry_value in zip(container.keys, container.values):
+                if entry_key is None:
+                    # A **mapping expansion can supply the selected key.
+                    values.append(entry_value)
+                elif (
+                    key is unknown_selection
+                    or (candidate := static_selection(entry_key)) is unknown_selection
+                    or candidate == key
+                ):
+                    values.append(entry_value)
+            return values
+        if isinstance(container, (ast.List, ast.Tuple)):
+            if (
+                isinstance(key, int) and not isinstance(key, bool)
+                and -len(container.elts) <= key < len(container.elts)
+            ):
+                return [container.elts[key]]
+            if key is not unknown_selection:
+                return [] if container.elts else []
+            return container.elts
+        if isinstance(container, ast.Set):
+            return container.elts
+        return []
 
     def mark_extracted_callbacks(node, seen):
-        receiver = extracted_receiver(node)
-        if not isinstance(receiver, ast.Name):
-            return
-        containers = reaching_containers(receiver)
-        if not containers or any(
-            known_container_mutator_type(binding) is None
-            for binding in containers
-        ):
-            return
-
-        # A private collection need not escape for a callback removed from it
-        # to escape. Include elements from its original literal and recognized
-        # stores into the same reaching collection identity.
-        for binding in containers:
-            if isinstance(binding, (ast.List, ast.Tuple, ast.Dict, ast.Set)):
-                mark_escaping_expression(binding, seen)
-
-        for store in ast.walk(tree):
-            if _control_paths_mutually_exclusive(
-                _node_control_path(store), _node_control_path(node)
+        for receiver, key_node in extracted_accesses(node):
+            if not isinstance(receiver, ast.Name):
+                continue
+            containers = reaching_containers(receiver)
+            if not containers or any(
+                known_container_mutator_type(binding) is None
+                for binding in containers
             ):
                 continue
-            if (
-                getattr(store, "_binding_scope", module_scope)
-                is getattr(node, "_binding_scope", module_scope)
-                and _node_position(store) > _node_position(node)
-            ):
-                continue
-            if isinstance(store, ast.Call):
-                stored_in = known_container_mutator_bindings(store)
-                if stored_in is not None and stored_in & containers:
-                    for value in [
-                        *store.args,
-                        *(keyword.value for keyword in store.keywords),
-                    ]:
+            selected = (
+                unknown_selection if key_node is None
+                else static_selection(key_node)
+            )
+
+            # A private collection can give away just one of its callbacks.
+            # Do not implicitly export unrelated literal or indexed values.
+            for binding in containers:
+                if isinstance(binding, (ast.List, ast.Tuple, ast.Dict, ast.Set)):
+                    for value in selected_elements(binding, selected):
                         mark_escaping_expression(value, seen)
-            elif isinstance(store, (ast.Assign, ast.AnnAssign, ast.NamedExpr)):
-                targets = (
-                    store.targets if isinstance(store, ast.Assign)
-                    else [store.target]
-                )
-                if any(
-                    isinstance(target, ast.Subscript)
-                    and isinstance(target.value, ast.Name)
-                    and reaching_containers(target.value) & containers
-                    for target in targets
+
+            for store in ast.walk(tree):
+                if _control_paths_mutually_exclusive(
+                    _node_control_path(store), _node_control_path(node)
                 ):
-                    mark_escaping_expression(store.value, seen)
-            elif isinstance(store, ast.AugAssign):
+                    continue
                 if (
-                    isinstance(store.target, ast.Name)
-                    and reaching_containers(store.target) & containers
+                    getattr(store, "_binding_scope", module_scope)
+                    is getattr(node, "_binding_scope", module_scope)
+                    and _node_position(store) > _node_position(node)
                 ):
-                    mark_escaping_expression(store.value, seen)
+                    continue
+                if isinstance(store, ast.Call):
+                    stored_in = known_container_mutator_bindings(store)
+                    if stored_in is None or not stored_in & containers:
+                        continue
+                    method = store.func.attr
+                    if method == "setdefault" and selected is not unknown_selection:
+                        key = static_selection(store.args[0]) if store.args else unknown_selection
+                        if key is not unknown_selection and key != selected:
+                            continue
+                        values = store.args[1:2]
+                    elif method == "update" and selected is not unknown_selection and all(
+                        isinstance(binding, ast.Dict) for binding in stored_in
+                    ):
+                        values = []
+                        for arg in store.args:
+                            if isinstance(arg, ast.Dict):
+                                values.extend(selected_elements(arg, selected))
+                            else:
+                                values.append(arg)
+                        for keyword in store.keywords:
+                            if keyword.arg is None or keyword.arg == selected:
+                                values.append(keyword.value)
+                    else:
+                        values = [
+                            *store.args,
+                            *(keyword.value for keyword in store.keywords),
+                        ]
+                    for value in values:
+                        mark_escaping_expression(value, seen)
+                elif isinstance(store, (ast.Assign, ast.AnnAssign, ast.NamedExpr)):
+                    targets = (
+                        store.targets if isinstance(store, ast.Assign)
+                        else [store.target]
+                    )
+                    matches = False
+                    for target in targets:
+                        if not (
+                            isinstance(target, ast.Subscript)
+                            and isinstance(target.value, ast.Name)
+                            and reaching_containers(target.value) & containers
+                        ):
+                            continue
+                        stored_key = static_selection(target.slice)
+                        if (
+                            selected is unknown_selection
+                            or stored_key is unknown_selection
+                            or stored_key == selected
+                        ):
+                            matches = True
+                    if matches:
+                        mark_escaping_expression(store.value, seen)
+                elif isinstance(store, ast.AugAssign):
+                    if (
+                        isinstance(store.target, ast.Name)
+                        and reaching_containers(store.target) & containers
+                    ):
+                        mark_escaping_expression(store.value, seen)
 
     def mark_escaping_expression(node, seen=None):
         """Follow callbacks from actual outward sinks, including extracted ones."""
@@ -7211,6 +7325,116 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             'configure(True)'
         )
         self.assertEqual(hardcoded_password_literal_lines(safe_source), [])
+
+    def test_aliased_private_container_accessors_retain_escaped_callbacks(self):
+        cases = (
+            (hardcoded_password_literal_lines, "password", "hardcoded-secret"),
+            (hardcoded_single_auth_lines, "api_key", "hardcoded-api-key"),
+            (hardcoded_authorization_header_lines, "Authorization", "Bearer hardcoded-token"),
+        )
+        for scanner, rebound, value in cases:
+            expression = (
+                'headers.setdefault(KEY, "' + value + '")'
+                if rebound == "Authorization"
+                else 'options.__setitem__(KEY, "' + value + '")'
+            )
+            source = (
+                'KEY = "username"\n'
+                'def configure(flag):\n'
+                '    global KEY\n'
+                '    if flag:\n'
+                '        source = []\n'
+                '        source.append(lambda: ' + expression + ')\n'
+                '        extract = source.pop\n'
+                '        alias = extract\n'
+                '        return alias()\n'
+                '    KEY = "' + rebound + '"\n'
+                'saved = configure(True)\n'
+                'configure(False)\n'
+                'saved()'
+            )
+            with self.subTest(scanner=scanner.__name__):
+                self.assertEqual(scanner(source), [6])
+
+        safe = (
+            'KEY = "username"\n'
+            'def configure(flag):\n'
+            '    global KEY\n'
+            '    if flag:\n'
+            '        source = []\n'
+            '        source.append(lambda: options.__setitem__(KEY, "hardcoded-secret"))\n'
+            '        extract = source.pop\n'
+            '        extract()()\n'
+            '    else:\n'
+            '        KEY = "password"\n'
+            'configure(True)'
+        )
+        self.assertEqual(hardcoded_password_literal_lines(safe), [])
+
+    def test_constant_key_extraction_does_not_export_private_callback(self):
+        for accessor in (
+            'source["exported"]',
+            'source.get("exported")',
+            'source.pop("exported")',
+            'source[selection]',
+        ):
+            safe = (
+                'KEY = "username"\n'
+                'def configure(flag):\n'
+                '    global KEY\n'
+                '    if flag:\n'
+                '        selection = "exported"\n'
+                '        source = {"private": lambda: options.__setitem__(KEY, "hardcoded-secret"), '
+                '"exported": lambda: None}\n'
+                '        return ' + accessor + '\n'
+                '    KEY = "password"\n'
+                'saved = configure(True)\n'
+                'configure(False)\n'
+                'saved()'
+            )
+            with self.subTest(accessor=accessor):
+                self.assertEqual(hardcoded_password_literal_lines(safe), [])
+
+        positive = (
+            'KEY = "username"\n'
+            'def configure(flag):\n'
+            '    global KEY\n'
+            '    if flag:\n'
+            '        source = {"private": lambda: None, '
+            '"exported": lambda: options.__setitem__(KEY, "hardcoded-secret")}\n'
+            '        return source["exported"]\n'
+            '    KEY = "password"\n'
+            'saved = configure(True)\n'
+            'configure(False)\n'
+            'saved()'
+        )
+        self.assertEqual(hardcoded_password_literal_lines(positive), [5])
+
+    def test_constant_key_extraction_respects_indexed_and_update_stores(self):
+        safe = (
+            'KEY = "username"\n'
+            'def configure(flag):\n'
+            '    global KEY\n'
+            '    if flag:\n'
+            '        source = {}\n'
+            '        source.update(private=lambda: options.__setitem__(KEY, "hardcoded-secret"))\n'
+            '        source["exported"] = lambda: None\n'
+            '        return source.get("exported")\n'
+            '    KEY = "password"\n'
+            'saved = configure(True)\n'
+            'configure(False)\n'
+            'saved()'
+        )
+        self.assertEqual(hardcoded_password_literal_lines(safe), [])
+
+        positive = safe.replace(
+            'source["exported"] = lambda: None',
+            'source["exported"] = lambda: options.__setitem__(KEY, "hardcoded-secret")',
+        ).replace(
+            'source.update(private=lambda: options.__setitem__(KEY, "hardcoded-secret"))',
+            'source.update(private=lambda: None)',
+        )
+        self.assertEqual(hardcoded_password_literal_lines(positive), [7])
 
     def test_python_password_literal_guard_preserves_mapping_alias_capture(self):
         hardcoded_source = (
