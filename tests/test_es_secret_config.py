@@ -1187,6 +1187,23 @@ def _annotate_binding_scopes(tree):
             current = scope_parents.get(current)
         return module_scope
 
+    def outward_assignment_target(target, scope):
+        """A name stored in an outer/global frame or an object really escapes."""
+        if isinstance(target, ast.Attribute):
+            return True
+        if isinstance(target, ast.Name):
+            return (
+                scope is module_scope
+                or container_binding_owner(target.id, scope) is not scope
+            )
+        if isinstance(target, (ast.Tuple, ast.List)):
+            return any(
+                outward_assignment_target(child, scope) for child in target.elts
+            )
+        # Indexed writes into a local container are not escape sinks merely
+        # because their target is an ast.Subscript; inspect them at fixed point.
+        return False
+
     def reaching_containers(name_node, seen=None):
         """Resolve container identities along the reachable assignment path."""
         seen = set() if seen is None else set(seen)
@@ -1278,9 +1295,9 @@ def _annotate_binding_scopes(tree):
             record_escaping_copies(node.value)
         elif isinstance(node, (ast.Assign, ast.AnnAssign, ast.NamedExpr)):
             targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            scope = getattr(node, "_binding_scope", module_scope)
             if node.value is not None and any(
-                isinstance(target, (ast.Attribute, ast.Subscript))
-                for target in targets
+                outward_assignment_target(target, scope) for target in targets
             ):
                 escaping_container_bindings.update(
                     exposed_container_bindings(node.value)
@@ -1335,8 +1352,8 @@ def _annotate_binding_scopes(tree):
             targets = node.targets if isinstance(node, ast.Assign) else [node.target]
             if node.value is None:
                 continue
-            if any(isinstance(target, (ast.Attribute, ast.Subscript))
-                   for target in targets):
+            scope = getattr(node, "_binding_scope", module_scope)
+            if any(outward_assignment_target(target, scope) for target in targets):
                 mark_escaping_expression(node.value)
         elif isinstance(node, ast.Call):
             # A callback passed to an opaque call can be retained; invoking
@@ -1355,6 +1372,14 @@ def _annotate_binding_scopes(tree):
         if isinstance(node, ast.AugAssign)
         and isinstance(node.op, (ast.Add, ast.BitOr))
         and isinstance(node.value, (ast.Dict, ast.List, ast.Tuple, ast.Set))
+    ]
+    indexed_stores = [
+        (node, target)
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.Assign, ast.AnnAssign, ast.NamedExpr))
+        and node.value is not None
+        for target in (node.targets if isinstance(node, ast.Assign) else [node.target])
+        if isinstance(target, ast.Subscript)
     ]
 
     def contained_container_bindings(parent):
@@ -1457,6 +1482,44 @@ def _annotate_binding_scopes(tree):
                 owner = container_binding_owner(read.id, function)
                 if owner is not function and owner is not module_scope:
                     escaping_container_bindings.update(reaching_containers(read))
+
+        for node, target in indexed_stores:
+            scope = getattr(node, "_binding_scope", module_scope)
+            base = target.value
+            if isinstance(base, ast.Name):
+                root_owner = container_binding_owner(base.id, scope)
+                shared = scope is module_scope or root_owner is not scope
+                if not shared:
+                    reaching = reaching_containers(base)
+                    # Unresolved and externally supplied collections cannot
+                    # be safely treated as new frame-private literals.
+                    shared = (
+                        not reaching
+                        or any(
+                            not isinstance(value, (ast.List, ast.Dict, ast.Tuple, ast.Set))
+                            for value in reaching
+                        )
+                        or bool(reaching & escaping_container_bindings)
+                        or any(
+                            binding in reaching
+                            and _node_position(node) <= _node_position(copy_call)
+                            and not _control_paths_mutually_exclusive(
+                                _node_control_path(node),
+                                _node_control_path(copy_call),
+                            )
+                            for binding, copy_call in copied_container_snapshots
+                        )
+                    )
+            else:
+                # Without a statically known local binding, remain
+                # conservative about attribute/nested indexed containers.
+                shared = True
+            if shared:
+                mark_escaping_expression(node.value)
+                escaping_container_bindings.update(
+                    exposed_container_bindings(node.value)
+                )
+                record_escaping_copies(node.value)
 
         for node in augmented_stores:
             owner = getattr(node, "_binding_scope", module_scope)
@@ -6768,6 +6831,42 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             (hardcoded_single_auth_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        source = {\"callback\": lambda: options.__setitem__(KEY, \"hardcoded-api-key\")}\n        holder.source = source\n    else:\n        KEY = \"api_key\"\nconfigure(True)\nconfigure(False)\nholder.source[\"callback\"]()", [5]),
             (hardcoded_authorization_header_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        source = {\"callback\": lambda: headers.setdefault(KEY, \"Bearer hardcoded-token\")}\n        holder.source = source\n    else:\n        KEY = \"Authorization\"\nconfigure(True)\nconfigure(False)\nholder.source[\"callback\"]()", [5]),
             (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        source = [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        holder.source = source\n    else:\n        KEY = \"password\"\nconfigure(True)\nconfigure(False)\nholder.source[0]()", [5]),
+        )
+        for scanner, source, expected in hardcoded_cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), expected)
+
+    def test_global_and_nonlocal_callback_sinks_retain_collections(self):
+        hardcoded_cases = (
+            (hardcoded_password_literal_lines, "SAVED = None\nKEY = \"username\"\ndef configure(flag):\n    global KEY, SAVED\n    if flag:\n        source = [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        SAVED = source\n    else:\n        KEY = \"password\"\nconfigure(True)\nconfigure(False)\nSAVED[0]()", [6]),
+            (hardcoded_password_literal_lines, "SAVED = None\nKEY = \"username\"\ndef configure(flag):\n    global KEY, SAVED\n    if flag:\n        source = [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        alias = source\n        SAVED = alias\n    else:\n        KEY = \"password\"\nconfigure(True)\nconfigure(False)\nSAVED[0]()", [6]),
+            (hardcoded_single_auth_lines, "SAVED = None\nKEY = \"username\"\ndef configure(flag):\n    global KEY, SAVED\n    if flag:\n        source = [lambda: options.__setitem__(KEY, \"hardcoded-api-key\")]\n        SAVED = source\n    else:\n        KEY = \"api_key\"\nconfigure(True)\nconfigure(False)\nSAVED[0]()", [6]),
+            (hardcoded_authorization_header_lines, "SAVED = None\nKEY = \"x-trace\"\ndef configure(flag):\n    global KEY, SAVED\n    if flag:\n        source = [lambda: headers.setdefault(KEY, \"Bearer hardcoded-token\")]\n        SAVED = source\n    else:\n        KEY = \"Authorization\"\nconfigure(True)\nconfigure(False)\nSAVED[0]()", [6]),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef outer():\n    saved = None\n    def configure(flag):\n        nonlocal saved\n        global KEY\n        if flag:\n            source = [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n            saved = source\n        else:\n            KEY = \"password\"\n    configure(True)\n    configure(False)\n    saved[0]()\nouter()", [8]),
+        )
+        for scanner, source, expected in hardcoded_cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), expected)
+
+    def test_indexed_callback_stores_only_escape_with_container(self):
+        safe_cases = (
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        source = {}\n        source[\"cb\"] = lambda: options.__setitem__(KEY, \"hardcoded-secret\")\n        source[\"cb\"]()\n    else:\n        KEY = \"password\"\nconfigure(True)"),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        source = {}\n        alias = source\n        alias[\"cb\"] = lambda: options.__setitem__(KEY, \"hardcoded-secret\")\n        alias[\"cb\"]()\n    else:\n        KEY = \"password\"\nconfigure(True)"),
+            (hardcoded_single_auth_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        source = {}\n        source[\"cb\"] = lambda: options.__setitem__(KEY, \"hardcoded-api-key\")\n        source[\"cb\"]()\n    else:\n        KEY = \"api_key\"\nconfigure(True)"),
+            (hardcoded_authorization_header_lines, "KEY = \"x-trace\"\ndef configure(flag):\n    global KEY\n    if flag:\n        source = {}\n        source[\"cb\"] = lambda: headers.setdefault(KEY, \"Bearer hardcoded-token\")\n        source[\"cb\"]()\n    else:\n        KEY = \"Authorization\"\nconfigure(True)"),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        source = {}\n        holder.source = source.copy()\n        source[\"cb\"] = lambda: options.__setitem__(KEY, \"hardcoded-secret\")\n        source[\"cb\"]()\n    else:\n        KEY = \"password\"\nconfigure(True)"),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        source = []\n        source[0:0] = [lambda: options.__setitem__(KEY, \"hardcoded-secret\")]\n        source[0]()\n    else:\n        KEY = \"password\"\nconfigure(True)"),
+        )
+        for scanner, source in safe_cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), [])
+
+        hardcoded_cases = (
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        source = {}\n        source[\"cb\"] = lambda: options.__setitem__(KEY, \"hardcoded-secret\")\n        holder.source = source\n    else:\n        KEY = \"password\"\nconfigure(True)\nconfigure(False)\nholder.source['cb']()", [6]),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        source = {}\n        holder.source = source\n        source[\"cb\"] = lambda: options.__setitem__(KEY, \"hardcoded-secret\")\n    else:\n        KEY = \"password\"\nconfigure(True)\nconfigure(False)\nholder.source['cb']()", [7]),
+            (hardcoded_password_literal_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        source = {}\n        source[\"cb\"] = lambda: options.__setitem__(KEY, \"hardcoded-secret\")\n        holder.source = source.copy()\n    else:\n        KEY = \"password\"\nconfigure(True)\nconfigure(False)\nholder.source['cb']()", [6]),
+            (hardcoded_single_auth_lines, "KEY = \"username\"\ndef configure(flag):\n    global KEY\n    if flag:\n        source = {}\n        source[\"cb\"] = lambda: options.__setitem__(KEY, \"hardcoded-api-key\")\n        holder.source = source\n    else:\n        KEY = \"api_key\"\nconfigure(True)\nconfigure(False)\nholder.source['cb']()", [6]),
+            (hardcoded_authorization_header_lines, "KEY = \"x-trace\"\ndef configure(flag):\n    global KEY\n    if flag:\n        source = {}\n        source[\"cb\"] = lambda: headers.setdefault(KEY, \"Bearer hardcoded-token\")\n        holder.source = source\n    else:\n        KEY = \"Authorization\"\nconfigure(True)\nconfigure(False)\nholder.source['cb']()", [6]),
         )
         for scanner, source, expected in hardcoded_cases:
             with self.subTest(scanner=scanner.__name__, source=source):
