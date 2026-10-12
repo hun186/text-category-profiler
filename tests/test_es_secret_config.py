@@ -1458,6 +1458,11 @@ def _annotate_binding_scopes(tree):
         if node is None:
             return
         seen = set() if seen is None else seen
+        # A callback extracted from a collection may itself refer to an
+        # accessor of that same collection. Prevent cyclic AST walks.
+        if node in seen:
+            return
+        seen = seen | {node}
         if isinstance(node, ast.Lambda):
             escaping_functions.add(node)
             return  # Its body runs later, not during the store.
