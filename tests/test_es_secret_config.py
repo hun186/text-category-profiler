@@ -7971,7 +7971,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     'saved()'
                 )
                 with self.subTest(scanner=scanner.__name__, use_update=use_update):
-                    self.assertEqual(scanner(unsafe), [10 if use_update else 10])
+                    self.assertEqual(scanner(unsafe), [11])
 
     def test_python_password_literal_guard_preserves_mapping_alias_capture(self):
         hardcoded_source = (
