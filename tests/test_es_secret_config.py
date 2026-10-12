@@ -1366,20 +1366,117 @@ def _annotate_binding_scopes(tree):
 
     escaping_functions = set()
 
-    def mark_escaping_expression(node):
-        """Follow callbacks from an actual escape sink, not a local alias."""
+    def reaching_assigned_values(name_node):
+        """Look through local aliases when an extracted callback reaches a sink."""
+        owner = container_binding_owner(
+            name_node.id, getattr(name_node, "_binding_scope", module_scope)
+        )
+        candidates = callable_bindings.get((owner, name_node.id), ())
+        if getattr(name_node, "_binding_scope", module_scope) is owner:
+            return _reaching_values(
+                [
+                    (position, value)
+                    for position, value in candidates
+                    if position <= _node_position(name_node)
+                ],
+                name_node,
+            )
+        return [
+            value for _position, value in candidates
+            if not _control_paths_mutually_exclusive(
+                _node_control_path(value), _node_control_path(name_node)
+            )
+        ]
+
+    def extracted_receiver(node):
+        """Only collection accessors that yield a stored value, not a copy."""
+        if isinstance(node, ast.Subscript):
+            return node.value
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+            if node.func.attr in {"pop", "popitem", "get", "__getitem__"}:
+                return node.func.value
+        return None
+
+    def mark_extracted_callbacks(node, seen):
+        receiver = extracted_receiver(node)
+        if not isinstance(receiver, ast.Name):
+            return
+        containers = reaching_containers(receiver)
+        if not containers or any(
+            known_container_mutator_type(binding) is None
+            for binding in containers
+        ):
+            return
+
+        # A private collection need not escape for a callback removed from it
+        # to escape. Include elements from its original literal and recognized
+        # stores into the same reaching collection identity.
+        for binding in containers:
+            if isinstance(binding, (ast.List, ast.Tuple, ast.Dict, ast.Set)):
+                mark_escaping_expression(binding, seen)
+
+        for store in ast.walk(tree):
+            if _control_paths_mutually_exclusive(
+                _node_control_path(store), _node_control_path(node)
+            ):
+                continue
+            if (
+                getattr(store, "_binding_scope", module_scope)
+                is getattr(node, "_binding_scope", module_scope)
+                and _node_position(store) > _node_position(node)
+            ):
+                continue
+            if isinstance(store, ast.Call):
+                stored_in = known_container_mutator_bindings(store)
+                if stored_in is not None and stored_in & containers:
+                    for value in [
+                        *store.args,
+                        *(keyword.value for keyword in store.keywords),
+                    ]:
+                        mark_escaping_expression(value, seen)
+            elif isinstance(store, (ast.Assign, ast.AnnAssign, ast.NamedExpr)):
+                targets = (
+                    store.targets if isinstance(store, ast.Assign)
+                    else [store.target]
+                )
+                if any(
+                    isinstance(target, ast.Subscript)
+                    and isinstance(target.value, ast.Name)
+                    and reaching_containers(target.value) & containers
+                    for target in targets
+                ):
+                    mark_escaping_expression(store.value, seen)
+            elif isinstance(store, ast.AugAssign):
+                if (
+                    isinstance(store.target, ast.Name)
+                    and reaching_containers(store.target) & containers
+                ):
+                    mark_escaping_expression(store.value, seen)
+
+    def mark_escaping_expression(node, seen=None):
+        """Follow callbacks from actual outward sinks, including extracted ones."""
         if node is None:
             return
+        seen = set() if seen is None else seen
         if isinstance(node, ast.Lambda):
             escaping_functions.add(node)
             return  # Its body runs later, not during the store.
         if isinstance(node, ast.Name):
             if isinstance(node.ctx, ast.Load):
                 escaping_functions.update(reaching_callables(node.id, node))
+                scope = getattr(node, "_binding_scope", module_scope)
+                owner = container_binding_owner(node.id, scope)
+                token = (owner, node.id)
+                if token not in seen:
+                    for value in reaching_assigned_values(node):
+                        if isinstance(value, (ast.Name, ast.Call, ast.Subscript)):
+                            mark_escaping_expression(value, seen | {token})
             return
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             escaping_functions.add(node)
             return
+        if isinstance(node, (ast.Call, ast.Subscript)):
+            mark_extracted_callbacks(node, seen)
         if isinstance(node, ast.Call):
             # A recognized collection mutation is not an outward sink for
             # its arguments unless the exact receiver is itself retained.
@@ -1389,12 +1486,12 @@ def _annotate_binding_scopes(tree):
             # function object. Only callback-valued arguments can be retained
             # by that invocation or its consumer.
             for argument in node.args:
-                mark_escaping_expression(argument)
+                mark_escaping_expression(argument, seen)
             for keyword in node.keywords:
-                mark_escaping_expression(keyword.value)
+                mark_escaping_expression(keyword.value, seen)
             return
         for child in ast.iter_child_nodes(node):
-            mark_escaping_expression(child)
+            mark_escaping_expression(child, seen)
 
     for node in ast.walk(tree):
         # Copying a local function to another local name is not an escape.
@@ -1591,7 +1688,7 @@ def _annotate_binding_scopes(tree):
             reaching = known_container_mutator_bindings(node)
             shared = (
                 scope is module_scope
-                or owner is not scope
+                or owner is module_scope
                 or not reaching
                 or bool(reaching & escaping_container_bindings)
                 or any(
@@ -7002,6 +7099,113 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for scanner, source, expected in hardcoded_cases:
             with self.subTest(scanner=scanner.__name__, source=source):
                 self.assertEqual(scanner(source), expected)
+
+
+    def test_nested_synchronous_mutator_uses_enclosing_private_container(self):
+        safe_cases = (
+            (
+                hardcoded_password_literal_lines,
+                'KEY = "username"\n'
+                'def configure(flag):\n'
+                '    global KEY\n'
+                '    if flag:\n'
+                '        source = []\n'
+                '        def build():\n'
+                '            source.append(lambda: options.__setitem__(KEY, "hardcoded-secret"))\n'
+                '            source[0]()\n'
+                '        build()\n'
+                '    else:\n'
+                '        KEY = "password"\n'
+                'configure(True)',
+            ),
+            (
+                hardcoded_single_auth_lines,
+                'KEY = "username"\n'
+                'def configure(flag):\n'
+                '    global KEY\n'
+                '    if flag:\n'
+                '        source = {}\n'
+                '        def build():\n'
+                '            source.setdefault("cb", lambda: options.__setitem__(KEY, "hardcoded-api-key"))\n'
+                '            source["cb"]()\n'
+                '        build()\n'
+                '    else:\n'
+                '        KEY = "api_key"\n'
+                'configure(True)',
+            ),
+        )
+        for scanner, source in safe_cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), [])
+
+    def test_private_container_extracted_callbacks_escape_independently(self):
+        cases = (
+            (
+                hardcoded_password_literal_lines,
+                'KEY = "username"\n'
+                'def configure(flag):\n'
+                '    global KEY\n'
+                '    if flag:\n'
+                '        source = []\n'
+                '        source.append(lambda: options.__setitem__(KEY, "hardcoded-secret"))\n'
+                '        return source.pop()\n'
+                '    KEY = "password"\n'
+                'saved = configure(True)\n'
+                'configure(False)\n'
+                'saved()',
+                [6],
+            ),
+            (
+                hardcoded_single_auth_lines,
+                'KEY = "username"\n'
+                'def configure(flag):\n'
+                '    global KEY\n'
+                '    if flag:\n'
+                '        source = {}\n'
+                '        alias = source\n'
+                '        alias.update(cb=lambda: options.__setitem__(KEY, "hardcoded-api-key"))\n'
+                '        saved = alias.pop("cb")\n'
+                '        return saved\n'
+                '    KEY = "api_key"\n'
+                'saved = configure(True)\n'
+                'configure(False)\n'
+                'saved()',
+                [7],
+            ),
+            (
+                hardcoded_authorization_header_lines,
+                'KEY = "x-trace"\n'
+                'def configure(flag):\n'
+                '    global KEY\n'
+                '    if flag:\n'
+                '        source = {}\n'
+                '        source["cb"] = lambda: headers.setdefault(KEY, "Bearer hardcoded-token")\n'
+                '        consume(source.get("cb"))\n'
+                '    else:\n'
+                '        KEY = "Authorization"\n'
+                'configure(True)\n'
+                'configure(False)',
+                [6],
+            ),
+        )
+        for scanner, source, expected in cases:
+            with self.subTest(scanner=scanner.__name__, source=source):
+                self.assertEqual(scanner(source), expected)
+
+        safe_source = (
+            'KEY = "username"\n'
+            'def configure(flag):\n'
+            '    global KEY\n'
+            '    if flag:\n'
+            '        source = []\n'
+            '        source.append(lambda: options.__setitem__(KEY, "hardcoded-secret"))\n'
+            '        callback = source.pop()\n'
+            '        callback()\n'
+            '    else:\n'
+            '        KEY = "password"\n'
+            'configure(True)'
+        )
+        self.assertEqual(hardcoded_password_literal_lines(safe_source), [])
 
     def test_python_password_literal_guard_preserves_mapping_alias_capture(self):
         hardcoded_source = (
