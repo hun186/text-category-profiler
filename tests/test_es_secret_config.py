@@ -4918,9 +4918,16 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     )
             return merged
 
-        def bind_export_target(state, target, expressions):
-            """Bind a selected export to possible RHS elements or expressions."""
+        def bind_export_target(
+            state, target, expressions, source_state=None
+        ):
+            """Bind exports from RHS values under their actual evaluation state.
+
+            Iterable elements were evaluated before the loop body, whereas an
+            assignment in the body reads its current reaching bindings.
+            """
             updated = {name: set(values) for name, values in state.items()}
+            source_state = state if source_state is None else source_state
             writes = {}
             def target_names(node):
                 if isinstance(node, ast.Name):
@@ -4941,7 +4948,18 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     leaves = [(name, expression) for name in target_names(target)]
                 for key, value in leaves:
                     if key in forwarded_exports:
-                        writes.setdefault(key, set()).add(value)
+                        # A selected export reading itself (or another selected
+                        # export) uses its *current* binding, not a previously
+                        # shadowed import with the same spelling.
+                        if (
+                            isinstance(value, ast.Name)
+                            and value.id in source_state
+                        ):
+                            writes.setdefault(key, set()).update(
+                                source_state[value.id]
+                            )
+                        else:
+                            writes.setdefault(key, set()).add(value)
             for key, values in writes.items():
                 updated[key] = values
             return updated
@@ -5113,6 +5131,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         stmt.iter if is_for else stmt.test, state
                     )
                     fixed = fixed_loop_elements(stmt.iter) if is_for else None
+                    iterable_state = loop_head
                     broken = None
                     if fixed is not None and len(fixed) <= 32:
                         exhausted = loop_head
@@ -5120,7 +5139,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             if exhausted is None:
                                 break
                             iteration = bind_export_target(
-                                exhausted, stmt.target, [element]
+                                exhausted, stmt.target, [element],
+                                source_state=iterable_state
                             )
                             if raising_states is not None:
                                 raising_states.append(iteration)
@@ -5143,7 +5163,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         while True:
                             iteration = (
                                 bind_export_target(
-                                    loop_head, stmt.target, possible
+                                    loop_head, stmt.target, possible,
+                                    source_state=iterable_state
                                 ) if is_for else loop_head
                             )
                             if raising_states is not None:
