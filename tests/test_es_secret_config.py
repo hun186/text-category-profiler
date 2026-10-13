@@ -4769,6 +4769,10 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 modules = [(alias.name, 0) for alias in node.names]
             elif isinstance(node, ast.ImportFrom):
                 modules = [(node.module, node.level)]
+                if node.level and node.module is None:
+                    # from . import * reads the current package __init__.py;
+                    # for .., locate the parent package at that level.
+                    modules.append(("__init__", node.level))
                 # from package import provider can load package/provider.py.
                 modules.extend(
                     ((node.module + "." if node.module else "") + alias.name, node.level)
@@ -4806,7 +4810,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         resolved.add(candidate.resolve())
         return resolved
 
-    def _credential_import_exports(self, source, dependency, forwarded_exports=()):
+    def _credential_import_exports(
+        self, source, dependency, forwarded_exports=(), importing_path=None
+    ):
         """Trace imports reaching credentials or selected re-exports, without execution."""
         try:
             tree = ast.parse(source)
@@ -5504,12 +5510,29 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
 
         exported = set()
         for node in ast.walk(tree):
-            if isinstance(node, ast.ImportFrom) and node.module:
-                module_tail = node.module.split(".")[-1]
+            if isinstance(node, ast.ImportFrom):
+                module_tail = (node.module or "").split(".")[-1]
+                relative_package = (
+                    node.level > 0
+                    and node.module is None
+                    and dependency.name == "__init__.py"
+                    and (
+                        importing_path is None
+                        or (
+                            len(importing_path.parents) >= node.level
+                            and importing_path.parents[node.level - 1].resolve()
+                            == dependency.parent.resolve()
+                        )
+                    )
+                )
                 if (
-                    dependency.stem == module_tail
-                    or dependency.name == "__init__.py"
-                    and dependency.parent.name == module_tail
+                    node.module
+                    and (
+                        dependency.stem == module_tail
+                        or dependency.name == "__init__.py"
+                        and dependency.parent.name == module_tail
+                    )
+                    or relative_package
                 ):
                     for alias in node.names:
                         if alias.name == "*":
@@ -5560,6 +5583,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                             isinstance(child, ast.Name)
                                             and isinstance(child.ctx, ast.Load)
                                             and child.id == name
+                                            and _binding_name_token(
+                                                child.id, bound_names(), child
+                                            )[0] is tree
                                             for value in selected_values
                                             for child in ast.walk(value)
                                         ):
@@ -5658,7 +5684,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 exports = imported_exports.setdefault(dependency, set())
                 before = len(exports)
                 exports.update(
-                    self._credential_import_exports(source, dependency, selected_here)
+                    self._credential_import_exports(
+                        source, dependency, selected_here, importing_path=path
+                    )
                 )
                 provider_source = dependency.read_text(
                     encoding="utf-8-sig", errors="ignore"
@@ -6817,6 +6845,92 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 )
                 included = set(self._runtime_es_module_paths())
                 self.assertNotIn(provider.resolve(), included)
+
+    def test_relative_package_wildcard_credentials(self):
+        """Bare relative star imports reach package __init__ credentials."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            package = root / "credential_package"
+            package.mkdir()
+            provider = package / "__init__.py"
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            consumer = package / "es_consumer.py"
+            prefix = (
+                'from . import *\n'
+                'from elasticsearch import Elasticsearch\n'
+            )
+            auth = 'Elasticsearch("localhost", basic_auth=("elastic", password))\n'
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                consumer.write_text(prefix + auth, encoding="utf-8")
+                paths = set(self._runtime_es_module_paths())
+                self.assertIn(provider.resolve(), paths)
+                self.assertIn(
+                    "password", self._imported_credential_exports.get(
+                        provider.resolve(), set()
+                    )
+                )
+                consumer.write_text(
+                    prefix + 'password = None\n' + auth, encoding="utf-8"
+                )
+                self.assertNotIn(provider.resolve(), self._runtime_es_module_paths())
+                # Parent-package relative star imports must resolve too.
+                nested = package / "nested"
+                nested.mkdir()
+                consumer.unlink()
+                consumer = nested / "es_consumer.py"
+                consumer.write_text(
+                    'from .. import *\n'
+                    'from elasticsearch import Elasticsearch\n' + auth,
+                    encoding="utf-8",
+                )
+                self.assertIn(provider.resolve(), self._runtime_es_module_paths())
+
+    def test_wildcard_self_reads_respect_nested_lambda_scope(self):
+        """A lambda-local password is not a star-imported module password."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "provider_b.py"
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            prefix = (
+                'import os\n'
+                'from provider_b import *\n'
+            )
+            auth = (
+                'from elasticsearch import Elasticsearch\n'
+                'Elasticsearch("localhost", basic_auth=("elastic", password))\n'
+            )
+            cases = (
+                ('password = (lambda password: password.strip())('
+                 'os.environ["TCP_ELASTIC_PASSWORD"])\n', False),
+                ('password = (lambda password: password)("safe")\n', False),
+                ('password = (lambda: password.strip())()\n', True),
+                ('password = password.strip()\n', True),
+                ('password = (lambda password: password.strip())('
+                 'os.environ["TCP_ELASTIC_PASSWORD"])\n'
+                 'password = None\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for assignment, expected in cases:
+                    with self.subTest(assignment=assignment):
+                        consumer.write_text(
+                            prefix + assignment + auth, encoding="utf-8"
+                        )
+                        included = set(self._runtime_es_module_paths())
+                        self.assertEqual(provider.resolve() in included, expected)
+                        self.assertEqual(
+                            "password" in self._imported_credential_exports.get(
+                                provider.resolve(), set()
+                            ), expected,
+                        )
 
     def test_secret_surface_paths_include_yaml_elasticsearch_samples(self):
         yaml_paths = [
