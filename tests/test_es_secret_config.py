@@ -4896,90 +4896,166 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         ):
                             yield from assigned_leaves(child_target, child_value)
 
-        # Track possible reaching module-level exports in execution order.
-        # Imports inside a conditional branch may replace a previously safe
-        # value, but a later unconditional safe assignment kills that import.
-        # Keep the *specific* reaching import node so an older shadowed import
-        # with the same local name is not incorrectly selected.
-        def merge_export_states(states):
+        # Track reaching module-level bindings and control-flow exits.
+        # A loop's break does not execute its else clause; an exception
+        # handler may see any binding that existed before a raising statement.
+        # Each state is a map from an export to possible reaching AST nodes.
+        def merge_states(*states):
+            states = [state for state in states if state is not None]
+            if not states:
+                return None
             return {
                 name: set().union(*(state[name] for state in states))
                 for name in forwarded_exports
             }
 
-        def walk_export_statements(statements, incoming):
-            state = {name: set(values) for name, values in incoming.items()}
+        def merge_flows(*flows):
+            merged = {}
+            for flow in flows:
+                for exit_kind, state in flow.items():
+                    merged[exit_kind] = merge_states(
+                        merged.get(exit_kind), state
+                    )
+            return merged
+
+        def walk_export_statements(statements, incoming, raising_states=None):
+            flow = {"normal": incoming}
             for stmt in statements:
+                if "normal" not in flow:
+                    break
+                state = flow.pop("normal")
+                if raising_states is not None:
+                    # An exception may be raised during this statement, before
+                    # its assignment has finished. Capture its entry binding.
+                    raising_states.append(state)
                 if isinstance(stmt, (ast.ImportFrom, ast.Import)):
+                    updated = {name: set(values) for name, values in state.items()}
                     for item in stmt.names:
                         local = item.asname or (
                             item.name if isinstance(stmt, ast.ImportFrom)
                             else item.name.split(".", 1)[0]
                         )
                         if local in forwarded_exports:
-                            state[local] = {stmt}
+                            updated[local] = {stmt}
+                    next_flow = {"normal": updated}
                 elif isinstance(stmt, (ast.Assign, ast.AnnAssign)):
-                    if stmt.value is None:
-                        continue
-                    targets = (
-                        stmt.targets if isinstance(stmt, ast.Assign)
-                        else [stmt.target]
-                    )
-                    for target in targets:
-                        for key, value in assigned_leaves(target, stmt.value):
-                            if key in forwarded_exports:
-                                state[key] = {value}
+                    updated = {name: set(values) for name, values in state.items()}
+                    if stmt.value is not None:
+                        targets = (
+                            stmt.targets if isinstance(stmt, ast.Assign)
+                            else [stmt.target]
+                        )
+                        for target in targets:
+                            for key, value in assigned_leaves(target, stmt.value):
+                                if key in forwarded_exports:
+                                    updated[key] = {value}
+                    next_flow = {"normal": updated}
                 elif isinstance(stmt, ast.If):
-                    state = merge_export_states((
-                        walk_export_statements(stmt.body, state),
-                        walk_export_statements(stmt.orelse, state),
-                    ))
-                elif isinstance(stmt, (ast.For, ast.AsyncFor, ast.While)):
-                    # A loop can run zero or more times. A body write is
-                    # possible, but not guaranteed to replace the incoming one.
-                    state = merge_export_states((
-                        walk_export_statements(stmt.orelse, state),
+                    next_flow = merge_flows(
                         walk_export_statements(
-                            stmt.orelse,
-                            walk_export_statements(stmt.body, state),
+                            stmt.body, state, raising_states
                         ),
-                    ))
+                        walk_export_statements(
+                            stmt.orelse, state, raising_states
+                        ),
+                    )
+                elif isinstance(stmt, (ast.For, ast.AsyncFor, ast.While)):
+                    # Widen loop-head states until the finite reaching-binding
+                    # set stops growing. Only normally exhausted/zero-trip
+                    # iterations execute else; break exits bypass it.
+                    loop_head = state
+                    exhausted = state
+                    broken = None
+                    while True:
+                        body = walk_export_statements(
+                            stmt.body, loop_head, raising_states
+                        )
+                        broken = merge_states(broken, body.get("break"))
+                        continued = merge_states(
+                            body.get("normal"), body.get("continue")
+                        )
+                        exhausted = merge_states(exhausted, continued)
+                        next_head = merge_states(loop_head, continued)
+                        if next_head == loop_head:
+                            break
+                        loop_head = next_head
+                    next_flow = walk_export_statements(
+                        stmt.orelse, exhausted, raising_states
+                    )
+                    if broken is not None:
+                        next_flow = merge_flows(
+                            next_flow, {"normal": broken}
+                        )
                 elif isinstance(stmt, (ast.With, ast.AsyncWith)):
-                    state = walk_export_statements(stmt.body, state)
+                    next_flow = walk_export_statements(
+                        stmt.body, state, raising_states
+                    )
                 elif isinstance(stmt, (ast.Try, getattr(ast, "TryStar", ast.Try))):
-                    body_state = walk_export_statements(stmt.body, state)
-                    outcomes = [
-                        walk_export_statements(stmt.orelse, body_state),
-                    ]
-                    for handler in stmt.handlers:
-                        # An exception may occur before or after a write in
-                        # the try body. Both reaching states are possible.
-                        outcomes.append(
-                            walk_export_statements(handler.body, state)
+                    # Capture every intermediate entry state, not just before
+                    # and after the complete try body. An exception can occur
+                    # after an import but before its later safe overwrite.
+                    exceptions = []
+                    body = walk_export_statements(
+                        stmt.body, state, exceptions
+                    )
+                    outcomes = {}
+                    if "normal" in body:
+                        outcomes = walk_export_statements(
+                            stmt.orelse, body["normal"], raising_states
                         )
-                        outcomes.append(
-                            walk_export_statements(handler.body, body_state)
+                    outcomes = merge_flows(
+                        outcomes,
+                        {kind: value for kind, value in body.items()
+                         if kind != "normal"},
+                    )
+                    if stmt.handlers:
+                        for handler in stmt.handlers:
+                            for possible_state in exceptions:
+                                outcomes = merge_flows(
+                                    outcomes,
+                                    walk_export_statements(
+                                        handler.body, possible_state,
+                                        raising_states
+                                    ),
+                                )
+                    # finally executes even on a pending break or continue;
+                    # a normally completing finally preserves the old exit.
+                    completed = {}
+                    for exit_kind, possible_state in outcomes.items():
+                        cleanup = walk_export_statements(
+                            stmt.finalbody, possible_state, raising_states
                         )
-                    state = merge_export_states(tuple(
-                        walk_export_statements(stmt.finalbody, outcome)
-                        for outcome in outcomes
-                    ))
+                        for kind, value in cleanup.items():
+                            kind = exit_kind if kind == "normal" else kind
+                            completed = merge_flows(
+                                completed, {kind: value}
+                            )
+                    next_flow = completed
                 elif isinstance(stmt, getattr(ast, "Match", ())):
-                    # A match may select any guarded case, or none of them.
-                    state = merge_export_states((
-                        state,
+                    next_flow = merge_flows(
+                        {"normal": state},
                         *(
-                            walk_export_statements(case.body, state)
+                            walk_export_statements(
+                                case.body, state, raising_states
+                            )
                             for case in stmt.cases
                         ),
-                    ))
-                # Function/class bodies bind their own scopes, not module
-                # export names. Do not walk their statements here.
-            return state
+                    )
+                elif isinstance(stmt, ast.Break):
+                    next_flow = {"break": state}
+                elif isinstance(stmt, ast.Continue):
+                    next_flow = {"continue": state}
+                else:
+                    # Function/class bodies have separate scopes and cannot
+                    # directly reassign the module's selected export names.
+                    next_flow = {"normal": state}
+                flow = merge_flows(flow, next_flow)
+            return flow
 
-        latest_exports = walk_export_statements(
+        latest_flow = walk_export_statements(
             tree.body, {name: {None} for name in forwarded_exports}
         )
+        latest_exports = latest_flow.get("normal", {})
         forwarded_import_nodes = set()
         for reaching_values in latest_exports.values():
             for value in reaching_values:
@@ -5575,6 +5651,143 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     'if enabled:\n'
                     '    from provider_b import password as imported\n'
                     '    password, unused = imported, None\n',
+                    True,
+                ),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for source, should_include in cases:
+                    with self.subTest(source=source):
+                        intermediary.write_text(source, encoding="utf-8")
+                        paths = set(self._runtime_es_module_paths())
+                        self.assertEqual(provider.resolve() in paths, should_include)
+                        self.assertEqual(
+                            "password" in self._imported_credential_exports.get(
+                                provider.resolve(), set()
+                            ),
+                            should_include,
+                        )
+
+    def test_try_intermediate_imports_and_loop_break_exports(self):
+        """Exception and break paths must not lose a reachable secret import."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            intermediary = root / "provider_a.py"
+            provider = root / "provider_b.py"
+            consumer.write_text(
+                'from provider_a import password\n'
+                'from elasticsearch import Elasticsearch\n'
+                'Elasticsearch("localhost", basic_auth=("elastic", password))\n',
+                encoding="utf-8",
+            )
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            cases = (
+                (
+                    'import os\n'
+                    'try:\n'
+                    '    from provider_b import password\n'
+                    '    optional_operation()\n'
+                    '    password = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+                    'except Exception:\n'
+                    '    pass\n',
+                    True,
+                ),
+                (
+                    'import os\n'
+                    'try:\n'
+                    '    if enabled:\n'
+                    '        from provider_b import password\n'
+                    '        optional_operation()\n'
+                    '        password = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+                    'except Exception:\n'
+                    '    pass\n',
+                    True,
+                ),
+                (
+                    'import os\n'
+                    'try:\n'
+                    '    from provider_b import password\n'
+                    '    optional_operation()\n'
+                    '    password = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+                    'except Exception:\n'
+                    '    password = os.getenv("TCP_ELASTIC_PASSWORD")\n',
+                    False,
+                ),
+                (
+                    'import os\n'
+                    'try:\n'
+                    '    from provider_b import password\n'
+                    '    optional_operation()\n'
+                    'except Exception:\n'
+                    '    pass\n'
+                    'finally:\n'
+                    '    password = os.getenv("TCP_ELASTIC_PASSWORD")\n',
+                    False,
+                ),
+                (
+                    'import os\n'
+                    'password = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+                    'for _ in [1]:\n'
+                    '    from provider_b import password\n'
+                    '    break\n'
+                    'else:\n'
+                    '    password = os.getenv("TCP_ELASTIC_PASSWORD")\n',
+                    True,
+                ),
+                (
+                    'import os\n'
+                    'password = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+                    'for _ in [1]:\n'
+                    '    if enabled:\n'
+                    '        from provider_b import password\n'
+                    '        break\n'
+                    'else:\n'
+                    '    password = os.getenv("TCP_ELASTIC_PASSWORD")\n',
+                    True,
+                ),
+                (
+                    'import os\n'
+                    'password = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+                    'for _ in [1]:\n'
+                    '    from provider_b import password\n'
+                    '    continue\n'
+                    'else:\n'
+                    '    password = os.getenv("TCP_ELASTIC_PASSWORD")\n',
+                    False,
+                ),
+                (
+                    'import os\n'
+                    'password = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+                    'for _ in [1]:\n'
+                    '    from provider_b import password\n'
+                    '    break\n'
+                    'else:\n'
+                    '    password = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+                    'password = os.getenv("TCP_ELASTIC_PASSWORD")\n',
+                    False,
+                ),
+                (
+                    'import os\n'
+                    'try:\n'
+                    '    for _ in [1]:\n'
+                    '        from provider_b import password\n'
+                    '        break\n'
+                    'finally:\n'
+                    '    password = os.getenv("TCP_ELASTIC_PASSWORD")\n',
+                    False,
+                ),
+                (
+                    'import os\n'
+                    'try:\n'
+                    '    for _ in [1]:\n'
+                    '        from provider_b import password\n'
+                    '        break\n'
+                    'except Exception:\n'
+                    '    pass\n',
                     True,
                 ),
             )
