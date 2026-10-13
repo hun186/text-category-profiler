@@ -5537,6 +5537,28 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                             and target.id == name
                                             for target in targets
                                         ):
+                                            # The RHS is read *before* its
+                                            # assignment target is stored. A
+                                            # self-assignment therefore keeps
+                                            # the wildcard-imported credential
+                                            # reaching later auth consumers.
+                                            # Likewise a read inside this RHS
+                                            # cannot be shadowed by this store.
+                                            rhs = statement.value
+                                            rhs_reads_name = any(
+                                                child is use
+                                                for child in ast.walk(rhs)
+                                            )
+                                            keeps_original = any(
+                                                target_name == name
+                                                and isinstance(value, ast.Name)
+                                                and value.id == name
+                                                for target in targets
+                                                for target_name, value in
+                                                assigned_leaves(target, rhs)
+                                            )
+                                            if rhs_reads_name or keeps_original:
+                                                continue
                                             shadowed = True
                                             break
                                     if not shadowed:
@@ -6662,6 +6684,10 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             }):
                 cases = (
                     ('from provider_b import *\n', True),
+                    ('from provider_b import *\npassword = password\n', True),
+                    ('from provider_b import *\npassword: str = password\n', True),
+                    ('from provider_b import *\npassword, unused = (password, None)\n', True),
+                    ('from provider_b import *\npassword = password\npassword = None\n', False),
                     ('from provider_b import *\npassword = None\n', False),
                     ('from provider_b import *\npassword = 0\n', False),
                     ('password = None\nfrom provider_b import *\n', True),
@@ -6684,6 +6710,21 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     encoding="utf-8",
                 )
                 intermediary.write_text('pass\n', encoding="utf-8")
+                included = set(self._runtime_es_module_paths())
+                self.assertIn(provider.resolve(), included)
+                self.assertIn(
+                    "password",
+                    self._imported_credential_exports.get(
+                        provider.resolve(), set()
+                    ),
+                )
+                consumer.write_text(
+                    'from provider_b import *\n'
+                    'password = password\n'
+                    'from elasticsearch import Elasticsearch\n'
+                    'Elasticsearch("localhost", basic_auth=("elastic", password))\n',
+                    encoding="utf-8",
+                )
                 included = set(self._runtime_es_module_paths())
                 self.assertIn(provider.resolve(), included)
                 self.assertIn(
