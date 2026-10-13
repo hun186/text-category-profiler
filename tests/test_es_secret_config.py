@@ -4963,10 +4963,27 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 )
             if isinstance(expression, ast.BoolOp):
                 evaluated = named_expr_bindings(expression.values[0], state)
-                for value in expression.values[1:]:
-                    evaluated = merge_states(
-                        evaluated, named_expr_bindings(value, evaluated)
+                for previous, value in zip(
+                    expression.values, expression.values[1:]
+                ):
+                    # Python skips the next operand only when the previous
+                    # result short-circuits. Literal booleans are decidable.
+                    truth = (
+                        bool(previous.value)
+                        if isinstance(previous, ast.Constant) else None
                     )
+                    if truth is not None:
+                        skip = (
+                            isinstance(expression.op, ast.And) and not truth
+                            or isinstance(expression.op, ast.Or) and truth
+                        )
+                        if skip:
+                            continue
+                        evaluated = named_expr_bindings(value, evaluated)
+                    else:
+                        evaluated = merge_states(
+                            evaluated, named_expr_bindings(value, evaluated)
+                        )
                 return evaluated
             if isinstance(expression, ast.IfExp):
                 tested = named_expr_bindings(expression.test, state)
@@ -6180,7 +6197,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 ('from provider_b import password\n'
                  'value = True or (password := None)\n', True),
                 ('from provider_b import password\n'
-                 'value = True and (password := None)\n', True),
+                 'value = True and (password := None)\n', False),
                 ('from provider_b import password\n'
                  'for password in [None]:\n'
                  '    pass\n', False),
