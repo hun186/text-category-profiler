@@ -4896,37 +4896,99 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         ):
                             yield from assigned_leaves(child_target, child_value)
 
-        latest_exports = {}
-        for stmt in tree.body:
-            if isinstance(stmt, (ast.ImportFrom, ast.Import)):
-                for item in stmt.names:
-                    local = item.asname or (
-                        item.name if isinstance(stmt, ast.ImportFrom)
-                        else item.name.split(".", 1)[0]
+        # Track possible reaching module-level exports in execution order.
+        # Imports inside a conditional branch may replace a previously safe
+        # value, but a later unconditional safe assignment kills that import.
+        # Keep the *specific* reaching import node so an older shadowed import
+        # with the same local name is not incorrectly selected.
+        def merge_export_states(states):
+            return {
+                name: set().union(*(state[name] for state in states))
+                for name in forwarded_exports
+            }
+
+        def walk_export_statements(statements, incoming):
+            state = {name: set(values) for name, values in incoming.items()}
+            for stmt in statements:
+                if isinstance(stmt, (ast.ImportFrom, ast.Import)):
+                    for item in stmt.names:
+                        local = item.asname or (
+                            item.name if isinstance(stmt, ast.ImportFrom)
+                            else item.name.split(".", 1)[0]
+                        )
+                        if local in forwarded_exports:
+                            state[local] = {stmt}
+                elif isinstance(stmt, (ast.Assign, ast.AnnAssign)):
+                    if stmt.value is None:
+                        continue
+                    targets = (
+                        stmt.targets if isinstance(stmt, ast.Assign)
+                        else [stmt.target]
                     )
-                    if local in forwarded_exports:
-                        latest_exports[local] = None
-            elif isinstance(stmt, (ast.Assign, ast.AnnAssign)):
-                if stmt.value is None:
-                    continue
-                targets = stmt.targets if isinstance(stmt, ast.Assign) else [stmt.target]
-                for target in targets:
-                    for key, value in assigned_leaves(target, stmt.value):
-                        if key in forwarded_exports:
-                            latest_exports[key] = value
+                    for target in targets:
+                        for key, value in assigned_leaves(target, stmt.value):
+                            if key in forwarded_exports:
+                                state[key] = {value}
+                elif isinstance(stmt, ast.If):
+                    state = merge_export_states((
+                        walk_export_statements(stmt.body, state),
+                        walk_export_statements(stmt.orelse, state),
+                    ))
+                elif isinstance(stmt, (ast.For, ast.AsyncFor, ast.While)):
+                    # A loop can run zero or more times. A body write is
+                    # possible, but not guaranteed to replace the incoming one.
+                    state = merge_export_states((
+                        walk_export_statements(stmt.orelse, state),
+                        walk_export_statements(
+                            stmt.orelse,
+                            walk_export_statements(stmt.body, state),
+                        ),
+                    ))
+                elif isinstance(stmt, (ast.With, ast.AsyncWith)):
+                    state = walk_export_statements(stmt.body, state)
+                elif isinstance(stmt, (ast.Try, getattr(ast, "TryStar", ast.Try))):
+                    body_state = walk_export_statements(stmt.body, state)
+                    outcomes = [
+                        walk_export_statements(stmt.orelse, body_state),
+                    ]
+                    for handler in stmt.handlers:
+                        # An exception may occur before or after a write in
+                        # the try body. Both reaching states are possible.
+                        outcomes.append(
+                            walk_export_statements(handler.body, state)
+                        )
+                        outcomes.append(
+                            walk_export_statements(handler.body, body_state)
+                        )
+                    state = merge_export_states(tuple(
+                        walk_export_statements(stmt.finalbody, outcome)
+                        for outcome in outcomes
+                    ))
+                elif isinstance(stmt, getattr(ast, "Match", ())):
+                    # A match may select any guarded case, or none of them.
+                    state = merge_export_states((
+                        state,
+                        *(
+                            walk_export_statements(case.body, state)
+                            for case in stmt.cases
+                        ),
+                    ))
+                # Function/class bodies bind their own scopes, not module
+                # export names. Do not walk their statements here.
+            return state
 
-        # If an export still refers to its import, keep that source selected.
-        # Otherwise trace only its final assignment value; a safe env-based
-        # replacement must not resurrect the shadowed imported secret.
-        forwarded_import_names = {
-            name for name in forwarded_exports
-            if name not in latest_exports or latest_exports[name] is None
-        }
-        for value in latest_exports.values():
-            if value is not None:
-                credential_values.append(value)
+        latest_exports = walk_export_statements(
+            tree.body, {name: {None} for name in forwarded_exports}
+        )
+        forwarded_import_nodes = set()
+        for reaching_values in latest_exports.values():
+            for value in reaching_values:
+                if isinstance(value, (ast.ImportFrom, ast.Import)):
+                    forwarded_import_nodes.add(value)
+                elif value is not None:
+                    credential_values.append(value)
 
-        used_names = set(forwarded_import_names)
+        used_names = set()
         used_chains = set()
 
         def attribute_chain(node):
@@ -4982,7 +5044,11 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     and dependency.parent.name == module_tail
                 ):
                     for alias in node.names:
-                        if (alias.asname or alias.name) in used_names:
+                        if (
+                            (alias.asname or alias.name) in used_names
+                            or node in forwarded_import_nodes
+                            and (alias.asname or alias.name) in forwarded_exports
+                        ):
                             exported.add(alias.name)
                 # "from providers import credential_provider" is a module
                 # import, whose exported secret sits on a subsequent attribute.
@@ -5409,6 +5475,125 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             provider.resolve(), set()
                         )
                         self.assertEqual("password" in exports, expected)
+
+    def test_nested_module_reexports_preserve_reaching_import_paths(self):
+        """Keep conditional imports, but discard imports definitely overwritten."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            intermediary = root / "provider_a.py"
+            provider = root / "provider_b.py"
+            alternate = root / "provider_c.py"
+            consumer.write_text(
+                'from provider_a import password\n'
+                'from elasticsearch import Elasticsearch\n'
+                'Elasticsearch("localhost", basic_auth=("elastic", password))\n',
+                encoding="utf-8",
+            )
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            alternate.write_text(
+                'import os\n'
+                'password = os.getenv("TCP_ELASTIC_PASSWORD")\n',
+                encoding="utf-8",
+            )
+            cases = (
+                (
+                    'import os\n'
+                    'password = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+                    'if enabled:\n'
+                    '    from provider_b import password\n',
+                    True,
+                ),
+                (
+                    'import os\n'
+                    'password = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+                    'if enabled:\n'
+                    '    if second_condition:\n'
+                    '        from provider_b import password\n',
+                    True,
+                ),
+                (
+                    'import os\n'
+                    'password = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+                    'if enabled:\n'
+                    '    from provider_b import password\n'
+                    'else:\n'
+                    '    password = os.getenv("TCP_ELASTIC_PASSWORD")\n',
+                    True,
+                ),
+                (
+                    'import os\n'
+                    'password = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+                    'try:\n'
+                    '    optional_operation()\n'
+                    'except Exception:\n'
+                    '    from provider_b import password\n',
+                    True,
+                ),
+                (
+                    'import os\n'
+                    'password = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+                    'if enabled:\n'
+                    '    from provider_b import password\n'
+                    '    password = os.getenv("TCP_ELASTIC_PASSWORD")\n',
+                    False,
+                ),
+                (
+                    'import os\n'
+                    'if enabled:\n'
+                    '    from provider_b import password\n'
+                    'password = os.getenv("TCP_ELASTIC_PASSWORD")\n',
+                    False,
+                ),
+                (
+                    'import os\n'
+                    'if enabled:\n'
+                    '    from provider_b import password\n'
+                    'else:\n'
+                    '    password = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+                    'password = os.getenv("TCP_ELASTIC_PASSWORD")\n',
+                    False,
+                ),
+                (
+                    'import os\n'
+                    'from provider_b import password\n'
+                    'from provider_c import password\n',
+                    False,
+                ),
+                (
+                    'import os\n'
+                    'password = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+                    'try:\n'
+                    '    from provider_b import password\n'
+                    'finally:\n'
+                    '    password = os.getenv("TCP_ELASTIC_PASSWORD")\n',
+                    False,
+                ),
+                (
+                    'import os\n'
+                    'password = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+                    'if enabled:\n'
+                    '    from provider_b import password as imported\n'
+                    '    password, unused = imported, None\n',
+                    True,
+                ),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for source, should_include in cases:
+                    with self.subTest(source=source):
+                        intermediary.write_text(source, encoding="utf-8")
+                        paths = set(self._runtime_es_module_paths())
+                        self.assertEqual(provider.resolve() in paths, should_include)
+                        self.assertEqual(
+                            "password" in self._imported_credential_exports.get(
+                                provider.resolve(), set()
+                            ),
+                            should_include,
+                        )
 
     def test_secret_surface_paths_include_yaml_elasticsearch_samples(self):
         yaml_paths = [
