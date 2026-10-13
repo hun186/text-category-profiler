@@ -4947,40 +4947,94 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             return updated
 
         def named_expr_bindings(expression, state):
-            """Conservatively account for walrus writes in evaluated expressions.
+            """Apply walrus writes in expression evaluation order.
 
-            Lambda bodies are deferred; a generator body need not execute.
-            Other nested expressions may be short-circuited, so preserve the
-            original reaching state as well unless the walrus is the root.
+            A tuple, call, or arithmetic expression evaluates its children
+            unconditionally when it completes normally. Only expressions
+            with optional child evaluation retain a no-write alternative.
+            Deferred lambda and generator bodies are not evaluated here.
             """
-            writes = {}
-            def visit(node):
-                if isinstance(node, (ast.Lambda, ast.GeneratorExp)):
-                    return
-                if isinstance(node, ast.NamedExpr):
-                    for key, value in assigned_leaves(node.target, node.value):
-                        if key in forwarded_exports:
-                            writes.setdefault(key, set()).add(value)
-                for child in ast.iter_child_nodes(node):
-                    visit(child)
-
-            visit(expression)
-            if not writes:
+            if isinstance(expression, (ast.Lambda, ast.GeneratorExp)):
                 return state
-            changed = {name: set(values) for name, values in state.items()}
-            for key, values in writes.items():
-                changed[key] = values
             if isinstance(expression, ast.NamedExpr):
-                return changed
-            return merge_states(state, changed)
+                evaluated = named_expr_bindings(expression.value, state)
+                return bind_export_target(
+                    evaluated, expression.target, [expression.value]
+                )
+            if isinstance(expression, ast.BoolOp):
+                evaluated = named_expr_bindings(expression.values[0], state)
+                for value in expression.values[1:]:
+                    evaluated = merge_states(
+                        evaluated, named_expr_bindings(value, evaluated)
+                    )
+                return evaluated
+            if isinstance(expression, ast.IfExp):
+                tested = named_expr_bindings(expression.test, state)
+                return merge_states(
+                    named_expr_bindings(expression.body, tested),
+                    named_expr_bindings(expression.orelse, tested),
+                )
+            if isinstance(expression, ast.Compare):
+                evaluated = named_expr_bindings(expression.left, state)
+                for index, comparator in enumerate(expression.comparators):
+                    checked = named_expr_bindings(comparator, evaluated)
+                    evaluated = (
+                        checked if index == 0
+                        else merge_states(evaluated, checked)
+                    )
+                return evaluated
+            if isinstance(expression, (ast.ListComp, ast.SetComp, ast.DictComp)):
+                # Comprehension iterations may be empty. The outer iterable
+                # runs, but walruses in filters/elements are conditional.
+                generators = expression.generators
+                evaluated = named_expr_bindings(generators[0].iter, state)
+                possible = evaluated
+                for generator in generators:
+                    possible = named_expr_bindings(generator.iter, possible)
+                    for condition in generator.ifs:
+                        possible = named_expr_bindings(condition, possible)
+                parts = (
+                    [expression.key, expression.value]
+                    if isinstance(expression, ast.DictComp)
+                    else [expression.elt]
+                )
+                for part in parts:
+                    possible = named_expr_bindings(part, possible)
+                return merge_states(evaluated, possible)
+            if isinstance(expression, ast.Dict):
+                children = []
+                for key, value in zip(expression.keys, expression.values):
+                    if key is not None:
+                        children.append(key)
+                    children.append(value)
+            else:
+                children = ast.iter_child_nodes(expression)
+            current = state
+            for child in children:
+                current = named_expr_bindings(child, current)
+            return current
 
-        def loop_target_expressions(iterable):
-            """Extract iterable elements when statically known, else source."""
-            resolved = (
-                [iterable] if isinstance(iterable, (ast.List, ast.Tuple, ast.Set))
+        def fixed_loop_elements(iterable):
+            """Return known, ordered loop elements or None for unknown inputs."""
+            nodes = (
+                [iterable] if isinstance(iterable, (ast.Tuple, ast.List))
                 else _resolve_bound_nodes(
                     iterable, bound_names(), _node_position(iterable)
                 )
+            )
+            if len(nodes) != 1:
+                return None
+            node = nodes[0]
+            if not isinstance(node, (ast.Tuple, ast.List)):
+                return None
+            if any(isinstance(item, ast.Starred) for item in node.elts):
+                return None
+            return node.elts
+
+        def loop_target_expressions(iterable):
+            """Unknown iterable: conservatively retain its possible values."""
+            resolved = _resolve_bound_nodes(
+                iterable, bound_names(), _node_position(iterable)
             )
             elements = []
             for node in resolved:
@@ -4988,7 +5042,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     elements.extend(node.elts)
                 else:
                     elements.append(node)
-            return elements
+            return elements or [iterable]
 
         def walk_export_statements(statements, incoming, raising_states=None):
             flow = {"normal": incoming}
@@ -5011,16 +5065,17 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             updated[local] = {stmt}
                     next_flow = {"normal": updated}
                 elif isinstance(stmt, (ast.Assign, ast.AnnAssign)):
-                    updated = {name: set(values) for name, values in state.items()}
+                    updated = state
                     if stmt.value is not None:
+                        updated = named_expr_bindings(stmt.value, updated)
                         targets = (
                             stmt.targets if isinstance(stmt, ast.Assign)
                             else [stmt.target]
                         )
                         for target in targets:
-                            for key, value in assigned_leaves(target, stmt.value):
-                                if key in forwarded_exports:
-                                    updated[key] = {value}
+                            updated = bind_export_target(
+                                updated, target, [stmt.value]
+                            )
                     next_flow = {"normal": updated}
                 elif isinstance(stmt, ast.If):
                     tested = named_expr_bindings(stmt.test, state)
@@ -5033,43 +5088,67 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         ),
                     )
                 elif isinstance(stmt, (ast.For, ast.AsyncFor, ast.While)):
-                    # Widen loop-head states until the finite reaching-binding
-                    # set stops growing. Only normally exhausted/zero-trip
-                    # iterations execute else; break exits bypass it.
-                    if isinstance(stmt, (ast.For, ast.AsyncFor)):
-                        loop_head = named_expr_bindings(stmt.iter, state)
-                        elements = loop_target_expressions(stmt.iter)
-                    else:
-                        loop_head = named_expr_bindings(stmt.test, state)
-                        elements = None
-                    exhausted = loop_head
+                    # For a known finite sequence, run each target binding in
+                    # order so the final element replaces earlier bindings.
+                    # A break exits without executing the loop's else suite.
+                    is_for = isinstance(stmt, (ast.For, ast.AsyncFor))
+                    loop_head = named_expr_bindings(
+                        stmt.iter if is_for else stmt.test, state
+                    )
+                    fixed = fixed_loop_elements(stmt.iter) if is_for else None
                     broken = None
-                    while True:
-                        iteration_state = (
-                            bind_export_target(loop_head, stmt.target, elements)
-                            if elements is not None else loop_head
+                    if fixed is not None and len(fixed) <= 32:
+                        exhausted = loop_head
+                        for element in fixed:
+                            if exhausted is None:
+                                break
+                            iteration = bind_export_target(
+                                exhausted, stmt.target, [element]
+                            )
+                            if raising_states is not None:
+                                raising_states.append(iteration)
+                            body = walk_export_statements(
+                                stmt.body, iteration, raising_states
+                            )
+                            broken = merge_states(broken, body.get("break"))
+                            exhausted = merge_states(
+                                body.get("normal"), body.get("continue")
+                            )
+                    else:
+                        # Unknown or very large loops: widen the finite
+                        # reaching-bindings lattice to a fixed point.
+                        # Do not claim a zero-trip path is impossible.
+                        exhausted = loop_head
+                        possible = (
+                            loop_target_expressions(stmt.iter)
+                            if is_for else None
                         )
-                        if raising_states is not None:
-                            raising_states.append(iteration_state)
-                        body = walk_export_statements(
-                            stmt.body, iteration_state, raising_states
-                        )
-                        broken = merge_states(broken, body.get("break"))
-                        continued = merge_states(
-                            body.get("normal"), body.get("continue")
-                        )
-                        exhausted = merge_states(exhausted, continued)
-                        next_head = merge_states(loop_head, continued)
-                        if next_head == loop_head:
-                            break
-                        loop_head = next_head
-                    next_flow = walk_export_statements(
-                        stmt.orelse, exhausted, raising_states
+                        while True:
+                            iteration = (
+                                bind_export_target(
+                                    loop_head, stmt.target, possible
+                                ) if is_for else loop_head
+                            )
+                            if raising_states is not None:
+                                raising_states.append(iteration)
+                            body = walk_export_statements(
+                                stmt.body, iteration, raising_states
+                            )
+                            broken = merge_states(broken, body.get("break"))
+                            continued = merge_states(
+                                body.get("normal"), body.get("continue")
+                            )
+                            exhausted = merge_states(exhausted, continued)
+                            widened = merge_states(loop_head, continued)
+                            if widened == loop_head:
+                                break
+                            loop_head = widened
+                    next_flow = (
+                        walk_export_statements(stmt.orelse, exhausted, raising_states)
+                        if exhausted is not None else {}
                     )
                     if broken is not None:
-                        next_flow = merge_flows(
-                            next_flow, {"normal": broken}
-                        )
+                        next_flow = merge_flows(next_flow, {"normal": broken})
                 elif isinstance(stmt, (ast.With, ast.AsyncWith)):
                     with_state = state
                     for item in stmt.items:
@@ -6045,6 +6124,93 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     'password = None\n',
                     False,
                 ),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for source, expected in cases:
+                    with self.subTest(source=source):
+                        intermediary.write_text(source, encoding="utf-8")
+                        paths = set(self._runtime_es_module_paths())
+                        self.assertEqual(provider.resolve() in paths, expected)
+                        self.assertEqual(
+                            "password" in self._imported_credential_exports.get(
+                                provider.resolve(), set()
+                            ), expected,
+                        )
+
+    def test_walrus_rhs_and_fixed_nonempty_loop_exports(self):
+        """Do not miss RHS walruses or resurrect overwritten loop secrets."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            intermediary = root / "provider_a.py"
+            provider = root / "provider_b.py"
+            consumer.write_text(
+                'from provider_a import password\n'
+                'from elasticsearch import Elasticsearch\n'
+                'Elasticsearch("localhost", basic_auth=("elastic", password))\n',
+                encoding="utf-8",
+            )
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            cases = (
+                ('import provider_b\n'
+                 'value = (password := provider_b.password)\n', True),
+                ('from provider_b import password as imported\n'
+                 'value = (password := imported)\n', True),
+                ('import provider_b\n'
+                 'value, other = (password := provider_b.password), None\n', True),
+                ('import provider_b\n'
+                 'value = ((password := provider_b.password), "safe")\n', True),
+                ('import os\nimport provider_b\n'
+                 'value = (password := provider_b.password)\n'
+                 'password = os.getenv("TCP_ELASTIC_PASSWORD")\n', False),
+                ('from provider_b import password\n'
+                 '(password := None,)\n', False),
+                ('from provider_b import password\n'
+                 'value = ((password := None),)\n', False),
+                ('from provider_b import password\n'
+                 '[password := None]\n', False),
+                ('from provider_b import password\n'
+                 'value = (password := None, 1)\n', False),
+                ('from provider_b import password\n'
+                 'value = False and (password := None)\n', True),
+                ('from provider_b import password\n'
+                 'value = True or (password := None)\n', True),
+                ('from provider_b import password\n'
+                 'value = True and (password := None)\n', True),
+                ('from provider_b import password\n'
+                 'for password in [None]:\n'
+                 '    pass\n', False),
+                ('from provider_b import password\n'
+                 'for password in [password, None]:\n'
+                 '    pass\n', False),
+                ('from provider_b import password\n'
+                 'for password in [None, password]:\n'
+                 '    pass\n', True),
+                ('from provider_b import password\n'
+                 'for password in []:\n'
+                 '    pass\n', True),
+                ('from provider_b import password\n'
+                 'for password in [None]:\n'
+                 '    break\n', False),
+                ('from provider_b import password\n'
+                 'for password in [None]:\n'
+                 '    pass\n'
+                 'else:\n'
+                 '    password = None\n', False),
+                ('from provider_b import password\n'
+                 'for password in [password]:\n'
+                 '    pass\n', True),
+                ('from provider_b import password\n'
+                 'for password in [None]:\n'
+                 '    continue\n', False),
+                ('from provider_b import password\n'
+                 'for password in [None]:\n'
+                 '    if enabled:\n'
+                 '        password = password\n', False),
             )
             with patch.dict(globals(), {
                 "REPOSITORY_ROOT": root,
