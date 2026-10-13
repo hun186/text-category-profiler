@@ -4806,7 +4806,14 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             tree = ast.parse(source)
         except SyntaxError:
             return set()
-        bindings = _name_bindings(tree)
+        bindings = None
+
+        def bound_names():
+            nonlocal bindings
+            if bindings is None:
+                bindings = _name_bindings(tree)
+            return bindings
+
         secret_keys = {
             "password", "api_key", "bearer_auth", "basic_auth",
             "http_auth", "authorization",
@@ -4817,7 +4824,10 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             # a credential; only index one can expose a password.
             if name not in {"basic_auth", "http_auth"}:
                 return [node]
-            possible = _resolve_bound_nodes(node, bindings, _node_position(node))
+            possible = (
+                [node] if isinstance(node, (ast.List, ast.Tuple))
+                else _resolve_bound_nodes(node, bound_names(), _node_position(node))
+            )
             extracted = []
             unknown = False
             for value in possible:
@@ -4858,6 +4868,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     if name in secret_keys:
                         credential_values.extend(password_side(node.value, name))
 
+        if not credential_values:
+            return set()
+
         used_names = set()
         used_chains = set()
 
@@ -4874,10 +4887,11 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             seen = set() if seen is None else seen
             if isinstance(node, ast.Name):
                 used_names.add(node.id)
-                token = _binding_name_token(node.id, bindings, node)
+                active_bindings = bound_names()
+                token = _binding_name_token(node.id, active_bindings, node)
                 if token in seen:
                     return
-                for value in _resolve_bound_nodes(node, bindings, _node_position(node)):
+                for value in _resolve_bound_nodes(node, active_bindings, _node_position(node)):
                     if value is not node:
                         trace(value, seen | {token})
                 return
