@@ -2286,7 +2286,13 @@ def _name_bindings(tree):
         # Evaluate eager nested expressions (f-strings, joins, formatting,
         # lookups) when the target is assigned, not at a later use. Do not
         # freeze lambda/comprehension bodies that execute in other scopes.
-        capture_eager_expression_names(value, position, lexical_scope)
+        # Python evaluates an assignment's RHS before storing its target.
+        # Freeze eager aliases at the position immediately before the store,
+        # so `unused, password = (password, None)` captures the imported
+        # password in `unused`, not the newly assigned None.
+        capture_eager_expression_names(
+            value, (position[0], position[1] - 1), lexical_scope
+        )
         values.setdefault(binding_scope, {}).setdefault(target.id, []).append(
             (position, value)
         )
