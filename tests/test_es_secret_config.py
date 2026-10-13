@@ -5532,30 +5532,47 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                             and statement.value is not None
                                             else []
                                         )
-                                        if any(
-                                            isinstance(target, ast.Name)
-                                            and target.id == name
+                                        # Associate each unpacked target
+                                        # with its own RHS leaf; another slot
+                                        # reading the secret does not preserve
+                                        # the overwritten credential export.
+                                        leaves = [
+                                            (target_name, value)
                                             for target in targets
-                                        ):
-                                            # Compare only the RHS *leaf*
-                                            # that is stored into this name.
-                                            # A read of the imported password
-                                            # into another unpacked target does
-                                            # not preserve the password export.
-                                            # A true self-assignment does.
-                                            rhs = statement.value
-                                            keeps_original = any(
-                                                target_name == name
-                                                and isinstance(value, ast.Name)
-                                                and value.id == name
-                                                for target in targets
-                                                for target_name, value in
-                                                assigned_leaves(target, rhs)
+                                            for target_name, value in
+                                            assigned_leaves(
+                                                target, statement.value
                                             )
-                                            if keeps_original:
-                                                continue
-                                            shadowed = True
-                                            break
+                                        ]
+                                        selected_values = [
+                                            value for target_name, value in leaves
+                                            if target_name == name
+                                        ]
+                                        if not selected_values:
+                                            continue
+                                        if any(
+                                            isinstance(value, ast.Name)
+                                            and value.id == name
+                                            for value in selected_values
+                                        ):
+                                            # password = password retains the
+                                            # imported value, including when
+                                            # the target is destructured.
+                                            continue
+                                        if any(
+                                            target_name != name
+                                            and any(
+                                                child is use
+                                                for child in ast.walk(value)
+                                            )
+                                            for target_name, value in leaves
+                                        ):
+                                            # A *traced* credential read into
+                                            # another slot can feed auth even
+                                            # if password itself is cleared.
+                                            continue
+                                        shadowed = True
+                                        break
                                     if not shadowed:
                                         exported.add(name)
                                         break
@@ -6743,6 +6760,21 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 )
                 included = set(self._runtime_es_module_paths())
                 self.assertNotIn(provider.resolve(), included)
+                consumer.write_text(
+                    'from provider_b import *\n'
+                    'unused, password = (password, None)\n'
+                    'from elasticsearch import Elasticsearch\n'
+                    'Elasticsearch("localhost", basic_auth=("elastic", unused))\n',
+                    encoding="utf-8",
+                )
+                included = set(self._runtime_es_module_paths())
+                self.assertIn(provider.resolve(), included)
+                self.assertIn(
+                    "password",
+                    self._imported_credential_exports.get(
+                        provider.resolve(), set()
+                    ),
+                )
                 consumer.write_text(
                     'from provider_b import *\n'
                     'password = None\n'
