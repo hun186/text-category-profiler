@@ -5537,18 +5537,13 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                             and target.id == name
                                             for target in targets
                                         ):
-                                            # The RHS is read *before* its
-                                            # assignment target is stored. A
-                                            # self-assignment therefore keeps
-                                            # the wildcard-imported credential
-                                            # reaching later auth consumers.
-                                            # Likewise a read inside this RHS
-                                            # cannot be shadowed by this store.
+                                            # Compare only the RHS *leaf*
+                                            # that is stored into this name.
+                                            # A read of the imported password
+                                            # into another unpacked target does
+                                            # not preserve the password export.
+                                            # A true self-assignment does.
                                             rhs = statement.value
-                                            rhs_reads_name = any(
-                                                child is use
-                                                for child in ast.walk(rhs)
-                                            )
                                             keeps_original = any(
                                                 target_name == name
                                                 and isinstance(value, ast.Name)
@@ -5557,7 +5552,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                 for target_name, value in
                                                 assigned_leaves(target, rhs)
                                             )
-                                            if rhs_reads_name or keeps_original:
+                                            if keeps_original:
                                                 continue
                                             shadowed = True
                                             break
@@ -6687,6 +6682,12 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     ('from provider_b import *\npassword = password\n', True),
                     ('from provider_b import *\npassword: str = password\n', True),
                     ('from provider_b import *\npassword, unused = (password, None)\n', True),
+                    ('from provider_b import *\nunused, password = (None, password)\n', True),
+                    ('from provider_b import *\nunused, password = (password, None)\n', False),
+                    ('from provider_b import *\nunused, password = (password, 0)\n', False),
+                    ('from provider_b import *\npassword, unused = (None, password)\n', False),
+                    ('from provider_b import *\nunused, password = (password, None)\npassword = password\n', False),
+                    ('from provider_b import *\nunused, password = (password, None)\npassword = None\n', False),
                     ('from provider_b import *\npassword = password\npassword = None\n', False),
                     ('from provider_b import *\npassword = None\n', False),
                     ('from provider_b import *\npassword = 0\n', False),
@@ -6733,6 +6734,15 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         provider.resolve(), set()
                     ),
                 )
+                consumer.write_text(
+                    'from provider_b import *\n'
+                    'unused, password = (password, None)\n'
+                    'from elasticsearch import Elasticsearch\n'
+                    'Elasticsearch("localhost", basic_auth=("elastic", password))\n',
+                    encoding="utf-8",
+                )
+                included = set(self._runtime_es_module_paths())
+                self.assertNotIn(provider.resolve(), included)
                 consumer.write_text(
                     'from provider_b import *\n'
                     'password = None\n'
