@@ -4801,25 +4801,38 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         return resolved
 
     def _credential_import_exports(self, source, dependency):
-        """Find imports feeding credential-valued expressions in an ES consumer.
-
-        Imported names are selected by their *use* in auth arguments, not by
-        capitalization or conventional password variable names. Nothing is
-        imported or executed at runtime.
-        """
+        """Trace import exports reaching credential values, without executing code."""
         try:
             tree = ast.parse(source)
         except SyntaxError:
             return set()
-
-        credential_values = []
+        bindings = _name_bindings(tree)
         secret_keys = {
             "password", "api_key", "bearer_auth", "basic_auth",
             "http_auth", "authorization",
         }
+
+        def password_side(node, name):
+            # For tuple-based Basic/HTTP auth, index zero is a username, not
+            # a credential; only index one can expose a password.
+            if name not in {"basic_auth", "http_auth"}:
+                return [node]
+            possible = _resolve_bound_nodes(node, bindings, _node_position(node))
+            extracted = []
+            unknown = False
+            for value in possible:
+                if isinstance(value, (ast.Tuple, ast.List)) and len(value.elts) >= 2:
+                    extracted.append(value.elts[1])
+                else:
+                    unknown = True
+            # An unresolved shape is conservatively retained, while known
+            # pairs never drag in a harmless username.
+            return [*extracted, *([node] if unknown else [])]
+
+        credential_values = []
         for node in ast.walk(tree):
             if isinstance(node, ast.keyword) and node.arg in secret_keys:
-                credential_values.append(node.value)
+                credential_values.extend(password_side(node.value, node.arg))
             elif isinstance(node, ast.Dict):
                 for key, value in zip(node.keys, node.values):
                     if (
@@ -4827,61 +4840,97 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         and isinstance(key.value, str)
                         and key.value.lower() in secret_keys
                     ):
-                        credential_values.append(value)
+                        credential_values.extend(password_side(value, key.value.lower()))
             elif isinstance(node, (ast.Assign, ast.AnnAssign)):
                 targets = node.targets if isinstance(node, ast.Assign) else [node.target]
                 if node.value is None:
                     continue
-                if any(
-                    (
-                        isinstance(target, ast.Name)
-                        and target.id.lower() in secret_keys
-                    ) or (
+                for target in targets:
+                    name = None
+                    if isinstance(target, ast.Name):
+                        name = target.id.lower()
+                    elif (
                         isinstance(target, ast.Subscript)
                         and isinstance(target.slice, ast.Constant)
                         and isinstance(target.slice.value, str)
-                        and target.slice.value.lower() in secret_keys
-                    )
-                    for target in targets
-                ):
-                    credential_values.append(node.value)
+                    ):
+                        name = target.slice.value.lower()
+                    if name in secret_keys:
+                        credential_values.extend(password_side(node.value, name))
 
-        used_names = {
-            child.id
-            for value in credential_values
-            for child in ast.walk(value)
-            if isinstance(child, ast.Name) and isinstance(child.ctx, ast.Load)
-        }
-        used_attrs = {
-            (child.value.id, child.attr)
-            for value in credential_values
-            for child in ast.walk(value)
-            if isinstance(child, ast.Attribute) and isinstance(child.value, ast.Name)
-        }
+        used_names = set()
+        used_chains = set()
+
+        def attribute_chain(node):
+            parts = []
+            while isinstance(node, ast.Attribute):
+                parts.append(node.attr)
+                node = node.value
+            if isinstance(node, ast.Name):
+                return tuple([node.id, *reversed(parts)])
+            return ()
+
+        def trace(node, seen=None):
+            seen = set() if seen is None else seen
+            if isinstance(node, ast.Name):
+                used_names.add(node.id)
+                token = _binding_name_token(node.id, bindings, node)
+                if token in seen:
+                    return
+                for value in _resolve_bound_nodes(node, bindings, _node_position(node)):
+                    if value is not node:
+                        trace(value, seen | {token})
+                return
+            if isinstance(node, ast.Attribute):
+                chain = attribute_chain(node)
+                if len(chain) >= 2:
+                    used_chains.add(chain)
+            for child in ast.iter_child_nodes(node):
+                trace(child, seen)
+
+        for value in credential_values:
+            trace(value)
+
         exported = set()
         for node in ast.walk(tree):
             if isinstance(node, ast.ImportFrom) and node.module:
                 module_tail = node.module.split(".")[-1]
-                if not (
+                if (
                     dependency.stem == module_tail
                     or dependency.name == "__init__.py"
                     and dependency.parent.name == module_tail
                 ):
-                    continue
+                    for alias in node.names:
+                        if (alias.asname or alias.name) in used_names:
+                            exported.add(alias.name)
+                # "from providers import credential_provider" is a module
+                # import, whose exported secret sits on a subsequent attribute.
                 for alias in node.names:
-                    if (alias.asname or alias.name) in used_names:
-                        exported.add(alias.name)
+                    if alias.name != dependency.stem:
+                        continue
+                    local = alias.asname or alias.name
+                    exported.update(
+                        chain[1]
+                        for chain in used_chains
+                        if len(chain) == 2 and chain[0] == local
+                    )
             elif isinstance(node, ast.Import):
                 for alias in node.names:
-                    module_tail = alias.name.split(".")[-1]
-                    if not (
-                        dependency.stem == module_tail
-                        or dependency.name == "__init__.py"
-                        and dependency.parent.name == module_tail
-                    ):
+                    if alias.name.split(".")[-1] != dependency.stem:
                         continue
-                    local = alias.asname or alias.name.split(".")[0]
-                    exported.update(attr for owner, attr in used_attrs if owner == local)
+                    # "import providers.credential_provider" binds 'providers',
+                    # not the leaf module as an independent local name.
+                    prefix = (
+                        (alias.asname,)
+                        if alias.asname
+                        else tuple(alias.name.split("."))
+                    )
+                    exported.update(
+                        chain[-1]
+                        for chain in used_chains
+                        if len(chain) == len(prefix) + 1
+                        and chain[:len(prefix)] == prefix
+                    )
         return exported
 
     def _runtime_es_module_paths(self):
@@ -4937,6 +4986,17 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             return []
         bindings = _name_bindings(tree)
         violations = []
+        def assigned_leaves(target, value):
+            """Associate tuple/list unpacked names with the actual RHS slots."""
+            if isinstance(target, ast.Name):
+                yield target.id, value
+            elif isinstance(target, (ast.Tuple, ast.List)):
+                resolved = _resolve_bound_nodes(value, bindings, _node_position(value))
+                for item in resolved:
+                    if isinstance(item, (ast.Tuple, ast.List)) and len(item.elts) == len(target.elts):
+                        for subtarget, subvalue in zip(target.elts, item.elts):
+                            yield from assigned_leaves(subtarget, subvalue)
+
         for statement in tree.body:
             if isinstance(statement, ast.Assign):
                 targets = statement.targets
@@ -4945,23 +5005,21 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             else:
                 continue
             for target in targets:
-                if not isinstance(target, ast.Name):
-                    continue
-                key = target.id
-                conventional_constant = (
-                    key.isupper()
-                    and re.search(
-                        r"(?:^|_)(?:PASSWORD|PASSWD|API_KEY|BEARER_AUTH|AUTH_TOKEN)$",
-                        key,
+                for key, expression in assigned_leaves(target, statement.value):
+                    conventional_constant = (
+                        key.isupper()
+                        and re.search(
+                            r"(?:^|_)(?:PASSWORD|PASSWD|API_KEY|BEARER_AUTH|AUTH_TOKEN)$",
+                            key,
+                        )
                     )
-                )
-                if not (conventional_constant or key in exported_names):
-                    continue
-                values = _hardcoded_password_values(
-                    statement.value, bindings, _node_position(statement)
-                )
-                if any(value != REDACTED_PASSWORD_SENTINEL for value in values):
-                    violations.append(statement.lineno)
+                    if not (conventional_constant or key in exported_names):
+                        continue
+                    values = _hardcoded_password_values(
+                        expression, bindings, _node_position(statement)
+                    )
+                    if any(value != REDACTED_PASSWORD_SENTINEL for value in values):
+                        violations.append(statement.lineno)
         return sorted(set(violations))
 
     def _secret_surface_paths(self):
@@ -5082,6 +5140,65 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     encoding="utf-8",
                 )
                 self.assertNotIn(provider.resolve(), self._runtime_es_module_paths())
+
+    def test_imported_auth_providers_follow_aliases_dotted_paths_and_unpacking(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            providers = root / "providers"
+            providers.mkdir()
+            (providers / "__init__.py").write_text("", encoding="utf-8")
+            provider = providers / "credential_provider.py"
+            consumer = root / "es_consumer.py"
+            scenarios = (
+                (
+                    'from providers.credential_provider import password as imported\n'
+                    'credential = imported\n'
+                    'from elasticsearch import Elasticsearch\n'
+                    'Elasticsearch("localhost", basic_auth=("elastic", credential))\n',
+                    'password = "hardcoded-secret"\n',
+                    True,
+                ),
+                (
+                    'import providers.credential_provider\n'
+                    'from elasticsearch import Elasticsearch\n'
+                    'Elasticsearch("localhost", basic_auth=("elastic", providers.credential_provider.password))\n',
+                    'password = "hardcoded-secret"\n',
+                    True,
+                ),
+                (
+                    'from providers.credential_provider import password\n'
+                    'from elasticsearch import Elasticsearch\n'
+                    'Elasticsearch("localhost", basic_auth=("elastic", password))\n',
+                    'password, unused = "hardcoded-secret", None\n',
+                    True,
+                ),
+                (
+                    'from providers.credential_provider import username\n'
+                    'import os\n'
+                    'from elasticsearch import Elasticsearch\n'
+                    'Elasticsearch("localhost", basic_auth=(username, os.environ["TCP_ELASTIC_PASSWORD"]))\n',
+                    'username = "elastic"\n',
+                    False,
+                ),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for client_source, provider_source, should_flag in scenarios:
+                    with self.subTest(source=client_source):
+                        consumer.write_text(client_source, encoding="utf-8")
+                        provider.write_text(provider_source, encoding="utf-8")
+                        paths = set(self._runtime_es_module_paths())
+                        selected = self._imported_credential_exports.get(
+                            provider.resolve(), set()
+                        )
+                        detected = self._module_uppercase_credential_literals(
+                            provider_source, selected
+                        )
+                        self.assertEqual(provider.resolve() in paths, should_flag)
+                        self.assertEqual(bool(detected), should_flag)
 
     def test_secret_surface_paths_include_yaml_elasticsearch_samples(self):
         yaml_paths = [
