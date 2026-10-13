@@ -5088,15 +5088,58 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     elements.append(node)
             return elements or [iterable]
 
+        contextlib_module_names = {"contextlib"}
+        contextlib_suppress_names = set()
+        for import_stmt in tree.body:
+            if isinstance(import_stmt, ast.Import):
+                for alias in import_stmt.names:
+                    if alias.name == "contextlib":
+                        contextlib_module_names.add(alias.asname or alias.name)
+            elif (
+                isinstance(import_stmt, ast.ImportFrom)
+                and import_stmt.module == "contextlib"
+            ):
+                for alias in import_stmt.names:
+                    if alias.name == "suppress":
+                        contextlib_suppress_names.add(
+                            alias.asname or alias.name
+                        )
+
+        def might_raise(stmt):
+            # Ordinary literal assignments, pass, break, and continue cannot
+            # interrupt control flow. Calls, imports and explicit raises can.
+            if isinstance(stmt, (ast.Pass, ast.Break, ast.Continue)):
+                return False
+            if isinstance(stmt, (ast.Import, ast.ImportFrom, ast.Raise)):
+                return True
+            if isinstance(stmt, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
+                value = stmt.value
+            elif isinstance(stmt, ast.Expr):
+                value = stmt.value
+            elif isinstance(stmt, (ast.If, ast.While)):
+                value = stmt.test
+            else:
+                return False  # Nested suite statements are inspected below.
+            if value is None:
+                return False
+            return any(
+                isinstance(n, (
+                    ast.Call, ast.Attribute, ast.Subscript, ast.Await,
+                    ast.Yield, ast.YieldFrom, ast.BinOp
+                ))
+                for n in ast.walk(value)
+            )
+
         def walk_export_statements(statements, incoming, raising_states=None):
             flow = {"normal": incoming}
             for stmt in statements:
                 if "normal" not in flow:
                     break
                 state = flow.pop("normal")
-                if raising_states is not None:
-                    # An exception may be raised during this statement, before
-                    # its assignment has finished. Capture its entry binding.
+                if raising_states is not None and might_raise(stmt):
+                    # Save the binding present when the statement can raise.
+                    # A later literal safe assignment cannot itself raise
+                    # and must not resurrect an earlier imported credential.
                     raising_states.append(state)
                 if isinstance(stmt, (ast.ImportFrom, ast.Import)):
                     updated = {name: set(values) for name, values in state.items()}
@@ -5120,6 +5163,18 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             updated = bind_export_target(
                                 updated, target, [stmt.value]
                             )
+                    next_flow = {"normal": updated}
+                elif isinstance(stmt, ast.AugAssign):
+                    updated = named_expr_bindings(stmt.value, state)
+                    if (
+                        isinstance(stmt.target, ast.Name)
+                        and stmt.target.id in forwarded_exports
+                    ):
+                        candidate = bind_export_target(
+                            updated, stmt.target, [stmt.value]
+                        )
+                        # An augmented assignment reads the prior target.
+                        updated = merge_states(updated, candidate)
                     next_flow = {"normal": updated}
                 elif isinstance(stmt, ast.If):
                     tested = named_expr_bindings(stmt.test, state)
@@ -5198,16 +5253,26 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         next_flow = merge_flows(next_flow, {"normal": broken})
                 elif isinstance(stmt, (ast.With, ast.AsyncWith)):
                     with_state = state
+                    suppresses_exceptions = False
                     for item in stmt.items:
                         with_state = named_expr_bindings(
                             item.context_expr, with_state
                         )
+                        call = item.context_expr
+                        if isinstance(call, ast.Call):
+                            func = call.func
+                            if (
+                                isinstance(func, ast.Attribute)
+                                and func.attr == "suppress"
+                                and isinstance(func.value, ast.Name)
+                                and func.value.id in contextlib_module_names
+                            ) or (
+                                isinstance(func, ast.Name)
+                                and func.id in contextlib_suppress_names
+                            ):
+                                suppresses_exceptions = True
                         if item.optional_vars is not None:
-                            # The result of __enter__/__aenter__ is unknown
-                            # statically. Track its context expression as a
-                            # possible source; nullcontext(expr) returns expr.
                             sources = [item.context_expr]
-                            call = item.context_expr
                             if (
                                 isinstance(call, ast.Call) and call.args
                                 and (
@@ -5223,9 +5288,18 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             )
                         if raising_states is not None:
                             raising_states.append(with_state)
+                    suppressed_states = [] if suppresses_exceptions else raising_states
                     next_flow = walk_export_statements(
-                        stmt.body, with_state, raising_states
+                        stmt.body, with_state, suppressed_states
                     )
+                    if suppresses_exceptions:
+                        # The with body may exit abnormally but the context
+                        # manager can suppress that exception and continue.
+                        suppressed = merge_states(*suppressed_states)
+                        if suppressed is not None:
+                            next_flow = merge_flows(
+                                next_flow, {"normal": suppressed}
+                            )
                 elif isinstance(stmt, (ast.Try, getattr(ast, "TryStar", ast.Try))):
                     # Capture every intermediate entry state, not just before
                     # and after the complete try body. An exception can occur
@@ -5254,6 +5328,22 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                         raising_states
                                     ),
                                 )
+                    catches_all = any(
+                        handler.type is None
+                        or isinstance(handler.type, ast.Name)
+                        and handler.type.id in {"Exception", "BaseException"}
+                        for handler in stmt.handlers
+                    )
+                    if raising_states is not None and not catches_all:
+                        # Forward inner exceptional states, *after* running
+                        # their finally suite, to any enclosing try handler.
+                        for possible_state in exceptions:
+                            cleanup = walk_export_statements(
+                                stmt.finalbody, possible_state
+                            )
+                            exceptional = cleanup.get("normal")
+                            if exceptional is not None:
+                                raising_states.append(exceptional)
                     # finally executes even on a pending break or continue;
                     # a normally completing finally preserves the old exit.
                     completed = {}
@@ -5269,19 +5359,27 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     next_flow = completed
                 elif isinstance(stmt, getattr(ast, "Match", ())):
                     matched = named_expr_bindings(stmt.subject, state)
-                    next_flow = merge_flows(
-                        {"normal": matched},
-                        *(
+                    possibilities = [{"normal": matched}]
+                    for case in stmt.cases:
+                        guarded = (
+                            named_expr_bindings(case.guard, matched)
+                            if case.guard is not None else matched
+                        )
+                        # A failing guard can still leave a walrus binding.
+                        possibilities.append({"normal": guarded})
+                        possibilities.append(
                             walk_export_statements(
-                                case.body, matched, raising_states
+                                case.body, guarded, raising_states
                             )
-                            for case in stmt.cases
-                        ),
-                    )
+                        )
+                    next_flow = merge_flows(*possibilities)
                 elif isinstance(stmt, ast.Expr):
                     next_flow = {
                         "normal": named_expr_bindings(stmt.value, state)
                     }
+                elif isinstance(stmt, ast.Raise):
+                    # No fallthrough past an explicit raise.
+                    next_flow = {}
                 elif isinstance(stmt, ast.Break):
                     next_flow = {"break": state}
                 elif isinstance(stmt, ast.Continue):
@@ -6258,6 +6356,102 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                  'for password in [None]:\n'
                  '    if enabled:\n'
                  '        password = password\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for source, expected in cases:
+                    with self.subTest(source=source):
+                        intermediary.write_text(source, encoding="utf-8")
+                        paths = set(self._runtime_es_module_paths())
+                        self.assertEqual(provider.resolve() in paths, expected)
+                        self.assertEqual(
+                            "password" in self._imported_credential_exports.get(
+                                provider.resolve(), set()
+                            ), expected,
+                        )
+
+    def test_augassign_nested_try_suppress_and_match_guard_paths(self):
+        """Track module exports through interrupted and guarded control flow."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            intermediary = root / "provider_a.py"
+            provider = root / "provider_b.py"
+            consumer.write_text(
+                'from provider_a import password\n'
+                'from elasticsearch import Elasticsearch\n'
+                'Elasticsearch("localhost", basic_auth=("elastic", password))\n',
+                encoding="utf-8",
+            )
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            cases = (
+                ('import provider_b\nvalue = ""\n'
+                 'value += (password := provider_b.password)\n', True),
+                ('from provider_b import password as imported\nvalue = ""\n'
+                 'value += (password := imported)\n', True),
+                ('import os\nimport provider_b\nvalue = ""\n'
+                 'value += (password := provider_b.password)\n'
+                 'password = os.getenv("TCP_ELASTIC_PASSWORD")\n', False),
+                ('import os\ntry:\n    try:\n'
+                 '        from provider_b import password\n'
+                 '        optional_operation()\n'
+                 '        password = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+                 '    finally:\n        pass\n'
+                 'except Exception:\n    pass\n', True),
+                ('import os\ntry:\n    try:\n'
+                 '        from provider_b import password\n'
+                 '        optional_operation()\n'
+                 '    finally:\n'
+                 '        password = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+                 'except Exception:\n    pass\n', False),
+                ('import os\ntry:\n    try:\n'
+                 '        from provider_b import password\n'
+                 '        optional_operation()\n'
+                 '    finally:\n        pass\n'
+                 'except Exception:\n'
+                 '    password = os.getenv("TCP_ELASTIC_PASSWORD")\n', False),
+                ('import contextlib\n'
+                 'with contextlib.suppress(Exception):\n'
+                 '    from provider_b import password\n'
+                 '    raise RuntimeError()\n'
+                 '    password = None\n', True),
+                ('from contextlib import suppress\n'
+                 'with suppress(Exception):\n'
+                 '    from provider_b import password\n'
+                 '    raise RuntimeError()\n'
+                 '    password = None\n', True),
+                ('import contextlib as ctx\n'
+                 'with ctx.suppress(Exception):\n'
+                 '    from provider_b import password\n'
+                 '    raise RuntimeError()\n'
+                 '    password = None\n', True),
+                ('import os\nimport contextlib\n'
+                 'with contextlib.suppress(Exception):\n'
+                 '    from provider_b import password\n'
+                 '    raise RuntimeError()\n'
+                 'password = os.getenv("TCP_ELASTIC_PASSWORD")\n', False),
+                ('import contextlib\n'
+                 'with contextlib.suppress(Exception):\n'
+                 '    from provider_b import password\n'
+                 '    password = None\n', False),
+                ('import provider_b\nmatch 1:\n'
+                 '    case 1 if (password := provider_b.password):\n'
+                 '        pass\n', True),
+                ('import provider_b\nmatch 1:\n'
+                 '    case 1 if (password := provider_b.password):\n'
+                 '        pass\n'
+                 '    case _:\n'
+                 '        pass\n', True),
+                ('import os\nimport provider_b\nmatch 1:\n'
+                 '    case 1 if (password := provider_b.password):\n'
+                 '        pass\n'
+                 'password = os.getenv("TCP_ELASTIC_PASSWORD")\n', False),
+                ('import os\nimport provider_b\nmatch 1:\n'
+                 '    case 1 if (password := os.getenv("TCP_ELASTIC_PASSWORD")):\n'
+                 '        pass\n', False),
             )
             with patch.dict(globals(), {
                 "REPOSITORY_ROOT": root,
