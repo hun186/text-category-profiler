@@ -5557,13 +5557,18 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                         if not selected_values:
                                             continue
                                         if any(
-                                            isinstance(value, ast.Name)
-                                            and value.id == name
+                                            isinstance(child, ast.Name)
+                                            and isinstance(child.ctx, ast.Load)
+                                            and child.id == name
                                             for value in selected_values
+                                            for child in ast.walk(value)
                                         ):
-                                            # password = password retains the
-                                            # imported value, including when
-                                            # the target is destructured.
+                                            # A selected RHS leaf can preserve
+                                            # the star-imported credential via
+                                            # direct or transformed self-reads,
+                                            # e.g. password = password.strip().
+                                            # Reads belonging to another
+                                            # unpacked target do not count.
                                             continue
                                         if any(
                                             target_name != name
@@ -6703,9 +6708,16 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 cases = (
                     ('from provider_b import *\n', True),
                     ('from provider_b import *\npassword = password\n', True),
+                    ('from provider_b import *\npassword = password.strip()\n', True),
+                    ('from provider_b import *\npassword = password.replace("x", "y")\n', True),
+                    ('from provider_b import *\npassword = str(password)\n', True),
+                    ('from provider_b import *\npassword: str = password.strip()\n', True),
+                    ('from provider_b import *\npassword = password.strip()\npassword = None\n', False),
                     ('from provider_b import *\npassword: str = password\n', True),
                     ('from provider_b import *\npassword, unused = (password, None)\n', True),
                     ('from provider_b import *\nunused, password = (None, password)\n', True),
+                    ('from provider_b import *\nunused, password = (None, password.strip())\n', True),
+                    ('from provider_b import *\nunused, password = (password.strip(), None)\n', False),
                     ('from provider_b import *\nunused, password = (password, None)\n', False),
                     ('from provider_b import *\nunused, password = (password, 0)\n', False),
                     ('from provider_b import *\npassword, unused = (None, password)\n', False),
@@ -6745,6 +6757,21 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 consumer.write_text(
                     'from provider_b import *\n'
                     'password = password\n'
+                    'from elasticsearch import Elasticsearch\n'
+                    'Elasticsearch("localhost", basic_auth=("elastic", password))\n',
+                    encoding="utf-8",
+                )
+                included = set(self._runtime_es_module_paths())
+                self.assertIn(provider.resolve(), included)
+                self.assertIn(
+                    "password",
+                    self._imported_credential_exports.get(
+                        provider.resolve(), set()
+                    ),
+                )
+                consumer.write_text(
+                    'from provider_b import *\n'
+                    'password = password.strip()\n'
                     'from elasticsearch import Elasticsearch\n'
                     'Elasticsearch("localhost", basic_auth=("elastic", password))\n',
                     encoding="utf-8",
