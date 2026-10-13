@@ -5105,21 +5105,64 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             alias.asname or alias.name
                         )
 
+        def is_suppress_callable(func, position, seen=None):
+            """Resolve source-ordered aliases of contextlib.suppress."""
+            seen = set() if seen is None else set(seen)
+            if isinstance(func, ast.Attribute) and func.attr == "suppress":
+                # Resolve ctx = contextlib and other simple module aliases.
+                roots = _resolve_bound_nodes(
+                    func.value, bound_names(), position
+                )
+                return any(
+                    isinstance(root, ast.Name)
+                    and root.id in contextlib_module_names
+                    for root in roots
+                )
+            if isinstance(func, ast.Name):
+                if func.id in contextlib_suppress_names:
+                    return True
+                if func.id in seen:
+                    return False
+                return any(
+                    candidate is not func
+                    and is_suppress_callable(
+                        candidate, position, seen | {func.id}
+                    )
+                    for candidate in _resolve_bound_nodes(
+                        func, bound_names(), position
+                    )
+                )
+            return False
+
         def might_raise(stmt):
-            # Ordinary literal assignments, pass, break, and continue cannot
-            # interrupt control flow. Calls, imports and explicit raises can.
+            # A store into an attribute or subscript invokes user-defined
+            # methods such as __setattr__ or __setitem__; a harmless literal
+            # RHS does not make that store safe from exceptions.
             if isinstance(stmt, (ast.Pass, ast.Break, ast.Continue)):
                 return False
             if isinstance(stmt, (ast.Import, ast.ImportFrom, ast.Raise)):
                 return True
             if isinstance(stmt, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
+                targets = (
+                    stmt.targets if isinstance(stmt, ast.Assign)
+                    else [stmt.target]
+                )
+                if any(
+                    isinstance(node, (ast.Attribute, ast.Subscript))
+                    for target in targets for node in ast.walk(target)
+                ):
+                    return True
+                # Augmented assignment reads the old target and can invoke
+                # operators even if the RHS is a constant.
+                if isinstance(stmt, ast.AugAssign):
+                    return True
                 value = stmt.value
             elif isinstance(stmt, ast.Expr):
                 value = stmt.value
             elif isinstance(stmt, (ast.If, ast.While)):
                 value = stmt.test
             else:
-                return False  # Nested suite statements are inspected below.
+                return False  # Nested suites are inspected by their walkers.
             if value is None:
                 return False
             return any(
@@ -5148,7 +5191,15 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             item.name if isinstance(stmt, ast.ImportFrom)
                             else item.name.split(".", 1)[0]
                         )
-                        if local in forwarded_exports:
+                        if (
+                            isinstance(stmt, ast.ImportFrom)
+                            and item.name == "*"
+                        ):
+                            # An import-star binds every selected forwarded
+                            # export whose spelling the provider supplies.
+                            for name in forwarded_exports:
+                                updated[name] = {stmt}
+                        elif local in forwarded_exports:
                             updated[local] = {stmt}
                     next_flow = {"normal": updated}
                 elif isinstance(stmt, (ast.Assign, ast.AnnAssign)):
@@ -5261,14 +5312,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         call = item.context_expr
                         if isinstance(call, ast.Call):
                             func = call.func
-                            if (
-                                isinstance(func, ast.Attribute)
-                                and func.attr == "suppress"
-                                and isinstance(func.value, ast.Name)
-                                and func.value.id in contextlib_module_names
-                            ) or (
-                                isinstance(func, ast.Name)
-                                and func.id in contextlib_suppress_names
+                            if is_suppress_callable(
+                                func, _node_position(item.context_expr)
                             ):
                                 suppresses_exceptions = True
                         if item.optional_vars is not None:
@@ -5404,6 +5449,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     credential_values.append(value)
 
         used_names = set()
+        used_name_occurrences = {}
         used_chains = set()
 
         def attribute_chain(node):
@@ -5419,6 +5465,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             seen = set() if seen is None else seen
             if isinstance(node, ast.Name):
                 used_names.add(node.id)
+                used_name_occurrences.setdefault(node.id, []).append(node)
                 active_bindings = bound_names()
                 token = _binding_name_token(node.id, active_bindings, node)
                 if token in seen:
@@ -5459,7 +5506,43 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     and dependency.parent.name == module_tail
                 ):
                     for alias in node.names:
-                        if (
+                        if alias.name == "*":
+                            if node in forwarded_import_nodes:
+                                exported.update(forwarded_exports)
+                            # For a direct ES consumer, an import-star does not
+                            # have a named binding to match. Trace referenced
+                            # credential names, except when a later definite
+                            # module assignment shadows the imported binding.
+                            for name, occurrences in used_name_occurrences.items():
+                                for use in occurrences:
+                                    import_pos = _node_position(node)
+                                    use_pos = _node_position(use)
+                                    if use_pos <= import_pos:
+                                        continue
+                                    shadowed = False
+                                    for statement in tree.body:
+                                        position = _node_position(statement)
+                                        if not import_pos < position < use_pos:
+                                            continue
+                                        targets = (
+                                            statement.targets
+                                            if isinstance(statement, ast.Assign)
+                                            else [statement.target]
+                                            if isinstance(statement, ast.AnnAssign)
+                                            and statement.value is not None
+                                            else []
+                                        )
+                                        if any(
+                                            isinstance(target, ast.Name)
+                                            and target.id == name
+                                            for target in targets
+                                        ):
+                                            shadowed = True
+                                            break
+                                    if not shadowed:
+                                        exported.add(name)
+                                        break
+                        elif (
                             (alias.asname or alias.name) in used_names
                             or node in forwarded_import_nodes
                             and (alias.asname or alias.name) in forwarded_exports
@@ -6469,6 +6552,155 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                 provider.resolve(), set()
                             ), expected,
                         )
+
+    def test_raising_assignment_targets_and_suppress_aliases(self):
+        """Store targets and aliased context managers preserve secret paths."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            intermediary = root / "provider_a.py"
+            provider = root / "provider_b.py"
+            consumer.write_text(
+                'from provider_a import password\n'
+                'from elasticsearch import Elasticsearch\n'
+                'Elasticsearch("localhost", basic_auth=("elastic", password))\n',
+                encoding="utf-8",
+            )
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            cases = (
+                ('import os\ntry:\n'
+                 '    from provider_b import password\n'
+                 '    receiver.value = None\n'
+                 '    password = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+                 'except Exception:\n'
+                 '    pass\n', True),
+                ('import os\ntry:\n'
+                 '    from provider_b import password\n'
+                 '    receiver["value"] = None\n'
+                 '    password = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+                 'except Exception:\n'
+                 '    pass\n', True),
+                ('import os\ntry:\n'
+                 '    from provider_b import password\n'
+                 '    receiver.value = None\n'
+                 '    password = None\n'
+                 'except Exception:\n'
+                 '    password = None\n', False),
+                ('import os\ntry:\n'
+                 '    from provider_b import password\n'
+                 '    receiver.value = None\n'
+                 'finally:\n'
+                 '    password = None\n', False),
+                ('import contextlib\n'
+                 'ignore = contextlib.suppress\n'
+                 'with ignore(Exception):\n'
+                 '    from provider_b import password\n'
+                 '    raise RuntimeError()\n'
+                 '    password = None\n', True),
+                ('import contextlib\n'
+                 'ignore = contextlib.suppress\n'
+                 'another = ignore\n'
+                 'with another(Exception):\n'
+                 '    from provider_b import password\n'
+                 '    raise RuntimeError()\n'
+                 '    password = None\n', True),
+                ('import contextlib as ctx\n'
+                 'ignore = ctx.suppress\n'
+                 'with ignore(Exception):\n'
+                 '    from provider_b import password\n'
+                 '    raise RuntimeError()\n', True),
+                ('from contextlib import suppress as original\n'
+                 'ignore = original\n'
+                 'with ignore(Exception):\n'
+                 '    from provider_b import password\n'
+                 '    raise RuntimeError()\n', True),
+                ('import contextlib\n'
+                 'ignore = contextlib.suppress\n'
+                 'with ignore(Exception):\n'
+                 '    from provider_b import password\n'
+                 '    raise RuntimeError()\n'
+                 'password = None\n', False),
+                ('import contextlib\n'
+                 'ignore = contextlib.suppress\n'
+                 'with ignore(Exception):\n'
+                 '    from provider_b import password\n'
+                 '    password = None\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for source, expected in cases:
+                    with self.subTest(source=source):
+                        intermediary.write_text(source, encoding="utf-8")
+                        included = set(self._runtime_es_module_paths())
+                        self.assertEqual(provider.resolve() in included, expected)
+                        self.assertEqual(
+                            "password" in self._imported_credential_exports.get(
+                                provider.resolve(), set()
+                            ), expected,
+                        )
+
+    def test_wildcard_provider_credentials_and_overwrites(self):
+        """Follow star imports only when their credential values can reach ES."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            intermediary = root / "provider_a.py"
+            provider = root / "provider_b.py"
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            consumer_source = (
+                'from provider_a import password\n'
+                'from elasticsearch import Elasticsearch\n'
+                'Elasticsearch("localhost", basic_auth=("elastic", password))\n'
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                cases = (
+                    ('from provider_b import *\n', True),
+                    ('from provider_b import *\npassword = None\n', False),
+                    ('from provider_b import *\npassword = 0\n', False),
+                    ('password = None\nfrom provider_b import *\n', True),
+                )
+                for source, expected in cases:
+                    with self.subTest(source=source):
+                        intermediary.write_text(source, encoding="utf-8")
+                        consumer.write_text(consumer_source, encoding="utf-8")
+                        included = set(self._runtime_es_module_paths())
+                        self.assertEqual(provider.resolve() in included, expected)
+                        self.assertEqual(
+                            "password" in self._imported_credential_exports.get(
+                                provider.resolve(), set()
+                            ), expected,
+                        )
+                consumer.write_text(
+                    'from provider_b import *\n'
+                    'from elasticsearch import Elasticsearch\n'
+                    'Elasticsearch("localhost", basic_auth=("elastic", password))\n',
+                    encoding="utf-8",
+                )
+                intermediary.write_text('pass\n', encoding="utf-8")
+                included = set(self._runtime_es_module_paths())
+                self.assertIn(provider.resolve(), included)
+                self.assertIn(
+                    "password",
+                    self._imported_credential_exports.get(
+                        provider.resolve(), set()
+                    ),
+                )
+                consumer.write_text(
+                    'from provider_b import *\n'
+                    'password = None\n'
+                    'from elasticsearch import Elasticsearch\n'
+                    'Elasticsearch("localhost", basic_auth=("elastic", password))\n',
+                    encoding="utf-8",
+                )
+                included = set(self._runtime_es_module_paths())
+                self.assertNotIn(provider.resolve(), included)
 
     def test_secret_surface_paths_include_yaml_elasticsearch_samples(self):
         yaml_paths = [
