@@ -4800,8 +4800,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         resolved.add(candidate.resolve())
         return resolved
 
-    def _credential_import_exports(self, source, dependency):
-        """Trace import exports reaching credential values, without executing code."""
+    def _credential_import_exports(self, source, dependency, forwarded_exports=()):
+        """Trace imports reaching credentials or selected re-exports, without execution."""
         try:
             tree = ast.parse(source)
         except SyntaxError:
@@ -4868,10 +4868,21 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     if name in secret_keys:
                         credential_values.extend(password_side(node.value, name))
 
-        if not credential_values:
+        if not credential_values and not forwarded_exports:
             return set()
 
-        used_names = set()
+        # A provider may only re-export an imported symbol with no ES call.
+        # Follow the selected export's RHS (including a local alias) onward.
+        for stmt in tree.body:
+            if isinstance(stmt, (ast.Assign, ast.AnnAssign)) and stmt.value is not None:
+                targets = stmt.targets if isinstance(stmt, ast.Assign) else [stmt.target]
+                if any(
+                    isinstance(target, ast.Name) and target.id in forwarded_exports
+                    for target in targets
+                ):
+                    credential_values.append(stmt.value)
+
+        used_names = set(forwarded_exports)
         used_chains = set()
 
         def attribute_chain(node):
@@ -4899,6 +4910,18 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 chain = attribute_chain(node)
                 if len(chain) >= 2:
                     used_chains.add(chain)
+                    root = node
+                    while isinstance(root, ast.Attribute):
+                        root = root.value
+                    if isinstance(root, ast.Name):
+                        # Preserve the suffix while resolving alias = cp where
+                        # cp is an imported module, not a credential string.
+                        for resolved in _resolve_bound_nodes(
+                            root, bound_names(), _node_position(root)
+                        ):
+                            resolved_root = attribute_chain(resolved)
+                            if resolved_root:
+                                used_chains.add(resolved_root + chain[1:])
             for child in ast.iter_child_nodes(node):
                 trace(child, seen)
 
@@ -4967,26 +4990,31 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         # without broadening this *ES* guard to unrelated library functions
         # (which can contain test-only or non-ES credential examples).
         pending = list(paths)
-        visited = set(paths)
+        processed = {}
         imported_exports = {}
         while pending:
             path = pending.pop()
             if not path.is_file():
                 continue
+            selected_here = frozenset(imported_exports.get(path, ()))
+            if processed.get(path) == selected_here:
+                continue
+            processed[path] = selected_here
             source = path.read_text(encoding="utf-8-sig", errors="ignore")
             for dependency in self._local_imported_python_paths(path, source):
-                imported_exports.setdefault(dependency, set()).update(
-                    self._credential_import_exports(source, dependency)
+                exports = imported_exports.setdefault(dependency, set())
+                before = len(exports)
+                exports.update(
+                    self._credential_import_exports(source, dependency, selected_here)
                 )
                 provider_source = dependency.read_text(
                     encoding="utf-8-sig", errors="ignore"
                 )
                 if self._module_uppercase_credential_literals(
-                    provider_source, imported_exports[dependency]
+                    provider_source, exports
                 ):
                     paths.add(dependency)
-                if dependency not in visited:
-                    visited.add(dependency)
+                if dependency not in processed or len(exports) != before:
                     pending.append(dependency)
 
         self._imported_credential_exports = imported_exports
@@ -5213,6 +5241,75 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         )
                         self.assertEqual(provider.resolve() in paths, should_flag)
                         self.assertEqual(bool(detected), should_flag)
+
+    def test_local_module_alias_attributes_and_transitive_reexports(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            package = root / "providers"
+            package.mkdir()
+            (package / "__init__.py").write_text("", encoding="utf-8")
+            provider = package / "credential_provider.py"
+            consumer = root / "es_consumer.py"
+            a = root / "provider_a.py"
+            b = root / "provider_b.py"
+
+            cases = (
+                (
+                    'from providers import credential_provider as cp\n'
+                    'alias = cp\n'
+                    'from elasticsearch import Elasticsearch\n'
+                    'Elasticsearch("localhost", basic_auth=("elastic", alias.password))\n',
+                    'password = "hardcoded-secret"\n',
+                ),
+                (
+                    'from providers import credential_provider as cp\n'
+                    'intermediate = cp\n'
+                    'alias = intermediate\n'
+                    'from elasticsearch import Elasticsearch\n'
+                    'Elasticsearch("localhost", basic_auth=("elastic", alias.password))\n',
+                    'password = "hardcoded-secret"\n',
+                ),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for client_source, provider_source in cases:
+                    with self.subTest(source=client_source):
+                        consumer.write_text(client_source, encoding="utf-8")
+                        provider.write_text(provider_source, encoding="utf-8")
+                        included = set(self._runtime_es_module_paths())
+                        self.assertIn(provider.resolve(), included)
+                        self.assertIn(
+                            "password",
+                            self._imported_credential_exports[provider.resolve()],
+                        )
+
+                consumer.write_text(
+                    'from provider_a import password\n'
+                    'from elasticsearch import Elasticsearch\n'
+                    'Elasticsearch("localhost", basic_auth=("elastic", password))\n',
+                    encoding="utf-8",
+                )
+                provider.write_text("unrelated = 1\n", encoding="utf-8")
+                b.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+                for reexport in (
+                    'from provider_b import password\n',
+                    'from provider_b import password as secret\npassword = secret\n',
+                ):
+                    with self.subTest(reexport=reexport):
+                        a.write_text(reexport, encoding="utf-8")
+                        included = set(self._runtime_es_module_paths())
+                        self.assertIn(b.resolve(), included)
+                        self.assertIn(
+                            "password", self._imported_credential_exports[b.resolve()]
+                        )
+                b.write_text(
+                    'import os\npassword = os.getenv("TCP_ELASTIC_PASSWORD")\n',
+                    encoding="utf-8",
+                )
+                self.assertNotIn(b.resolve(), self._runtime_es_module_paths())
 
     def test_secret_surface_paths_include_yaml_elasticsearch_samples(self):
         yaml_paths = [
