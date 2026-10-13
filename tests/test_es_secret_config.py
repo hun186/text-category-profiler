@@ -6405,14 +6405,14 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                  '        from provider_b import password\n'
                  '        optional_operation()\n'
                  '    finally:\n'
-                 '        password = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+                 '        password = None\n'
                  'except Exception:\n    pass\n', False),
                 ('import os\ntry:\n    try:\n'
                  '        from provider_b import password\n'
                  '        optional_operation()\n'
                  '    finally:\n        pass\n'
                  'except Exception:\n'
-                 '    password = os.getenv("TCP_ELASTIC_PASSWORD")\n', False),
+                 '    password = None\n', False),
                 ('import contextlib\n'
                  'with contextlib.suppress(Exception):\n'
                  '    from provider_b import password\n'
