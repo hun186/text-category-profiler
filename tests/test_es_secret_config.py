@@ -4800,6 +4800,90 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         resolved.add(candidate.resolve())
         return resolved
 
+    def _credential_import_exports(self, source, dependency):
+        """Find imports feeding credential-valued expressions in an ES consumer.
+
+        Imported names are selected by their *use* in auth arguments, not by
+        capitalization or conventional password variable names. Nothing is
+        imported or executed at runtime.
+        """
+        try:
+            tree = ast.parse(source)
+        except SyntaxError:
+            return set()
+
+        credential_values = []
+        secret_keys = {
+            "password", "api_key", "bearer_auth", "basic_auth",
+            "http_auth", "authorization",
+        }
+        for node in ast.walk(tree):
+            if isinstance(node, ast.keyword) and node.arg in secret_keys:
+                credential_values.append(node.value)
+            elif isinstance(node, ast.Dict):
+                for key, value in zip(node.keys, node.values):
+                    if (
+                        isinstance(key, ast.Constant)
+                        and isinstance(key.value, str)
+                        and key.value.lower() in secret_keys
+                    ):
+                        credential_values.append(value)
+            elif isinstance(node, (ast.Assign, ast.AnnAssign)):
+                targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+                if node.value is None:
+                    continue
+                if any(
+                    (
+                        isinstance(target, ast.Name)
+                        and target.id.lower() in secret_keys
+                    ) or (
+                        isinstance(target, ast.Subscript)
+                        and isinstance(target.slice, ast.Constant)
+                        and isinstance(target.slice.value, str)
+                        and target.slice.value.lower() in secret_keys
+                    )
+                    for target in targets
+                ):
+                    credential_values.append(node.value)
+
+        used_names = {
+            child.id
+            for value in credential_values
+            for child in ast.walk(value)
+            if isinstance(child, ast.Name) and isinstance(child.ctx, ast.Load)
+        }
+        used_attrs = {
+            (child.value.id, child.attr)
+            for value in credential_values
+            for child in ast.walk(value)
+            if isinstance(child, ast.Attribute) and isinstance(child.value, ast.Name)
+        }
+        exported = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.module:
+                module_tail = node.module.split(".")[-1]
+                if not (
+                    dependency.stem == module_tail
+                    or dependency.name == "__init__.py"
+                    and dependency.parent.name == module_tail
+                ):
+                    continue
+                for alias in node.names:
+                    if (alias.asname or alias.name) in used_names:
+                        exported.add(alias.name)
+            elif isinstance(node, ast.Import):
+                for alias in node.names:
+                    module_tail = alias.name.split(".")[-1]
+                    if not (
+                        dependency.stem == module_tail
+                        or dependency.name == "__init__.py"
+                        and dependency.parent.name == module_tail
+                    ):
+                        continue
+                    local = alias.asname or alias.name.split(".")[0]
+                    exported.update(attr for owner, attr in used_attrs if owner == local)
+        return exported
+
     def _runtime_es_module_paths(self):
         paths = {path.resolve() for path in RUNTIME_ES_MODULES}
 
@@ -4821,25 +4905,31 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         # (which can contain test-only or non-ES credential examples).
         pending = list(paths)
         visited = set(paths)
+        imported_exports = {}
         while pending:
             path = pending.pop()
             if not path.is_file():
                 continue
             source = path.read_text(encoding="utf-8-sig", errors="ignore")
             for dependency in self._local_imported_python_paths(path, source):
-                if dependency in visited:
-                    continue
-                visited.add(dependency)
+                imported_exports.setdefault(dependency, set()).update(
+                    self._credential_import_exports(source, dependency)
+                )
                 provider_source = dependency.read_text(
                     encoding="utf-8-sig", errors="ignore"
                 )
-                if self._module_uppercase_credential_literals(provider_source):
+                if self._module_uppercase_credential_literals(
+                    provider_source, imported_exports[dependency]
+                ):
                     paths.add(dependency)
-                pending.append(dependency)
+                if dependency not in visited:
+                    visited.add(dependency)
+                    pending.append(dependency)
 
+        self._imported_credential_exports = imported_exports
         return sorted(paths)
 
-    def _module_uppercase_credential_literals(self, source):
+    def _module_uppercase_credential_literals(self, source, exported_names=()):
         """Catch imported providers exporting a literal credential constant."""
         try:
             tree = ast.parse(source)
@@ -4858,13 +4948,14 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 if not isinstance(target, ast.Name):
                     continue
                 key = target.id
-                if not (
+                conventional_constant = (
                     key.isupper()
                     and re.search(
                         r"(?:^|_)(?:PASSWORD|PASSWD|API_KEY|BEARER_AUTH|AUTH_TOKEN)$",
                         key,
                     )
-                ):
+                )
+                if not (conventional_constant or key in exported_names):
                     continue
                 values = _hardcoded_password_values(
                     statement.value, bindings, _node_position(statement)
@@ -4942,6 +5033,55 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     ),
                     [],
                 )
+
+    def test_imported_credential_export_detected_by_usage_not_case(self):
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory)
+            consumer = project / "es_consumer.py"
+            provider = project / "credential_provider.py"
+            consumer.write_text(
+                'from credential_provider import password as credential\n'
+                'from elasticsearch import Elasticsearch\n'
+                'Elasticsearch("localhost", basic_auth=("elastic", credential))\n',
+                encoding="utf-8",
+            )
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": project,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (project,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                paths = set(self._runtime_es_module_paths())
+                self.assertIn(consumer.resolve(), paths)
+                self.assertIn(provider.resolve(), paths)
+                names = self._imported_credential_exports[provider.resolve()]
+                self.assertEqual(names, {"password"})
+                self.assertEqual(
+                    self._module_uppercase_credential_literals(
+                        provider.read_text(encoding="utf-8"), names
+                    ),
+                    [1],
+                )
+                provider.write_text(
+                    'import os\npassword = os.getenv("TCP_ELASTIC_PASSWORD")\n',
+                    encoding="utf-8",
+                )
+                self.assertNotIn(provider.resolve(), self._runtime_es_module_paths())
+                self.assertEqual(
+                    self._module_uppercase_credential_literals(
+                        provider.read_text(encoding="utf-8"), names
+                    ),
+                    [],
+                )
+                # A benign import containing a literal is not an auth provider.
+                provider.write_text('password = "not-used-for-auth"\n', encoding="utf-8")
+                consumer.write_text(
+                    'from credential_provider import password\n'
+                    'from elasticsearch import Elasticsearch\n'
+                    'Elasticsearch("localhost", basic_auth=("elastic", runtime_password))\n',
+                    encoding="utf-8",
+                )
+                self.assertNotIn(provider.resolve(), self._runtime_es_module_paths())
 
     def test_secret_surface_paths_include_yaml_elasticsearch_samples(self):
         yaml_paths = [
@@ -8940,7 +9080,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     )
             if path.suffix.lower() == ".py":
                 if path in runtime_es_modules:
-                    for line_number in self._module_uppercase_credential_literals(text):
+                    for line_number in self._module_uppercase_credential_literals(
+                        text, getattr(self, "_imported_credential_exports", {}).get(path, ())
+                    ):
                         violations.append(
                             f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:imported-credential-literal"
                         )
