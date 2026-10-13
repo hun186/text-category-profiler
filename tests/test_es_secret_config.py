@@ -4871,18 +4871,62 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         if not credential_values and not forwarded_exports:
             return set()
 
-        # A provider may only re-export an imported symbol with no ES call.
-        # Follow the selected export's RHS (including a local alias) onward.
-        for stmt in tree.body:
-            if isinstance(stmt, (ast.Assign, ast.AnnAssign)) and stmt.value is not None:
-                targets = stmt.targets if isinstance(stmt, ast.Assign) else [stmt.target]
-                if any(
-                    isinstance(target, ast.Name) and target.id in forwarded_exports
-                    for target in targets
-                ):
-                    credential_values.append(stmt.value)
+        # Re-exports must follow the value that reaches the module's final
+        # exported name, not an earlier import overwritten before consumers
+        # import the module. Direct module-level assignments are unconditional.
+        # A tuple/list unpacking binds only the element belonging to the
+        # selected export, not unrelated siblings.
+        def assigned_leaves(target, value):
+            if isinstance(target, ast.Name):
+                yield target.id, value
+            elif isinstance(target, (ast.Tuple, ast.List)):
+                possibilities = (
+                    [value] if isinstance(value, (ast.Tuple, ast.List))
+                    else _resolve_bound_nodes(
+                        value, bound_names(), _node_position(value)
+                    )
+                )
+                for resolved in possibilities:
+                    if (
+                        isinstance(resolved, (ast.Tuple, ast.List))
+                        and len(resolved.elts) == len(target.elts)
+                    ):
+                        for child_target, child_value in zip(
+                            target.elts, resolved.elts
+                        ):
+                            yield from assigned_leaves(child_target, child_value)
 
-        used_names = set(forwarded_exports)
+        latest_exports = {}
+        for stmt in tree.body:
+            if isinstance(stmt, (ast.ImportFrom, ast.Import)):
+                for item in stmt.names:
+                    local = item.asname or (
+                        item.name if isinstance(stmt, ast.ImportFrom)
+                        else item.name.split(".", 1)[0]
+                    )
+                    if local in forwarded_exports:
+                        latest_exports[local] = None
+            elif isinstance(stmt, (ast.Assign, ast.AnnAssign)):
+                if stmt.value is None:
+                    continue
+                targets = stmt.targets if isinstance(stmt, ast.Assign) else [stmt.target]
+                for target in targets:
+                    for key, value in assigned_leaves(target, stmt.value):
+                        if key in forwarded_exports:
+                            latest_exports[key] = value
+
+        # If an export still refers to its import, keep that source selected.
+        # Otherwise trace only its final assignment value; a safe env-based
+        # replacement must not resurrect the shadowed imported secret.
+        forwarded_import_names = {
+            name for name in forwarded_exports
+            if name not in latest_exports or latest_exports[name] is None
+        }
+        for value in latest_exports.values():
+            if value is not None:
+                credential_values.append(value)
+
+        used_names = set(forwarded_import_names)
         used_chains = set()
 
         def attribute_chain(node):
@@ -5310,6 +5354,61 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     encoding="utf-8",
                 )
                 self.assertNotIn(b.resolve(), self._runtime_es_module_paths())
+
+    def test_transitive_destructuring_and_shadowed_imports(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            intermediary = root / "provider_a.py"
+            provider = root / "provider_b.py"
+            consumer.write_text(
+                'from provider_a import password\n'
+                'from elasticsearch import Elasticsearch\n'
+                'Elasticsearch("localhost", basic_auth=("elastic", password))\n',
+                encoding="utf-8",
+            )
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            scenarios = (
+                (
+                    'from provider_b import password as secret\n'
+                    'password, unused = secret, None\n',
+                    True,
+                ),
+                (
+                    'from provider_b import password\n'
+                    'import os\n'
+                    'password = os.getenv("TCP_ELASTIC_PASSWORD")\n',
+                    False,
+                ),
+                (
+                    'from provider_b import password as secret\n'
+                    'import os\n'
+                    'password, unused = os.getenv("TCP_ELASTIC_PASSWORD"), secret\n',
+                    False,
+                ),
+                (
+                    'import os\n'
+                    'password = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+                    'from provider_b import password\n',
+                    True,
+                ),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for intermediary_source, expected in scenarios:
+                    with self.subTest(source=intermediary_source):
+                        intermediary.write_text(
+                            intermediary_source, encoding="utf-8"
+                        )
+                        modules = set(self._runtime_es_module_paths())
+                        self.assertEqual(provider.resolve() in modules, expected)
+                        exports = self._imported_credential_exports.get(
+                            provider.resolve(), set()
+                        )
+                        self.assertEqual("password" in exports, expected)
 
     def test_secret_surface_paths_include_yaml_elasticsearch_samples(self):
         yaml_paths = [
