@@ -4866,6 +4866,15 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     ):
                         name = target.slice.value.lower()
                     if name in secret_keys:
+                        # Selected module exports are analyzed using their
+                        # final reaching bindings below. Adding every raw
+                        # assignment value here would revive an import that a
+                        # loop target (or later safe write) already shadowed.
+                        if (
+                            isinstance(target, ast.Name)
+                            and target.id in forwarded_exports
+                        ):
+                            continue
                         credential_values.extend(password_side(node.value, name))
 
         if not credential_values and not forwarded_exports:
