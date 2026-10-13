@@ -6411,6 +6411,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                  '        from provider_b import password\n'
                  '        optional_operation()\n'
                  '    finally:\n        pass\n'
+                 '    password = None\n'
                  'except Exception:\n'
                  '    password = None\n', False),
                 ('import contextlib\n'
