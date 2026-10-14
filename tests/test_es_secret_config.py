@@ -5582,6 +5582,13 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             # module assignment shadows the imported binding.
                             for name, occurrences in used_name_occurrences.items():
                                 for use in occurrences:
+                                    # A lambda parameter or comprehension
+                                    # target with the same spelling does not
+                                    # refer to this module's wildcard import.
+                                    if _binding_name_token(
+                                        name, bound_names(), use
+                                    )[0] is not tree:
+                                        continue
                                     import_pos = _node_position(node)
                                     use_pos = _node_position(use)
                                     if use_pos <= import_pos:
@@ -7014,6 +7021,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 ('password = next(password.strip() for password in '
                  '[os.environ["TCP_ELASTIC_PASSWORD"]])\n', False),
                 ('password = [password.strip() for unused in [None]][0]\n', True),
+                ('password = [x.strip() for x in [password]][0]\n', True),
                 ('password = password.strip()\n', True),
             )
             with patch.dict(globals(), {
