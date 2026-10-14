@@ -5552,6 +5552,113 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for value in credential_values:
             trace(value)
 
+        # Invocation-sensitive wildcard reads need lexical owners and their
+        # module-level callers, not just definition-time source positions.
+        ast_parents = {
+            child: parent
+            for parent in ast.walk(tree)
+            for child in ast.iter_child_nodes(parent)
+        }
+
+        def module_invocation_sites(use):
+            """Return known direct/aliased module call sites of a deferred read.
+
+            Without a statically identifiable invocation, retain the old
+            conservative module-end scan (callbacks may run externally).
+            """
+            metadata = bound_names()["metadata"]
+            scope = getattr(use, "_binding_scope", tree)
+            outermost = None
+            while scope is not None and scope is not tree:
+                if isinstance(scope, (
+                    ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda,
+                    ast.GeneratorExp,
+                )):
+                    outermost = scope
+                scope = metadata["parents"].get(scope)
+            if outermost is None:
+                return []
+            names = set()
+            if isinstance(outermost, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                names.add(outermost.name)
+            elif isinstance(outermost, ast.Lambda):
+                parent = ast_parents.get(outermost)
+                if isinstance(parent, ast.Assign):
+                    names.update(
+                        target.id
+                        for target in parent.targets
+                        if isinstance(target, ast.Name)
+                    )
+                elif isinstance(parent, (ast.AnnAssign, ast.NamedExpr)):
+                    if isinstance(parent.target, ast.Name):
+                        names.add(parent.target.id)
+            if not names:
+                return []
+
+            # Follow straightforward module aliases of the callable. Opaque
+            # escapes are analyzed conservatively rather than assuming that
+            # these are the only possible invocation sites.
+            module_assignments = [
+                stmt for stmt in ast.walk(tree)
+                if isinstance(stmt, (ast.Assign, ast.AnnAssign))
+                and getattr(stmt, "_binding_scope", tree) is tree
+            ]
+            changed = True
+            while changed:
+                changed = False
+                for stmt in module_assignments:
+                    if not isinstance(stmt.value, ast.Name):
+                        continue
+                    if stmt.value.id not in names:
+                        continue
+                    targets = (
+                        stmt.targets if isinstance(stmt, ast.Assign)
+                        else [stmt.target]
+                    )
+                    for target in targets:
+                        if isinstance(target, ast.Name) and target.id not in names:
+                            names.add(target.id)
+                            changed = True
+            sites = [
+                call for call in ast.walk(tree)
+                if isinstance(call, ast.Call)
+                and isinstance(call.func, ast.Name)
+                and call.func.id in names
+                and getattr(call, "_binding_scope", tree) is tree
+                and _node_position(call) > _node_position(outermost)
+            ]
+            # A named callable can escape as an argument or object value;
+            # in that case its invocation may not be represented by a direct
+            # call. Include the module-end state as an additional possibility.
+            opaque_escape = any(
+                isinstance(name_node, ast.Name)
+                and isinstance(name_node.ctx, ast.Load)
+                and name_node.id in names
+                and getattr(name_node, "_binding_scope", tree) is tree
+                and not (
+                    isinstance(ast_parents.get(name_node), ast.Call)
+                    and ast_parents[name_node].func is name_node
+                )
+                and not (
+                    isinstance(ast_parents.get(name_node), (
+                        ast.Assign, ast.AnnAssign
+                    ))
+                    and ast_parents[name_node].value is name_node
+                )
+                for name_node in ast.walk(tree)
+            )
+            if not sites or opaque_escape:
+                sites.append(None)
+            return [
+                (
+                    _node_position(call)
+                    if call is not None
+                    else (float("inf"), float("inf")),
+                    _node_control_path(call) if call is not None else (),
+                )
+                for call in sites
+            ]
+
         exported = set()
         for node in ast.walk(tree):
             if isinstance(node, ast.ImportFrom):
@@ -5614,14 +5721,24 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                     # expression instead reads at source order.
                                     if use_pos <= import_pos and not deferred_read:
                                         continue
-                                    # The source location of a deferred body is
-                                    # not its execution time. Include statements
-                                    # after the later wildcard import.
-                                    cutoff_pos = (
-                                        (float("inf"), float("inf"))
-                                        if deferred_read and use_pos <= import_pos
-                                        else use_pos
+                                    # A deferred global read observes values at
+                                    # invocation, which can be after a later
+                                    # import but before a subsequent overwrite.
+                                    # Eager reads instead use their AST position.
+                                    invocation_sites = (
+                                        module_invocation_sites(use)
+                                        if deferred_read else []
                                     )
+                                    if not invocation_sites:
+                                        invocation_sites = [(use_pos, _node_control_path(use))]
+                                    if deferred_read and use_pos <= import_pos:
+                                        invocation_sites = [
+                                            (pos, path)
+                                            for pos, path in invocation_sites
+                                            if pos > import_pos
+                                        ]
+                                    if not invocation_sites:
+                                        continue
                                     # Walk module-level reaching
                                     # writes rather than only tree.body. A
                                     # guaranteed assignment nested under
@@ -5665,6 +5782,50 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                 possible.add(False)
                                         return possible
 
+                                    def conditional_header(expression, states, truth):
+                                        """Track writes only along paths where test has truth.
+
+                                        For AND's true arm, every operand must
+                                        have executed; for OR's false arm likewise.
+                                        The opposite arm unions each possible
+                                        short-circuit point, preserving unsafe
+                                        no-write paths.
+                                        """
+                                        if not states:
+                                            return set()
+                                        if isinstance(expression, ast.Constant):
+                                            return (
+                                                states if bool(expression.value) is truth
+                                                else set()
+                                            )
+                                        if isinstance(expression, ast.UnaryOp) and isinstance(
+                                            expression.op, ast.Not
+                                        ):
+                                            return conditional_header(
+                                                expression.operand, states, not truth
+                                            )
+                                        if isinstance(expression, ast.BoolOp):
+                                            is_and = isinstance(expression.op, ast.And)
+                                            must_evaluate_all = is_and == truth
+                                            if must_evaluate_all:
+                                                result = states
+                                                for part in expression.values:
+                                                    result = conditional_header(
+                                                        part, result, truth
+                                                    )
+                                                return result
+                                            result = set()
+                                            continuing = states
+                                            for part in expression.values:
+                                                result |= conditional_header(
+                                                    part, continuing, truth
+                                                )
+                                                continuing = conditional_header(
+                                                    part, continuing, not truth
+                                                )
+                                            return result
+                                        return after_header(expression, states)
+
                                     def live_after(statements, states):
                                         for statement in statements:
                                             if _node_position(statement) <= import_pos:
@@ -5692,34 +5853,38 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                     statement.lineno,
                                                     statement.col_offset,
                                                 )
-                                                tested_states = after_header(
-                                                    statement.test, states
+                                                true_states = conditional_header(
+                                                    statement.test, states, True
                                                 )
+                                                false_states = conditional_header(
+                                                    statement.test, states, False
+                                                )
+                                                tested_states = true_states | false_states
                                                 if (*branch, "body") in use_path:
                                                     states = (
-                                                        live_after(statement.body, tested_states)
+                                                        live_after(statement.body, true_states)
                                                         if tested is not False else set()
                                                     )
                                                 elif (*branch, "orelse") in use_path:
                                                     states = (
-                                                        live_after(statement.orelse, tested_states)
+                                                        live_after(statement.orelse, false_states)
                                                         if tested is not True else set()
                                                     )
                                                 elif tested is True:
                                                     states = live_after(
-                                                        statement.body, tested_states
+                                                        statement.body, true_states
                                                     )
                                                 elif tested is False:
                                                     states = live_after(
-                                                        statement.orelse, tested_states
+                                                        statement.orelse, false_states
                                                     )
                                                 else:
                                                     states = (
                                                         live_after(
-                                                            statement.body, tested_states
+                                                            statement.body, true_states
                                                         )
                                                         | live_after(
-                                                            statement.orelse, tested_states
+                                                            statement.orelse, false_states
                                                         )
                                                     )
                                                 continue
@@ -5771,7 +5936,10 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                             states = states if self_reads else {False}
                                         return states
 
-                                    if True in live_after(tree.body, {True}):
+                                    if any(
+                                        True in live_after(tree.body, {True})
+                                        for cutoff_pos, use_path in invocation_sites
+                                    ):
                                         exported.add(name)
                                         break
                         elif (
@@ -7316,6 +7484,91 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         self.assertEqual(
                             provider.resolve() in self._runtime_es_module_paths(),
                             should_include,
+                        )
+
+    def test_wildcard_deferred_invocation_before_later_overwrite(self):
+        """At the call, a later module overwrite has not executed yet."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "provider_b.py"
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            auth = 'Elasticsearch("localhost", basic_auth=("elastic", password))'
+            cases = (
+                ('password = None\n'
+                 'def run():\n    ' + auth + '\n'
+                 'from provider_b import *\nrun()\npassword = None\n', True),
+                ('password = None\n'
+                 'run = lambda: ' + auth + '\n'
+                 'from provider_b import *\nrun()\npassword = None\n', True),
+                ('password = None\n'
+                 'def run():\n    ' + auth + '\n'
+                 'from provider_b import *\n'
+                 'alias = run\nalias()\npassword = None\n', True),
+                ('password = None\n'
+                 'def run():\n    ' + auth + '\n'
+                 'from provider_b import *\n'
+                 'password = None\nrun()\n', False),
+                ('password = None\n'
+                 'def run():\n    ' + auth + '\n'
+                 'from provider_b import *\n'
+                 'run()\npassword = None\nrun()\n', True),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for code, expected in cases:
+                    with self.subTest(code=code):
+                        consumer.write_text(
+                            'from elasticsearch import Elasticsearch\n' + code,
+                            encoding="utf-8",
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+
+    def test_wildcard_if_header_truthy_short_circuit(self):
+        """The selected arm proves which short-circuit walruses ran."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "provider_b.py"
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            auth = 'Elasticsearch("localhost", basic_auth=("elastic", password))\n'
+            env = 'os.environ["TCP_ELASTIC_PASSWORD"]'
+            cases = (
+                ('if enabled and (password := ' + env + '):\n'
+                 '    ' + auth, False),
+                ('if enabled or (password := ' + env + '):\n'
+                 '    ' + auth, True),
+                ('if enabled or (password := ' + env + '):\n'
+                 '    pass\nelse:\n    ' + auth, False),
+                ('if not (enabled and (password := ' + env + ')):\n'
+                 '    ' + auth, True),
+                ('if enabled and (password := password.strip()):\n'
+                 '    ' + auth, True),
+                ('if (enabled and (password := ' + env + ')) and other:\n'
+                 '    ' + auth, False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for code, expected in cases:
+                    with self.subTest(code=code):
+                        consumer.write_text(
+                            'import os\n'
+                            'from provider_b import *\n'
+                            'from elasticsearch import Elasticsearch\n' + code,
+                            encoding="utf-8",
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
                         )
 
     def test_wildcard_nested_guaranteed_overwrites(self):
