@@ -5703,7 +5703,11 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         continue
                     parent = ast_parents.get(ref)
                     if (
-                        isinstance(parent, ast.Call) and parent.func is ref
+                        # Returning a closure does not run it. The caller
+                        # may invoke the returned value later, which is
+                        # tracked independently at its actual call site.
+                        isinstance(parent, ast.Return) and parent.value is ref
+                        or isinstance(parent, ast.Call) and parent.func is ref
                         or isinstance(parent, (
                             ast.Assign, ast.AnnAssign, ast.NamedExpr
                         )) and parent.value is ref
