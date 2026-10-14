@@ -5661,6 +5661,22 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 # plain stores to an alias are not an invocation.
                 sites.append((_node_position(ref), _node_control_path(ref)))
 
+            if (
+                "alias = lambda: None" in source
+                or "callback = outer()" in source
+                or "outer()\\npassword = None" in source
+            ):
+                print(
+                    "INVOCATION_DIAGNOSTIC", getattr(owner, "name", type(owner).__name__),
+                    "sites", sites,
+                    "calls", [
+                        (ast.unparse(call), _node_position(call),
+                         refers_to_owner(call.func))
+                        for call in ast.walk(tree)
+                        if isinstance(call, ast.Call)
+                    ],
+                    flush=True,
+                )
             if not sites:
                 # An uncalled function may be invoked through an external
                 # registry; retain the conservative final-state possibility.
