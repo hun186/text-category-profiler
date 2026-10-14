@@ -902,6 +902,44 @@ def _annotate_binding_scopes(tree):
             self.visit(node.body)
             self.scope_stack.pop()
 
+        def _visit_comprehension(self, node, result_nodes):
+            # In Python 3 comprehensions have their own implicit function
+            # scope. The first iterable alone is evaluated in the enclosing
+            # scope; generator targets, filters, other iterables, and the
+            # produced element all execute in the comprehension frame.
+            self._mark(node)
+            if not node.generators:
+                for result in result_nodes:
+                    self.visit(result)
+                return
+            self.visit(node.generators[0].iter)
+            self._new_scope(node, self.current_scope)
+            self.scope_stack.append(node)
+            first = node.generators[0]
+            self.visit(first.target)
+            for predicate in first.ifs:
+                self.visit(predicate)
+            for generator in node.generators[1:]:
+                self.visit(generator.iter)
+                self.visit(generator.target)
+                for predicate in generator.ifs:
+                    self.visit(predicate)
+            for result in result_nodes:
+                self.visit(result)
+            self.scope_stack.pop()
+
+        def visit_ListComp(self, node):
+            self._visit_comprehension(node, [node.elt])
+
+        def visit_SetComp(self, node):
+            self._visit_comprehension(node, [node.elt])
+
+        def visit_GeneratorExp(self, node):
+            self._visit_comprehension(node, [node.elt])
+
+        def visit_DictComp(self, node):
+            self._visit_comprehension(node, [node.key, node.value])
+
         def visit_ClassDef(self, node):
             self._mark(node)
             scope_locals[self.current_scope].add(node.name)
@@ -5548,69 +5586,93 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                     use_pos = _node_position(use)
                                     if use_pos <= import_pos:
                                         continue
-                                    shadowed = False
-                                    for statement in tree.body:
-                                        position = _node_position(statement)
-                                        if not import_pos < position < use_pos:
-                                            continue
-                                        targets = (
-                                            statement.targets
-                                            if isinstance(statement, ast.Assign)
-                                            else [statement.target]
-                                            if isinstance(statement, ast.AnnAssign)
-                                            and statement.value is not None
-                                            else []
-                                        )
-                                        # Associate each unpacked target
-                                        # with its own RHS leaf; another slot
-                                        # reading the secret does not preserve
-                                        # the overwritten credential export.
-                                        leaves = [
-                                            (target_name, value)
-                                            for target in targets
-                                            for target_name, value in
-                                            assigned_leaves(
-                                                target, statement.value
-                                            )
-                                        ]
-                                        selected_values = [
-                                            value for target_name, value in leaves
-                                            if target_name == name
-                                        ]
-                                        if not selected_values:
-                                            continue
-                                        if any(
-                                            isinstance(child, ast.Name)
-                                            and isinstance(child.ctx, ast.Load)
-                                            and child.id == name
-                                            and _binding_name_token(
-                                                child.id, bound_names(), child
-                                            )[0] is tree
-                                            for value in selected_values
-                                            for child in ast.walk(value)
-                                        ):
-                                            # A selected RHS leaf can preserve
-                                            # the star-imported credential via
-                                            # direct or transformed self-reads,
-                                            # e.g. password = password.strip().
-                                            # Reads belonging to another
-                                            # unpacked target do not count.
-                                            continue
-                                        if any(
-                                            target_name != name
-                                            and any(
+                                    # Walk module-level reaching
+                                    # writes rather than only tree.body. A
+                                    # guaranteed assignment nested under
+                                    # "if True" or both arms of an if/else
+                                    # shadows the imported name just as a
+                                    # direct store does. Unknown branches
+                                    # retain the live-import possibility.
+                                    def live_after(statements, states):
+                                        for statement in statements:
+                                            if _node_position(statement) <= import_pos:
+                                                continue
+                                            if _node_position(statement) >= use_pos:
+                                                break
+                                            if isinstance(statement, ast.If):
+                                                tested = (
+                                                    statement.test.value
+                                                    if isinstance(
+                                                        statement.test, ast.Constant
+                                                    ) else None
+                                                )
+                                                if tested is True:
+                                                    states = live_after(
+                                                        statement.body, states
+                                                    )
+                                                elif tested is False:
+                                                    states = live_after(
+                                                        statement.orelse, states
+                                                    )
+                                                else:
+                                                    states = (
+                                                        live_after(
+                                                            statement.body, states
+                                                        )
+                                                        | live_after(
+                                                            statement.orelse, states
+                                                        )
+                                                    )
+                                                continue
+                                            # The RHS of the statement
+                                            # containing this particular read
+                                            # runs before its assignment store.
+                                            if any(
                                                 child is use
+                                                for child in ast.walk(statement)
+                                            ):
+                                                break
+                                            targets = (
+                                                statement.targets
+                                                if isinstance(statement, ast.Assign)
+                                                else [statement.target]
+                                                if isinstance(statement, ast.AnnAssign)
+                                                and statement.value is not None
+                                                else []
+                                            )
+                                            if not targets:
+                                                continue
+                                            leaves = [
+                                                (target_name, value)
+                                                for target in targets
+                                                for target_name, value in
+                                                assigned_leaves(
+                                                    target, statement.value
+                                                )
+                                            ]
+                                            selected_values = [
+                                                value for target_name, value in leaves
+                                                if target_name == name
+                                            ]
+                                            if not selected_values:
+                                                continue
+                                            # Preserve the incoming import
+                                            # when this name's own RHS leaf
+                                            # reads it (including transforms).
+                                            self_reads = any(
+                                                isinstance(child, ast.Name)
+                                                and isinstance(child.ctx, ast.Load)
+                                                and child.id == name
+                                                and _binding_name_token(
+                                                    child.id, bound_names(), child
+                                                )[0] is tree
+                                                for value in selected_values
                                                 for child in ast.walk(value)
                                             )
-                                            for target_name, value in leaves
-                                        ):
-                                            # A *traced* credential read into
-                                            # another slot can feed auth even
-                                            # if password itself is cleared.
-                                            continue
-                                        shadowed = True
-                                        break
-                                    if not shadowed:
+                                            states = states if self_reads else {False}
+                                        return states
+
+                                    if True in live_after(tree.body, {True}):
                                         exported.add(name)
                                         break
                         elif (
@@ -6930,6 +6992,79 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             "password" in self._imported_credential_exports.get(
                                 provider.resolve(), set()
                             ), expected,
+                        )
+
+    def test_wildcard_comprehension_local_names(self):
+        """Comprehension binding scopes distinguish local from imported passwords."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "provider_b.py"
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            prefix = 'import os\nfrom provider_b import *\n'
+            suffix = (
+                'from elasticsearch import Elasticsearch\n'
+                'Elasticsearch("localhost", basic_auth=("elastic", password))\n'
+            )
+            cases = (
+                ('password = [password.strip() for password in '
+                 '[os.environ["TCP_ELASTIC_PASSWORD"]]][0]\n', False),
+                ('password = {password.strip() for password in '
+                 '[os.environ["TCP_ELASTIC_PASSWORD"]]}.pop()\n', False),
+                ('password = next(password.strip() for password in '
+                 '[os.environ["TCP_ELASTIC_PASSWORD"]])\n', False),
+                ('password = [password.strip() for unused in [None]][0]\n', True),
+                ('password = password.strip()\n', True),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for assignment, expected in cases:
+                    with self.subTest(assignment=assignment):
+                        consumer.write_text(
+                            prefix + assignment + suffix, encoding="utf-8"
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+
+    def test_wildcard_nested_guaranteed_overwrites(self):
+        """Guaranteed module-scope branch stores shadow a wildcard credential."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "provider_b.py"
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            prefix = 'from provider_b import *\n'
+            suffix = (
+                'from elasticsearch import Elasticsearch\n'
+                'Elasticsearch("localhost", basic_auth=("elastic", password))\n'
+            )
+            cases = (
+                ('if True:\n    password = None\n', False),
+                ('if False:\n    password = None\n', True),
+                ('if False:\n    password = 1\nelse:\n    password = None\n', False),
+                ('if True:\n    if True:\n        password = None\n', False),
+                ('if flag:\n    password = None\n', True),
+                ('if flag:\n    password = None\nelse:\n    password = 0\n', False),
+                ('if True:\n    password = password.strip()\n', True),
+                ('if True:\n    password = None\npassword = password\n', False),
+                ('if True:\n    password = None\npassword = "safe"\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for code, expected in cases:
+                    with self.subTest(code=code):
+                        consumer.write_text(prefix + code + suffix, encoding="utf-8")
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
                         )
 
     def test_secret_surface_paths_include_yaml_elasticsearch_samples(self):
