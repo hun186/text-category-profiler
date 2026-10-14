@@ -5936,11 +5936,14 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                             states = states if self_reads else {False}
                                         return states
 
-                                    if any(
-                                        True in live_after(tree.body, {True})
-                                        for cutoff_pos, use_path in invocation_sites
-                                    ):
-                                        exported.add(name)
+                                    # Keep invocation positions in this
+                                    # lexical frame: live_after captures the
+                                    # selected position and branch path.
+                                    for cutoff_pos, use_path in invocation_sites:
+                                        if True in live_after(tree.body, {True}):
+                                            exported.add(name)
+                                            break
+                                    if name in exported:
                                         break
                         elif (
                             (alias.asname or alias.name) in used_names
