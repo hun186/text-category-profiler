@@ -4966,9 +4966,12 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             states = [state for state in states if state is not None]
             if not states:
                 return None
+            # The ordinary export flow tracks forwarded_exports, while a
+            # credential use can temporarily track one wildcard-bound name.
+            # Merge whichever names the incoming reaching states contain.
             return {
-                name: set().union(*(state[name] for state in states))
-                for name in forwarded_exports
+                name: set().union(*(state.get(name, ()) for state in states))
+                for name in set().union(*(state.keys() for state in states))
             }
 
         def merge_flows(*flows):
@@ -5009,7 +5012,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     # safer than silently losing a possible credential.
                     leaves = [(name, expression) for name in target_names(target)]
                 for key, value in leaves:
-                    if key in forwarded_exports:
+                    if key in updated:
                         # A selected export reading itself (or another selected
                         # export) uses its *current* binding, not a previously
                         # shadowed import with the same spelling.
@@ -5594,8 +5597,31 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                         continue
                                     import_pos = _node_position(node)
                                     use_pos = _node_position(use)
-                                    if use_pos <= import_pos:
+                                    metadata = bound_names()["metadata"]
+                                    scope = getattr(use, "_binding_scope", tree)
+                                    deferred_read = False
+                                    while scope is not None and scope is not tree:
+                                        if isinstance(scope, (
+                                            ast.FunctionDef, ast.AsyncFunctionDef,
+                                            ast.Lambda, ast.GeneratorExp,
+                                        )):
+                                            deferred_read = True
+                                            break
+                                        scope = metadata["parents"].get(scope)
+                                    # A closure resolves module globals on
+                                    # invocation, potentially after a later
+                                    # wildcard import. An eager class/module
+                                    # expression instead reads at source order.
+                                    if use_pos <= import_pos and not deferred_read:
                                         continue
+                                    # The source location of a deferred body is
+                                    # not its execution time. Include statements
+                                    # after the later wildcard import.
+                                    cutoff_pos = (
+                                        (float("inf"), float("inf"))
+                                        if deferred_read and use_pos <= import_pos
+                                        else use_pos
+                                    )
                                     # Walk module-level reaching
                                     # writes rather than only tree.body. A
                                     # guaranteed assignment nested under
@@ -5605,11 +5631,45 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                     # retain the live-import possibility.
                                     use_path = _node_control_path(use)
 
+                                    def after_header(expression, states):
+                                        """Track the header's walrus writes before its arm."""
+                                        if not states:
+                                            return set()
+                                        incoming = {name: set()}
+                                        if True in states:
+                                            incoming[name].add(node)
+                                        if False in states:
+                                            incoming[name].add(None)
+                                        values = named_expr_bindings(
+                                            expression, incoming
+                                        )[name]
+                                        possible = set()
+                                        for value in values:
+                                            if value is node:
+                                                possible.add(True)
+                                            elif value is None:
+                                                possible.add(False)
+                                            elif any(
+                                                isinstance(child, ast.Name)
+                                                and isinstance(child.ctx, ast.Load)
+                                                and child.id == name
+                                                and _binding_name_token(
+                                                    name, bound_names(), child
+                                                )[0] is tree
+                                                for child in ast.walk(value)
+                                            ):
+                                                # Transformed self-reads retain
+                                                # whichever source was reaching.
+                                                possible.update(states)
+                                            else:
+                                                possible.add(False)
+                                        return possible
+
                                     def live_after(statements, states):
                                         for statement in statements:
                                             if _node_position(statement) <= import_pos:
                                                 continue
-                                            if _node_position(statement) >= use_pos:
+                                            if _node_position(statement) >= cutoff_pos:
                                                 break
                                             if isinstance(statement, ast.If):
                                                 # If this read occurs within one arm,
@@ -5632,31 +5692,34 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                     statement.lineno,
                                                     statement.col_offset,
                                                 )
+                                                tested_states = after_header(
+                                                    statement.test, states
+                                                )
                                                 if (*branch, "body") in use_path:
                                                     states = (
-                                                        live_after(statement.body, states)
+                                                        live_after(statement.body, tested_states)
                                                         if tested is not False else set()
                                                     )
                                                 elif (*branch, "orelse") in use_path:
                                                     states = (
-                                                        live_after(statement.orelse, states)
+                                                        live_after(statement.orelse, tested_states)
                                                         if tested is not True else set()
                                                     )
                                                 elif tested is True:
                                                     states = live_after(
-                                                        statement.body, states
+                                                        statement.body, tested_states
                                                     )
                                                 elif tested is False:
                                                     states = live_after(
-                                                        statement.orelse, states
+                                                        statement.orelse, tested_states
                                                     )
                                                 else:
                                                     states = (
                                                         live_after(
-                                                            statement.body, states
+                                                            statement.body, tested_states
                                                         )
                                                         | live_after(
-                                                            statement.orelse, states
+                                                            statement.orelse, tested_states
                                                         )
                                                     )
                                                 continue
@@ -7160,6 +7223,99 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         self.assertEqual(
                             provider.resolve() in self._runtime_es_module_paths(),
                             expected,
+                        )
+
+    def test_wildcard_import_after_deferred_global_read(self):
+        """Global reads in deferred callables can see later star imports."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "provider_b.py"
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            auth = (
+                'Elasticsearch("localhost", basic_auth=("elastic", password))'
+            )
+            cases = (
+                ('password = None\n'
+                 'def run():\n    ' + auth + '\n'
+                 'from provider_b import *\nrun()\n', True),
+                ('password = None\n'
+                 'run = lambda: ' + auth + '\n'
+                 'from provider_b import *\nrun()\n', True),
+                ('password = None\n'
+                 'def run():\n    ' + auth + '\n'
+                 'from provider_b import *\n'
+                 'password = password.strip()\nrun()\n', True),
+                ('password = None\n'
+                 'def run():\n    ' + auth + '\n'
+                 'run()\nfrom provider_b import *\n', True),
+                ('password = None\n'
+                 'def run():\n    password = None\n    ' + auth + '\n'
+                 'from provider_b import *\nrun()\n', False),
+                ('password = None\n'
+                 + auth + '\nfrom provider_b import *\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for source, should_include in cases:
+                    with self.subTest(source=source):
+                        consumer.write_text(
+                            'from elasticsearch import Elasticsearch\n' + source,
+                            encoding="utf-8",
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            should_include,
+                        )
+
+    def test_wildcard_if_header_walrus_reaching_state(self):
+        """Walrus writes in a conditional header precede reads in its arms."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "provider_b.py"
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            auth = (
+                'Elasticsearch("localhost", basic_auth=("elastic", password))\n'
+            )
+            cases = (
+                ('if (password := os.environ["TCP_ELASTIC_PASSWORD"]):\n'
+                 '    ' + auth, False),
+                ('if (password := os.environ["TCP_ELASTIC_PASSWORD"]):\n'
+                 '    if enabled:\n        ' + auth, False),
+                ('if (password := os.environ["TCP_ELASTIC_PASSWORD"]):\n'
+                 '    pass\nelse:\n    ' + auth, False),
+                ('if (password := password.strip()):\n'
+                 '    ' + auth, True),
+                ('if (safe := os.environ["TCP_ELASTIC_PASSWORD"]):\n'
+                 '    ' + auth, True),
+                ('if enabled:\n'
+                 '    password = None\n'
+                 '    if (other := 1):\n'
+                 '        ' + auth, False),
+                ('if enabled and (password := os.environ["TCP_ELASTIC_PASSWORD"]):\n'
+                 '    ' + auth, True),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for code, should_include in cases:
+                    with self.subTest(code=code):
+                        consumer.write_text(
+                            'import os\n'
+                            'from provider_b import *\n'
+                            'from elasticsearch import Elasticsearch\n'
+                            + code,
+                            encoding="utf-8",
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            should_include,
                         )
 
     def test_wildcard_nested_guaranteed_overwrites(self):
