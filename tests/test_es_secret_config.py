@@ -5561,12 +5561,11 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         }
 
         def module_invocation_sites(use):
-            """Find when the callable that owns a deferred read may execute.
+            """Snapshot actual reads, not definitions or suspended callables.
 
-            Creating an enclosing closure is not executing its inner body.
-            Resolve straightforward module aliases and returned nested
-            functions at each *use position*, so overwritten aliases cannot
-            be mistaken for a live invocation.
+            Follow direct lexical calls through enclosing functions, tracked
+            returned closures, and module-level callback escapes. An async
+            function or generator only executes when its result is resumed.
             """
             metadata = bound_names()["metadata"]
             owner = getattr(use, "_binding_scope", tree)
@@ -5580,10 +5579,10 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             if owner is None or owner is tree:
                 return []
 
-            def refers_to_owner(value, seen=None):
+            def refers_to(value, target, seen=None):
                 if value is None:
                     return False
-                if value is owner:
+                if value is target:
                     return True
                 seen = set() if seen is None else seen
                 if value in seen:
@@ -5591,15 +5590,15 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 seen = seen | {value}
                 if isinstance(value, ast.Name):
                     return any(
-                        refers_to_owner(binding, seen)
+                        refers_to(binding, target, seen)
                         for binding in _resolve_bound_nodes(
                             value, bound_names(), _node_position(value)
                         )
                         if binding is not value
                     )
                 if isinstance(value, ast.Call):
-                    # outer() can *return* an inner closure. Its invocation
-                    # is not an invocation of the returned closure.
+                    # An outer factory can return an inner callable. Creating
+                    # it does not execute the returned callable's body.
                     for function in _resolve_bound_nodes(
                         value.func, bound_names(), _node_position(value.func)
                     ):
@@ -5612,58 +5611,119 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                 isinstance(returned, ast.Return)
                                 and getattr(returned, "_binding_scope", None)
                                 is function
-                                and refers_to_owner(returned.value, seen)
+                                and refers_to(returned.value, target, seen)
                             ):
                                 return True
                 return False
 
+            def is_suspended(target):
+                if isinstance(target, (ast.AsyncFunctionDef, ast.GeneratorExp)):
+                    return True
+                if not isinstance(target, ast.FunctionDef):
+                    return False
+                return any(
+                    isinstance(node, (ast.Yield, ast.YieldFrom))
+                    and getattr(node, "_binding_scope", None) is target
+                    for node in ast.walk(target)
+                )
+
+            def resume_expressions(created):
+                """Find common explicit coroutine/generator consumption sites."""
+                for expression in ast.walk(tree):
+                    value = None
+                    if isinstance(expression, (ast.Await, ast.YieldFrom)):
+                        value = expression.value
+                    elif isinstance(expression, (ast.For, ast.AsyncFor)):
+                        value = expression.iter
+                    elif isinstance(expression, ast.Call):
+                        func = expression.func
+                        consumer = (
+                            isinstance(func, ast.Name)
+                            and func.id in {
+                                "next", "anext", "list", "tuple", "set",
+                                "sum", "any", "all", "max", "min",
+                            }
+                            or isinstance(func, ast.Attribute)
+                            and func.attr in {"run", "send", "__next__"}
+                        )
+                        if consumer and expression.args:
+                            value = expression.args[0]
+                    if value is not None and refers_to(value, created):
+                        yield expression
+
             sites = []
-            for call in ast.walk(tree):
-                if not (
-                    isinstance(call, ast.Call)
-                    and getattr(call, "_binding_scope", tree) is tree
-                ):
-                    continue
-                call_pos = _node_position(call)
-                if refers_to_owner(call.func):
-                    sites.append((call_pos, _node_control_path(call)))
-                    continue
-                # Dispatchers may invoke their callback synchronously. Record
-                # this position before any later password overwrite, not just
-                # the final state of the module.
-                passed = [*call.args, *(kw.value for kw in call.keywords)]
-                if any(refers_to_owner(arg) for arg in passed):
-                    sites.append((call_pos, _node_control_path(call)))
+            visited = set()
 
-            # An opaque use such as inserting a callable into a container can
-            # hand it to an unknown consumer. Snapshot where it escapes too.
-            for ref in ast.walk(tree):
-                if not (
-                    isinstance(ref, ast.Name)
-                    and isinstance(ref.ctx, ast.Load)
-                    and getattr(ref, "_binding_scope", tree) is tree
-                    and refers_to_owner(ref)
-                ):
-                    continue
-                parent = ast_parents.get(ref)
-                if (
-                    isinstance(parent, ast.Call) and parent.func is ref
-                    or isinstance(parent, (
-                        ast.Assign, ast.AnnAssign, ast.NamedExpr
-                    )) and parent.value is ref
-                    or isinstance(parent, ast.Call) and (
-                        ref in parent.args
-                        or any(kw.value is ref for kw in parent.keywords)
-                    )
-                ):
-                    continue
-                # Only expressions which retain/pass the function are escapes:
-                # plain stores to an alias are not an invocation.
-                sites.append((_node_position(ref), _node_control_path(ref)))
+            def add_site(expression):
+                scope = getattr(expression, "_binding_scope", tree)
+                if scope is tree:
+                    sites.append((
+                        _node_position(expression), _node_control_path(expression)
+                    ))
+                elif isinstance(scope, (
+                    ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda,
+                    ast.GeneratorExp,
+                )):
+                    # inner() directly invoked inside outer() runs when
+                    # outer itself runs; nested closure *creation* does not.
+                    collect(scope)
 
+            def collect(target):
+                if target in visited:
+                    return
+                visited.add(target)
+                for call in ast.walk(tree):
+                    if not isinstance(call, ast.Call):
+                        continue
+                    if refers_to(call.func, target):
+                        if is_suspended(target):
+                            # Calling async def or a generator function only
+                            # creates the suspended object. Its body reads
+                            # globals on await/iteration, not on creation.
+                            for resume in resume_expressions(call):
+                                add_site(resume)
+                        else:
+                            add_site(call)
+                        continue
+                    # A synchronous dispatcher can invoke a passed callback
+                    # immediately, including callbacks passed by keyword.
+                    passed = [*call.args, *(k.value for k in call.keywords)]
+                    if any(refers_to(arg, target) for arg in passed):
+                        add_site(call)
+
+                # An attribute/subscript assignment cannot be followed by
+                # the simple-name alias resolver. Preserve the store as an
+                # opaque escape (possibly immediately invoked later).
+                for ref in ast.walk(tree):
+                    if not (
+                        isinstance(ref, ast.Name)
+                        and isinstance(ref.ctx, ast.Load)
+                        and refers_to(ref, target)
+                    ):
+                        continue
+                    parent = ast_parents.get(ref)
+                    if (
+                        isinstance(parent, ast.Call) and parent.func is ref
+                        or isinstance(parent, (
+                            ast.Assign, ast.AnnAssign, ast.NamedExpr
+                        )) and parent.value is ref
+                        and isinstance(
+                            parent.targets[0] if isinstance(parent, ast.Assign)
+                            else parent.target, ast.Name
+                        )
+                        or isinstance(parent, ast.Call) and (
+                            ref in parent.args
+                            or any(k.value is ref for k in parent.keywords)
+                        )
+                    ):
+                        continue
+                    add_site(ref)
+
+            collect(owner)
+            # Unknown external invocation conservatively observes module
+            # end. Known calls and escape positions are independently
+            # analyzed at their actual reaching-state snapshots.
             if not sites:
-                # An uncalled function may be invoked through an external
-                # registry; retain the conservative final-state possibility.
                 return [((float("inf"), float("inf")), ())]
             return list(dict.fromkeys(sites))
 
@@ -7597,6 +7657,60 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         consumer.write_text(
                             'from elasticsearch import Elasticsearch\n'
                             'from provider_b import *\n' + body,
+                            encoding="utf-8",
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+
+    def test_wildcard_nested_direct_and_suspended_invocation(self):
+        """Nested call, opaque storage and coroutine/generator resume timing."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "provider_b.py"
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            auth = 'Elasticsearch("localhost", basic_auth=("elastic", password))'
+            nested = (
+                'def outer():\n'
+                '    def inner():\n'
+                '        ' + auth + '\n'
+                '    inner()\n'
+            )
+            direct = 'def run():\n    ' + auth + '\n'
+            asynchronous = 'async def run():\n    ' + auth + '\n'
+            generator = 'def run():\n    yield 1\n    ' + auth + '\n'
+            cases = (
+                (nested + 'outer()\npassword = None\n', True),
+                (nested + 'password = None\nouter()\n', False),
+                ('holder = type("Holder", (), {})()\n' + direct
+                 + 'holder.cb = run\nholder.cb()\npassword = None\n', True),
+                ('holder = {}\n' + direct
+                 + 'holder["cb"] = run\nholder["cb"]()\npassword = None\n', True),
+                (asynchronous
+                 + 'coro = run()\npassword = None\n'
+                 'asyncio.run(coro)\n', False),
+                (asynchronous
+                 + 'coro = run()\nasyncio.run(coro)\n'
+                 'password = None\n', True),
+                (generator
+                 + 'gen = run()\npassword = None\n'
+                 'next(gen)\nnext(gen)\n', False),
+                (generator
+                 + 'gen = run()\nnext(gen)\nnext(gen)\n'
+                 'password = None\n', True),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for source, expected in cases:
+                    with self.subTest(source=source):
+                        consumer.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'from provider_b import *\n' + source,
                             encoding="utf-8",
                         )
                         self.assertEqual(
