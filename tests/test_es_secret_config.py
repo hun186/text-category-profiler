@@ -7417,9 +7417,11 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                  'def run():\n    ' + auth + '\n'
                  'from provider_b import *\n'
                  'password = password.strip()\nrun()\n', True),
+                # The only module-level call precedes the later import;
+                # it cannot read a credential introduced afterwards.
                 ('password = None\n'
                  'def run():\n    ' + auth + '\n'
-                 'run()\nfrom provider_b import *\n', True),
+                 'run()\nfrom provider_b import *\n', False),
                 ('password = None\n'
                  'def run():\n    password = None\n    ' + auth + '\n'
                  'from provider_b import *\nrun()\n', False),
@@ -7467,8 +7469,10 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                  '    password = None\n'
                  '    if (other := 1):\n'
                  '        ' + auth, False),
+                # Entering the true arm proves the short-circuited
+                # walrus did execute, so the imported secret is overwritten.
                 ('if enabled and (password := os.environ["TCP_ELASTIC_PASSWORD"]):\n'
-                 '    ' + auth, True),
+                 '    ' + auth, False),
             )
             with patch.dict(globals(), {
                 "REPOSITORY_ROOT": root,
