@@ -913,7 +913,10 @@ def _annotate_binding_scopes(tree):
                     self.visit(result)
                 return
             self.visit(node.generators[0].iter)
-            self._new_scope(node, self.current_scope)
+            # Comprehension frames do not close over class namespaces.
+            # The leading iterable above still executes in that class scope,
+            # but later iterables, targets and produced values do not.
+            self._new_scope(node, self._function_parent_scope())
             self.scope_stack.append(node)
             first = node.generators[0]
             self.visit(first.target)
@@ -5600,6 +5603,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                     # shadows the imported name just as a
                                     # direct store does. Unknown branches
                                     # retain the live-import possibility.
+                                    use_path = _node_control_path(use)
+
                                     def live_after(statements, states):
                                         for statement in statements:
                                             if _node_position(statement) <= import_pos:
@@ -5607,13 +5612,37 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                             if _node_position(statement) >= use_pos:
                                                 break
                                             if isinstance(statement, ast.If):
+                                                # If this read occurs within one arm,
+                                                # the other arm cannot reach this
+                                                # particular use. Retain both paths
+                                                # only for uses after the if statement.
+                                                if any(
+                                                    child is use
+                                                    for child in ast.walk(statement.test)
+                                                ):
+                                                    break  # Test is read before either arm.
                                                 tested = (
                                                     statement.test.value
                                                     if isinstance(
                                                         statement.test, ast.Constant
                                                     ) else None
                                                 )
-                                                if tested is True:
+                                                branch = (
+                                                    "If",
+                                                    statement.lineno,
+                                                    statement.col_offset,
+                                                )
+                                                if (*branch, "body") in use_path:
+                                                    states = (
+                                                        live_after(statement.body, states)
+                                                        if tested is not False else set()
+                                                    )
+                                                elif (*branch, "orelse") in use_path:
+                                                    states = (
+                                                        live_after(statement.orelse, states)
+                                                        if tested is not True else set()
+                                                    )
+                                                elif tested is True:
                                                     states = live_after(
                                                         statement.body, states
                                                     )
@@ -7034,6 +7063,100 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         consumer.write_text(
                             prefix + assignment + suffix, encoding="utf-8"
                         )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+
+    def test_wildcard_comprehension_skips_enclosing_class_scope(self):
+        """The first iterable reads class locals; comprehension body does not."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "provider_b.py"
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            prefix = (
+                'import os\n'
+                'from provider_b import *\n'
+                'from elasticsearch import Elasticsearch\n'
+                'class Client:\n'
+                '    password = None\n'
+            )
+            cases = (
+                # Comprehension result reads the imported module password.
+                ('    result = Elasticsearch("localhost", basic_auth='
+                 '("elastic", [password for _ in [None]][0]))\n', True),
+                ('    result = Elasticsearch("localhost", basic_auth='
+                 '("elastic", {password for _ in [None]}.pop()))\n', True),
+                ('    result = Elasticsearch("localhost", basic_auth='
+                 '("elastic", {"key": password for _ in [None]}["key"]))\n', True),
+                ('    result = Elasticsearch("localhost", basic_auth='
+                 '("elastic", next(password for _ in [None])))\n', True),
+                ('    result = Elasticsearch("localhost", basic_auth='
+                 '("elastic", [[password for _ in [None]] for _ in [None]][0][0]))\n', True),
+                # First iterable is evaluated in the enclosing class scope.
+                ('    result = Elasticsearch("localhost", basic_auth='
+                 '("elastic", [item for item in [password]][0]))\n', False),
+                # A local target shadows both class and module bindings.
+                ('    result = Elasticsearch("localhost", basic_auth='
+                 '("elastic", [password for password in '
+                 '[os.environ["TCP_ELASTIC_PASSWORD"]]][0]))\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for code, expected in cases:
+                    with self.subTest(code=code):
+                        consumer.write_text(prefix + code, encoding="utf-8")
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+
+    def test_wildcard_use_inside_conditional_branch(self):
+        """An opposite branch cannot flow into a call in the selected branch."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "provider_b.py"
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            prefix = (
+                'from provider_b import *\n'
+                'from elasticsearch import Elasticsearch\n'
+            )
+            auth = 'Elasticsearch("localhost", basic_auth=("elastic", password))\n'
+            cases = (
+                ('if flag:\n'
+                 '    password = None\n'
+                 '    ' + auth, False),
+                ('if flag:\n'
+                 '    password = None\n'
+                 '    if other_flag:\n'
+                 '        ' + auth, False),
+                ('if flag:\n'
+                 '    password = password.strip()\n'
+                 '    ' + auth, True),
+                ('if flag:\n'
+                 '    ' + auth +
+                 'else:\n'
+                 '    password = None\n', True),
+                ('if flag:\n'
+                 '    password = None\n'
+                 'else:\n'
+                 '    ' + auth, True),
+                ('if flag:\n'
+                 '    password = None\n' + auth, True),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for code, expected in cases:
+                    with self.subTest(code=code):
+                        consumer.write_text(prefix + code, encoding="utf-8")
                         self.assertEqual(
                             provider.resolve() in self._runtime_es_module_paths(),
                             expected,
