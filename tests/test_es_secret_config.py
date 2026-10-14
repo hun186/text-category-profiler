@@ -5561,103 +5561,111 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         }
 
         def module_invocation_sites(use):
-            """Return known direct/aliased module call sites of a deferred read.
+            """Find when the callable that owns a deferred read may execute.
 
-            Without a statically identifiable invocation, retain the old
-            conservative module-end scan (callbacks may run externally).
+            Creating an enclosing closure is not executing its inner body.
+            Resolve straightforward module aliases and returned nested
+            functions at each *use position*, so overwritten aliases cannot
+            be mistaken for a live invocation.
             """
             metadata = bound_names()["metadata"]
-            scope = getattr(use, "_binding_scope", tree)
-            outermost = None
-            while scope is not None and scope is not tree:
-                if isinstance(scope, (
+            owner = getattr(use, "_binding_scope", tree)
+            while owner is not None and owner is not tree:
+                if isinstance(owner, (
                     ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda,
                     ast.GeneratorExp,
                 )):
-                    outermost = scope
-                scope = metadata["parents"].get(scope)
-            if outermost is None:
-                return []
-            names = set()
-            if isinstance(outermost, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                names.add(outermost.name)
-            elif isinstance(outermost, ast.Lambda):
-                parent = ast_parents.get(outermost)
-                if isinstance(parent, ast.Assign):
-                    names.update(
-                        target.id
-                        for target in parent.targets
-                        if isinstance(target, ast.Name)
-                    )
-                elif isinstance(parent, (ast.AnnAssign, ast.NamedExpr)):
-                    if isinstance(parent.target, ast.Name):
-                        names.add(parent.target.id)
-            if not names:
+                    break
+                owner = metadata["parents"].get(owner)
+            if owner is None or owner is tree:
                 return []
 
-            # Follow straightforward module aliases of the callable. Opaque
-            # escapes are analyzed conservatively rather than assuming that
-            # these are the only possible invocation sites.
-            module_assignments = [
-                stmt for stmt in ast.walk(tree)
-                if isinstance(stmt, (ast.Assign, ast.AnnAssign))
-                and getattr(stmt, "_binding_scope", tree) is tree
-            ]
-            changed = True
-            while changed:
-                changed = False
-                for stmt in module_assignments:
-                    if not isinstance(stmt.value, ast.Name):
-                        continue
-                    if stmt.value.id not in names:
-                        continue
-                    targets = (
-                        stmt.targets if isinstance(stmt, ast.Assign)
-                        else [stmt.target]
+            def refers_to_owner(value, seen=None):
+                if value is None:
+                    return False
+                if value is owner:
+                    return True
+                seen = set() if seen is None else seen
+                if value in seen:
+                    return False
+                seen = seen | {value}
+                if isinstance(value, ast.Name):
+                    return any(
+                        refers_to_owner(binding, seen)
+                        for binding in _resolve_bound_nodes(
+                            value, bound_names(), _node_position(value)
+                        )
+                        if binding is not value
                     )
-                    for target in targets:
-                        if isinstance(target, ast.Name) and target.id not in names:
-                            names.add(target.id)
-                            changed = True
-            sites = [
-                call for call in ast.walk(tree)
-                if isinstance(call, ast.Call)
-                and isinstance(call.func, ast.Name)
-                and call.func.id in names
-                and getattr(call, "_binding_scope", tree) is tree
-                and _node_position(call) > _node_position(outermost)
-            ]
-            # A named callable can escape as an argument or object value;
-            # in that case its invocation may not be represented by a direct
-            # call. Include the module-end state as an additional possibility.
-            opaque_escape = any(
-                isinstance(name_node, ast.Name)
-                and isinstance(name_node.ctx, ast.Load)
-                and name_node.id in names
-                and getattr(name_node, "_binding_scope", tree) is tree
-                and not (
-                    isinstance(ast_parents.get(name_node), ast.Call)
-                    and ast_parents[name_node].func is name_node
-                )
-                and not (
-                    isinstance(ast_parents.get(name_node), (
-                        ast.Assign, ast.AnnAssign
-                    ))
-                    and ast_parents[name_node].value is name_node
-                )
-                for name_node in ast.walk(tree)
-            )
-            if not sites or opaque_escape:
-                sites.append(None)
-            return [
-                (
-                    _node_position(call)
-                    if call is not None
-                    else (float("inf"), float("inf")),
-                    _node_control_path(call) if call is not None else (),
-                )
-                for call in sites
-            ]
+                if isinstance(value, ast.Call):
+                    # outer() can *return* an inner closure. Its invocation
+                    # is not an invocation of the returned closure.
+                    for function in _resolve_bound_nodes(
+                        value.func, bound_names(), _node_position(value.func)
+                    ):
+                        if not isinstance(function, (
+                            ast.FunctionDef, ast.AsyncFunctionDef,
+                        )):
+                            continue
+                        for returned in ast.walk(function):
+                            if (
+                                isinstance(returned, ast.Return)
+                                and getattr(returned, "_binding_scope", None)
+                                is function
+                                and refers_to_owner(returned.value, seen)
+                            ):
+                                return True
+                return False
+
+            sites = []
+            for call in ast.walk(tree):
+                if not (
+                    isinstance(call, ast.Call)
+                    and getattr(call, "_binding_scope", tree) is tree
+                ):
+                    continue
+                call_pos = _node_position(call)
+                if refers_to_owner(call.func):
+                    sites.append((call_pos, _node_control_path(call)))
+                    continue
+                # Dispatchers may invoke their callback synchronously. Record
+                # this position before any later password overwrite, not just
+                # the final state of the module.
+                passed = [*call.args, *(kw.value for kw in call.keywords)]
+                if any(refers_to_owner(arg) for arg in passed):
+                    sites.append((call_pos, _node_control_path(call)))
+
+            # An opaque use such as inserting a callable into a container can
+            # hand it to an unknown consumer. Snapshot where it escapes too.
+            for ref in ast.walk(tree):
+                if not (
+                    isinstance(ref, ast.Name)
+                    and isinstance(ref.ctx, ast.Load)
+                    and getattr(ref, "_binding_scope", tree) is tree
+                    and refers_to_owner(ref)
+                ):
+                    continue
+                parent = ast_parents.get(ref)
+                if (
+                    isinstance(parent, ast.Call) and parent.func is ref
+                    or isinstance(parent, (
+                        ast.Assign, ast.AnnAssign, ast.NamedExpr
+                    )) and parent.value is ref
+                    or isinstance(parent, ast.Call) and (
+                        ref in parent.args
+                        or any(kw.value is ref for kw in parent.keywords)
+                    )
+                ):
+                    continue
+                # Only expressions which retain/pass the function are escapes:
+                # plain stores to an alias are not an invocation.
+                sites.append((_node_position(ref), _node_control_path(ref)))
+
+            if not sites:
+                # An uncalled function may be invoked through an external
+                # registry; retain the conservative final-state possibility.
+                return [((float("inf"), float("inf")), ())]
+            return list(dict.fromkeys(sites))
 
         exported = set()
         for node in ast.walk(tree):
@@ -7530,6 +7538,58 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     with self.subTest(code=code):
                         consumer.write_text(
                             'from elasticsearch import Elasticsearch\n' + code,
+                            encoding="utf-8",
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+
+    def test_wildcard_callable_escape_alias_and_closure_invocation(self):
+        """Invocation snapshots follow live aliases and returned closures."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "provider_b.py"
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            auth = 'Elasticsearch("localhost", basic_auth=("elastic", password))'
+            direct = 'def run():\n    ' + auth + '\n'
+            nested = (
+                'def outer():\n'
+                '    def inner():\n'
+                '        ' + auth + '\n'
+                '    return inner\n'
+            )
+            cases = (
+                (direct + 'invoke(run)\npassword = None\n', True),
+                (direct + 'callback = run\ninvoke(callback)\n'
+                 'password = None\n', True),
+                (direct + 'alias = run\nalias = lambda: None\n'
+                 'alias()\npassword = None\n', False),
+                (direct + 'alias = run\nalias()\n'
+                 'alias = lambda: None\npassword = None\n', True),
+                (direct + 'alias = run\nalias = lambda: None\n'
+                 'alias()\n', True),
+                (nested + 'callback = outer()\npassword = None\n'
+                 'callback()\n', False),
+                (nested + 'callback = outer()\ncallback()\n'
+                 'password = None\n', True),
+                (nested + 'callback = outer()\n'
+                 'password = None\nalias = callback\nalias()\n', False),
+                (nested + 'callback = outer()\n'
+                 'invoke(callback)\npassword = None\n', True),
+                (nested + 'outer()\npassword = None\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for body, expected in cases:
+                    with self.subTest(body=body):
+                        consumer.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'from provider_b import *\n' + body,
                             encoding="utf-8",
                         )
                         self.assertEqual(
