@@ -2990,21 +2990,77 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
                     returned = callee.body[0].value
                 else:
                     continue
-                if (
-                    arguments.posonlyargs or arguments.args
-                    or arguments.kwonlyargs or arguments.vararg
-                    or arguments.kwarg
+                positional = [
+                    *arguments.posonlyargs, *arguments.args
+                ]
+                supplied_defaults = len(arguments.defaults)
+                # A call with no explicit arguments is legal only if each
+                # positional/keyword-only parameter has a default (or is a
+                # variadic parameter). Do not model an impossible call.
+                if len(positional) > supplied_defaults or any(
+                    default is None
+                    for default in arguments.kw_defaults
                 ):
                     continue
+                defaults = {
+                    argument.arg: default
+                    for argument, default in zip(
+                        positional[len(positional) - supplied_defaults:],
+                        arguments.defaults,
+                    )
+                }
+                defaults.update({
+                    argument.arg: default
+                    for argument, default in zip(
+                        arguments.kwonlyargs, arguments.kw_defaults
+                    )
+                })
                 token = ("callable-return", id(callee))
                 if token in seen_names:
                     continue
+
+                def returned_passwords(expression, active):
+                    if isinstance(expression, ast.Name) and expression.id in defaults:
+                        return _hardcoded_password_values(
+                            defaults[expression.id], bindings,
+                            before_position, active,
+                        )
+                    if (
+                        isinstance(expression, ast.Call)
+                        and isinstance(expression.func, ast.Attribute)
+                        and expression.func.attr in {
+                            "strip", "lstrip", "rstrip",
+                            "lower", "upper", "casefold",
+                        }
+                        and not expression.args and not expression.keywords
+                    ):
+                        return returned_passwords(
+                            expression.func.value, active
+                        )
+                    if isinstance(expression, ast.IfExp):
+                        return (
+                            returned_passwords(expression.body, active)
+                            + returned_passwords(expression.orelse, active)
+                        )
+                    if isinstance(expression, (ast.BoolOp, ast.BinOp)):
+                        components = (
+                            expression.values
+                            if isinstance(expression, ast.BoolOp)
+                            else [expression.left, expression.right]
+                        )
+                        return [
+                            secret for component in components
+                            for secret in returned_passwords(
+                                component, active
+                            )
+                        ]
+                    return _hardcoded_password_values(
+                        expression, bindings, before_position, active
+                    )
+
                 if returned is not None:
-                    found = _hardcoded_password_values(
-                        returned,
-                        bindings,
-                        before_position,
-                        seen_names | {token},
+                    found = returned_passwords(
+                        returned, seen_names | {token}
                     )
                     if found:
                         return found
@@ -6048,6 +6104,15 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             # resume counter. Calls from opposing arms must
                             # never accumulate as though both arms ran.
                             paths = [(0, {})]
+                            constant_if_choices = {
+                                ("If", *_node_position(conditional)): (
+                                    "body" if bool(conditional.test.value)
+                                    else "orelse"
+                                )
+                                for conditional in ast.walk(tree)
+                                if isinstance(conditional, ast.If)
+                                and isinstance(conditional.test, ast.Constant)
+                            }
                             for resume, kind in resume_expressions(call):
                                 branches = [
                                     step for step in _node_control_path(resume)
@@ -6060,7 +6125,20 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                     next_paths = []
                                     for count, choices in expanded:
                                         prior_choice = choices.get(key)
-                                        if prior_choice is not None:
+                                        constant_choice = constant_if_choices.get(key)
+                                        if constant_choice is not None:
+                                            # Statically false/true arms cannot
+                                            # contribute a resume to the count
+                                            # that reaches later module calls.
+                                            if (
+                                                prior_choice is not None
+                                                and prior_choice != constant_choice
+                                            ):
+                                                continue
+                                            selected = dict(choices)
+                                            selected[key] = constant_choice
+                                            next_paths.append((count, selected))
+                                        elif prior_choice is not None:
                                             next_paths.append((count, choices))
                                         else:
                                             matching = dict(choices)
@@ -8395,6 +8473,85 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                  'next(gen)\n'
                  'if flag:\n    next(gen)\n'
                  'password = None\n', True),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for source, expected in cases:
+                    with self.subTest(source=source):
+                        consumer.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'from provider_b import *\n' + source,
+                            encoding="utf-8",
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+
+    def test_hardcoded_default_argument_return_callables(self):
+        """Zero-arg calls can return required positional/keyword defaults."""
+        cases = (
+            ('password = (lambda value="hardcoded-secret": value)()\n', True),
+            ('password = (lambda *, value="hardcoded-secret": value)()\n', True),
+            ('password = (lambda a="hardcoded-secret", b="safe": a)()\n', True),
+            ('def get_password(value="hardcoded-secret"):\n'
+             '    return value\npassword = get_password()\n', True),
+            ('def get_password(*, value="hardcoded-secret"):\n'
+             '    return value\npassword = get_password()\n', True),
+            ('def get_password(value="hardcoded-secret"):\n'
+             '    return value.strip()\npassword = get_password()\n', True),
+            ('def get_password(value="hardcoded-secret"):\n'
+             '    return "safe"\npassword = get_password()\n', False),
+            ('password = (lambda value="hardcoded-secret": None)()\n', False),
+            ('password = (lambda required, opt="hardcoded-secret": opt)()\n', False),
+            ('password = (lambda value=os.getenv("TCP_ELASTIC_PASSWORD"): value)()\n', False),
+        )
+        for source, expected in cases:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    bool(hardcoded_password_literal_lines(source)), expected
+                )
+        self.assertTrue(hardcoded_auth_tuple_lines(
+            'def get_password(value="hardcoded-secret"):\n'
+            '    return value\n'
+            'password = get_password()\n'
+            'Elasticsearch("localhost", basic_auth=("elastic", password))\n'
+        ))
+
+    def test_wildcard_generator_prune_constant_if_resume(self):
+        """An unreachable branch must not advance the generator counter."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "provider_b.py"
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            auth = 'Elasticsearch("localhost", basic_auth=("elastic", password))'
+            generator = 'def run():\n    yield 1\n    ' + auth + '\n'
+            cases = (
+                (generator + 'gen = run()\n'
+                 'if False:\n    next(gen)\n'
+                 'next(gen)\npassword = None\n', False),
+                (generator + 'gen = run()\n'
+                 'if True:\n    next(gen)\n'
+                 'next(gen)\npassword = None\n', True),
+                (generator + 'gen = run()\n'
+                 'if False:\n    next(gen)\n'
+                 'else:\n    next(gen)\n'
+                 'next(gen)\npassword = None\n', True),
+                (generator + 'gen = run()\n'
+                 'if True:\n    next(gen)\n'
+                 'else:\n    next(gen)\n'
+                 'password = None\n', False),
+                (generator + 'gen = run()\n'
+                 'if False:\n    next(gen)\n'
+                 'password = None\nnext(gen)\n', False),
+                (generator + 'gen = run()\n'
+                 'if flag:\n    next(gen)\n'
+                 'else:\n    next(gen)\n'
+                 'next(gen)\npassword = None\n', True),
             )
             with patch.dict(globals(), {
                 "REPOSITORY_ROOT": root,
