@@ -3021,9 +3021,14 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
 
                 def returned_passwords(expression, active):
                     if isinstance(expression, ast.Name) and expression.id in defaults:
+                        default = defaults[expression.id]
+                        # Default expressions are evaluated when the lambda
+                        # or function is DEFINED, not when it is invoked.
+                        # The default AST is annotated in the enclosing
+                        # scope, so reach only prior source-order bindings.
                         return _hardcoded_password_values(
-                            defaults[expression.id], bindings,
-                            before_position, active,
+                            default, bindings,
+                            _node_position(default), active,
                         )
                     if (
                         isinstance(expression, ast.Call)
@@ -6087,6 +6092,76 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     # outer itself runs; nested closure *creation* does not.
                     collect(scope)
 
+            def static_condition_truth(condition):
+                """Safely resolve side-effect-free constant boolean outcomes.
+
+                None denotes unknown; conservative paths remain for unknown
+                conditions. Short-circuit boolean logic can still prove a
+                result with one unknown operand.
+                """
+                if isinstance(condition, ast.Constant):
+                    return bool(condition.value)
+                if isinstance(condition, ast.UnaryOp) and isinstance(
+                    condition.op, ast.Not
+                ):
+                    nested = static_condition_truth(condition.operand)
+                    return None if nested is None else not nested
+                if isinstance(condition, ast.BoolOp):
+                    known = [
+                        static_condition_truth(value)
+                        for value in condition.values
+                    ]
+                    if isinstance(condition.op, ast.And):
+                        if False in known:
+                            return False
+                        return True if all(x is True for x in known) else None
+                    if isinstance(condition.op, ast.Or):
+                        if True in known:
+                            return True
+                        return False if all(x is False for x in known) else None
+                if isinstance(condition, ast.Compare):
+                    expressions = [condition.left, *condition.comparators]
+                    try:
+                        values = [ast.literal_eval(x) for x in expressions]
+                    except (ValueError, TypeError, RecursionError):
+                        return None
+                    for left, op, right in zip(
+                        values, condition.ops, values[1:]
+                    ):
+                        # Restrict comparisons to immutable scalar constants:
+                        # no user-defined comparison methods or side effects.
+                        if not (
+                            type(left) in (str, int, float, bool, type(None))
+                            and type(right) in (
+                                str, int, float, bool, type(None)
+                            )
+                        ):
+                            return None
+                        if isinstance(op, ast.Eq):
+                            result = left == right
+                        elif isinstance(op, ast.NotEq):
+                            result = left != right
+                        elif isinstance(op, ast.Is):
+                            result = left is right
+                        elif isinstance(op, ast.IsNot):
+                            result = left is not right
+                        elif isinstance(op, ast.Lt):
+                            result = left < right if type(left) is type(right) else None
+                        elif isinstance(op, ast.LtE):
+                            result = left <= right if type(left) is type(right) else None
+                        elif isinstance(op, ast.Gt):
+                            result = left > right if type(left) is type(right) else None
+                        elif isinstance(op, ast.GtE):
+                            result = left >= right if type(left) is type(right) else None
+                        else:
+                            return None
+                        if result is None:
+                            return None
+                        if not result:
+                            return False
+                    return True
+                return None
+
             def collect(target):
                 if target in visited:
                     return
@@ -6106,12 +6181,15 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             paths = [(0, {})]
                             constant_if_choices = {
                                 ("If", *_node_position(conditional)): (
-                                    "body" if bool(conditional.test.value)
+                                    "body"
+                                    if static_condition_truth(conditional.test)
                                     else "orelse"
                                 )
                                 for conditional in ast.walk(tree)
                                 if isinstance(conditional, ast.If)
-                                and isinstance(conditional.test, ast.Constant)
+                                and static_condition_truth(
+                                    conditional.test
+                                ) is not None
                             }
                             for resume, kind in resume_expressions(call):
                                 branches = [
@@ -8563,6 +8641,79 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         consumer.write_text(
                             'from elasticsearch import Elasticsearch\n'
                             'from provider_b import *\n' + source,
+                            encoding="utf-8",
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+
+    def test_hardcoded_callable_default_captured_before_overwrite(self):
+        """Default values freeze earlier name aliases at definition time."""
+        cases = (
+            ('secret = "hardcoded-secret"\n'
+             'get_password = lambda value=secret: value\n'
+             'secret = None\npassword = get_password()\n', True),
+            ('secret = "hardcoded-secret"\n'
+             'def get_password(value=secret):\n    return value\n'
+             'secret = None\npassword = get_password()\n', True),
+            ('secret = "hardcoded-secret"\n'
+             'get_password = lambda *, value=secret: value\n'
+             'secret = None\npassword = get_password()\n', True),
+            ('secret = None\n'
+             'get_password = lambda value=secret: value\n'
+             'secret = "hardcoded-secret"\npassword = get_password()\n', False),
+            ('secret = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+             'get_password = lambda value=secret: value\n'
+             'secret = "hardcoded-secret"\npassword = get_password()\n', False),
+            ('secret = "hardcoded-secret"\n'
+             'get_password = lambda value=secret: None\n'
+             'secret = None\npassword = get_password()\n', False),
+        )
+        for source, expected in cases:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    bool(hardcoded_password_literal_lines(source)), expected
+                )
+        self.assertTrue(hardcoded_auth_tuple_lines(
+            'secret = "hardcoded-secret"\n'
+            'get_password = lambda value=secret: value\n'
+            'secret = None\n'
+            'password = get_password()\n'
+            'Elasticsearch("localhost", basic_auth=("elastic", password))\n'
+        ))
+
+    def test_wildcard_generator_static_false_expressions(self):
+        """Provably unreachable expression branches cannot advance resumes."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "provider_b.py"
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            auth = 'Elasticsearch("localhost", basic_auth=("elastic", password))'
+            definition = 'def run():\n    yield 1\n    ' + auth + '\n'
+            cases = (
+                ('if not True:\n    next(gen)\nnext(gen)\npassword = None\n', False),
+                ('if 1 == 2:\n    next(gen)\nnext(gen)\npassword = None\n', False),
+                ('if False and flag:\n    next(gen)\nnext(gen)\npassword = None\n', False),
+                ('if True or flag:\n    next(gen)\nnext(gen)\npassword = None\n', True),
+                ('if not False:\n    next(gen)\nnext(gen)\npassword = None\n', True),
+                ('if 1 != 2:\n    next(gen)\nnext(gen)\npassword = None\n', True),
+                ('if True and flag:\n    next(gen)\nnext(gen)\npassword = None\n', True),
+                ('if not True:\n    next(gen)\nelse:\n    next(gen)\n'
+                 'next(gen)\npassword = None\n', True),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for source, expected in cases:
+                    with self.subTest(source=source):
+                        consumer.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'from provider_b import *\n'
+                            + definition + 'gen = run()\n' + source,
                             encoding="utf-8",
                         )
                         self.assertEqual(
