@@ -5645,7 +5645,16 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             # The resumed object is the method's receiver,
                             # even for gen.__next__() with zero arguments.
                             value = func.value
-                            kind = "step"
+                            # An unprimed generator rejects send(non-None)
+                            # before entering its body. Once resumed normally,
+                            # later sends may drive the next segment.
+                            kind = (
+                                "send-value"
+                                if func.attr == "send" and expression.args
+                                and isinstance(expression.args[0], ast.Constant)
+                                and expression.args[0].value is not None
+                                else "step"
+                            )
                         elif isinstance(func, ast.Name) and func.id in {
                             "next", "anext",
                         } and expression.args:
@@ -5682,7 +5691,13 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     return 0
                 count = 0
                 for statement in target.body:
-                    if _node_position(statement) >= _node_position(use):
+                    # The yielded expression is evaluated BEFORE suspending.
+                    # A credential access nested inside that very yield must
+                    # be reached by the current step, not the next one.
+                    if (
+                        _node_position(statement) >= _node_position(use)
+                        or any(child is use for child in ast.walk(statement))
+                    ):
                         break
                     if isinstance(statement, ast.Expr) and isinstance(
                         statement.value, (ast.Yield, ast.YieldFrom)
@@ -5690,6 +5705,53 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         count += 1
                 return count
 
+            def resume_repeat_bound(expression, needed):
+                """Conservatively bound repeated execution of one resume AST."""
+                repeats = 1
+                child = expression
+                while child is not tree:
+                    parent = ast_parents.get(child)
+                    if parent is None:
+                        break
+                    if isinstance(parent, (ast.For, ast.AsyncFor)) and any(
+                        child is stmt for stmt in parent.body
+                    ):
+                        iterable = parent.iter
+                        repetitions = None
+                        if isinstance(iterable, (ast.List, ast.Tuple)):
+                            repetitions = len(iterable.elts)
+                        elif (
+                            isinstance(iterable, ast.Call)
+                            and isinstance(iterable.func, ast.Name)
+                            and iterable.func.id == "range"
+                            and not iterable.keywords
+                            and 1 <= len(iterable.args) <= 3
+                            and all(
+                                isinstance(arg, ast.Constant)
+                                and type(arg.value) is int
+                                for arg in iterable.args
+                            )
+                        ):
+                            try:
+                                repetitions = len(range(*(
+                                    arg.value for arg in iterable.args
+                                )))
+                            except ValueError:
+                                pass
+                        repeats *= (
+                            min(repetitions, needed)
+                            if repetitions is not None
+                            else needed
+                        )
+                    elif isinstance(parent, ast.While) and child in parent.body:
+                        repeats *= (
+                            0 if isinstance(parent.test, ast.Constant)
+                            and not bool(parent.test.value) else needed
+                        )
+                    child = parent
+                    if repeats >= needed:
+                        return needed
+                return repeats
 
             def reaches_call(expression, scope):
                 """Exclude syntactically unreachable inner invocations."""
@@ -5776,11 +5838,14 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             steps = 0
                             needed = prior_definite_yields(target) + 1
                             for resume, kind in resume_expressions(call):
-                                if kind == "step":
-                                    steps += 1
-                                    # The preceding yields suspend before the
-                                    # password use. A one-step resume cannot
-                                    # read past them until the needed step.
+                                if kind in {"step", "send-value"}:
+                                    if kind == "send-value" and steps == 0:
+                                        # TypeError: can't send non-None to a
+                                        # just-started generator. No code ran.
+                                        continue
+                                    steps += resume_repeat_bound(resume, needed)
+                                    # One AST resume inside a repeated loop
+                                    # can reach several suspension segments.
                                     if steps < needed:
                                         continue
                                 add_site(resume)
@@ -7869,6 +7934,63 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                  'callback()\npassword = None\n', True),
                 (direct + 'callbacks = [run]\n'
                  'callbacks[0]()\npassword = None\n', True),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for source, expected in cases:
+                    with self.subTest(source=source):
+                        consumer.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'from provider_b import *\n' + source,
+                            encoding="utf-8",
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+
+    def test_wildcard_generator_yield_loop_and_initial_send(self):
+        """Credential evaluation at a yield, repeated resume, invalid first send."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "provider_b.py"
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            auth = 'Elasticsearch("localhost", basic_auth=("elastic", password))'
+            yielded_auth = 'def run():\n    yield ' + auth + '\n'
+            later_auth = 'def run():\n    yield 1\n    ' + auth + '\n'
+            cases = (
+                (yielded_auth + 'gen = run()\nnext(gen)\npassword = None\n', True),
+                (yielded_auth + 'gen = run()\npassword = None\nnext(gen)\n', False),
+                (yielded_auth + 'gen = run()\ngen.send(None)\n'
+                 'password = None\n', True),
+                (later_auth + 'gen = run()\n'
+                 'for _ in range(2):\n    next(gen)\n'
+                 'password = None\n', True),
+                (later_auth + 'gen = run()\n'
+                 'for _ in range(1):\n    next(gen)\n'
+                 'password = None\n', False),
+                (later_auth + 'gen = run()\n'
+                 'for _ in range(0):\n    next(gen)\n'
+                 'password = None\n', False),
+                (later_auth + 'gen = run()\n'
+                 'password = None\n'
+                 'for _ in range(2):\n    next(gen)\n', False),
+                (yielded_auth + 'gen = run()\n'
+                 'try:\n    gen.send(7)\n'
+                 'except TypeError:\n    pass\n'
+                 'password = None\nnext(gen)\n', False),
+                (yielded_auth + 'gen = run()\n'
+                 'try:\n    gen.send(7)\n'
+                 'except TypeError:\n    pass\n'
+                 'next(gen)\npassword = None\n', True),
+                (later_auth + 'gen = run()\nnext(gen)\n'
+                 'gen.send(7)\npassword = None\n', True),
+                (later_auth + 'gen = run()\nnext(gen)\n'
+                 'password = None\ngen.send(7)\n', False),
             )
             with patch.dict(globals(), {
                 "REPOSITORY_ROOT": root,
