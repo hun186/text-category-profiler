@@ -5628,34 +5628,127 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 )
 
             def resume_expressions(created):
-                """Find common explicit coroutine/generator consumption sites."""
+                """Return ordered resume attempts, distinguishing one step from exhaustion."""
+                found = []
                 for expression in ast.walk(tree):
                     value = None
+                    kind = "all"
                     if isinstance(expression, (ast.Await, ast.YieldFrom)):
                         value = expression.value
                     elif isinstance(expression, (ast.For, ast.AsyncFor)):
                         value = expression.iter
                     elif isinstance(expression, ast.Call):
                         func = expression.func
-                        consumer = (
-                            isinstance(func, ast.Name)
-                            and func.id in {
-                                "next", "anext", "list", "tuple", "set",
-                                "sum", "any", "all", "max", "min",
-                            }
-                            or isinstance(func, ast.Attribute)
-                            and func.attr in {"run", "send", "__next__"}
-                        )
-                        if consumer and expression.args:
+                        if isinstance(func, ast.Attribute) and func.attr in {
+                            "send", "__next__", "__anext__",
+                        }:
+                            # The resumed object is the method's receiver,
+                            # even for gen.__next__() with zero arguments.
+                            value = func.value
+                            kind = "step"
+                        elif isinstance(func, ast.Name) and func.id in {
+                            "next", "anext",
+                        } and expression.args:
                             value = expression.args[0]
+                            kind = "step"
+                        elif isinstance(func, ast.Name) and func.id in {
+                            "list", "tuple", "set", "sum",
+                            "any", "all", "max", "min",
+                        } and expression.args:
+                            value = expression.args[0]
+                        elif isinstance(func, ast.Attribute) and func.attr == "run" and expression.args:
+                            value = expression.args[0]
+                        elif not (
+                            isinstance(func, ast.Name) and func.id in {
+                                "iter", "repr", "id", "type",
+                            }
+                        ):
+                            # Opaque consumer may synchronously drive a
+                            # passed coroutine/generator to its credential.
+                            for argument in [
+                                *expression.args,
+                                *(kw.value for kw in expression.keywords),
+                            ]:
+                                if refers_to(argument, created):
+                                    value = argument
+                                    break
                     if value is not None and refers_to(value, created):
-                        yield expression
+                        found.append((expression, kind))
+                return sorted(found, key=lambda item: _node_position(item[0]))
+
+            def prior_definite_yields(target):
+                """Count only unconditional yields preceding this read."""
+                if not isinstance(target, ast.FunctionDef):
+                    return 0
+                count = 0
+                for statement in target.body:
+                    if _node_position(statement) >= _node_position(use):
+                        break
+                    if isinstance(statement, ast.Expr) and isinstance(
+                        statement.value, (ast.Yield, ast.YieldFrom)
+                    ):
+                        count += 1
+                return count
+
+
+            def reaches_call(expression, scope):
+                """Exclude syntactically unreachable inner invocations."""
+                child = expression
+                while child is not scope:
+                    parent = ast_parents.get(child)
+                    if parent is None:
+                        break
+                    if isinstance(parent, ast.If) and isinstance(
+                        parent.test, ast.Constant
+                    ):
+                        truth = bool(parent.test.value)
+                        if child in parent.body and not truth:
+                            return False
+                        if child in parent.orelse and truth:
+                            return False
+                    for suite_name in ("body", "orelse", "finalbody"):
+                        suite = getattr(parent, suite_name, None)
+                        if isinstance(suite, list) and child in suite:
+                            if any(
+                                isinstance(previous, (ast.Return, ast.Raise))
+                                for previous in suite[:suite.index(child)]
+                            ):
+                                return False
+                    child = parent
+                return True
+
+            def tracked_name_alias_store(reference):
+                """Detect name leaves in source-ordered unpacking stores."""
+                child = reference
+                indexes = []
+                parent = ast_parents.get(child)
+                while isinstance(parent, (ast.Tuple, ast.List)):
+                    if any(isinstance(leaf, ast.Starred) for leaf in parent.elts):
+                        return False
+                    indexes.insert(0, parent.elts.index(child))
+                    child, parent = parent, ast_parents.get(parent)
+                if not isinstance(parent, ast.Assign) or parent.value is not child:
+                    return False
+                for target in parent.targets:
+                    leaf = target
+                    for index in indexes:
+                        if not isinstance(leaf, (ast.Tuple, ast.List)):
+                            break
+                        if index >= len(leaf.elts):
+                            break
+                        leaf = leaf.elts[index]
+                    else:
+                        if isinstance(leaf, ast.Name):
+                            return True
+                return False
 
             sites = []
             visited = set()
 
             def add_site(expression):
                 scope = getattr(expression, "_binding_scope", tree)
+                if scope is not tree and not reaches_call(expression, scope):
+                    return
                 if scope is tree:
                     sites.append((
                         _node_position(expression), _node_control_path(expression)
@@ -5680,7 +5773,16 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             # Calling async def or a generator function only
                             # creates the suspended object. Its body reads
                             # globals on await/iteration, not on creation.
-                            for resume in resume_expressions(call):
+                            steps = 0
+                            needed = prior_definite_yields(target) + 1
+                            for resume, kind in resume_expressions(call):
+                                if kind == "step":
+                                    steps += 1
+                                    # The preceding yields suspend before the
+                                    # password use. A one-step resume cannot
+                                    # read past them until the needed step.
+                                    if steps < needed:
+                                        continue
                                 add_site(resume)
                         else:
                             add_site(call)
@@ -5719,6 +5821,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             ref in parent.args
                             or any(k.value is ref for k in parent.keywords)
                         )
+                        or tracked_name_alias_store(ref)
                     ):
                         continue
                     add_site(ref)
@@ -7704,6 +7807,68 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 (generator
                  + 'gen = run()\nnext(gen)\nnext(gen)\n'
                  'password = None\n', True),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for source, expected in cases:
+                    with self.subTest(source=source):
+                        consumer.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'from provider_b import *\n' + source,
+                            encoding="utf-8",
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+
+    def test_wildcard_generator_consumers_reachability_and_unpacking(self):
+        """Resume receivers, unknown consumers, suspension steps, and dead calls."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "provider_b.py"
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            auth = 'Elasticsearch("localhost", basic_auth=("elastic", password))'
+            generator = 'def run():\n    yield 1\n    ' + auth + '\n'
+            immediate = 'def run():\n    ' + auth + '\n    yield 1\n'
+            direct = 'def run():\n    ' + auth + '\n'
+            cases = (
+                (immediate + 'gen = run()\ngen.send(None)\npassword = None\n', True),
+                (immediate + 'gen = run()\ngen.__next__()\npassword = None\n', True),
+                (generator + 'gen = run()\ngen.send(None)\n'
+                 'password = None\ngen.__next__()\n', False),
+                (generator + 'gen = run()\ngen.__next__()\n'
+                 'gen.send(None)\npassword = None\n', True),
+                (generator + 'gen = run()\nnext(gen)\n'
+                 'password = None\nnext(gen)\n', False),
+                (generator + 'gen = run()\nnext(gen)\n'
+                 'next(gen)\npassword = None\n', True),
+                (immediate + 'gen = run()\nconsume(gen)\n'
+                 'password = None\n', True),
+                (immediate + 'gen = run()\npassword = None\n'
+                 'consume(gen)\n', False),
+                ('def outer():\n'
+                 '    def inner():\n        ' + auth + '\n'
+                 '    if False:\n        inner()\n'
+                 'outer()\npassword = None\n', False),
+                ('def outer():\n'
+                 '    def inner():\n        ' + auth + '\n'
+                 '    return None\n    inner()\n'
+                 'outer()\npassword = None\n', False),
+                ('def outer():\n'
+                 '    def inner():\n        ' + auth + '\n'
+                 '    if True:\n        inner()\n'
+                 'outer()\npassword = None\n', True),
+                (direct + 'callback, unused = run, None\n'
+                 'password = None\ncallback()\n', False),
+                (direct + 'callback, unused = run, None\n'
+                 'callback()\npassword = None\n', True),
+                (direct + 'callbacks = [run]\n'
+                 'callbacks[0]()\npassword = None\n', True),
             )
             with patch.dict(globals(), {
                 "REPOSITORY_ROOT": root,
