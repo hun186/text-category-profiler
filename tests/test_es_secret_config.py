@@ -5781,11 +5781,33 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                 iterable = parent.iter
                                 repetition = None
                                 if isinstance(iterable, (ast.List, ast.Tuple)):
-                                    if not any(
-                                        isinstance(item, ast.Starred)
-                                        for item in iterable.elts
-                                    ):
-                                        repetition = len(iterable.elts)
+                                    # Starred literal iterables expand into
+                                    # their *runtime* element counts. Unknown
+                                    # stars preserve an unknown upper bound.
+                                    repetition = 0
+                                    for item in iterable.elts:
+                                        if not isinstance(item, ast.Starred):
+                                            repetition += 1
+                                            continue
+                                        expanded = item.value
+                                        if isinstance(expanded, (ast.List, ast.Tuple)):
+                                            if any(
+                                                isinstance(part, ast.Starred)
+                                                for part in expanded.elts
+                                            ):
+                                                repetition = None
+                                                break
+                                            repetition += len(expanded.elts)
+                                        elif (
+                                            isinstance(expanded, ast.Constant)
+                                            and isinstance(expanded.value, (
+                                                str, bytes, tuple, list,
+                                            ))
+                                        ):
+                                            repetition += len(expanded.value)
+                                        else:
+                                            repetition = None
+                                            break
                                 elif (
                                     isinstance(iterable, ast.Call)
                                     and isinstance(iterable.func, ast.Name)
@@ -5946,6 +5968,13 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     sites.append((
                         _node_position(expression), _node_control_path(expression)
                     ))
+                elif isinstance(scope, (
+                    ast.ListComp, ast.SetComp, ast.DictComp,
+                )):
+                    # Eager comprehensions run at their expression site.
+                    # The produced element executes in their implicit scope,
+                    # but that frame is not a deferred user callable.
+                    add_site(scope)
                 elif isinstance(scope, (
                     ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda,
                     ast.GeneratorExp,
