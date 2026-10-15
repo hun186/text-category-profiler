@@ -5651,8 +5651,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             kind = (
                                 "send-value"
                                 if func.attr == "send" and expression.args
-                                and isinstance(expression.args[0], ast.Constant)
-                                and expression.args[0].value is not None
+                                and definitely_non_none(expression.args[0])
                                 else "step"
                             )
                         elif isinstance(func, ast.Name) and func.id in {
@@ -5685,73 +5684,205 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         found.append((expression, kind))
                 return sorted(found, key=lambda item: _node_position(item[0]))
 
+            def static_iterable_minimum(expression):
+                """Lower bound on yields from a plainly known iterable.
+
+                Unknown delegation may yield zero items, so it contributes
+                no definite suspension before a credential read.
+                """
+                if isinstance(expression, (ast.List, ast.Tuple, ast.Set)):
+                    if any(isinstance(item, ast.Starred) for item in expression.elts):
+                        return 0
+                    return len(expression.elts)
+                if isinstance(expression, ast.Dict):
+                    if any(key is None for key in expression.keys):
+                        return 0
+                    return len(expression.keys)
+                if isinstance(expression, ast.Constant) and isinstance(
+                    expression.value, (str, bytes, tuple, list, frozenset)
+                ):
+                    return len(expression.value)
+                if (
+                    isinstance(expression, ast.Call)
+                    and isinstance(expression.func, ast.Name)
+                    and expression.func.id == "range"
+                    and not expression.keywords
+                    and 1 <= len(expression.args) <= 3
+                    and all(
+                        isinstance(arg, ast.Constant) and type(arg.value) is int
+                        for arg in expression.args
+                    )
+                ):
+                    try:
+                        return len(range(*(arg.value for arg in expression.args)))
+                    except ValueError:
+                        return 0
+                return 0
+
             def prior_definite_yields(target):
-                """Count only unconditional yields preceding this read."""
+                """Count guaranteed suspensions strictly before the read."""
                 if not isinstance(target, ast.FunctionDef):
                     return 0
                 count = 0
                 for statement in target.body:
-                    # The yielded expression is evaluated BEFORE suspending.
-                    # A credential access nested inside that very yield must
-                    # be reached by the current step, not the next one.
+                    # A yielded expression is evaluated BEFORE suspension.
                     if (
                         _node_position(statement) >= _node_position(use)
                         or any(child is use for child in ast.walk(statement))
                     ):
                         break
-                    if isinstance(statement, ast.Expr) and isinstance(
-                        statement.value, (ast.Yield, ast.YieldFrom)
-                    ):
-                        count += 1
+                    if isinstance(statement, ast.Expr):
+                        if isinstance(statement.value, ast.Yield):
+                            count += 1
+                        elif isinstance(statement.value, ast.YieldFrom):
+                            count += static_iterable_minimum(
+                                statement.value.value
+                            )
                 return count
 
-            def resume_repeat_bound(expression, needed):
-                """Conservatively bound repeated execution of one resume AST."""
+            def loop_ancestors(expression):
+                """Loops whose body contains this syntactic operation."""
+                ancestors = []
+                child = expression
+                while child is not tree:
+                    parent = ast_parents.get(child)
+                    if parent is None:
+                        break
+                    if isinstance(parent, (ast.For, ast.AsyncFor, ast.While)):
+                        if any(child is stmt for stmt in parent.body):
+                            ancestors.append(parent)
+                    child = parent
+                return ancestors
+
+            def resumes_same_instance(created, resume, loop):
+                """A generator reconstructed each pass cannot accumulate steps."""
+                return (
+                    loop in loop_ancestors(created)
+                    and loop in loop_ancestors(resume)
+                    and _node_position(created) < _node_position(resume)
+                )
+
+            def resume_repeat_bound(expression, needed, created):
+                """Conservatively bound repeat resumes of the same object."""
                 repeats = 1
                 child = expression
                 while child is not tree:
                     parent = ast_parents.get(child)
                     if parent is None:
                         break
-                    if isinstance(parent, (ast.For, ast.AsyncFor)) and any(
-                        child is stmt for stmt in parent.body
-                    ):
-                        iterable = parent.iter
-                        repetitions = None
-                        if isinstance(iterable, (ast.List, ast.Tuple)):
-                            repetitions = len(iterable.elts)
-                        elif (
-                            isinstance(iterable, ast.Call)
-                            and isinstance(iterable.func, ast.Name)
-                            and iterable.func.id == "range"
-                            and not iterable.keywords
-                            and 1 <= len(iterable.args) <= 3
-                            and all(
-                                isinstance(arg, ast.Constant)
-                                and type(arg.value) is int
-                                for arg in iterable.args
+                    if isinstance(parent, (ast.For, ast.AsyncFor)):
+                        # The iterable expression is evaluated once, before
+                        # the loop body, so it is not a repeating resume site.
+                        in_body = any(child is stmt for stmt in parent.body)
+                        if in_body:
+                            if resumes_same_instance(created, expression, parent):
+                                repetition = 1
+                            else:
+                                iterable = parent.iter
+                                repetition = None
+                                if isinstance(iterable, (ast.List, ast.Tuple)):
+                                    if not any(
+                                        isinstance(item, ast.Starred)
+                                        for item in iterable.elts
+                                    ):
+                                        repetition = len(iterable.elts)
+                                elif (
+                                    isinstance(iterable, ast.Call)
+                                    and isinstance(iterable.func, ast.Name)
+                                    and iterable.func.id == "range"
+                                    and not iterable.keywords
+                                    and 1 <= len(iterable.args) <= 3
+                                    and all(
+                                        isinstance(arg, ast.Constant)
+                                        and type(arg.value) is int
+                                        for arg in iterable.args
+                                    )
+                                ):
+                                    try:
+                                        repetition = len(range(*(
+                                            arg.value for arg in iterable.args
+                                        )))
+                                    except ValueError:
+                                        pass
+                            repeats *= (
+                                min(repetition, needed)
+                                if repetition is not None else needed
                             )
+                        elif isinstance(parent, ast.For) and child is parent.iter:
+                            pass
+                    elif isinstance(parent, ast.While):
+                        in_body = any(child is stmt for stmt in parent.body)
+                        in_test = any(
+                            node is expression for node in ast.walk(parent.test)
+                        )
+                        if in_body or in_test:
+                            if in_body and resumes_same_instance(
+                                created, expression, parent
+                            ):
+                                repetition = 1
+                            else:
+                                repetition = (
+                                    0 if isinstance(parent.test, ast.Constant)
+                                    and not bool(parent.test.value)
+                                    else needed
+                                )
+                            repeats *= repetition
+                    elif isinstance(parent, (
+                        ast.ListComp, ast.SetComp, ast.DictComp,
+                        ast.GeneratorExp,
+                    )):
+                        # Result expressions and filters may evaluate once
+                        # per iteration, including nested comprehensions.
+                        if not any(
+                            node is expression
+                            for generator in parent.generators
+                            for node in ast.walk(generator.iter)
                         ):
-                            try:
-                                repetitions = len(range(*(
-                                    arg.value for arg in iterable.args
-                                )))
-                            except ValueError:
-                                pass
-                        repeats *= (
-                            min(repetitions, needed)
-                            if repetitions is not None
-                            else needed
-                        )
-                    elif isinstance(parent, ast.While) and child in parent.body:
-                        repeats *= (
-                            0 if isinstance(parent.test, ast.Constant)
-                            and not bool(parent.test.value) else needed
-                        )
+                            repeats *= needed
                     child = parent
                     if repeats >= needed:
                         return needed
                 return repeats
+
+            def definitely_non_none(expr, seen=None):
+                """Recognize only statically provable non-None send values."""
+                if expr is None:
+                    return False
+                seen = set() if seen is None else seen
+                if expr in seen:
+                    return False
+                seen = seen | {expr}
+                if isinstance(expr, ast.Name):
+                    values = [
+                        bound for bound in _resolve_bound_nodes(
+                            expr, bound_names(), _node_position(expr)
+                        ) if bound is not expr
+                    ]
+                    return bool(values) and all(
+                        definitely_non_none(bound, seen) for bound in values
+                    )
+                if isinstance(expr, ast.Constant):
+                    return expr.value is not None
+                if isinstance(expr, (
+                    ast.List, ast.Tuple, ast.Set, ast.Dict,
+                    ast.JoinedStr, ast.Lambda,
+                )):
+                    return True
+                if isinstance(expr, ast.UnaryOp) and isinstance(
+                    expr.op, (ast.UAdd, ast.USub, ast.Invert)
+                ):
+                    return definitely_non_none(expr.operand, seen)
+                if isinstance(expr, ast.BinOp):
+                    return (
+                        definitely_non_none(expr.left, seen)
+                        and definitely_non_none(expr.right, seen)
+                    )
+                if isinstance(expr, ast.IfExp):
+                    return (
+                        definitely_non_none(expr.body, seen)
+                        and definitely_non_none(expr.orelse, seen)
+                    )
+                return False
 
             def reaches_call(expression, scope):
                 """Exclude syntactically unreachable inner invocations."""
@@ -5843,7 +5974,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                         # TypeError: can't send non-None to a
                                         # just-started generator. No code ran.
                                         continue
-                                    steps += resume_repeat_bound(resume, needed)
+                                    steps += resume_repeat_bound(
+                                        resume, needed, call
+                                    )
                                     # One AST resume inside a repeated loop
                                     # can reach several suspension segments.
                                     if steps < needed:
@@ -7991,6 +8124,79 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                  'gen.send(7)\npassword = None\n', True),
                 (later_auth + 'gen = run()\nnext(gen)\n'
                  'password = None\ngen.send(7)\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for source, expected in cases:
+                    with self.subTest(source=source):
+                        consumer.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'from provider_b import *\n' + source,
+                            encoding="utf-8",
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+
+    def test_wildcard_generator_review_resumption_paths(self):
+        """While tests, starred loops, delegation, fresh instances, send aliases."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "provider_b.py"
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            auth = 'Elasticsearch("localhost", basic_auth=("elastic", password))'
+            after_yield = 'def run():\n    yield True\n    ' + auth + '\n'
+            yielded_auth = 'def run():\n    yield ' + auth + '\n'
+            cases = (
+                (after_yield + 'gen = run()\nwhile next(gen):\n    pass\n'
+                 'password = None\n', True),
+                (after_yield + 'gen = run()\npassword = None\n'
+                 'while next(gen):\n    pass\n', False),
+                (after_yield + 'gen = run()\n'
+                 'for _ in [*(1, 2)]:\n    next(gen)\n'
+                 'password = None\n', True),
+                (after_yield + 'gen = run()\n'
+                 'for _ in [*()]:\n    next(gen)\n'
+                 'password = None\n', False),
+                (after_yield + 'gen = run()\n'
+                 'results = [next(gen) for _ in range(2)]\n'
+                 'password = None\n', True),
+                (after_yield + 'gen = run()\n'
+                 'password = None\n'
+                 'results = [next(gen) for _ in range(2)]\n', False),
+                ('def run():\n    yield from []\n    ' + auth + '\n'
+                 'gen = run()\nnext(gen)\npassword = None\n', True),
+                ('def run():\n    yield from xs\n    ' + auth + '\n'
+                 'gen = run()\nnext(gen)\npassword = None\n', True),
+                ('def run():\n    yield from [1, 2]\n    ' + auth + '\n'
+                 'gen = run()\nnext(gen)\nnext(gen)\n'
+                 'password = None\nnext(gen)\n', False),
+                (after_yield
+                 + 'for _ in range(2):\n'
+                 '    gen = run()\n    next(gen)\n'
+                 'password = None\n', False),
+                (after_yield
+                 + 'for _ in range(2):\n'
+                 '    gen = run()\n    next(gen)\n    next(gen)\n'
+                 'password = None\n', True),
+                (yielded_auth
+                 + 'gen = run()\nvalue = 7\n'
+                 'try:\n    gen.send(value)\n'
+                 'except TypeError:\n    pass\n'
+                 'password = None\nnext(gen)\n', False),
+                (yielded_auth
+                 + 'gen = run()\nvalue = 7\n'
+                 'try:\n    gen.send(value)\n'
+                 'except TypeError:\n    pass\n'
+                 'next(gen)\npassword = None\n', True),
+                (after_yield
+                 + 'gen = run()\nvalue = 7\nnext(gen)\n'
+                 'gen.send(value)\npassword = None\n', True),
             )
             with patch.dict(globals(), {
                 "REPOSITORY_ROOT": root,
