@@ -8504,7 +8504,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ('def get_password(value="hardcoded-secret"):\n'
              '    return value.strip()\npassword = get_password()\n', True),
             ('def get_password(value="hardcoded-secret"):\n'
-             '    return "safe"\npassword = get_password()\n', False),
+             '    return None\npassword = get_password()\n', False),
             ('password = (lambda value="hardcoded-secret": None)()\n', False),
             ('password = (lambda required, opt="hardcoded-secret": opt)()\n', False),
             ('password = (lambda value=os.getenv("TCP_ELASTIC_PASSWORD"): value)()\n', False),
