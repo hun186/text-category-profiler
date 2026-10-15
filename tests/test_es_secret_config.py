@@ -2966,6 +2966,49 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
                 seen_names,
             )
 
+        # A zero-argument source-visible callable can return an embedded
+        # literal without exposing the literal in the assignment expression.
+        # Only follow its *return value*, never its unrelated call arguments.
+        if not node.args and not node.keywords:
+            for callee in _resolve_bound_nodes(
+                node.func, bindings, before_position
+            ):
+                returned = None
+                if isinstance(callee, ast.Lambda):
+                    arguments = callee.args
+                    returned = callee.body
+                elif isinstance(callee, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    # An async call yields a coroutine, not the returned
+                    # credential until awaited; do not equate the two.
+                    if isinstance(callee, ast.AsyncFunctionDef):
+                        continue
+                    if callee.decorator_list or len(callee.body) != 1:
+                        continue
+                    if not isinstance(callee.body[0], ast.Return):
+                        continue
+                    arguments = callee.args
+                    returned = callee.body[0].value
+                else:
+                    continue
+                if (
+                    arguments.posonlyargs or arguments.args
+                    or arguments.kwonlyargs or arguments.vararg
+                    or arguments.kwarg
+                ):
+                    continue
+                token = ("callable-return", id(callee))
+                if token in seen_names:
+                    continue
+                if returned is not None:
+                    found = _hardcoded_password_values(
+                        returned,
+                        bindings,
+                        before_position,
+                        seen_names | {token},
+                    )
+                    if found:
+                        return found
+
         # Unknown/runtime provider calls may accept lookup identifiers, prompts,
         # paths, or options. Their arguments are not statically returned password
         # values, so scanning them creates false positives.
@@ -5853,9 +5896,14 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         ast.ListComp, ast.SetComp, ast.DictComp,
                         ast.GeneratorExp,
                     )):
-                        # Result expressions and filters may evaluate once
-                        # per iteration, including nested comprehensions.
-                        if not any(
+                        # Comprehension bodies repeat, but an inline run()
+                        # in that same comprehension creates a new suspended
+                        # object for each iteration; its steps cannot carry
+                        # over to another fresh generator instance.
+                        created_in_parent = any(
+                            node is created for node in ast.walk(parent)
+                        )
+                        if not created_in_parent and not any(
                             node is expression
                             for generator in parent.generators
                             for node in ast.walk(generator.iter)
@@ -5995,22 +6043,63 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             # Calling async def or a generator function only
                             # creates the suspended object. Its body reads
                             # globals on await/iteration, not on creation.
-                            steps = 0
                             needed = prior_definite_yields(target) + 1
+                            # Each possible If/else path owns an independent
+                            # resume counter. Calls from opposing arms must
+                            # never accumulate as though both arms ran.
+                            paths = [(0, {})]
                             for resume, kind in resume_expressions(call):
-                                if kind in {"step", "send-value"}:
-                                    if kind == "send-value" and steps == 0:
-                                        # TypeError: can't send non-None to a
-                                        # just-started generator. No code ran.
+                                branches = [
+                                    step for step in _node_control_path(resume)
+                                    if step[0] == "If"
+                                ]
+                                expanded = paths
+                                for branch in branches:
+                                    key = branch[:3]
+                                    chosen = branch[3]
+                                    next_paths = []
+                                    for count, choices in expanded:
+                                        prior_choice = choices.get(key)
+                                        if prior_choice is not None:
+                                            next_paths.append((count, choices))
+                                        else:
+                                            matching = dict(choices)
+                                            matching[key] = chosen
+                                            opposing = dict(choices)
+                                            opposing[key] = (
+                                                "orelse" if chosen == "body"
+                                                else "body"
+                                            )
+                                            next_paths.extend([
+                                                (count, matching),
+                                                (count, opposing),
+                                            ])
+                                    expanded = next_paths
+                                updated = []
+                                for count, choices in expanded:
+                                    if any(
+                                        choices.get(branch[:3]) != branch[3]
+                                        for branch in branches
+                                    ):
+                                        updated.append((count, choices))
                                         continue
-                                    steps += resume_repeat_bound(
-                                        resume, needed, call
+                                    if kind == "send-value" and count == 0:
+                                        # Invalid initial send(non-None)
+                                        # raises without advancing this path.
+                                        updated.append((count, choices))
+                                        continue
+                                    increment = (
+                                        resume_repeat_bound(resume, needed, call)
+                                        if kind in {"step", "send-value"}
+                                        else needed
                                     )
-                                    # One AST resume inside a repeated loop
-                                    # can reach several suspension segments.
-                                    if steps < needed:
-                                        continue
-                                add_site(resume)
+                                    next_count = min(
+                                        needed, count + increment
+                                    )
+                                    if next_count >= needed:
+                                        add_site(resume)
+                                    updated.append((next_count, choices))
+                                paths = updated
                         else:
                             add_site(call)
                         continue
@@ -8226,6 +8315,86 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 (after_yield
                  + 'gen = run()\nvalue = 7\nnext(gen)\n'
                  'gen.send(value)\npassword = None\n', True),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for source, expected in cases:
+                    with self.subTest(source=source):
+                        consumer.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'from provider_b import *\n' + source,
+                            encoding="utf-8",
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+
+    def test_source_visible_callable_password_literal_returns(self):
+        """Only provable callable return literals count as hardcoded secrets."""
+        cases = (
+            ('password = (lambda: "hardcoded-secret")()\n', True),
+            ('def secret():\n    return "hardcoded-secret"\n'
+             'password = secret()\n', True),
+            ('def secret():\n    return "hardcoded-secret"\n'
+             'alias = secret\npassword = alias()\n', True),
+            ('secret = lambda: "hardcoded-secret"\n'
+             'password = secret()\n', True),
+            ('secret = lambda: "hardcoded-secret"\n'
+             'secret = lambda: None\npassword = secret()\n', False),
+            ('password = resolver("lookup-key")\n', False),
+            ('password = (lambda: os.environ["TCP_ELASTIC_PASSWORD"])()\n', False),
+            ('def secret():\n    return os.getenv("TCP_ELASTIC_PASSWORD")\n'
+             'password = secret()\n', False),
+        )
+        for source, expected in cases:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    bool(hardcoded_password_literal_lines(source)), expected
+                )
+        auth = 'Elasticsearch("localhost", basic_auth=("elastic", password))\n'
+        self.assertTrue(hardcoded_auth_tuple_lines(
+            'password = (lambda: "hardcoded-secret")()\n' + auth
+        ))
+        self.assertTrue(hardcoded_auth_tuple_lines(
+            'def secret():\n    return "hardcoded-secret"\n'
+            'password = secret()\n' + auth
+        ))
+
+    def test_wildcard_comprehension_identity_and_branch_resume(self):
+        """Fresh generators and mutually exclusive branches are not cumulative."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "provider_b.py"
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            auth = 'Elasticsearch("localhost", basic_auth=("elastic", password))'
+            source_def = 'def run():\n    yield 1\n    ' + auth + '\n'
+            cases = (
+                (source_def + 'results = [next(run()) for _ in range(2)]\n'
+                 'password = None\n', False),
+                (source_def + 'gen = run()\n'
+                 'results = [next(gen) for _ in range(2)]\n'
+                 'password = None\n', True),
+                (source_def + 'gen = run()\n'
+                 'if flag:\n    next(gen)\n'
+                 'else:\n    next(gen)\n'
+                 'password = None\nnext(gen)\n', False),
+                (source_def + 'gen = run()\n'
+                 'if flag:\n    next(gen)\n'
+                 'else:\n    next(gen)\n'
+                 'next(gen)\npassword = None\n', True),
+                (source_def + 'gen = run()\n'
+                 'if flag:\n    next(gen)\n'
+                 'else:\n    next(gen)\n'
+                 'password = None\n', False),
+                (source_def + 'gen = run()\n'
+                 'next(gen)\n'
+                 'if flag:\n    next(gen)\n'
+                 'password = None\n', True),
             )
             with patch.dict(globals(), {
                 "REPOSITORY_ROOT": root,
