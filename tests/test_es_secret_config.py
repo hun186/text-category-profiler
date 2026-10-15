@@ -1,5 +1,7 @@
 import ast
+import copy
 import io
+from itertools import product
 import os
 import re
 import runpy
@@ -3019,49 +3021,91 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
                 if token in seen_names:
                     continue
 
-                def returned_passwords(expression, active):
-                    if isinstance(expression, ast.Name) and expression.id in defaults:
-                        default = defaults[expression.id]
-                        # Default expressions are evaluated when the lambda
-                        # or function is DEFINED, not when it is invoked.
-                        # The default AST is annotated in the enclosing
-                        # scope, so reach only prior source-order bindings.
-                        return _hardcoded_password_values(
-                            default, bindings,
-                            _node_position(default), active,
-                        )
-                    if (
-                        isinstance(expression, ast.Call)
-                        and isinstance(expression.func, ast.Attribute)
-                        and expression.func.attr in {
-                            "strip", "lstrip", "rstrip",
-                            "lower", "upper", "casefold",
-                        }
-                        and not expression.args and not expression.keywords
-                    ):
-                        return returned_passwords(
-                            expression.func.value, active
-                        )
-                    if isinstance(expression, ast.IfExp):
-                        return (
-                            returned_passwords(expression.body, active)
-                            + returned_passwords(expression.orelse, active)
-                        )
-                    if isinstance(expression, (ast.BoolOp, ast.BinOp)):
-                        components = (
-                            expression.values
-                            if isinstance(expression, ast.BoolOp)
-                            else [expression.left, expression.right]
-                        )
-                        return [
-                            secret for component in components
-                            for secret in returned_passwords(
-                                component, active
+                def expand_return_defaults(expression, captured=False,
+                                           seen=None):
+                    """Substitute default-backed names anywhere in a return AST.
+
+                    Preserve every source-visible reaching alias. Defaults are
+                    evaluated at definition time; a later module overwrite
+                    cannot change their already captured values.
+                    """
+                    seen = set() if seen is None else set(seen)
+                    if isinstance(expression, ast.Name):
+                        if not captured and expression.id in defaults:
+                            token = ("default-parameter", expression.id)
+                            if token in seen:
+                                return [expression]
+                            return expand_return_defaults(
+                                defaults[expression.id], True,
+                                seen | {token},
                             )
-                        ]
-                    return _hardcoded_password_values(
-                        expression, bindings, before_position, active
-                    )
+                        if captured:
+                            token = ("default-source", id(expression))
+                            if token not in seen:
+                                candidates = _resolve_bound_nodes(
+                                    expression, bindings,
+                                    _node_position(expression),
+                                )
+                                alternatives = [
+                                    candidate for candidate in candidates
+                                    if candidate is not expression
+                                    and not (
+                                        isinstance(candidate, ast.Name)
+                                        and candidate.id == expression.id
+                                    )
+                                ]
+                                if alternatives:
+                                    expanded = []
+                                    for candidate in alternatives:
+                                        expanded.extend(
+                                            expand_return_defaults(
+                                                candidate, True, seen | {token},
+                                            )
+                                        )
+                                    return expanded
+                        return [expression]
+                    if not isinstance(expression, ast.AST) or isinstance(
+                        expression, (
+                            ast.Lambda, ast.FunctionDef, ast.AsyncFunctionDef,
+                            ast.GeneratorExp,
+                        ),
+                    ):
+                        return [expression]
+                    variants = [copy.copy(expression)]
+                    for field, field_value in ast.iter_fields(expression):
+                        if isinstance(field_value, ast.AST):
+                            candidates = expand_return_defaults(
+                                field_value, captured, seen
+                            )
+                            next_variants = []
+                            for variant in variants:
+                                for candidate in candidates:
+                                    replacement = copy.copy(variant)
+                                    setattr(replacement, field, candidate)
+                                    next_variants.append(replacement)
+                            variants = next_variants
+                        elif isinstance(field_value, list):
+                            choices = [
+                                expand_return_defaults(value, captured, seen)
+                                if isinstance(value, ast.AST) else [value]
+                                for value in field_value
+                            ]
+                            next_variants = []
+                            for variant in variants:
+                                for combination in product(*choices):
+                                    replacement = copy.copy(variant)
+                                    setattr(replacement, field, list(combination))
+                                    next_variants.append(replacement)
+                            variants = next_variants
+                    return variants
+
+                def returned_passwords(expression, active):
+                    secrets = []
+                    for expanded in expand_return_defaults(expression):
+                        secrets.extend(_hardcoded_password_values(
+                            expanded, bindings, before_position, active
+                        ))
+                    return secrets
 
                 if returned is not None:
                     found = returned_passwords(
@@ -6141,10 +6185,20 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             result = left == right
                         elif isinstance(op, ast.NotEq):
                             result = left != right
-                        elif isinstance(op, ast.Is):
-                            result = left is right
-                        elif isinstance(op, ast.IsNot):
-                            result = left is not right
+                        elif isinstance(op, (ast.Is, ast.IsNot)):
+                            # CPython may intern/reuse arbitrary compiled
+                            # literal objects. Only singleton identity is
+                            # portable and safe to fold at source level.
+                            singletons = (None, True, False)
+                            if not (
+                                any(left is item for item in singletons)
+                                and any(right is item for item in singletons)
+                            ):
+                                return None
+                            result = (
+                                left is right if isinstance(op, ast.Is)
+                                else left is not right
+                            )
                         elif isinstance(op, ast.Lt):
                             result = left < right if type(left) is type(right) else None
                         elif isinstance(op, ast.LtE):
@@ -8714,6 +8768,81 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             'from elasticsearch import Elasticsearch\n'
                             'from provider_b import *\n'
                             + definition + 'gen = run()\n' + source,
+                            encoding="utf-8",
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+
+    def test_callable_return_nested_default_substitution(self):
+        """Defaults resolve recursively through returned access paths."""
+        cases = (
+            ('password = (lambda value=("hardcoded-secret",): value[0])()\n', True),
+            ('password = (lambda value=[None, "hardcoded-secret"]: value[1])()\n', True),
+            ('password = (lambda value={"key": "hardcoded-secret"}: value["key"])()\n', True),
+            ('password = (lambda value=("hardcoded-secret",): value[0].strip())()\n', True),
+            ('password = (lambda value=("hardcoded-secret",): value[0] if True else None)()\n', True),
+            ('def secret(value=("hardcoded-secret",)):\n'
+             '    return value[0]\npassword = secret()\n', True),
+            ('secret = "hardcoded-secret"\n'
+             'fn = lambda value=(secret,): value[0]\n'
+             'secret = None\npassword = fn()\n', True),
+            ('secret = None\nfn = lambda value=(secret,): value[0]\n'
+             'secret = "hardcoded-secret"\npassword = fn()\n', False),
+            ('password = (lambda value=(None, "hardcoded-secret"): value[0])()\n', False),
+            ('password = (lambda value={"key": None, "other": "hardcoded-secret"}: value["key"])()\n', False),
+            ('password = (lambda value=(os.getenv("TCP_ELASTIC_PASSWORD"),): value[0])()\n', False),
+            ('password = secret_manager.get("lookup-key")\n', False),
+        )
+        for source, expected in cases:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    bool(hardcoded_password_literal_lines(source)), expected
+                )
+        self.assertTrue(hardcoded_auth_tuple_lines(
+            'password = (lambda value=("hardcoded-secret",): value[0])()\n'
+            'Elasticsearch("localhost", basic_auth=("elastic", password))\n'
+        ))
+
+    def test_generator_identity_comparison_unknown_branch(self):
+        """Only true language-level singleton identity can be folded."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "provider_b.py"
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            auth = 'Elasticsearch("localhost", basic_auth=("elastic", password))'
+            definition = 'def run():\n    yield 1\n    ' + auth + '\n'
+            cases = (
+                ('if 1000 is 1000:\n    next(gen)\nnext(gen)\n'
+                 'password = None\n', True),
+                ('if 1000 is not 1000:\n    next(gen)\nnext(gen)\n'
+                 'password = None\n', True),
+                ('if "token" is "token":\n    next(gen)\nnext(gen)\n'
+                 'password = None\n', True),
+                ('if 1 == 2:\n    next(gen)\nnext(gen)\n'
+                 'password = None\n', False),
+                ('if None is None:\n    next(gen)\nnext(gen)\n'
+                 'password = None\n', True),
+                ('if None is not None:\n    next(gen)\nnext(gen)\n'
+                 'password = None\n', False),
+                ('if True is False:\n    next(gen)\nnext(gen)\n'
+                 'password = None\n', False),
+                ('if True is not False:\n    next(gen)\nnext(gen)\n'
+                 'password = None\n', True),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for source, expected in cases:
+                    with self.subTest(source=source):
+                        consumer.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'from provider_b import *\n' + definition
+                            + 'gen = run()\n' + source,
                             encoding="utf-8",
                         )
                         self.assertEqual(
