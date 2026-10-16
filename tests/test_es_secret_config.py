@@ -2968,10 +2968,14 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
                 seen_names,
             )
 
-        # A zero-argument source-visible callable can return an embedded
-        # literal without exposing the literal in the assignment expression.
-        # Only follow its *return value*, never its unrelated call arguments.
-        if not node.args and not node.keywords:
+        # Resolve returns of source-visible callables, including calls with
+        # arguments. Unknown providers remain opaque: never consider their
+        # input arguments as credentials unless a known return uses them.
+        # Dynamic *args/**kwargs cannot be bound precisely here.
+        if (
+            not any(isinstance(arg, ast.Starred) for arg in node.args)
+            and all(keyword.arg is not None for keyword in node.keywords)
+        ):
             # A factory IIFE may *return* a lambda which a surrounding
             # zero-argument Call then immediately invokes. Model the outer
             # invocations inside the factory return, so its original defaults
@@ -2984,7 +2988,7 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
             ):
                 extra_calls += 1
                 factory_call = factory_call.func
-            if extra_calls:
+            if extra_calls and not node.args and not node.keywords:
                 for factory in _resolve_bound_nodes(
                     factory_call, bindings, before_position
                 ):
@@ -3048,14 +3052,6 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
                     *arguments.posonlyargs, *arguments.args
                 ]
                 supplied_defaults = len(arguments.defaults)
-                # A call with no explicit arguments is legal only if each
-                # positional/keyword-only parameter has a default (or is a
-                # variadic parameter). Do not model an impossible call.
-                if len(positional) > supplied_defaults or any(
-                    default is None
-                    for default in arguments.kw_defaults
-                ):
-                    continue
                 defaults = {
                     argument.arg: default
                     for argument, default in zip(
@@ -3068,7 +3064,49 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
                     for argument, default in zip(
                         arguments.kwonlyargs, arguments.kw_defaults
                     )
+                    if default is not None
                 })
+                # Python binds positional arguments first and then keywords.
+                # Reject invalid/ambiguous invocations instead of attributing
+                # the credential return to a call that cannot run.
+                if len(node.args) > len(positional) and arguments.vararg is None:
+                    continue
+                provided = {
+                    argument.arg: expression
+                    for argument, expression in zip(positional, node.args)
+                }
+                valid = True
+                positional_only = {
+                    arg.arg for arg in arguments.posonlyargs
+                }
+                accepted = {
+                    arg.arg for arg in [
+                        *positional, *arguments.kwonlyargs
+                    ]
+                }
+                for keyword in node.keywords:
+                    if keyword.arg in provided:
+                        valid = False
+                        break
+                    if keyword.arg in positional_only:
+                        # A positional-only name can be a **kwargs key, but
+                        # cannot assign the positional parameter itself.
+                        if arguments.kwarg is None:
+                            valid = False
+                        continue
+                    if keyword.arg not in accepted:
+                        if arguments.kwarg is None:
+                            valid = False
+                        continue
+                    provided[keyword.arg] = keyword.value
+                if not valid:
+                    continue
+                defaults.update(provided)
+                if any(
+                    arg.arg not in defaults
+                    for arg in [*positional, *arguments.kwonlyargs]
+                ):
+                    continue
                 token = ("callable-return", id(callee))
                 if token in seen_names:
                     continue
@@ -7090,6 +7128,54 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             yield from assigned_leaves(subtarget, subvalue)
 
         for statement in tree.body:
+            if isinstance(statement, ast.FunctionDef):
+                # A named import used as an ES credential provider may return
+                # an embedded literal without assigning it to a module name.
+                # Only inspect exported, source-visible single-return functions;
+                # unrelated functions and opaque/decorated providers stay out
+                # of this scoped ES import guard.
+                if (
+                    statement.name in exported_names
+                    and not statement.decorator_list
+                    and len(statement.body) == 1
+                    and isinstance(statement.body[0], ast.Return)
+                ):
+                    arguments = statement.args
+                    positional = [*arguments.posonlyargs, *arguments.args]
+                    defaults_start = len(positional) - len(arguments.defaults)
+                    synthetic_args = [
+                        ast.copy_location(ast.Constant(value=None), statement)
+                        for arg in positional[:defaults_start]
+                    ]
+                    synthetic_keywords = [
+                        ast.keyword(
+                            arg=arg.arg,
+                            value=ast.copy_location(
+                                ast.Constant(value=None), statement
+                            ),
+                        )
+                        for arg, default in zip(
+                            arguments.kwonlyargs, arguments.kw_defaults
+                        )
+                        if default is None
+                    ]
+                    callee = ast.copy_location(
+                        ast.Name(id=statement.name, ctx=ast.Load()), statement
+                    )
+                    invocation = ast.copy_location(
+                        ast.Call(
+                            func=callee, args=synthetic_args,
+                            keywords=synthetic_keywords,
+                        ),
+                        statement,
+                    )
+                    values = _hardcoded_password_values(
+                        invocation, bindings, _node_position(statement)
+                    )
+                    if any(value != REDACTED_PASSWORD_SENTINEL
+                           for value in values):
+                        violations.append(statement.lineno)
+                continue
             if isinstance(statement, ast.Assign):
                 targets = statement.targets
             elif isinstance(statement, ast.AnnAssign) and statement.value is not None:
@@ -7232,6 +7318,52 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     encoding="utf-8",
                 )
                 self.assertNotIn(provider.resolve(), self._runtime_es_module_paths())
+
+    def test_imported_callable_credential_providers(self):
+        """Only exported ES credential functions trigger imported provider scans."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "credential_provider.py"
+            cases = (
+                ('def get_password():\n    return "hardcoded-secret"\n', True),
+                ('def get_password(unused=None):\n    return "hardcoded-secret"\n', True),
+                ('def get_password(unused):\n    return "hardcoded-secret"\n', True),
+                ('import os\ndef get_password():\n'
+                 '    return os.getenv("TCP_ELASTIC_PASSWORD")\n', False),
+                ('def get_password():\n    return None\n'
+                 'def unrelated():\n    return "hardcoded-secret"\n', False),
+                ('def unrelated():\n    return "hardcoded-secret"\n'
+                 'get_password = lambda: os.getenv("TCP_ELASTIC_PASSWORD")\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                consumer.write_text(
+                    'from credential_provider import get_password\n'
+                    'from elasticsearch import Elasticsearch\n'
+                    'Elasticsearch("localhost", '
+                    'basic_auth=("elastic", get_password()))\n',
+                    encoding="utf-8",
+                )
+                for provider_source, expected in cases:
+                    with self.subTest(provider_source=provider_source):
+                        provider.write_text(provider_source, encoding="utf-8")
+                        paths = set(self._runtime_es_module_paths())
+                        names = self._imported_credential_exports.get(
+                            provider.resolve(), set()
+                        )
+                        self.assertIn("get_password", names)
+                        self.assertEqual(
+                            provider.resolve() in paths, expected
+                        )
+                        self.assertEqual(
+                            bool(self._module_uppercase_credential_literals(
+                                provider_source, names
+                            )), expected
+                        )
 
     def test_imported_auth_providers_follow_aliases_dotted_paths_and_unpacking(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -9103,6 +9235,43 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             provider.resolve() in self._runtime_es_module_paths(),
                             expected,
                         )
+
+    def test_source_visible_argumented_provider_credentials(self):
+        """Known positional/keyword returns are inspectable; opaque calls are not."""
+        cases = (
+            ('def provider(unused):\n    return "hardcoded-secret"\n'
+             'password = provider(None)\n', True),
+            ('password = (lambda unused: "hardcoded-secret")(None)\n', True),
+            ('def provider(*, unused):\n    return "hardcoded-secret"\n'
+             'password = provider(unused=None)\n', True),
+            ('def provider(value):\n    return value\n'
+             'password = provider("hardcoded-secret")\n', True),
+            ('def provider(first, second=None):\n    return first\n'
+             'password = provider("hardcoded-secret", second=None)\n', True),
+            ('def provider(unused):\n    return os.getenv("TCP_ELASTIC_PASSWORD")\n'
+             'password = provider("hardcoded-secret")\n', False),
+            ('password = vault.lookup("hardcoded-secret")\n', False),
+            ('def provider(value):\n    return value\n'
+             'password = provider(os.getenv("TCP_ELASTIC_PASSWORD"))\n', False),
+            ('def provider(value):\n    return value\n'
+             'password = provider()\n', False),
+            ('def provider(value):\n    return value\n'
+             'password = provider("hardcoded-secret", extra=True)\n', False),
+            ('def provider(value):\n    return value\n'
+             'password = provider(None, value="hardcoded-secret")\n', False),
+            ('def provider(value):\n    return "hardcoded-secret"\n'
+             'password = provider(*args)\n', False),
+        )
+        for source, expected in cases:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    bool(hardcoded_password_literal_lines(source)), expected
+                )
+        self.assertTrue(hardcoded_auth_tuple_lines(
+            'def provider(unused):\n    return "hardcoded-secret"\n'
+            'password = provider(None)\n'
+            'Elasticsearch("localhost", basic_auth=("elastic", password))\n'
+        ))
 
     def test_callable_return_nested_default_substitution(self):
         """Defaults resolve recursively through returned access paths."""
