@@ -7129,16 +7129,33 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         )
 
         def provider_export(func):
-            if isinstance(func, ast.Name):
-                return direct_names.get(func.id)
-            if isinstance(func, ast.Attribute):
-                if func.attr not in selected_exports:
-                    return None
-                root = func.value
-                while isinstance(root, ast.Attribute):
-                    root = root.value
-                if isinstance(root, ast.Name) and root.id in module_names:
-                    return func.attr
+            # Alias assignments can retain an imported callable or module.
+            # Resolve in source order so a later unrelated overwrite cannot
+            # resurrect a previously bound provider.
+            candidates = _resolve_bound_nodes(
+                func, bindings, _node_position(func)
+            )
+            for candidate in candidates:
+                if isinstance(candidate, ast.Name):
+                    export = direct_names.get(candidate.id)
+                    if export is not None:
+                        return export
+                elif isinstance(candidate, ast.Attribute):
+                    if candidate.attr not in selected_exports:
+                        continue
+                    root = candidate.value
+                    while isinstance(root, ast.Attribute):
+                        root = root.value
+                    if isinstance(root, ast.Name):
+                        modules = _resolve_bound_nodes(
+                            root, bindings, _node_position(candidate)
+                        )
+                        if any(
+                            isinstance(module, ast.Name)
+                            and module.id in module_names
+                            for module in modules
+                        ):
+                            return candidate.attr
             return None
 
         secret_keys = {
@@ -7189,21 +7206,89 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 ):
                     expressions.append(node.value)
 
-        def static_argument(expression):
-            # Consumer-side name and default captures cannot be resolved
-            # against the *provider* module's lexical bindings.
-            values = _hardcoded_password_values(
-                expression, bindings, _node_position(expression)
-            )
-            if values:
-                return ast.copy_location(
-                    ast.Constant(value=values[0]), expression
+        def static_argument_choices(expression, seen=None):
+            """Transfer every known consumer possibility into provider scope.
+
+            Keep literal tuple/list/dict shape for indexed provider returns;
+            do not collapse a structure to a string found in another slot.
+            Unknown runtime inputs become None, not invented secrets.
+            """
+            seen = set() if seen is None else seen
+            if expression in seen:
+                return [ast.copy_location(ast.Constant(value=None), expression)]
+            seen = seen | {expression}
+            if isinstance(expression, ast.IfExp):
+                return [
+                    *static_argument_choices(expression.body, seen),
+                    *static_argument_choices(expression.orelse, seen),
+                ]
+            if isinstance(expression, (ast.Tuple, ast.List)):
+                alternatives = [
+                    static_argument_choices(child, seen)
+                    for child in expression.elts
+                ]
+                choices = []
+                for combination in product(*alternatives):
+                    choices.append(ast.copy_location(
+                        type(expression)(
+                            elts=list(combination), ctx=ast.Load()
+                        ), expression,
+                    ))
+                return choices
+            if isinstance(expression, ast.Dict) and all(
+                key is not None for key in expression.keys
+            ):
+                alternative_values = [
+                    static_argument_choices(value, seen)
+                    for value in expression.values
+                ]
+                return [
+                    ast.copy_location(ast.Dict(
+                        keys=list(expression.keys),
+                        values=list(combination),
+                    ), expression)
+                    for combination in product(*alternative_values)
+                ]
+            if isinstance(expression, ast.Name):
+                resolved = [
+                    value for value in _resolve_bound_nodes(
+                        expression, bindings, _node_position(expression)
+                    ) if value is not expression
+                    and not (
+                        isinstance(value, ast.Name)
+                        and value.id == expression.id
+                    )
+                ]
+                if resolved:
+                    return [
+                        choice for value in resolved
+                        for choice in static_argument_choices(value, seen)
+                    ]
+            if isinstance(expression, ast.Subscript):
+                selected = _resolve_constant_subscript(
+                    expression, bindings, _node_position(expression)
                 )
+                if selected is not None:
+                    return static_argument_choices(selected, seen)
             try:
                 literal = ast.literal_eval(expression)
             except (ValueError, TypeError, RecursionError):
                 literal = None
-            return ast.copy_location(ast.Constant(value=literal), expression)
+            else:
+                return [ast.copy_location(
+                    ast.parse(repr(literal), mode="eval").body, expression
+                )]
+            # Unknown lookups stay opaque. For known local transforms, retain
+            # every statically proven returned credential, not values[0].
+            values = _hardcoded_password_values(
+                expression, bindings, _node_position(expression)
+            )
+            if values:
+                return [
+                    ast.copy_location(ast.Constant(value=value), expression)
+                    for value in dict.fromkeys(values)
+                ]
+            return [ast.copy_location(ast.Constant(value=None), expression)]
 
         results = []
         for expr in expressions:
@@ -7221,12 +7306,22 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         isinstance(arg, ast.Starred) for arg in call.args
                     ) or any(k.arg is None for k in call.keywords):
                         continue
-                    args = tuple(static_argument(a) for a in call.args)
-                    keywords = tuple(
-                        ast.keyword(arg=k.arg, value=static_argument(k.value))
-                        for k in call.keywords
-                    )
-                    results.append((exported_name, args, keywords))
+                    argument_options = [
+                        static_argument_choices(arg) for arg in call.args
+                    ]
+                    keyword_options = [
+                        static_argument_choices(kw.value)
+                        for kw in call.keywords
+                    ]
+                    for args in product(*argument_options):
+                        for values in product(*keyword_options):
+                            keywords = tuple(
+                                ast.keyword(arg=keyword.arg, value=value)
+                                for keyword, value in zip(call.keywords, values)
+                            )
+                            results.append((
+                                exported_name, tuple(args), keywords
+                            ))
         return results
 
     def _runtime_es_module_paths(self):
@@ -7559,6 +7654,88 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                 provider_source, names
                             )), expected
                         )
+
+    def test_imported_provider_alias_and_argument_alternatives(self):
+        """Aliases and every concrete argument branch reach an imported provider."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "credential_provider.py"
+            provider_source = (
+                'def get_password(value):\n    return value\n'
+            )
+            cases = (
+                ('from credential_provider import get_password\n'
+                 'fetch = get_password\n'
+                 'from elasticsearch import Elasticsearch\n'
+                 'Elasticsearch("localhost", basic_auth=("elastic", '
+                 'fetch("hardcoded-secret")))\n', True),
+                ('import credential_provider as cp\n'
+                 'provider = cp\n'
+                 'from elasticsearch import Elasticsearch\n'
+                 'Elasticsearch("localhost", basic_auth=("elastic", '
+                 'provider.get_password("hardcoded-secret")))\n', True),
+                ('from credential_provider import get_password\n'
+                 'from elasticsearch import Elasticsearch\n'
+                 'Elasticsearch("localhost", basic_auth=("elastic", '
+                 'get_password("***REDACTED***" if flag else "hardcoded-secret")))\n', True),
+                ('from credential_provider import get_password\n'
+                 'from elasticsearch import Elasticsearch\n'
+                 'Elasticsearch("localhost", basic_auth=("elastic", '
+                 'get_password("hardcoded-secret" if flag else "***REDACTED***")))\n', True),
+                ('from credential_provider import get_password\n'
+                 'from elasticsearch import Elasticsearch\n'
+                 'Elasticsearch("localhost", basic_auth=("elastic", '
+                 'get_password(None if flag else "hardcoded-secret")))\n', True),
+                ('from credential_provider import get_password\n'
+                 'from elasticsearch import Elasticsearch\n'
+                 'Elasticsearch("localhost", basic_auth=("elastic", '
+                 'get_password("***REDACTED***" if flag else None)))\n', False),
+                ('from credential_provider import get_password\n'
+                 'fetch = get_password\n'
+                 'fetch = lambda value: None\n'
+                 'from elasticsearch import Elasticsearch\n'
+                 'Elasticsearch("localhost", basic_auth=("elastic", '
+                 'fetch("hardcoded-secret")))\n', False),
+                ('import credential_provider as cp\n'
+                 'provider = cp\nprovider = object()\n'
+                 'from elasticsearch import Elasticsearch\n'
+                 'Elasticsearch("localhost", basic_auth=("elastic", '
+                 'provider.get_password("hardcoded-secret")))\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                provider.write_text(provider_source, encoding="utf-8")
+                for text, expected in cases:
+                    with self.subTest(source=text):
+                        consumer.write_text(text, encoding="utf-8")
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+                provider.write_text(
+                    'def get_password(value):\n    return value[0]\n',
+                    encoding="utf-8",
+                )
+                consumer.write_text(
+                    'from credential_provider import get_password\n'
+                    'from elasticsearch import Elasticsearch\n'
+                    'Elasticsearch("localhost", basic_auth=("elastic", '
+                    'get_password([None, "hardcoded-secret"])))\n',
+                    encoding="utf-8",
+                )
+                self.assertNotIn(provider.resolve(), self._runtime_es_module_paths())
+                consumer.write_text(
+                    'from credential_provider import get_password\n'
+                    'from elasticsearch import Elasticsearch\n'
+                    'Elasticsearch("localhost", basic_auth=("elastic", '
+                    'get_password(["hardcoded-secret", None])))\n',
+                    encoding="utf-8",
+                )
+                self.assertIn(provider.resolve(), self._runtime_es_module_paths())
 
     def test_imported_provider_uses_consumer_call_arguments(self):
         """Cross-module returns observe actual consumer arguments, not None."""
