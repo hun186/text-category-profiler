@@ -3075,6 +3075,15 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
                     argument.arg: expression
                     for argument, expression in zip(positional, node.args)
                 }
+                if arguments.vararg is not None:
+                    # Additional positional arguments are one runtime tuple,
+                    # not ignored independent arguments.
+                    provided[arguments.vararg.arg] = ast.copy_location(
+                        ast.Tuple(
+                            elts=list(node.args[len(positional):]),
+                            ctx=ast.Load(),
+                        ), node,
+                    )
                 valid = True
                 positional_only = {
                     arg.arg for arg in arguments.posonlyargs
@@ -3084,6 +3093,7 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
                         *positional, *arguments.kwonlyargs
                     ]
                 }
+                keyword_extras = []
                 for keyword in node.keywords:
                     if keyword.arg in provided:
                         valid = False
@@ -3093,14 +3103,31 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
                         # cannot assign the positional parameter itself.
                         if arguments.kwarg is None:
                             valid = False
+                        else:
+                            keyword_extras.append(keyword)
                         continue
                     if keyword.arg not in accepted:
                         if arguments.kwarg is None:
                             valid = False
+                        else:
+                            keyword_extras.append(keyword)
                         continue
                     provided[keyword.arg] = keyword.value
                 if not valid:
                     continue
+                if arguments.kwarg is not None:
+                    provided[arguments.kwarg.arg] = ast.copy_location(
+                        ast.Dict(
+                            keys=[
+                                ast.copy_location(
+                                    ast.Constant(value=keyword.arg), node
+                                ) for keyword in keyword_extras
+                            ],
+                            values=[
+                                keyword.value for keyword in keyword_extras
+                            ],
+                        ), node,
+                    )
                 defaults.update(provided)
                 if any(
                     arg.arg not in defaults
@@ -9235,6 +9262,34 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             provider.resolve() in self._runtime_es_module_paths(),
                             expected,
                         )
+
+    def test_source_visible_variadic_provider_credentials(self):
+        """Variadic parameters retain only actual argument/keyword slots."""
+        cases = (
+            ('def provider(*values):\n    return values[0]\n'
+             'password = provider("hardcoded-secret")\n', True),
+            ('password = (lambda *values: values[1])(None, "hardcoded-secret")\n', True),
+            ('def provider(*values):\n    return values[0]\n'
+             'password = provider(None, "hardcoded-secret")\n', False),
+            ('def provider(prefix, *values):\n    return values[0]\n'
+             'password = provider(None, "hardcoded-secret")\n', True),
+            ('def provider(**values):\n    return values["password"]\n'
+             'password = provider(password="hardcoded-secret")\n', True),
+            ('def provider(**values):\n    return values["password"]\n'
+             'password = provider(password=None, unused="hardcoded-secret")\n', False),
+            ('def provider(value, **values):\n    return value\n'
+             'password = provider(None, unused="hardcoded-secret")\n', False),
+            ('def provider(*values):\n    return values[0]\n'
+             'password = provider(*external)\n', False),
+        )
+        for source, expected in cases:
+            with self.subTest(source=source):
+                self.assertEqual(bool(hardcoded_password_literal_lines(source)), expected)
+        self.assertTrue(hardcoded_auth_tuple_lines(
+            'def provider(*values):\n    return values[0]\n'
+            'password = provider("hardcoded-secret")\n'
+            'Elasticsearch("localhost", basic_auth=("elastic", password))\n'
+        ))
 
     def test_source_visible_argumented_provider_credentials(self):
         """Known positional/keyword returns are inspectable; opaque calls are not."""
