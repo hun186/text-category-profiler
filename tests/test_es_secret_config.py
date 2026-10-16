@@ -7309,40 +7309,96 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     *static_argument_choices(expression.orelse, seen),
                 ]
             if isinstance(expression, (ast.Tuple, ast.List)):
-                alternatives = [
-                    static_argument_choices(child, seen)
-                    for child in expression.elts
-                ]
-                choices = []
-                for combination in product(*alternatives):
-                    choices.append(ast.copy_location(
-                        type(expression)(
-                            elts=list(combination), ctx=ast.Load()
-                        ), expression,
-                    ))
-                return choices
-            if isinstance(expression, ast.Dict) and all(
-                key is not None for key in expression.keys
-            ):
-                # Dictionary *keys* are evaluated in consumer scope too.
-                # Transferring an unresolved consumer Name into the provider
-                # would hide an indexed literal-returning credential.
-                alternative_keys = [
-                    static_argument_choices(key, seen)
-                    for key in expression.keys
-                ]
-                alternative_values = [
-                    static_argument_choices(value, seen)
-                    for value in expression.values
-                ]
+                # List/tuple displays can contain known *unpack expressions;
+                # their resulting positions differ from the syntax indices.
+                alternatives = []
+                for child in expression.elts:
+                    if isinstance(child, ast.Starred):
+                        groups = [
+                            list(value.elts)
+                            for value in static_argument_choices(
+                                child.value, seen
+                            )
+                            if isinstance(value, (ast.Tuple, ast.List))
+                            and not any(
+                                isinstance(elt, ast.Starred)
+                                for elt in value.elts
+                            )
+                        ]
+                        if not groups:
+                            return [ast.copy_location(
+                                ast.Constant(value=None), expression
+                            )]
+                        alternatives.append(groups)
+                    else:
+                        alternatives.append([
+                            [value] for value in
+                            static_argument_choices(child, seen)
+                        ])
                 return [
-                    ast.copy_location(ast.Dict(
-                        keys=list(keys),
-                        values=list(values),
-                    ), expression)
-                    for keys in product(*alternative_keys)
-                    for values in product(*alternative_values)
+                    ast.copy_location(
+                        type(expression)(
+                            elts=[
+                                elt for group in combination for elt in group
+                            ],
+                            ctx=ast.Load(),
+                        ), expression,
+                    )
+                    for combination in product(*alternatives)
                 ]
+            if isinstance(expression, ast.Dict):
+                # Evaluate explicit keys and ** mapping spreads in consumer
+                # scope, preserving each possible source-order overwrite.
+                # The provider's index resolver expects flattened literal keys.
+                alternatives = []
+                for key, value in zip(expression.keys, expression.values):
+                    if key is None:
+                        possibilities = [
+                            list(zip(mapping.keys, mapping.values))
+                            for mapping in static_argument_choices(value, seen)
+                            if isinstance(mapping, ast.Dict)
+                            and all(k is not None for k in mapping.keys)
+                        ]
+                    else:
+                        possibilities = [
+                            [(resolved_key, resolved_value)]
+                            for resolved_key in static_argument_choices(
+                                key, seen
+                            )
+                            for resolved_value in static_argument_choices(
+                                value, seen
+                            )
+                        ]
+                    if not possibilities:
+                        return [ast.copy_location(
+                            ast.Constant(value=None), expression
+                        )]
+                    alternatives.append(possibilities)
+                mappings = []
+                for groups in product(*alternatives):
+                    entries = []
+                    for group in groups:
+                        for key, value in group:
+                            try:
+                                comparable = ast.literal_eval(key)
+                                hash(comparable)
+                            except (ValueError, TypeError, RecursionError):
+                                comparable = None
+                            if comparable is not None:
+                                entries = [
+                                    (earlier, old_value)
+                                    for earlier, old_value in entries
+                                    if not (
+                                        isinstance(earlier, ast.Constant)
+                                        and earlier.value == comparable
+                                    )
+                                ]
+                            entries.append((key, value))
+                    mappings.append(ast.copy_location(ast.Dict(
+                        keys=[key for key, _ in entries],
+                        values=[value for _, value in entries],
+                    ), expression))
+                return mappings
             if isinstance(expression, ast.Name):
                 resolved = [
                     value for value in _resolve_bound_nodes(
@@ -7396,26 +7452,84 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     exported_name = provider_export(call.func)
                     if exported_name is None:
                         continue
-                    if any(
-                        isinstance(arg, ast.Starred) for arg in call.args
-                    ) or any(k.arg is None for k in call.keywords):
-                        continue
-                    argument_options = [
-                        static_argument_choices(arg) for arg in call.args
-                    ]
-                    keyword_options = [
-                        static_argument_choices(kw.value)
-                        for kw in call.keywords
-                    ]
-                    for args in product(*argument_options):
-                        for values in product(*keyword_options):
-                            keywords = tuple(
-                                ast.keyword(arg=keyword.arg, value=value)
-                                for keyword, value in zip(call.keywords, values)
-                            )
-                            results.append((
-                                exported_name, tuple(args), keywords
-                            ))
+                    # Expand only statically known argument spreads.
+                    # Unknown *args/**kwargs are opaque rather than inspected
+                    # as if their contents were returned passwords.
+                    argument_options = []
+                    for arg in call.args:
+                        if isinstance(arg, ast.Starred):
+                            variants = [
+                                list(value.elts)
+                                for value in static_argument_choices(
+                                    arg.value
+                                )
+                                if isinstance(value, (ast.Tuple, ast.List))
+                                and not any(
+                                    isinstance(item, ast.Starred)
+                                    for item in value.elts
+                                )
+                            ]
+                        else:
+                            variants = [
+                                [value] for value in
+                                static_argument_choices(arg)
+                            ]
+                        if not variants:
+                            break
+                        argument_options.append(variants)
+                    else:
+                        keyword_options = []
+                        for kw in call.keywords:
+                            if kw.arg is None:
+                                variants = []
+                                for mapping in static_argument_choices(kw.value):
+                                    if not isinstance(mapping, ast.Dict):
+                                        continue
+                                    pairs = []
+                                    for key, value in zip(
+                                        mapping.keys, mapping.values
+                                    ):
+                                        if not (
+                                            isinstance(key, ast.Constant)
+                                            and isinstance(key.value, str)
+                                            and key.value.isidentifier()
+                                        ):
+                                            break
+                                        pairs.append(ast.keyword(
+                                            arg=key.value, value=value
+                                        ))
+                                    else:
+                                        variants.append(pairs)
+                            else:
+                                variants = [
+                                    [ast.keyword(arg=kw.arg, value=value)]
+                                    for value in
+                                    static_argument_choices(kw.value)
+                                ]
+                            if not variants:
+                                break
+                            keyword_options.append(variants)
+                        else:
+                            for argument_groups in product(*argument_options):
+                                args = tuple(
+                                    value for group in argument_groups
+                                    for value in group
+                                )
+                                for keyword_groups in product(*keyword_options):
+                                    keywords = tuple(
+                                        value for group in keyword_groups
+                                        for value in group
+                                    )
+                                    keyword_names = [
+                                        value.arg for value in keywords
+                                    ]
+                                    if len(set(keyword_names)) != len(
+                                        keyword_names
+                                    ):
+                                        continue
+                                    results.append((
+                                        exported_name, args, keywords
+                                    ))
         return results
 
     def _runtime_es_module_paths(self):
@@ -7495,7 +7609,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             yield from assigned_leaves(subtarget, subvalue)
 
         for statement in tree.body:
-            if isinstance(statement, ast.FunctionDef):
+            if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 # A named import used as an ES credential provider may return
                 # an embedded literal without assigning it to a module name.
                 # Only inspect exported, source-visible single-return functions;
@@ -7536,6 +7650,32 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         ),
                         statement,
                     )
+                    # Model an async provider's source-visible return only
+                    # after the consumer import discovery has selected it.
+                    # A bare async call is a coroutine, so do not change the
+                    # general credential expression evaluator's semantics.
+                    if isinstance(statement, ast.AsyncFunctionDef):
+                        callable_for_return = ast.copy_location(
+                            ast.FunctionDef(
+                                name=statement.name,
+                                args=statement.args,
+                                body=statement.body,
+                                decorator_list=[],
+                                returns=statement.returns,
+                                type_comment=statement.type_comment,
+                            ), statement,
+                        )
+                        module_values = bindings["values"].get(tree, {})
+                        original_binding = module_values.get(
+                            statement.name, []
+                        )
+                        module_values[statement.name] = [
+                            (position, callable_for_return)
+                            if value is statement else (position, value)
+                            for position, value in original_binding
+                        ]
+                    else:
+                        original_binding = None
                     invocations = [invocation]
                     invocations.extend(
                         ast.copy_location(
@@ -7559,6 +7699,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         ):
                             violations.append(statement.lineno)
                             break
+                    if original_binding is not None:
+                        module_values[statement.name] = original_binding
                 continue
             if isinstance(statement, ast.Assign):
                 targets = statement.targets
@@ -7747,6 +7889,142 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             bool(self._module_uppercase_credential_literals(
                                 provider_source, names
                             )), expected
+                        )
+
+    def test_imported_provider_statically_known_spread_arguments(self):
+        """Expand known *args/**kwargs, not opaque runtime unpacking."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "credential_provider.py"
+            cases = (
+                ('args = ("hardcoded-secret",)\n'
+                 'password = get_password(*args)\n',
+                 'def get_password(value):\n    return value\n', True),
+                ('args = [None, "hardcoded-secret"]\n'
+                 'password = get_password(*args)\n',
+                 'def get_password(unused, value):\n    return value\n', True),
+                ('args = (None, "hardcoded-secret")\n'
+                 'password = get_password(*args)\n',
+                 'def get_password(value, unused):\n    return value\n', False),
+                ('args = (None, "hardcoded-secret")\n'
+                 'password = get_password(*args)\n',
+                 'def get_password(unused, value):\n    return value\n', True),
+                ('options = {"value": "hardcoded-secret"}\n'
+                 'password = get_password(**options)\n',
+                 'def get_password(value):\n    return value\n', True),
+                ('options = {"unused": "hardcoded-secret", "value": None}\n'
+                 'password = get_password(**options)\n',
+                 'def get_password(value, unused):\n    return value\n', False),
+                ('password = get_password(*(None, "hardcoded-secret"))\n',
+                 'def get_password(unused, value):\n    return value\n', True),
+                ('password = get_password(**{"value": "hardcoded-secret"})\n',
+                 'def get_password(value):\n    return value\n', True),
+                ('password = get_password(*unknown)\n',
+                 'def get_password(value):\n    return value\n', False),
+                ('password = get_password(**unknown)\n',
+                 'def get_password(value):\n    return value\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for call_source, provider_source, expected in cases:
+                    with self.subTest(call_source=call_source):
+                        provider.write_text(provider_source, encoding="utf-8")
+                        consumer.write_text(
+                            'from credential_provider import get_password\n'
+                            'from elasticsearch import Elasticsearch\n'
+                            + call_source +
+                            'Elasticsearch("localhost", '
+                            'basic_auth=("elastic", password))\n',
+                            encoding="utf-8",
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+
+    def test_imported_provider_nested_dictionary_unpacking(self):
+        """Preserve known **mapping spreads and their override order."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "credential_provider.py"
+            provider.write_text(
+                'def get_password(value):\n'
+                '    return value["credential"]\n', encoding="utf-8"
+            )
+            cases = (
+                ('get_password({**{"credential": "hardcoded-secret"}})', True),
+                ('get_password({**{"credential": "hardcoded-secret"}, '
+                 '"credential": None})', False),
+                ('get_password({"credential": None, '
+                 '**{"credential": "hardcoded-secret"}})', True),
+                ('get_password({**{"other": "hardcoded-secret"}, '
+                 '"credential": None})', False),
+                ('get_password({**{"credential": None}, '
+                 '"other": "hardcoded-secret"})', False),
+                ('get_password({**{"credential": "hardcoded-secret"}'
+                 ' if flag else {"credential": None}})', True),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for expression, expected in cases:
+                    with self.subTest(expression=expression):
+                        consumer.write_text(
+                            'from credential_provider import get_password\n'
+                            'from elasticsearch import Elasticsearch\n'
+                            'password = ' + expression + '\n'
+                            'Elasticsearch("localhost", '
+                            'basic_auth=("elastic", password))\n',
+                            encoding="utf-8",
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+
+    def test_imported_async_credential_provider_return(self):
+        """Awaited imported async provider returns can contain literals."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "credential_provider.py"
+            consumer.write_text(
+                'from credential_provider import get_password\n'
+                'from elasticsearch import Elasticsearch\n'
+                'async def connect():\n'
+                '    password = await get_password("hardcoded-secret")\n'
+                '    return Elasticsearch("localhost", '
+                'basic_auth=("elastic", password))\n',
+                encoding="utf-8",
+            )
+            cases = (
+                ('async def get_password(value):\n    return value\n', True),
+                ('async def get_password(value):\n'
+                 '    return "hardcoded-secret"\n', True),
+                ('import os\nasync def get_password(value):\n'
+                 '    return os.getenv("TCP_ELASTIC_PASSWORD")\n', False),
+                ('async def unrelated(value):\n'
+                 '    return "hardcoded-secret"\n'
+                 'async def get_password(value):\n    return None\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for source, expected in cases:
+                    with self.subTest(provider=source):
+                        provider.write_text(source, encoding="utf-8")
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
                         )
 
     def test_imported_provider_conditional_import_survival(self):
