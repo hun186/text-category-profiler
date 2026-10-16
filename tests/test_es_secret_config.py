@@ -7966,8 +7966,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                  '"credential": None})', False),
                 ('get_password({**{"credential": None}, '
                  '"other": "hardcoded-secret"})', False),
-                ('get_password({**{"credential": "hardcoded-secret"}'
-                 ' if flag else {"credential": None}})', True),
+                ('get_password({**({"credential": "hardcoded-secret"}'
+                 ' if flag else {"credential": None})})', True),
             )
             with patch.dict(globals(), {
                 "REPOSITORY_ROOT": root,
