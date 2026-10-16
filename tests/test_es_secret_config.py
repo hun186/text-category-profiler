@@ -6127,7 +6127,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
 
             def prior_definite_yields(target):
                 """Count guaranteed suspensions strictly before the read."""
-                if not isinstance(target, ast.FunctionDef):
+                if not isinstance(target, (ast.FunctionDef, ast.AsyncFunctionDef)):
                     return 0
                 count = 0
                 for statement in target.body:
@@ -9369,9 +9369,10 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 ('advance = gen.send\nmatch choice:\n'
                  '    case 0:\n        advance = gen.__next__\n'
                  'advance()\npassword = None\n', True),
-                ('advance = gen.__next__\nmatch choice:\n'
+                ('advance = gen.send\nmatch choice:\n'
                  '    case 0:\n        advance = gen.send\n'
-                 'advance(None)\npassword = None\n', False),
+                 '    case _:\n        advance = lambda: None\n'
+                 'advance()\npassword = None\n', False),
             )
             with patch.dict(globals(), {
                 "REPOSITORY_ROOT": root,
