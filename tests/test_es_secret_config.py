@@ -3064,6 +3064,23 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
                                         )
                                     return expanded
                         return [expression]
+                    if (
+                        isinstance(expression, ast.Call)
+                        and isinstance(expression.func, ast.Lambda)
+                        and not expression.args and not expression.keywords
+                    ):
+                        # A nested lambda that is immediately called runs
+                        # its body now, so the outer default-backed parameter
+                        # remains visible to the returned credential scan.
+                        # A merely returned lambda must stay deferred.
+                        nested_args = expression.func.args
+                        if not (
+                            nested_args.posonlyargs or nested_args.args
+                            or nested_args.kwonlyargs
+                        ):
+                            return expand_return_defaults(
+                                expression.func.body, captured, seen
+                            )
                     if not isinstance(expression, ast.AST) or isinstance(
                         expression, (
                             ast.Lambda, ast.FunctionDef, ast.AsyncFunctionDef,
@@ -5787,21 +5804,38 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         value = expression.iter
                     elif isinstance(expression, ast.Call):
                         func = expression.func
-                        if isinstance(func, ast.Attribute) and func.attr in {
-                            "send", "__next__", "__anext__",
-                        }:
-                            # The resumed object is the method's receiver,
-                            # even for gen.__next__() with zero arguments.
-                            value = func.value
-                            # An unprimed generator rejects send(non-None)
-                            # before entering its body. Once resumed normally,
-                            # later sends may drive the next segment.
-                            kind = (
-                                "send-value"
-                                if func.attr == "send" and expression.args
-                                and definitely_non_none(expression.args[0])
-                                else "step"
-                            )
+                        # Both a direct bound method call and an alias such as
+                        # advance = gen.__next__; advance() resume the method
+                        # receiver. Resolve source-ordered aliases at the call
+                        # position, rather than requiring gen in call args.
+                        bound_methods = (
+                            [func] if isinstance(func, ast.Attribute)
+                            else [
+                                alias for alias in _resolve_bound_nodes(
+                                    func, bound_names(), _node_position(func)
+                                )
+                                if isinstance(alias, ast.Attribute)
+                            ]
+                        )
+                        resumable_methods = [
+                            method for method in bound_methods
+                            if method.attr in {
+                                "send", "__next__", "__anext__",
+                            }
+                            and refers_to(method.value, created)
+                        ]
+                        if resumable_methods:
+                            # Each aliased method retains its bound receiver;
+                            # ambiguous aliases are handled conservatively.
+                            method = resumable_methods[0]
+                            if method.attr != "send" or expression.args:
+                                value = method.value
+                                kind = (
+                                    "send-value"
+                                    if method.attr == "send"
+                                    and definitely_non_none(expression.args[0])
+                                    else "step"
+                                )
                         elif isinstance(func, ast.Name) and func.id in {
                             "next", "anext",
                         } and expression.args:
@@ -8843,6 +8877,65 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             'from elasticsearch import Elasticsearch\n'
                             'from provider_b import *\n' + definition
                             + 'gen = run()\n' + source,
+                            encoding="utf-8",
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+
+    def test_nested_immediate_lambda_default_credentials(self):
+        """An invoked nested lambda reads the outer captured default."""
+        cases = (
+            ('password = (lambda value="hardcoded-secret": (lambda: value)())()\n', True),
+            ('password = (lambda value=("hardcoded-secret",): (lambda: value[0])())()\n', True),
+            ('password = (lambda value="hardcoded-secret": (lambda: (lambda: value)())())()\n', True),
+            ('secret = "hardcoded-secret"\n'
+             'get_password = lambda value=secret: (lambda: value)()\n'
+             'secret = None\npassword = get_password()\n', True),
+            ('password = (lambda value="hardcoded-secret": (lambda: None)())()\n', False),
+            ('password = (lambda value="hardcoded-secret": (lambda: value))()\n', False),
+            ('password = (lambda value=os.getenv("TCP_ELASTIC_PASSWORD"): (lambda: value)())()\n', False),
+        )
+        for source, expected in cases:
+            with self.subTest(source=source):
+                self.assertEqual(
+                    bool(hardcoded_password_literal_lines(source)), expected
+                )
+        self.assertTrue(hardcoded_auth_tuple_lines(
+            'password = (lambda value="hardcoded-secret": (lambda: value)())()\n'
+            'Elasticsearch("localhost", basic_auth=("elastic", password))\n'
+        ))
+
+    def test_wildcard_bound_generator_method_aliases(self):
+        """Source-ordered bound-method aliases preserve generator resume sites."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "provider_b.py"
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            auth = 'Elasticsearch("localhost", basic_auth=("elastic", password))'
+            generator = 'def run():\n    yield 1\n    ' + auth + '\n'
+            cases = (
+                ('advance = gen.__next__\nadvance()\nadvance()\npassword = None\n', True),
+                ('advance = gen.__next__\nadvance()\npassword = None\nadvance()\n', False),
+                ('advance = gen.__next__\nalias = advance\nalias()\nalias()\npassword = None\n', True),
+                ('advance = gen.send\nadvance(None)\nadvance(7)\npassword = None\n', True),
+                ('advance = gen.send\nadvance(None)\npassword = None\nadvance(7)\n', False),
+                ('advance = gen.__next__\nadvance = lambda: None\n'
+                 'advance()\npassword = None\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for suffix, expected in cases:
+                    with self.subTest(suffix=suffix):
+                        consumer.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'from provider_b import *\n' + generator
+                            + 'gen = run()\n' + suffix,
                             encoding="utf-8",
                         )
                         self.assertEqual(
