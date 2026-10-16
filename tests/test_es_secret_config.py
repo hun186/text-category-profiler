@@ -7101,6 +7101,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         bindings = _name_bindings(tree)
         direct_names = {}
         module_names = set()
+        import_sites = {}
         for statement in ast.walk(tree):
             if isinstance(statement, ast.ImportFrom):
                 tail = (statement.module or "").split(".")[-1]
@@ -7110,36 +7111,125 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 ):
                     for item in statement.names:
                         if item.name in selected_exports:
-                            direct_names[item.asname or item.name] = item.name
+                            local = item.asname or item.name
+                            direct_names[local] = item.name
+                            import_sites.setdefault(local, []).append(statement)
                 if any(item.name == dependency.stem for item in statement.names):
-                    module_names.update(
-                        item.asname or item.name
-                        for item in statement.names
-                        if item.name == dependency.stem
-                    )
+                    for item in statement.names:
+                        if item.name == dependency.stem:
+                            local = item.asname or item.name
+                            module_names.add(local)
+                            import_sites.setdefault(local, []).append(statement)
                 if any(item.name == "*" for item in statement.names):
                     direct_names.update(
                         (name, name) for name in selected_exports
                     )
+                    for name in selected_exports:
+                        import_sites.setdefault(name, []).append(statement)
             elif isinstance(statement, ast.Import):
                 for item in statement.names:
                     if item.name.split(".")[-1] == dependency.stem:
-                        module_names.add(
-                            item.asname or item.name.split(".", 1)[0]
+                        local = item.asname or item.name.split(".", 1)[0]
+                        module_names.add(local)
+                        import_sites.setdefault(local, []).append(statement)
+
+        if_nodes = {
+            ("If", *_node_position(node)): node
+            for node in ast.walk(tree) if isinstance(node, ast.If)
+        }
+
+        def guaranteed_overwrite(writes):
+            """Whether all feasible control paths execute a replacement.
+
+            Imported names do not occur in _name_bindings. A conditional
+            replacement therefore cannot erase the untouched import path.
+            """
+            if any(not _node_control_path(value) for _, value in writes):
+                return True
+            arms = {}
+            for _, value in writes:
+                path = _node_control_path(value)
+                if len(path) != 1 or path[0][0] != "If":
+                    continue
+                step = path[0]
+                key = step[:3]
+                arms.setdefault(key, set()).add(step[3])
+            for key, present in arms.items():
+                statement = if_nodes.get(key)
+                if statement is None:
+                    continue
+                if {"body", "orelse"}.issubset(present):
+                    return True
+                if isinstance(statement.test, ast.Constant):
+                    selected = (
+                        "body" if bool(statement.test.value) else "orelse"
+                    )
+                    if selected in present:
+                        return True
+            return False
+
+        def potentially_imported(name, use_position):
+            """An imported local name may survive conditional overwrites."""
+            imports = [
+                import_node for import_node in import_sites.get(name, ())
+                if _node_position(import_node) <= use_position
+            ]
+            if not imports:
+                return False
+            scope = bindings["metadata"]["module"]
+            writes = bindings["values"].get(scope, {}).get(name, ())
+            for import_node in imports:
+                start = _node_position(import_node)
+                later = [
+                    (position, value) for position, value in writes
+                    if start < position <= use_position
+                ]
+                if not guaranteed_overwrite(later):
+                    return True
+            return False
+
+        def possible_original_names(name, use_position, seen=None):
+            """Follow alias copies only while their earlier value can reach."""
+            seen = set() if seen is None else seen
+            if name in seen:
+                return set()
+            seen = seen | {name}
+            choices = set()
+            if potentially_imported(name, use_position):
+                choices.add(name)
+            scope = bindings["metadata"]["module"]
+            writes = [
+                (position, value)
+                for position, value in
+                bindings["values"].get(scope, {}).get(name, ())
+                if position <= use_position
+            ]
+            for index, (position, value) in enumerate(writes):
+                if guaranteed_overwrite(writes[index + 1:]):
+                    continue
+                if isinstance(value, ast.Name):
+                    choices.update(
+                        possible_original_names(
+                            value.id, position, seen
                         )
+                    )
+            return choices
 
         def provider_export(func):
-            # Alias assignments can retain an imported callable or module.
-            # Resolve in source order so a later unrelated overwrite cannot
-            # resurrect a previously bound provider.
+            # Include an import kept alive by a conditional overwrite even
+            # when the ordinary local binding resolver sees only the
+            # conditional replacement. Guaranteed overwrites still win.
             candidates = _resolve_bound_nodes(
                 func, bindings, _node_position(func)
             )
-            for candidate in candidates:
+            for candidate in [func, *candidates]:
                 if isinstance(candidate, ast.Name):
-                    export = direct_names.get(candidate.id)
-                    if export is not None:
-                        return export
+                    for name in possible_original_names(
+                        candidate.id, _node_position(func)
+                    ):
+                        export = direct_names.get(name)
+                        if export is not None:
+                            return export
                 elif isinstance(candidate, ast.Attribute):
                     if candidate.attr not in selected_exports:
                         continue
@@ -7147,14 +7237,10 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     while isinstance(root, ast.Attribute):
                         root = root.value
                     if isinstance(root, ast.Name):
-                        modules = _resolve_bound_nodes(
-                            root, bindings, _node_position(candidate)
+                        possible = possible_original_names(
+                            root.id, _node_position(func)
                         )
-                        if any(
-                            isinstance(module, ast.Name)
-                            and module.id in module_names
-                            for module in modules
-                        ):
+                        if possible & module_names:
                             return candidate.attr
             return None
 
@@ -7238,16 +7324,24 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             if isinstance(expression, ast.Dict) and all(
                 key is not None for key in expression.keys
             ):
+                # Dictionary *keys* are evaluated in consumer scope too.
+                # Transferring an unresolved consumer Name into the provider
+                # would hide an indexed literal-returning credential.
+                alternative_keys = [
+                    static_argument_choices(key, seen)
+                    for key in expression.keys
+                ]
                 alternative_values = [
                     static_argument_choices(value, seen)
                     for value in expression.values
                 ]
                 return [
                     ast.copy_location(ast.Dict(
-                        keys=list(expression.keys),
-                        values=list(combination),
+                        keys=list(keys),
+                        values=list(values),
                     ), expression)
-                    for combination in product(*alternative_values)
+                    for keys in product(*alternative_keys)
+                    for values in product(*alternative_values)
                 ]
             if isinstance(expression, ast.Name):
                 resolved = [
@@ -7653,6 +7747,111 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             bool(self._module_uppercase_credential_literals(
                                 provider_source, names
                             )), expected
+                        )
+
+    def test_imported_provider_conditional_import_survival(self):
+        """A conditional alias replacement cannot erase the untouched import."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "credential_provider.py"
+            provider.write_text(
+                'def get_password(value):\n    return value\n', encoding="utf-8"
+            )
+            cases = (
+                ('from credential_provider import get_password\n'
+                 'if flag:\n    get_password = lambda value: None\n'
+                 'from elasticsearch import Elasticsearch\n'
+                 'Elasticsearch("localhost", basic_auth=("elastic", '
+                 'get_password("hardcoded-secret")))\n', True),
+                ('import credential_provider as cp\n'
+                 'if flag:\n    cp = object()\n'
+                 'from elasticsearch import Elasticsearch\n'
+                 'Elasticsearch("localhost", basic_auth=("elastic", '
+                 'cp.get_password("hardcoded-secret")))\n', True),
+                ('import credential_provider as cp\n'
+                 'provider = cp\n'
+                 'if flag:\n    provider = object()\n'
+                 'from elasticsearch import Elasticsearch\n'
+                 'Elasticsearch("localhost", basic_auth=("elastic", '
+                 'provider.get_password("hardcoded-secret")))\n', True),
+                ('from credential_provider import get_password\n'
+                 'if flag:\n    get_password = lambda value: None\n'
+                 'else:\n    get_password = lambda value: None\n'
+                 'from elasticsearch import Elasticsearch\n'
+                 'Elasticsearch("localhost", basic_auth=("elastic", '
+                 'get_password("hardcoded-secret")))\n', False),
+                ('from credential_provider import get_password\n'
+                 'if True:\n    get_password = lambda value: None\n'
+                 'from elasticsearch import Elasticsearch\n'
+                 'Elasticsearch("localhost", basic_auth=("elastic", '
+                 'get_password("hardcoded-secret")))\n', False),
+                ('from credential_provider import get_password\n'
+                 'if flag:\n    get_password = lambda value: None\n'
+                 'get_password = lambda value: None\n'
+                 'from elasticsearch import Elasticsearch\n'
+                 'Elasticsearch("localhost", basic_auth=("elastic", '
+                 'get_password("hardcoded-secret")))\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for consumer_source, expected in cases:
+                    with self.subTest(source=consumer_source):
+                        consumer.write_text(
+                            consumer_source, encoding="utf-8"
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+
+    def test_imported_provider_consumer_dictionary_keys(self):
+        """Indexing exported-provider dict arguments uses resolved key slots."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "credential_provider.py"
+            provider.write_text(
+                'def get_password(value):\n'
+                '    return value["credential"]\n',
+                encoding="utf-8",
+            )
+            cases = (
+                ('KEY = "credential"\n'
+                 'get_password({KEY: "hardcoded-secret"})\n', True),
+                ('KEY = "credential"\n'
+                 'get_password({KEY: None, "other": "hardcoded-secret"})\n', False),
+                ('KEY = "other"\n'
+                 'get_password({KEY: "hardcoded-secret", "credential": None})\n', False),
+                ('KEY = "other" if flag else "credential"\n'
+                 'get_password({KEY: "hardcoded-secret"})\n', True),
+                ('KEY = "credential"\n'
+                 'secret = {KEY: "hardcoded-secret"}\n'
+                 'get_password(secret)\n', True),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for text, expected in cases:
+                    with self.subTest(source=text):
+                        consumer.write_text(
+                            'from credential_provider import get_password\n'
+                            'from elasticsearch import Elasticsearch\n'
+                            + text.replace(
+                                'get_password(', 'password = get_password('
+                            )
+                            + 'Elasticsearch("localhost", '
+                            'basic_auth=("elastic", password))\n',
+                            encoding="utf-8",
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
                         )
 
     def test_imported_provider_alias_and_argument_alternatives(self):
