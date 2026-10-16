@@ -3022,7 +3022,7 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
                     continue
 
                 def expand_return_defaults(expression, captured=False,
-                                           seen=None):
+                                           seen=None, active_defaults=None):
                     """Substitute default-backed names anywhere in a return AST.
 
                     Preserve every source-visible reaching alias. Defaults are
@@ -3030,14 +3030,17 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
                     cannot change their already captured values.
                     """
                     seen = set() if seen is None else set(seen)
+                    active_defaults = (
+                        defaults if active_defaults is None else active_defaults
+                    )
                     if isinstance(expression, ast.Name):
-                        if not captured and expression.id in defaults:
+                        if not captured and expression.id in active_defaults:
                             token = ("default-parameter", expression.id)
                             if token in seen:
                                 return [expression]
                             return expand_return_defaults(
-                                defaults[expression.id], True,
-                                seen | {token},
+                                active_defaults[expression.id], True,
+                                seen | {token}, active_defaults,
                             )
                         if captured:
                             token = ("default-source", id(expression))
@@ -3060,6 +3063,7 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
                                         expanded.extend(
                                             expand_return_defaults(
                                                 candidate, True, seen | {token},
+                                                active_defaults,
                                             )
                                         )
                                     return expanded
@@ -3074,13 +3078,45 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
                         # remains visible to the returned credential scan.
                         # A merely returned lambda must stay deferred.
                         nested_args = expression.func.args
-                        if not (
-                            nested_args.posonlyargs or nested_args.args
-                            or nested_args.kwonlyargs
-                        ):
-                            return expand_return_defaults(
-                                expression.func.body, captured, seen
+                        positional = [
+                            *nested_args.posonlyargs, *nested_args.args
+                        ]
+                        if (
+                            len(nested_args.defaults) == len(positional)
+                            and all(
+                                default is not None
+                                for default in nested_args.kw_defaults
                             )
+                        ):
+                            # A zero-argument IIFE may still accept parameters
+                            # through defaults. Evaluate those defaults in the
+                            # enclosing scope *before* entering the inner lambda
+                            # so outer captures survive shadowing and overwrites.
+                            pairs = [
+                                *(zip(positional, nested_args.defaults)),
+                                *(zip(nested_args.kwonlyargs,
+                                       nested_args.kw_defaults)),
+                            ]
+                            choices = [
+                                expand_return_defaults(
+                                    default, captured, seen, active_defaults
+                                )
+                                for _, default in pairs
+                            ]
+                            expanded = []
+                            for combination in product(*choices):
+                                inner_defaults = dict(active_defaults)
+                                inner_defaults.update({
+                                    parameter.arg: value
+                                    for (parameter, _), value in zip(
+                                        pairs, combination
+                                    )
+                                })
+                                expanded.extend(expand_return_defaults(
+                                    expression.func.body, captured, seen,
+                                    inner_defaults,
+                                ))
+                            return expanded
                     if not isinstance(expression, ast.AST) or isinstance(
                         expression, (
                             ast.Lambda, ast.FunctionDef, ast.AsyncFunctionDef,
@@ -3092,7 +3128,7 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
                     for field, field_value in ast.iter_fields(expression):
                         if isinstance(field_value, ast.AST):
                             candidates = expand_return_defaults(
-                                field_value, captured, seen
+                                field_value, captured, seen, active_defaults
                             )
                             next_variants = []
                             for variant in variants:
@@ -3103,7 +3139,9 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
                             variants = next_variants
                         elif isinstance(field_value, list):
                             choices = [
-                                expand_return_defaults(value, captured, seen)
+                                expand_return_defaults(
+                                    value, captured, seen, active_defaults
+                                )
                                 if isinstance(value, ast.AST) else [value]
                                 for value in field_value
                             ]
@@ -8904,6 +8942,37 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 )
         self.assertTrue(hardcoded_auth_tuple_lines(
             'password = (lambda value="hardcoded-secret": (lambda: value)())()\n'
+            'Elasticsearch("localhost", basic_auth=("elastic", password))\n'
+        ))
+
+    def test_defaulted_immediate_nested_lambda_capture_boundaries(self):
+        """Defaulted IIFEs execute; merely returned lambdas do not."""
+        cases = (
+            ('password = (lambda value="hardcoded-secret": '
+             '(lambda copied=value: copied)())()\n', True),
+            ('password = (lambda value="hardcoded-secret": '
+             '(lambda first=value: (lambda second=first: second)())())()\n', True),
+            ('password = (lambda value="hardcoded-secret": '
+             '(lambda *, copied=value: copied)())()\n', True),
+            ('password = (lambda value="hardcoded-secret": '
+             '(lambda value=None: value)())()\n', False),
+            ('password = (lambda value="hardcoded-secret": '
+             '(lambda copied=value: copied))()\n', False),
+            ('secret = "hardcoded-secret"\n'
+             'getter = lambda value=secret: (lambda copied=value: copied)()\n'
+             'secret = None\npassword = getter()\n', True),
+            ('secret = None\ngetter = lambda value=secret: '
+             '(lambda copied=value: copied)()\n'
+             'secret = "hardcoded-secret"\npassword = getter()\n', False),
+            ('password = (lambda value=os.getenv("TCP_ELASTIC_PASSWORD"): '
+             '(lambda copied=value: copied)())()\n', False),
+        )
+        for source, expected in cases:
+            with self.subTest(source=source):
+                self.assertEqual(bool(hardcoded_password_literal_lines(source)), expected)
+        self.assertTrue(hardcoded_auth_tuple_lines(
+            'password = (lambda value="hardcoded-secret": '
+            '(lambda copied=value: copied)())()\n'
             'Elasticsearch("localhost", basic_auth=("elastic", password))\n'
         ))
 
