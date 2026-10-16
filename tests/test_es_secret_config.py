@@ -3169,9 +3169,56 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
                                     inner_defaults,
                                 ))
                             return expanded
+                    if isinstance(expression, ast.Lambda):
+                        # Materialize captured outer defaults in a *returned*
+                        # lambda without executing its body. The body may be
+                        # invoked only by an enclosing Call; local parameters
+                        # shadow outer captures while default expressions are
+                        # evaluated in the enclosing lexical environment.
+                        arguments = expression.args
+                        parameters = {
+                            arg.arg for arg in [
+                                *arguments.posonlyargs, *arguments.args,
+                                *arguments.kwonlyargs,
+                                *([arguments.vararg] if arguments.vararg else []),
+                                *([arguments.kwarg] if arguments.kwarg else []),
+                            ]
+                        }
+                        defaults_list = [
+                            *arguments.defaults,
+                            *(value for value in arguments.kw_defaults
+                              if value is not None),
+                        ]
+                        default_choices = [
+                            expand_return_defaults(
+                                value, captured, seen, active_defaults
+                            ) for value in defaults_list
+                        ]
+                        inner_defaults = {
+                            key: value for key, value in active_defaults.items()
+                            if key not in parameters
+                        }
+                        bodies = expand_return_defaults(
+                            expression.body, captured, seen, inner_defaults
+                        )
+                        variants = []
+                        for combination in product(*default_choices):
+                            for body in bodies:
+                                replacement = copy.copy(expression)
+                                replacement.args = copy.copy(arguments)
+                                count = len(arguments.defaults)
+                                replacement.args.defaults = list(combination[:count])
+                                remaining = iter(combination[count:])
+                                replacement.args.kw_defaults = [
+                                    next(remaining) if value is not None else None
+                                    for value in arguments.kw_defaults
+                                ]
+                                replacement.body = body
+                                variants.append(replacement)
+                        return variants
                     if not isinstance(expression, ast.AST) or isinstance(
                         expression, (
-                            ast.Lambda, ast.FunctionDef, ast.AsyncFunctionDef,
+                            ast.FunctionDef, ast.AsyncFunctionDef,
                             ast.GeneratorExp,
                         ),
                     ):
