@@ -5830,69 +5830,160 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     for node in ast.walk(target)
                 )
 
+            def bound_resume_options(call, created, consume_anext=False):
+                """Branch-correlated outcomes for calls through bound methods.
+
+                A reaching alias is not an independent call: only the *last*
+                binding executed on one control-flow path supplies the method.
+                Keep the skip path too (send() without an argument, an unawaited
+                __anext__(), or an alias overwritten by a different callable).
+                """
+                func = call.func
+                candidates = (
+                    [func] if isinstance(func, ast.Attribute)
+                    else _resolve_bound_nodes(
+                        func, bound_names(), _node_position(func)
+                    )
+                )
+                methods = {"send", "__next__", "__anext__"}
+                if not any(
+                    isinstance(node, ast.Attribute)
+                    and node.attr in methods
+                    and refers_to(node.value, created)
+                    for node in candidates
+                ):
+                    return None
+                keys = list(dict.fromkeys(
+                    step[:3]
+                    for node in candidates
+                    for step in _node_control_path(node)
+                    if step[0] == "If"
+                ))
+                options = []
+                for decisions in product(("body", "orelse"), repeat=len(keys)):
+                    choices = dict(zip(keys, decisions))
+                    reaching = [
+                        node for node in candidates
+                        if all(
+                            choices.get(step[:3]) == step[3]
+                            for step in _node_control_path(node)
+                            if step[0] == "If"
+                        )
+                    ]
+                    selected = reaching[-1] if reaching else None
+                    kind = "skip"
+                    if (
+                        isinstance(selected, ast.Attribute)
+                        and refers_to(selected.value, created)
+                        and not call.keywords
+                    ):
+                        if selected.attr == "__next__" and not call.args:
+                            kind = "step"
+                        elif selected.attr == "send" and len(call.args) == 1:
+                            kind = (
+                                "send-value"
+                                if definitely_non_none(call.args[0])
+                                else "step"
+                            )
+                        elif (
+                            selected.attr == "__anext__"
+                            and not call.args and consume_anext
+                        ):
+                            # __anext__() itself only creates an awaitable.
+                            kind = "step"
+                    option = (kind, tuple(zip(keys, decisions)))
+                    if option not in options:
+                        options.append(option)
+                return options
+
+            def pending_anext_options(value, created, seen=None):
+                """Resolve awaited __anext__ awaitables through name aliases."""
+                seen = set() if seen is None else seen
+                if value in seen:
+                    return []
+                seen = seen | {value}
+                if isinstance(value, ast.Name):
+                    options = []
+                    for bound in _resolve_bound_nodes(
+                        value, bound_names(), _node_position(value)
+                    ):
+                        if bound is not value:
+                            options.extend(
+                                pending_anext_options(bound, created, seen)
+                            )
+                    return options
+                if not isinstance(value, ast.Call):
+                    return []
+                options = bound_resume_options(
+                    value, created, consume_anext=True
+                )
+                if options is not None:
+                    return options
+                if (
+                    isinstance(value.func, ast.Name)
+                    and value.func.id == "anext"
+                    and len(value.args) in (1, 2)
+                    and not value.keywords
+                    and refers_to(value.args[0], created)
+                ):
+                    return [("step", ())]
+                return []
+
             def resume_expressions(created):
-                """Return ordered resume attempts, distinguishing one step from exhaustion."""
+                """Ordered execution events, not merely awaitable creation."""
                 found = []
                 for expression in ast.walk(tree):
                     value = None
                     kind = "all"
-                    if isinstance(expression, (ast.Await, ast.YieldFrom)):
+                    if isinstance(expression, ast.Await):
+                        options = pending_anext_options(
+                            expression.value, created
+                        )
+                        if options:
+                            found.append((expression, options))
+                            continue
+                        value = expression.value
+                    elif isinstance(expression, ast.YieldFrom):
                         value = expression.value
                     elif isinstance(expression, (ast.For, ast.AsyncFor)):
                         value = expression.iter
                     elif isinstance(expression, ast.Call):
                         func = expression.func
-                        # Both a direct bound method call and an alias such as
-                        # advance = gen.__next__; advance() resume the method
-                        # receiver. Resolve source-ordered aliases at the call
-                        # position, rather than requiring gen in call args.
-                        bound_methods = (
-                            [func] if isinstance(func, ast.Attribute)
-                            else [
-                                alias for alias in _resolve_bound_nodes(
-                                    func, bound_names(), _node_position(func)
-                                )
-                                if isinstance(alias, ast.Attribute)
-                            ]
-                        )
-                        resumable_methods = [
-                            method for method in bound_methods
-                            if method.attr in {
-                                "send", "__next__", "__anext__",
-                            }
-                            and refers_to(method.value, created)
-                        ]
-                        if resumable_methods:
-                            # Each aliased method retains its bound receiver;
-                            # ambiguous aliases are handled conservatively.
-                            method = resumable_methods[0]
-                            if method.attr != "send" or expression.args:
-                                value = method.value
-                                kind = (
-                                    "send-value"
-                                    if method.attr == "send"
-                                    and definitely_non_none(expression.args[0])
-                                    else "step"
-                                )
-                        elif isinstance(func, ast.Name) and func.id in {
-                            "next", "anext",
-                        } and expression.args:
+                        options = bound_resume_options(expression, created)
+                        if options is not None:
+                            if any(option[0] != "skip" for option in options):
+                                found.append((expression, options))
+                            continue
+                        if (
+                            isinstance(func, ast.Name)
+                            and func.id == "next"
+                            and expression.args
+                        ):
                             value = expression.args[0]
                             kind = "step"
+                        elif (
+                            isinstance(func, ast.Name)
+                            and func.id == "anext"
+                        ):
+                            # Builtin anext() also returns an awaitable.
+                            continue
                         elif isinstance(func, ast.Name) and func.id in {
                             "list", "tuple", "set", "sum",
                             "any", "all", "max", "min",
                         } and expression.args:
                             value = expression.args[0]
-                        elif isinstance(func, ast.Attribute) and func.attr == "run" and expression.args:
+                        elif (
+                            isinstance(func, ast.Attribute)
+                            and func.attr == "run"
+                            and expression.args
+                        ):
                             value = expression.args[0]
                         elif not (
                             isinstance(func, ast.Name) and func.id in {
                                 "iter", "repr", "id", "type",
                             }
                         ):
-                            # Opaque consumer may synchronously drive a
-                            # passed coroutine/generator to its credential.
+                            # Opaque consumers may drive a suspended object.
                             for argument in [
                                 *expression.args,
                                 *(kw.value for kw in expression.keywords),
@@ -5901,7 +5992,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                     value = argument
                                     break
                     if value is not None and refers_to(value, created):
-                        found.append((expression, kind))
+                        found.append((expression, [(kind, ())]))
                 return sorted(found, key=lambda item: _node_position(item[0]))
 
             def static_iterable_minimum(expression):
@@ -6317,70 +6408,79 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                     conditional.test
                                 ) is not None
                             }
-                            for resume, kind in resume_expressions(call):
-                                branches = [
+                            for resume, options in resume_expressions(call):
+                                # One call can have several reaching method
+                                # bindings, but executes only one on each
+                                # feasible control-flow path. Include guards
+                                # from the assignment *and* the invocation.
+                                event_branches = [
                                     step for step in _node_control_path(resume)
                                     if step[0] == "If"
                                 ]
+                                guarded = [
+                                    (kind, [
+                                        *event_branches,
+                                        *(tuple(key) + (arm,) for key, arm in guard),
+                                    ])
+                                    for kind, guard in options
+                                ]
+                                keys = list(dict.fromkeys(
+                                    step[:3]
+                                    for _, conditions in guarded
+                                    for step in conditions
+                                ))
                                 expanded = paths
-                                for branch in branches:
-                                    key = branch[:3]
-                                    chosen = branch[3]
+                                for key in keys:
                                     next_paths = []
                                     for count, choices in expanded:
-                                        prior_choice = choices.get(key)
-                                        constant_choice = constant_if_choices.get(key)
-                                        if constant_choice is not None:
-                                            # Statically false/true arms cannot
-                                            # contribute a resume to the count
-                                            # that reaches later module calls.
-                                            if (
-                                                prior_choice is not None
-                                                and prior_choice != constant_choice
-                                            ):
+                                        choice = choices.get(key)
+                                        constant = constant_if_choices.get(key)
+                                        possible = (
+                                            [constant] if constant is not None
+                                            else [choice] if choice is not None
+                                            else ["body", "orelse"]
+                                        )
+                                        for arm in possible:
+                                            if choice is not None and choice != arm:
                                                 continue
-                                            selected = dict(choices)
-                                            selected[key] = constant_choice
-                                            next_paths.append((count, selected))
-                                        elif prior_choice is not None:
-                                            next_paths.append((count, choices))
-                                        else:
-                                            matching = dict(choices)
-                                            matching[key] = chosen
-                                            opposing = dict(choices)
-                                            opposing[key] = (
-                                                "orelse" if chosen == "body"
-                                                else "body"
-                                            )
-                                            next_paths.extend([
-                                                (count, matching),
-                                                (count, opposing),
-                                            ])
+                                            next_choices = dict(choices)
+                                            next_choices[key] = arm
+                                            next_paths.append((count, next_choices))
                                     expanded = next_paths
                                 updated = []
                                 for count, choices in expanded:
-                                    if any(
-                                        choices.get(branch[:3]) != branch[3]
-                                        for branch in branches
-                                    ):
+                                    matches = [
+                                        kind for kind, conditions in guarded
+                                        if all(
+                                            choices.get(step[:3]) == step[3]
+                                            for step in conditions
+                                        )
+                                    ]
+                                    if not matches:
                                         updated.append((count, choices))
                                         continue
-                                    if kind == "send-value" and count == 0:
-                                        # Invalid initial send(non-None)
-                                        # raises without advancing this path.
-                                        updated.append((count, choices))
-                                        continue
-                                    increment = (
-                                        resume_repeat_bound(resume, needed, call)
-                                        if kind in {"step", "send-value"}
-                                        else needed
-                                    )
-                                    next_count = min(
-                                        needed, count + increment
-                                    )
-                                    if next_count >= needed:
-                                        add_site(resume)
-                                    updated.append((next_count, choices))
+                                    for kind in matches:
+                                        if (
+                                            kind == "skip"
+                                            or kind == "send-value" and count == 0
+                                        ):
+                                            # A zero-arg send or invalid initial
+                                            # send(non-None) cannot advance.
+                                            updated.append((count, choices))
+                                            continue
+                                        increment = (
+                                            resume_repeat_bound(
+                                                resume, needed, call
+                                            )
+                                            if kind in {"step", "send-value"}
+                                            else needed
+                                        )
+                                        next_count = min(
+                                            needed, count + increment
+                                        )
+                                        if next_count >= needed:
+                                            add_site(resume)
+                                        updated.append((next_count, choices))
                                 paths = updated
                         else:
                             add_site(call)
@@ -9006,6 +9106,99 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             'from provider_b import *\n' + generator
                             + 'gen = run()\n' + suffix,
                             encoding="utf-8",
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+
+    def test_wildcard_bound_generator_reaching_method_branches(self):
+        """One call must never count two mutually exclusive bound methods."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "provider_b.py"
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            auth = 'Elasticsearch("localhost", basic_auth=("elastic", password))'
+            cases = (
+                ('def run():\n    ' + auth + '\n    yield 1\n',
+                 'advance = gen.send\nif flag:\n    advance = gen.__next__\n'
+                 'advance()\npassword = None\n', True),
+                ('def run():\n    yield 1\n    ' + auth + '\n',
+                 'advance = gen.send\nif flag:\n    advance = gen.__next__\n'
+                 'advance()\npassword = None\n', False),
+                ('def run():\n    yield 1\n    ' + auth + '\n',
+                 'advance = gen.send\nif flag:\n    advance = gen.__next__\n'
+                 'advance()\nadvance()\npassword = None\n', True),
+                ('def run():\n    ' + auth + '\n    yield 1\n',
+                 'advance = gen.send\nif True:\n    advance = lambda: None\n'
+                 'advance()\npassword = None\n', False),
+                ('def run():\n    ' + auth + '\n    yield 1\n',
+                 'advance = gen.__next__\nalias = advance\n'
+                 'advance = gen.send\nalias()\npassword = None\n', True),
+                ('def run():\n    ' + auth + '\n    yield 1\n',
+                 'advance = gen.__next__\nif False:\n'
+                 '    advance = gen.send\nadvance()\npassword = None\n', True),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for definition, suffix, expected in cases:
+                    with self.subTest(suffix=suffix):
+                        consumer.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'from provider_b import *\n'
+                            + definition + 'gen = run()\n' + suffix,
+                            encoding="utf-8",
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+
+    def test_wildcard_async_generator_anext_awaitable_timing(self):
+        """Aliased __anext__ creation is inert until a legal await."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "provider_b.py"
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            auth = 'Elasticsearch("localhost", basic_auth=("elastic", password))'
+            generator = (
+                'async def run():\n    ' + auth + '\n    yield 1\n'
+                'gen = run()\nadvance = gen.__anext__\n'
+            )
+            cases = (
+                ('pending = advance()\npassword = None\n', False),
+                ('pending = advance()\npassword = None\n'
+                 'async def consume():\n    await pending\n'
+                 'import asyncio\nasyncio.run(consume())\n', False),
+                ('pending = advance()\nasync def consume():\n'
+                 '    await pending\nimport asyncio\n'
+                 'asyncio.run(consume())\npassword = None\n', True),
+                ('async def consume():\n    await advance()\n'
+                 'import asyncio\nasyncio.run(consume())\n'
+                 'password = None\n', True),
+                ('pending = advance()\nasync def consume():\n'
+                 '    return 1\nimport asyncio\n'
+                 'asyncio.run(consume())\npassword = None\n', False),
+                ('async def consume():\n    await anext(gen)\n'
+                 'import asyncio\nasyncio.run(consume())\n'
+                 'password = None\n', True),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for suffix, expected in cases:
+                    with self.subTest(suffix=suffix):
+                        consumer.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'from provider_b import *\n'
+                            + generator + suffix, encoding="utf-8",
                         )
                         self.assertEqual(
                             provider.resolve() in self._runtime_es_module_paths(),
