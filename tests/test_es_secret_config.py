@@ -7083,6 +7083,152 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     )
         return exported
 
+    def _imported_credential_call_arguments(
+        self, source, dependency, selected_exports
+    ):
+        """Pass statically known credential-call arguments to imported providers.
+
+        Only calls feeding a recognized credential value are used. Literal
+        values of their arguments are analyzed in the *consumer* scope before
+        crossing the module boundary; unrelated calls stay out of the scan.
+        """
+        if not selected_exports:
+            return []
+        try:
+            tree = ast.parse(source)
+        except SyntaxError:
+            return []
+        bindings = _name_bindings(tree)
+        direct_names = {}
+        module_names = set()
+        for statement in ast.walk(tree):
+            if isinstance(statement, ast.ImportFrom):
+                tail = (statement.module or "").split(".")[-1]
+                if tail == dependency.stem or (
+                    dependency.name == "__init__.py"
+                    and tail == dependency.parent.name
+                ):
+                    for item in statement.names:
+                        if item.name in selected_exports:
+                            direct_names[item.asname or item.name] = item.name
+                if any(item.name == dependency.stem for item in statement.names):
+                    module_names.update(
+                        item.asname or item.name
+                        for item in statement.names
+                        if item.name == dependency.stem
+                    )
+                if any(item.name == "*" for item in statement.names):
+                    direct_names.update(
+                        (name, name) for name in selected_exports
+                    )
+            elif isinstance(statement, ast.Import):
+                for item in statement.names:
+                    if item.name.split(".")[-1] == dependency.stem:
+                        module_names.add(
+                            item.asname or item.name.split(".", 1)[0]
+                        )
+
+        def provider_export(func):
+            if isinstance(func, ast.Name):
+                return direct_names.get(func.id)
+            if isinstance(func, ast.Attribute):
+                if func.attr not in selected_exports:
+                    return None
+                root = func.value
+                while isinstance(root, ast.Attribute):
+                    root = root.value
+                if isinstance(root, ast.Name) and root.id in module_names:
+                    return func.attr
+            return None
+
+        secret_keys = {
+            "password", "api_key", "bearer_auth", "basic_auth",
+            "http_auth", "authorization",
+        }
+
+        def password_sides(value, key):
+            if key not in {"basic_auth", "http_auth"}:
+                return [value]
+            possible = (
+                [value] if isinstance(value, (ast.Tuple, ast.List))
+                else _resolve_bound_nodes(
+                    value, bindings, _node_position(value)
+                )
+            )
+            return [
+                item.elts[1] for item in possible
+                if isinstance(item, (ast.Tuple, ast.List))
+                and len(item.elts) >= 2
+            ] or [value]
+
+        expressions = []
+        for node in ast.walk(tree):
+            if isinstance(node, ast.keyword) and node.arg in secret_keys:
+                expressions.extend(password_sides(node.value, node.arg))
+            elif isinstance(node, ast.Dict):
+                for key, value in zip(node.keys, node.values):
+                    if (
+                        isinstance(key, ast.Constant)
+                        and isinstance(key.value, str)
+                        and key.value.lower() in secret_keys
+                    ):
+                        expressions.extend(
+                            password_sides(value, key.value.lower())
+                        )
+            elif isinstance(node, (ast.Assign, ast.AnnAssign)):
+                if node.value is None:
+                    continue
+                targets = (
+                    node.targets if isinstance(node, ast.Assign)
+                    else [node.target]
+                )
+                if any(
+                    isinstance(target, ast.Name)
+                    and target.id.lower() in secret_keys
+                    for target in targets
+                ):
+                    expressions.append(node.value)
+
+        def static_argument(expression):
+            # Consumer-side name and default captures cannot be resolved
+            # against the *provider* module's lexical bindings.
+            values = _hardcoded_password_values(
+                expression, bindings, _node_position(expression)
+            )
+            if values:
+                return ast.copy_location(
+                    ast.Constant(value=values[0]), expression
+                )
+            try:
+                literal = ast.literal_eval(expression)
+            except (ValueError, TypeError, RecursionError):
+                literal = None
+            return ast.copy_location(ast.Constant(value=literal), expression)
+
+        results = []
+        for expr in expressions:
+            roots = _resolve_bound_nodes(
+                expr, bindings, _node_position(expr)
+            )
+            for root in roots:
+                for call in ast.walk(root):
+                    if not isinstance(call, ast.Call):
+                        continue
+                    exported_name = provider_export(call.func)
+                    if exported_name is None:
+                        continue
+                    if any(
+                        isinstance(arg, ast.Starred) for arg in call.args
+                    ) or any(k.arg is None for k in call.keywords):
+                        continue
+                    args = tuple(static_argument(a) for a in call.args)
+                    keywords = tuple(
+                        ast.keyword(arg=k.arg, value=static_argument(k.value))
+                        for k in call.keywords
+                    )
+                    results.append((exported_name, args, keywords))
+        return results
+
     def _runtime_es_module_paths(self):
         paths = {path.resolve() for path in RUNTIME_ES_MODULES}
 
@@ -7125,8 +7271,11 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 provider_source = dependency.read_text(
                     encoding="utf-8-sig", errors="ignore"
                 )
+                call_arguments = self._imported_credential_call_arguments(
+                    source, dependency, exports
+                )
                 if self._module_uppercase_credential_literals(
-                    provider_source, exports
+                    provider_source, exports, call_arguments
                 ):
                     paths.add(dependency)
                 if dependency not in processed or len(exports) != before:
@@ -7135,7 +7284,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         self._imported_credential_exports = imported_exports
         return sorted(paths)
 
-    def _module_uppercase_credential_literals(self, source, exported_names=()):
+    def _module_uppercase_credential_literals(
+        self, source, exported_names=(), imported_calls=()
+    ):
         """Catch imported providers exporting a literal credential constant."""
         try:
             tree = ast.parse(source)
@@ -7196,12 +7347,29 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         ),
                         statement,
                     )
-                    values = _hardcoded_password_values(
-                        invocation, bindings, _node_position(statement)
+                    invocations = [invocation]
+                    invocations.extend(
+                        ast.copy_location(
+                            ast.Call(
+                                func=callee,
+                                args=list(args),
+                                keywords=list(keywords),
+                            ),
+                            statement,
+                        )
+                        for name, args, keywords in imported_calls
+                        if name == statement.name
                     )
-                    if any(value != REDACTED_PASSWORD_SENTINEL
-                           for value in values):
-                        violations.append(statement.lineno)
+                    for invocation in invocations:
+                        values = _hardcoded_password_values(
+                            invocation, bindings, _node_position(statement)
+                        )
+                        if any(
+                            value != REDACTED_PASSWORD_SENTINEL
+                            for value in values
+                        ):
+                            violations.append(statement.lineno)
+                            break
                 continue
             if isinstance(statement, ast.Assign):
                 targets = statement.targets
@@ -7390,6 +7558,80 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             bool(self._module_uppercase_credential_literals(
                                 provider_source, names
                             )), expected
+                        )
+
+    def test_imported_provider_uses_consumer_call_arguments(self):
+        """Cross-module returns observe actual consumer arguments, not None."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "credential_provider.py"
+            cases = (
+                (
+                    'from credential_provider import get_password\n'
+                    'from elasticsearch import Elasticsearch\n'
+                    'Elasticsearch("localhost", basic_auth=("elastic", '
+                    'get_password("hardcoded-secret")))\n',
+                    'def get_password(value):\n    return value\n', True,
+                ),
+                (
+                    'from credential_provider import get_password as fetch\n'
+                    'from elasticsearch import Elasticsearch\n'
+                    'Elasticsearch("localhost", basic_auth=("elastic", '
+                    'fetch(value="hardcoded-secret")))\n',
+                    'def get_password(value):\n    return value\n', True,
+                ),
+                (
+                    'import credential_provider as cp\n'
+                    'from elasticsearch import Elasticsearch\n'
+                    'Elasticsearch("localhost", basic_auth=("elastic", '
+                    'cp.get_password("hardcoded-secret")))\n',
+                    'def get_password(value):\n    return value\n', True,
+                ),
+                (
+                    'from credential_provider import get_password\n'
+                    'from elasticsearch import Elasticsearch\n'
+                    'credential = get_password("hardcoded-secret")\n'
+                    'Elasticsearch("localhost", '
+                    'basic_auth=("elastic", credential))\n',
+                    'def get_password(value):\n    return value\n', True,
+                ),
+                (
+                    'from credential_provider import get_password\n'
+                    'from elasticsearch import Elasticsearch\n'
+                    'Elasticsearch("localhost", basic_auth=("elastic", '
+                    'get_password("hardcoded-secret")))\n',
+                    'def get_password(value):\n    return None\n', False,
+                ),
+                (
+                    'from credential_provider import get_password\n'
+                    'from elasticsearch import Elasticsearch\n'
+                    'get_password("hardcoded-secret")\n'
+                    'Elasticsearch("localhost", basic_auth=("elastic", '
+                    'get_password(None)))\n',
+                    'def get_password(value):\n    return value\n', False,
+                ),
+                (
+                    'from credential_provider import get_password\n'
+                    'from elasticsearch import Elasticsearch\n'
+                    'Elasticsearch("localhost", basic_auth=("elastic", '
+                    'get_password("hardcoded-secret")))\n',
+                    'import os\ndef get_password(value):\n'
+                    '    return os.getenv("TCP_ELASTIC_PASSWORD")\n', False,
+                ),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for consumer_source, provider_source, expected in cases:
+                    with self.subTest(consumer_source=consumer_source):
+                        consumer.write_text(consumer_source, encoding="utf-8")
+                        provider.write_text(provider_source, encoding="utf-8")
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
                         )
 
     def test_imported_auth_providers_follow_aliases_dotted_paths_and_unpacking(self):
