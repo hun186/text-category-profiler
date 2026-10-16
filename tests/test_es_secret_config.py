@@ -5857,17 +5857,29 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     step[:3]
                     for node in candidates
                     for step in _node_control_path(node)
-                    if step[0] == "If"
+                    if step[0] in {"If", "Match"}
                 ))
+                match_arms = {
+                    ("Match", *_node_position(match)): tuple(
+                        f"case-{index}" for index in range(len(match.cases))
+                    ) + ("no-match",)
+                    for match in ast.walk(tree)
+                    if isinstance(match, ast.Match)
+                }
+                alternatives = [
+                    ("body", "orelse") if key[0] == "If"
+                    else match_arms.get(key, ("no-match",))
+                    for key in keys
+                ]
                 options = []
-                for decisions in product(("body", "orelse"), repeat=len(keys)):
+                for decisions in product(*alternatives):
                     choices = dict(zip(keys, decisions))
                     reaching = [
                         node for node in candidates
                         if all(
                             choices.get(step[:3]) == step[3]
                             for step in _node_control_path(node)
-                            if step[0] == "If"
+                            if step[0] in {"If", "Match"}
                         )
                     ]
                     selected = reaching[-1] if reaching else None
@@ -5896,29 +5908,38 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         options.append(option)
                 return options
 
-            def pending_anext_options(value, created, seen=None):
-                """Resolve awaited __anext__ awaitables through name aliases."""
+            def pending_anext_groups(value, created, seen=None):
+                """Awaited groups of generator-step alternatives and identities.
+
+                Each group advances at most one bound method on a path.
+                gather() consumes each of its inputs, unlike alternative
+                bound-method assignments. A stored __anext__ awaitable keeps
+                the identity of the original Call AST across name aliases.
+                """
                 seen = set() if seen is None else seen
                 if value in seen:
                     return []
                 seen = seen | {value}
                 if isinstance(value, ast.Name):
-                    options = []
+                    groups = []
                     for bound in _resolve_bound_nodes(
                         value, bound_names(), _node_position(value)
                     ):
                         if bound is not value:
-                            options.extend(
-                                pending_anext_options(bound, created, seen)
+                            groups.extend(
+                                pending_anext_groups(bound, created, seen)
                             )
-                    return options
+                    return groups
                 if not isinstance(value, ast.Call):
                     return []
                 options = bound_resume_options(
                     value, created, consume_anext=True
                 )
                 if options is not None:
-                    return options
+                    return [[
+                        (kind, guard, value if kind == "step" else None)
+                        for kind, guard in options
+                    ]]
                 if (
                     isinstance(value.func, ast.Name)
                     and value.func.id == "anext"
@@ -5926,7 +5947,23 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     and not value.keywords
                     and refers_to(value.args[0], created)
                 ):
-                    return [("step", ())]
+                    return [[("step", (), value)]]
+                if (
+                    isinstance(value.func, ast.Attribute)
+                    and isinstance(value.func.value, ast.Name)
+                    and value.func.value.id == "asyncio"
+                    and not value.keywords
+                ):
+                    if value.func.attr == "shield" and len(value.args) == 1:
+                        return pending_anext_groups(value.args[0], created, seen)
+                    if value.func.attr == "gather" and value.args:
+                        return [
+                            group
+                            for arg in value.args
+                            for group in pending_anext_groups(arg, created, seen)
+                        ]
+                    if value.func.attr == "wait_for" and len(value.args) == 2:
+                        return pending_anext_groups(value.args[0], created, seen)
                 return []
 
             def resume_expressions(created):
@@ -5936,11 +5973,13 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     value = None
                     kind = "all"
                     if isinstance(expression, ast.Await):
-                        options = pending_anext_options(
+                        groups = pending_anext_groups(
                             expression.value, created
                         )
-                        if options:
-                            found.append((expression, options))
+                        if groups:
+                            found.extend(
+                                (expression, group) for group in groups
+                            )
                             continue
                         value = expression.value
                     elif isinstance(expression, ast.YieldFrom):
@@ -5952,7 +5991,11 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         options = bound_resume_options(expression, created)
                         if options is not None:
                             if any(option[0] != "skip" for option in options):
-                                found.append((expression, options))
+                                found.append((
+                                    expression,
+                                    [(kind, guard, None)
+                                     for kind, guard in options],
+                                ))
                             continue
                         if (
                             isinstance(func, ast.Name)
@@ -5992,7 +6035,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                     value = argument
                                     break
                     if value is not None and refers_to(value, created):
-                        found.append((expression, [(kind, ())]))
+                        found.append((expression, [(kind, (), None)]))
                 return sorted(found, key=lambda item: _node_position(item[0]))
 
             def static_iterable_minimum(expression):
@@ -6395,7 +6438,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             # Each possible If/else path owns an independent
                             # resume counter. Calls from opposing arms must
                             # never accumulate as though both arms ran.
-                            paths = [(0, {})]
+                            paths = [(0, {}, frozenset())]
                             constant_if_choices = {
                                 ("If", *_node_position(conditional)): (
                                     "body"
@@ -6415,58 +6458,69 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                 # from the assignment *and* the invocation.
                                 event_branches = [
                                     step for step in _node_control_path(resume)
-                                    if step[0] == "If"
+                                    if step[0] in {"If", "Match"}
                                 ]
                                 guarded = [
-                                    (kind, [
+                                    (kind, identity, [
                                         *event_branches,
                                         *(tuple(key) + (arm,) for key, arm in guard),
                                     ])
-                                    for kind, guard in options
+                                    for kind, guard, identity in options
                                 ]
                                 keys = list(dict.fromkeys(
                                     step[:3]
-                                    for _, conditions in guarded
+                                    for _, _, conditions in guarded
                                     for step in conditions
                                 ))
                                 expanded = paths
                                 for key in keys:
                                     next_paths = []
-                                    for count, choices in expanded:
+                                    for count, choices, consumed in expanded:
                                         choice = choices.get(key)
                                         constant = constant_if_choices.get(key)
                                         possible = (
                                             [constant] if constant is not None
                                             else [choice] if choice is not None
-                                            else ["body", "orelse"]
+                                            else ["body", "orelse"] if key[0] == "If"
+                                            else [
+                                                *(f"case-{index}" for index in range(
+                                                    len(next(match for match in ast.walk(tree)
+                                                        if isinstance(match, ast.Match)
+                                                        and ("Match", *_node_position(match)) == key
+                                                    ).cases)
+                                                )),
+                                                "no-match",
+                                            ]
                                         )
                                         for arm in possible:
                                             if choice is not None and choice != arm:
                                                 continue
                                             next_choices = dict(choices)
                                             next_choices[key] = arm
-                                            next_paths.append((count, next_choices))
+                                            next_paths.append((count, next_choices, consumed))
                                     expanded = next_paths
                                 updated = []
-                                for count, choices in expanded:
+                                for count, choices, consumed in expanded:
                                     matches = [
-                                        kind for kind, conditions in guarded
+                                        (kind, identity) for kind, identity, conditions in guarded
                                         if all(
                                             choices.get(step[:3]) == step[3]
                                             for step in conditions
                                         )
                                     ]
                                     if not matches:
-                                        updated.append((count, choices))
+                                        updated.append((count, choices, consumed))
                                         continue
-                                    for kind in matches:
+                                    for kind, identity in matches:
                                         if (
                                             kind == "skip"
                                             or kind == "send-value" and count == 0
+                                            or identity is not None
+                                            and identity in consumed
                                         ):
                                             # A zero-arg send or invalid initial
                                             # send(non-None) cannot advance.
-                                            updated.append((count, choices))
+                                            updated.append((count, choices, consumed))
                                             continue
                                         increment = (
                                             resume_repeat_bound(
@@ -6480,7 +6534,11 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                         )
                                         if next_count >= needed:
                                             add_site(resume)
-                                        updated.append((next_count, choices))
+                                        updated.append((
+                                            next_count, choices,
+                                            consumed | {identity}
+                                            if identity is not None else consumed,
+                                        ))
                                 paths = updated
                         else:
                             add_site(call)
@@ -9199,6 +9257,99 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             'from elasticsearch import Elasticsearch\n'
                             'from provider_b import *\n'
                             + generator + suffix, encoding="utf-8",
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+
+    def test_wildcard_generator_match_arm_aliases(self):
+        """Bound method decisions are correlated across match/case arms."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "provider_b.py"
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            auth = 'Elasticsearch("localhost", basic_auth=("elastic", password))'
+            cases = (
+                ('advance = gen.__next__\nmatch choice:\n'
+                 '    case 0:\n        advance = gen.send\n'
+                 '    case 1:\n        advance = gen.__next__\n'
+                 'advance()\npassword = None\n', True),
+                ('advance = gen.send\nmatch choice:\n'
+                 '    case 0:\n        advance = gen.__next__\n'
+                 '    case _:\n        advance = gen.send\n'
+                 'advance()\npassword = None\n', True),
+                ('advance = gen.send\nmatch choice:\n'
+                 '    case 0:\n        advance = gen.__next__\n'
+                 'advance()\npassword = None\n', True),
+                ('advance = gen.__next__\nmatch choice:\n'
+                 '    case 0:\n        advance = gen.send\n'
+                 'advance(None)\npassword = None\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for source, expected in cases:
+                    with self.subTest(source=source):
+                        consumer.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'from provider_b import *\n'
+                            'def run():\n    ' + auth + '\n    yield 1\n'
+                            'gen = run()\n' + source,
+                            encoding="utf-8",
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+
+    def test_wildcard_async_anext_wrappers_and_single_use(self):
+        """Await wrappers consume inputs; reawaiting an object cannot resume."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "provider_b.py"
+            provider.write_text('password = "hardcoded-secret"\n', encoding="utf-8")
+            auth = 'Elasticsearch("localhost", basic_auth=("elastic", password))'
+            generator = (
+                'async def run():\n    yield 1\n    ' + auth + '\n'
+                'gen = run()\nimport asyncio\n'
+            )
+            cases = (
+                ('async def consume():\n    await asyncio.gather(anext(gen))\n'
+                 '    await anext(gen)\n'
+                 'asyncio.run(consume())\npassword = None\n', True),
+                ('pending = anext(gen)\nasync def consume():\n'
+                 '    await asyncio.shield(pending)\n'
+                 '    await anext(gen)\n'
+                 'asyncio.run(consume())\npassword = None\n', True),
+                ('pending = anext(gen)\nasync def consume():\n'
+                 '    await pending\n    try:\n        await pending\n'
+                 '    except RuntimeError:\n        pass\n'
+                 'asyncio.run(consume())\npassword = None\n', False),
+                ('pending = anext(gen)\nasync def consume():\n'
+                 '    await pending\n    try:\n        await pending\n'
+                 '    except RuntimeError:\n        pass\n'
+                 '    await anext(gen)\n'
+                 'asyncio.run(consume())\npassword = None\n', True),
+                ('pending = anext(gen)\nasync def consume():\n'
+                 '    await asyncio.shield(pending)\n'
+                 'password = None\nasyncio.run(consume())\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for source, expected in cases:
+                    with self.subTest(source=source):
+                        consumer.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'from provider_b import *\n' + generator + source,
+                            encoding="utf-8",
                         )
                         self.assertEqual(
                             provider.resolve() in self._runtime_es_module_paths(),
