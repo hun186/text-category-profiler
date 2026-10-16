@@ -2972,6 +2972,58 @@ def _hardcoded_password_values(node, bindings, before_position, seen_names=None)
         # literal without exposing the literal in the assignment expression.
         # Only follow its *return value*, never its unrelated call arguments.
         if not node.args and not node.keywords:
+            # A factory IIFE may *return* a lambda which a surrounding
+            # zero-argument Call then immediately invokes. Model the outer
+            # invocations inside the factory return, so its original defaults
+            # remain captured; do not execute merely returned callables.
+            factory_call = node.func
+            extra_calls = 0
+            while (
+                isinstance(factory_call, ast.Call)
+                and not factory_call.args and not factory_call.keywords
+            ):
+                extra_calls += 1
+                factory_call = factory_call.func
+            if extra_calls:
+                for factory in _resolve_bound_nodes(
+                    factory_call, bindings, before_position
+                ):
+                    if isinstance(factory, ast.Lambda):
+                        returned_lambda = factory.body
+                    elif (
+                        isinstance(factory, ast.FunctionDef)
+                        and not factory.decorator_list
+                        and len(factory.body) == 1
+                        and isinstance(factory.body[0], ast.Return)
+                    ):
+                        returned_lambda = factory.body[0].value
+                    else:
+                        continue
+                    if not isinstance(returned_lambda, ast.Lambda):
+                        continue
+                    invoked = returned_lambda
+                    for _ in range(extra_calls):
+                        invoked = ast.copy_location(
+                            ast.Call(func=invoked, args=[], keywords=[]),
+                            node,
+                        )
+                    if isinstance(factory, ast.Lambda):
+                        captured_factory = copy.copy(factory)
+                        captured_factory.body = invoked
+                    else:
+                        captured_factory = copy.copy(factory)
+                        captured_factory.body = [ast.copy_location(
+                            ast.Return(value=invoked), factory.body[0]
+                        )]
+                    simulated = ast.copy_location(ast.Call(
+                        func=captured_factory, args=[], keywords=[]
+                    ), node)
+                    values = _hardcoded_password_values(
+                        simulated, bindings, before_position,
+                        seen_names | {("chained-factory", id(factory))},
+                    )
+                    if values:
+                        return values
             for callee in _resolve_bound_nodes(
                 node.func, bindings, before_position
             ):
@@ -9131,6 +9183,40 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         self.assertTrue(hardcoded_auth_tuple_lines(
             'password = (lambda value="hardcoded-secret": '
             '(lambda copied=value: copied)())()\n'
+            'Elasticsearch("localhost", basic_auth=("elastic", password))\n'
+        ))
+
+    def test_chained_returned_lambda_immediate_invocations(self):
+        """A returned callable runs only at the subsequent call site."""
+        cases = (
+            ('password = (lambda value="hardcoded-secret": '
+             '(lambda copied=value: copied))()()\n', True),
+            ('password = (lambda value="hardcoded-secret": '
+             '(lambda: value))()()\n', True),
+            ('password = (lambda value="hardcoded-secret": '
+             '(lambda copied=value: copied))()\n', False),
+            ('password = (lambda value="hardcoded-secret": '
+             '(lambda copied=None: copied))()()\n', False),
+            ('password = (lambda value=os.getenv("TCP_ELASTIC_PASSWORD"): '
+             '(lambda copied=value: copied))()()\n', False),
+            ('secret = "hardcoded-secret"\n'
+             'factory = lambda value=secret: (lambda copied=value: copied)\n'
+             'secret = None\npassword = factory()()\n', True),
+            ('secret = None\n'
+             'factory = lambda value=secret: (lambda copied=value: copied)\n'
+             'secret = "hardcoded-secret"\npassword = factory()()\n', False),
+            ('def factory(value="hardcoded-secret"):\n'
+             '    return lambda copied=value: copied\n'
+             'password = factory()()\n', True),
+            ('password = (lambda value="hardcoded-secret": '
+             '(lambda copied=value: (lambda final=copied: final)))()()()\n', True),
+        )
+        for source, expected in cases:
+            with self.subTest(source=source):
+                self.assertEqual(bool(hardcoded_password_literal_lines(source)), expected)
+        self.assertTrue(hardcoded_auth_tuple_lines(
+            'password = (lambda value="hardcoded-secret": '
+            '(lambda copied=value: copied))()()\n'
             'Elasticsearch("localhost", basic_auth=("elastic", password))\n'
         ))
 
