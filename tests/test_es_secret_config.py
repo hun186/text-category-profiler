@@ -8588,10 +8588,11 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
                 "RUNTIME_ES_MODULES": (),
             }):
-                for prefix, credential, source, expected in cases:
+                for combined, source, expected in cases:
+                    prefix, credential = combined.rsplit('\n', 1)
                     with self.subTest(credential=credential, expected=expected):
                         consumer.write_text(
-                            prefix
+                            prefix + '\n'
                             + 'from elasticsearch import Elasticsearch\n'
                             + 'Elasticsearch("localhost", '
                             'basic_auth=("elastic", ' + credential + '))\n',
