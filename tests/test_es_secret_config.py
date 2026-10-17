@@ -7351,21 +7351,73 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 # scope, preserving each possible source-order overwrite.
                 # Condition-dependent key/value alternatives must preserve the
                 # *same* branch, not invent an infeasible Cartesian pairing.
+                def merge_constraints(*sets):
+                    """Combine feasible correlated branch selections."""
+                    merged = {}
+                    for group in sets:
+                        for branch, selected in group:
+                            if branch in merged and merged[branch] != selected:
+                                return None
+                            merged[branch] = selected
+                    return frozenset(merged.items())
+
+                def condition_identity(test):
+                    """Fingerprint a condition and the bindings at evaluation.
+
+                    Identical syntax after a variable has been rebound is not
+                    the same decision. Conversely, two expressions reading the
+                    same unchanged condition can share a branch constraint.
+                    """
+                    position = _node_position(test)
+                    references = {}
+                    for name in ast.walk(test):
+                        if not (
+                            isinstance(name, ast.Name)
+                            and isinstance(name.ctx, ast.Load)
+                        ):
+                            continue
+                        scope, binding_name = _binding_name_token(
+                            name.id, bindings, name
+                        )
+                        epochs = tuple(
+                            write_position
+                            for write_position, _value in
+                            bindings["values"].get(scope, {}).get(
+                                binding_name, ()
+                            )
+                            if write_position <= position
+                        )
+                        references[(scope, binding_name)] = epochs
+                    signature = tuple(
+                        sorted(
+                            (
+                                (id(scope), name, epochs)
+                                for (scope, name), epochs in references.items()
+                            ),
+                            key=lambda item: (item[1], item[0]),
+                        )
+                    )
+                    return (
+                        ast.dump(test, include_attributes=False),
+                        signature,
+                    )
+
                 def traced_choices(element):
-                    """Return (node, branch constraints) for known alternatives."""
+                    """Return AST candidates with all feasible branch constraints."""
                     if isinstance(element, ast.IfExp):
-                        branch = ast.dump(element.test, include_attributes=False)
-                        return [
-                            (value, frozenset(((branch, selected),)))
-                            for selected, arm in (
-                                (True, element.body), (False, element.orelse)
-                            )
-                            for value, choices in traced_choices(arm)
-                            if not any(
-                                name == branch and flag != selected
-                                for name, flag in choices
-                            )
-                        ]
+                        branch = condition_identity(element.test)
+                        choices = []
+                        for selected, arm in (
+                            (True, element.body), (False, element.orelse)
+                        ):
+                            required = frozenset(((branch, selected),))
+                            for value, nested in traced_choices(arm):
+                                correlated = merge_constraints(
+                                    required, nested
+                                )
+                                if correlated is not None:
+                                    choices.append((value, correlated))
+                        return choices
                     if isinstance(element, ast.Name):
                         resolves = [
                             resolved for resolved in _resolve_bound_nodes(
@@ -7387,15 +7439,6 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         (value, frozenset())
                         for value in static_argument_choices(element, seen)
                     ]
-
-                def merge_constraints(*sets):
-                    merged = {}
-                    for group in sets:
-                        for branch, selected in group:
-                            if branch in merged and merged[branch] != selected:
-                                return None
-                            merged[branch] = selected
-                    return frozenset(merged.items())
 
                 alternatives = []
                 for key, value in zip(expression.keys, expression.values):
@@ -8082,6 +8125,28 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                  'get_password({KEY: VALUE})', True),
                 ('get_password({"credential": None if flag else '
                  '"hardcoded-secret", "other": "unused" if flag else None})', True),
+                # A write between evaluations gives the same condition text
+                # a new epoch. The old and new branch choices must not merge.
+                ('KEY = "credential" if flag else "other"\n'
+                 'flag = not flag\n'
+                 'VALUE = None if flag else "hardcoded-secret"\n'
+                 'get_password({KEY: VALUE})', True),
+                ('KEY = "credential" if flag else "other"\n'
+                 'flag = not flag\n'
+                 'VALUE = "hardcoded-secret" if flag else None\n'
+                 'get_password({KEY: VALUE})', False),
+                # An inner branch remains correlated with a separate use of
+                # the same condition outside the nested expression.
+                ('get_password({("other" if outer else '
+                 '("credential" if inner else "other")): '
+                 '(None if inner else "hardcoded-secret")})', False),
+                ('get_password({("other" if outer else '
+                 '("credential" if inner else "other")): '
+                 '("hardcoded-secret" if inner else None)})', True),
+                ('KEY = "other" if outer else '
+                 '("credential" if inner else "other")\n'
+                 'VALUE = None if inner else "hardcoded-secret"\n'
+                 'get_password({KEY: VALUE})', False),
             )
             with patch.dict(globals(), {
                 "REPOSITORY_ROOT": root,
