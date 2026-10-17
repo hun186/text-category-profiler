@@ -8475,6 +8475,138 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             expected,
                         )
 
+    def test_es_wrapper_reverse_importer_credentials(self):
+        """ES wrapper callers are security surfaces only for live wrapper calls."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = root / "client.py"
+            caller = root / "worker.py"
+            safe = root / "irrelevant.py"
+            wrapper.write_text(
+                'from elasticsearch import Elasticsearch\n'
+                'def connect(password):\n'
+                '    return Elasticsearch("localhost", '
+                'basic_auth=("elastic", password))\n',
+                encoding="utf-8",
+            )
+            safe.write_text(
+                'from client import connect\n'
+                'unrelated = "hardcoded-secret"\n',
+                encoding="utf-8",
+            )
+            cases = (
+                ('from client import connect\n'
+                 'connect("hardcoded-secret")\n', True),
+                ('from client import connect as open_client\n'
+                 'open_client("hardcoded-secret")\n', True),
+                ('import client as cp\n'
+                 'cp.connect("hardcoded-secret")\n', True),
+                ('from client import connect\n'
+                 'token = "hardcoded-secret"\n'
+                 'connect(token)\n', True),
+                ('from client import connect\n'
+                 'connect(password="hardcoded-secret")\n', True),
+                ('from client import connect\n'
+                 'connect(os.getenv("TCP_ELASTIC_PASSWORD"))\n', False),
+                ('from client import connect\n'
+                 'connect(None)\n', False),
+                ('from client import connect\n'
+                 'unrelated("hardcoded-secret")\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for caller_source, expected in cases:
+                    with self.subTest(source=caller_source):
+                        caller.write_text(caller_source, encoding="utf-8")
+                        modules = set(self._runtime_es_module_paths())
+                        flagged = bool(
+                            self._es_wrapper_credential_lines.get(caller, ())
+                        )
+                        self.assertEqual(flagged, expected)
+                        self.assertEqual(
+                            caller.resolve() in modules,
+                            "unrelated(" not in caller_source,
+                        )
+                        self.assertNotIn(safe.resolve(), modules)
+                        self.assertIn(wrapper.resolve(), modules)
+
+    def test_selected_imported_class_credentials(self):
+        """Only members actually used by auth can expose a class credential."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "credential_provider.py"
+            cases = (
+                ('from credential_provider import Config\n'
+                 'Config.password',
+                 'class Config:\n'
+                 '    password = "hardcoded-secret"\n', True),
+                ('from credential_provider import Config as C\n'
+                 'C.get_password()',
+                 'class Config:\n'
+                 '    @staticmethod\n'
+                 '    def get_password():\n'
+                 '        return "hardcoded-secret"\n', True),
+                ('from credential_provider import Config\n'
+                 'Config().get_password()',
+                 'class Config:\n'
+                 '    def get_password(self):\n'
+                 '        return "hardcoded-secret"\n', True),
+                ('import credential_provider as cp\n'
+                 'cp.Config.password',
+                 'class Config:\n'
+                 '    password = "hardcoded-secret"\n', True),
+                ('from credential_provider import Config\n'
+                 'Config().get_password()',
+                 'class Config:\n'
+                 '    password = "hardcoded-secret"\n'
+                 '    def get_password(self):\n'
+                 '        return self.password\n', True),
+                ('from credential_provider import Config\n'
+                 'Config().get_password()',
+                 'import os\nclass Config:\n'
+                 '    def get_password(self):\n'
+                 '        return os.getenv("TCP_ELASTIC_PASSWORD")\n', False),
+                ('from credential_provider import Config\n'
+                 'Config.password',
+                 'class Config:\n'
+                 '    unrelated = "hardcoded-secret"\n'
+                 '    password = None\n', False),
+                ('from credential_provider import Config\n'
+                 'Config.get_password()',
+                 'class Config:\n'
+                 '    @classmethod\n'
+                 '    def get_password(cls):\n'
+                 '        value = "hardcoded-secret"\n'
+                 '        return value\n', True),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for prefix, credential, source, expected in cases:
+                    with self.subTest(credential=credential, expected=expected):
+                        consumer.write_text(
+                            prefix
+                            + 'from elasticsearch import Elasticsearch\n'
+                            + 'Elasticsearch("localhost", '
+                            'basic_auth=("elastic", ' + credential + '))\n',
+                            encoding="utf-8",
+                        )
+                        provider.write_text(source, encoding="utf-8")
+                        modules = set(self._runtime_es_module_paths())
+                        self.assertEqual(
+                            provider.resolve() in modules, expected
+                        )
+                        members = self._imported_credential_class_members.get(
+                            provider.resolve(), {}
+                        )
+                        self.assertIn(credential.split(".")[-1].split("(")[0], members.get("Config", ()))
+
     def test_imported_provider_nonidentifier_keyword_keys(self):
         """Known **kwargs can use any string key, including hyphens."""
         with tempfile.TemporaryDirectory() as directory:
