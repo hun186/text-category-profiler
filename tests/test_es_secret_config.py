@@ -7698,6 +7698,48 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             child: parent for parent in ast.walk(tree)
             for child in ast.iter_child_nodes(parent)
         }
+        bindings = _name_bindings(tree)
+
+        def imported_class_owner(expression, at_position, seen=None):
+            """Follow reaching instance aliases to a selected class import.
+
+            A constructor result is an instance of the imported class, but
+            only the member actually used by authentication is selected.
+            """
+            seen = set() if seen is None else seen
+            if id(expression) in seen:
+                return None
+            seen = seen | {id(expression)}
+            if isinstance(expression, ast.Call):
+                if expression.args or expression.keywords:
+                    # Arguments do not affect the identity of a normal class
+                    # constructor, but their runtime effects are out of scope.
+                    return None
+                return imported_class_owner(expression.func, at_position, seen)
+            if isinstance(expression, ast.Name):
+                if expression.id in direct:
+                    return direct[expression.id]
+                candidates = _resolve_bound_nodes(
+                    expression, bindings, at_position
+                )
+                owners = {
+                    owner for candidate in candidates
+                    if candidate is not expression
+                    for owner in [
+                        imported_class_owner(candidate, at_position, seen)
+                    ]
+                    if owner is not None
+                }
+                return next(iter(owners)) if len(owners) == 1 else None
+            if (
+                isinstance(expression, ast.Attribute)
+                and expression.attr in exports
+                and isinstance(expression.value, ast.Name)
+                and expression.value.id in modules
+            ):
+                return expression.attr
+            return None
+
         def is_auth_source(node):
             while node in parents:
                 node = parents[node]
@@ -7719,19 +7761,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for node in ast.walk(tree):
             if not isinstance(node, ast.Attribute) or not is_auth_source(node):
                 continue
-            owner = node.value
-            if isinstance(owner, ast.Call) and not owner.args and not owner.keywords:
-                owner = owner.func
-            class_name = None
-            if isinstance(owner, ast.Name):
-                class_name = direct.get(owner.id)
-            elif (
-                isinstance(owner, ast.Attribute)
-                and owner.attr in exports
-                and isinstance(owner.value, ast.Name)
-                and owner.value.id in modules
-            ):
-                class_name = owner.attr
+            class_name = imported_class_owner(
+                node.value, _node_position(node)
+            )
             if class_name:
                 members.setdefault(class_name, set()).add(node.attr)
         return members
@@ -7869,7 +7901,10 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 exported = self._es_wrapper_password_parameters(source)
                 if exported:
                     wrapper_exports[path] = exported
-        for caller in candidate_modules - paths:
+        # Inspect every candidate, including marker-matched files already
+        # present in paths. Being included in the generic scan does not mean
+        # a wrapper call's positional credential has been checked.
+        for caller in candidate_modules:
             source = caller.read_text(encoding="utf-8-sig", errors="ignore")
             if not any(wrapper.stem in source for wrapper in wrapper_exports):
                 continue
@@ -8060,7 +8095,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         continue
                     if member.decorator_list and not all(
                         isinstance(decorator, ast.Name)
-                        and decorator.id in {"staticmethod", "classmethod"}
+                        and decorator.id in {
+                            "staticmethod", "classmethod", "property"
+                        }
                         for decorator in member.decorator_list
                     ):
                         continue
@@ -8607,6 +8644,164 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             provider.resolve(), {}
                         )
                         self.assertIn(credential.split(".")[-1].split("(")[0], members.get("Config", ()))
+
+    def test_es_wrapper_marked_caller_credential_lines(self):
+        """Marker-matched callers still need wrapper-argument inspection."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = root / "elasticsearch_client.py"
+            caller = root / "connect_user.py"
+            wrapper.write_text(
+                'from elasticsearch import Elasticsearch\n'
+                'def connect(password):\n'
+                '    return Elasticsearch("localhost", '
+                'basic_auth=("elastic", password))\n',
+                encoding="utf-8",
+            )
+            cases = (
+                ('from elasticsearch_client import connect\n'
+                 'connect("hardcoded-secret")\n', [2]),
+                ('import elasticsearch_client as ec\n'
+                 'ec.connect("hardcoded-secret")\n', [2]),
+                ('from elasticsearch_client import connect\n'
+                 'value = "hardcoded-secret"\n'
+                 'connect(value)\n', [3]),
+                ('from elasticsearch_client import connect\n'
+                 'connect(password_from_store)\n', []),
+                ('from elasticsearch_client import connect\n'
+                 'unrelated("hardcoded-secret")\n', []),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for source, lines in cases:
+                    with self.subTest(source=source):
+                        caller.write_text(source, encoding="utf-8")
+                        paths = set(self._runtime_es_module_paths())
+                        self.assertIn(wrapper.resolve(), paths)
+                        # The import name itself includes "elasticsearch",
+                        # so this caller is already a discovered ES surface.
+                        self.assertIn(caller.resolve(), paths)
+                        self.assertEqual(
+                            sorted(self._es_wrapper_credential_lines.get(
+                                caller.resolve(), ()
+                            )), lines,
+                        )
+
+    def test_selected_class_instance_alias_credentials(self):
+        """Resolve only the selected auth member through constructor aliases."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "credential_provider.py"
+            cases = (
+                ('from credential_provider import Config\n'
+                 'cfg = Config()\n'
+                 'password = cfg.password\n',
+                 'class Config:\n'
+                 '    password = "hardcoded-secret"\n', True, "password"),
+                ('from credential_provider import Config\n'
+                 'cfg = Config()\n'
+                 'alias = cfg\n'
+                 'password = alias.get_password()\n',
+                 'class Config:\n'
+                 '    def get_password(self):\n'
+                 '        return "hardcoded-secret"\n', True, "get_password"),
+                ('from credential_provider import Config as C\n'
+                 'cfg = C()\n'
+                 'password = cfg.get_password()\n',
+                 'class Config:\n'
+                 '    def get_password(self):\n'
+                 '        return "hardcoded-secret"\n', True, "get_password"),
+                ('from credential_provider import Config\n'
+                 'cfg = Config()\n'
+                 'password = cfg.password\n',
+                 'class Config:\n'
+                 '    unrelated = "hardcoded-secret"\n'
+                 '    password = None\n', False, "password"),
+                ('from credential_provider import Config\n'
+                 'cfg = Config()\n'
+                 'cfg = object()\n'
+                 'password = cfg.password\n',
+                 'class Config:\n'
+                 '    password = "hardcoded-secret"\n', False, None),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for caller_source, provider_source, expected, member in cases:
+                    with self.subTest(source=caller_source):
+                        consumer.write_text(
+                            caller_source
+                            + 'from elasticsearch import Elasticsearch\n'
+                            + 'Elasticsearch("localhost", '
+                            'basic_auth=("elastic", password))\n',
+                            encoding="utf-8",
+                        )
+                        provider.write_text(provider_source, encoding="utf-8")
+                        paths = set(self._runtime_es_module_paths())
+                        self.assertEqual(
+                            provider.resolve() in paths, expected
+                        )
+                        selected = self._imported_credential_class_members.get(
+                            provider.resolve(), {}
+                        ).get("Config", ())
+                        if member is not None:
+                            self.assertIn(member, selected)
+                        else:
+                            self.assertNotIn("password", selected)
+
+    def test_selected_class_property_credentials(self):
+        """Inspect a selected property getter without unrelated members."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "credential_provider.py"
+            consumer.write_text(
+                'from credential_provider import Config\n'
+                'from elasticsearch import Elasticsearch\n'
+                'Elasticsearch("localhost", '
+                'basic_auth=("elastic", Config().password))\n',
+                encoding="utf-8",
+            )
+            cases = (
+                ('class Config:\n'
+                 '    @property\n'
+                 '    def password(self):\n'
+                 '        return "hardcoded-secret"\n', True),
+                ('class Config:\n'
+                 '    @property\n'
+                 '    def password(self):\n'
+                 '        value = "hardcoded-secret"\n'
+                 '        return value\n', True),
+                ('import os\nclass Config:\n'
+                 '    @property\n'
+                 '    def password(self):\n'
+                 '        return os.getenv("TCP_ELASTIC_PASSWORD")\n', False),
+                ('class Config:\n'
+                 '    @property\n'
+                 '    def unrelated(self):\n'
+                 '        return "hardcoded-secret"\n'
+                 '    @property\n'
+                 '    def password(self):\n'
+                 '        return None\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for provider_source, expected in cases:
+                    with self.subTest(provider=provider_source):
+                        provider.write_text(provider_source, encoding="utf-8")
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
 
     def test_imported_provider_nonidentifier_keyword_keys(self):
         """Known **kwargs can use any string key, including hyphens."""
