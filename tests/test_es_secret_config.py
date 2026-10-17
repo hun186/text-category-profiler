@@ -7711,10 +7711,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 return None
             seen = seen | {id(expression)}
             if isinstance(expression, ast.Call):
-                if expression.args or expression.keywords:
-                    # Arguments do not affect the identity of a normal class
-                    # constructor, but their runtime effects are out of scope.
-                    return None
+                # A constructor with arguments still yields an instance of
+                # the imported class. Do not model __new__/__init__ effects;
+                # only preserve class identity for selecting auth members.
                 return imported_class_owner(expression.func, at_position, seen)
             if isinstance(expression, ast.Name):
                 if expression.id in direct:
@@ -7842,14 +7841,34 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for call in ast.walk(tree):
             if not isinstance(call, ast.Call):
                 continue
-            name = (
-                direct.get(call.func.id) if isinstance(call.func, ast.Name)
-                else call.func.attr if (
-                    isinstance(call.func, ast.Attribute)
-                    and isinstance(call.func.value, ast.Name)
-                    and call.func.value.id in modules
-                ) else None
+            # A wrapper can be reached through source-visible local aliases:
+            #   from client import connect; open_es = connect; open_es(...)
+            #   import client as cl; alias = cl; alias.connect(...)
+            # Use reaching bindings so overwritten aliases are not resurrected.
+            name = None
+            candidates = _resolve_bound_nodes(
+                call.func, bindings, _node_position(call.func)
             )
+            for candidate in candidates:
+                if isinstance(candidate, ast.Name):
+                    export = direct.get(candidate.id)
+                    if export is not None:
+                        name = export
+                        break
+                elif isinstance(candidate, ast.Attribute):
+                    if not isinstance(candidate.value, ast.Name):
+                        continue
+                    modules_reaching = _resolve_bound_nodes(
+                        candidate.value, bindings,
+                        _node_position(candidate.value)
+                    )
+                    if any(
+                        isinstance(module, ast.Name)
+                        and module.id in modules
+                        for module in modules_reaching
+                    ):
+                        name = candidate.attr
+                        break
             if name not in wrappers:
                 continue
             invoked = True
@@ -8549,6 +8568,24 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                  'connect(None)\n', False),
                 ('from client import connect\n'
                  'unrelated("hardcoded-secret")\n', False),
+                ('from client import connect\n'
+                 'open_es = connect\n'
+                 'open_es("hardcoded-secret")\n', True),
+                ('from client import connect\n'
+                 'open_es = connect\n'
+                 'delegate = open_es\n'
+                 'delegate("hardcoded-secret")\n', True),
+                ('import client as cp\n'
+                 'open_es = cp\n'
+                 'open_es.connect("hardcoded-secret")\n', True),
+                ('from client import connect\n'
+                 'open_es = connect\n'
+                 'open_es = lambda password: None\n'
+                 'open_es("hardcoded-secret")\n', False),
+                ('import client as cp\n'
+                 'open_es = cp\n'
+                 'open_es = object()\n'
+                 'open_es.connect("hardcoded-secret")\n', False),
             )
             with patch.dict(globals(), {
                 "REPOSITORY_ROOT": root,
@@ -8727,6 +8764,23 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                  'password = cfg.password\n',
                  'class Config:\n'
                  '    password = "hardcoded-secret"\n', False, None),
+                ('from credential_provider import Config\n'
+                 'cfg = Config("prod")\n'
+                 'password = cfg.password\n',
+                 'class Config:\n'
+                 '    password = "hardcoded-secret"\n', True, "password"),
+                ('from credential_provider import Config\n'
+                 'cfg = Config("prod", region="us")\n'
+                 'password = cfg.get_password()\n',
+                 'class Config:\n'
+                 '    def get_password(self):\n'
+                 '        return "hardcoded-secret"\n', True, "get_password"),
+                ('from credential_provider import Config\n'
+                 'cfg = Config("prod")\n'
+                 'password = cfg.password\n',
+                 'class Config:\n'
+                 '    password = None\n'
+                 '    unrelated = "hardcoded-secret"\n', False, "password"),
             )
             with patch.dict(globals(), {
                 "REPOSITORY_ROOT": root,
