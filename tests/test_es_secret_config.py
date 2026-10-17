@@ -7349,26 +7349,77 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             if isinstance(expression, ast.Dict):
                 # Evaluate explicit keys and ** mapping spreads in consumer
                 # scope, preserving each possible source-order overwrite.
-                # The provider's index resolver expects flattened literal keys.
+                # Condition-dependent key/value alternatives must preserve the
+                # *same* branch, not invent an infeasible Cartesian pairing.
+                def traced_choices(element):
+                    """Return (node, branch constraints) for known alternatives."""
+                    if isinstance(element, ast.IfExp):
+                        branch = ast.dump(element.test, include_attributes=False)
+                        return [
+                            (value, frozenset(((branch, selected),)))
+                            for selected, arm in (
+                                (True, element.body), (False, element.orelse)
+                            )
+                            for value, choices in traced_choices(arm)
+                            if not any(
+                                name == branch and flag != selected
+                                for name, flag in choices
+                            )
+                        ]
+                    if isinstance(element, ast.Name):
+                        resolves = [
+                            resolved for resolved in _resolve_bound_nodes(
+                                element, bindings, _node_position(element)
+                            )
+                            if resolved is not element
+                            and not (
+                                isinstance(resolved, ast.Name)
+                                and resolved.id == element.id
+                            )
+                        ]
+                        if resolves:
+                            return [
+                                (value, constraints)
+                                for resolved in resolves
+                                for value, constraints in traced_choices(resolved)
+                            ]
+                    return [
+                        (value, frozenset())
+                        for value in static_argument_choices(element, seen)
+                    ]
+
+                def merge_constraints(*sets):
+                    merged = {}
+                    for group in sets:
+                        for branch, selected in group:
+                            if branch in merged and merged[branch] != selected:
+                                return None
+                            merged[branch] = selected
+                    return frozenset(merged.items())
+
                 alternatives = []
                 for key, value in zip(expression.keys, expression.values):
                     if key is None:
                         possibilities = [
-                            list(zip(mapping.keys, mapping.values))
-                            for mapping in static_argument_choices(value, seen)
+                            (list(zip(mapping.keys, mapping.values)), constraints)
+                            for mapping, constraints in traced_choices(value)
                             if isinstance(mapping, ast.Dict)
                             and all(k is not None for k in mapping.keys)
                         ]
                     else:
-                        possibilities = [
-                            [(resolved_key, resolved_value)]
-                            for resolved_key in static_argument_choices(
-                                key, seen
-                            )
-                            for resolved_value in static_argument_choices(
-                                value, seen
-                            )
-                        ]
+                        possibilities = []
+                        for resolved_key, key_constraints in traced_choices(key):
+                            for resolved_value, value_constraints in traced_choices(
+                                value
+                            ):
+                                merged = merge_constraints(
+                                    key_constraints, value_constraints
+                                )
+                                if merged is not None:
+                                    possibilities.append((
+                                        [(resolved_key, resolved_value)],
+                                        merged,
+                                    ))
                     if not possibilities:
                         return [ast.copy_location(
                             ast.Constant(value=None), expression
@@ -7376,8 +7427,12 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     alternatives.append(possibilities)
                 mappings = []
                 for groups in product(*alternatives):
+                    if merge_constraints(
+                        *(constraints for _, constraints in groups)
+                    ) is None:
+                        continue
                     entries = []
-                    for group in groups:
+                    for group, _constraints in groups:
                         for key, value in group:
                             try:
                                 comparable = ast.literal_eval(key)
@@ -7492,7 +7547,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                         if not (
                                             isinstance(key, ast.Constant)
                                             and isinstance(key.value, str)
-                                            and key.value.isidentifier()
+                                            # **kwargs accepts any string key,
+                                            # even one that is not an identifier.
                                         ):
                                             break
                                         pairs.append(ast.keyword(
@@ -7615,11 +7671,19 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 # Only inspect exported, source-visible single-return functions;
                 # unrelated functions and opaque/decorated providers stay out
                 # of this scoped ES import guard.
+                provider_body = statement.body
+                if (
+                    provider_body
+                    and isinstance(provider_body[0], ast.Expr)
+                    and isinstance(provider_body[0].value, ast.Constant)
+                    and isinstance(provider_body[0].value.value, str)
+                ):
+                    provider_body = provider_body[1:]
                 if (
                     statement.name in exported_names
                     and not statement.decorator_list
-                    and len(statement.body) == 1
-                    and isinstance(statement.body[0], ast.Return)
+                    and len(provider_body) == 1
+                    and isinstance(provider_body[0], ast.Return)
                 ):
                     arguments = statement.args
                     positional = [*arguments.posonlyargs, *arguments.args]
@@ -7654,12 +7718,19 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     # after the consumer import discovery has selected it.
                     # A bare async call is a coroutine, so do not change the
                     # general credential expression evaluator's semantics.
-                    if isinstance(statement, ast.AsyncFunctionDef):
+                    if (
+                        isinstance(statement, ast.AsyncFunctionDef)
+                        or provider_body is not statement.body
+                    ):
+                        # For selected async providers, inspect the
+                        # source-visible return rather than the coroutine.
+                        # Also remove optional docstrings before applying the
+                        # existing simple-return checker.
                         callable_for_return = ast.copy_location(
                             ast.FunctionDef(
                                 name=statement.name,
                                 args=statement.args,
-                                body=statement.body,
+                                body=provider_body,
                                 decorator_list=[],
                                 returns=statement.returns,
                                 type_comment=statement.type_comment,
@@ -7889,6 +7960,152 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             bool(self._module_uppercase_credential_literals(
                                 provider_source, names
                             )), expected
+                        )
+
+    def test_imported_provider_nonidentifier_keyword_keys(self):
+        """Known **kwargs can use any string key, including hyphens."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "credential_provider.py"
+            cases = (
+                ('password = get_password(**{"credential-key": "hardcoded-secret"})\n',
+                 'def get_password(**kwargs):\n'
+                 '    return kwargs["credential-key"]\n', True),
+                ('args = {"credential-key": "hardcoded-secret"}\n'
+                 'password = get_password(**args)\n',
+                 'def get_password(**kwargs):\n'
+                 '    return kwargs["credential-key"]\n', True),
+                ('password = get_password(**{"credential-key": None, '
+                 '"other-key": "hardcoded-secret"})\n',
+                 'def get_password(**kwargs):\n'
+                 '    return kwargs["credential-key"]\n', False),
+                ('password = get_password(**{"credential-key": "hardcoded-secret"})\n',
+                 'def get_password(**kwargs):\n'
+                 '    return kwargs.get("other-key")\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for call_source, provider_source, expected in cases:
+                    with self.subTest(source=call_source):
+                        consumer.write_text(
+                            'from credential_provider import get_password\n'
+                            'from elasticsearch import Elasticsearch\n'
+                            + call_source
+                            + 'Elasticsearch("localhost", '
+                            'basic_auth=("elastic", password))\n',
+                            encoding="utf-8",
+                        )
+                        provider.write_text(provider_source, encoding="utf-8")
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+
+    def test_imported_provider_documented_returns(self):
+        """An optional leading docstring must not hide exported returns."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "credential_provider.py"
+            consumer.write_text(
+                'from credential_provider import get_password\n'
+                'from elasticsearch import Elasticsearch\n'
+                'async def connect():\n'
+                '    password = await get_password("hardcoded-secret")\n'
+                '    return Elasticsearch("localhost", '
+                'basic_auth=("elastic", password))\n',
+                encoding="utf-8",
+            )
+            cases = (
+                ('def get_password(value):\n'
+                 '    """Return the password."""\n'
+                 '    return "hardcoded-secret"\n', True),
+                ('async def get_password(value):\n'
+                 '    """Return the password."""\n'
+                 '    return value\n', True),
+                ('async def get_password(value):\n'
+                 '    """Return the password."""\n'
+                 '    return "hardcoded-secret"\n', True),
+                ('import os\ndef get_password(value):\n'
+                 '    """Return password safely."""\n'
+                 '    return os.getenv("TCP_ELASTIC_PASSWORD")\n', False),
+                ('def get_password(value):\n'
+                 '    """Return password safely."""\n'
+                 '    return None\n', False),
+                ('def unrelated(value):\n'
+                 '    """Unused secret provider."""\n'
+                 '    return "hardcoded-secret"\n'
+                 'def get_password(value):\n'
+                 '    """Return nothing."""\n'
+                 '    return None\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for provider_source, expected in cases:
+                    with self.subTest(source=provider_source):
+                        provider.write_text(provider_source, encoding="utf-8")
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+
+    def test_imported_provider_correlated_dictionary_branches(self):
+        """A shared condition cannot pair key/value from opposite arms."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "credential_provider.py"
+            provider.write_text(
+                'def get_password(value):\n'
+                '    return value["credential"]\n',
+                encoding="utf-8",
+            )
+            cases = (
+                ('get_password({("credential" if flag else "other"): '
+                 '(None if flag else "hardcoded-secret")})', False),
+                ('get_password({("credential" if flag else "other"): '
+                 '("hardcoded-secret" if flag else None)})', True),
+                ('get_password({("other" if flag else "credential"): '
+                 '(None if flag else "hardcoded-secret")})', True),
+                ('KEY = "credential" if flag else "other"\n'
+                 'VALUE = None if flag else "hardcoded-secret"\n'
+                 'get_password({KEY: VALUE})', False),
+                ('KEY = "credential" if flag else "other"\n'
+                 'VALUE = "hardcoded-secret" if flag else None\n'
+                 'get_password({KEY: VALUE})', True),
+                ('get_password({"credential": None if flag else '
+                 '"hardcoded-secret", "other": "unused" if flag else None})', True),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for expression, expected in cases:
+                    with self.subTest(source=expression):
+                        if '\n' in expression:
+                            prelude, call = expression.rsplit('\n', 1)
+                            expression_source = prelude + '\npassword = ' + call
+                        else:
+                            expression_source = 'password = ' + expression
+                        consumer.write_text(
+                            'from credential_provider import get_password\n'
+                            'from elasticsearch import Elasticsearch\n'
+                            + expression_source + '\n'
+                            + 'Elasticsearch("localhost", '
+                            'basic_auth=("elastic", password))\n',
+                            encoding="utf-8",
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
                         )
 
     def test_imported_provider_statically_known_spread_arguments(self):
