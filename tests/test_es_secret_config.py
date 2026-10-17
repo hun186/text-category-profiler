@@ -8602,7 +8602,11 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         self.assertEqual(flagged, expected)
                         self.assertEqual(
                             caller.resolve() in modules,
-                            "unrelated(" not in caller_source,
+                            (
+                                "unrelated(" not in caller_source
+                                and "open_es = lambda" not in caller_source
+                                and "open_es = object()" not in caller_source
+                            ),
                         )
                         self.assertNotIn(safe.resolve(), modules)
                         self.assertIn(wrapper.resolve(), modules)
