@@ -7673,8 +7673,72 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                     ))
         return results
 
+    def _imported_credential_class_accesses(self, source, dependency, exports):
+        """Match class members used by a consumer's authentication expression."""
+        try:
+            tree = ast.parse(source)
+        except SyntaxError:
+            return {}
+        direct = {}
+        modules = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                if (node.module or "").split(".")[-1] == dependency.stem:
+                    for alias in node.names:
+                        if alias.name in exports:
+                            direct[alias.asname or alias.name] = alias.name
+                for alias in node.names:
+                    if alias.name == dependency.stem:
+                        modules.add(alias.asname or alias.name)
+            elif isinstance(node, ast.Import):
+                for alias in node.names:
+                    if alias.name.split(".")[-1] == dependency.stem:
+                        modules.add(alias.asname or alias.name.split(".", 1)[0])
+        parents = {
+            child: parent for parent in ast.walk(tree)
+            for child in ast.iter_child_nodes(parent)
+        }
+        def is_auth_source(node):
+            while node in parents:
+                node = parents[node]
+                if isinstance(node, ast.keyword) and node.arg in {
+                    "basic_auth", "http_auth", "api_key", "bearer_auth",
+                    "authorization", "password"
+                }:
+                    return True
+                if isinstance(node, (ast.Assign, ast.AnnAssign)):
+                    targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+                    if any(
+                        isinstance(target, ast.Name)
+                        and target.id.lower() in {"password", "credential", "token"}
+                        for target in targets
+                    ):
+                        return True
+            return False
+        members = {}
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Attribute) or not is_auth_source(node):
+                continue
+            owner = node.value
+            if isinstance(owner, ast.Call) and not owner.args and not owner.keywords:
+                owner = owner.func
+            class_name = None
+            if isinstance(owner, ast.Name):
+                class_name = direct.get(owner.id)
+            elif (
+                isinstance(owner, ast.Attribute)
+                and owner.attr in exports
+                and isinstance(owner.value, ast.Name)
+                and owner.value.id in modules
+            ):
+                class_name = owner.attr
+            if class_name:
+                members.setdefault(class_name, set()).add(node.attr)
+        return members
+
     def _runtime_es_module_paths(self):
         paths = {path.resolve() for path in RUNTIME_ES_MODULES}
+        self._imported_credential_class_members = {}
 
         for root in ES_RUNTIME_DISCOVERY_ROOTS:
             if not root.is_dir():
@@ -7718,8 +7782,15 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 call_arguments = self._imported_credential_call_arguments(
                     source, dependency, exports
                 )
+                selected_classes = self._imported_credential_class_members.setdefault(
+                    dependency, {}
+                )
+                for class_name, members in self._imported_credential_class_accesses(
+                    source, dependency, exports
+                ).items():
+                    selected_classes.setdefault(class_name, set()).update(members)
                 if self._module_uppercase_credential_literals(
-                    provider_source, exports, call_arguments
+                    provider_source, exports, call_arguments, selected_classes
                 ):
                     paths.add(dependency)
                 if dependency not in processed or len(exports) != before:
@@ -7729,7 +7800,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         return sorted(paths)
 
     def _module_uppercase_credential_literals(
-        self, source, exported_names=(), imported_calls=()
+        self, source, exported_names=(), imported_calls=(),
+        selected_class_members=None,
     ):
         """Catch imported providers exporting a literal credential constant."""
         try:
@@ -7823,6 +7895,55 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             return collect(body, {}, 0)
 
         for statement in tree.body:
+            if isinstance(statement, ast.ClassDef):
+                selected = (selected_class_members or {}).get(statement.name, ())
+                if statement.name not in exported_names or not selected:
+                    continue
+                class_values = {}
+                for member in statement.body:
+                    if isinstance(member, ast.Assign):
+                        for target in member.targets:
+                            if isinstance(target, ast.Name):
+                                class_values[target.id] = member.value
+                    elif (
+                        isinstance(member, ast.AnnAssign)
+                        and isinstance(member.target, ast.Name)
+                        and member.value is not None
+                    ):
+                        class_values[member.target.id] = member.value
+                for name in selected:
+                    expression = class_values.get(name)
+                    if expression is not None:
+                        values = _hardcoded_password_values(
+                            expression, bindings, _node_position(expression)
+                        )
+                        if any(value and value != REDACTED_PASSWORD_SENTINEL for value in values):
+                            violations.append(expression.lineno)
+                for member in statement.body:
+                    if not isinstance(
+                        member, (ast.FunctionDef, ast.AsyncFunctionDef)
+                    ) or member.name not in selected:
+                        continue
+                    if member.decorator_list and not all(
+                        isinstance(decorator, ast.Name)
+                        and decorator.id in {"staticmethod", "classmethod"}
+                        for decorator in member.decorator_list
+                    ):
+                        continue
+                    for expression in exported_return_expressions(member.body):
+                        if (
+                            isinstance(expression, ast.Attribute)
+                            and isinstance(expression.value, ast.Name)
+                            and expression.value.id in {"self", "cls", statement.name}
+                        ):
+                            expression = class_values.get(expression.attr, expression)
+                        values = _hardcoded_password_values(
+                            expression, bindings, _node_position(member)
+                        )
+                        if any(value and value != REDACTED_PASSWORD_SENTINEL for value in values):
+                            violations.append(member.lineno)
+                            break
+                continue
             if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 # Only inspect selected, undecorated source-visible provider
                 # returns; normalize simple local stores and branch returns
@@ -15182,7 +15303,10 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             if path.suffix.lower() == ".py":
                 if path in runtime_es_modules:
                     for line_number in self._module_uppercase_credential_literals(
-                        text, getattr(self, "_imported_credential_exports", {}).get(path, ())
+                        text, getattr(self, "_imported_credential_exports", {}).get(path, ()),
+                        selected_class_members=getattr(
+                            self, "_imported_credential_class_members", {}
+                        ).get(path, {}),
                     ):
                         violations.append(
                             f"{path.relative_to(REPOSITORY_ROOT)}:{line_number}:imported-credential-literal"
