@@ -7736,9 +7736,115 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 members.setdefault(class_name, set()).add(node.attr)
         return members
 
+    def _es_wrapper_password_parameters(self, source):
+        """Find source-visible exported wrappers forwarding parameters to ES."""
+        try:
+            tree = ast.parse(source)
+        except SyntaxError:
+            return {}
+        wrappers = {}
+        for statement in tree.body:
+            if not isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            positional = [*statement.args.posonlyargs, *statement.args.args]
+            parameters = {
+                argument.arg: index for index, argument in enumerate(positional)
+            }
+            auth_parameters = set()
+            for call in ast.walk(statement):
+                if not isinstance(call, ast.Call):
+                    continue
+                fn = call.func
+                is_es = (
+                    isinstance(fn, ast.Name)
+                    and fn.id in {"Elasticsearch", "AsyncElasticsearch"}
+                ) or (
+                    isinstance(fn, ast.Attribute)
+                    and fn.attr in {"Elasticsearch", "AsyncElasticsearch"}
+                )
+                if not is_es:
+                    continue
+                for keyword in call.keywords:
+                    if keyword.arg not in {
+                        "basic_auth", "http_auth", "api_key", "bearer_auth"
+                    }:
+                        continue
+                    expression = keyword.value
+                    if (
+                        keyword.arg in {"basic_auth", "http_auth"}
+                        and isinstance(expression, (ast.Tuple, ast.List))
+                        and len(expression.elts) > 1
+                    ):
+                        expression = expression.elts[1]
+                    if isinstance(expression, ast.Name) and expression.id in parameters:
+                        auth_parameters.add(expression.id)
+            if auth_parameters:
+                wrappers[statement.name] = {
+                    name: parameters[name] for name in auth_parameters
+                }
+        return wrappers
+
+    def _es_wrapper_caller_credentials(self, source, wrapper_path, wrappers):
+        """Return wrapper invocations and literal credential call-site lines."""
+        try:
+            tree = ast.parse(source)
+        except SyntaxError:
+            return False, []
+        direct = {}
+        modules = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                if (node.module or "").split(".")[-1] == wrapper_path.stem:
+                    for alias in node.names:
+                        if alias.name in wrappers:
+                            direct[alias.asname or alias.name] = alias.name
+            elif isinstance(node, ast.Import):
+                for alias in node.names:
+                    if alias.name.split(".")[-1] == wrapper_path.stem:
+                        modules.add(alias.asname or alias.name.split(".", 1)[0])
+        if not direct and not modules:
+            return False, []
+        bindings = _name_bindings(tree)
+        invoked = False
+        lines = []
+        for call in ast.walk(tree):
+            if not isinstance(call, ast.Call):
+                continue
+            name = (
+                direct.get(call.func.id) if isinstance(call.func, ast.Name)
+                else call.func.attr if (
+                    isinstance(call.func, ast.Attribute)
+                    and isinstance(call.func.value, ast.Name)
+                    and call.func.value.id in modules
+                ) else None
+            )
+            if name not in wrappers:
+                continue
+            invoked = True
+            for parameter, index in wrappers[name].items():
+                expression = (
+                    call.args[index] if len(call.args) > index else next(
+                        (keyword.value for keyword in call.keywords
+                         if keyword.arg == parameter), None
+                    )
+                )
+                if expression is None or isinstance(expression, ast.Starred):
+                    continue
+                values = _hardcoded_password_values(
+                    expression, bindings, _node_position(expression)
+                )
+                if any(
+                    value and value != REDACTED_PASSWORD_SENTINEL
+                    for value in values
+                ):
+                    lines.append(call.lineno)
+        return invoked, sorted(set(lines))
+
     def _runtime_es_module_paths(self):
         paths = {path.resolve() for path in RUNTIME_ES_MODULES}
         self._imported_credential_class_members = {}
+        self._es_wrapper_credential_lines = {}
+        candidate_modules = set()
 
         for root in ES_RUNTIME_DISCOVERY_ROOTS:
             if not root.is_dir():
@@ -7750,8 +7856,36 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     encoding="utf-8-sig",
                     errors="ignore",
                 ).lower()
+                candidate_modules.add(path.resolve())
                 if any(marker in source for marker in ES_RUNTIME_MARKERS):
                     paths.add(path.resolve())
+
+        # Trace reverse-imported callers only when they invoke a wrapper
+        # proven to forward a named argument into an Elasticsearch auth sink.
+        wrapper_exports = {}
+        for path in paths:
+            if path.is_file() and path.suffix == ".py":
+                source = path.read_text(encoding="utf-8-sig", errors="ignore")
+                exported = self._es_wrapper_password_parameters(source)
+                if exported:
+                    wrapper_exports[path] = exported
+        for caller in candidate_modules - paths:
+            source = caller.read_text(encoding="utf-8-sig", errors="ignore")
+            if not any(wrapper.stem in source for wrapper in wrapper_exports):
+                continue
+            dependencies = set(self._local_imported_python_paths(caller, source))
+            for wrapper, exported in wrapper_exports.items():
+                if wrapper not in dependencies:
+                    continue
+                invoked, line_numbers = self._es_wrapper_caller_credentials(
+                    source, wrapper, exported
+                )
+                if invoked:
+                    paths.add(caller)
+                if line_numbers:
+                    self._es_wrapper_credential_lines.setdefault(
+                        caller, set()
+                    ).update(line_numbers)
 
         # Walk the local import graph to find credential-provider modules,
         # without broadening this *ES* guard to unrelated library functions
@@ -15302,6 +15436,13 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     )
             if path.suffix.lower() == ".py":
                 if path in runtime_es_modules:
+                    for line_number in getattr(
+                        self, "_es_wrapper_credential_lines", {}
+                    ).get(path, ()):
+                        violations.append(
+                            f"{path.relative_to(REPOSITORY_ROOT)}:"
+                            f"{line_number}:wrapper-auth-literal"
+                        )
                     for line_number in self._module_uppercase_credential_literals(
                         text, getattr(self, "_imported_credential_exports", {}).get(path, ()),
                         selected_class_members=getattr(
