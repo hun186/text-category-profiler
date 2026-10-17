@@ -7370,10 +7370,27 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     those rebindings into a polarity bit to keep valid paths
                     and reject impossible key/value combinations.
                     """
+                    # Calls (such as next(iterator)) and nontrivial lookups
+                    # may produce different results at each evaluation even
+                    # without a visible name assignment. Never correlate them
+                    # just because their source text is identical.
+                    explicit_negation = (
+                        isinstance(test, ast.UnaryOp)
+                        and isinstance(test.op, ast.Not)
+                        and isinstance(test.operand, ast.Name)
+                    )
+                    normalized_test = (
+                        test.operand if explicit_negation else test
+                    )
+                    if not isinstance(normalized_test, ast.Name):
+                        return (
+                            ("independent-evaluation", _node_position(test)),
+                            False,
+                        )
                     position = _node_position(test)
                     references = {}
-                    inverted = False
-                    for name in ast.walk(test):
+                    inverted = explicit_negation
+                    for name in ast.walk(normalized_test):
                         if not (
                             isinstance(name, ast.Name)
                             and isinstance(name.ctx, ast.Load)
@@ -7390,7 +7407,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             )
                             if write_position <= position
                         ]
-                        if isinstance(test, ast.Name) and name is test:
+                        if name is normalized_test:
                             # Only strip unconditionally executed self-flips.
                             # A conditional write needs its own epoch because
                             # its inversion may not have executed.
@@ -7419,7 +7436,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         )
                     )
                     return (
-                        ast.dump(test, include_attributes=False),
+                        ast.dump(normalized_test, include_attributes=False),
                         signature,
                     ), inverted
 
@@ -7732,27 +7749,90 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         for subtarget, subvalue in zip(target.elts, item.elts):
                             yield from assigned_leaves(subtarget, subvalue)
 
+        def exported_return_expressions(body):
+            """Fold simple provider-local stores into each reachable return.
+
+            Preserve only source-visible linear assignments and If branches.
+            Unsupported side-effecting control flow stays opaque; in
+            particular, an unused secret-valued local is not a credential.
+            """
+            if (
+                body and isinstance(body[0], ast.Expr)
+                and isinstance(body[0].value, ast.Constant)
+                and isinstance(body[0].value.value, str)
+            ):
+                body = body[1:]
+
+            def substitute(expression, local_values):
+                if expression is None:
+                    return ast.Constant(value=None)
+
+                class ReplaceLocals(ast.NodeTransformer):
+                    def visit_Name(self, node):
+                        if (
+                            isinstance(node.ctx, ast.Load)
+                            and node.id in local_values
+                        ):
+                            return copy.deepcopy(local_values[node.id])
+                        return node
+
+                    def visit_Lambda(self, node):
+                        # Parameter shadowing / deferred capture is not
+                        # modeled by the local straight-line fold.
+                        return node
+
+                return ReplaceLocals().visit(copy.deepcopy(expression))
+
+            def collect(statements, locals_, depth):
+                if not statements or depth > 30:
+                    return []
+                first, *remaining = statements
+                if isinstance(first, ast.Return):
+                    return [substitute(first.value, locals_)]
+                if isinstance(first, ast.Pass):
+                    return collect(remaining, locals_, depth + 1)
+                if isinstance(first, ast.If):
+                    if isinstance(first.test, ast.Constant):
+                        arms = [first.body if first.test.value else first.orelse]
+                    else:
+                        arms = [first.body, first.orelse]
+                    return [
+                        expression
+                        for arm in arms
+                        for expression in collect(
+                            [*arm, *remaining], dict(locals_), depth + 1
+                        )
+                    ][:32]
+                if isinstance(first, ast.Assign):
+                    targets = first.targets
+                    if len(targets) != 1 or not isinstance(targets[0], ast.Name):
+                        return []
+                    name, value = targets[0].id, first.value
+                elif (
+                    isinstance(first, ast.AnnAssign)
+                    and isinstance(first.target, ast.Name)
+                    and first.value is not None
+                ):
+                    name, value = first.target.id, first.value
+                else:
+                    return []
+                next_locals = dict(locals_)
+                next_locals[name] = substitute(value, locals_)
+                return collect(remaining, next_locals, depth + 1)
+
+            return collect(body, {}, 0)
+
         for statement in tree.body:
             if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                # A named import used as an ES credential provider may return
-                # an embedded literal without assigning it to a module name.
-                # Only inspect exported, source-visible single-return functions;
-                # unrelated functions and opaque/decorated providers stay out
-                # of this scoped ES import guard.
-                provider_body = statement.body
-                if (
-                    provider_body
-                    and isinstance(provider_body[0], ast.Expr)
-                    and isinstance(provider_body[0].value, ast.Constant)
-                    and isinstance(provider_body[0].value.value, str)
-                ):
-                    provider_body = provider_body[1:]
-                if (
-                    statement.name in exported_names
-                    and not statement.decorator_list
-                    and len(provider_body) == 1
-                    and isinstance(provider_body[0], ast.Return)
-                ):
+                # Only inspect selected, undecorated source-visible provider
+                # returns; normalize simple local stores and branch returns
+                # before simulating the consumer's actual invocation.
+                return_expressions = (
+                    exported_return_expressions(statement.body)
+                    if statement.name in exported_names
+                    and not statement.decorator_list else []
+                )
+                if return_expressions:
                     arguments = statement.args
                     positional = [*arguments.posonlyargs, *arguments.args]
                     defaults_start = len(positional) - len(arguments.defaults)
@@ -7782,39 +7862,26 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         ),
                         statement,
                     )
-                    # Model an async provider's source-visible return only
-                    # after the consumer import discovery has selected it.
-                    # A bare async call is a coroutine, so do not change the
-                    # general credential expression evaluator's semantics.
-                    if (
-                        isinstance(statement, ast.AsyncFunctionDef)
-                        or provider_body is not statement.body
-                    ):
-                        # For selected async providers, inspect the
-                        # source-visible return rather than the coroutine.
-                        # Also remove optional docstrings before applying the
-                        # existing simple-return checker.
-                        callable_for_return = ast.copy_location(
+                    # Materialize the selected return as a small sync
+                    # callable only for the source-visible credential scan.
+                    # Async coroutine semantics remain unchanged elsewhere.
+                    module_values = bindings["values"].get(tree, {})
+                    original_binding = module_values.get(statement.name, [])
+                    return_callables = [
+                        ast.copy_location(
                             ast.FunctionDef(
                                 name=statement.name,
                                 args=statement.args,
-                                body=provider_body,
+                                body=[ast.copy_location(
+                                    ast.Return(value=value), statement
+                                )],
                                 decorator_list=[],
                                 returns=statement.returns,
                                 type_comment=statement.type_comment,
-                            ), statement,
+                            ), statement
                         )
-                        module_values = bindings["values"].get(tree, {})
-                        original_binding = module_values.get(
-                            statement.name, []
-                        )
-                        module_values[statement.name] = [
-                            (position, callable_for_return)
-                            if value is statement else (position, value)
-                            for position, value in original_binding
-                        ]
-                    else:
-                        original_binding = None
+                        for value in return_expressions
+                    ]
                     invocations = [invocation]
                     invocations.extend(
                         ast.copy_location(
@@ -7828,18 +7895,25 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         for name, args, keywords in imported_calls
                         if name == statement.name
                     )
-                    for invocation in invocations:
-                        values = _hardcoded_password_values(
-                            invocation, bindings, _node_position(statement)
-                        )
-                        if any(
-                            value != REDACTED_PASSWORD_SENTINEL
-                            for value in values
-                        ):
-                            violations.append(statement.lineno)
+                    for return_callable in return_callables:
+                        module_values[statement.name] = [
+                            (position, return_callable)
+                            if value is statement else (position, value)
+                            for position, value in original_binding
+                        ]
+                        for invocation in invocations:
+                            values = _hardcoded_password_values(
+                                invocation, bindings, _node_position(statement)
+                            )
+                            if any(
+                                value != REDACTED_PASSWORD_SENTINEL
+                                for value in values
+                            ):
+                                violations.append(statement.lineno)
+                                break
+                        if statement.lineno in violations:
                             break
-                    if original_binding is not None:
-                        module_values[statement.name] = original_binding
+                    module_values[statement.name] = original_binding
                 continue
             if isinstance(statement, ast.Assign):
                 targets = statement.targets
@@ -8028,6 +8102,122 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             bool(self._module_uppercase_credential_literals(
                                 provider_source, names
                             )), expected
+                        )
+
+    def test_imported_provider_volatile_condition_evaluations(self):
+        """Side-effecting conditions cannot share a decision identity."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "credential_provider.py"
+            provider.write_text(
+                'def get_password(value):\n'
+                '    return value["credential"]\n', encoding="utf-8",
+            )
+            cases = (
+                ('flags = iter((True, False))\n'
+                 'KEY = "credential" if next(flags) else "other"\n'
+                 'VALUE = None if next(flags) else "hardcoded-secret"\n'
+                 'password = get_password({KEY: VALUE})\n', True),
+                ('flags = iter((True, False))\n'
+                 'KEY = "other" if next(flags) else "credential"\n'
+                 'VALUE = None if next(flags) else "hardcoded-secret"\n'
+                 'password = get_password({KEY: VALUE})\n', True),
+                ('password = get_password({("credential" if flag else "other"): '
+                 '("hardcoded-secret" if not flag else None)})\n', False),
+                ('password = get_password({("credential" if flag else "other"): '
+                 '(None if not flag else "hardcoded-secret")})\n', True),
+                ('KEY = "credential" if flag else "other"\n'
+                 'VALUE = "hardcoded-secret" if not flag else None\n'
+                 'password = get_password({KEY: VALUE})\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for body, expected in cases:
+                    with self.subTest(body=body):
+                        consumer.write_text(
+                            'from credential_provider import get_password\n'
+                            'from elasticsearch import Elasticsearch\n'
+                            + body +
+                            'Elasticsearch("localhost", '
+                            'basic_auth=("elastic", password))\n',
+                            encoding="utf-8",
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+
+    def test_imported_provider_multistatement_returns(self):
+        """Return-flow tracks only a selected provider's actual local values."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "credential_provider.py"
+            cases = (
+                ('def get_password():\n'
+                 '    value = "hardcoded-secret"\n'
+                 '    return value\n', True),
+                ('def get_password():\n'
+                 '    unused = "hardcoded-secret"\n'
+                 '    return None\n', False),
+                ('def get_password():\n'
+                 '    value = "hardcoded-secret"\n'
+                 '    value = None\n'
+                 '    return value\n', False),
+                ('def get_password(value):\n'
+                 '    result = value\n'
+                 '    return result\n', True),
+                ('async def get_password(value):\n'
+                 '    """Get authentication value."""\n'
+                 '    result = value\n'
+                 '    return result\n', True),
+                ('def get_password():\n'
+                 '    if flag:\n'
+                 '        value = "hardcoded-secret"\n'
+                 '    else:\n'
+                 '        value = None\n'
+                 '    return value\n', True),
+                ('def get_password():\n'
+                 '    if False:\n'
+                 '        return "hardcoded-secret"\n'
+                 '    return None\n', False),
+                ('def get_password():\n'
+                 '    if flag:\n'
+                 '        return None\n'
+                 '    return "hardcoded-secret"\n', True),
+                ('import os\ndef get_password():\n'
+                 '    value = os.getenv("TCP_ELASTIC_PASSWORD")\n'
+                 '    return value\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for provider_source, expected in cases:
+                    with self.subTest(provider=provider_source):
+                        args = (
+                            '"hardcoded-secret"' if "get_password(value)" in
+                            provider_source else ""
+                        )
+                        consumer.write_text(
+                            'from credential_provider import get_password\n'
+                            'from elasticsearch import Elasticsearch\n'
+                            'password = get_password(' + args + ')\n'
+                            'Elasticsearch("localhost", '
+                            'basic_auth=("elastic", password))\n',
+                            encoding="utf-8",
+                        )
+                        provider.write_text(
+                            provider_source, encoding="utf-8",
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
                         )
 
     def test_imported_provider_nonidentifier_keyword_keys(self):
