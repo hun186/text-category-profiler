@@ -7362,14 +7362,17 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     return frozenset(merged.items())
 
                 def condition_identity(test):
-                    """Fingerprint a condition and the bindings at evaluation.
+                    """Return the condition's binding epoch and known polarity.
 
-                    Identical syntax after a variable has been rebound is not
-                    the same decision. Conversely, two expressions reading the
-                    same unchanged condition can share a branch constraint.
+                    A general name reassignment starts a new decision epoch.
+                    The special deterministic `flag = not flag` inverts the
+                    previous decision rather than making it unrelated; fold
+                    those rebindings into a polarity bit to keep valid paths
+                    and reject impossible key/value combinations.
                     """
                     position = _node_position(test)
                     references = {}
+                    inverted = False
                     for name in ast.walk(test):
                         if not (
                             isinstance(name, ast.Name)
@@ -7379,15 +7382,33 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         scope, binding_name = _binding_name_token(
                             name.id, bindings, name
                         )
-                        epochs = tuple(
-                            write_position
-                            for write_position, _value in
+                        writes = [
+                            (write_position, value)
+                            for write_position, value in
                             bindings["values"].get(scope, {}).get(
                                 binding_name, ()
                             )
                             if write_position <= position
+                        ]
+                        if isinstance(test, ast.Name) and name is test:
+                            # Only strip unconditionally executed self-flips.
+                            # A conditional write needs its own epoch because
+                            # its inversion may not have executed.
+                            while writes:
+                                write_position, value = writes[-1]
+                                if not (
+                                    isinstance(value, ast.UnaryOp)
+                                    and isinstance(value.op, ast.Not)
+                                    and isinstance(value.operand, ast.Name)
+                                    and value.operand.id == binding_name
+                                    and not _node_control_path(value)
+                                ):
+                                    break
+                                inverted = not inverted
+                                writes.pop()
+                        references[(scope, binding_name)] = tuple(
+                            write_position for write_position, _ in writes
                         )
-                        references[(scope, binding_name)] = epochs
                     signature = tuple(
                         sorted(
                             (
@@ -7400,17 +7421,21 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     return (
                         ast.dump(test, include_attributes=False),
                         signature,
-                    )
+                    ), inverted
 
                 def traced_choices(element):
                     """Return AST candidates with all feasible branch constraints."""
                     if isinstance(element, ast.IfExp):
-                        branch = condition_identity(element.test)
+                        branch, inverted = condition_identity(element.test)
                         choices = []
                         for selected, arm in (
                             (True, element.body), (False, element.orelse)
                         ):
-                            required = frozenset(((branch, selected),))
+                            # Normalize a known self-negation to the original
+                            # condition's polarity before correlating branches.
+                            required = frozenset((
+                                (branch, selected != inverted),
+                            ))
                             for value, nested in traced_choices(arm):
                                 correlated = merge_constraints(
                                     required, nested
