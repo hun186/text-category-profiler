@@ -7674,12 +7674,11 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         return results
 
     def _local_import_origins_at(self, tree, imported, use_node, selected_members=()):
-        """Resolve local import identities at a use by module-level path flow.
+        """Resolve imports in the lexical suite containing the actual use.
 
-        Snapshots like `saved = imported` retain their original identity,
-        including after later overwrites. An unknown conditional write keeps
-        both branch outcomes; a definite reassignment erases the old import.
-        Only source-visible module-level statements are considered.
+        Imported origins and eager alias snapshots are source ordered. A call
+        inside a function/method runs that suite's visible imports/assignments,
+        not unrelated function bodies. Conditional writes retain both arms.
         """
         cutoff = _node_position(use_node)
 
@@ -7746,6 +7745,25 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         ):
                             return execute(stmt.body, state)
                         return execute(stmt.orelse, state)
+                    if isinstance(
+                        stmt, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+                    ) and any(
+                        child is use_node
+                        for member in stmt.body
+                        for child in ast.walk(member)
+                    ):
+                        lexical = dict(state)
+                        if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                            # A parameter hides an outer imported name.
+                            args = stmt.args
+                            for parameter in (
+                                *args.posonlyargs, *args.args, *args.kwonlyargs
+                            ):
+                                lexical[parameter.arg] = frozenset()
+                            for argument in (args.vararg, args.kwarg):
+                                if argument is not None:
+                                    lexical[argument.arg] = frozenset()
+                        return execute(stmt.body, lexical)
                     break
                 if isinstance(stmt, (ast.Import, ast.ImportFrom)):
                     selected = imported.get(stmt, {})
@@ -7891,12 +7909,83 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         return members
 
     def _es_wrapper_password_parameters(self, source):
-        """Find source-visible exported wrappers forwarding parameters to ES."""
+        """Find parameters reaching an ES authentication sink through aliases."""
         try:
             tree = ast.parse(source)
         except SyntaxError:
             return {}
+        bindings = _name_bindings(tree)
         wrappers = {}
+
+        def originating_parameters(expression, parameters, before, seen=None):
+            """Use source-ordered reaching bindings, not incidental literals."""
+            seen = set() if seen is None else set(seen)
+            if id(expression) in seen:
+                return set()
+            seen.add(id(expression))
+            if isinstance(expression, ast.Name):
+                # The existing binding engine preserves eager snapshots across
+                # rebinding, and excludes overwritten reaching definitions.
+                resolved = _resolve_bound_nodes(expression, bindings, before)
+                if len(resolved) == 1 and resolved[0] is expression:
+                    return {expression.id} if expression.id in parameters else set()
+                origins = set()
+                for value in resolved:
+                    if value is expression:
+                        if expression.id in parameters:
+                            origins.add(expression.id)
+                    else:
+                        origins.update(originating_parameters(
+                            value, parameters, before, seen
+                        ))
+                return origins
+            if isinstance(expression, ast.IfExp):
+                branches = (
+                    [expression.body if expression.test.value else expression.orelse]
+                    if isinstance(expression.test, ast.Constant)
+                    else [expression.body, expression.orelse]
+                )
+                return set().union(*(
+                    originating_parameters(branch, parameters, before, set(seen))
+                    for branch in branches
+                ))
+            if isinstance(expression, ast.BinOp) and isinstance(
+                expression.op, (ast.Add, ast.Mod)
+            ):
+                return (
+                    originating_parameters(expression.left, parameters, before, set(seen))
+                    | originating_parameters(expression.right, parameters, before, set(seen))
+                )
+            if isinstance(expression, (ast.JoinedStr, ast.FormattedValue)):
+                parts = (
+                    expression.values if isinstance(expression, ast.JoinedStr)
+                    else [expression.value]
+                )
+                return set().union(*(
+                    originating_parameters(item, parameters, before, set(seen))
+                    for item in parts
+                ))
+            if isinstance(expression, ast.Call):
+                if (
+                    isinstance(expression.func, ast.Attribute)
+                    and expression.func.attr in {
+                        "strip", "lstrip", "rstrip", "lower", "upper", "casefold"
+                    }
+                ):
+                    return originating_parameters(
+                        expression.func.value, parameters, before, seen
+                    )
+                if (
+                    expression.args
+                    and _is_transparent_string_transform_call(
+                        expression, bindings, before
+                    )
+                ):
+                    return originating_parameters(
+                        expression.args[0], parameters, before, seen
+                    )
+            return set()
+
         for statement in tree.body:
             if not isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 continue
@@ -7904,13 +7993,15 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             parameters = {
                 argument.arg: index for index, argument in enumerate(positional)
             }
-            # Keyword-only parameters have no legal positional index.
             parameters.update({
                 argument.arg: None for argument in statement.args.kwonlyargs
             })
             auth_parameters = set()
             for call in ast.walk(statement):
                 if not isinstance(call, ast.Call):
+                    continue
+                # Nested functions have independent parameters and semantics.
+                if getattr(call, "_binding_scope", None) is not statement:
                     continue
                 fn = call.func
                 is_es = (
@@ -7934,8 +8025,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         and len(expression.elts) > 1
                     ):
                         expression = expression.elts[1]
-                    if isinstance(expression, ast.Name) and expression.id in parameters:
-                        auth_parameters.add(expression.id)
+                    auth_parameters.update(originating_parameters(
+                        expression, parameters, _node_position(expression)
+                    ))
             if auth_parameters:
                 wrappers[statement.name] = {
                     name: parameters[name] for name in auth_parameters
@@ -8015,25 +8107,70 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             if name not in wrappers:
                 continue
             invoked = True
+            # Expand only provably sized positional spreads. Preserve
+            # possible alternative sequences when aliases have reaching
+            # definitions; unknown *args never shift a guessed position.
+            positional_options = [[]]
+            for argument in call.args:
+                if isinstance(argument, ast.Starred):
+                    variants = []
+                    for resolved in _resolve_bound_nodes(
+                        argument.value, bindings, _node_position(argument.value)
+                    ):
+                        choices = (
+                            [resolved.body, resolved.orelse]
+                            if isinstance(resolved, ast.IfExp)
+                            and not isinstance(resolved.test, ast.Constant)
+                            else [
+                                resolved.body if resolved.test.value
+                                else resolved.orelse
+                            ] if isinstance(resolved, ast.IfExp)
+                            else [resolved]
+                        )
+                        for choice in choices:
+                            if (
+                                isinstance(choice, (ast.Tuple, ast.List))
+                                and not any(
+                                    isinstance(item, ast.Starred)
+                                    for item in choice.elts
+                                )
+                            ):
+                                variants.append(list(choice.elts))
+                    if not variants:
+                        positional_options = []
+                        break
+                else:
+                    variants = [[argument]]
+                positional_options = [
+                    [*prefix, *variant]
+                    for prefix in positional_options
+                    for variant in variants
+                ][:64]
+
             for parameter, index in wrappers[name].items():
-                expression = (
-                    call.args[index]
-                    if index is not None and len(call.args) > index
-                    else next(
-                        (keyword.value for keyword in call.keywords
-                         if keyword.arg == parameter), None
+                expressions = []
+                if index is not None:
+                    expressions.extend(
+                        args[index] for args in positional_options
+                        if index < len(args)
                     )
-                )
-                if expression is None or isinstance(expression, ast.Starred):
-                    continue
-                values = _hardcoded_password_values(
-                    expression, bindings, _node_position(expression)
-                )
-                if any(
-                    value and value != REDACTED_PASSWORD_SENTINEL
-                    for value in values
-                ):
-                    lines.append(call.lineno)
+                if index is None or not expressions:
+                    # A keyword-only credential is inspectable even when
+                    # unrelated positional spreads cannot be expanded.
+                    expressions.extend(
+                        kw.value for kw in call.keywords
+                        if kw.arg == parameter
+                    )
+                for expression in expressions:
+                    values = _hardcoded_password_values(
+                        expression, bindings, _node_position(call)
+                    )
+                    if any(
+                        value and value != REDACTED_PASSWORD_SENTINEL
+                        for value in values
+                    ):
+                        lines.append(call.lineno)
+                        break
         return invoked, sorted(set(lines))
 
     def _runtime_es_module_paths(self):
@@ -9324,6 +9461,189 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             bool(getattr(
                                 self, "_es_wrapper_credential_lines", {}
                             ).get(caller.resolve())),
+                            expected,
+                        )
+
+    def test_lazy_function_imports_retain_selected_es_origins(self):
+        """Only the containing function's live imported wrapper is relevant."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = root / "client.py"
+            caller = root / "worker.py"
+            wrapper.write_text(
+                'from elasticsearch import Elasticsearch\n'
+                'def connect(password):\n'
+                '    return Elasticsearch("localhost", '
+                'basic_auth=("elastic", password))\n',
+                encoding="utf-8",
+            )
+            cases = (
+                ('def build():\n'
+                 '    from client import connect\n'
+                 '    connect("hardcoded-secret")\n', True),
+                ('def build():\n'
+                 '    import client as cp\n'
+                 '    alias = cp\n'
+                 '    alias.connect("hardcoded-secret")\n', True),
+                ('def build():\n'
+                 '    from client import connect as es_connect\n'
+                 '    saved = es_connect\n'
+                 '    es_connect = lambda password: None\n'
+                 '    saved("hardcoded-secret")\n', True),
+                ('def build():\n'
+                 '    from client import connect\n'
+                 '    connect = lambda password: None\n'
+                 '    connect("hardcoded-secret")\n', False),
+                ('def unrelated():\n'
+                 '    from client import connect\n'
+                 'def build():\n'
+                 '    connect("hardcoded-secret")\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for source, expected in cases:
+                    with self.subTest(source=source):
+                        caller.write_text(source, encoding="utf-8")
+                        self._runtime_es_module_paths()
+                        self.assertEqual(
+                            bool(self._es_wrapper_credential_lines.get(
+                                caller.resolve()
+                            )),
+                            expected,
+                        )
+
+    def test_lazy_function_imported_config_member(self):
+        """Function-local class aliases only flag selected auth members."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "credential_provider.py"
+            provider.write_text(
+                'class Config:\n'
+                '    password = "hardcoded-secret"\n'
+                '    harmless = None\n', encoding="utf-8",
+            )
+            cases = (
+                ('def build():\n'
+                 '    from credential_provider import Config as C\n'
+                 '    password = C.password\n', True),
+                ('def build():\n'
+                 '    import credential_provider as cp\n'
+                 '    saved = cp\n'
+                 '    password = saved.Config.password\n', True),
+                ('def build():\n'
+                 '    from credential_provider import Config as C\n'
+                 '    password = C.harmless\n', False),
+                ('def build():\n'
+                 '    from credential_provider import Config as C\n'
+                 '    C = object()\n'
+                 '    password = C.password\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for body, expected in cases:
+                    with self.subTest(body=body):
+                        consumer.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            + body + '    Elasticsearch("localhost", '
+                            'basic_auth=("elastic", password))\n',
+                            encoding="utf-8",
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+
+    def test_wrapper_parameter_flow_through_local_bindings(self):
+        """Only params that still reach the authentication sink are exported."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = root / "client.py"
+            caller = root / "worker.py"
+            cases = (
+                ('secret = password\n', True),
+                ('secret = password\nsecret = None\n', False),
+                ('secret = None\nsecret = password\n', True),
+                ('secret = password.strip()\n', True),
+                ('secret = password if flag else None\n', True),
+                ('unused = password\nsecret = None\n', False),
+                ('secret = "hardcoded-secret"\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for body, expected in cases:
+                    with self.subTest(body=body):
+                        wrapper.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'def connect(password):\n'
+                            + textwrap.indent(body, '    ')
+                            + '    return Elasticsearch("localhost", '
+                            'basic_auth=("elastic", secret))\n',
+                            encoding="utf-8",
+                        )
+                        caller.write_text(
+                            'from client import connect\n'
+                            'connect("hardcoded-secret")\n', encoding="utf-8",
+                        )
+                        self._runtime_es_module_paths()
+                        self.assertEqual(
+                            bool(self._es_wrapper_credential_lines.get(
+                                caller.resolve()
+                            )),
+                            expected,
+                        )
+
+    def test_statically_sized_wrapper_starred_arguments(self):
+        """Static spreads respect selected positions, aliases, and overrides."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = root / "client.py"
+            caller = root / "worker.py"
+            wrapper.write_text(
+                'from elasticsearch import Elasticsearch\n'
+                'def connect(host, password):\n'
+                '    return Elasticsearch(host, '
+                'basic_auth=("elastic", password))\n',
+                encoding="utf-8",
+            )
+            cases = (
+                ('connect(*["localhost", "hardcoded-secret"])\n', True),
+                ('arguments = ("localhost", "hardcoded-secret")\n'
+                 'connect(*arguments)\n', True),
+                ('connect("localhost", *["hardcoded-secret"])\n', True),
+                ('connect(*[], "localhost", "hardcoded-secret")\n', True),
+                ('connect(*["hardcoded-secret", "localhost"])\n', False),
+                ('connect(*["localhost", None])\n', False),
+                ('connect(*dynamic)\n', False),
+                ('connect(*["localhost"], password="hardcoded-secret")\n', True),
+                ('connect(*["localhost", os.getenv("TCP_ELASTIC_PASSWORD")])\n',
+                 False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for body, expected in cases:
+                    with self.subTest(body=body):
+                        caller.write_text(
+                            'from client import connect\n' + body,
+                            encoding="utf-8",
+                        )
+                        self._runtime_es_module_paths()
+                        self.assertEqual(
+                            bool(self._es_wrapper_credential_lines.get(
+                                caller.resolve()
+                            )),
                             expected,
                         )
 
