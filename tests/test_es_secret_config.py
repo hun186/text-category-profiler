@@ -7899,13 +7899,30 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         }
 
         def definitely_overwritten(writes, import_name):
-            """A replacement kills an import only if it changes its identity."""
+            """Keep imported callables restored via source-visible aliases."""
+            def retained_identity(value, position, visited=None):
+                visited = set() if visited is None else visited
+                if not isinstance(value, ast.Name):
+                    return False
+                if value.id == import_name:
+                    return True
+                if value.id in visited:
+                    return False
+                alias_writes = [
+                    (at, rhs) for at, rhs in
+                    bindings["values"].get(module_scope, {}).get(value.id, ())
+                    if at < position
+                ]
+                if not alias_writes:
+                    return False
+                at, rhs = alias_writes[-1]
+                return not _node_control_path(rhs) and retained_identity(
+                    rhs, at, visited | {value.id}
+                )
+
             writes = [
                 (position, value) for position, value in writes
-                if not (
-                    isinstance(value, ast.Name)
-                    and value.id == import_name
-                )
+                if not retained_identity(value, position)
             ]
             for _position, value in writes:
                 control = _node_control_path(value)
@@ -9177,6 +9194,16 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                  'connect("hardcoded-secret")\n', True),
                 ('from client import connect\n'
                  'connect = lambda password: None\n'
+                 'connect("hardcoded-secret")\n', False),
+                ('from client import connect\n'
+                 'saved = connect\n'
+                 'connect = lambda password: None\n'
+                 'connect = saved\n'
+                 'connect("hardcoded-secret")\n', True),
+                ('from client import connect\n'
+                 'saved = connect\n'
+                 'saved = lambda password: None\n'
+                 'connect = saved\n'
                  'connect("hardcoded-secret")\n', False),
                 ('import client as c\n'
                  'c = c\n'
