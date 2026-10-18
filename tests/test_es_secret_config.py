@@ -7673,7 +7673,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                     ))
         return results
 
-    def _local_import_origins_at(self, tree, imported, use_node):
+    def _local_import_origins_at(self, tree, imported, use_node, selected_members=()):
         """Resolve local import identities at a use by module-level path flow.
 
         Snapshots like `saved = imported` retain their original identity,
@@ -7697,7 +7697,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 return identity(node.func, state)
             if isinstance(node, ast.Attribute):
                 base = identity(node.value, state)
-                exported = {
+                exported = set(selected_members) | {
                     value for imports in imported.values()
                     for value in imports.values()
                     if isinstance(value, str)
@@ -7845,7 +7845,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     and isinstance(node, ast.Attribute)
                 ), expression,
             )
-            state = self._local_import_origins_at(tree, imported, use)
+            state = self._local_import_origins_at(tree, imported, use, exports)
             if isinstance(expression, ast.Call):
                 expression = expression.func
             if isinstance(expression, ast.Name):
@@ -7999,7 +7999,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             # Evaluate imports and copied aliases at this exact call site.
             # This also keeps conditional snapshots that may still carry an
             # imported wrapper after a later unconditional restoration.
-            state = self._local_import_origins_at(tree, imported, call)
+            state = self._local_import_origins_at(tree, imported, call, wrappers)
             name = None
             if isinstance(call.func, ast.Name):
                 candidates = state.get(call.func.id, frozenset()) & set(wrappers)
