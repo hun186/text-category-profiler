@@ -7697,10 +7697,17 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 return identity(node.func, state)
             if isinstance(node, ast.Attribute):
                 base = identity(node.value, state)
+                exported = {
+                    value for imports in imported.values()
+                    for value in imports.values()
+                    if isinstance(value, str)
+                }
                 return frozenset(
-                    origin[1] for origin in base
-                    if isinstance(origin, tuple) and origin[0] == "module"
-                    and origin[1] == node.attr
+                    (node.attr,)
+                    if node.attr in exported and any(
+                        isinstance(origin, tuple) and origin[0] == "module"
+                        for origin in base
+                    ) else ()
                 )
             if isinstance(node, ast.IfExp):
                 if isinstance(node.test, ast.Constant):
