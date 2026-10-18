@@ -7734,9 +7734,20 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 isinstance(expression, ast.Attribute)
                 and expression.attr in exports
                 and isinstance(expression.value, ast.Name)
-                and expression.value.id in modules
             ):
-                return expression.attr
+                # A module import can be copied before constructing a class:
+                #   import provider as cp; alias = cp; alias.Config(...)
+                # Follow reaching assignments rather than assuming the module
+                # must be accessed by its original import alias.
+                candidates = _resolve_bound_nodes(
+                    expression.value, bindings, at_position
+                )
+                if any(
+                    isinstance(candidate, ast.Name)
+                    and candidate.id in modules
+                    for candidate in candidates
+                ):
+                    return expression.attr
             return None
 
         def is_auth_source(node):
@@ -7781,6 +7792,10 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             parameters = {
                 argument.arg: index for index, argument in enumerate(positional)
             }
+            # Keyword-only parameters have no legal positional index.
+            parameters.update({
+                argument.arg: None for argument in statement.args.kwonlyargs
+            })
             auth_parameters = set()
             for call in ast.walk(statement):
                 if not isinstance(call, ast.Call):
@@ -7823,19 +7838,80 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             return False, []
         direct = {}
         modules = set()
+        import_sites = {}
         for node in ast.walk(tree):
             if isinstance(node, ast.ImportFrom):
                 if (node.module or "").split(".")[-1] == wrapper_path.stem:
                     for alias in node.names:
                         if alias.name in wrappers:
-                            direct[alias.asname or alias.name] = alias.name
+                            name = alias.asname or alias.name
+                            direct[name] = alias.name
+                            import_sites.setdefault(name, []).append(node)
             elif isinstance(node, ast.Import):
                 for alias in node.names:
                     if alias.name.split(".")[-1] == wrapper_path.stem:
-                        modules.add(alias.asname or alias.name.split(".", 1)[0])
+                        name = alias.asname or alias.name.split(".", 1)[0]
+                        modules.add(name)
+                        import_sites.setdefault(name, []).append(node)
         if not direct and not modules:
             return False, []
         bindings = _name_bindings(tree)
+        module_scope = bindings["metadata"]["module"]
+        branch_nodes = {
+            ("If", *_node_position(node)): node
+            for node in ast.walk(tree) if isinstance(node, ast.If)
+        }
+
+        def definitely_overwritten(writes):
+            """Check whether replacement executes on all paths."""
+            for _position, value in writes:
+                control = _node_control_path(value)
+                if not control:
+                    return True
+                if len(control) == 1 and control[0][0] == "If":
+                    step = control[0]
+                    condition = branch_nodes.get(step[:3])
+                    if (
+                        condition is not None
+                        and isinstance(condition.test, ast.Constant)
+                        and (
+                            (bool(condition.test.value) and step[3] == "body")
+                            or (not bool(condition.test.value)
+                                and step[3] == "orelse")
+                        )
+                    ):
+                        return True
+            arms = {}
+            for _position, value in writes:
+                path = _node_control_path(value)
+                if len(path) == 1 and path[0][0] == "If":
+                    arms.setdefault(path[0][:3], set()).add(path[0][3])
+            return any(
+                {"body", "orelse"} <= arms
+                for arms in arms.values()
+            )
+
+        def imported_name_survives(name, use):
+            """An import is still reaching after only conditional shadows."""
+            use_position = _node_position(use)
+            if _binding_name_token(name, bindings, use)[0] is not module_scope:
+                return False
+            imports = [
+                statement for statement in import_sites.get(name, ())
+                if _node_position(statement) <= use_position
+            ]
+            for statement in imports:
+                start = _node_position(statement)
+                writes = [
+                    (position, value)
+                    for position, value in
+                    bindings["values"].get(module_scope, {}).get(name, ())
+                    if start < position <= use_position
+                ]
+                if not definitely_overwritten(writes):
+                    return True
+            return False
+
         invoked = False
         lines = []
         for call in ast.walk(tree):
@@ -7849,10 +7925,12 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             candidates = _resolve_bound_nodes(
                 call.func, bindings, _node_position(call.func)
             )
-            for candidate in candidates:
+            for candidate in [call.func, *candidates]:
                 if isinstance(candidate, ast.Name):
                     export = direct.get(candidate.id)
-                    if export is not None:
+                    if export is not None and imported_name_survives(
+                        candidate.id, call.func
+                    ):
                         name = export
                         break
                 elif isinstance(candidate, ast.Attribute):
@@ -7865,7 +7943,10 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     if any(
                         isinstance(module, ast.Name)
                         and module.id in modules
-                        for module in modules_reaching
+                        and imported_name_survives(
+                            module.id, candidate.value
+                        )
+                        for module in [candidate.value, *modules_reaching]
                     ):
                         name = candidate.attr
                         break
@@ -7874,7 +7955,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             invoked = True
             for parameter, index in wrappers[name].items():
                 expression = (
-                    call.args[index] if len(call.args) > index else next(
+                    call.args[index]
+                    if index is not None and len(call.args) > index
+                    else next(
                         (keyword.value for keyword in call.keywords
                          if keyword.arg == parameter), None
                     )
@@ -8525,6 +8608,132 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         )
                         provider.write_text(
                             provider_source, encoding="utf-8",
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+
+    def test_es_wrapper_conditionally_shadowed_import(self):
+        """The original wrapper survives an overwrite on one branch."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = root / "client.py"
+            caller = root / "worker.py"
+            wrapper.write_text(
+                'from elasticsearch import Elasticsearch\n'
+                'def connect(password):\n'
+                '    return Elasticsearch("localhost", '
+                'basic_auth=("elastic", password))\n',
+                encoding="utf-8",
+            )
+            cases = (
+                ('from client import connect\n'
+                 'if flag:\n    connect = lambda password: None\n'
+                 'connect("hardcoded-secret")\n', True),
+                ('import client as cp\n'
+                 'if flag:\n    cp = None\n'
+                 'cp.connect("hardcoded-secret")\n', True),
+                ('from client import connect\n'
+                 'if flag:\n    connect = lambda password: None\n'
+                 'else:\n    connect = lambda password: None\n'
+                 'connect("hardcoded-secret")\n', False),
+                ('from client import connect\n'
+                 'connect = lambda password: None\n'
+                 'connect("hardcoded-secret")\n', False),
+                ('from client import connect\n'
+                 'if True:\n    connect = lambda password: None\n'
+                 'connect("hardcoded-secret")\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for body, expected in cases:
+                    with self.subTest(body=body):
+                        caller.write_text(body, encoding="utf-8")
+                        paths = set(self._runtime_es_module_paths())
+                        flagged = bool(
+                            self._es_wrapper_credential_lines.get(caller, ())
+                        )
+                        self.assertEqual(flagged, expected)
+                        self.assertEqual(caller.resolve() in paths, expected)
+
+    def test_es_wrapper_keyword_only_password_parameter(self):
+        """A keyword-only wrapper sink cannot be dropped from discovery."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = root / "client.py"
+            caller = root / "worker.py"
+            wrapper.write_text(
+                'from elasticsearch import Elasticsearch\n'
+                'def connect(*, password):\n'
+                '    return Elasticsearch("localhost", '
+                'basic_auth=("elastic", password))\n',
+                encoding="utf-8",
+            )
+            cases = (
+                ('from client import connect\n'
+                 'connect(password="hardcoded-secret")\n', True),
+                ('from client import connect\n'
+                 'connect(password=os.getenv("TCP_ELASTIC_PASSWORD"))\n', False),
+                ('from client import connect\n'
+                 'connect(password=None)\n', False),
+                ('from client import connect\n'
+                 'connect("hardcoded-secret")\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for body, expected in cases:
+                    with self.subTest(body=body):
+                        caller.write_text(body, encoding="utf-8")
+                        self._runtime_es_module_paths()
+                        self.assertEqual(
+                            bool(self._es_wrapper_credential_lines.get(caller, ())),
+                            expected,
+                        )
+
+    def test_selected_class_module_import_alias(self):
+        """A copied module alias still identifies the imported config class."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "credential_provider.py"
+            provider.write_text(
+                'class Config:\n'
+                '    password = "hardcoded-secret"\n'
+                '    unrelated = None\n', encoding="utf-8",
+            )
+            cases = (
+                ('import credential_provider as cp\n'
+                 'alias = cp\n'
+                 'cfg = alias.Config("prod")\n'
+                 'password = cfg.password\n', True),
+                ('import credential_provider as cp\n'
+                 'alias = cp\n'
+                 'cfg = alias.Config("prod")\n'
+                 'password = cfg.unrelated\n', False),
+                ('import credential_provider as cp\n'
+                 'alias = cp\n'
+                 'alias = object()\n'
+                 'password = alias.Config.password\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for source, expected in cases:
+                    with self.subTest(source=source):
+                        consumer.write_text(
+                            source + 'from elasticsearch import Elasticsearch\n'
+                            'Elasticsearch("localhost", '
+                            'basic_auth=("elastic", password))\n',
+                            encoding="utf-8",
                         )
                         self.assertEqual(
                             provider.resolve() in self._runtime_es_module_paths(),
