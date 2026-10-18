@@ -9621,7 +9621,12 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                  'connect(*arguments)\n', True),
                 ('connect("localhost", *["hardcoded-secret"])\n', True),
                 ('connect(*[], "localhost", "hardcoded-secret")\n', True),
-                ('connect(*["hardcoded-secret", "localhost"])\n', False),
+                # Any literal in the password slot is hardcoded, even if
+                # it happens to resemble a hostname. Only a safe password
+                # source makes the second slot a true negative case.
+                ('connect(*["hardcoded-secret", "localhost"])\n', True),
+                ('connect(*["hardcoded-secret", '
+                 'os.getenv("TCP_ELASTIC_PASSWORD")])\n', False),
                 ('connect(*["localhost", None])\n', False),
                 ('connect(*dynamic)\n', False),
                 ('connect(*["localhost"], password="hardcoded-secret")\n', True),
