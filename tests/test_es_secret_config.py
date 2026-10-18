@@ -7700,6 +7700,39 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         }
         bindings = _name_bindings(tree)
 
+        def class_module_import_survives(name, use):
+            """Keep ordinary imports reachable after conditional shadows."""
+            imported = [
+                node for node in ast.walk(tree)
+                if isinstance(node, ast.Import)
+                and any(
+                    (alias.asname or alias.name.split(".", 1)[0]) == name
+                    and alias.name.split(".")[-1] == dependency.stem
+                    for alias in node.names
+                )
+                and _node_position(node) <= _node_position(use)
+            ]
+            if not imported:
+                return False
+            if _binding_name_token(name, bindings, use)[0] is not tree:
+                return False
+            for statement in imported:
+                writes = [
+                    (position, value)
+                    for position, value in
+                    bindings["values"].get(tree, {}).get(name, ())
+                    if _node_position(statement) < position <= _node_position(use)
+                ]
+                if not any(
+                    not _node_control_path(value)
+                    and not (
+                        isinstance(value, ast.Name) and value.id == name
+                    )
+                    for _, value in writes
+                ):
+                    return True
+            return False
+
         def imported_class_owner(expression, at_position, seen=None):
             """Follow reaching instance aliases to a selected class import.
 
@@ -7745,7 +7778,10 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 if any(
                     isinstance(candidate, ast.Name)
                     and candidate.id in modules
-                    for candidate in candidates
+                    and class_module_import_survives(
+                        candidate.id, expression.value
+                    )
+                    for candidate in [expression.value, *candidates]
                 ):
                     return expression.attr
             return None
@@ -7862,8 +7898,15 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             for node in ast.walk(tree) if isinstance(node, ast.If)
         }
 
-        def definitely_overwritten(writes):
-            """Check whether replacement executes on all paths."""
+        def definitely_overwritten(writes, import_name):
+            """A replacement kills an import only if it changes its identity."""
+            writes = [
+                (position, value) for position, value in writes
+                if not (
+                    isinstance(value, ast.Name)
+                    and value.id == import_name
+                )
+            ]
             for _position, value in writes:
                 control = _node_control_path(value)
                 if not control:
@@ -7908,7 +7951,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     bindings["values"].get(module_scope, {}).get(name, ())
                     if start < position <= use_position
                 ]
-                if not definitely_overwritten(writes):
+                if not definitely_overwritten(writes, name):
                     return True
             return False
 
