@@ -7673,6 +7673,111 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                     ))
         return results
 
+    def _local_import_origins_at(self, tree, imported, use_node):
+        """Resolve local import identities at a use by module-level path flow.
+
+        Snapshots like `saved = imported` retain their original identity,
+        including after later overwrites. An unknown conditional write keeps
+        both branch outcomes; a definite reassignment erases the old import.
+        Only source-visible module-level statements are considered.
+        """
+        cutoff = _node_position(use_node)
+
+        def merge(left, right):
+            return {
+                key: left.get(key, frozenset()) | right.get(key, frozenset())
+                for key in left.keys() | right.keys()
+            }
+
+        def identity(node, state):
+            if isinstance(node, ast.Name):
+                return state.get(node.id, frozenset())
+            if isinstance(node, ast.Call):
+                # A class constructor retains class identity for member use.
+                return identity(node.func, state)
+            if isinstance(node, ast.Attribute):
+                base = identity(node.value, state)
+                return frozenset(
+                    origin[1] for origin in base
+                    if isinstance(origin, tuple) and origin[0] == "module"
+                    and origin[1] == node.attr
+                )
+            if isinstance(node, ast.IfExp):
+                if isinstance(node.test, ast.Constant):
+                    return identity(
+                        node.body if node.test.value else node.orelse, state
+                    )
+                return (
+                    identity(node.body, state)
+                    | identity(node.orelse, state)
+                )
+            return frozenset()
+
+        def assign(name, value, state):
+            if isinstance(name, ast.Name):
+                state[name.id] = identity(value, state)
+
+        def execute(statements, initial):
+            state = dict(initial)
+            for stmt in statements:
+                if _node_position(stmt) > cutoff:
+                    break
+                # RHS and branch tests execute before this statement's
+                # bindings are changed.
+                if stmt is use_node or any(
+                    child is use_node for child in ast.walk(stmt)
+                ):
+                    if isinstance(stmt, ast.If):
+                        if any(
+                            child is use_node for child in ast.walk(stmt.test)
+                        ):
+                            break
+                        if any(
+                            child is use_node
+                            for branch in stmt.body
+                            for child in ast.walk(branch)
+                        ):
+                            return execute(stmt.body, state)
+                        return execute(stmt.orelse, state)
+                    break
+                if isinstance(stmt, (ast.Import, ast.ImportFrom)):
+                    selected = imported.get(stmt, {})
+                    for item in stmt.names:
+                        name = (
+                            item.asname or item.name.split(".", 1)[0]
+                            if isinstance(stmt, ast.Import)
+                            else item.asname or item.name
+                        )
+                        if name != "*":
+                            state[name] = frozenset(
+                                (selected[name],)
+                            ) if name in selected else frozenset()
+                elif isinstance(stmt, ast.Assign):
+                    old = dict(state)
+                    for target in stmt.targets:
+                        assign(target, stmt.value, state)
+                        # Assign each RHS against the same prior state.
+                        if isinstance(target, ast.Name):
+                            state[target.id] = identity(stmt.value, old)
+                elif isinstance(stmt, ast.AnnAssign) and stmt.value is not None:
+                    assign(stmt.target, stmt.value, state)
+                elif isinstance(stmt, ast.If):
+                    if isinstance(stmt.test, ast.Constant):
+                        statements_to_run = (
+                            stmt.body if stmt.test.value else stmt.orelse
+                        )
+                        state = execute(statements_to_run, state)
+                    else:
+                        state = merge(
+                            execute(stmt.body, state),
+                            execute(stmt.orelse, state),
+                        )
+                elif isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                    state[stmt.name] = frozenset()
+            return state
+
+        return execute(tree.body, {})
+
     def _imported_credential_class_accesses(self, source, dependency, exports):
         """Match class members used by a consumer's authentication expression."""
         try:
@@ -7700,90 +7805,54 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         }
         bindings = _name_bindings(tree)
 
-        def class_module_import_survives(name, use):
-            """Keep ordinary imports reachable after conditional shadows."""
-            imported = [
-                node for node in ast.walk(tree)
-                if isinstance(node, ast.Import)
-                and any(
-                    (alias.asname or alias.name.split(".", 1)[0]) == name
-                    and alias.name.split(".")[-1] == dependency.stem
-                    for alias in node.names
-                )
-                and _node_position(node) <= _node_position(use)
-            ]
-            if not imported:
-                return False
-            if _binding_name_token(name, bindings, use)[0] is not tree:
-                return False
-            for statement in imported:
-                writes = [
-                    (position, value)
-                    for position, value in
-                    bindings["values"].get(tree, {}).get(name, ())
-                    if _node_position(statement) < position <= _node_position(use)
-                ]
-                if not any(
-                    not _node_control_path(value)
-                    and not (
-                        isinstance(value, ast.Name) and value.id == name
-                    )
-                    for _, value in writes
-                ):
-                    return True
-            return False
+        imported = {}
+        for statement in ast.walk(tree):
+            if isinstance(statement, ast.ImportFrom):
+                if (statement.module or "").split(".")[-1] == dependency.stem:
+                    selected = {
+                        alias.asname or alias.name: alias.name
+                        for alias in statement.names if alias.name in exports
+                    }
+                    if selected:
+                        imported[statement] = selected
+                for alias in statement.names:
+                    if alias.name == dependency.stem:
+                        imported.setdefault(statement, {})[
+                            alias.asname or alias.name
+                        ] = ("module", dependency.stem)
+            elif isinstance(statement, ast.Import):
+                for alias in statement.names:
+                    if alias.name.split(".")[-1] == dependency.stem:
+                        imported.setdefault(statement, {})[
+                            alias.asname or alias.name.split(".", 1)[0]
+                        ] = ("module", dependency.stem)
 
         def imported_class_owner(expression, at_position, seen=None):
-            """Follow reaching instance aliases to a selected class import.
-
-            A constructor result is an instance of the imported class, but
-            only the member actually used by authentication is selected.
-            """
-            seen = set() if seen is None else seen
-            if id(expression) in seen:
-                return None
-            seen = seen | {id(expression)}
+            """Read class identity through saved aliases and conditional paths."""
+            # at_position is the actual consumer use, not the definition of an
+            # alias; snapshots were evaluated when the alias was assigned.
+            use = next(
+                (
+                    node for node in ast.walk(tree)
+                    if _node_position(node) == at_position
+                    and isinstance(node, ast.Attribute)
+                ), expression,
+            )
+            state = self._local_import_origins_at(tree, imported, use)
             if isinstance(expression, ast.Call):
-                # A constructor with arguments still yields an instance of
-                # the imported class. Do not model __new__/__init__ effects;
-                # only preserve class identity for selecting auth members.
-                return imported_class_owner(expression.func, at_position, seen)
+                expression = expression.func
             if isinstance(expression, ast.Name):
-                if expression.id in direct:
-                    return direct[expression.id]
-                candidates = _resolve_bound_nodes(
-                    expression, bindings, at_position
-                )
-                owners = {
-                    owner for candidate in candidates
-                    if candidate is not expression
-                    for owner in [
-                        imported_class_owner(candidate, at_position, seen)
-                    ]
-                    if owner is not None
-                }
-                return next(iter(owners)) if len(owners) == 1 else None
+                origins = state.get(expression.id, frozenset())
+                choices = origins & set(exports)
+                return next(iter(choices)) if len(choices) == 1 else None
             if (
                 isinstance(expression, ast.Attribute)
                 and expression.attr in exports
                 and isinstance(expression.value, ast.Name)
+                and ("module", dependency.stem)
+                in state.get(expression.value.id, frozenset())
             ):
-                # A module import can be copied before constructing a class:
-                #   import provider as cp; alias = cp; alias.Config(...)
-                # Follow reaching assignments rather than assuming the module
-                # must be accessed by its original import alias.
-                candidates = _resolve_bound_nodes(
-                    expression.value, bindings, at_position
-                )
-                if any(
-                    isinstance(candidate, ast.Name)
-                    and candidate.id in modules
-                    and class_module_import_survives(
-                        candidate.id, expression.value
-                    )
-                    for candidate in [expression.value, *candidates]
-                ):
-                    return expression.attr
+                return expression.attr
             return None
 
         def is_auth_source(node):
@@ -7898,132 +7967,44 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             for node in ast.walk(tree) if isinstance(node, ast.If)
         }
 
-        def definitely_overwritten(writes, import_name):
-            """Keep imported callables restored via source-visible aliases."""
-            def retained_identity(value, position, visited=None):
-                visited = set() if visited is None else visited
-                if not isinstance(value, ast.Name):
-                    return False
-                if value.id == import_name:
-                    return True
-                if value.id in visited:
-                    return False
-                alias_writes = [
-                    (at, rhs) for at, rhs in
-                    bindings["values"].get(module_scope, {}).get(value.id, ())
-                    if at < position
-                ]
-                if not alias_writes:
-                    return False
-                at, rhs = alias_writes[-1]
-                return not _node_control_path(rhs) and retained_identity(
-                    rhs, at, visited | {value.id}
-                )
-
-            # A later unconditional restoration supersedes earlier kills.
-            # If that final write restores a saved import, it reaches the use.
-            unconditional = [
-                (position, value) for position, value in writes
-                if not _node_control_path(value)
-            ]
-            if unconditional:
-                last_position, last_value = unconditional[-1]
-                if retained_identity(last_value, last_position):
-                    return False
-                writes = [
-                    (position, value) for position, value in writes
-                    if position >= last_position
-                ]
-            writes = [
-                (position, value) for position, value in writes
-                if not retained_identity(value, position)
-            ]
-            for _position, value in writes:
-                control = _node_control_path(value)
-                if not control:
-                    return True
-                if len(control) == 1 and control[0][0] == "If":
-                    step = control[0]
-                    condition = branch_nodes.get(step[:3])
-                    if (
-                        condition is not None
-                        and isinstance(condition.test, ast.Constant)
-                        and (
-                            (bool(condition.test.value) and step[3] == "body")
-                            or (not bool(condition.test.value)
-                                and step[3] == "orelse")
-                        )
-                    ):
-                        return True
-            arms = {}
-            for _position, value in writes:
-                path = _node_control_path(value)
-                if len(path) == 1 and path[0][0] == "If":
-                    arms.setdefault(path[0][:3], set()).add(path[0][3])
-            return any(
-                {"body", "orelse"} <= arms
-                for arms in arms.values()
-            )
-
-        def imported_name_survives(name, use):
-            """An import is still reaching after only conditional shadows."""
-            use_position = _node_position(use)
-            if _binding_name_token(name, bindings, use)[0] is not module_scope:
-                return False
-            imports = [
-                statement for statement in import_sites.get(name, ())
-                if _node_position(statement) <= use_position
-            ]
-            for statement in imports:
-                start = _node_position(statement)
-                writes = [
-                    (position, value)
-                    for position, value in
-                    bindings["values"].get(module_scope, {}).get(name, ())
-                    if start < position <= use_position
-                ]
-                if not definitely_overwritten(writes, name):
-                    return True
-            return False
+        imported = {}
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                if (node.module or "").split(".")[-1] == wrapper_path.stem:
+                    matches = {
+                        alias.asname or alias.name: alias.name
+                        for alias in node.names if alias.name in wrappers
+                    }
+                    if matches:
+                        imported[node] = matches
+            elif isinstance(node, ast.Import):
+                for alias in node.names:
+                    if alias.name.split(".")[-1] == wrapper_path.stem:
+                        imported.setdefault(node, {})[
+                            alias.asname or alias.name.split(".", 1)[0]
+                        ] = ("module", wrapper_path.stem)
 
         invoked = False
         lines = []
         for call in ast.walk(tree):
             if not isinstance(call, ast.Call):
                 continue
-            # A wrapper can be reached through source-visible local aliases:
-            #   from client import connect; open_es = connect; open_es(...)
-            #   import client as cl; alias = cl; alias.connect(...)
-            # Use reaching bindings so overwritten aliases are not resurrected.
+            # Evaluate imports and copied aliases at this exact call site.
+            # This also keeps conditional snapshots that may still carry an
+            # imported wrapper after a later unconditional restoration.
+            state = self._local_import_origins_at(tree, imported, call)
             name = None
-            candidates = _resolve_bound_nodes(
-                call.func, bindings, _node_position(call.func)
-            )
-            for candidate in [call.func, *candidates]:
-                if isinstance(candidate, ast.Name):
-                    export = direct.get(candidate.id)
-                    if export is not None and imported_name_survives(
-                        candidate.id, call.func
-                    ):
-                        name = export
-                        break
-                elif isinstance(candidate, ast.Attribute):
-                    if not isinstance(candidate.value, ast.Name):
-                        continue
-                    modules_reaching = _resolve_bound_nodes(
-                        candidate.value, bindings,
-                        _node_position(candidate.value)
-                    )
-                    if any(
-                        isinstance(module, ast.Name)
-                        and module.id in modules
-                        and imported_name_survives(
-                            module.id, candidate.value
-                        )
-                        for module in [candidate.value, *modules_reaching]
-                    ):
-                        name = candidate.attr
-                        break
+            if isinstance(call.func, ast.Name):
+                candidates = state.get(call.func.id, frozenset()) & set(wrappers)
+                if len(candidates) == 1:
+                    name = next(iter(candidates))
+            elif isinstance(call.func, ast.Attribute) and isinstance(
+                call.func.value, ast.Name
+            ):
+                if ("module", wrapper_path.stem) in state.get(
+                    call.func.value.id, frozenset()
+                ):
+                    name = call.func.attr
             if name not in wrappers:
                 continue
             invoked = True
@@ -8685,6 +8666,106 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         )
                         self.assertEqual(
                             provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+
+    def test_class_saved_module_restore_and_direct_class_overwrite(self):
+        """Saved module identity survives restore; replaced class does not."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "es_consumer.py"
+            provider = root / "credential_provider.py"
+            provider.write_text(
+                'class Config:\n'
+                '    password = "hardcoded-secret"\n',
+                encoding="utf-8",
+            )
+            cases = (
+                ('import credential_provider as cp\n'
+                 'saved = cp\ncp = object()\ncp = saved\n'
+                 'password = cp.Config.password\n', True),
+                ('import credential_provider as cp\n'
+                 'saved = cp\ncp = object()\n'
+                 'if flag:\n    saved = object()\n'
+                 'cp = saved\npassword = cp.Config.password\n', True),
+                ('import credential_provider as cp\n'
+                 'saved = cp\nsaved = object()\ncp = saved\n'
+                 'password = cp.Config.password\n', False),
+                ('from credential_provider import Config\n'
+                 'class Safe:\n    password = None\n'
+                 'Config = Safe\npassword = Config.password\n', False),
+                ('from credential_provider import Config\n'
+                 'if flag:\n    Config = object()\n'
+                 'password = Config.password\n', True),
+                ('from credential_provider import Config\n'
+                 'saved = Config\nConfig = object()\n'
+                 'Config = saved\npassword = Config.password\n', True),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for body, expected in cases:
+                    with self.subTest(source=body):
+                        consumer.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            + body + 'Elasticsearch("localhost", '
+                            'basic_auth=("elastic", password))\n',
+                            encoding="utf-8",
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+
+    def test_wrapper_saved_alias_conditionally_shadowed(self):
+        """Conditional reassignment cannot discard saved wrapper on safe arm."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = root / "client.py"
+            caller = root / "caller.py"
+            wrapper.write_text(
+                'from elasticsearch import Elasticsearch\n'
+                'def connect(password):\n'
+                '    return Elasticsearch("localhost", '
+                'basic_auth=("elastic", password))\n',
+                encoding="utf-8",
+            )
+            cases = (
+                ('from client import connect\n'
+                 'saved = connect\n'
+                 'if flag:\n    saved = lambda password: None\n'
+                 'connect = saved\n'
+                 'connect("hardcoded-secret")\n', True),
+                ('from client import connect\n'
+                 'saved = connect\n'
+                 'if flag:\n    saved = lambda password: None\n'
+                 'else:\n    saved = lambda password: None\n'
+                 'connect = saved\n'
+                 'connect("hardcoded-secret")\n', False),
+                ('from client import connect\n'
+                 'saved = connect\n'
+                 'saved = lambda password: None\n'
+                 'connect = saved\n'
+                 'connect("hardcoded-secret")\n', False),
+                ('import client as cp\n'
+                 'saved = cp\ncp = object()\ncp = saved\n'
+                 'cp.connect("hardcoded-secret")\n', True),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for body, expected in cases:
+                    with self.subTest(source=body):
+                        caller.write_text(body, encoding="utf-8")
+                        self._runtime_es_module_paths()
+                        self.assertEqual(
+                            bool(self._es_wrapper_credential_lines.get(
+                                caller.resolve()
+                            )),
                             expected,
                         )
 
