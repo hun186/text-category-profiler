@@ -7920,6 +7920,20 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     rhs, at, visited | {value.id}
                 )
 
+            # A later unconditional restoration supersedes earlier kills.
+            # If that final write restores a saved import, it reaches the use.
+            unconditional = [
+                (position, value) for position, value in writes
+                if not _node_control_path(value)
+            ]
+            if unconditional:
+                last_position, last_value = unconditional[-1]
+                if retained_identity(last_value, last_position):
+                    return False
+                writes = [
+                    (position, value) for position, value in writes
+                    if position >= last_position
+                ]
             writes = [
                 (position, value) for position, value in writes
                 if not retained_identity(value, position)
