@@ -7723,6 +7723,36 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             if isinstance(name, ast.Name):
                 state[name.id] = identity(value, state)
 
+        try_kinds = (ast.Try, getattr(ast, "TryStar", ast.Try))
+
+        def contains_use(statements):
+            return any(
+                node is use_node
+                for statement in statements
+                for node in ast.walk(statement)
+            )
+
+        def merge_states(states):
+            result = {}
+            for state in states:
+                result = merge(result, state)
+            return result
+
+        def shadow_target(initial, target):
+            result = dict(initial)
+            for node in ast.walk(target):
+                if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
+                    result[node.id] = frozenset()
+            return result
+
+        def try_outcomes(stmt, state):
+            completed = execute(stmt.body, state)
+            outcomes = [execute(stmt.orelse, completed)]
+            # An exception may occur before some earlier writes execute.
+            for handler in stmt.handlers:
+                outcomes.append(execute(handler.body, merge(state, completed)))
+            return merge_states(outcomes)
+
         def execute(statements, initial):
             state = dict(initial)
             for stmt in statements:
@@ -7764,6 +7794,49 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                 if argument is not None:
                                     lexical[argument.arg] = frozenset()
                         return execute(stmt.body, lexical)
+                    if isinstance(stmt, try_kinds):
+                        if contains_use(stmt.body):
+                            return execute(stmt.body, state)
+                        completed = execute(stmt.body, state)
+                        for handler in stmt.handlers:
+                            if contains_use(handler.body):
+                                return execute(
+                                    handler.body, merge(state, completed)
+                                )
+                        if contains_use(stmt.orelse):
+                            return execute(stmt.orelse, completed)
+                        if contains_use(stmt.finalbody):
+                            return execute(
+                                stmt.finalbody, try_outcomes(stmt, state)
+                            )
+                    if isinstance(stmt, (ast.With, ast.AsyncWith)):
+                        if contains_use(stmt.body):
+                            local = dict(state)
+                            for item in stmt.items:
+                                if item.optional_vars is not None:
+                                    local = shadow_target(local, item.optional_vars)
+                            return execute(stmt.body, local)
+                    if isinstance(stmt, (ast.For, ast.AsyncFor, ast.While)):
+                        if contains_use(stmt.body):
+                            local = (
+                                shadow_target(state, stmt.target)
+                                if isinstance(stmt, (ast.For, ast.AsyncFor))
+                                else state
+                            )
+                            return execute(stmt.body, local)
+                        if contains_use(stmt.orelse):
+                            local = (
+                                shadow_target(state, stmt.target)
+                                if isinstance(stmt, (ast.For, ast.AsyncFor))
+                                else state
+                            )
+                            return execute(
+                                stmt.orelse, merge(state, execute(stmt.body, local))
+                            )
+                    if isinstance(stmt, ast.Match):
+                        for case in stmt.cases:
+                            if contains_use(case.body):
+                                return execute(case.body, state)
                     break
                 if isinstance(stmt, (ast.Import, ast.ImportFrom)):
                     selected = imported.get(stmt, {})
@@ -7797,6 +7870,29 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             execute(stmt.body, state),
                             execute(stmt.orelse, state),
                         )
+                elif isinstance(stmt, try_kinds):
+                    state = execute(stmt.finalbody, try_outcomes(stmt, state))
+                elif isinstance(stmt, (ast.With, ast.AsyncWith)):
+                    local = dict(state)
+                    for item in stmt.items:
+                        if item.optional_vars is not None:
+                            local = shadow_target(local, item.optional_vars)
+                    state = execute(stmt.body, local)
+                elif isinstance(stmt, (ast.For, ast.AsyncFor, ast.While)):
+                    local = (
+                        shadow_target(state, stmt.target)
+                        if isinstance(stmt, (ast.For, ast.AsyncFor))
+                        else state
+                    )
+                    state = merge(
+                        state,
+                        execute(stmt.orelse, merge(state, execute(stmt.body, local))),
+                    )
+                elif isinstance(stmt, ast.Match):
+                    state = merge_states([
+                        state,
+                        *(execute(case.body, state) for case in stmt.cases),
+                    ])
                 elif isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
                     state[stmt.name] = frozenset()
             return state
@@ -7917,54 +8013,87 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         bindings = _name_bindings(tree)
         wrappers = {}
 
-        def originating_parameters(expression, parameters, before, seen=None):
-            """Use source-ordered reaching bindings, not incidental literals."""
+        def originating_parameters(
+            expression, parameters, before, seen=None, auth_kind=None
+        ):
+            """Trace only values selected by a source-visible auth sink."""
             seen = set() if seen is None else set(seen)
             if id(expression) in seen:
                 return set()
             seen.add(id(expression))
+
+            def descend(node, kind=None):
+                return originating_parameters(
+                    node, parameters, before, seen, kind
+                )
+
             if isinstance(expression, ast.Name):
-                # The existing binding engine preserves eager snapshots across
-                # rebinding, and excludes overwritten reaching definitions.
                 resolved = _resolve_bound_nodes(expression, bindings, before)
                 if len(resolved) == 1 and resolved[0] is expression:
                     return {expression.id} if expression.id in parameters else set()
-                origins = set()
-                for value in resolved:
-                    if value is expression:
-                        if expression.id in parameters:
-                            origins.add(expression.id)
-                    else:
-                        origins.update(originating_parameters(
-                            value, parameters, before, seen
-                        ))
-                return origins
+                return set().union(*(
+                    ({value.id} if value.id in parameters else set())
+                    if value is expression else descend(value, auth_kind)
+                    for value in resolved
+                ))
+
             if isinstance(expression, ast.IfExp):
                 branches = (
                     [expression.body if expression.test.value else expression.orelse]
                     if isinstance(expression.test, ast.Constant)
                     else [expression.body, expression.orelse]
                 )
+                return set().union(*(descend(part, auth_kind) for part in branches))
+
+            if isinstance(expression, (ast.Tuple, ast.List)):
+                # Basic/HTTP auth: the first slot is the username, and only
+                # the second slot is the password. Handle aliased pairs too.
+                selected = (
+                    expression.elts[1:2]
+                    if auth_kind in {"basic_auth", "http_auth"}
+                    else expression.elts
+                )
+                return set().union(*(descend(part) for part in selected))
+
+            if isinstance(expression, ast.Dict):
+                # A keyed credential mapping must not turn unrelated metadata
+                # into a credential, even when it holds a wrapper parameter.
+                auth_keys = {
+                    "password", "api_key", "bearer_auth", "basic_auth",
+                    "http_auth", "authorization", "token", "key",
+                }
+                selected = [
+                    (key.value.lower(), value)
+                    for key, value in zip(expression.keys, expression.values)
+                    if isinstance(key, ast.Constant)
+                    and isinstance(key.value, str)
+                    and key.value.lower() in auth_keys
+                ]
                 return set().union(*(
-                    originating_parameters(branch, parameters, before, set(seen))
-                    for branch in branches
+                    descend(value, key if key in {"basic_auth", "http_auth"} else None)
+                    for key, value in selected
                 ))
+
+            if isinstance(expression, ast.Subscript):
+                selected = _resolve_constant_subscript(
+                    expression, bindings, before
+                )
+                if selected is not None:
+                    # The subscript already identified the selected value.
+                    return descend(selected)
+
             if isinstance(expression, ast.BinOp) and isinstance(
                 expression.op, (ast.Add, ast.Mod)
             ):
-                return (
-                    originating_parameters(expression.left, parameters, before, set(seen))
-                    | originating_parameters(expression.right, parameters, before, set(seen))
-                )
+                return descend(expression.left) | descend(expression.right)
+
             if isinstance(expression, (ast.JoinedStr, ast.FormattedValue)):
                 parts = (
                     expression.values if isinstance(expression, ast.JoinedStr)
                     else [expression.value]
                 )
-                return set().union(*(
-                    originating_parameters(item, parameters, before, set(seen))
-                    for item in parts
-                ))
+                return set().union(*(descend(part) for part in parts))
+
             if isinstance(expression, ast.Call):
                 if (
                     isinstance(expression.func, ast.Attribute)
@@ -7972,18 +8101,14 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         "strip", "lstrip", "rstrip", "lower", "upper", "casefold"
                     }
                 ):
-                    return originating_parameters(
-                        expression.func.value, parameters, before, seen
-                    )
+                    return descend(expression.func.value, auth_kind)
                 if (
                     expression.args
                     and _is_transparent_string_transform_call(
                         expression, bindings, before
                     )
                 ):
-                    return originating_parameters(
-                        expression.args[0], parameters, before, seen
-                    )
+                    return descend(expression.args[0], auth_kind)
             return set()
 
         for statement in tree.body:
@@ -8019,14 +8144,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     }:
                         continue
                     expression = keyword.value
-                    if (
-                        keyword.arg in {"basic_auth", "http_auth"}
-                        and isinstance(expression, (ast.Tuple, ast.List))
-                        and len(expression.elts) > 1
-                    ):
-                        expression = expression.elts[1]
                     auth_parameters.update(originating_parameters(
-                        expression, parameters, _node_position(expression)
+                        expression, parameters, _node_position(expression),
+                        auth_kind=keyword.arg,
                     ))
             if auth_parameters:
                 wrappers[statement.name] = {
@@ -9498,6 +9618,38 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                  '    from client import connect\n'
                  'def build():\n'
                  '    connect("hardcoded-secret")\n', False),
+                ('def build():\n'
+                 '    try:\n'
+                 '        from client import connect\n'
+                 '    except ImportError:\n'
+                 '        connect = lambda password: None\n'
+                 '    connect("hardcoded-secret")\n', True),
+                ('def build():\n'
+                 '    try:\n'
+                 '        raise ImportError()\n'
+                 '    except ImportError:\n'
+                 '        from client import connect\n'
+                 '    connect("hardcoded-secret")\n', True),
+                ('def build():\n'
+                 '    with context():\n'
+                 '        from client import connect\n'
+                 '        connect("hardcoded-secret")\n', True),
+                ('def build():\n'
+                 '    for item in [1]:\n'
+                 '        from client import connect\n'
+                 '        connect("hardcoded-secret")\n', True),
+                ('def build():\n'
+                 '    try:\n'
+                 '        from client import connect\n'
+                 '    finally:\n'
+                 '        connect("hardcoded-secret")\n', True),
+                ('def build():\n'
+                 '    from client import connect\n'
+                 '    try:\n'
+                 '        connect = lambda password: None\n'
+                 '    except Exception:\n'
+                 '        connect = lambda password: None\n'
+                 '    connect("hardcoded-secret")\n', False),
             )
             with patch.dict(globals(), {
                 "REPOSITORY_ROOT": root,
@@ -9541,6 +9693,17 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                  '    from credential_provider import Config as C\n'
                  '    C = object()\n'
                  '    password = C.password\n', False),
+                ('def build():\n'
+                 '    try:\n'
+                 '        from credential_provider import Config as C\n'
+                 '    except ImportError:\n'
+                 '        C = object()\n'
+                 '    password = C.password\n', True),
+                ('def build():\n'
+                 '    try:\n'
+                 '        import credential_provider as cp\n'
+                 '    finally:\n'
+                 '        password = cp.Config.password\n', True),
             )
             with patch.dict(globals(), {
                 "REPOSITORY_ROOT": root,
@@ -9643,6 +9806,61 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         caller.write_text(
                             'from client import connect\n' + body,
                             encoding="utf-8",
+                        )
+                        self._runtime_es_module_paths()
+                        self.assertEqual(
+                            bool(self._es_wrapper_credential_lines.get(
+                                caller.resolve()
+                            )),
+                            expected,
+                        )
+
+    def test_wrapper_auth_container_parameter_origins(self):
+        """Forward only selected authentication container values from params."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = root / "client.py"
+            caller = root / "worker.py"
+            cases = (
+                ('auth = ("elastic", password)\n',
+                 'basic_auth=auth', True),
+                ('auth = ["elastic", password]\n',
+                 'http_auth=auth', True),
+                ('auth = ("elastic", None)\nunused = password\n',
+                 'basic_auth=auth', False),
+                ('auth = (password, None)\n',
+                 'basic_auth=auth', False),
+                ('auth = ("elastic", password)\n'
+                 'auth = ("elastic", None)\n',
+                 'basic_auth=auth', False),
+                ('auth = ("elastic", password if flag else None)\n',
+                 'basic_auth=auth', True),
+                ('auth = {"id": None, "api_key": password}\n',
+                 'api_key=auth', True),
+                ('auth = {"hint": password, "api_key": None}\n',
+                 'api_key=auth', False),
+                ('values = ("elastic", password)\nauth = values\n',
+                 'basic_auth=auth', True),
+                ('values = ["elastic", password]\nauth = values[1]\n',
+                 'bearer_auth=auth', True),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for body, sink, expected in cases:
+                    with self.subTest(body=body, sink=sink):
+                        wrapper.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'def connect(password):\n'
+                            + textwrap.indent(body, '    ')
+                            + '    return Elasticsearch("localhost", '
+                            + sink + ')\n', encoding="utf-8",
+                        )
+                        caller.write_text(
+                            'from client import connect\n'
+                            'connect("hardcoded-secret")\n', encoding="utf-8",
                         )
                         self._runtime_es_module_paths()
                         self.assertEqual(
