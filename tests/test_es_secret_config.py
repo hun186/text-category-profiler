@@ -9113,6 +9113,91 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             expected,
                         )
 
+    def test_class_import_survives_conditional_module_shadow(self):
+        """Conditional module overwrite preserves the original ES class path."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "consumer.py"
+            provider = root / "credential_provider.py"
+            provider.write_text(
+                'class Config:\n'
+                '    password = "hardcoded-secret"\n',
+                encoding="utf-8",
+            )
+            cases = (
+                ('import credential_provider as cp\n'
+                 'if flag:\n    cp = object()\n'
+                 'password = cp.Config.password\n', True),
+                ('import credential_provider as cp\n'
+                 'cp = object()\n'
+                 'password = cp.Config.password\n', False),
+                ('import credential_provider as cp\n'
+                 'alias = cp\n'
+                 'if flag:\n    alias = object()\n'
+                 'password = alias.Config.password\n', True),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for source, expected in cases:
+                    with self.subTest(source=source):
+                        consumer.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            + source
+                            + 'Elasticsearch("localhost", '
+                            'basic_auth=("elastic", password))\n',
+                            encoding="utf-8",
+                        )
+                        self.assertEqual(
+                            provider.resolve() in self._runtime_es_module_paths(),
+                            expected,
+                        )
+
+    def test_es_wrapper_identity_preserving_import_assignment(self):
+        """Reassigning an imported wrapper to itself does not erase it."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = root / "client.py"
+            caller = root / "caller.py"
+            wrapper.write_text(
+                'from elasticsearch import Elasticsearch\n'
+                'def connect(password):\n'
+                '    return Elasticsearch("localhost", '
+                'basic_auth=("elastic", password))\n',
+                encoding="utf-8",
+            )
+            cases = (
+                ('from client import connect\n'
+                 'connect = connect\n'
+                 'connect("hardcoded-secret")\n', True),
+                ('from client import connect\n'
+                 'if flag:\n    connect = connect\n'
+                 'connect("hardcoded-secret")\n', True),
+                ('from client import connect\n'
+                 'connect = lambda password: None\n'
+                 'connect("hardcoded-secret")\n', False),
+                ('import client as c\n'
+                 'c = c\n'
+                 'c.connect("hardcoded-secret")\n', True),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for source, expected in cases:
+                    with self.subTest(source=source):
+                        caller.write_text(source, encoding="utf-8")
+                        self._runtime_es_module_paths()
+                        self.assertEqual(
+                            bool(getattr(
+                                self, "_es_wrapper_credential_lines", {}
+                            ).get(caller.resolve())),
+                            expected,
+                        )
+
     def test_imported_provider_nonidentifier_keyword_keys(self):
         """Known **kwargs can use any string key, including hyphens."""
         with tempfile.TemporaryDirectory() as directory:
