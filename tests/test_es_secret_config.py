@@ -8048,8 +8048,37 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 values = _mapping_key_values(
                     root, auth_key, bindings, before
                 )
+                if isinstance(root, ast.Dict):
+                    # A named **source is evaluated at expansion time, after
+                    # mutations to that source; resolving only its creation
+                    # literal misses selected keys inserted before expansion.
+                    # Apply spreads and direct keys in Python overwrite order.
+                    selected = []
+                    for key, part in zip(root.keys, root.values):
+                        if key is None:
+                            if isinstance(part, ast.Name) and not any(
+                                id(source) == id(root) for source in
+                                _resolve_bound_nodes(
+                                    part, bindings, _node_position(root)
+                                )
+                            ):
+                                expanded = selected_mapping_values(
+                                    part, auth_key, _node_position(root), wrapper
+                                )
+                            else:
+                                expanded = _mapping_key_values(
+                                    part, auth_key, bindings,
+                                    _node_position(root)
+                                )
+                            if expanded:
+                                selected = expanded
+                        elif _static_key_matches(
+                            key, auth_key, bindings, _node_position(root)
+                        ):
+                            selected = [part]
+                    values = selected
                 if values:
-                    events.append(((0, 0), values[-1]))
+                    events.extend(((0, 0), value) for value in values)
 
             if not isinstance(expression, ast.Name):
                 return [value for _, value in events]
