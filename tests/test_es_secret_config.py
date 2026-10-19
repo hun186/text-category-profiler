@@ -8136,6 +8136,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             # call runs it guarantees the key exists on the call's path.
             presence_guarantees = []
             removals = []
+            initially_missing_candidates = []
 
             def shadowed_dict_return(root):
                 """Resolve a trivial local dict() shadow without inventing absence.
@@ -8226,23 +8227,10 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     values = selected
                 if values:
                     events.extend(((0, 0), value) for value in values)
-                elif (
-                    (known_keys := literal_keys(root, _node_position(root)))
-                    is not None
-                    and auth_key not in known_keys
-                ):
-                    # Only proven built-in mapping constructors with statically
-                    # known keys warrant the initial missing-key alternative.
-                    # In particular, dict(other=None) has no auth key, while
-                    # a shadowed dict name or unknown spread is not assumed
-                    # empty. Later conditional insertions can still leave the
-                    # original no-key branch reachable.
-                    # Keep its sentinel until an unconditional write or
-                    # presence guarantee makes that alternative impossible.
-                    absent = ast.Constant(value=None)
-                    absent._binding_control_path = ()
-                    absent._auth_key_removed = True
-                    events.append(((0, 0), absent))
+                elif isinstance(root, (ast.Dict, ast.Call)):
+                    # Defer the missing-key check until literal_keys and its
+                    # builtin-shadow detector have both been declared.
+                    initially_missing_candidates.append(root)
 
             if not isinstance(expression, ast.Name):
                 return [value for _, value in events]
@@ -8411,6 +8399,17 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             result.append(kw.arg)
                     return result
                 return None
+
+            # An initially missing auth key remains possible when subsequent
+            # writes occur only under a condition. Only recognized mapping
+            # constructors with statically known keys justify this sentinel.
+            for root in initially_missing_candidates:
+                known_keys = literal_keys(root, _node_position(root))
+                if known_keys is not None and auth_key not in known_keys:
+                    absent = ast.Constant(value=None)
+                    absent._binding_control_path = ()
+                    absent._auth_key_removed = True
+                    events.append(((0, 0), absent))
 
             # Python dict.popitem removes the most recently inserted key.
             # Keep insertion order only while every relevant mutation is
