@@ -8347,11 +8347,29 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         # whose construction/mutations we cannot fully prove.
                         # Never retain a stale last-key assumption.
                         key_order = None
-                        updated = _mapping_key_values(
-                            node.value, auth_key, bindings, _node_position(node)
-                        )
+                        # A named union source is read at augmentation time:
+                        # include its reaching writes, not just the literal
+                        # from the original name binding. A removed source
+                        # key does not overwrite the target mapping.
+                        if isinstance(node.value, ast.Name):
+                            updated = selected_mapping_values(
+                                node.value, auth_key, _node_position(node),
+                                wrapper,
+                            )
+                        else:
+                            updated = _mapping_key_values(
+                                node.value, auth_key, bindings,
+                                _node_position(node),
+                            )
+                        updated = [
+                            value for value in updated
+                            if not getattr(value, "_auth_key_removed", False)
+                        ]
                         if updated:
-                            events.append((_node_position(node), updated[-1]))
+                            events.extend(
+                                (_node_position(node), value)
+                                for value in updated
+                            )
                 elif isinstance(node, (ast.Assign, ast.AnnAssign)):
                     if node.value is None:
                         continue
@@ -10612,6 +10630,51 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 ('options = {"other": None}\n'
                  'options |= {"api_key": password}\n',
                  '**options', True),
+                ('extra = {"api_key": None}\n'
+                 'extra["api_key"] = password\n'
+                 'options = {}\noptions |= extra\n',
+                 '**options', True),
+                ('extra = {"api_key": password}\n'
+                 'extra["api_key"] = None\n'
+                 'options = {}\noptions |= extra\n',
+                 '**options', False),
+                ('extra = {}\n'
+                 'extra["api_key"] = password\n'
+                 'options = {}\noptions |= extra\n',
+                 '**options', True),
+                ('extra = {"api_key": None}\n'
+                 'extra.update(api_key=password)\n'
+                 'options = {}\noptions |= extra\n',
+                 '**options', True),
+                ('extra = {"api_key": password}\n'
+                 'extra.update(api_key=None)\n'
+                 'options = {}\noptions |= extra\n',
+                 '**options', False),
+                ('extra = {}\n'
+                 'extra.setdefault("api_key", password)\n'
+                 'options = {}\noptions |= extra\n',
+                 '**options', True),
+                ('extra = {"api_key": None}\n'
+                 'extra.setdefault("api_key", password)\n'
+                 'options = {}\noptions |= extra\n',
+                 '**options', False),
+                ('extra = {"api_key": password}\n'
+                 'extra.pop("api_key")\n'
+                 'options = {}\noptions |= extra\n',
+                 '**options', False),
+                ('extra = {"api_key": password}\n'
+                 'extra.clear()\n'
+                 'options = {}\noptions |= extra\n',
+                 '**options', False),
+                ('extra = {"api_key": None}\n'
+                 'saved = extra\n'
+                 'saved["api_key"] = password\n'
+                 'options = {}\noptions |= extra\n',
+                 '**options', True),
+                ('extra = {"api_key": None}\n'
+                 'options = {}\noptions |= extra\n'
+                 'extra["api_key"] = password\n',
+                 '**options', False),
                 ('options = {"api_key": password, "other": None}\n'
                  'def nested():\n    del options["other"]\n'
                  'options.popitem()\n',
