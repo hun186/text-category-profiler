@@ -4561,9 +4561,22 @@ def _mapping_key_values(
     values = []
     for candidate in candidates:
         if isinstance(candidate, ast.Dict):
+            # Python applies dict entries from left to right. A statically
+            # known **mapping replaces the previously selected key, even
+            # when that key was explicitly assigned earlier in the literal.
+            # Keep an opaque spread opaque rather than guessing its entries.
+            selected = []
             for key, value in zip(candidate.keys, candidate.values):
-                if key_matches(key):
-                    values.append(value)
+                if key is None:
+                    unpacked = _mapping_key_values(
+                        value, key_name, bindings, before_position,
+                        set(seen_nodes), case_insensitive,
+                    )
+                    if unpacked:
+                        selected = unpacked
+                elif key_matches(key):
+                    selected = [value]
+            values.extend(selected)
         elif isinstance(candidate, (ast.List, ast.Tuple, ast.Set)):
             for element in candidate.elts:
                 pair_candidates = [element]
@@ -8087,12 +8100,31 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         if len(node.args) >= 2 and _static_key_matches(
                             node.args[0], auth_key, bindings, _node_position(node)
                         ):
-                            # setdefault only writes when the key is absent:
-                            # conservatively retain either reaching value.
                             if node.func.attr == "__setitem__":
                                 events.append((_node_position(node), node.args[1]))
-                            elif not events:
-                                events.append((_node_position(node), node.args[1]))
+                            else:
+                                # A prior write confined to an if/else/loop
+                                # may not execute. setdefault can still supply
+                                # the credential on the missing-key path.
+                                # Only a guaranteed reaching write excludes it.
+                                path = _node_control_path(node)
+                                guaranteed = any(
+                                    _control_path_is_prefix(
+                                        _node_control_path(value), path
+                                    )
+                                    for position, value in events
+                                    if position < _node_position(node)
+                                )
+                                if not guaranteed:
+                                    possible_default = copy.copy(node.args[1])
+                                    possible_default._binding_control_path = (
+                                        *path,
+                                        ("If", node.lineno, node.col_offset,
+                                         "setdefault-missing"),
+                                    )
+                                    events.append((
+                                        _node_position(node), possible_default
+                                    ))
                     elif node.func.attr == "update":
                         values = []
                         for arg in node.args:
@@ -8170,23 +8202,22 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 return set().union(*(descend(part) for part in selected))
 
             if isinstance(expression, ast.Dict):
-                # A keyed credential mapping must not turn unrelated metadata
-                # into a credential, even when it holds a wrapper parameter.
+                # Select only actual credential keys, honoring rightmost
+                # statically known ** mapping overrides as in the shared
+                # source-order mapping resolver.
                 mapping_auth_keys = {
                     "password", "api_key", "bearer_auth", "basic_auth",
                     "http_auth", "authorization", "token", "key",
                 }
-                selected = [
-                    (key.value.lower(), value)
-                    for key, value in zip(expression.keys, expression.values)
-                    if isinstance(key, ast.Constant)
-                    and isinstance(key.value, str)
-                    and key.value.lower() in mapping_auth_keys
-                ]
-                return set().union(*(
-                    descend(value, key if key in {"basic_auth", "http_auth"} else None)
-                    for key, value in selected
-                ))
+                origins = set()
+                for key in mapping_auth_keys:
+                    for value in _mapping_key_values(
+                        expression, key, bindings, before
+                    ):
+                        origins.update(descend(
+                            value, key if key in {"basic_auth", "http_auth"} else None
+                        ))
+                return origins
 
             if isinstance(expression, ast.Subscript):
                 selected = _resolve_constant_subscript(
@@ -10070,6 +10101,42 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                  '**options', True),
                 ('options = {"api_key": password}\n'
                  'options = {}\n',
+                 '**options', False),
+                ('options = {"api_key": None, '
+                 '**{"api_key": password}}\n',
+                 '**options', True),
+                ('options = {"api_key": password, '
+                 '**{"api_key": None}}\n',
+                 '**options', False),
+                ('options = {**{"api_key": None}, '
+                 '"api_key": password}\n',
+                 '**options', True),
+                ('options = {**{"api_key": password}, '
+                 '"api_key": None}\n',
+                 '**options', False),
+                ('inner = {"api_key": password}\n'
+                 'options = {"api_key": None, **inner}\n',
+                 '**options', True),
+                ('options = {}\n'
+                 'if flag:\n    options["api_key"] = None\n'
+                 'options.setdefault("api_key", password)\n',
+                 '**options', True),
+                ('options = {}\n'
+                 'if flag:\n    options["api_key"] = password\n'
+                 'options.setdefault("api_key", None)\n',
+                 '**options', True),
+                ('options = {"api_key": None}\n'
+                 'options.setdefault("api_key", password)\n',
+                 '**options', False),
+                ('options = {}\n'
+                 'options["api_key"] = None\n'
+                 'options.setdefault("api_key", password)\n',
+                 '**options', False),
+                ('options = {}\n'
+                 'options.setdefault("api_key", password)\n',
+                 '**options', True),
+                ('options = {}\n'
+                 'options.setdefault("api_key", None)\n',
                  '**options', False),
                 ('auth = {}\nauth["api_key"] = password\n',
                  'api_key=auth', True),
