@@ -8694,9 +8694,17 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         feasible.extend(_reaching_values(
                             selected_events, expression
                         ))
-                    return feasible
+                    return [
+                        value for value in feasible
+                        if not getattr(value, "_restored_absence", False)
+                    ]
 
-            return _reaching_values(events, expression) if events else []
+            return [
+                value for value in (
+                    _reaching_values(events, expression) if events else []
+                )
+                if id(value) not in restored_absences
+            ]
 
         def originating_parameters(
             expression, parameters, before, seen=None, auth_kind=None
