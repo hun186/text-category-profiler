@@ -8137,6 +8137,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             presence_guarantees = []
             removals = []
             initially_missing_candidates = []
+            shadowed_dict_returns = {}
 
             def builtin_dict_name(func, position):
                 """Trust dict(...) insertion order only for unshadowed builtin."""
@@ -8196,6 +8197,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     and getattr(node, "_binding_scope", None) in {tree, wrapper}
                 )
                 results = []
+                return_literals = []
                 for definition in definitions:
                     if isinstance(definition, ast.Lambda):
                         if definition.args.args or definition.args.kwonlyargs:
@@ -8212,9 +8214,15 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     else:
                         continue
                     if isinstance(returned, (ast.Dict, ast.Call, ast.BinOp)):
+                        return_literals.append(returned)
                         results.extend(_mapping_key_values(
                             returned, auth_key, bindings, _node_position(root)
                         ))
+                # Keep the actual definition's returned mapping: an empty
+                # shadowed dict() can have a known missing auth slot even
+                # though the constructor is not the Python builtin.
+                if len(return_literals) == 1:
+                    shadowed_dict_returns[id(root)] = return_literals[0]
                 return results
 
             for root in roots:
@@ -8404,7 +8412,16 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             # writes occur only under a condition. Only recognized mapping
             # constructors with statically known keys justify this sentinel.
             for root in initially_missing_candidates:
-                known_keys = literal_keys(root, _node_position(root))
+                returned = shadowed_dict_returns.get(id(root))
+                if returned is not None and isinstance(returned, ast.Dict):
+                    # A literal returned by a proven zero-argument local
+                    # dict() shadow is independently known at construction.
+                    # Do not generalize this to opaque custom constructors.
+                    known_keys = literal_keys(
+                        returned, _node_position(returned)
+                    )
+                else:
+                    known_keys = literal_keys(root, _node_position(root))
                 if known_keys is not None and auth_key not in known_keys:
                     absent = ast.Constant(value=None)
                     absent._binding_control_path = ()
@@ -8769,6 +8786,38 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 }
                 guards = {}
 
+                # Correlate only guard decisions that participate in selected
+                # credential events. Mutations before the earliest such test
+                # or after the latest cannot invalidate their correlation.
+                replay_paths = [
+                    getattr(value, "_union_original_path",
+                            _node_control_path(value))
+                    for _, value in events
+                ]
+                replay_paths.extend(
+                    missing
+                    for _, value in events
+                    for missing in getattr(value, "_union_rhs_absence_paths", ())
+                )
+                replay_paths.append(_node_control_path(expression))
+                guard_positions = {}
+                for path in replay_paths:
+                    for part in path:
+                        if part[0] != "If" or part[3] not in {"body", "orelse"}:
+                            continue
+                        owner = if_nodes.get(part[:3])
+                        if owner is None:
+                            continue
+                        check = owner.test
+                        if isinstance(check, ast.UnaryOp) and isinstance(
+                            check.op, ast.Not
+                        ):
+                            check = check.operand
+                        if isinstance(check, ast.Name):
+                            guard_positions.setdefault(check.id, set()).add(
+                                _node_position(owner)
+                            )
+
                 def stable_branch(step):
                     if step[0] != "If" or step[3] not in {"body", "orelse"}:
                         return None
@@ -8785,49 +8834,65 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     if not isinstance(condition, ast.Name):
                         return None
                     name = condition.id
-                    # Rebinding the decision variable between tests creates
-                    # separate epochs; never assume their outcomes correlate.
-                    if any(
-                        isinstance(item, ast.Name)
-                        and isinstance(item.ctx, (ast.Store, ast.Del))
-                        and item.id == name
-                        and getattr(item, "_binding_scope", None) is wrapper
-                        for item in ast.walk(wrapper)
-                    ):
-                        return None
+                    interval = guard_positions.get(name, set())
+                    if len(interval) > 1:
+                        first, last = min(interval), max(interval)
 
-                    # A truth-test result is stable only if the referenced
-                    # object cannot be visibly mutated between the guards.
-                    # Reject receiver method calls, item/attribute writes and
-                    # escapes to opaque calls. A list-valued guard followed
-                    # by flag.clear() must not correlate its two if branches.
-                    for item in ast.walk(wrapper):
-                        if getattr(item, "_binding_scope", None) is not wrapper:
-                            continue
-                        if isinstance(item, ast.Call):
-                            receiver = item.func
-                            if (
-                                (isinstance(receiver, ast.Attribute)
-                                 and isinstance(receiver.value, ast.Name)
-                                 and receiver.value.id == name)
-                                or (isinstance(receiver, ast.Name)
-                                    and receiver.id == name)
-                                or any(
-                                    isinstance(arg, ast.Name)
-                                    and arg.id == name
-                                    for arg in (*item.args, *(
-                                        keyword.value for keyword in item.keywords
-                                    ))
+                        def aliases_guard(value, position):
+                            if not isinstance(value, ast.Name):
+                                return False
+                            if value.id == name:
+                                return True
+                            # Resolve a chain such as alias2 = alias = flag
+                            # using the value visible at the mutation site,
+                            # not the name spelling of its receiver.
+                            return any(
+                                isinstance(resolved, ast.Name)
+                                and resolved.id == name
+                                for resolved in _resolve_bound_nodes(
+                                    value, bindings, position
                                 )
-                            ):
-                                return None
-                        elif isinstance(item, (ast.Subscript, ast.Attribute)):
+                            )
+
+                        for item in ast.walk(wrapper):
+                            if getattr(item, "_binding_scope", None) is not wrapper:
+                                continue
+                            at = _node_position(item)
+                            if not first < at < last:
+                                continue
+                            # A direct reassignment changes the guard epoch.
                             if (
-                                isinstance(item.value, ast.Name)
-                                and item.value.id == name
+                                isinstance(item, ast.Name)
                                 and isinstance(item.ctx, (ast.Store, ast.Del))
+                                and item.id == name
                             ):
                                 return None
+                            if isinstance(item, ast.Call):
+                                func = item.func
+                                if isinstance(func, ast.Attribute):
+                                    if aliases_guard(func.value, at):
+                                        # Read-only copies do not change the
+                                        # original guard object's truthiness.
+                                        if func.attr != "copy":
+                                            return None
+                                elif aliases_guard(func, at):
+                                    return None
+                                if any(
+                                    aliases_guard(arg, at)
+                                    for arg in (
+                                        *item.args,
+                                        *(kw.value for kw in item.keywords)
+                                    )
+                                ):
+                                    # Opaque calls may mutate an alias passed
+                                    # as a positional or keyword argument.
+                                    return None
+                            elif isinstance(item, (ast.Subscript, ast.Attribute)):
+                                if (
+                                    isinstance(item.ctx, (ast.Store, ast.Del))
+                                    and aliases_guard(item.value, at)
+                                ):
+                                    return None
                     return name, ((step[3] == "body") != negated)
 
                 absence_paths = [
@@ -11451,6 +11516,134 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         caller.write_text(
                             'from client import connect\n'
                             'connect("hardcoded-secret", True)\n',
+                            encoding="utf-8",
+                        )
+                        self._runtime_es_module_paths()
+                        self.assertEqual(
+                            bool(self._es_wrapper_credential_lines.get(
+                                caller.resolve()
+                            )),
+                            expected,
+                        )
+
+    def test_es_wrapper_shadowed_empty_dict_and_guard_mutation_intervals(self):
+        """Shadowed returned literals and guard aliases retain real branches."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = root / "client.py"
+            caller = root / "worker.py"
+            cases = (
+                ('dict = lambda: {}\n'
+                 'extra = dict()\n'
+                 'if flag:\n    extra["api_key"] = None\n'
+                 'options = {"api_key": password} | extra\n', True),
+                ('dict = lambda: {"other": None}\n'
+                 'extra = dict()\n'
+                 'if flag:\n    extra["api_key"] = None\n'
+                 'options = {"api_key": password} | extra\n', True),
+                ('def dict():\n    return {}\n'
+                 'extra = dict()\n'
+                 'if flag:\n    extra["api_key"] = None\n'
+                 'options = {"api_key": password} | extra\n', True),
+                ('def dict():\n    return {"other": None}\n'
+                 'extra = dict()\n'
+                 'if flag:\n    extra["api_key"] = None\n'
+                 'options = {"api_key": password}\n'
+                 'options.update(extra)\n', True),
+                ('dict = lambda: {}\n'
+                 'extra = dict()\n'
+                 'if flag:\n    extra["api_key"] = None\n'
+                 'options = {"api_key": password}\n'
+                 'options |= extra\n', True),
+                ('dict = lambda: {"api_key": None}\n'
+                 'extra = dict()\n'
+                 'options = {"api_key": password} | extra\n', False),
+                ('dict = lambda: {"other": None}\n'
+                 'extra = dict()\n'
+                 'extra["api_key"] = None\n'
+                 'options = {"api_key": password} | extra\n', False),
+                # Alias mutation between two correlated tests invalidates
+                # replay; the first password branch can reach the sink.
+                ('extra = {"api_key": None}\n'
+                 'alias = flag\n'
+                 'if flag:\n    extra["api_key"] = password\n'
+                 'options = {"api_key": None}\n'
+                 'options.update(extra)\n'
+                 'alias.clear()\n'
+                 'if flag:\n    options["api_key"] = None\n', True),
+                ('extra = {"api_key": None}\n'
+                 'alias = flag\n'
+                 'if flag:\n    extra["api_key"] = password\n'
+                 'options = {"api_key": None}\n'
+                 'options.update(extra)\n'
+                 'mutate(alias)\n'
+                 'if flag:\n    options["api_key"] = None\n', True),
+                ('extra = {"api_key": None}\n'
+                 'alias = flag\n'
+                 'alias2 = alias\n'
+                 'if flag:\n    extra["api_key"] = password\n'
+                 'options = {"api_key": None}\n'
+                 'options.update(extra)\n'
+                 'alias2.clear()\n'
+                 'if flag:\n    options["api_key"] = None\n', True),
+                # Mutations outside the replay interval do not break the
+                # correlation that makes the password unreachable.
+                ('extra = {"api_key": None}\n'
+                 'flag.clear()\n'
+                 'if flag:\n    extra["api_key"] = password\n'
+                 'options = {"api_key": None}\n'
+                 'options.update(extra)\n'
+                 'if flag:\n    options["api_key"] = None\n', False),
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra["api_key"] = password\n'
+                 'options = {"api_key": None}\n'
+                 'options.update(extra)\n'
+                 'if flag:\n    options["api_key"] = None\n'
+                 'flag.clear()\n', False),
+                ('extra = {"api_key": None}\n'
+                 'alias = flag\n'
+                 'alias.clear()\n'
+                 'if flag:\n    extra["api_key"] = password\n'
+                 'options = {"api_key": None}\n'
+                 'options.update(extra)\n'
+                 'if flag:\n    options["api_key"] = None\n', False),
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra["api_key"] = password\n'
+                 'options = {"api_key": None}\n'
+                 'options.update(extra)\n'
+                 'flag.copy()\n'
+                 'if flag:\n    options["api_key"] = None\n', False),
+                ('extra = {"api_key": None}\n'
+                 'alias = flag\n'
+                 'if flag:\n    extra["api_key"] = password\n'
+                 'options = {"api_key": None}\n'
+                 'options.update(extra)\n'
+                 'alias.copy()\n'
+                 'if flag:\n    options["api_key"] = None\n', False),
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra["api_key"] = password\n'
+                 'options = {"api_key": None}\n'
+                 'options.update(extra)\n'
+                 'flag.clear()\n'
+                 'if flag:\n    options["api_key"] = None\n', True),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for body, expected in cases:
+                    with self.subTest(body=body):
+                        wrapper.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'def connect(password, flag):\n'
+                            + textwrap.indent(body, '    ')
+                            + '    return Elasticsearch("localhost", '
+                            '**options)\n', encoding="utf-8",
+                        )
+                        caller.write_text(
+                            'from client import connect\n'
+                            'connect("hardcoded-secret", [True])\n',
                             encoding="utf-8",
                         )
                         self._runtime_es_module_paths()
