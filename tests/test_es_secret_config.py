@@ -8138,6 +8138,37 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             removals = []
             initially_missing_candidates = []
 
+            def builtin_dict_name(func, position):
+                """Trust dict(...) insertion order only for unshadowed builtin."""
+                resolved = _resolve_bound_nodes(func, bindings, position)
+                if len(resolved) != 1 or resolved[0] is not func:
+                    return False
+                # Function/class definitions and imports may bind the name
+                # without producing an ordinary assignment-expression event.
+                for definition in ast.walk(tree):
+                    scope = getattr(definition, "_binding_scope", None)
+                    if scope not in {tree, wrapper}:
+                        continue
+                    if isinstance(definition, (ast.FunctionDef, ast.AsyncFunctionDef,
+                                               ast.ClassDef)):
+                        if definition.name == "dict":
+                            return False
+                    elif isinstance(definition, ast.arg):
+                        if definition.arg == "dict":
+                            return False
+                    elif isinstance(definition, (ast.Import, ast.ImportFrom)):
+                        if any(
+                            (alias.asname or alias.name.split(".")[0]) == "dict"
+                            for alias in definition.names
+                        ):
+                            return False
+                    elif isinstance(definition, ast.Name):
+                        if definition.id == "dict" and isinstance(
+                            definition.ctx, (ast.Store, ast.Del)
+                        ):
+                            return False
+                return True
+
             def shadowed_dict_return(root):
                 """Resolve a trivial local dict() shadow without inventing absence.
 
@@ -8301,37 +8332,6 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         if any(id(item) == id(root) for item in resolved):
                             return True
                 return False
-
-            def builtin_dict_name(func, position):
-                """Trust dict(...) insertion order only for unshadowed builtin."""
-                resolved = _resolve_bound_nodes(func, bindings, position)
-                if len(resolved) != 1 or resolved[0] is not func:
-                    return False
-                # Function/class definitions and imports may bind the name
-                # without producing an ordinary assignment-expression event.
-                for definition in ast.walk(tree):
-                    scope = getattr(definition, "_binding_scope", None)
-                    if scope not in {tree, wrapper}:
-                        continue
-                    if isinstance(definition, (ast.FunctionDef, ast.AsyncFunctionDef,
-                                               ast.ClassDef)):
-                        if definition.name == "dict":
-                            return False
-                    elif isinstance(definition, ast.arg):
-                        if definition.arg == "dict":
-                            return False
-                    elif isinstance(definition, (ast.Import, ast.ImportFrom)):
-                        if any(
-                            (alias.asname or alias.name.split(".")[0]) == "dict"
-                            for alias in definition.names
-                        ):
-                            return False
-                    elif isinstance(definition, ast.Name):
-                        if definition.id == "dict" and isinstance(
-                            definition.ctx, (ast.Store, ast.Del)
-                        ):
-                            return False
-                return True
 
             def literal_keys(value, position, seen=None):
                 """Recover Python insertion order only for known mapping keys."""
