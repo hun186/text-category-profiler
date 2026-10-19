@@ -8063,6 +8063,103 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 resolved = _resolve_bound_nodes(receiver, bindings, position)
                 return any(id(node) in root_ids for node in resolved)
 
+            def static_key(node, position):
+                if node is None:
+                    return None
+                candidates = _static_key_strings(node, bindings, position)
+                unique = set(candidates)
+                return next(iter(unique)) if len(unique) == 1 else None
+
+            def literal_keys(value, position, seen=None):
+                """Recover Python insertion order only for known mapping keys."""
+                seen = set() if seen is None else set(seen)
+                if id(value) in seen:
+                    return None
+                seen.add(id(value))
+                if isinstance(value, ast.Name):
+                    resolved = _resolve_bound_nodes(value, bindings, position)
+                    if len(resolved) != 1:
+                        return None
+                    return literal_keys(resolved[0], position, seen)
+                if isinstance(value, ast.Dict):
+                    entries = zip(value.keys, value.values)
+                    result = []
+                    for key, part in entries:
+                        if key is None:
+                            expanded = literal_keys(part, position, seen.copy())
+                            if expanded is None:
+                                return None
+                            for name in expanded:
+                                if name not in result:
+                                    result.append(name)
+                        else:
+                            name = static_key(key, position)
+                            if name is None:
+                                return None
+                            if name not in result:
+                                result.append(name)
+                    return result
+                if (
+                    isinstance(value, ast.Call)
+                    and isinstance(value.func, ast.Name)
+                    and value.func.id == "dict"
+                ):
+                    result = []
+                    if len(value.args) > 1:
+                        return None
+                    for arg in value.args:
+                        # dict(iterable_of_pairs) is not necessarily a mapping,
+                        # so leave non-mapping constructions unknown.
+                        expanded = literal_keys(arg, position, seen.copy())
+                        if expanded is None:
+                            return None
+                        for name in expanded:
+                            if name not in result:
+                                result.append(name)
+                    for kw in value.keywords:
+                        if kw.arg is None:
+                            expanded = literal_keys(
+                                kw.value, position, seen.copy()
+                            )
+                            if expanded is None:
+                                return None
+                            for name in expanded:
+                                if name not in result:
+                                    result.append(name)
+                        elif kw.arg not in result:
+                            result.append(kw.arg)
+                    return result
+                return None
+
+            # Python dict.popitem removes the most recently inserted key.
+            # Keep insertion order only while every relevant mutation is
+            # statically known and unconditional.
+            key_order = (
+                literal_keys(roots[0], before) if len(roots) == 1 else None
+            )
+
+            def update_key_order(node, receiver, key=None, *, remove=False,
+                                 clear=False):
+                nonlocal key_order
+                if key_order is None or not matches_receiver(
+                    receiver, _position_before(node)
+                ):
+                    return
+                if _node_control_path(node):
+                    key_order = None
+                    return
+                if clear:
+                    key_order = []
+                    return
+                name = static_key(key, _node_position(node))
+                if name is None:
+                    key_order = None
+                elif remove:
+                    if name in key_order:
+                        key_order.remove(name)
+                elif name not in key_order:
+                    key_order.append(name)
+
             def add_write(node, receiver, key, value):
                 if (
                     getattr(node, "_binding_scope", None) is wrapper
@@ -8074,7 +8171,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 ):
                     events.append((_node_position(node), value))
 
-            def remove_key(node, receiver, key=None):
+            def remove_key(node, receiver, key=None, *, possible=False):
                 """Invalidate selected-key values and guarantees after deletion."""
                 if (
                     getattr(node, "_binding_scope", None) is not wrapper
@@ -8091,7 +8188,11 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 # A deletion is not an auth value. Keep a path-aware sentinel
                 # so a later sink cannot inherit a superseded credential.
                 absent = ast.Constant(value=None)
-                absent._binding_control_path = path
+                absent._binding_control_path = (
+                    (*path, ("If", node.lineno, node.col_offset,
+                             "popitem-may-remove"))
+                    if possible else path
+                )
                 absent._auth_key_removed = True
                 events.append((position, absent))
 
@@ -8105,6 +8206,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             and isinstance(target.value, ast.Name)
                         ):
                             remove_key(node, target.value, target.slice)
+                            update_key_order(
+                                node, target.value, target.slice, remove=True
+                            )
                 elif isinstance(node, (ast.Assign, ast.AnnAssign)):
                     if node.value is None:
                         continue
@@ -8120,6 +8224,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             add_write(
                                 node, target.value, target.slice, node.value
                             )
+                            update_key_order(node, target.value, target.slice)
                 elif isinstance(node, ast.Call) and isinstance(
                     node.func, ast.Attribute
                 ) and isinstance(node.func.value, ast.Name):
@@ -8134,9 +8239,36 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     if node.func.attr in {"pop", "__delitem__"}:
                         if node.args:
                             remove_key(node, node.func.value, node.args[0])
-                    elif node.func.attr in {"clear", "popitem"}:
+                            update_key_order(
+                                node, node.func.value, node.args[0], remove=True
+                            )
+                    elif node.func.attr == "clear":
                         remove_key(node, node.func.value)
+                        update_key_order(node, node.func.value, clear=True)
+                    elif node.func.attr == "popitem":
+                        # A known non-auth last key leaves the selected auth
+                        # entry untouched; an unknown last key may remove it.
+                        if key_order:
+                            removed = key_order[-1]
+                            if removed == auth_key:
+                                remove_key(node, node.func.value)
+                            update_key_order(
+                                node, node.func.value,
+                                ast.Constant(value=removed), remove=True,
+                            )
+                        elif key_order is None:
+                            remove_key(
+                                node, node.func.value, possible=True
+                            )
                     elif node.func.attr in {"__setitem__", "setdefault"}:
+                        if node.func.attr == "__setitem__" and node.args:
+                            update_key_order(
+                                node, node.func.value, node.args[0]
+                            )
+                        elif node.func.attr == "setdefault" and node.args:
+                            update_key_order(
+                                node, node.func.value, node.args[0]
+                            )
                         if len(node.args) >= 2 and _static_key_matches(
                             node.args[0], auth_key, bindings, _node_position(node)
                         ):
@@ -8189,6 +8321,37 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                         _node_position(node), possible_default
                                     ))
                     elif node.func.attr == "update":
+                        if key_order is not None:
+                            if _node_control_path(node):
+                                key_order = None
+                            else:
+                                added = []
+                                for arg in node.args:
+                                    added_part = literal_keys(
+                                        arg, _node_position(node)
+                                    )
+                                    if added_part is None:
+                                        added = None
+                                        break
+                                    added.extend(added_part)
+                                if added is not None:
+                                    for kw in node.keywords:
+                                        if kw.arg is None:
+                                            expanded = literal_keys(
+                                                kw.value, _node_position(node)
+                                            )
+                                            if expanded is None:
+                                                added = None
+                                                break
+                                            added.extend(expanded)
+                                        else:
+                                            added.append(kw.arg)
+                                if added is None:
+                                    key_order = None
+                                else:
+                                    for key in added:
+                                        if key not in key_order:
+                                            key_order.append(key)
                         values = []
                         for arg in node.args:
                             values.extend(_mapping_key_values(
@@ -10296,6 +10459,52 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                  'saved.clear()\n'
                  'options.setdefault("api_key", password)\n',
                  '**options', True),
+                ('options = {"api_key": password, "other": None}\n'
+                 'options.popitem()\n',
+                 '**options', True),
+                ('options = {"other": None, "api_key": password}\n'
+                 'options.popitem()\n',
+                 '**options', False),
+                ('options = {"api_key": None, "other": None}\n'
+                 'options.popitem()\n'
+                 'options.setdefault("api_key", password)\n',
+                 '**options', False),
+                ('options = {"other": None, "api_key": None}\n'
+                 'options.popitem()\n'
+                 'options.setdefault("api_key", password)\n',
+                 '**options', True),
+                ('options = {"api_key": password}\n'
+                 'options["other"] = None\n'
+                 'options.popitem()\n',
+                 '**options', True),
+                ('options = {"other": None}\n'
+                 'options["api_key"] = password\n'
+                 'options.popitem()\n',
+                 '**options', False),
+                ('options = {"api_key": password}\n'
+                 'options.update({"other": None})\n'
+                 'options.popitem()\n',
+                 '**options', True),
+                ('options = {"api_key": password}\n'
+                 'options.update({"api_key": None, "other": None})\n'
+                 'options.popitem()\n',
+                 '**options', False),
+                ('options = {"api_key": password}\n'
+                 'if flag:\n    options["other"] = None\n'
+                 'options.popitem()\n',
+                 '**options', True),
+                ('options = {"api_key": password}\n'
+                 'options[other_key] = None\n'
+                 'options.popitem()\n',
+                 '**options', True),
+                ('options = {"api_key": password, **{"other": None}}\n'
+                 'options.popitem()\n',
+                 '**options', True),
+                ('options = {"api_key": None}\n'
+                 'options["other"] = None\n'
+                 'options.popitem()\n'
+                 'options.setdefault("api_key", password)\n',
+                 '**options', False),
                 ('auth = {}\nauth["api_key"] = password\n',
                  'api_key=auth', True),
                 ('auth = {}\nauth["note"] = password\n',
