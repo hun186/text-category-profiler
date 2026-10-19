@@ -8070,6 +8070,88 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 unique = set(candidates)
                 return next(iter(unique)) if len(unique) == 1 else None
 
+            def has_relevant_mapping_mutation(root, position):
+                """Reject creation-time order when an expanded name was mutated.
+
+                Resolve receiver aliases at each statement, but do not treat
+                dormant nested functions as executed mutations.
+                """
+                start = _node_position(root)
+                for change in ast.walk(wrapper):
+                    when = _node_position(change)
+                    if not start < when < position:
+                        continue
+                    if getattr(change, "_binding_scope", None) is not wrapper:
+                        continue
+                    receiver = None
+                    if isinstance(change, (ast.Assign, ast.AnnAssign)):
+                        targets = (
+                            change.targets if isinstance(change, ast.Assign)
+                            else (change.target,)
+                        )
+                        for target in targets:
+                            if isinstance(target, ast.Subscript) and isinstance(
+                                target.value, ast.Name
+                            ):
+                                receiver = target.value
+                                break
+                    elif isinstance(change, ast.Delete):
+                        for target in change.targets:
+                            if isinstance(target, ast.Subscript) and isinstance(
+                                target.value, ast.Name
+                            ):
+                                receiver = target.value
+                                break
+                    elif isinstance(change, ast.AugAssign) and isinstance(
+                        change.target, ast.Name
+                    ):
+                        receiver = change.target
+                    elif isinstance(change, ast.Call) and isinstance(
+                        change.func, ast.Attribute
+                    ) and change.func.attr in {
+                        "update", "setdefault", "__setitem__", "pop",
+                        "__delitem__", "popitem", "clear",
+                    }:
+                        receiver = change.func.value
+                    if isinstance(receiver, ast.Name):
+                        resolved = _resolve_bound_nodes(
+                            receiver, bindings, _position_before(change)
+                        )
+                        if any(id(item) == id(root) for item in resolved):
+                            return True
+                return False
+
+            def builtin_dict_name(func, position):
+                """Trust dict(...) insertion order only for unshadowed builtin."""
+                resolved = _resolve_bound_nodes(func, bindings, position)
+                if len(resolved) != 1 or resolved[0] is not func:
+                    return False
+                # Function/class definitions and imports may bind the name
+                # without producing an ordinary assignment-expression event.
+                for definition in ast.walk(tree):
+                    scope = getattr(definition, "_binding_scope", None)
+                    if scope not in {tree, wrapper}:
+                        continue
+                    if isinstance(definition, (ast.FunctionDef, ast.AsyncFunctionDef,
+                                               ast.ClassDef)):
+                        if definition.name == "dict":
+                            return False
+                    elif isinstance(definition, ast.arg):
+                        if definition.arg == "dict":
+                            return False
+                    elif isinstance(definition, (ast.Import, ast.ImportFrom)):
+                        if any(
+                            (alias.asname or alias.name.split(".")[0]) == "dict"
+                            for alias in definition.names
+                        ):
+                            return False
+                    elif isinstance(definition, ast.Name):
+                        if definition.id == "dict" and isinstance(
+                            definition.ctx, (ast.Store, ast.Del)
+                        ):
+                            return False
+                return True
+
             def literal_keys(value, position, seen=None):
                 """Recover Python insertion order only for known mapping keys."""
                 seen = set() if seen is None else set(seen)
@@ -8078,7 +8160,11 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 seen.add(id(value))
                 if isinstance(value, ast.Name):
                     resolved = _resolve_bound_nodes(value, bindings, position)
-                    if len(resolved) != 1:
+                    if len(resolved) != 1 or resolved[0] is value:
+                        return None
+                    if has_relevant_mapping_mutation(resolved[0], position):
+                        # A copied **mapping observes mutations already made
+                        # to the source, not merely the source's literal keys.
                         return None
                     return literal_keys(resolved[0], position, seen)
                 if isinstance(value, ast.Dict):
@@ -8104,6 +8190,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     and isinstance(value.func, ast.Name)
                     and value.func.id == "dict"
                 ):
+                    if not builtin_dict_name(value.func, _node_position(value)):
+                        return None
                     result = []
                     if len(value.args) > 1:
                         return None
@@ -8141,8 +8229,11 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             def update_key_order(node, receiver, key=None, *, remove=False,
                                  clear=False):
                 nonlocal key_order
-                if key_order is None or not matches_receiver(
-                    receiver, _position_before(node)
+                if (
+                    key_order is None
+                    or getattr(node, "_binding_scope", None) is not wrapper
+                    or _node_position(node) >= before
+                    or not matches_receiver(receiver, _position_before(node))
                 ):
                     return
                 if _node_control_path(node):
@@ -8209,6 +8300,29 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             update_key_order(
                                 node, target.value, target.slice, remove=True
                             )
+                elif isinstance(node, ast.AugAssign):
+                    if (
+                        isinstance(node.target, ast.Name)
+                        and isinstance(node.op, ast.BitOr)
+                        and getattr(node, "_binding_scope", None) is wrapper
+                        and _node_position(node) < before
+                        and (
+                            matches_receiver(
+                                node.target, _position_before(node)
+                            )
+                            or node.target.id == expression.id
+                        )
+                    ):
+                        # |= behaves like dict.update for values, but its
+                        # insertion order is unknown if it receives a mapping
+                        # whose construction/mutations we cannot fully prove.
+                        # Never retain a stale last-key assumption.
+                        key_order = None
+                        updated = _mapping_key_values(
+                            node.value, auth_key, bindings, _node_position(node)
+                        )
+                        if updated:
+                            events.append((_node_position(node), updated[-1]))
                 elif isinstance(node, (ast.Assign, ast.AnnAssign)):
                     if node.value is None:
                         continue
@@ -10462,6 +10576,42 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 ('options = {"api_key": password, "other": None}\n'
                  'options.popitem()\n',
                  '**options', True),
+                ('options = {"api_key": password}\n'
+                 'options |= {"other": None}\n'
+                 'options.popitem()\n',
+                 '**options', True),
+                ('options = {"other": None}\n'
+                 'options |= {"api_key": password}\n',
+                 '**options', True),
+                ('options = {"api_key": password, "other": None}\n'
+                 'def nested():\n    del options["other"]\n'
+                 'options.popitem()\n',
+                 '**options', True),
+                ('options = {"api_key": password, "other": None}\n'
+                 'def nested():\n    options["api_key"] = None\n'
+                 'options.popitem()\n',
+                 '**options', True),
+                ('extra = {"api_key": password}\n'
+                 'extra["other"] = None\n'
+                 'options = {**extra}\noptions.popitem()\n',
+                 '**options', True),
+                ('extra = {"api_key": password}\n'
+                 'extra.update({"other": None})\n'
+                 'options = {**extra}\noptions.popitem()\n',
+                 '**options', True),
+                ('extra = {"other": None}\n'
+                 'extra["api_key"] = password\n'
+                 'options = {**extra}\n',
+                 '**options', True),
+                ('def dict(**kwargs):\n'
+                 '    return {"api_key": kwargs["api_key"], '
+                 '"other": kwargs["other"]}\n'
+                 'options = dict(other=None, api_key=password)\n'
+                 'options.popitem()\n',
+                 '**options', True),
+                ('options = dict(other=None, api_key=password)\n'
+                 'options.popitem()\n',
+                 '**options', False),
                 ('options = {"other": None, "api_key": password}\n'
                  'options.popitem()\n',
                  '**options', False),
