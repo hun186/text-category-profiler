@@ -8563,19 +8563,17 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             # executes, even when its default was not selected. A prior
             # removal cannot still describe a missing key on a path that
             # unconditionally passed through that presence guarantee.
-            events = [
-                (position, value) for position, value in events
-                if not (
-                    getattr(value, "_auth_key_removed", False)
-                    and any(
-                        position < guarantee_at < before
-                        and _control_path_is_prefix(
-                            guarantee_path, _node_control_path(value)
-                        )
-                        for guarantee_at, guarantee_path in presence_guarantees
+            restored_absences = {
+                id(value) for position, value in events
+                if getattr(value, "_auth_key_removed", False)
+                and any(
+                    position < guarantee_at < before
+                    and _control_path_is_prefix(
+                        guarantee_path, _node_control_path(value)
                     )
+                    for guarantee_at, guarantee_path in presence_guarantees
                 )
-            ]
+            }
             events.sort(key=lambda item: item[0])
             conditional_transfers = [
                 value for _, value in events
