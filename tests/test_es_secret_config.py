@@ -8387,6 +8387,11 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                     ("If", node.lineno, node.col_offset,
                                      "union-rhs-key-present"),
                                 )
+                                # Keep the real RHS absence guards separately:
+                                # a later target mutation under the same stable
+                                # condition may eliminate the retained value.
+                                value._union_rhs_absence_paths = tuple(absence_paths)
+                                value._union_original_path = value_path
                             transferred.append(value)
                         if transferred:
                             events.extend(
@@ -8554,7 +8559,142 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             # after any positional mapping.
                             events.append((_node_position(node), values[-1]))
 
+            # setdefault(key, default) guarantees key presence after it
+            # executes, even when its default was not selected. A prior
+            # removal cannot still describe a missing key on a path that
+            # unconditionally passed through that presence guarantee.
+            events = [
+                (position, value) for position, value in events
+                if not (
+                    getattr(value, "_auth_key_removed", False)
+                    and any(
+                        position < guarantee_at < before
+                        and _control_path_is_prefix(
+                            guarantee_path, _node_control_path(value)
+                        )
+                        for guarantee_at, guarantee_path in presence_guarantees
+                    )
+                )
+            ]
             events.sort(key=lambda item: item[0])
+            conditional_transfers = [
+                value for _, value in events
+                if hasattr(value, "_union_rhs_absence_paths")
+            ]
+            if conditional_transfers:
+                # The synthetic optional-write path alone loses correlations
+                # with later `if flag` writes/removals to the target. Replay
+                # the selected key for both choices of a *stable* plain bool
+                # guard, preserving real branch identity. If a condition is
+                # complex, reassigned, or unresolvable, keep the conservative
+                # ordinary reaching-value result instead.
+                if_nodes = {
+                    ("If", *_node_position(node)): node
+                    for node in ast.walk(wrapper)
+                    if isinstance(node, ast.If)
+                    and getattr(node, "_binding_scope", None) is wrapper
+                }
+                guards = {}
+
+                def stable_branch(step):
+                    if step[0] != "If" or step[3] not in {"body", "orelse"}:
+                        return None
+                    owner = if_nodes.get(step[:3])
+                    if owner is None:
+                        return None
+                    condition = owner.test
+                    negated = (
+                        isinstance(condition, ast.UnaryOp)
+                        and isinstance(condition.op, ast.Not)
+                    )
+                    if negated:
+                        condition = condition.operand
+                    if not isinstance(condition, ast.Name):
+                        return None
+                    name = condition.id
+                    # Rebinding the decision variable between tests creates
+                    # separate epochs; never assume their outcomes correlate.
+                    if any(
+                        isinstance(item, ast.Name)
+                        and isinstance(item.ctx, (ast.Store, ast.Del))
+                        and item.id == name
+                        and getattr(item, "_binding_scope", None) is wrapper
+                        for item in ast.walk(wrapper)
+                    ):
+                        return None
+                    return name, ((step[3] == "body") != negated)
+
+                absence_paths = [
+                    path for value in conditional_transfers
+                    for path in value._union_rhs_absence_paths
+                ]
+                stable = bool(absence_paths)
+                for path in absence_paths:
+                    if not path:
+                        stable = False
+                        break
+                    for step in path:
+                        branch = stable_branch(step)
+                        if branch is None:
+                            stable = False
+                            break
+                        guards[branch[0]] = True
+                    if not stable:
+                        break
+
+                if stable and len(guards) <= 4:
+                    guard_names = sorted(guards)
+
+                    def path_compatible(path, decisions):
+                        for step in path:
+                            branch = stable_branch(step)
+                            if branch is not None:
+                                name, required = branch
+                                if name in decisions and decisions[name] != required:
+                                    return False
+                        return True
+
+                    def conditioned_path(path):
+                        return tuple(
+                            step for step in path
+                            if not (
+                                (branch := stable_branch(step)) is not None
+                                and branch[0] in guards
+                            )
+                        )
+
+                    feasible = []
+                    for choices in product((False, True), repeat=len(guard_names)):
+                        decisions = dict(zip(guard_names, choices))
+                        if not path_compatible(
+                            _node_control_path(expression), decisions
+                        ):
+                            continue
+                        selected_events = []
+                        for position, value in events:
+                            old_path = getattr(
+                                value, "_union_original_path",
+                                _node_control_path(value),
+                            )
+                            if not path_compatible(old_path, decisions):
+                                continue
+                            if hasattr(value, "_union_rhs_absence_paths") and any(
+                                path_compatible(missing, decisions)
+                                for missing in value._union_rhs_absence_paths
+                            ):
+                                # The RHS has no key on this branch, so the
+                                # target retains its previous value.
+                                continue
+                            selected = copy.copy(value)
+                            selected._binding_control_path = conditioned_path(
+                                old_path
+                            )
+                            selected_events.append((position, selected))
+                        feasible.extend(_reaching_values(
+                            selected_events, expression
+                        ))
+                    return feasible
+
             return _reaching_values(events, expression) if events else []
 
         def originating_parameters(
@@ -10873,6 +11013,62 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                  'extra.pop("note")\n'
                  'options = {"api_key": password}\n'
                  'options |= extra\n', False),
+                # A later unconditional setdefault restores presence on all
+                # paths, so the earlier RHS absence must not remain possible.
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra.pop("api_key")\n'
+                 'extra.setdefault("api_key", None)\n'
+                 'options = {"api_key": password}\n'
+                 'options |= extra\n', False),
+                ('extra = {"api_key": None}\n'
+                 'if not flag:\n    extra.pop("api_key")\n'
+                 'extra.setdefault("api_key", None)\n'
+                 'options = {"api_key": password}\n'
+                 'options |= extra\n', False),
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n'
+                 '    extra.pop("api_key")\n'
+                 '    extra.setdefault("api_key", None)\n'
+                 'options = {"api_key": password}\n'
+                 'options |= extra\n', False),
+                ('extra = {"api_key": None}\n'
+                 'extra.setdefault("api_key", None)\n'
+                 'if flag:\n    extra.pop("api_key")\n'
+                 'options = {"api_key": password}\n'
+                 'options |= extra\n', True),
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra.pop("api_key")\n'
+                 'else:\n    extra.setdefault("api_key", None)\n'
+                 'options = {"api_key": password}\n'
+                 'options |= extra\n', True),
+                # Source and target removals under the same stable condition
+                # are correlated, even when they are separate if statements.
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra.pop("api_key")\n'
+                 'options = {"api_key": password}\n'
+                 'options |= extra\n'
+                 'if flag:\n    options.pop("api_key")\n', False),
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra.pop("api_key")\n'
+                 'options = {"api_key": password}\n'
+                 'options |= extra\n'
+                 'if flag:\n    options["api_key"] = None\n', False),
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra.pop("api_key")\n'
+                 'options = {"api_key": password}\n'
+                 'options |= extra\n'
+                 'if not flag:\n    options.pop("api_key")\n', True),
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra.pop("api_key")\n'
+                 'options = {"api_key": password}\n'
+                 'options |= extra\n'
+                 'flag = not flag\n'
+                 'if flag:\n    options.pop("api_key")\n', True),
+                ('extra = {"api_key": password}\n'
+                 'if flag:\n    extra.pop("api_key")\n'
+                 'options = {"api_key": None}\n'
+                 'options |= extra\n'
+                 'if flag:\n    options.pop("api_key")\n', True),
             )
             with patch.dict(globals(), {
                 "REPOSITORY_ROOT": root,
