@@ -4560,7 +4560,21 @@ def _mapping_key_values(
 
     values = []
     for candidate in candidates:
-        if isinstance(candidate, ast.Dict):
+        if isinstance(candidate, ast.BinOp) and isinstance(candidate.op, ast.BitOr):
+            # Mapping union evaluates left then right; an RHS auth key
+            # overrides the LHS, including in nested union expressions.
+            # Resolve each side separately to avoid returning a superseded
+            # literal credential from the left operand.
+            left = _mapping_key_values(
+                candidate.left, key_name, bindings, before_position,
+                set(seen_nodes), case_insensitive,
+            )
+            right = _mapping_key_values(
+                candidate.right, key_name, bindings, before_position,
+                set(seen_nodes), case_insensitive,
+            )
+            values.extend(right if right else left)
+        elif isinstance(candidate, ast.Dict):
             # Python applies dict entries from left to right. A statically
             # known **mapping replaces the previously selected key, even
             # when that key was explicitly assigned earlier in the literal.
@@ -8458,8 +8472,11 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             update_key_order(
                                 node, node.func.value, node.args[0]
                             )
-                        if len(node.args) >= 2 and _static_key_matches(
+                        if node.args and _static_key_matches(
                             node.args[0], auth_key, bindings, _node_position(node)
+                        ) and (
+                            node.func.attr == "setdefault"
+                            or len(node.args) >= 2
                         ):
                             if node.func.attr == "__setitem__":
                                 events.append((_node_position(node), node.args[1]))
@@ -8500,7 +8517,14 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                     (_node_position(node), path)
                                 )
                                 if not guaranteed:
-                                    possible_default = copy.copy(node.args[1])
+                                    # dict.setdefault(key) is equivalent to
+                                    # dict.setdefault(key, None); the implicit
+                                    # None still makes the key present.
+                                    default = (
+                                        node.args[1] if len(node.args) >= 2
+                                        else ast.Constant(value=None)
+                                    )
+                                    possible_default = copy.copy(default)
                                     possible_default._binding_control_path = (
                                         *path,
                                         ("If", node.lineno, node.col_offset,
@@ -10953,6 +10977,75 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             expected,
                         )
 
+    def test_es_wrapper_nested_mapping_unions(self):
+        """Nested dict unions honor last-key overwrite for ES authentication."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = root / "client.py"
+            caller = root / "worker.py"
+            cases = (
+                # A literal on the right of a nested union reaches the ES sink.
+                ('options = {}\noptions |= extra | {"api_key": password}\n',
+                 True),
+                ('options = {}\n'
+                 'options |= (extra | {"other": None}) | '
+                 '{"api_key": password}\n', True),
+                ('options = {}\n'
+                 'options |= {"api_key": None} | {"api_key": password}\n',
+                 True),
+                ('options = {}\n'
+                 'options |= ({"api_key": None} | {"other": None}) | '
+                 '{"api_key": password}\n', True),
+                ('options = extra | {"api_key": password}\n', True),
+                ('options = {}\n'
+                 'options.update({"api_key": None} | {"api_key": password})\n',
+                 True),
+                # A definite right-hand safe value must mask a prior secret.
+                ('options = {}\n'
+                 'options |= {"api_key": password} | {"api_key": None}\n',
+                 False),
+                ('options = {}\n'
+                 'options |= ({"api_key": password} | {"other": None}) | '
+                 '{"api_key": None}\n', False),
+                ('options = {}\n'
+                 'options |= {"api_key": password} | {"other": None}\n',
+                 True),
+                ('options = extra | {"api_key": None}\n', False),
+                ('options = {}\n'
+                 'options.update({"api_key": password} | {"api_key": None})\n',
+                 False),
+                ('options = {}\n'
+                 'options |= {"other": password} | {"api_key": None}\n',
+                 False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for body, expected in cases:
+                    with self.subTest(body=body):
+                        wrapper.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'def connect(password, extra):\n'
+                            + textwrap.indent(body, '    ')
+                            + '    return Elasticsearch("localhost", '
+                            '**options)\n',
+                            encoding="utf-8",
+                        )
+                        caller.write_text(
+                            'from client import connect\n'
+                            'connect("hardcoded-secret", {})\n',
+                            encoding="utf-8",
+                        )
+                        self._runtime_es_module_paths()
+                        self.assertEqual(
+                            bool(self._es_wrapper_credential_lines.get(
+                                caller.resolve()
+                            )),
+                            expected,
+                        )
+
     def test_es_wrapper_union_rhs_conditional_absence(self):
         """A possibly absent RHS key must not unconditionally mask the LHS."""
         with tempfile.TemporaryDirectory() as directory:
@@ -11028,6 +11121,35 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                  'if flag:\n    extra.pop("api_key")\n'
                  'extra.setdefault("api_key", None)\n'
                  'options = {"api_key": password}\n'
+                 'options |= extra\n', False),
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra.pop("api_key")\n'
+                 'extra.setdefault("api_key")\n'
+                 'options = {"api_key": password}\n'
+                 'options |= extra\n', False),
+                ('extra = {"api_key": None}\n'
+                 'if not flag:\n    extra.pop("api_key")\n'
+                 'extra.setdefault("api_key")\n'
+                 'options = {"api_key": password}\n'
+                 'options |= extra\n', False),
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra.pop("api_key")\n'
+                 'else:\n    extra.setdefault("api_key")\n'
+                 'options = {"api_key": password}\n'
+                 'options |= extra\n', True),
+                ('extra = {"api_key": None}\n'
+                 'extra.setdefault("api_key")\n'
+                 'if flag:\n    extra.pop("api_key")\n'
+                 'options = {"api_key": password}\n'
+                 'options |= extra\n', True),
+                ('extra = {"api_key": password}\n'
+                 'extra.setdefault("api_key")\n'
+                 'options = {"api_key": None}\n'
+                 'options |= extra\n', True),
+                ('extra = {"api_key": password}\n'
+                 'extra.pop("api_key")\n'
+                 'extra.setdefault("api_key")\n'
+                 'options = {"api_key": None}\n'
                  'options |= extra\n', False),
                 ('extra = {"api_key": None}\n'
                  'if not flag:\n    extra.pop("api_key")\n'
