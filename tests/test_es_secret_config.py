@@ -8043,6 +8043,61 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             "basic_auth", "http_auth", "api_key", "bearer_auth",
         }
 
+        def union_mapping_values(node, auth_key, before, wrapper, depth=0):
+            """Read a mapping union with live named operands and RHS priority.
+
+            A named operand is resolved at the union's evaluation point, not
+            where its original dict literal was created: pop, setdefault,
+            alias writes and update may have changed its selected auth key.
+            Only analyze bounded literal/alias shapes to avoid recursion
+            through self-referential assignments.
+            """
+            if depth > 12:
+                return _mapping_key_values(node, auth_key, bindings, before)
+            if isinstance(node, ast.BinOp) and isinstance(node.op, ast.BitOr):
+                left = union_mapping_values(
+                    node.left, auth_key, before, wrapper, depth + 1
+                )
+                right = union_mapping_values(
+                    node.right, auth_key, before, wrapper, depth + 1
+                )
+                present = [
+                    value for value in right
+                    if not getattr(value, "_auth_key_removed", False)
+                ]
+                absent = [
+                    value for value in right
+                    if getattr(value, "_auth_key_removed", False)
+                ]
+                if not present:
+                    # An absent RHS slot does not replace the LHS slot.
+                    return left
+                if absent:
+                    # The RHS key is only present on some branches. Preserve
+                    # the LHS fallback as well as the conditional RHS values.
+                    return [*left, *present] if left else present
+                return present
+            if isinstance(node, ast.Name):
+                return selected_mapping_values(
+                    node, auth_key, before, wrapper
+                )
+            if isinstance(node, ast.Dict):
+                selected = []
+                for key, part in zip(node.keys, node.values):
+                    if key is None:
+                        expanded = union_mapping_values(
+                            part, auth_key, _node_position(node),
+                            wrapper, depth + 1,
+                        )
+                        if expanded:
+                            selected = expanded
+                    elif _static_key_matches(
+                        key, auth_key, bindings, _node_position(node)
+                    ):
+                        selected = [part]
+                return selected
+            return _mapping_key_values(node, auth_key, bindings, before)
+
         def selected_mapping_values(expression, auth_key, before, wrapper):
             """Read the selected mapping slot at the ES call, including writes.
 
@@ -8059,8 +8114,13 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             presence_guarantees = []
             removals = []
             for root in roots:
-                values = _mapping_key_values(
-                    root, auth_key, bindings, before
+                values = (
+                    union_mapping_values(root, auth_key, before, wrapper)
+                    if isinstance(root, ast.BinOp)
+                    and isinstance(root.op, ast.BitOr)
+                    else _mapping_key_values(
+                        root, auth_key, bindings, before
+                    )
                 )
                 if isinstance(root, ast.Dict):
                     # A named **source is evaluated at expansion time, after
@@ -8080,9 +8140,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                     part, auth_key, _node_position(root), wrapper
                                 )
                             else:
-                                expanded = _mapping_key_values(
-                                    part, auth_key, bindings,
-                                    _node_position(root)
+                                expanded = union_mapping_values(
+                                    part, auth_key, _node_position(root), wrapper
                                 )
                             if expanded:
                                 selected = expanded
@@ -8365,16 +8424,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         # include its reaching writes, not just the literal
                         # from the original name binding. A removed source
                         # key does not overwrite the target mapping.
-                        if isinstance(node.value, ast.Name):
-                            updated = selected_mapping_values(
-                                node.value, auth_key, _node_position(node),
-                                wrapper,
-                            )
-                        else:
-                            updated = _mapping_key_values(
-                                node.value, auth_key, bindings,
-                                _node_position(node),
-                            )
+                        updated = union_mapping_values(
+                            node.value, auth_key, _node_position(node), wrapper
+                        )
                         # Absence in the RHS is not a deletion from the
                         # target: dict union simply leaves the target slot
                         # untouched. A conditional RHS removal therefore
@@ -8567,16 +8619,16 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                             key_order.append(key)
                         values = []
                         for arg in node.args:
-                            values.extend(_mapping_key_values(
-                                arg, auth_key, bindings, _node_position(node)
+                            values.extend(union_mapping_values(
+                                arg, auth_key, _node_position(node), wrapper
                             ))
                         for kw in node.keywords:
                             if kw.arg == auth_key:
                                 values.append(kw.value)
                             elif kw.arg is None:
-                                values.extend(_mapping_key_values(
-                                    kw.value, auth_key, bindings,
-                                    _node_position(node)
+                                values.extend(union_mapping_values(
+                                    kw.value, auth_key,
+                                    _node_position(node), wrapper
                                 ))
                         if values:
                             # Python update applies later keyword arguments
@@ -11036,6 +11088,119 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         caller.write_text(
                             'from client import connect\n'
                             'connect("hardcoded-secret", {})\n',
+                            encoding="utf-8",
+                        )
+                        self._runtime_es_module_paths()
+                        self.assertEqual(
+                            bool(self._es_wrapper_credential_lines.get(
+                                caller.resolve()
+                            )),
+                            expected,
+                        )
+
+    def test_es_wrapper_named_mapping_union_mutations(self):
+        """Named operands contribute their values at union evaluation time."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = root / "client.py"
+            caller = root / "worker.py"
+            cases = (
+                ('extra = {"api_key": password}\n'
+                 'extra.pop("api_key")\n'
+                 'options = {"api_key": None} | extra\n', False),
+                ('extra = {"api_key": None}\n'
+                 'extra["api_key"] = password\n'
+                 'options = {"api_key": None} | extra\n', True),
+                ('extra = {"api_key": None}\n'
+                 'extra.update(api_key=password)\n'
+                 'options = {"api_key": None} | extra\n', True),
+                ('extra = {"api_key": password}\n'
+                 'extra["api_key"] = None\n'
+                 'options = {"api_key": None} | extra\n', False),
+                ('extra = {"api_key": password}\n'
+                 'alias = extra\n'
+                 'alias.pop("api_key")\n'
+                 'options = {"api_key": None} | extra\n', False),
+                ('extra = {"api_key": None}\n'
+                 'alias = extra\n'
+                 'alias["api_key"] = password\n'
+                 'options = {"api_key": None} | extra\n', True),
+                ('extra = {}\n'
+                 'extra.setdefault("api_key", password)\n'
+                 'options = {"api_key": None} | extra\n', True),
+                ('extra = {"api_key": password}\n'
+                 'extra.pop("api_key")\n'
+                 'extra.setdefault("api_key")\n'
+                 'options = {"api_key": None} | extra\n', False),
+                ('extra = {"api_key": password}\n'
+                 'extra.clear()\n'
+                 'options = {"api_key": None} | extra\n', False),
+                ('extra = {"api_key": password}\n'
+                 'extra.pop("api_key")\n'
+                 'options = {}\n'
+                 'options |= extra | {"api_key": None}\n', False),
+                ('extra = {"api_key": None}\n'
+                 'extra["api_key"] = password\n'
+                 'options = {}\n'
+                 'options |= extra | {"other": None}\n', True),
+                ('extra = {"api_key": password}\n'
+                 'extra.pop("api_key")\n'
+                 'options = {}\n'
+                 'options |= ({"api_key": None} | extra) | '
+                 '{"other": None}\n', False),
+                ('extra = {"api_key": None}\n'
+                 'extra["api_key"] = password\n'
+                 'options = {}\n'
+                 'options |= ({"api_key": None} | extra) | '
+                 '{"other": None}\n', True),
+                ('extra = {"api_key": None}\n'
+                 'extra["api_key"] = password\n'
+                 'options = {}\n'
+                 'options.update({"api_key": None} | extra)\n', True),
+                ('extra = {"api_key": password}\n'
+                 'extra.pop("api_key")\n'
+                 'options = {}\n'
+                 'options.update({"api_key": None} | extra)\n', False),
+                ('extra = {"api_key": None}\n'
+                 'extra["api_key"] = password\n'
+                 'options = {"api_key": None, **extra}\n', True),
+                ('extra = {"api_key": password}\n'
+                 'extra.pop("api_key")\n'
+                 'options = {"api_key": None, **extra}\n', False),
+                ('extra = {"api_key": password}\n'
+                 'options = {"api_key": None} | extra | '
+                 '{"api_key": None}\n', False),
+                ('extra = {"api_key": None}\n'
+                 'extra["api_key"] = password\n'
+                 'options = {"api_key": None} | extra | '
+                 '{"api_key": None}\n', False),
+                ('extra = {"api_key": password}\n'
+                 'if flag:\n    extra.pop("api_key")\n'
+                 'options = {"api_key": None} | extra\n', True),
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra["api_key"] = password\n'
+                 'options = {"api_key": None} | extra\n', True),
+                ('extra = {"api_key": None}\n'
+                 'extra["other"] = password\n'
+                 'options = {"api_key": None} | extra\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for body, expected in cases:
+                    with self.subTest(body=body):
+                        wrapper.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'def connect(password, flag):\n'
+                            + textwrap.indent(body, '    ')
+                            + '    return Elasticsearch("localhost", '
+                            '**options)\n', encoding="utf-8",
+                        )
+                        caller.write_text(
+                            'from client import connect\n'
+                            'connect("hardcoded-secret", True)\n',
                             encoding="utf-8",
                         )
                         self._runtime_es_module_paths()
