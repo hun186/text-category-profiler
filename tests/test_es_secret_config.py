@@ -8043,6 +8043,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             # setdefault may contribute a conditional value, but after that
             # call runs it guarantees the key exists on the call's path.
             presence_guarantees = []
+            removals = []
             for root in roots:
                 values = _mapping_key_values(
                     root, auth_key, bindings, before
@@ -8073,10 +8074,38 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 ):
                     events.append((_node_position(node), value))
 
+            def remove_key(node, receiver, key=None):
+                """Invalidate selected-key values and guarantees after deletion."""
+                if (
+                    getattr(node, "_binding_scope", None) is not wrapper
+                    or _node_position(node) >= before
+                    or not matches_receiver(receiver, _position_before(node))
+                    or (key is not None and not _static_key_matches(
+                        key, auth_key, bindings, _node_position(node)
+                    ))
+                ):
+                    return
+                position = _node_position(node)
+                path = _node_control_path(node)
+                removals.append((position, path))
+                # A deletion is not an auth value. Keep a path-aware sentinel
+                # so a later sink cannot inherit a superseded credential.
+                absent = ast.Constant(value=None)
+                absent._binding_control_path = path
+                absent._auth_key_removed = True
+                events.append((position, absent))
+
             # Process candidate writes in source order so an earlier
             # setdefault can establish presence for a later one.
             for node in sorted(ast.walk(wrapper), key=_node_position):
-                if isinstance(node, (ast.Assign, ast.AnnAssign)):
+                if isinstance(node, ast.Delete):
+                    for target in node.targets:
+                        if (
+                            isinstance(target, ast.Subscript)
+                            and isinstance(target.value, ast.Name)
+                        ):
+                            remove_key(node, target.value, target.slice)
+                elif isinstance(node, (ast.Assign, ast.AnnAssign)):
                     if node.value is None:
                         continue
                     targets = (
@@ -8102,7 +8131,12 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         )
                     ):
                         continue
-                    if node.func.attr in {"__setitem__", "setdefault"}:
+                    if node.func.attr in {"pop", "__delitem__"}:
+                        if node.args:
+                            remove_key(node, node.func.value, node.args[0])
+                    elif node.func.attr in {"clear", "popitem"}:
+                        remove_key(node, node.func.value)
+                    elif node.func.attr in {"__setitem__", "setdefault"}:
                         if len(node.args) >= 2 and _static_key_matches(
                             node.args[0], auth_key, bindings, _node_position(node)
                         ):
@@ -8114,15 +8148,27 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                 # the credential on the missing-key path.
                                 # Only a guaranteed reaching write excludes it.
                                 path = _node_control_path(node)
+                                def still_present(position):
+                                    return not any(
+                                        position < removed_at < _node_position(node)
+                                        and not _control_paths_mutually_exclusive(
+                                            removed_path, path
+                                        )
+                                        for removed_at, removed_path in removals
+                                    )
+
                                 guaranteed = any(
-                                    _control_path_is_prefix(
+                                    position < _node_position(node)
+                                    and not getattr(value, "_auth_key_removed", False)
+                                    and _control_path_is_prefix(
                                         _node_control_path(value), path
                                     )
+                                    and still_present(position)
                                     for position, value in events
-                                    if position < _node_position(node)
                                 ) or any(
                                     position < _node_position(node)
                                     and _control_path_is_prefix(prior_path, path)
+                                    and still_present(position)
                                     for position, prior_path in presence_guarantees
                                 )
                                 # Even if the default was not selected,
@@ -10189,6 +10235,67 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                  'saved.setdefault("api_key", None)\n'
                  'options.setdefault("api_key", password)\n',
                  '**options', False),
+                ('options = {}\n'
+                 'options.setdefault("api_key", None)\n'
+                 'del options["api_key"]\n'
+                 'options.setdefault("api_key", password)\n',
+                 '**options', True),
+                ('options = {}\n'
+                 'options.setdefault("api_key", None)\n'
+                 'options.pop("api_key")\n'
+                 'options.setdefault("api_key", password)\n',
+                 '**options', True),
+                ('options = {}\n'
+                 'options.setdefault("api_key", None)\n'
+                 'options.clear()\n'
+                 'options.setdefault("api_key", password)\n',
+                 '**options', True),
+                ('options = {}\n'
+                 'options.setdefault("api_key", None)\n'
+                 'options.__delitem__("api_key")\n'
+                 'options.setdefault("api_key", password)\n',
+                 '**options', True),
+                ('options = {}\n'
+                 'options.setdefault("api_key", None)\n'
+                 'options.popitem()\n'
+                 'options.setdefault("api_key", password)\n',
+                 '**options', True),
+                ('options = {}\n'
+                 'options.setdefault("api_key", password)\n'
+                 'del options["api_key"]\n'
+                 'options.setdefault("api_key", None)\n',
+                 '**options', False),
+                ('options = {}\n'
+                 'options.setdefault("api_key", password)\n'
+                 'options.pop("api_key", None)\n',
+                 '**options', False),
+                ('options = {}\n'
+                 'options.setdefault("api_key", None)\n'
+                 'options.pop("other", None)\n'
+                 'options.setdefault("api_key", password)\n',
+                 '**options', False),
+                ('options = {}\n'
+                 'options.setdefault("api_key", None)\n'
+                 'if flag:\n    options.pop("api_key", None)\n'
+                 'options.setdefault("api_key", password)\n',
+                 '**options', True),
+                ('options = {}\n'
+                 'options.setdefault("api_key", None)\n'
+                 'if flag:\n    options.pop("api_key", None)\n'
+                 'else:\n    options.setdefault("api_key", password)\n',
+                 '**options', False),
+                ('options = {}\n'
+                 'options.setdefault("api_key", None)\n'
+                 'options.pop("api_key", None)\n'
+                 'options["api_key"] = None\n'
+                 'options.setdefault("api_key", password)\n',
+                 '**options', False),
+                ('options = {}\n'
+                 'options.setdefault("api_key", None)\n'
+                 'saved = options\n'
+                 'saved.clear()\n'
+                 'options.setdefault("api_key", password)\n',
+                 '**options', True),
                 ('auth = {}\nauth["api_key"] = password\n',
                  'api_key=auth', True),
                 ('auth = {}\nauth["note"] = password\n',
