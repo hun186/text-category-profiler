@@ -8175,6 +8175,24 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     values = selected
                 if values:
                     events.extend(((0, 0), value) for value in values)
+                elif (
+                    isinstance(root, ast.Dict)
+                    or (
+                        isinstance(root, ast.Call)
+                        and isinstance(root.func, ast.Name)
+                        and root.func.id == "dict"
+                        and not root.args
+                        and not root.keywords
+                    )
+                ):
+                    # An initially missing auth key is a *real* alternative
+                    # when later insertions execute only conditionally.
+                    # Keep its sentinel until an unconditional write or
+                    # presence guarantee makes that alternative impossible.
+                    absent = ast.Constant(value=None)
+                    absent._binding_control_path = ()
+                    absent._auth_key_removed = True
+                    events.append(((0, 0), absent))
 
             if not isinstance(expression, ast.Name):
                 return [value for _, value in events]
@@ -8439,6 +8457,18 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         )
                         value._union_rhs_absence_paths = tuple(absence_paths)
                         value._union_original_path = value_path
+                    # Even if no deletion sentinel exists, conditional writes
+                    # to the RHS must retain their original guard: a later
+                    # target write in the same guard may make them unreachable.
+                    # Record a replay path without treating this as deletion.
+                    if (
+                        _node_control_path(value)
+                        and not hasattr(value, "_union_original_path")
+                    ):
+                        tracked = copy.copy(value)
+                        tracked._union_original_path = _node_control_path(value)
+                        tracked._union_rhs_absence_paths = ()
+                        value = tracked
                     events.append((_node_position(node), value))
 
             # Process candidate writes in source order so an earlier
@@ -8722,8 +8752,20 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     path for value in conditional_transfers
                     for path in value._union_rhs_absence_paths
                 ]
-                stable = bool(absence_paths)
-                for path in absence_paths:
+                # Presence can be branch-dependent even without a pop:
+                # e.g. if flag: extra["api_key"] = password. Replaying the
+                # original guarded write allows later if flag mutations to
+                # supersede it on precisely the same branch.
+                tracked_paths = [
+                    *absence_paths,
+                    *(
+                        value._union_original_path
+                        for value in conditional_transfers
+                        if value._union_original_path
+                    ),
+                ]
+                stable = bool(tracked_paths)
+                for path in tracked_paths:
                     if not path:
                         stable = False
                         break
@@ -11203,6 +11245,112 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 ('extra = {"api_key": None}\n'
                  'extra["other"] = password\n'
                  'options = {"api_key": None} | extra\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for body, expected in cases:
+                    with self.subTest(body=body):
+                        wrapper.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'def connect(password, flag):\n'
+                            + textwrap.indent(body, '    ')
+                            + '    return Elasticsearch("localhost", '
+                            '**options)\n', encoding="utf-8",
+                        )
+                        caller.write_text(
+                            'from client import connect\n'
+                            'connect("hardcoded-secret", True)\n',
+                            encoding="utf-8",
+                        )
+                        self._runtime_es_module_paths()
+                        self.assertEqual(
+                            bool(self._es_wrapper_credential_lines.get(
+                                caller.resolve()
+                            )),
+                            expected,
+                        )
+
+    def test_es_wrapper_conditional_insertions_and_update_correlations(self):
+        """Missing initial keys and repeated stable flags retain real paths."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = root / "client.py"
+            caller = root / "worker.py"
+            cases = (
+                # Missing RHS key when the insertion arm is not taken.
+                ('extra = {}\n'
+                 'if flag:\n    extra["api_key"] = None\n'
+                 'options = {"api_key": password} | extra\n', True),
+                ('extra = {"other": None}\n'
+                 'if flag:\n    extra["api_key"] = None\n'
+                 'options = {"api_key": password} | extra\n', True),
+                ('extra = {}\n'
+                 'if not flag:\n    extra["api_key"] = None\n'
+                 'options = {"api_key": password} | extra\n', True),
+                ('extra = {}\n'
+                 'if flag:\n    extra["api_key"] = None\n'
+                 'options = {"api_key": password} | '
+                 '(extra | {"other": None})\n', True),
+                ('extra = {}\n'
+                 'if flag:\n    extra["api_key"] = None\n'
+                 'options = {"api_key": password}\n'
+                 'options.update(extra)\n', True),
+                ('extra = {}\n'
+                 'if flag:\n    extra["api_key"] = None\n'
+                 'options = {"api_key": password}\n'
+                 'options |= extra\n', True),
+                # An unconditional addition guarantees the key is present.
+                ('extra = {}\n'
+                 'extra["api_key"] = None\n'
+                 'options = {"api_key": password} | extra\n', False),
+                ('extra = {}\n'
+                 'if flag:\n    extra["api_key"] = None\n'
+                 'extra.setdefault("api_key")\n'
+                 'options = {"api_key": password} | extra\n', False),
+                ('extra = {}\n'
+                 'if flag:\n    extra["api_key"] = None\n'
+                 'options = {"api_key": None} | extra\n', False),
+                # Both RHS alternatives are present; the secret branch is
+                # overwritten by a later write guarded by the same flag.
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra["api_key"] = password\n'
+                 'else:\n    extra["api_key"] = None\n'
+                 'options = {"api_key": None}\n'
+                 'options.update(extra)\n'
+                 'if flag:\n    options["api_key"] = None\n', False),
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra["api_key"] = password\n'
+                 'else:\n    extra["api_key"] = None\n'
+                 'options = {"api_key": None}\n'
+                 'options |= extra\n'
+                 'if flag:\n    options["api_key"] = None\n', False),
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra["api_key"] = password\n'
+                 'else:\n    extra["api_key"] = None\n'
+                 'options = {"api_key": None}\n'
+                 'options.update(extra)\n'
+                 'if not flag:\n    options["api_key"] = None\n', True),
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra["api_key"] = password\n'
+                 'options = {"api_key": None}\n'
+                 'options.update(extra)\n'
+                 'if flag:\n    options.pop("api_key")\n', False),
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra["api_key"] = password\n'
+                 'options = {"api_key": None}\n'
+                 'options.update(extra)\n'
+                 'if not flag:\n    options.pop("api_key")\n', True),
+                # After a visible rebinding, the guard is no longer
+                # correlated with the original decision.
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra["api_key"] = password\n'
+                 'options = {"api_key": None}\n'
+                 'options.update(extra)\n'
+                 'flag = not flag\n'
+                 'if flag:\n    options["api_key"] = None\n', True),
             )
             with patch.dict(globals(), {
                 "REPOSITORY_ROOT": root,
