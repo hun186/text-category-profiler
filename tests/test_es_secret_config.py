@@ -8361,14 +8361,37 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                 node.value, auth_key, bindings,
                                 _node_position(node),
                             )
-                        updated = [
-                            value for value in updated
-                            if not getattr(value, "_auth_key_removed", False)
+                        # Absence in the RHS is not a deletion from the
+                        # target: dict union simply leaves the target slot
+                        # untouched. A conditional RHS removal therefore
+                        # makes an otherwise unconditional RHS value an
+                        # *optional* overwrite. Retain that possibility in
+                        # the reaching-value control path, without forwarding
+                        # a removal sentinel as a target-key deletion.
+                        absence_paths = [
+                            _node_control_path(value) for value in updated
+                            if getattr(value, "_auth_key_removed", False)
                         ]
-                        if updated:
+                        transferred = []
+                        for value in updated:
+                            if getattr(value, "_auth_key_removed", False):
+                                continue
+                            value_path = _node_control_path(value)
+                            if any(
+                                _control_path_is_prefix(value_path, missing_path)
+                                for missing_path in absence_paths
+                            ):
+                                value = copy.copy(value)
+                                value._binding_control_path = (
+                                    *value_path,
+                                    ("If", node.lineno, node.col_offset,
+                                     "union-rhs-key-present"),
+                                )
+                            transferred.append(value)
+                        if transferred:
                             events.extend(
                                 (_node_position(node), value)
-                                for value in updated
+                                for value in transferred
                             )
                 elif isinstance(node, (ast.Assign, ast.AnnAssign)):
                     if node.value is None:
@@ -10772,6 +10795,104 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         caller.write_text(
                             'from client import connect\n'
                             'connect("hardcoded-secret")\n', encoding="utf-8",
+                        )
+                        self._runtime_es_module_paths()
+                        self.assertEqual(
+                            bool(self._es_wrapper_credential_lines.get(
+                                caller.resolve()
+                            )),
+                            expected,
+                        )
+
+    def test_es_wrapper_union_rhs_conditional_absence(self):
+        """A possibly absent RHS key must not unconditionally mask the LHS."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = root / "client.py"
+            caller = root / "worker.py"
+            cases = (
+                # The source's safe value does not overwrite on the pop path.
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra.pop("api_key")\n'
+                 'options = {"api_key": password}\n'
+                 'options |= extra\n', True),
+                ('extra = {"api_key": None}\n'
+                 'if not flag:\n    extra.pop("api_key")\n'
+                 'options = {"api_key": password}\n'
+                 'options |= extra\n', True),
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra.pop("api_key")\n'
+                 'else:\n    extra["note"] = None\n'
+                 'options = {"api_key": password}\n'
+                 'options |= extra\n', True),
+                # Definite overwrite and definite absence have opposite effects.
+                ('extra = {"api_key": None}\n'
+                 'options = {"api_key": password}\n'
+                 'options |= extra\n', False),
+                ('extra = {"api_key": None}\n'
+                 'extra.pop("api_key")\n'
+                 'options = {"api_key": password}\n'
+                 'options |= extra\n', True),
+                # The reverse combination must detect a conditional secret,
+                # but not a definitely removed secret or an all-safe union.
+                ('extra = {"api_key": password}\n'
+                 'if flag:\n    extra.pop("api_key")\n'
+                 'options = {"api_key": None}\n'
+                 'options |= extra\n', True),
+                ('extra = {"api_key": password}\n'
+                 'options = {"api_key": None}\n'
+                 'options |= extra\n', True),
+                ('extra = {"api_key": password}\n'
+                 'extra.pop("api_key")\n'
+                 'options = {"api_key": None}\n'
+                 'options |= extra\n', False),
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra.pop("api_key")\n'
+                 'options = {"api_key": None}\n'
+                 'options |= extra\n', False),
+                # Alias and nested-control-path mutations still transfer
+                # conditional absence across the union boundary.
+                ('extra = {"api_key": None}\n'
+                 'alias = extra\n'
+                 'if flag:\n    alias.pop("api_key")\n'
+                 'options = {"api_key": password}\n'
+                 'options |= extra\n', True),
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n'
+                 '    if nested_flag:\n'
+                 '        extra.pop("api_key")\n'
+                 'options = {"api_key": password}\n'
+                 'options |= extra\n', True),
+                # Restoring a key after deletion makes its presence certain.
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra.pop("api_key")\n'
+                 'extra["api_key"] = None\n'
+                 'options = {"api_key": password}\n'
+                 'options |= extra\n', False),
+                ('extra = {"api_key": None, "note": password}\n'
+                 'extra.pop("note")\n'
+                 'options = {"api_key": password}\n'
+                 'options |= extra\n', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for body, expected in cases:
+                    with self.subTest(body=body):
+                        wrapper.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'def connect(password, flag):\n'
+                            + textwrap.indent(body, '    ')
+                            + '    return Elasticsearch("localhost", '
+                            '**options)\n',
+                            encoding="utf-8",
+                        )
+                        caller.write_text(
+                            'from client import connect\n'
+                            'connect("hardcoded-secret", True)\n',
+                            encoding="utf-8",
                         )
                         self._runtime_es_module_paths()
                         self.assertEqual(
