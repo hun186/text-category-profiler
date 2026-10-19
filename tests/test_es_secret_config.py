@@ -8687,6 +8687,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             selected._binding_control_path = conditioned_path(
                                 old_path
                             )
+                            selected._restored_absence = (
+                                id(value) in restored_absences
+                            )
                             selected_events.append((position, selected))
                         feasible.extend(_reaching_values(
                             selected_events, expression
