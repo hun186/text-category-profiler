@@ -8039,6 +8039,10 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             """
             roots = _resolve_bound_nodes(expression, bindings, before)
             events = []
+            # Key existence and a fallback value are distinct facts.
+            # setdefault may contribute a conditional value, but after that
+            # call runs it guarantees the key exists on the call's path.
+            presence_guarantees = []
             for root in roots:
                 values = _mapping_key_values(
                     root, auth_key, bindings, before
@@ -8069,7 +8073,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 ):
                     events.append((_node_position(node), value))
 
-            for node in ast.walk(wrapper):
+            # Process candidate writes in source order so an earlier
+            # setdefault can establish presence for a later one.
+            for node in sorted(ast.walk(wrapper), key=_node_position):
                 if isinstance(node, (ast.Assign, ast.AnnAssign)):
                     if node.value is None:
                         continue
@@ -8114,6 +8120,17 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                     )
                                     for position, value in events
                                     if position < _node_position(node)
+                                ) or any(
+                                    position < _node_position(node)
+                                    and _control_path_is_prefix(prior_path, path)
+                                    for position, prior_path in presence_guarantees
+                                )
+                                # Even if the default was not selected,
+                                # this call makes the key exist wherever it
+                                # executes; its fallback value is still
+                                # conditional on key absence.
+                                presence_guarantees.append(
+                                    (_node_position(node), path)
                                 )
                                 if not guaranteed:
                                     possible_default = copy.copy(node.args[1])
@@ -10137,6 +10154,40 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                  '**options', True),
                 ('options = {}\n'
                  'options.setdefault("api_key", None)\n',
+                 '**options', False),
+                ('options = {}\n'
+                 'options.setdefault("api_key", None)\n'
+                 'options.setdefault("api_key", password)\n',
+                 '**options', False),
+                ('options = {}\n'
+                 'options.setdefault("api_key", password)\n'
+                 'options.setdefault("api_key", None)\n',
+                 '**options', True),
+                ('options = {}\n'
+                 'options.setdefault("api_key", os.getenv("ES_KEY"))\n'
+                 'options.setdefault("api_key", password)\n',
+                 '**options', False),
+                ('options = {}\n'
+                 'if flag:\n    options.setdefault("api_key", None)\n'
+                 'options.setdefault("api_key", password)\n',
+                 '**options', True),
+                ('options = {}\n'
+                 'options.setdefault("api_key", None)\n'
+                 'if flag:\n    options.setdefault("api_key", password)\n',
+                 '**options', False),
+                ('options = {}\n'
+                 'if flag:\n'
+                 '    options.setdefault("api_key", None)\n'
+                 '    options.setdefault("api_key", password)\n',
+                 '**options', False),
+                ('options = {}\n'
+                 'if flag:\n    options.setdefault("api_key", password)\n'
+                 'options.setdefault("api_key", None)\n',
+                 '**options', True),
+                ('options = {}\n'
+                 'saved = options\n'
+                 'saved.setdefault("api_key", None)\n'
+                 'options.setdefault("api_key", password)\n',
                  '**options', False),
                 ('auth = {}\nauth["api_key"] = password\n',
                  'api_key=auth', True),
