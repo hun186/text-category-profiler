@@ -8012,6 +8012,108 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             return {}
         bindings = _name_bindings(tree)
         wrappers = {}
+        auth_keys = {
+            "basic_auth", "http_auth", "api_key", "bearer_auth",
+        }
+
+        def selected_mapping_values(expression, auth_key, before, wrapper):
+            """Read the selected mapping slot at the ES call, including writes.
+
+            Reuse the name-binding and mapping-key engines. A mutation belongs
+            to this mapping only when its source-ordered receiver still refers
+            to the same resolved container; reassignment cannot carry a stale
+            value into a new dict. Definite later writes replace earlier ones.
+            """
+            roots = _resolve_bound_nodes(expression, bindings, before)
+            events = []
+            for root in roots:
+                values = _mapping_key_values(
+                    root, auth_key, bindings, before
+                )
+                if values:
+                    events.append(((0, 0), values[-1]))
+
+            if not isinstance(expression, ast.Name):
+                return [value for _, value in events]
+            root_ids = {id(root) for root in roots}
+            if not root_ids:
+                return [value for _, value in events]
+
+            def matches_receiver(receiver, position):
+                if not isinstance(receiver, ast.Name):
+                    return False
+                resolved = _resolve_bound_nodes(receiver, bindings, position)
+                return any(id(node) in root_ids for node in resolved)
+
+            def add_write(node, receiver, key, value):
+                if (
+                    getattr(node, "_binding_scope", None) is wrapper
+                    and _node_position(node) < before
+                    and matches_receiver(receiver, _position_before(node))
+                    and _static_key_matches(
+                        key, auth_key, bindings, _node_position(node)
+                    )
+                ):
+                    events.append((_node_position(node), value))
+
+            for node in ast.walk(wrapper):
+                if isinstance(node, (ast.Assign, ast.AnnAssign)):
+                    if node.value is None:
+                        continue
+                    targets = (
+                        node.targets if isinstance(node, ast.Assign)
+                        else (node.target,)
+                    )
+                    for target in targets:
+                        if (
+                            isinstance(target, ast.Subscript)
+                            and isinstance(target.value, ast.Name)
+                        ):
+                            add_write(
+                                node, target.value, target.slice, node.value
+                            )
+                elif isinstance(node, ast.Call) and isinstance(
+                    node.func, ast.Attribute
+                ) and isinstance(node.func.value, ast.Name):
+                    if (
+                        getattr(node, "_binding_scope", None) is not wrapper
+                        or _node_position(node) >= before
+                        or not matches_receiver(
+                            node.func.value, _position_before(node)
+                        )
+                    ):
+                        continue
+                    if node.func.attr in {"__setitem__", "setdefault"}:
+                        if len(node.args) >= 2 and _static_key_matches(
+                            node.args[0], auth_key, bindings, _node_position(node)
+                        ):
+                            # setdefault only writes when the key is absent:
+                            # conservatively retain either reaching value.
+                            if node.func.attr == "__setitem__":
+                                events.append((_node_position(node), node.args[1]))
+                            elif not events:
+                                events.append((_node_position(node), node.args[1]))
+                    elif node.func.attr == "update":
+                        values = []
+                        for arg in node.args:
+                            values.extend(_mapping_key_values(
+                                arg, auth_key, bindings, _node_position(node)
+                            ))
+                        for kw in node.keywords:
+                            if kw.arg == auth_key:
+                                values.append(kw.value)
+                            elif kw.arg is None:
+                                values.extend(_mapping_key_values(
+                                    kw.value, auth_key, bindings,
+                                    _node_position(node)
+                                ))
+                        if values:
+                            # Python update applies later keyword arguments
+                            # after any positional mapping.
+                            events.append((_node_position(node), values[-1]))
+
+            events.sort(key=lambda item: item[0])
+            return _reaching_values(events, expression) if events else []
 
         def originating_parameters(
             expression, parameters, before, seen=None, auth_kind=None
@@ -8028,13 +8130,25 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 )
 
             if isinstance(expression, ast.Name):
+                if expression.id in parameters:
+                    return {expression.id}
+                if auth_kind in auth_keys:
+                    selected = selected_mapping_values(
+                        expression, auth_kind, before, active_wrapper
+                    )
+                    if selected:
+                        return set().union(*(
+                            descend(value, auth_kind if auth_kind in {
+                                "basic_auth", "http_auth"
+                            } else None)
+                            for value in selected
+                        ))
                 resolved = _resolve_bound_nodes(expression, bindings, before)
                 if len(resolved) == 1 and resolved[0] is expression:
-                    return {expression.id} if expression.id in parameters else set()
+                    return set()
                 return set().union(*(
-                    ({value.id} if value.id in parameters else set())
-                    if value is expression else descend(value, auth_kind)
-                    for value in resolved
+                    descend(value, auth_kind)
+                    for value in resolved if value is not expression
                 ))
 
             if isinstance(expression, ast.IfExp):
@@ -8114,6 +8228,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for statement in tree.body:
             if not isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 continue
+            active_wrapper = statement
             positional = [*statement.args.posonlyargs, *statement.args.args]
             parameters = {
                 argument.arg: index for index, argument in enumerate(positional)
@@ -8139,18 +8254,54 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 if not is_es:
                     continue
                 for keyword in call.keywords:
-                    if keyword.arg not in {
-                        "basic_auth", "http_auth", "api_key", "bearer_auth"
-                    }:
-                        continue
                     expression = keyword.value
-                    auth_parameters.update(originating_parameters(
-                        expression, parameters, _node_position(expression),
-                        auth_kind=keyword.arg,
-                    ))
+                    if keyword.arg in auth_keys:
+                        auth_parameters.update(originating_parameters(
+                            expression, parameters, _node_position(expression),
+                            auth_kind=keyword.arg,
+                        ))
+                    elif keyword.arg is None:
+                        # Only recognized static keys from **options count.
+                        # This does not turn unrelated mapping fields into
+                        # authentication parameters.
+                        for auth_key in auth_keys:
+                            for selected in selected_mapping_values(
+                                expression, auth_key,
+                                _node_position(expression), statement
+                            ):
+                                auth_parameters.update(originating_parameters(
+                                    selected, parameters, _node_position(expression),
+                                    auth_kind=auth_key,
+                                ))
             if auth_parameters:
+                defaults = {}
+                for argument, default in zip(
+                    positional[len(positional) - len(statement.args.defaults):],
+                    statement.args.defaults,
+                ):
+                    defaults[argument.arg] = default
+                for argument, default in zip(
+                    statement.args.kwonlyargs, statement.args.kw_defaults
+                ):
+                    if default is not None:
+                        defaults[argument.arg] = default
+                # Freeze source-module defaults here: caller bindings belong
+                # to another module and must not resolve the default names.
+                literal_defaults = {
+                    name: any(
+                        value and value != REDACTED_PASSWORD_SENTINEL
+                        for value in _hardcoded_password_values(
+                            expression, bindings, _node_position(expression)
+                        )
+                    )
+                    for name, expression in defaults.items()
+                    if name in auth_parameters
+                }
                 wrappers[statement.name] = {
-                    name: parameters[name] for name in auth_parameters
+                    "parameters": {
+                        name: parameters[name] for name in auth_parameters
+                    },
+                    "literal_defaults": literal_defaults,
                 }
         return wrappers
 
@@ -8267,20 +8418,18 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     for variant in variants
                 ][:64]
 
-            for parameter, index in wrappers[name].items():
-                expressions = []
-                if index is not None:
-                    expressions.extend(
-                        args[index] for args in positional_options
-                        if index < len(args)
-                    )
-                if index is None or not expressions:
-                    # A keyword-only credential is inspectable even when
-                    # unrelated positional spreads cannot be expanded.
-                    expressions.extend(
-                        kw.value for kw in call.keywords
-                        if kw.arg == parameter
-                    )
+            for parameter, index in wrappers[name]["parameters"].items():
+                expressions = [
+                    args[index] for args in positional_options
+                    if index is not None and index < len(args)
+                ]
+                for kw in call.keywords:
+                    if kw.arg == parameter:
+                        expressions.append(kw.value)
+                    elif kw.arg is None:
+                        expressions.extend(_mapping_key_values(
+                            kw.value, parameter, bindings, _node_position(call)
+                        ))
                 for expression in expressions:
                     values = _hardcoded_password_values(
                         expression, bindings, _node_position(call)
@@ -8291,6 +8440,26 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     ):
                         lines.append(call.lineno)
                         break
+                else:
+                    # Defaults matter only when this parameter can be omitted.
+                    # Unknown *args/**kwargs cannot prove omission.
+                    uncertain_spread = (
+                        not positional_options
+                        or any(kw.arg is None and not isinstance(
+                            _resolve_bound_node(
+                                kw.value, bindings, _node_position(call)
+                            ), (ast.Dict, ast.Call)
+                        ) for kw in call.keywords)
+                    )
+                    omitted = (
+                        index is None
+                        or any(len(args) <= index for args in positional_options)
+                    )
+                    if (
+                        omitted and not expressions and not uncertain_spread
+                        and wrappers[name]["literal_defaults"].get(parameter)
+                    ):
+                        lines.append(call.lineno)
         return invoked, sorted(set(lines))
 
     def _runtime_es_module_paths(self):
@@ -9861,6 +10030,124 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         caller.write_text(
                             'from client import connect\n'
                             'connect("hardcoded-secret")\n', encoding="utf-8",
+                        )
+                        self._runtime_es_module_paths()
+                        self.assertEqual(
+                            bool(self._es_wrapper_credential_lines.get(
+                                caller.resolve()
+                            )),
+                            expected,
+                        )
+
+    def test_es_wrapper_unpacked_auth_options_and_mutations(self):
+        """Only a selected credential key reaching ES identifies a wrapper."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = root / "client.py"
+            caller = root / "worker.py"
+            cases = (
+                ('options = {"api_key": password}\n',
+                 '**options', True),
+                ('options = {"api_key": None, "note": password}\n',
+                 '**options', False),
+                ('options = {"api_key": password}\n'
+                 'options["api_key"] = None\n',
+                 '**options', False),
+                ('options = {}\noptions["api_key"] = password\n',
+                 '**options', True),
+                ('options = {}\noptions["api_key"] = password\n'
+                 'options["api_key"] = None\n',
+                 '**options', False),
+                ('options = {}\noptions.update(api_key=password)\n',
+                 '**options', True),
+                ('options = {}\noptions.update({"api_key": password})\n',
+                 '**options', True),
+                ('options = {}\noptions.update({"api_key": password}, '
+                 'api_key=None)\n',
+                 '**options', False),
+                ('options = {}\nsaved = options\n'
+                 'saved["api_key"] = password\n',
+                 '**options', True),
+                ('options = {"api_key": password}\n'
+                 'options = {}\n',
+                 '**options', False),
+                ('auth = {}\nauth["api_key"] = password\n',
+                 'api_key=auth', True),
+                ('auth = {}\nauth["note"] = password\n',
+                 'api_key=auth', False),
+                ('auth = {}\nauth["api_key"] = password\n'
+                 'auth["api_key"] = None\n',
+                 'api_key=auth', False),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for body, options, expected in cases:
+                    with self.subTest(body=body, options=options):
+                        wrapper.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'def connect(secret):\n'
+                            + textwrap.indent(body, '    ')
+                            + '    return Elasticsearch("localhost", '
+                            + options + ')\n', encoding="utf-8",
+                        )
+                        caller.write_text(
+                            'from client import connect\n'
+                            'connect("hardcoded-secret")\n', encoding="utf-8",
+                        )
+                        self._runtime_es_module_paths()
+                        self.assertEqual(
+                            bool(self._es_wrapper_credential_lines.get(
+                                caller.resolve()
+                            )),
+                            expected,
+                        )
+
+    def test_es_wrapper_caller_omitted_auth_defaults(self):
+        """Only invoked wrappers with unsupplied literal defaults are flagged."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = root / "client.py"
+            caller = root / "worker.py"
+            cases = (
+                ('def connect(secret="hardcoded-secret"):\n',
+                 'connect()\n', True),
+                ('def connect(secret="hardcoded-secret"):\n',
+                 'connect(secret=None)\n', False),
+                ('def connect(secret="hardcoded-secret"):\n',
+                 'connect(secret=os.getenv("TCP_ELASTIC_PASSWORD"))\n', False),
+                ('def connect(secret=None):\n',
+                 'connect()\n', False),
+                ('def connect(secret=os.getenv("TCP_ELASTIC_PASSWORD")):\n',
+                 'connect()\n', False),
+                ('def connect(*, secret="hardcoded-secret"):\n',
+                 'connect()\n', True),
+                ('def connect(*, secret="hardcoded-secret"):\n',
+                 'connect(secret=None)\n', False),
+                ('def connect(secret="hardcoded-secret"):\n',
+                 'connect(**{"secret": None})\n', False),
+                ('def connect(secret="hardcoded-secret"):\n',
+                 'connect(**{})\n', True),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for signature, invocation, expected in cases:
+                    with self.subTest(signature=signature, call=invocation):
+                        wrapper.write_text(
+                            'import os\nfrom elasticsearch import Elasticsearch\n'
+                            + signature
+                            + '    return Elasticsearch("localhost", '
+                            'basic_auth=("elastic", secret))\n',
+                            encoding="utf-8",
+                        )
+                        caller.write_text(
+                            'from client import connect\n'
+                            + invocation, encoding="utf-8",
                         )
                         self._runtime_es_module_paths()
                         self.assertEqual(
