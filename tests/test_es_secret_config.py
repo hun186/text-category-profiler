@@ -8196,6 +8196,20 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     and node.name == "dict"
                     and getattr(node, "_binding_scope", None) in {tree, wrapper}
                 )
+                # A nested def dict(): is declared in the wrapper body,
+                # while its AST binding scope can be the nested definition
+                # itself. Inspect the actual lexical owner as well.
+                definitions.extend(
+                    node for node in wrapper.body
+                    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+                    and node.name == "dict"
+                    and _node_position(node) < _node_position(root)
+                )
+                # The same definition may be discovered by several routes.
+                # Count one literal return once, not once per search route.
+                definitions = list({
+                    id(node): node for node in definitions
+                }.values())
                 results = []
                 return_literals = []
                 for definition in definitions:
