@@ -8172,7 +8172,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             if isinstance(expression, ast.Dict):
                 # A keyed credential mapping must not turn unrelated metadata
                 # into a credential, even when it holds a wrapper parameter.
-                auth_keys = {
+                mapping_auth_keys = {
                     "password", "api_key", "bearer_auth", "basic_auth",
                     "http_auth", "authorization", "token", "key",
                 }
@@ -8181,7 +8181,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     for key, value in zip(expression.keys, expression.values)
                     if isinstance(key, ast.Constant)
                     and isinstance(key.value, str)
-                    and key.value.lower() in auth_keys
+                    and key.value.lower() in mapping_auth_keys
                 ]
                 return set().union(*(
                     descend(value, key if key in {"basic_auth", "http_auth"} else None)
