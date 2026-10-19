@@ -10088,7 +10088,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     with self.subTest(body=body, options=options):
                         wrapper.write_text(
                             'from elasticsearch import Elasticsearch\n'
-                            'def connect(secret):\n'
+                            'def connect(password):\n'
                             + textwrap.indent(body, '    ')
                             + '    return Elasticsearch("localhost", '
                             + options + ')\n', encoding="utf-8",
