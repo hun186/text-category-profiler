@@ -8136,8 +8136,59 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             # call runs it guarantees the key exists on the call's path.
             presence_guarantees = []
             removals = []
+
+            def shadowed_dict_return(root):
+                """Resolve a trivial local dict() shadow without inventing absence.
+
+                A user-defined zero-argument dict lambda/function is not the
+                Python builtin. Its definite literal return can still supply
+                an auth key, so don't interpret it as the empty constructor.
+                """
+                if not (
+                    isinstance(root, ast.Call)
+                    and isinstance(root.func, ast.Name)
+                    and root.func.id == "dict"
+                    and not root.args and not root.keywords
+                    and not builtin_dict_name(root.func, _node_position(root))
+                ):
+                    return None
+                definitions = _resolve_bound_nodes(
+                    root.func, bindings, _node_position(root)
+                )
+                # Function definitions may not be represented as ordinary
+                # assignment binding nodes by the generic name resolver.
+                definitions.extend(
+                    node for node in ast.walk(tree)
+                    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+                    and node.name == "dict"
+                    and getattr(node, "_binding_scope", None) in {tree, wrapper}
+                )
+                results = []
+                for definition in definitions:
+                    if isinstance(definition, ast.Lambda):
+                        if definition.args.args or definition.args.kwonlyargs:
+                            continue
+                        returned = definition.body
+                    elif isinstance(definition, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                        if (
+                            definition.args.args or definition.args.kwonlyargs
+                            or len(definition.body) != 1
+                            or not isinstance(definition.body[0], ast.Return)
+                        ):
+                            continue
+                        returned = definition.body[0].value
+                    else:
+                        continue
+                    if isinstance(returned, (ast.Dict, ast.Call, ast.BinOp)):
+                        results.extend(_mapping_key_values(
+                            returned, auth_key, bindings, _node_position(root)
+                        ))
+                return results
+
             for root in roots:
+                shadowed = shadowed_dict_return(root)
                 values = (
+                    shadowed if shadowed is not None else
                     union_mapping_values(root, auth_key, before, wrapper)
                     if isinstance(root, ast.BinOp)
                     and isinstance(root.op, ast.BitOr)
@@ -8176,17 +8227,16 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                 if values:
                     events.extend(((0, 0), value) for value in values)
                 elif (
-                    isinstance(root, ast.Dict)
-                    or (
-                        isinstance(root, ast.Call)
-                        and isinstance(root.func, ast.Name)
-                        and root.func.id == "dict"
-                        and not root.args
-                        and not root.keywords
-                    )
+                    (known_keys := literal_keys(root, _node_position(root)))
+                    is not None
+                    and auth_key not in known_keys
                 ):
-                    # An initially missing auth key is a *real* alternative
-                    # when later insertions execute only conditionally.
+                    # Only proven built-in mapping constructors with statically
+                    # known keys warrant the initial missing-key alternative.
+                    # In particular, dict(other=None) has no auth key, while
+                    # a shadowed dict name or unknown spread is not assumed
+                    # empty. Later conditional insertions can still leave the
+                    # original no-key branch reachable.
                     # Keep its sentinel until an unconditional write or
                     # presence guarantee makes that alternative impossible.
                     absent = ast.Constant(value=None)
@@ -8746,6 +8796,39 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         for item in ast.walk(wrapper)
                     ):
                         return None
+
+                    # A truth-test result is stable only if the referenced
+                    # object cannot be visibly mutated between the guards.
+                    # Reject receiver method calls, item/attribute writes and
+                    # escapes to opaque calls. A list-valued guard followed
+                    # by flag.clear() must not correlate its two if branches.
+                    for item in ast.walk(wrapper):
+                        if getattr(item, "_binding_scope", None) is not wrapper:
+                            continue
+                        if isinstance(item, ast.Call):
+                            receiver = item.func
+                            if (
+                                (isinstance(receiver, ast.Attribute)
+                                 and isinstance(receiver.value, ast.Name)
+                                 and receiver.value.id == name)
+                                or (isinstance(receiver, ast.Name)
+                                    and receiver.id == name)
+                                or any(
+                                    isinstance(arg, ast.Name)
+                                    and arg.id == name
+                                    for arg in (*item.args, *(
+                                        keyword.value for keyword in item.keywords
+                                    ))
+                                )
+                            ):
+                                return None
+                        elif isinstance(item, (ast.Subscript, ast.Attribute)):
+                            if (
+                                isinstance(item.value, ast.Name)
+                                and item.value.id == name
+                                and isinstance(item.ctx, (ast.Store, ast.Del))
+                            ):
+                                return None
                     return name, ((step[3] == "body") != negated)
 
                 absence_paths = [
@@ -11369,6 +11452,104 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         caller.write_text(
                             'from client import connect\n'
                             'connect("hardcoded-secret", True)\n',
+                            encoding="utf-8",
+                        )
+                        self._runtime_es_module_paths()
+                        self.assertEqual(
+                            bool(self._es_wrapper_credential_lines.get(
+                                caller.resolve()
+                            )),
+                            expected,
+                        )
+
+    def test_es_wrapper_dict_constructors_and_mutable_guard(self):
+        """Preserve known missing keys, shadowed dict and mutable guards."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = root / "client.py"
+            caller = root / "worker.py"
+            cases = (
+                ('extra = dict(other=None)\n'
+                 'if flag:\n    extra["api_key"] = None\n'
+                 'options = {"api_key": password} | extra\n', True),
+                ('extra = dict({"other": None})\n'
+                 'if flag:\n    extra["api_key"] = None\n'
+                 'options = {"api_key": password} | extra\n', True),
+                ('extra = dict(other=None)\n'
+                 'if flag:\n    extra["api_key"] = None\n'
+                 'options = {"api_key": password}\n'
+                 'options.update(extra)\n', True),
+                ('extra = dict({"other": None})\n'
+                 'if flag:\n    extra["api_key"] = None\n'
+                 'options = {"api_key": password}\n'
+                 'options |= extra\n', True),
+                ('extra = dict(other=None)\n'
+                 'extra["api_key"] = None\n'
+                 'options = {"api_key": password} | extra\n', False),
+                ('extra = dict(api_key=None)\n'
+                 'options = {"api_key": password} | extra\n', False),
+                ('dict = lambda: {"api_key": None}\n'
+                 'extra = dict()\n'
+                 'options = {"api_key": password} | extra\n', False),
+                ('def dict():\n'
+                 '    return {"api_key": None}\n'
+                 'extra = dict()\n'
+                 'options = {"api_key": password} | extra\n', False),
+                ('dict = lambda: {"api_key": password}\n'
+                 'extra = dict()\n'
+                 'options = {"api_key": None} | extra\n', True),
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra["api_key"] = password\n'
+                 'options = {"api_key": None}\n'
+                 'options.update(extra)\n'
+                 'flag.clear()\n'
+                 'if flag:\n    options["api_key"] = None\n', True),
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra["api_key"] = password\n'
+                 'options = {"api_key": None}\n'
+                 'options.update(extra)\n'
+                 'flag.append(None)\n'
+                 'if flag:\n    options["api_key"] = None\n', True),
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra["api_key"] = password\n'
+                 'options = {"api_key": None}\n'
+                 'options.update(extra)\n'
+                 'flag[0] = None\n'
+                 'if flag:\n    options["api_key"] = None\n', True),
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra["api_key"] = password\n'
+                 'options = {"api_key": None}\n'
+                 'options.update(extra)\n'
+                 'mutate(flag)\n'
+                 'if flag:\n    options["api_key"] = None\n', True),
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra["api_key"] = password\n'
+                 'options = {"api_key": None}\n'
+                 'options.update(extra)\n'
+                 'if flag:\n    options["api_key"] = None\n', False),
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra["api_key"] = password\n'
+                 'options = {"api_key": None}\n'
+                 'options.update(extra)\n'
+                 'if not flag:\n    options["api_key"] = None\n', True),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for body, expected in cases:
+                    with self.subTest(body=body):
+                        wrapper.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'def connect(password, flag):\n'
+                            + textwrap.indent(body, '    ')
+                            + '    return Elasticsearch("localhost", '
+                            '**options)\n', encoding="utf-8",
+                        )
+                        caller.write_text(
+                            'from client import connect\n'
+                            'connect("hardcoded-secret", [True])\n',
                             encoding="utf-8",
                         )
                         self._runtime_es_module_paths()
