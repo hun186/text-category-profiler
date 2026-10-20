@@ -8834,24 +8834,16 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             )
 
                 def aliases_guard(value, position, name):
-                    if not isinstance(value, ast.Name):
-                        return False
-                    if value.id == name:
-                        return True
-
-                    # A locally bound alias resolves all the way through its
-                    # guard name to the original list/dict/set literal. Name
-                    # comparison therefore misses in-place alias mutations.
-                    # Compare the reaching object sources at the mutation
-                    # site, not names from an earlier conditional test.
+                    # Compare the source-ordered roots of *objects*, including
+                    # extracted children (state = flag.state) and indexed
+                    # containers (holder[0] = flag). A syntactic root name
+                    # alone loses both kinds of indirect alias.
                     guard = ast.Name(id=name, ctx=ast.Load())
                     guard._binding_scope = wrapper
                     guard._binding_control_path = _node_control_path(value)
 
                     def object_source(resolved):
                         if isinstance(resolved, ast.Name):
-                            # Unbound parameters remain symbolic objects.
-                            # Scope is part of their identity.
                             return (
                                 "name",
                                 _binding_name_token(
@@ -8862,33 +8854,96 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             ast.Constant, ast.Tuple, ast.JoinedStr,
                             ast.Lambda, ast.FunctionDef, ast.AsyncFunctionDef,
                         )):
-                            # These bindings are not in-place mutable objects.
                             return None
-                        # AST source identity distinguishes independently
-                        # created objects even when their text is identical.
                         return ("source", id(resolved))
 
-                    guard_sources = {
-                        source for resolved in _resolve_bound_nodes(
-                            guard, bindings, position
+                    def indexed_values(node, depth=0):
+                        # Resolve known container members instead of assuming
+                        # that an arbitrary holder is the guarded object.
+                        if depth > 12:
+                            return []
+                        if isinstance(node, ast.Name):
+                            return _resolve_bound_nodes(
+                                node, bindings, position
+                            )
+                        if not isinstance(node, ast.Subscript):
+                            return [node]
+                        bases = indexed_values(node.value, depth + 1)
+                        index = node.slice
+                        key = (
+                            index.value if isinstance(index, ast.Constant)
+                            else None
                         )
-                        if (source := object_source(resolved)) is not None
-                    }
-                    return bool(guard_sources) and any(
-                        (source := object_source(resolved)) is not None
-                        and source in guard_sources
-                        for resolved in _resolve_bound_nodes(
-                            value, bindings, position
-                        )
-                    )
+                        selected = []
+                        for base in bases:
+                            if isinstance(base, (ast.List, ast.Tuple)):
+                                if isinstance(key, int) and not isinstance(key, bool):
+                                    if -len(base.elts) <= key < len(base.elts):
+                                        selected.append(base.elts[key])
+                                else:
+                                    # An unknown index may select any member.
+                                    selected.extend(base.elts)
+                            elif isinstance(base, ast.Dict):
+                                matched = False
+                                for candidate_key, candidate_value in zip(
+                                    base.keys, base.values
+                                ):
+                                    if (
+                                        isinstance(candidate_key, ast.Constant)
+                                        and isinstance(index, ast.Constant)
+                                        and candidate_key.value == key
+                                    ):
+                                        selected.append(candidate_value)
+                                        matched = True
+                                if not matched and not isinstance(
+                                    index, ast.Constant
+                                ):
+                                    selected.extend(base.values)
+                        return selected
 
-                def guard_receiver(value):
-                    # Mutating a nested attribute or indexed child can change
-                    # the truthiness of its owning guard. Follow the chain to
-                    # the name that owns the receiver before alias resolution.
-                    while isinstance(value, (ast.Attribute, ast.Subscript)):
-                        value = value.value
-                    return value
+                    def object_roots(node, seen=frozenset(), depth=0):
+                        if depth > 16:
+                            return set()
+                        if isinstance(node, ast.Name):
+                            token = _binding_name_token(
+                                node.id, bindings, node
+                            )
+                            if token in seen:
+                                return {object_source(node)}
+                            bound = _bound_name_values(
+                                node.id, bindings, position, seen, node
+                            )
+                            if not bound:
+                                return {object_source(node)}
+                            result = set()
+                            for candidate in bound:
+                                result.update(object_roots(
+                                    candidate, seen | {token}, depth + 1
+                                ))
+                            return result
+                        if isinstance(node, ast.Attribute):
+                            return object_roots(
+                                node.value, seen, depth + 1
+                            )
+                        if isinstance(node, ast.Subscript):
+                            values = indexed_values(node)
+                            if values:
+                                roots = set()
+                                for selected in values:
+                                    roots.update(object_roots(
+                                        selected, seen, depth + 1
+                                    ))
+                                return roots
+                            # For a dynamically selected member, the base
+                            # itself may be the guard whose state is changed.
+                            return object_roots(
+                                node.value, seen, depth + 1
+                            )
+                        source = object_source(node)
+                        return {source} if source is not None else set()
+
+                    guard_sources = object_roots(guard)
+                    return bool(guard_sources & object_roots(value))
 
                 def nonmutating_builtin_copy(value, position):
                     # Only a literal builtin list/dict/set has a proven
@@ -8916,7 +8971,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         # Augmented assignment can mutate a shared guard or
                         # nested mutable receiver, even through an alias.
                         if aliases_guard(
-                            guard_receiver(item.target),
+                            item.target,
                             _position_before(item), name
                         ):
                             return True
@@ -8924,7 +8979,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         func = item.func
                         if isinstance(func, ast.Attribute):
                             if aliases_guard(
-                                guard_receiver(func.value), at, name
+                                func.value, at, name
                             ):
                                 if (
                                     func.attr != "copy"
@@ -8936,7 +8991,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         elif aliases_guard(func, at, name):
                             return True
                         return any(
-                            aliases_guard(guard_receiver(arg), at, name)
+                            aliases_guard(arg, at, name)
                             for arg in (
                                 *item.args,
                                 *(kw.value for kw in item.keywords)
@@ -8946,7 +9001,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         return (
                             isinstance(item.ctx, (ast.Store, ast.Del))
                             and aliases_guard(
-                                guard_receiver(item.value), at, name
+                                item.value, at, name
                             )
                         )
                     return False
@@ -12044,6 +12099,99 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                       mutation=mutation, prior=prior):
                         body = (
                             initial + aliases
+                            + 'extra = {"api_key": None}\n'
+                            'if flag:\n    extra["api_key"] = password\n'
+                            'options = {"api_key": None}\n'
+                            'options.update(extra)\n'
+                            + ('if flag:\n    options["api_key"] = None\n'
+                               if prior else '')
+                            + mutation + '\n'
+                            'if flag:\n    options["api_key"] = None\n'
+                        )
+                        wrapper.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'def connect(password):\n'
+                            + textwrap.indent(body, '    ')
+                            + '    return Elasticsearch("localhost", '
+                            '**options)\n',
+                            encoding="utf-8",
+                        )
+                        caller.write_text(
+                            'from client import connect\n'
+                            'connect("hardcoded-secret")\n',
+                            encoding="utf-8",
+                        )
+                        self._runtime_es_module_paths()
+                        self.assertEqual(
+                            bool(self._es_wrapper_credential_lines.get(
+                                caller.resolve()
+                            )),
+                            expected,
+                        )
+
+    def test_es_wrapper_extracted_guard_children_and_indexed_aliases(self):
+        """Extracted nested children keep the original guard's object identity."""
+        child_guard = (
+            'class Guard:\n'
+            '    def __init__(self):\n'
+            '        self.state = [True]\n'
+            '    def __bool__(self):\n'
+            '        return bool(self.state)\n'
+            'flag = Guard()\n'
+        )
+        # aliases, mutation, sanitizer-before-mutation, expected warning
+        cases = (
+            ('state = flag.state\n', 'state.clear()', False, True),
+            ('state = flag.state\nstate2 = state\n',
+             'state2.clear()', False, True),
+            ('state = flag.state\n', 'state[:] = []', False, True),
+            ('state = flag.state\n', 'state *= 0', False, True),
+            ('state = flag.state\n', 'state.clear()', True, False),
+            ('state = flag.state\nstate = [True]\n',
+             'state.clear()', False, False),
+            ('state = [True]\n', 'state.clear()', False, False),
+            ('holder = [flag]\n', 'holder[0].state.clear()', False, True),
+            ('holder = [flag]\nstate = holder[0].state\n',
+             'state.clear()', False, True),
+            ('holder = (flag,)\n', 'holder[0].state.clear()', False, True),
+            ('holder = {"main": flag}\n',
+             'holder["main"].state.clear()', False, True),
+            ('holder = [[flag]]\n',
+             'holder[0][0].state.clear()', False, True),
+            ('holder = [flag]\n', 'holder[0].state.clear()', True, False),
+            ('holder = [Guard(), flag]\n',
+             'holder[0].state.clear()', False, False),
+            ('holder = [flag, Guard()]\n',
+             'holder[1].state.clear()', False, False),
+            ('holder = [Guard()]\n',
+             'holder[0].state.clear()', False, False),
+            ('holder = [flag]\nholder = [Guard()]\n',
+             'holder[0].state.clear()', False, False),
+            ('holder = [flag]\nflag = Guard()\n',
+             'holder[0].state.clear()', False, False),
+            ('state = flag.state\nflag = Guard()\n',
+             'state.clear()', False, False),
+            ('other = Guard()\nstate = other.state\n',
+             'state.clear()', False, False),
+            ('holder = {"main": Guard(), "other": flag}\n',
+             'holder["main"].state.clear()', False, False),
+            ('holder = {"main": Guard(), "other": flag}\n',
+             'holder["other"].state.clear()', False, True),
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = root / "client.py"
+            caller = root / "worker.py"
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for alias, mutation, prior, expected in cases:
+                    with self.subTest(alias=alias, mutation=mutation,
+                                      prior=prior):
+                        body = (
+                            child_guard + alias
                             + 'extra = {"api_key": None}\n'
                             'if flag:\n    extra["api_key"] = password\n'
                             'options = {"api_key": None}\n'
