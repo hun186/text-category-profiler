@@ -11703,19 +11703,23 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                  'options = {"api_key": None}\n'
                  'options.update(extra)\n'
                  'if flag:\n    options["api_key"] = None\n', False),
+                # A wrapper parameter's runtime type is not proven here:
+                # user-defined copy() methods may mutate the guard. Treat
+                # these as possible leaks; local literal builtin copies are
+                # separately proven safe by the receiver regression suite.
                 ('extra = {"api_key": None}\n'
                  'if flag:\n    extra["api_key"] = password\n'
                  'options = {"api_key": None}\n'
                  'options.update(extra)\n'
                  'flag.copy()\n'
-                 'if flag:\n    options["api_key"] = None\n', False),
+                 'if flag:\n    options["api_key"] = None\n', True),
                 ('extra = {"api_key": None}\n'
                  'alias = flag\n'
                  'if flag:\n    extra["api_key"] = password\n'
                  'options = {"api_key": None}\n'
                  'options.update(extra)\n'
                  'alias.copy()\n'
-                 'if flag:\n    options["api_key"] = None\n', False),
+                 'if flag:\n    options["api_key"] = None\n', True),
                 ('extra = {"api_key": None}\n'
                  'if flag:\n    extra["api_key"] = password\n'
                  'options = {"api_key": None}\n'
