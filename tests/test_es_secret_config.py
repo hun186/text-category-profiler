@@ -8882,6 +8882,26 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         )
                     )
 
+                def guard_receiver(value):
+                    # Mutating a nested attribute or indexed child can change
+                    # the truthiness of its owning guard. Follow the chain to
+                    # the name that owns the receiver before alias resolution.
+                    while isinstance(value, (ast.Attribute, ast.Subscript)):
+                        value = value.value
+                    return value
+
+                def nonmutating_builtin_copy(value, position):
+                    # Only a literal builtin list/dict/set has a proven
+                    # nonmutating copy method. A user-defined copy() may alter
+                    # state consulted by __bool__, even if named "copy".
+                    if not isinstance(value, ast.Name):
+                        return False
+                    reaching = _resolve_bound_nodes(value, bindings, position)
+                    return bool(reaching) and all(
+                        isinstance(resolved, (ast.List, ast.Dict, ast.Set))
+                        for resolved in reaching
+                    )
+
                 def mutates_guard(item, name):
                     if getattr(item, "_binding_scope", None) is not wrapper:
                         return False
@@ -8893,21 +8913,30 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     ):
                         return True
                     if isinstance(item, ast.AugAssign):
-                        # alias *= 0 mutates a shared list's truthiness
-                        # without spelling the original guard's name.
-                        if aliases_guard(item.target, _position_before(item), name):
+                        # Augmented assignment can mutate a shared guard or
+                        # nested mutable receiver, even through an alias.
+                        if aliases_guard(
+                            guard_receiver(item.target),
+                            _position_before(item), name
+                        ):
                             return True
                     if isinstance(item, ast.Call):
                         func = item.func
                         if isinstance(func, ast.Attribute):
-                            if aliases_guard(func.value, at, name):
-                                # A copy does not mutate the original object.
-                                if func.attr != "copy":
+                            if aliases_guard(
+                                guard_receiver(func.value), at, name
+                            ):
+                                if (
+                                    func.attr != "copy"
+                                    or not nonmutating_builtin_copy(
+                                        func.value, at
+                                    )
+                                ):
                                     return True
                         elif aliases_guard(func, at, name):
                             return True
                         return any(
-                            aliases_guard(arg, at, name)
+                            aliases_guard(guard_receiver(arg), at, name)
                             for arg in (
                                 *item.args,
                                 *(kw.value for kw in item.keywords)
@@ -8916,7 +8945,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     if isinstance(item, (ast.Subscript, ast.Attribute)):
                         return (
                             isinstance(item.ctx, (ast.Store, ast.Del))
-                            and aliases_guard(item.value, at, name)
+                            and aliases_guard(
+                                guard_receiver(item.value), at, name
+                            )
                         )
                     return False
 
@@ -11890,6 +11921,133 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                if prior else '')
                             + mutation + "\n"
                             + guard + ':\n    options["api_key"] = None\n'
+                        )
+                        wrapper.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'def connect(password):\n'
+                            + textwrap.indent(body, '    ')
+                            + '    return Elasticsearch("localhost", '
+                            '**options)\n',
+                            encoding="utf-8",
+                        )
+                        caller.write_text(
+                            'from client import connect\n'
+                            'connect("hardcoded-secret")\n',
+                            encoding="utf-8",
+                        )
+                        self._runtime_es_module_paths()
+                        self.assertEqual(
+                            bool(self._es_wrapper_credential_lines.get(
+                                caller.resolve()
+                            )),
+                            expected,
+                        )
+
+    def test_es_wrapper_guard_copy_methods_and_nested_receivers(self):
+        """Custom copy and nested receiver mutations split guard epochs."""
+        class_state = (
+            'class State:\n'
+            '    def __init__(self):\n'
+            '        self.active = True\n'
+            'class Guard:\n'
+            '    def __init__(self):\n'
+            '        self.state = State()\n'
+            '    def __bool__(self):\n'
+            '        return self.state.active\n'
+            'flag = Guard()\n'
+        )
+        class_copy = (
+            'class Guard:\n'
+            '    def __init__(self):\n'
+            '        self.active = True\n'
+            '    def __bool__(self):\n'
+            '        return self.active\n'
+            '    def copy(self):\n'
+            '        self.active = False\n'
+            '        return self\n'
+            'flag = Guard()\n'
+        )
+        class_list_state = (
+            'class Guard:\n'
+            '    def __init__(self):\n'
+            '        self.state = [True]\n'
+            '    def __bool__(self):\n'
+            '        return bool(self.state)\n'
+            'flag = Guard()\n'
+        )
+        class_child = (
+            'class Child:\n'
+            '    def __init__(self):\n'
+            '        self.active = True\n'
+            'class Guard:\n'
+            '    def __init__(self):\n'
+            '        self.items = [Child()]\n'
+            '    def __bool__(self):\n'
+            '        return self.items[0].active\n'
+            'flag = Guard()\n'
+        )
+        # initialization, aliases, mutation, sanitized-before, result
+        cases = (
+            (class_copy, 'alias = flag\n', 'alias.copy()', False, True),
+            (class_copy, 'alias = flag\nalias2 = alias\n',
+             'alias2.copy()', False, True),
+            (class_copy, 'alias = flag\n', 'alias.copy()', True, False),
+            (class_copy, 'alias = Guard()\n', 'alias.copy()', False, False),
+            (class_state, 'alias = flag\n',
+             'alias.state.active = False', False, True),
+            (class_state, 'alias = flag\nalias2 = alias\n',
+             'alias2.state.active = False', False, True),
+            (class_state, 'alias = flag\n',
+             'alias.state.active = False', True, False),
+            (class_state, 'alias = Guard()\n',
+             'alias.state.active = False', False, False),
+            (class_state, 'alias = flag\n',
+             'alias = Guard()\nalias.state.active = False', False, False),
+            (class_state, 'alias = flag\n',
+             'flag.state.active = False', False, True),
+            (class_list_state, 'alias = flag\n',
+             'alias.state.clear()', False, True),
+            (class_list_state, 'alias = flag\n',
+             'alias.state[:] = []', False, True),
+            (class_list_state, 'alias = flag\n',
+             'alias.state.clear()', True, False),
+            (class_list_state, 'alias = flag\n',
+             'def clear_state(value):\n'
+             '    value.clear()\n'
+             'clear_state(alias.state)', False, True),
+            (class_child, 'alias = flag\n',
+             'alias.items[0].active = False', False, True),
+            (class_child, 'alias = flag\n',
+             'alias.items[0].active = False', True, False),
+            ('flag = [True]\n', 'alias = flag\n',
+             'alias.copy()', False, False),
+            ('flag = {"active": True}\n', 'alias = flag\n',
+             'alias.copy()', False, False),
+            ('flag = {True}\n', 'alias = flag\n',
+             'alias.copy()', False, False),
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = root / "client.py"
+            caller = root / "worker.py"
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for initial, aliases, mutation, prior, expected in cases:
+                    with self.subTest(initial=initial, aliases=aliases,
+                                      mutation=mutation, prior=prior):
+                        body = (
+                            initial + aliases
+                            + 'extra = {"api_key": None}\n'
+                            'if flag:\n    extra["api_key"] = password\n'
+                            'options = {"api_key": None}\n'
+                            'options.update(extra)\n'
+                            + ('if flag:\n    options["api_key"] = None\n'
+                               if prior else '')
+                            + mutation + '\n'
+                            'if flag:\n    options["api_key"] = None\n'
                         )
                         wrapper.write_text(
                             'from elasticsearch import Elasticsearch\n'
