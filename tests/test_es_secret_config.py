@@ -8857,10 +8857,79 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             return None
                         return ("source", id(resolved))
 
+                    def mapping_selection(mapping, index, depth=0):
+                        """Possible selected values and key absence in write order.
+
+                        An unpack can overwrite a preceding exact key; a later
+                        explicit key can overwrite the unpack again. An opaque
+                        source or dynamic key may or may not write the key,
+                        so retain both prior and newly reachable alternatives.
+                        """
+                        if depth > 12:
+                            return [], True
+                        if isinstance(mapping, ast.Name):
+                            sources = _resolve_bound_nodes(
+                                mapping, bindings, position
+                            )
+                        else:
+                            sources = [mapping]
+                        outcomes = []
+                        may_be_absent = False
+                        for source in sources:
+                            if isinstance(source, ast.BinOp) and isinstance(
+                                source.op, ast.BitOr
+                            ):
+                                # Mapping union is right-biased, like unpack.
+                                left, left_absent = mapping_selection(
+                                    source.left, index, depth + 1
+                                )
+                                right, right_absent = mapping_selection(
+                                    source.right, index, depth + 1
+                                )
+                                outcomes.extend(
+                                    [*left, *right] if right_absent else right
+                                )
+                                may_be_absent |= (
+                                    left_absent and right_absent
+                                )
+                                continue
+                            if not isinstance(source, ast.Dict):
+                                # Unknown mappings cannot prove either key
+                                # absence or a stable overwrite.
+                                may_be_absent = True
+                                continue
+                            current = []
+                            absent = True
+                            for key_node, value_node in zip(
+                                source.keys, source.values
+                            ):
+                                if key_node is None:
+                                    unpacked, unpack_absent = mapping_selection(
+                                        value_node, index, depth + 1
+                                    )
+                                    if unpack_absent:
+                                        current.extend(unpacked)
+                                    else:
+                                        current = list(unpacked)
+                                        absent = False
+                                elif (
+                                    isinstance(key_node, ast.Constant)
+                                    and isinstance(index, ast.Constant)
+                                ):
+                                    if key_node.value == index.value:
+                                        current = [value_node]
+                                        absent = False
+                                else:
+                                    # An unknown expression can match the
+                                    # requested key, but need not overwrite.
+                                    current.append(value_node)
+                            outcomes.extend(current)
+                            may_be_absent |= absent
+                        return outcomes, may_be_absent
+
                     def indexed_values(node, depth=0):
                         # Resolve known container members including dict.get.
-                        # Unknown selections keep all possible mapped objects
-                        # rather than correlating guard decisions unsafely.
+                        # Mapping unpacks are processed source-ordered.
                         if depth > 12:
                             return []
                         if isinstance(node, ast.Name):
@@ -8903,41 +8972,14 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                     if -len(base.elts) <= slot < len(base.elts):
                                         selected.append(base.elts[slot])
                                 else:
-                                    # An unknown index may select any member.
                                     selected.extend(base.elts)
-                            elif isinstance(base, ast.Dict):
-                                if isinstance(index, ast.Constant):
-                                    # For literal duplicate keys the last
-                                    # occurrence determines the selected value.
-                                    exact = [
-                                        value
-                                        for candidate_key, value in zip(
-                                            base.keys, base.values
-                                        )
-                                        if (
-                                            isinstance(candidate_key, ast.Constant)
-                                            and candidate_key.value == index.value
-                                        )
-                                    ]
-                                    if exact:
-                                        selected.append(exact[-1])
-                                    else:
-                                        # Dynamic/unpacked keys could match.
-                                        selected.extend(
-                                            value
-                                            for candidate_key, value in zip(
-                                                base.keys, base.values
-                                            )
-                                            if not isinstance(
-                                                candidate_key, ast.Constant
-                                            )
-                                        )
-                                        if getter:
-                                            selected.append(fallback)
-                                else:
-                                    selected.extend(base.values)
-                                    if getter:
-                                        selected.append(fallback)
+                            elif isinstance(base, (ast.Dict, ast.BinOp)):
+                                values, absent = mapping_selection(
+                                    base, index, depth + 1
+                                )
+                                selected.extend(values)
+                                if getter and absent:
+                                    selected.append(fallback)
                         return selected
 
                     def object_roots(node, seen=frozenset(), depth=0):
@@ -12348,6 +12390,130 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
              'holder2 = holder.copy()\n'
              'state = holder.get("main").state\n',
              'state.clear()', False, True),
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = root / "client.py"
+            caller = root / "worker.py"
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for setup, mutation, prior, expected in cases:
+                    with self.subTest(setup=setup, mutation=mutation,
+                                      prior=prior):
+                        body = (
+                            guard + setup
+                            + 'extra = {"api_key": None}\n'
+                            'if flag:\n    extra["api_key"] = password\n'
+                            'options = {"api_key": None}\n'
+                            'options.update(extra)\n'
+                            + ('if flag:\n    options["api_key"] = None\n'
+                               if prior else '')
+                            + mutation + '\n'
+                            'if flag:\n    options["api_key"] = None\n'
+                        )
+                        wrapper.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'def connect(password):\n'
+                            + textwrap.indent(body, '    ')
+                            + '    return Elasticsearch("localhost", '
+                            '**options)\n',
+                            encoding="utf-8",
+                        )
+                        caller.write_text(
+                            'from client import connect\n'
+                            'connect("hardcoded-secret")\n',
+                            encoding="utf-8",
+                        )
+                        self._runtime_es_module_paths()
+                        self.assertEqual(
+                            bool(self._es_wrapper_credential_lines.get(
+                                caller.resolve()
+                            )),
+                            expected,
+                        )
+
+    def test_es_wrapper_guard_mapping_unpack_write_order(self):
+        """Guard alias selection follows right-biased mapping unpack order."""
+        guard = (
+            'class Guard:\n'
+            '    def __init__(self):\n'
+            '        self.state = [True]\n'
+            '    def __bool__(self):\n'
+            '        return bool(self.state)\n'
+            'flag = Guard()\n'
+        )
+        # setup, mutation, sanitized-before-mutation, credential reaches ES
+        cases = (
+            ('holder = {"main": Guard(), **{"main": flag}}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('holder = {"main": flag, **{"main": Guard()}}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('holder = {"main": Guard(), **{"main": flag}}\n'
+             'state = holder.get("main").state\n',
+             'state.clear()', False, True),
+            ('holder = {"main": Guard(), **{"main": flag}}\n'
+             'state = holder["main"].state\n',
+             'state.clear()', False, True),
+            ('holder = {"main": Guard(), **{"main": flag}}\n'
+             'state = holder.get("main").state\n',
+             'state.clear()', True, False),
+            ('holder = {"main": flag, **{"other": Guard()}}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('holder = {"main": Guard(), **{"other": flag}}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('rhs = {"main": flag}\n'
+             'holder = {"main": Guard(), **rhs}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('rhs = {"main": Guard()}\n'
+             'holder = {"main": flag, **rhs}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('rhs = {"main": flag}\n'
+             'holder = {"main": Guard(), **rhs}\n'
+             'rhs = {"main": Guard()}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('holder = {"main": Guard(), **{"main": flag},'
+             ' "main": Guard()}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('holder = {"main": flag, **{"main": Guard()},'
+             ' "main": flag}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('holder = {"main": Guard(), **{"main": flag},'
+             ' **{"other": Guard()}}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('holder = {"main": Guard(), **{"main": flag},'
+             ' **{"main": Guard()}}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('holder = {"main": Guard(), **{"other": flag},'
+             ' **{"main": flag}}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('holder = {**{"main": Guard()}, **{"main": flag}}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('holder = {**{"main": flag}, **{"main": Guard()}}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('holder = {"main": Guard(), **{"main": flag}}\n'
+             'holder = {"main": Guard()}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('holder = {"main": Guard(), **{"main": flag}}\n'
+             'state = holder.get("main").state\n'
+             'holder = {"main": Guard()}\n',
+             'state.clear()', False, True),
+            ('holder = {"main": Guard(), **{"main": flag}}\n'
+             'state = holder.get("main").state\n'
+             'state = [True]\n',
+             'state.clear()', False, False),
+            ('holder = {"main": Guard(), **{"main": flag}}\n'
+             'state = holder.get("main").state\n'
+             'flag = Guard()\n',
+             'state.clear()', False, False),
+            ('holder = {"main": Guard(), **({"main": flag} | {})}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('holder = {"main": Guard(), **({} | {"main": flag})}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('holder = {"main": flag, **({} | {"main": Guard()})}\n',
+             'holder.get("main").state.clear()', False, False),
         )
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
