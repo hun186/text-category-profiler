@@ -8858,47 +8858,86 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         return ("source", id(resolved))
 
                     def indexed_values(node, depth=0):
-                        # Resolve known container members instead of assuming
-                        # that an arbitrary holder is the guarded object.
+                        # Resolve known container members including dict.get.
+                        # Unknown selections keep all possible mapped objects
+                        # rather than correlating guard decisions unsafely.
                         if depth > 12:
                             return []
                         if isinstance(node, ast.Name):
                             return _resolve_bound_nodes(
                                 node, bindings, position
                             )
-                        if not isinstance(node, ast.Subscript):
-                            return [node]
-                        bases = indexed_values(node.value, depth + 1)
-                        index = node.slice
-                        key = (
-                            index.value if isinstance(index, ast.Constant)
-                            else None
+                        getter = (
+                            isinstance(node, ast.Call)
+                            and isinstance(node.func, ast.Attribute)
+                            and node.func.attr == "get"
+                            and 1 <= len(node.args) <= 2
+                            and not node.keywords
                         )
+                        if getter:
+                            bases = indexed_values(
+                                node.func.value, depth + 1
+                            )
+                            index = node.args[0]
+                            fallback = (
+                                node.args[1] if len(node.args) == 2
+                                else ast.Constant(value=None)
+                            )
+                        elif isinstance(node, ast.Subscript):
+                            bases = indexed_values(node.value, depth + 1)
+                            index = node.slice
+                            fallback = None
+                        else:
+                            return [node]
                         selected = []
                         for base in bases:
                             if isinstance(base, (ast.List, ast.Tuple)):
-                                if isinstance(key, int) and not isinstance(key, bool):
-                                    if -len(base.elts) <= key < len(base.elts):
-                                        selected.append(base.elts[key])
+                                if getter:
+                                    continue
+                                if (
+                                    isinstance(index, ast.Constant)
+                                    and isinstance(index.value, int)
+                                    and not isinstance(index.value, bool)
+                                ):
+                                    slot = index.value
+                                    if -len(base.elts) <= slot < len(base.elts):
+                                        selected.append(base.elts[slot])
                                 else:
                                     # An unknown index may select any member.
                                     selected.extend(base.elts)
                             elif isinstance(base, ast.Dict):
-                                matched = False
-                                for candidate_key, candidate_value in zip(
-                                    base.keys, base.values
-                                ):
-                                    if (
-                                        isinstance(candidate_key, ast.Constant)
-                                        and isinstance(index, ast.Constant)
-                                        and candidate_key.value == key
-                                    ):
-                                        selected.append(candidate_value)
-                                        matched = True
-                                if not matched and not isinstance(
-                                    index, ast.Constant
-                                ):
+                                if isinstance(index, ast.Constant):
+                                    # For literal duplicate keys the last
+                                    # occurrence determines the selected value.
+                                    exact = [
+                                        value
+                                        for candidate_key, value in zip(
+                                            base.keys, base.values
+                                        )
+                                        if (
+                                            isinstance(candidate_key, ast.Constant)
+                                            and candidate_key.value == index.value
+                                        )
+                                    ]
+                                    if exact:
+                                        selected.append(exact[-1])
+                                    else:
+                                        # Dynamic/unpacked keys could match.
+                                        selected.extend(
+                                            value
+                                            for candidate_key, value in zip(
+                                                base.keys, base.values
+                                            )
+                                            if not isinstance(
+                                                candidate_key, ast.Constant
+                                            )
+                                        )
+                                        if getter:
+                                            selected.append(fallback)
+                                else:
                                     selected.extend(base.values)
+                                    if getter:
+                                        selected.append(fallback)
                         return selected
 
                     def object_roots(node, seen=frozenset(), depth=0):
@@ -8925,7 +8964,12 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             return object_roots(
                                 node.value, seen, depth + 1
                             )
-                        if isinstance(node, ast.Subscript):
+                        getter = (
+                            isinstance(node, ast.Call)
+                            and isinstance(node.func, ast.Attribute)
+                            and node.func.attr == "get"
+                        )
+                        if isinstance(node, ast.Subscript) or getter:
                             values = indexed_values(node)
                             if values:
                                 roots = set()
@@ -8934,11 +8978,15 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                         selected, seen, depth + 1
                                     ))
                                 return roots
-                            # For a dynamically selected member, the base
-                            # itself may be the guard whose state is changed.
-                            return object_roots(
-                                node.value, seen, depth + 1
-                            )
+                            if isinstance(node, ast.Subscript):
+                                # Dynamically selected members may alter the
+                                # containing object's guard state.
+                                return object_roots(
+                                    node.value, seen, depth + 1
+                                )
+                            # A known missing mapping getter with no default
+                            # must not be mistaken for its container/guard.
+                            return set()
                         source = object_source(node)
                         return {source} if source is not None else set()
 
@@ -12192,6 +12240,129 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                       prior=prior):
                         body = (
                             child_guard + alias
+                            + 'extra = {"api_key": None}\n'
+                            'if flag:\n    extra["api_key"] = password\n'
+                            'options = {"api_key": None}\n'
+                            'options.update(extra)\n'
+                            + ('if flag:\n    options["api_key"] = None\n'
+                               if prior else '')
+                            + mutation + '\n'
+                            'if flag:\n    options["api_key"] = None\n'
+                        )
+                        wrapper.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'def connect(password):\n'
+                            + textwrap.indent(body, '    ')
+                            + '    return Elasticsearch("localhost", '
+                            '**options)\n',
+                            encoding="utf-8",
+                        )
+                        caller.write_text(
+                            'from client import connect\n'
+                            'connect("hardcoded-secret")\n',
+                            encoding="utf-8",
+                        )
+                        self._runtime_es_module_paths()
+                        self.assertEqual(
+                            bool(self._es_wrapper_credential_lines.get(
+                                caller.resolve()
+                            )),
+                            expected,
+                        )
+
+    def test_es_wrapper_mapping_getter_guard_aliases(self):
+        """Preserve object identity through source-ordered dict.get results."""
+        guard = (
+            'class Guard:\n'
+            '    def __init__(self):\n'
+            '        self.state = [True]\n'
+            '    def __bool__(self):\n'
+            '        return bool(self.state)\n'
+            'flag = Guard()\n'
+        )
+        # setup, mutation, sanitized-before-mutation, detected
+        cases = (
+            ('holder = {"main": flag}\n'
+             'state = holder.get("main").state\n',
+             'state.clear()', False, True),
+            ('holder = {"main": flag}\n'
+             'state = holder.get("main").state\nalias = state\n',
+             'alias.clear()', False, True),
+            ('holder = {"main": flag}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('holder = {"main": flag}\n'
+             'state = holder.get("main").state\n',
+             'state[:] = []', False, True),
+            ('holder = {"main": flag}\n'
+             'state = holder.get("main").state\n',
+             'state.clear()', True, False),
+            ('holder = {"main": flag}\n'
+             'other = holder\nstate = other.get("main").state\n',
+             'state.clear()', False, True),
+            ('holder = {"main": flag, "other": Guard()}\n'
+             'state = holder.get("other").state\n',
+             'state.clear()', False, False),
+            ('holder = {"main": Guard(), "other": flag}\n'
+             'state = holder.get("other").state\n',
+             'state.clear()', False, True),
+            ('holder = {"main": Guard(), "other": flag}\n'
+             'state = holder.get("main").state\n',
+             'state.clear()', False, False),
+            ('holder = {"main": flag}\n'
+             'state = holder.get("missing", Guard()).state\n',
+             'state.clear()', False, False),
+            ('holder = {"main": Guard()}\n'
+             'state = holder.get("missing", flag).state\n',
+             'state.clear()', False, True),
+            ('holder = {"main": flag}\n'
+             'state = holder.get("main", Guard()).state\n',
+             'state.clear()', False, True),
+            ('holder = {"main": Guard()}\n'
+             'state = holder.get("main", flag).state\n',
+             'state.clear()', False, False),
+            ('holder = {"main": flag}\n'
+             'holder = {"main": Guard()}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('holder = {"main": flag}\n'
+             'state = holder.get("main").state\n'
+             'holder = {"main": Guard()}\n',
+             'state.clear()', False, True),
+            ('holder = {"main": flag}\n'
+             'state = holder.get("main").state\n'
+             'state = [True]\n',
+             'state.clear()', False, False),
+            ('holder = {"main": flag}\n'
+             'state = holder.get("main").state\n'
+             'flag = Guard()\n',
+             'state.clear()', False, False),
+            ('holder = {"main": Guard(), "main": flag}\n'
+             'state = holder.get("main").state\n',
+             'state.clear()', False, True),
+            ('holder = {"main": flag, "main": Guard()}\n'
+             'state = holder.get("main").state\n',
+             'state.clear()', False, False),
+            ('outer = {"nested": {"main": flag}}\n'
+             'state = outer.get("nested").get("main").state\n',
+             'state.clear()', False, True),
+            ('holder = {"main": flag}\n'
+             'holder2 = holder.copy()\n'
+             'state = holder.get("main").state\n',
+             'state.clear()', False, True),
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = root / "client.py"
+            caller = root / "worker.py"
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for setup, mutation, prior, expected in cases:
+                    with self.subTest(setup=setup, mutation=mutation,
+                                      prior=prior):
+                        body = (
+                            guard + setup
                             + 'extra = {"api_key": None}\n'
                             'if flag:\n    extra["api_key"] = password\n'
                             'options = {"api_key": None}\n'
