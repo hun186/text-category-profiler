@@ -8219,7 +8219,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         returned = definition.body
                     elif isinstance(definition, (ast.FunctionDef, ast.AsyncFunctionDef)):
                         if (
-                            definition.args.args or definition.args.kwonlyargs
+                            definition.decorator_list
+                            or definition.args.args or definition.args.kwonlyargs
                             or len(definition.body) != 1
                             or not isinstance(definition.body[0], ast.Return)
                         ):
@@ -8832,6 +8833,80 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                 _node_position(owner)
                             )
 
+                def aliases_guard(value, position, name):
+                    if not isinstance(value, ast.Name):
+                        return False
+                    if value.id == name:
+                        return True
+                    # Resolve aliases as of the mutation, not as of an
+                    # unrelated earlier conditional check.
+                    return any(
+                        isinstance(resolved, ast.Name)
+                        and resolved.id == name
+                        for resolved in _resolve_bound_nodes(
+                            value, bindings, position
+                        )
+                    )
+
+                def mutates_guard(item, name):
+                    if getattr(item, "_binding_scope", None) is not wrapper:
+                        return False
+                    at = _node_position(item)
+                    if (
+                        isinstance(item, ast.Name)
+                        and isinstance(item.ctx, (ast.Store, ast.Del))
+                        and item.id == name
+                    ):
+                        return True
+                    if isinstance(item, ast.AugAssign):
+                        # alias *= 0 mutates a shared list's truthiness
+                        # without spelling the original guard's name.
+                        if aliases_guard(item.target, _position_before(item), name):
+                            return True
+                    if isinstance(item, ast.Call):
+                        func = item.func
+                        if isinstance(func, ast.Attribute):
+                            if aliases_guard(func.value, at, name):
+                                # A copy does not mutate the original object.
+                                if func.attr != "copy":
+                                    return True
+                        elif aliases_guard(func, at, name):
+                            return True
+                        return any(
+                            aliases_guard(arg, at, name)
+                            for arg in (
+                                *item.args,
+                                *(kw.value for kw in item.keywords)
+                            )
+                        )
+                    if isinstance(item, (ast.Subscript, ast.Attribute)):
+                        return (
+                            isinstance(item.ctx, (ast.Store, ast.Del))
+                            and aliases_guard(item.value, at, name)
+                        )
+                    return False
+
+                # A single guard may have multiple stable epochs. A mutation
+                # after the first sanitizing overwrite must not invalidate
+                # an earlier safe transfer/overwrite correlation merely
+                # because a third conditional later uses the same name.
+                # Treat tests on either side of each visible mutation as
+                # independent decisions, while preserving correlation within
+                # each adjacent stable interval.
+                guard_epoch = {}
+                for name, positions in guard_positions.items():
+                    epoch = 0
+                    previous = None
+                    for position in sorted(positions):
+                        if previous is not None and any(
+                            previous < _node_position(item) < position
+                            and mutates_guard(item, name)
+                            for item in ast.walk(wrapper)
+                        ):
+                            epoch += 1
+                        guard_epoch[(name, position)] = epoch
+                        previous = position
+
                 def stable_branch(step):
                     if step[0] != "If" or step[3] not in {"body", "orelse"}:
                         return None
@@ -8848,66 +8923,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     if not isinstance(condition, ast.Name):
                         return None
                     name = condition.id
-                    interval = guard_positions.get(name, set())
-                    if len(interval) > 1:
-                        first, last = min(interval), max(interval)
-
-                        def aliases_guard(value, position):
-                            if not isinstance(value, ast.Name):
-                                return False
-                            if value.id == name:
-                                return True
-                            # Resolve a chain such as alias2 = alias = flag
-                            # using the value visible at the mutation site,
-                            # not the name spelling of its receiver.
-                            return any(
-                                isinstance(resolved, ast.Name)
-                                and resolved.id == name
-                                for resolved in _resolve_bound_nodes(
-                                    value, bindings, position
-                                )
-                            )
-
-                        for item in ast.walk(wrapper):
-                            if getattr(item, "_binding_scope", None) is not wrapper:
-                                continue
-                            at = _node_position(item)
-                            if not first < at < last:
-                                continue
-                            # A direct reassignment changes the guard epoch.
-                            if (
-                                isinstance(item, ast.Name)
-                                and isinstance(item.ctx, (ast.Store, ast.Del))
-                                and item.id == name
-                            ):
-                                return None
-                            if isinstance(item, ast.Call):
-                                func = item.func
-                                if isinstance(func, ast.Attribute):
-                                    if aliases_guard(func.value, at):
-                                        # Read-only copies do not change the
-                                        # original guard object's truthiness.
-                                        if func.attr != "copy":
-                                            return None
-                                elif aliases_guard(func, at):
-                                    return None
-                                if any(
-                                    aliases_guard(arg, at)
-                                    for arg in (
-                                        *item.args,
-                                        *(kw.value for kw in item.keywords)
-                                    )
-                                ):
-                                    # Opaque calls may mutate an alias passed
-                                    # as a positional or keyword argument.
-                                    return None
-                            elif isinstance(item, (ast.Subscript, ast.Attribute)):
-                                if (
-                                    isinstance(item.ctx, (ast.Store, ast.Del))
-                                    and aliases_guard(item.value, at)
-                                ):
-                                    return None
-                    return name, ((step[3] == "body") != negated)
+                    epoch = guard_epoch.get((name, _node_position(owner)), 0)
+                    return (name, epoch), ((step[3] == "body") != negated)
 
                 absence_paths = [
                     path for value in conditional_transfers
@@ -11640,6 +11657,108 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                  'options.update(extra)\n'
                  'flag.clear()\n'
                  'if flag:\n    options["api_key"] = None\n', True),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for body, expected in cases:
+                    with self.subTest(body=body):
+                        wrapper.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'def connect(password, flag):\n'
+                            + textwrap.indent(body, '    ')
+                            + '    return Elasticsearch("localhost", '
+                            '**options)\n', encoding="utf-8",
+                        )
+                        caller.write_text(
+                            'from client import connect\n'
+                            'connect("hardcoded-secret", [True])\n',
+                            encoding="utf-8",
+                        )
+                        self._runtime_es_module_paths()
+                        self.assertEqual(
+                            bool(self._es_wrapper_credential_lines.get(
+                                caller.resolve()
+                            )),
+                            expected,
+                        )
+
+    def test_es_wrapper_guard_epochs_and_decorated_dict(self):
+        """Partition mutable alias decisions and distrust decorated returns."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = root / "client.py"
+            caller = root / "worker.py"
+            cases = (
+                ('extra = {"api_key": None}\n'
+                 'alias = flag\n'
+                 'if flag:\n    extra["api_key"] = password\n'
+                 'options = {"api_key": None}\n'
+                 'options.update(extra)\n'
+                 'alias *= 0\n'
+                 'if flag:\n    options["api_key"] = None\n', True),
+                ('extra = {"api_key": None}\n'
+                 'alias = flag\n'
+                 'alias2 = alias\n'
+                 'if flag:\n    extra["api_key"] = password\n'
+                 'options = {"api_key": None}\n'
+                 'options.update(extra)\n'
+                 'alias2 *= 0\n'
+                 'if flag:\n    options["api_key"] = None\n', True),
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra["api_key"] = password\n'
+                 'options = {"api_key": None}\n'
+                 'options.update(extra)\n'
+                 'if flag:\n    options["api_key"] = None\n'
+                 'flag.clear()\n'
+                 'if flag:\n    options["api_key"] = None\n', False),
+                ('extra = {"api_key": None}\n'
+                 'alias = flag\n'
+                 'if flag:\n    extra["api_key"] = password\n'
+                 'options = {"api_key": None}\n'
+                 'options.update(extra)\n'
+                 'if flag:\n    options["api_key"] = None\n'
+                 'alias *= 0\n'
+                 'if flag:\n    options["api_key"] = None\n', False),
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra["api_key"] = password\n'
+                 'options = {"api_key": None}\n'
+                 'options.update(extra)\n'
+                 'if flag:\n    options["api_key"] = None\n'
+                 'flag.clear()\n'
+                 'if not flag:\n    options["api_key"] = None\n', False),
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra["api_key"] = password\n'
+                 'options = {"api_key": None}\n'
+                 'options.update(extra)\n'
+                 'flag.clear()\n'
+                 'if flag:\n    options["api_key"] = None\n', True),
+                ('extra = {"api_key": None}\n'
+                 'if flag:\n    extra["api_key"] = password\n'
+                 'options = {"api_key": None}\n'
+                 'options.update(extra)\n'
+                 'if flag:\n    options["api_key"] = None\n', False),
+                ('def decorator(fn):\n'
+                 '    return lambda: {}\n'
+                 '@decorator\n'
+                 'def dict():\n'
+                 '    return {"api_key": None}\n'
+                 'extra = dict()\n'
+                 'options = {"api_key": password} | extra\n', True),
+                ('def decorator(fn):\n'
+                 '    return lambda: {}\n'
+                 '@decorator\n'
+                 'def dict():\n'
+                 '    return {"api_key": None}\n'
+                 'extra = dict()\n'
+                 'options = {"api_key": password}\n'
+                 'options.update(extra)\n', True),
+                ('def dict():\n'
+                 '    return {"api_key": None}\n'
+                 'extra = dict()\n'
+                 'options = {"api_key": password} | extra\n', False),
             )
             with patch.dict(globals(), {
                 "REPOSITORY_ROOT": root,
