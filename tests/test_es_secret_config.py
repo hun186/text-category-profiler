@@ -8838,11 +8838,45 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         return False
                     if value.id == name:
                         return True
-                    # Resolve aliases as of the mutation, not as of an
-                    # unrelated earlier conditional check.
-                    return any(
-                        isinstance(resolved, ast.Name)
-                        and resolved.id == name
+
+                    # A locally bound alias resolves all the way through its
+                    # guard name to the original list/dict/set literal. Name
+                    # comparison therefore misses in-place alias mutations.
+                    # Compare the reaching object sources at the mutation
+                    # site, not names from an earlier conditional test.
+                    guard = ast.Name(id=name, ctx=ast.Load())
+                    guard._binding_scope = wrapper
+                    guard._binding_control_path = _node_control_path(value)
+
+                    def object_source(resolved):
+                        if isinstance(resolved, ast.Name):
+                            # Unbound parameters remain symbolic objects.
+                            # Scope is part of their identity.
+                            return (
+                                "name",
+                                _binding_name_token(
+                                    resolved.id, bindings, resolved
+                                ),
+                            )
+                        if isinstance(resolved, (
+                            ast.Constant, ast.Tuple, ast.JoinedStr,
+                            ast.Lambda, ast.FunctionDef, ast.AsyncFunctionDef,
+                        )):
+                            # These bindings are not in-place mutable objects.
+                            return None
+                        # AST source identity distinguishes independently
+                        # created objects even when their text is identical.
+                        return ("source", id(resolved))
+
+                    guard_sources = {
+                        source for resolved in _resolve_bound_nodes(
+                            guard, bindings, position
+                        )
+                        if (source := object_source(resolved)) is not None
+                    }
+                    return bool(guard_sources) and any(
+                        (source := object_source(resolved)) is not None
+                        and source in guard_sources
                         for resolved in _resolve_bound_nodes(
                             value, bindings, position
                         )
@@ -11777,6 +11811,97 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         caller.write_text(
                             'from client import connect\n'
                             'connect("hardcoded-secret", [True])\n',
+                            encoding="utf-8",
+                        )
+                        self._runtime_es_module_paths()
+                        self.assertEqual(
+                            bool(self._es_wrapper_credential_lines.get(
+                                caller.resolve()
+                            )),
+                            expected,
+                        )
+
+    def test_es_wrapper_locally_bound_mutable_guard_aliases(self):
+        """Mutate guard objects through source-ordered aliases, not their names."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = root / "client.py"
+            caller = root / "worker.py"
+            # init, aliases, mutation, prior sanitizer, final branch, flagged
+            cases = (
+                ("flag = [True]", "alias = flag", "alias *= 0",
+                 False, "if flag", True),
+                ("flag = [True]", "alias = flag", "alias.clear()",
+                 False, "if flag", True),
+                ("flag = [True]", "alias = flag", "alias[:] = []",
+                 False, "if flag", True),
+                ("flag = [True]", "alias = flag", "flag.clear()",
+                 False, "if flag", True),
+                ("flag = [True]", "alias = flag\nalias2 = alias",
+                 "alias2 *= 0", False, "if flag", True),
+                ("flag = [True]", "alias = flag\nalias2 = alias",
+                 "alias2.clear()", False, "if flag", True),
+                ("flag = [True]", "alias = flag\nalias2 = alias",
+                 "alias2[:] = []", False, "if flag", True),
+                ("flag = [True]", "alias = flag", "alias *= 0",
+                 True, "if flag", False),
+                ("flag = [True]", "alias = flag", "alias.clear()",
+                 True, "if not flag", False),
+                ("flag = [True]", "alias = flag", "alias2 = flag",
+                 False, "if flag", False),
+                ("flag = [True]", "alias = [True]", "alias.clear()",
+                 False, "if flag", False),
+                ("flag = [True]", "alias = flag\nalias = [True]",
+                 "alias *= 0", False, "if flag", False),
+                ("flag = [True]", "alias = flag\nalias = [True]",
+                 "alias.clear()", False, "if flag", False),
+                ("flag = [True]\nalias = flag\nflag = [True]",
+                 "unused = 0", "alias.clear()", False, "if flag", False),
+                ("flag = [True]", "alias = flag\ncopy = alias.copy()",
+                 "copy.clear()", False, "if flag", False),
+                ("flag = True", "alias = flag", "alias *= 0",
+                 False, "if flag", False),
+                ("flag = [True]", "alias = flag", "alias.copy()",
+                 False, "if flag", False),
+                ("class Guard:\n"
+                 "    def __init__(self):\n"
+                 "        self.active = True\n"
+                 "    def __bool__(self):\n"
+                 "        return self.active\n"
+                 "flag = Guard()", "alias = flag", "alias.active = False",
+                 False, "if flag", True),
+            )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for initial, aliases, mutation, prior, guard, expected in cases:
+                    with self.subTest(initial=initial, aliases=aliases,
+                                      mutation=mutation, prior=prior,
+                                      guard=guard):
+                        body = (
+                            initial + "\n" + aliases + "\n"
+                            'extra = {"api_key": None}\n'
+                            'if flag:\n    extra["api_key"] = password\n'
+                            'options = {"api_key": None}\n'
+                            'options.update(extra)\n'
+                            + ('if flag:\n    options["api_key"] = None\n'
+                               if prior else '')
+                            + mutation + "\n"
+                            + guard + ':\n    options["api_key"] = None\n'
+                        )
+                        wrapper.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'def connect(password):\n'
+                            + textwrap.indent(body, '    ')
+                            + '    return Elasticsearch("localhost", '
+                            '**options)\n',
+                            encoding="utf-8",
+                        )
+                        caller.write_text(
+                            'from client import connect\n'
+                            'connect("hardcoded-secret")\n',
                             encoding="utf-8",
                         )
                         self._runtime_es_module_paths()
