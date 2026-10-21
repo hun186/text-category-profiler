@@ -8916,7 +8916,28 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                 # possible guarded receiver *and* the missing
                                 # key path. A later exact literal key still
                                 # overwrites this uncertainty.
-                                outcomes.append(guard)
+                                # Explicit inputs to an opaque callable
+                                # preserve their source-time object identity.
+                                # For instance, identity({"main": flag})
+                                # captures the old flag when flag is later
+                                # rebound. Without any visible candidate,
+                                # retain the conservative unknown guard.
+                                candidates = []
+                                if isinstance(source, ast.Call):
+                                    inputs = [
+                                        *source.args,
+                                        *(kw.value for kw in source.keywords)
+                                    ]
+                                    if isinstance(source.func, ast.Attribute):
+                                        inputs.append(source.func.value)
+                                    candidates = [
+                                        member
+                                        for argument in inputs
+                                        for member in ast.walk(argument)
+                                        if isinstance(member, ast.Name)
+                                        and isinstance(member.ctx, ast.Load)
+                                    ]
+                                outcomes.extend(candidates or [guard])
                                 may_be_absent = True
                                 continue
                             current = []
