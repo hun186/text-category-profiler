@@ -28,10 +28,20 @@ RUNTIME_ES_MODULES = (
     REPOSITORY_ROOT / "text_category_profiler" / "ES_ingest_txt_to_es.py",
     REPOSITORY_ROOT / "text_category_profiler" / "integrations" / "ES_utils.py",
 )
-ES_RUNTIME_DISCOVERY_ROOTS = (
-    REPOSITORY_ROOT / "DatasetConverter",
-    REPOSITORY_ROOT / "text_category_profiler",
-)
+# Discover executable Python consumers everywhere in the project, not
+# only in directories that already happened to contain Elasticsearch code.
+ES_RUNTIME_DISCOVERY_ROOTS = (REPOSITORY_ROOT,)
+_DEFAULT_REPOSITORY_ROOT = REPOSITORY_ROOT
+_DEFAULT_RUNTIME_ES_MODULES = RUNTIME_ES_MODULES
+EXCLUDED_ES_DISCOVERY_DIRS = frozenset({
+    ".git", ".github", ".codex", ".tox", ".venv", "venv",
+    "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache",
+    "build", "dist", "site-packages", "node_modules",
+    "vendor", "third_party", "third-party", "trv_deploy",
+    "tests", "test", "fixtures", "trainsamples", "models",
+    "model", "checkpoints", "workpool", "logs", "outputs",
+    "output", "cache", "generated", "ldvisual_all",
+})
 ES_RUNTIME_MARKERS = (
     "elasticsearch",
     "es_tokens",
@@ -5187,6 +5197,10 @@ def python_disabled_code_secret_lines(source):
 
 
 class ElasticsearchSecretConfigTests(unittest.TestCase):
+    # The real checkout is immutable for this guard run. Synthetic project
+    # fixtures patch repository globals and must always be rediscovered.
+    _repository_discovery_cache = None
+
     def _load_password(self, path, mapping_name):
         namespace = runpy.run_path(str(path))
         return namespace[mapping_name]["es_tokens"]["password"]
@@ -8894,8 +8908,15 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                 )
                                 continue
                             if not isinstance(source, ast.Dict):
-                                # Unknown mappings cannot prove either key
-                                # absence or a stable overwrite.
+                                # An opaque mapping can overwrite a known
+                                # entry with an arbitrary object, including
+                                # this guard. Retaining only the prior value
+                                # would incorrectly correlate decisions after
+                                # mutation of that selected object. Keep a
+                                # possible guarded receiver *and* the missing
+                                # key path. A later exact literal key still
+                                # overwrites this uncertainty.
+                                outcomes.append(guard)
                                 may_be_absent = True
                                 continue
                             current = []
@@ -9579,6 +9600,26 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         return invoked, sorted(set(lines))
 
     def _runtime_es_module_paths(self):
+        # Cache only the immutable real-checkout discovery. Temporary test
+        # roots intentionally mutate source between calls and remain uncached.
+        use_cache = (
+            REPOSITORY_ROOT == _DEFAULT_REPOSITORY_ROOT
+            and ES_RUNTIME_DISCOVERY_ROOTS == (_DEFAULT_REPOSITORY_ROOT,)
+            and RUNTIME_ES_MODULES == _DEFAULT_RUNTIME_ES_MODULES
+        )
+        cached = type(self)._repository_discovery_cache if use_cache else None
+        if cached is not None:
+            self._imported_credential_class_members = copy.deepcopy(
+                cached["class_members"]
+            )
+            self._es_wrapper_credential_lines = copy.deepcopy(
+                cached["wrapper_lines"]
+            )
+            self._imported_credential_exports = copy.deepcopy(
+                cached["exports"]
+            )
+            return list(cached["paths"])
+
         paths = {path.resolve() for path in RUNTIME_ES_MODULES}
         self._imported_credential_class_members = {}
         self._es_wrapper_credential_lines = {}
@@ -9587,16 +9628,29 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         for root in ES_RUNTIME_DISCOVERY_ROOTS:
             if not root.is_dir():
                 continue
-            for path in root.rglob("*.py"):
-                if not path.is_file():
-                    continue
-                source = path.read_text(
-                    encoding="utf-8-sig",
-                    errors="ignore",
-                ).lower()
-                candidate_modules.add(path.resolve())
-                if any(marker in source for marker in ES_RUNTIME_MARKERS):
-                    paths.add(path.resolve())
+            # Prune generated/vendor/data trees before descent. A root-level
+            # Elasticsearch consumer and BertScript files must be included.
+            for current, directories, files in os.walk(
+                root, topdown=True, followlinks=False
+            ):
+                directories[:] = sorted(
+                    name for name in directories
+                    if name.casefold() not in EXCLUDED_ES_DISCOVERY_DIRS
+                    and not name.startswith(".")
+                    and not (Path(current) / name).is_symlink()
+                )
+                for filename in sorted(files):
+                    if not filename.endswith(".py"):
+                        continue
+                    path = Path(current) / filename
+                    if not path.is_file() or path.is_symlink():
+                        continue
+                    source = path.read_text(
+                        encoding="utf-8-sig", errors="ignore"
+                    ).lower()
+                    candidate_modules.add(path.resolve())
+                    if any(marker in source for marker in ES_RUNTIME_MARKERS):
+                        paths.add(path.resolve())
 
         # Trace reverse-imported callers only when they invoke a wrapper
         # proven to forward a named argument into an Elasticsearch auth sink.
@@ -9672,7 +9726,21 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                     pending.append(dependency)
 
         self._imported_credential_exports = imported_exports
-        return sorted(paths)
+        result = sorted(paths)
+        if use_cache:
+            type(self)._repository_discovery_cache = {
+                "paths": tuple(result),
+                "class_members": copy.deepcopy(
+                    self._imported_credential_class_members
+                ),
+                "wrapper_lines": copy.deepcopy(
+                    self._es_wrapper_credential_lines
+                ),
+                "exports": copy.deepcopy(
+                    self._imported_credential_exports
+                ),
+            }
+        return result
 
     def _module_uppercase_credential_literals(
         self, source, exported_names=(), imported_calls=(),
@@ -12529,6 +12597,140 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                       prior=prior):
                         body = (
                             guard + setup
+                            + 'extra = {"api_key": None}\n'
+                            'if flag:\n    extra["api_key"] = password\n'
+                            'options = {"api_key": None}\n'
+                            'options.update(extra)\n'
+                            + ('if flag:\n    options["api_key"] = None\n'
+                               if prior else '')
+                            + mutation + '\n'
+                            'if flag:\n    options["api_key"] = None\n'
+                        )
+                        wrapper.write_text(
+                            'from elasticsearch import Elasticsearch\n'
+                            'def connect(password):\n'
+                            + textwrap.indent(body, '    ')
+                            + '    return Elasticsearch("localhost", '
+                            '**options)\n',
+                            encoding="utf-8",
+                        )
+                        caller.write_text(
+                            'from client import connect\n'
+                            'connect("hardcoded-secret")\n',
+                            encoding="utf-8",
+                        )
+                        self._runtime_es_module_paths()
+                        self.assertEqual(
+                            bool(self._es_wrapper_credential_lines.get(
+                                caller.resolve()
+                            )),
+                            expected,
+                        )
+
+    def test_runtime_discovery_covers_root_and_bert_script_and_excludes_artifacts(self):
+        """Repository-wide ES coverage never descends into generated trees."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            root_es = root / "root_es.py"
+            bert = root / "BertScript"
+            bert.mkdir()
+            bert_es = bert / "client.py"
+            nested = root / "OtherTools"
+            nested.mkdir()
+            nested_es = nested / "pipeline.py"
+            sources = (
+                root_es, bert_es, nested_es,
+            )
+            for path in sources:
+                path.write_text(
+                    'from elasticsearch import Elasticsearch\n'
+                    'client = Elasticsearch("localhost", '
+                    'basic_auth=("elastic", "hardcoded-secret"))\n',
+                    encoding="utf-8",
+                )
+            for name in ("tests", "vendor", "TrainSamples", "generated"):
+                folder = root / name
+                folder.mkdir()
+                (folder / "ignored.py").write_text(
+                    'from elasticsearch import Elasticsearch\n'
+                    'Elasticsearch("localhost", api_key="hardcoded-secret")\n',
+                    encoding="utf-8",
+                )
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                discovered = set(self._runtime_es_module_paths())
+                self.assertTrue(set(sources).issubset(discovered))
+                self.assertEqual(
+                    sorted(str(path.relative_to(root)) for path in discovered),
+                    sorted(str(path.relative_to(root)) for path in sources),
+                )
+                surfaces = set(self._secret_surface_paths())
+                self.assertTrue(set(sources).issubset(surfaces))
+                for path in sources:
+                    self.assertTrue(hardcoded_auth_tuple_lines(
+                        path.read_text(encoding="utf-8")
+                    ))
+
+    def test_es_wrapper_opaque_mapping_unpacks_invalidate_guard_epochs(self):
+        """Unknown mapping results can override a guard-bearing dict key."""
+        guard_class = (
+            'class Guard:\n'
+            '    def __init__(self):\n'
+            '        self.state = [True]\n'
+            '    def __bool__(self):\n'
+            '        return bool(self.state)\n'
+            'flag = Guard()\n'
+            'def identity(value):\n'
+            '    return value\n'
+        )
+        cases = (
+            ('holder = {"main": Guard(), **identity({"main": flag})}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('holder = {"main": Guard(), **identity({"main": flag})}\n'
+             'state = holder.get("main").state\n',
+             'state.clear()', False, True),
+            ('holder = {"main": Guard(), **identity({"main": flag})}\n',
+             'holder["main"].state.clear()', False, True),
+            ('holder = {"main": Guard(), **identity({"main": flag})}\n',
+             'holder.get("main").state.clear()', True, False),
+            ('holder = {"main": Guard(), **identity({"main": flag}),'
+             ' "main": Guard()}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('holder = {"main": Guard(), **identity({"main": flag}),'
+             ' "main": flag}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('holder = {"main": flag, **identity({"main": Guard()})}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('holder = {"main": Guard(), **identity({"other": Guard()})}\n',
+             'holder.get("main").state.clear()', True, False),
+            ('holder = {"main": Guard(), **identity({"main": flag})}\n'
+             'holder = {"main": Guard()}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('holder = {"main": Guard(), **identity({"main": flag})}\n'
+             'state = holder.get("main").state\n'
+             'state = [True]\n',
+             'state.clear()', False, False),
+            ('holder = {"main": Guard(), **identity({"main": flag})}\n'
+             'flag = Guard()\n',
+             'holder.get("main").state.clear()', False, False),
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = root / "client.py"
+            caller = root / "worker.py"
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for setup, mutation, prior, expected in cases:
+                    with self.subTest(setup=setup, mutation=mutation,
+                                      prior=prior):
+                        body = (
+                            guard_class + setup
                             + 'extra = {"api_key": None}\n'
                             'if flag:\n    extra["api_key"] = password\n'
                             'options = {"api_key": None}\n'
