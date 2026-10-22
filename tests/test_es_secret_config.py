@@ -9054,19 +9054,49 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                     change, ast.AugAssign
                                                 ):
                                                     receivers.append(target)
-                                        elif (
-                                            isinstance(change, ast.Call)
-                                            and isinstance(
+                                        elif isinstance(change, ast.Call):
+                                            # Passing the dict (or an alias) to
+                                            # an unknown helper can mutate it
+                                            # before **spread. Also catch
+                                            # unbound dict.__setitem__(spread,
+                                            # ...), callbacks, and **kwargs.
+                                            # Calls on the dict receiver itself
+                                            # may mutate it unless they are
+                                            # known read-only builtin methods.
+                                            when_before = _position_before(change)
+                                            if any(
+                                                writes_to_root(
+                                                    argument, when_before
+                                                )
+                                                for argument in ast.walk(
+                                                    ast.Tuple(
+                                                        elts=[
+                                                            *change.args,
+                                                            *(kw.value for kw
+                                                              in change.keywords)
+                                                        ],
+                                                        ctx=ast.Load(),
+                                                    )
+                                                )
+                                                if isinstance(
+                                                    argument, ast.Name
+                                                )
+                                            ):
+                                                return unknown
+                                            if isinstance(
                                                 change.func, ast.Attribute
-                                            )
-                                            and change.func.attr in {
-                                                "update", "clear", "pop",
-                                                "popitem", "setdefault",
-                                                "__setitem__", "__delitem__",
-                                                "__ior__",
-                                            }
-                                        ):
-                                            receivers.append(change.func.value)
+                                            ):
+                                                receiver = change.func.value
+                                                if (
+                                                    writes_to_root(
+                                                        receiver, when_before
+                                                    )
+                                                    and change.func.attr not in {
+                                                        "get", "keys", "items",
+                                                        "values", "copy",
+                                                    }
+                                                ):
+                                                    return unknown
                                         if any(
                                             writes_to_root(
                                                 receiver, _position_before(change)
@@ -13419,6 +13449,88 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             # contain the target key.
             ('other = Guard()\nspread = deferred(other)\n'
              'source = {**spread, "choice": {"main": flag}}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            # Unknown calls may mutate a dictionary through a parameter,
+            # positional/keyword/starred forwarding, or an alias.
+            ('other = Guard()\n'
+             'spread = {"other": deferred(other)}\n'
+             'mutate(spread)\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('other = Guard()\n'
+             'spread = {"other": deferred(other)}\n'
+             'alias = spread\nmutate(alias)\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder["main"].state.clear()', False, True),
+            ('other = Guard()\n'
+             'spread = {"other": deferred(other)}\n'
+             'mutate(mapping=spread)\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('other = Guard()\n'
+             'spread = {"other": deferred(other)}\n'
+             'mutate(*[spread])\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('other = Guard()\n'
+             'spread = {"other": deferred(other)}\n'
+             'mutate(**{"mapping": spread})\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('other = Guard()\n'
+             'spread = {"other": deferred(other)}\n'
+             'dict.__setitem__(spread, "choice", deferred(other))\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('other = Guard()\n'
+             'spread = {"other": deferred(other)}\n'
+             'dict.update(spread, {"choice": deferred(other)})\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('other = Guard()\n'
+             'spread = {"other": deferred(other)}\n'
+             'spread.custom_mutator()\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            # A call *after* a snapshot cannot retroactively change it.
+            ('other = Guard()\n'
+             'spread = {"other": deferred(other)}\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'mutate(spread)\nflag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            # Passing an unrelated object must not invalidate the proof.
+            ('other = Guard()\n'
+             'spread = {"other": deferred(other)}\n'
+             'unrelated = {"choice": deferred(other)}\n'
+             'mutate(unrelated)\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            # Known read-only mapping methods cannot insert the target key.
+            ('other = Guard()\n'
+             'spread = {"other": deferred(other)}\n'
+             'spread.get("other")\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
              'flag = Guard()\n'
              'holder = {"main": Guard(), **source}\n',
              'holder.get("main").state.clear()', False, False),
