@@ -9007,15 +9007,161 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                     # A source literal is not an immutable
                                     # snapshot, so revoke an absence proof on
                                     # any visible mutation of that same root.
-                                    def writes_to_root(receiver, when):
-                                        if not isinstance(receiver, ast.Name):
+                                    def writes_to_root(
+                                        receiver, when, depth=0,
+                                        seen=frozenset(),
+                                    ):
+                                        """Can a passed/selected alias reach this dict?
+
+                                        A helper can mutate spread via box[0],
+                                        box["slot"], or an intermediate
+                                        container. Resolve those selections
+                                        at the *call* site without conflating
+                                        unrelated definite container slots.
+                                        """
+                                        if depth > 12:
                                             return False
-                                        resolved = _resolve_bound_nodes(
-                                            receiver, bindings, when
+                                        if id(receiver) == id(root):
+                                            return True
+                                        if isinstance(receiver, ast.Name):
+                                            token = _binding_name_token(
+                                                receiver.id, bindings, receiver
+                                            )
+                                            if token in seen:
+                                                return False
+                                            resolved = _resolve_bound_nodes(
+                                                receiver, bindings, when
+                                            )
+                                            return any(
+                                                value is not receiver
+                                                and writes_to_root(
+                                                    value, when, depth + 1,
+                                                    seen | {token},
+                                                )
+                                                for value in resolved
+                                            )
+                                        getter = (
+                                            isinstance(receiver, ast.Call)
+                                            and isinstance(
+                                                receiver.func, ast.Attribute
+                                            )
+                                            and receiver.func.attr == "get"
+                                            and len(receiver.args) in (1, 2)
+                                            and not receiver.keywords
                                         )
+                                        if isinstance(receiver, ast.Subscript):
+                                            owner = receiver.value
+                                            index = receiver.slice
+                                        elif getter:
+                                            owner = receiver.func.value
+                                            index = receiver.args[0]
+                                        else:
+                                            owner = None
+                                        if owner is not None:
+                                            owners = (
+                                                _resolve_bound_nodes(
+                                                    owner, bindings, when
+                                                )
+                                                if isinstance(owner, ast.Name)
+                                                else [owner]
+                                            )
+                                            for container in owners:
+                                                choices = []
+                                                if isinstance(
+                                                    container, (ast.List, ast.Tuple)
+                                                ):
+                                                    if (
+                                                        isinstance(
+                                                            index, ast.Constant
+                                                        )
+                                                        and isinstance(
+                                                            index.value, int
+                                                        )
+                                                        and not isinstance(
+                                                            index.value, bool
+                                                        )
+                                                        and not getter
+                                                        and -len(container.elts)
+                                                        <= index.value
+                                                        < len(container.elts)
+                                                    ):
+                                                        choices = [
+                                                            container.elts[
+                                                                index.value
+                                                            ]
+                                                        ]
+                                                    elif not isinstance(
+                                                        index, ast.Constant
+                                                    ):
+                                                        choices = container.elts
+                                                elif isinstance(
+                                                    container, ast.Dict
+                                                ):
+                                                    # Unknown display keys or
+                                                    # nested spreads may shadow
+                                                    # literal selections, so
+                                                    # retain all potentially
+                                                    # selected values.
+                                                    possible = []
+                                                    for k, val in zip(
+                                                        container.keys,
+                                                        container.values,
+                                                    ):
+                                                        if (
+                                                            isinstance(
+                                                                k, ast.Constant
+                                                            )
+                                                            and isinstance(
+                                                                index, ast.Constant
+                                                            )
+                                                        ):
+                                                            if k.value == index.value:
+                                                                possible = [val]
+                                                        else:
+                                                            possible.append(val)
+                                                    choices = possible
+                                                elif isinstance(
+                                                    container, ast.Name
+                                                ):
+                                                    choices = [container]
+                                                if any(
+                                                    writes_to_root(
+                                                        choice, when, depth + 1,
+                                                        seen,
+                                                    )
+                                                    for choice in choices
+                                                ):
+                                                    return True
+                                            if getter and len(receiver.args) == 2:
+                                                return writes_to_root(
+                                                    receiver.args[1], when,
+                                                    depth + 1, seen,
+                                                )
+                                            return False
+                                        if isinstance(
+                                            receiver, (ast.List, ast.Tuple, ast.Set)
+                                        ):
+                                            children = receiver.elts
+                                        elif isinstance(receiver, ast.Dict):
+                                            children = receiver.values
+                                        elif isinstance(receiver, ast.Starred):
+                                            children = [receiver.value]
+                                        elif isinstance(receiver, ast.Call):
+                                            # A builtin container constructor
+                                            # can preserve references supplied
+                                            # as values, including **keywords.
+                                            children = [
+                                                *receiver.args,
+                                                *(kw.value for kw
+                                                  in receiver.keywords),
+                                            ]
+                                        else:
+                                            children = []
                                         return any(
-                                            id(value) == id(root)
-                                            for value in resolved
+                                            writes_to_root(
+                                                child, when, depth + 1, seen,
+                                            )
+                                            for child in children
                                         )
 
                                     for change in ast.walk(wrapper):
@@ -9068,19 +9214,11 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                 writes_to_root(
                                                     argument, when_before
                                                 )
-                                                for argument in ast.walk(
-                                                    ast.Tuple(
-                                                        elts=[
-                                                            *change.args,
-                                                            *(kw.value for kw
-                                                              in change.keywords)
-                                                        ],
-                                                        ctx=ast.Load(),
-                                                    )
-                                                )
-                                                if isinstance(
-                                                    argument, ast.Name
-                                                )
+                                                for argument in [
+                                                    *change.args,
+                                                    *(kw.value for kw
+                                                      in change.keywords),
+                                                ]
                                             ):
                                                 return unknown
                                             if isinstance(
@@ -13532,6 +13670,99 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
              'spread.get("other")\n'
              'source = {"choice": {"main": flag}, **spread}["choice"]\n'
              'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            # A spread reachable through a selected container member can
+            # escape to an unknown mutator, including unbound dict methods.
+            ('other = Guard()\n'
+             'spread = {"other": deferred(other)}\n'
+             'box = [spread]\nmutate(box[0])\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('other = Guard()\n'
+             'spread = {"other": deferred(other)}\n'
+             'box = [spread]\nbox[0].update({"choice": deferred(other)})\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('other = Guard()\n'
+             'spread = {"other": deferred(other)}\n'
+             'box = (spread,)\nmutate(box[0])\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('other = Guard()\n'
+             'spread = {"other": deferred(other)}\n'
+             'box = {"slot": spread}\nmutate(box["slot"])\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('other = Guard()\n'
+             'spread = {"other": deferred(other)}\n'
+             'box = {"slot": spread}\n'
+             'mutate(box.get("slot"))\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('other = Guard()\n'
+             'spread = {"other": deferred(other)}\n'
+             'box = [[spread]]\n'
+             'dict.__setitem__(box[0][0], "choice", deferred(other))\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('other = Guard()\n'
+             'spread = {"other": deferred(other)}\n'
+             'box = [spread]\n'
+             'mutate(mapping=box[0])\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('other = Guard()\n'
+             'spread = {"other": deferred(other)}\n'
+             'box = [spread]\nmutate(*[box[0]])\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('other = Guard()\n'
+             'spread = {"other": deferred(other)}\n'
+             'box = [spread]\nmutate(box[0])\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', True, False),
+            # A definite different slot is unrelated to the spread.
+            ('other = Guard()\n'
+             'spread = {"other": deferred(other)}\n'
+             'box = [spread, {"choice": deferred(other)}]\n'
+             'mutate(box[1])\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('other = Guard()\n'
+             'spread = {"other": deferred(other)}\n'
+             'box = {"slot": spread, "other": {"choice": deferred(other)}}\n'
+             'mutate(box["other"])\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            # A mutation after the dict display selection cannot change it.
+            ('other = Guard()\n'
+             'spread = {"other": deferred(other)}\n'
+             'box = [spread]\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'mutate(box[0])\nflag = Guard()\n'
              'holder = {"main": Guard(), **source}\n',
              'holder.get("main").state.clear()', False, False),
             # Control-flow alternatives are proven eager only when both
