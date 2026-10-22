@@ -9342,7 +9342,35 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                             # may mutate it unless they are
                                             # known read-only builtin methods.
                                             when_before = _position_before(change)
-                                            if any(
+                                            # A proven builtin dict.get cannot
+                                            # mutate the argument passed as a
+                                            # default value. Keep other calls
+                                            # conservative, including methods
+                                            # of opaque receivers.
+                                            builtin_dict_get = False
+                                            if (
+                                                isinstance(change.func, ast.Attribute)
+                                                and change.func.attr == "get"
+                                            ):
+                                                getter_owner = change.func.value
+                                                getter_values = (
+                                                    _resolve_bound_nodes(
+                                                        getter_owner, bindings,
+                                                        when_before,
+                                                    )
+                                                    if isinstance(
+                                                        getter_owner, ast.Name
+                                                    )
+                                                    else [getter_owner]
+                                                )
+                                                builtin_dict_get = (
+                                                    bool(getter_values)
+                                                    and all(
+                                                        isinstance(value, ast.Dict)
+                                                        for value in getter_values
+                                                    )
+                                                )
+                                            if not builtin_dict_get and any(
                                                 writes_to_root(
                                                     argument, when_before
                                                 )
@@ -14031,8 +14059,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
               "spread = {\"other\": deferred(other)}\n"
               "box = {\"slot\": {\"inner\": spread}}\n"
               "mutate(box.get(\"slot\")[\"inner\"])\n"
-              "source = {\"choice\": {\"main\": flag}}\n"
               "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+              "source = {\"main\": flag}\n"
               "flag = Guard()\n"
               "holder = {\"main\": Guard(), **source}\n",
              'holder.get("main").state.clear()', False, False),
