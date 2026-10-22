@@ -8914,6 +8914,29 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                 proven_eager_mapping(member, depth + 1)
                                 for member in members
                             )
+                        if (
+                            isinstance(source, ast.Subscript)
+                            and isinstance(source.value, ast.Dict)
+                            and isinstance(source.slice, ast.Constant)
+                        ):
+                            # A value selected from a concrete dict display
+                            # was evaluated when that display was built.
+                            # Walk in insertion/overwrite order: duplicate
+                            # literal keys select the *last* value. Dynamic
+                            # keys and **spreads can overwrite any selected
+                            # value, so they cannot prove eager identity.
+                            selected = None
+                            for key, value in zip(
+                                source.value.keys, source.value.values
+                            ):
+                                if not isinstance(key, ast.Constant):
+                                    return False
+                                if key.value == source.slice.value:
+                                    selected = value
+                            return (
+                                selected is not None
+                                and proven_eager_mapping(selected, depth + 1)
+                            )
                         if isinstance(source, ast.IfExp):
                             return (
                                 proven_eager_mapping(source.body, depth + 1)
@@ -12965,6 +12988,66 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
              'holder.get("main").state.clear()', False, True),
             ('other = Guard()\n'
              'source = deferred(other) if other else deferred(other)\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            # A concrete dict display eagerly evaluates selected values,
+            # even though the source AST is a Subscript rather than a Dict.
+            ('source = {"choice": {"main": flag}}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('source = {"choice": dict(main=flag)}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder["main"].state.clear()', False, False),
+            ('source = {"other": Guard(), "choice": {"main": flag}}'
+             '["choice"]\nflag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('other = Guard()\n'
+             'source = {"choice": deferred(other), '
+             '"choice": {"main": flag}}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('source = {"choice": {"main": flag}}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', True, False),
+            # The last duplicate key wins. A selected deferred mapping can
+            # still read the new guard when its __getitem__ runs at unpack.
+            ('other = Guard()\n'
+             'source = {"choice": {"main": flag}, '
+             '"choice": deferred(other)}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            # A dynamic key or **spread might overwrite the literal key.
+            # Do not incorrectly certify the resulting mapping as eager.
+            ('other = Guard()\n'
+             'selection = "choice"\n'
+             'source = {"choice": {"main": flag}, '
+             'selection: deferred(other)}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('other = Guard()\n'
+             'source = {"choice": {"main": flag}, '
+             '**{"choice": deferred(other)}}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            # Control-flow alternatives are proven eager only when both
+            # possible dict-display selections capture their values.
+            ('source = ({"choice": {"main": flag}}["choice"]'
+             ' if flag else {"choice": dict(main=flag)}["choice"])\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('other = Guard()\n'
+             'source = ({"choice": {"main": flag}}["choice"]'
+             ' if other else {"choice": deferred(other)}["choice"])\n'
              'flag = Guard()\n'
              'holder = {"main": Guard(), **source}\n',
              'holder.get("main").state.clear()', False, True),
