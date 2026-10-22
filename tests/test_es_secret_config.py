@@ -8919,23 +8919,80 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             and isinstance(source.value, ast.Dict)
                             and isinstance(source.slice, ast.Constant)
                         ):
-                            # Follow Python's left-to-right dict display
-                            # overwrites. A dynamic key or **spread can replace
-                            # the selected value, but a *later* matching literal
-                            # key definitively wins and restores eager proof.
-                            # Unknown entries *after* the last exact key must
-                            # keep the possibility of a deferred custom mapping.
-                            selected = None
-                            for key, value in zip(
-                                source.value.keys, source.value.values
-                            ):
-                                if isinstance(key, ast.Constant):
-                                    if key.value == source.slice.value:
-                                        selected = value
-                                else:
-                                    selected = None
+                            # Distinguish a provably absent spread key from an
+                            # unknown/matching spread. Python processes ** and
+                            # ordinary dict keys left-to-right, so later exact
+                            # keys can restore an eagerly captured selection.
+                            absent = object()
+                            unknown = object()
+
+                            def spread_key_value(mapping, key, nesting):
+                                """Selected key in a static spread, or uncertainty."""
+                                if nesting > 12:
+                                    return unknown
+                                if isinstance(mapping, ast.Dict):
+                                    selected = absent
+                                    for part_key, part_value in zip(
+                                        mapping.keys, mapping.values
+                                    ):
+                                        if part_key is None:
+                                            incoming = spread_key_value(
+                                                part_value, key, nesting + 1
+                                            )
+                                            if incoming is not absent:
+                                                selected = incoming
+                                        elif isinstance(part_key, ast.Constant):
+                                            if part_key.value == key:
+                                                selected = part_value
+                                        else:
+                                            # A dynamic key may overwrite the
+                                            # queried slot, but a later literal
+                                            # matching key can restore it.
+                                            selected = unknown
+                                    return selected
+                                if (
+                                    isinstance(mapping, ast.Call)
+                                    and isinstance(mapping.func, ast.Name)
+                                    and mapping.func.id == "dict"
+                                    and builtin_dict_name(
+                                        mapping.func, _node_position(mapping)
+                                    )
+                                    and len(mapping.args) <= 1
+                                ):
+                                    selected = (
+                                        spread_key_value(mapping.args[0], key,
+                                                         nesting + 1)
+                                        if mapping.args else absent
+                                    )
+                                    for keyword in mapping.keywords:
+                                        if keyword.arg is None:
+                                            incoming = spread_key_value(
+                                                keyword.value, key, nesting + 1
+                                            )
+                                            if incoming is not absent:
+                                                selected = incoming
+                                        elif keyword.arg == key:
+                                            selected = keyword.value
+                                    return selected
+                                if (
+                                    isinstance(mapping, ast.BinOp)
+                                    and isinstance(mapping.op, ast.BitOr)
+                                ):
+                                    left = spread_key_value(
+                                        mapping.left, key, nesting + 1
+                                    )
+                                    right = spread_key_value(
+                                        mapping.right, key, nesting + 1
+                                    )
+                                    return left if right is absent else right
+                                return unknown
+
+                            selected = spread_key_value(
+                                source.value, source.slice.value, depth + 1
+                            )
                             return (
-                                selected is not None
+                                selected is not absent
+                                and selected is not unknown
                                 and proven_eager_mapping(selected, depth + 1)
                             )
                         if isinstance(source, ast.IfExp):
@@ -13107,6 +13164,89 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
              'flag = Guard()\n'
              'holder = {"main": Guard(), **source}\n',
              'holder.get("main").state.clear()', True, False),
+            # Statically disjoint **spreads do NOT overwrite a selected
+            # literal key. Include nested spreads and builtin dict builders.
+            ('other = Guard()\n'
+             'source = {"choice": {"main": flag}, '
+             '**{"other": deferred(other)}}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('other = Guard()\n'
+             'source = {"choice": {"main": flag}, '
+             '**{"other": deferred(other)}}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder["main"].state.clear()', True, False),
+            ('other = Guard()\n'
+             'source = {**{"other": deferred(other)}, '
+             '"choice": {"main": flag}, '
+             '**{"extra": 123}}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('other = Guard()\n'
+             'source = {"choice": {"main": flag}, '
+             '**{"other": deferred(other), '
+             '**{"third": deferred(other)}}}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('other = Guard()\n'
+             'source = {"choice": {"main": flag}, '
+             '**dict(other=deferred(other))}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            # Matching spreads may replace the selected value. Preserve the
+            # deferred mapping possibility and late guard identity.
+            ('other = Guard()\n'
+             'source = {"choice": {"main": flag}, '
+             '**{"choice": deferred(other)}}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('other = Guard()\n'
+             'source = {"choice": {"main": flag}, '
+             '**dict(choice=deferred(other))}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('other = Guard()\n'
+             'source = {"choice": {"main": flag}, '
+             '**{"other": deferred(other), '
+             '**{"choice": deferred(other)}}}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            # A known matching spread with an eager result takes priority.
+            ('other = Guard()\n'
+             'source = {"choice": deferred(other), '
+             '**{"choice": {"main": flag}}}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            # A dynamic post-selection spread is still unknown, while an
+            # exact later key overwrites both dynamic and static spreads.
+            ('other = Guard()\nunknown = deferred(other)\n'
+             'source = {"choice": {"main": flag}, **unknown}'
+             '["choice"]\nflag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('other = Guard()\n'
+             'source = {"choice": deferred(other), '
+             '**{"other": deferred(other)}, '
+             '"choice": {"main": flag}}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            # A spread mapping produced via union is right-biased.
+            ('other = Guard()\n'
+             'source = {"choice": {"main": flag}, '
+             '**({"other": deferred(other)} | {"next": 1})}'
+             '["choice"]\nflag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
             # Control-flow alternatives are proven eager only when both
             # possible dict-display selections capture their values.
             ('source = ({"choice": {"main": flag}}["choice"]'
