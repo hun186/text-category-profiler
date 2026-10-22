@@ -8937,13 +8937,13 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                         if isinstance(member, ast.Name)
                                         and isinstance(member.ctx, ast.Load)
                                     ]
-                                # Inputs do not exhaust opaque call results:
-                                # closure/global state can return this guard
-                                # without receiving it as an argument. Retain
-                                # that alternative alongside visible inputs.
-                                # Freeze its identity at unpack evaluation
-                                # time so a later "flag = Guard()" does not
-                                # spuriously invalidate the new guard's epoch.
+                                # Explicit call inputs are eagerly captured
+                                # at call-time, not re-bound at a later unpack.
+                                # An opaque return can also expose a guard
+                                # through closure/global state. Keep its
+                                # call-time identity for immediate unpacks and
+                                # for a mapping whose values were captured
+                                # eagerly when the call executed.
                                 opaque_guard = ast.Name(
                                     id=name, ctx=ast.Load()
                                 )
@@ -8955,6 +8955,31 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                     _node_position(source)
                                 )
                                 outcomes.extend([*candidates, opaque_guard])
+                                if (
+                                    isinstance(source, ast.Call)
+                                    and isinstance(mapping, ast.Name)
+                                    and _node_position(source)
+                                    < _node_position(mapping)
+                                ):
+                                    # A custom mapping returned by an earlier
+                                    # opaque call can defer __getitem__ until
+                                    # **mapping executes. That lookup may read
+                                    # the *current* guard after reassignment.
+                                    # Capture at the unpack Name, not at a
+                                    # later mutation site or the source Call.
+                                    # Plain dict literals remain handled by
+                                    # their eagerly captured value nodes.
+                                    unpack_guard = ast.Name(
+                                        id=name, ctx=ast.Load()
+                                    )
+                                    unpack_guard._binding_scope = wrapper
+                                    unpack_guard._binding_control_path = (
+                                        _node_control_path(mapping)
+                                    )
+                                    unpack_guard._alias_captured_at = (
+                                        _node_position(mapping)
+                                    )
+                                    outcomes.append(unpack_guard)
                                 may_be_absent = True
                                 continue
                             current = []
@@ -12828,6 +12853,118 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                         caller.write_text(
                             'from client import connect\n'
                             'connect("hardcoded-secret")\n',
+                            encoding="utf-8",
+                        )
+                        self._runtime_es_module_paths()
+                        self.assertEqual(
+                            bool(self._es_wrapper_credential_lines.get(
+                                caller.resolve()
+                            )),
+                            expected,
+                        )
+
+    def test_es_wrapper_deferred_mapping_unpack_time_guard_epochs(self):
+        """A deferred custom mapping may load a rebound guard at ** unpack."""
+        guard_class = (
+            'class Guard:\\n'
+            '    def __init__(self):\\n'
+            '        self.state = [True]\\n'
+            '    def __bool__(self):\\n'
+            '        return bool(self.state)\\n'
+            'flag = Guard()\\n'
+            'class Deferred:\\n'
+            '    def keys(self):\\n'
+            '        return ("main",)\\n'
+            '    def __getitem__(self, key):\\n'
+            '        return flag\\n'
+            'def deferred(other):\\n'
+            '    return Deferred()\\n'
+        )
+        deferred_setup = (
+            'other = Guard()\\n'
+            'source = deferred(other)\\n'
+            'flag = Guard()\\n'
+        )
+        cases = (
+            # Positive: __getitem__ consults the new guard when ** executes,
+            # not the guard that was bound when deferred() returned.
+            (deferred_setup + 'holder = {"main": Guard(), **source}\\n',
+             'holder.get("main").state.clear()', False, True),
+            (deferred_setup + 'holder = {"main": Guard(), **source}\\n',
+             'holder["main"].state.clear()', False, True),
+            (deferred_setup + 'holder = {"main": Guard(), **source}\\n'
+             'state = holder.get("main").state\\n',
+             'state.clear()', False, True),
+            (deferred_setup + 'staged = source\\n'
+             'holder = {"main": Guard(), **staged}\\n',
+             'holder.get("main").state.clear()', False, True),
+            # The first sanitizer already ran before the mutation: the
+            # second guard decision cannot resurrect the credential.
+            (deferred_setup + 'holder = {"main": Guard(), **source}\\n',
+             'holder.get("main").state.clear()', True, False),
+            # An ordinary dict eagerly captures its values, even when later
+            # unpacked after reassigning flag. It is not a deferred mapping.
+            ('source = {"main": flag}\\nflag = Guard()\\n'
+             'holder = {"main": Guard(), **source}\\n',
+             'holder.get("main").state.clear()', False, False),
+            ('source = {"main": flag}\\nflag = Guard()\\n'
+             'holder = {"main": Guard(), **source}\\n',
+             'holder["main"].state.clear()', True, False),
+            # Guard rebinding *after* unpack cannot retroactively change the
+            # object stored in holder.
+            ('other = Guard()\\nsource = deferred(other)\\n'
+             'holder = {"main": Guard(), **source}\\nflag = Guard()\\n',
+             'holder.get("main").state.clear()', False, False),
+            (deferred_setup + 'holder = {"main": Guard(), **source}\\n'
+             'flag = Guard()\\n',
+             'holder.get("main").state.clear()', False, False),
+            # A subsequent explicit key or holder reassignment overrides
+            # the possible guard selected by the deferred unpack.
+            (deferred_setup
+             + 'holder = {"main": Guard(), **source, "main": Guard()}\\n',
+             'holder.get("main").state.clear()', False, False),
+            (deferred_setup + 'holder = {"main": Guard(), **source}\\n'
+             'holder = {"main": Guard()}\\n',
+             'holder.get("main").state.clear()', False, False),
+            # An exact later key can deliberately alias the new guard.
+            (deferred_setup
+             + 'holder = {"main": Guard(), **source, "main": flag}\\n',
+             'holder.get("main").state.clear()', False, True),
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = root / "client.py"
+            caller = root / "worker.py"
+            with patch.dict(globals(), {
+                "REPOSITORY_ROOT": root,
+                "ES_RUNTIME_DISCOVERY_ROOTS": (root,),
+                "RUNTIME_ES_MODULES": (),
+            }):
+                for setup, mutation, prior, expected in cases:
+                    with self.subTest(setup=setup, mutation=mutation,
+                                      prior=prior):
+                        body = (
+                            guard_class + setup
+                            + 'extra = {"api_key": None}\\n'
+                            'if flag:\\n    extra["api_key"] = password\\n'
+                            'options = {"api_key": None}\\n'
+                            'options.update(extra)\\n'
+                            + ('if flag:\\n    options["api_key"] = None\\n'
+                               if prior else '')
+                            + mutation + '\\n'
+                            'if flag:\\n    options["api_key"] = None\\n'
+                        )
+                        wrapper.write_text(
+                            'from elasticsearch import Elasticsearch\\n'
+                            'def connect(password):\\n'
+                            + textwrap.indent(body, '    ')
+                            + '    return Elasticsearch("localhost", '
+                            '**options)\\n',
+                            encoding="utf-8",
+                        )
+                        caller.write_text(
+                            'from client import connect\\n'
+                            'connect("hardcoded-secret")\\n',
                             encoding="utf-8",
                         )
                         self._runtime_es_module_paths()
