@@ -8937,7 +8937,24 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                         if isinstance(member, ast.Name)
                                         and isinstance(member.ctx, ast.Load)
                                     ]
-                                outcomes.extend(candidates or [guard])
+                                # Inputs do not exhaust opaque call results:
+                                # closure/global state can return this guard
+                                # without receiving it as an argument. Retain
+                                # that alternative alongside visible inputs.
+                                # Freeze its identity at unpack evaluation
+                                # time so a later "flag = Guard()" does not
+                                # spuriously invalidate the new guard's epoch.
+                                opaque_guard = ast.Name(
+                                    id=name, ctx=ast.Load()
+                                )
+                                opaque_guard._binding_scope = wrapper
+                                opaque_guard._binding_control_path = (
+                                    _node_control_path(source)
+                                )
+                                opaque_guard._alias_captured_at = (
+                                    _node_position(source)
+                                )
+                                outcomes.extend([*candidates, opaque_guard])
                                 may_be_absent = True
                                 continue
                             current = []
@@ -12706,6 +12723,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             'flag = Guard()\n'
             'def identity(value):\n'
             '    return value\n'
+            'def make(other):\n'
+            '    return {"main": flag}\n'
         )
         cases = (
             ('holder = {"main": Guard(), **identity({"main": flag})}\n',
@@ -12737,6 +12756,43 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ('holder = {"main": Guard(), **identity({"main": flag})}\n'
              'flag = Guard()\n',
              'holder.get("main").state.clear()', False, False),
+            # Opaque calls may read a closure/global guard not present in
+            # any of their explicit arguments. The unknown guard and visible
+            # arguments must both remain possible selected receiver roots.
+            ('other = Guard()\n'
+             'holder = {"main": Guard(), **make(other)}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('other = Guard()\n'
+             'holder = {"main": Guard(), **make(other)}\n'
+             'state = holder.get("main").state\n',
+             'state.clear()', False, True),
+            ('other = Guard()\n'
+             'holder = {"main": Guard(), **make(other)}\n',
+             'holder["main"].state.clear()', False, True),
+            ('other = Guard()\n'
+             'holder = {"main": Guard(), **make(other)}\n',
+             'holder.get("main").state.clear()', True, False),
+            ('other = Guard()\n'
+             'holder = {"main": Guard(), **make(other),'
+             ' "main": Guard()}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('other = Guard()\n'
+             'holder = {"main": Guard(), **make(other),'
+             ' "main": flag}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('other = Guard()\n'
+             'holder = {"main": Guard(), **make(other)}\n'
+             'flag = Guard()\n',
+             'holder.get("main").state.clear()', False, False),
+            ('other = Guard()\n'
+             'holder = {"main": Guard(), **make(other)}\n'
+             'holder = {"main": Guard()}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('other = Guard()\n'
+             'holder = {"main": Guard(), **make(other)}\n'
+             'state = holder.get("main").state\n'
+             'flag = Guard()\n',
+             'state.clear()', False, False),
         )
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
