@@ -8985,6 +8985,98 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                         mapping.right, key, nesting + 1
                                     )
                                     return left if right is absent else right
+                                if isinstance(mapping, ast.Name):
+                                    # Resolve at the actual **spread use site,
+                                    # not at the final security decision: a
+                                    # later rebind cannot affect an earlier
+                                    # dict construction. Multiple reaching
+                                    # definitions remain unknown.
+                                    roots = _resolve_bound_nodes(
+                                        mapping, bindings, _node_position(mapping)
+                                    )
+                                    if len(roots) != 1 or roots[0] is mapping:
+                                        return unknown
+                                    root = roots[0]
+                                    creation = _node_position(root)
+                                    unpack = _node_position(mapping)
+                                    if creation >= unpack:
+                                        return unknown
+
+                                    # A locally built dict may be mutated or
+                                    # passed through aliases before **spread.
+                                    # A source literal is not an immutable
+                                    # snapshot, so revoke an absence proof on
+                                    # any visible mutation of that same root.
+                                    def writes_to_root(receiver, when):
+                                        if not isinstance(receiver, ast.Name):
+                                            return False
+                                        resolved = _resolve_bound_nodes(
+                                            receiver, bindings, when
+                                        )
+                                        return any(
+                                            id(value) == id(root)
+                                            for value in resolved
+                                        )
+
+                                    for change in ast.walk(wrapper):
+                                        when = _node_position(change)
+                                        if not creation < when < unpack:
+                                            continue
+                                        if getattr(
+                                            change, "_binding_scope", None
+                                        ) is not wrapper:
+                                            continue
+                                        if _control_paths_mutually_exclusive(
+                                            _node_control_path(change),
+                                            _node_control_path(mapping)
+                                        ):
+                                            continue
+                                        receivers = []
+                                        if isinstance(
+                                            change, (ast.Assign, ast.AnnAssign,
+                                                     ast.AugAssign, ast.Delete)
+                                        ):
+                                            targets = (
+                                                change.targets
+                                                if isinstance(change, ast.Assign)
+                                                else change.targets
+                                                if isinstance(change, ast.Delete)
+                                                else [change.target]
+                                            )
+                                            for target in targets:
+                                                if isinstance(
+                                                    target, ast.Subscript
+                                                ):
+                                                    receivers.append(
+                                                        target.value
+                                                    )
+                                                elif isinstance(
+                                                    change, ast.AugAssign
+                                                ):
+                                                    receivers.append(target)
+                                        elif (
+                                            isinstance(change, ast.Call)
+                                            and isinstance(
+                                                change.func, ast.Attribute
+                                            )
+                                            and change.func.attr in {
+                                                "update", "clear", "pop",
+                                                "popitem", "setdefault",
+                                                "__setitem__", "__delitem__",
+                                                "__ior__",
+                                            }
+                                        ):
+                                            receivers.append(change.func.value)
+                                        if any(
+                                            writes_to_root(
+                                                receiver, _position_before(change)
+                                            )
+                                            for receiver in receivers
+                                        ):
+                                            return unknown
+                                    return spread_key_value(
+                                        root, key, nesting + 1
+                                    )
                                 return unknown
 
                             selected = spread_key_value(
@@ -13245,6 +13337,89 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
              'source = {"choice": {"main": flag}, '
              '**({"other": deferred(other)} | {"next": 1})}'
              '["choice"]\nflag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            # A named statically disjoint spread is equivalent to an inline
+            # display, including alias chains and unshadowed dict calls.
+            ('other = Guard()\nspread = {"other": deferred(other)}\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('other = Guard()\nspread = {"other": deferred(other)}\n'
+             'staged = spread\n'
+             'source = {"choice": {"main": flag}, **staged}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder["main"].state.clear()', False, False),
+            ('other = Guard()\n'
+             'spread = dict(other=deferred(other))\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('other = Guard()\nbase = {"other": deferred(other)}\n'
+             'spread = {"extra": 1, **base}\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('other = Guard()\n'
+             'spread = {"other": deferred(other)}\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder["main"].state.clear()', True, False),
+            # Reaching source-order rebind takes precedence over an obsolete
+            # disjoint literal, while an after-use rebind changes nothing.
+            ('other = Guard()\n'
+             'spread = {"other": deferred(other)}\n'
+             'spread = {"choice": deferred(other)}\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('other = Guard()\n'
+             'spread = {"other": deferred(other)}\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'spread = {"choice": deferred(other)}\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            # A named spread selecting a deferred mapping is not proven eager.
+            ('other = Guard()\n'
+             'spread = {"choice": deferred(other)}\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('other = Guard()\n'
+             'spread = deferred(other)\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            # A mutable named source can acquire the target key before use.
+            # Its literal creation does not prove the expanded key absent.
+            ('other = Guard()\n'
+             'spread = {"other": deferred(other)}\n'
+             'spread["choice"] = deferred(other)\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('other = Guard()\n'
+             'spread = {"other": deferred(other)}\n'
+             'alias = spread\nalias.update({"choice": deferred(other)})\n'
+             'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            # An exact later literal still wins even if a named spread may
+            # contain the target key.
+            ('other = Guard()\nspread = deferred(other)\n'
+             'source = {**spread, "choice": {"main": flag}}["choice"]\n'
+             'flag = Guard()\n'
              'holder = {"main": Guard(), **source}\n',
              'holder.get("main").state.clear()', False, False),
             # Control-flow alternatives are proven eager only when both
