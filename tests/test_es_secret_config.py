@@ -9088,9 +9088,28 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                             visited | {token},
                                                         )
                                                     ]
-                                                if isinstance(candidate, ast.Subscript):
+                                                getter_call = (
+                                                    isinstance(candidate, ast.Call)
+                                                    and isinstance(
+                                                        candidate.func, ast.Attribute
+                                                    )
+                                                    and candidate.func.attr == "get"
+                                                    and len(candidate.args) in (1, 2)
+                                                    and not candidate.keywords
+                                                )
+                                                if isinstance(candidate, ast.Subscript) or getter_call:
+                                                    index_node = (
+                                                        candidate.slice
+                                                        if isinstance(candidate, ast.Subscript)
+                                                        else candidate.args[0]
+                                                    )
+                                                    owner_node = (
+                                                        candidate.value
+                                                        if isinstance(candidate, ast.Subscript)
+                                                        else candidate.func.value
+                                                    )
                                                     containers = container_sources(
-                                                        candidate.value,
+                                                        owner_node,
                                                         level + 1, visited,
                                                     )
                                                     selections = []
@@ -9101,30 +9120,26 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                         ):
                                                             if (
                                                                 isinstance(
-                                                                    candidate.slice,
+                                                                    index_node,
                                                                     ast.Constant,
                                                                 )
                                                                 and isinstance(
-                                                                    candidate.slice.value,
+                                                                    index_node.value,
                                                                     int,
-                                                                )
-                                                                and not isinstance(
-                                                                    candidate.slice.value,
-                                                                    bool,
                                                                 )
                                                                 and -len(
                                                                     container.elts
                                                                 )
-                                                                <= candidate.slice.value
+                                                                <= index_node.value
                                                                 < len(container.elts)
                                                             ):
                                                                 selections.append(
                                                                     container.elts[
-                                                                        candidate.slice.value
+                                                                        index_node.value
                                                                     ]
                                                                 )
                                                             elif not isinstance(
-                                                                candidate.slice,
+                                                                index_node,
                                                                 ast.Constant,
                                                             ):
                                                                 selections.extend(
@@ -9143,17 +9158,37 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                         ast.Constant,
                                                                     )
                                                                     and isinstance(
-                                                                        candidate.slice,
+                                                                        index_node,
                                                                         ast.Constant,
                                                                     )
                                                                 ):
                                                                     if (
                                                                         key_node.value
-                                                                        == candidate.slice.value
+                                                                        == index_node.value
                                                                     ):
                                                                         selections = [val]
                                                                 else:
                                                                     selections.append(val)
+                                                    if getter_call and len(candidate.args) == 2:
+                                                        # get() uses its default only when
+                                                        # the selected key may be absent.
+                                                        # A definite literal key must not
+                                                        # cause unrelated-default false alarms.
+                                                        definitely_present = (
+                                                            bool(containers)
+                                                            and isinstance(index_node, ast.Constant)
+                                                            and all(
+                                                                isinstance(container, ast.Dict)
+                                                                and any(
+                                                                    isinstance(key_node, ast.Constant)
+                                                                    and key_node.value == index_node.value
+                                                                    for key_node in container.keys
+                                                                )
+                                                                for container in containers
+                                                            )
+                                                        )
+                                                        if not definitely_present:
+                                                            selections.append(candidate.args[1])
                                                     return [
                                                         selected
                                                         for value in selections
@@ -9176,9 +9211,6 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                         )
                                                         and isinstance(
                                                             index.value, int
-                                                        )
-                                                        and not isinstance(
-                                                            index.value, bool
                                                         )
                                                         and not getter
                                                         and -len(container.elts)
@@ -13864,6 +13896,145 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
              'source = {"choice": {"main": flag}, **spread}["choice"]\n'
              'mutate(box[0])\nflag = Guard()\n'
              'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            # Getter-returned containers and boolean sequence indexes must
+            # preserve precise alias identity without unrelated-slot alarms.
+            # getter-selected nested dictionary.
+            ("other = Guard()\n"
+              "spread = {\"other\": deferred(other)}\n"
+              "box = {\"slot\": {\"inner\": spread}}\n"
+              "mutate(box.get(\"slot\")[\"inner\"])\n"
+              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+              "flag = Guard()\n"
+              "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # chained getters.
+            ("other = Guard()\n"
+              "spread = {\"other\": deferred(other)}\n"
+              "box = {\"slot\": {\"inner\": spread}}\n"
+              "mutate(box.get(\"slot\").get(\"inner\"))\n"
+              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+              "flag = Guard()\n"
+              "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # getter to indexed list mutator.
+            ("other = Guard()\n"
+              "spread = {\"other\": deferred(other)}\n"
+              "box = {\"slot\": [spread]}\n"
+              "box.get(\"slot\")[0].update({\"choice\": deferred(other)})\n"
+              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+              "flag = Guard()\n"
+              "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # unbound setter through getter.
+            ("other = Guard()\n"
+              "spread = {\"other\": deferred(other)}\n"
+              "box = {\"slot\": {\"inner\": spread}}\n"
+              "dict.__setitem__(box.get(\"slot\")[\"inner\"], \"choice\", deferred(other))\n"
+              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+              "flag = Guard()\n"
+              "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # getter default used for absent key.
+            ("other = Guard()\n"
+              "spread = {\"other\": deferred(other)}\n"
+              "box = {\"slot\": {}}\n"
+              "mutate(box.get(\"missing\", {\"inner\": spread})[\"inner\"])\n"
+              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+              "flag = Guard()\n"
+              "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # getter alias rebound through name.
+            ("other = Guard()\n"
+              "spread = {\"other\": deferred(other)}\n"
+              "box = {\"slot\": {\"inner\": spread}}\n"
+              "alias = box.get(\"slot\")\n"
+              "mutate(alias[\"inner\"])\n"
+              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+              "flag = Guard()\n"
+              "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # unknown selected dictionary key.
+            ("other = Guard()\n"
+              "spread = {\"other\": deferred(other)}\n"
+              "box = {\"slot\": {\"inner\": spread, \"other\": {\"choice\": deferred(other)}}}\n"
+              "mutate(box.get(\"slot\")[unknown_key])\n"
+              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+              "flag = Guard()\n"
+              "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # false sequence index.
+            ("other = Guard()\n"
+              "spread = {\"other\": deferred(other)}\n"
+              "box = [spread]\n"
+              "mutate(box[False])\n"
+              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+              "flag = Guard()\n"
+              "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # true tuple index.
+            ("other = Guard()\n"
+              "spread = {\"other\": deferred(other)}\n"
+              "box = ({\"choice\": deferred(other)}, spread)\n"
+              "mutate(box[True])\n"
+              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+              "flag = Guard()\n"
+              "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # unrelated true index.
+            ("other = Guard()\n"
+              "spread = {\"other\": deferred(other)}\n"
+              "box = [spread, {\"choice\": deferred(other)}]\n"
+              "mutate(box[True])\n"
+              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+              "flag = Guard()\n"
+              "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # unrelated false index.
+            ("other = Guard()\n"
+              "spread = {\"other\": deferred(other)}\n"
+              "box = [{\"choice\": deferred(other)}, spread]\n"
+              "mutate(box[False])\n"
+              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+              "flag = Guard()\n"
+              "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # unrelated nested getter key.
+            ("other = Guard()\n"
+              "spread = {\"other\": deferred(other)}\n"
+              "box = {\"slot\": {\"inner\": {\"choice\": deferred(other)}, \"other\": spread}}\n"
+              "mutate(box.get(\"slot\")[\"inner\"])\n"
+              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+              "flag = Guard()\n"
+              "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # present getter key ignores alias default.
+            ("other = Guard()\n"
+              "spread = {\"other\": deferred(other)}\n"
+              "box = {\"slot\": {\"inner\": {\"choice\": deferred(other)}}}\n"
+              "mutate(box.get(\"slot\", {\"inner\": spread})[\"inner\"])\n"
+              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+              "flag = Guard()\n"
+              "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # getter mutation after snapshot.
+            ("other = Guard()\n"
+              "spread = {\"other\": deferred(other)}\n"
+              "box = {\"slot\": {\"inner\": spread}}\n"
+              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+              "mutate(box.get(\"slot\")[\"inner\"])\n"
+              "flag = Guard()\n"
+              "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # later exact literal overwrite.
+            ("other = Guard()\n"
+              "spread = {\"other\": deferred(other)}\n"
+              "box = {\"slot\": {\"inner\": spread}}\n"
+              "mutate(box.get(\"slot\")[\"inner\"])\n"
+              "source = {\"choice\": {\"main\": flag}}\n"
+              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+              "flag = Guard()\n"
+              "holder = {\"main\": Guard(), **source}\n",
              'holder.get("main").state.clear()', False, False),
             # Control-flow alternatives are proven eager only when both
             # possible dict-display selections capture their values.
