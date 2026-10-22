@@ -8919,20 +8919,21 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             and isinstance(source.value, ast.Dict)
                             and isinstance(source.slice, ast.Constant)
                         ):
-                            # A value selected from a concrete dict display
-                            # was evaluated when that display was built.
-                            # Walk in insertion/overwrite order: duplicate
-                            # literal keys select the *last* value. Dynamic
-                            # keys and **spreads can overwrite any selected
-                            # value, so they cannot prove eager identity.
+                            # Follow Python's left-to-right dict display
+                            # overwrites. A dynamic key or **spread can replace
+                            # the selected value, but a *later* matching literal
+                            # key definitively wins and restores eager proof.
+                            # Unknown entries *after* the last exact key must
+                            # keep the possibility of a deferred custom mapping.
                             selected = None
                             for key, value in zip(
                                 source.value.keys, source.value.values
                             ):
-                                if not isinstance(key, ast.Constant):
-                                    return False
-                                if key.value == source.slice.value:
-                                    selected = value
+                                if isinstance(key, ast.Constant):
+                                    if key.value == source.slice.value:
+                                        selected = value
+                                else:
+                                    selected = None
                             return (
                                 selected is not None
                                 and proven_eager_mapping(selected, depth + 1)
@@ -13038,6 +13039,74 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
              'flag = Guard()\n'
              'holder = {"main": Guard(), **source}\n',
              'holder.get("main").state.clear()', False, True),
+            # A later exact literal key overwrites earlier dynamic or **
+            # entries, restoring a known eager selected identity.
+            ('other = Guard()\nselection = "choice"\n'
+             'source = {selection: deferred(other), '
+             '"choice": {"main": flag}}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('other = Guard()\n'
+             'source = {**{"choice": deferred(other)}, '
+             '"choice": {"main": flag}}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder["main"].state.clear()', False, False),
+            ('other = Guard()\nselection = "choice"\n'
+             'source = {selection: deferred(other), '
+             '"other": deferred(other), "choice": dict(main=flag)}'
+             '["choice"]\nflag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('other = Guard()\n'
+             'source = {**{"choice": deferred(other)}, '
+             '"choice": {"main": flag}, "other": deferred(other)}'
+             '["choice"]\nflag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            # The later exact key can instead select a deferred custom map.
+            ('other = Guard()\nselection = "choice"\n'
+             'source = {selection: {"main": flag}, '
+             '"choice": deferred(other)}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            # Unknown keys appearing after a matching literal remain unsafe
+            # to certify. A second exact key following them restores proof.
+            ('other = Guard()\nselection = "choice"\n'
+             'source = {"choice": {"main": flag}, '
+             'selection: deferred(other), "choice": {"main": flag}}'
+             '["choice"]\nflag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('other = Guard()\nselection = "choice"\n'
+             'source = {"choice": {"main": flag}, '
+             'selection: deferred(other), "other": Guard()}'
+             '["choice"]\nflag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('other = Guard()\n'
+             'source = {"choice": {"main": flag}, '
+             '**{"choice": deferred(other)}, '
+             '"choice": {"main": flag}}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('other = Guard()\n'
+             'source = {"choice": {"main": flag}, '
+             '"choice": {"main": flag}, '
+             '**{"choice": deferred(other)}}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            # Earlier sanitizer guarantees the unsafe value is overwritten.
+            ('other = Guard()\nselection = "choice"\n'
+             'source = {selection: deferred(other), '
+             '"choice": {"main": flag}}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', True, False),
             # Control-flow alternatives are proven eager only when both
             # possible dict-display selections capture their values.
             ('source = ({"choice": {"main": flag}}["choice"]'
