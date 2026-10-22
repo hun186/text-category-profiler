@@ -9058,13 +9058,113 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                         else:
                                             owner = None
                                         if owner is not None:
-                                            owners = (
-                                                _resolve_bound_nodes(
-                                                    owner, bindings, when
-                                                )
-                                                if isinstance(owner, ast.Name)
-                                                else [owner]
-                                            )
+                                            def container_sources(
+                                                candidate, level=0,
+                                                visited=frozenset(),
+                                            ):
+                                                """Follow nested selections to their container."""
+                                                if level > 12:
+                                                    return []
+                                                if isinstance(candidate, ast.Name):
+                                                    token = _binding_name_token(
+                                                        candidate.id, bindings,
+                                                        candidate,
+                                                    )
+                                                    if token in visited:
+                                                        return []
+                                                    values = _resolve_bound_nodes(
+                                                        candidate, bindings, when
+                                                    )
+                                                    if (
+                                                        len(values) == 1
+                                                        and values[0] is candidate
+                                                    ):
+                                                        return []
+                                                    return [
+                                                        selected
+                                                        for value in values
+                                                        for selected in container_sources(
+                                                            value, level + 1,
+                                                            visited | {token},
+                                                        )
+                                                    ]
+                                                if isinstance(candidate, ast.Subscript):
+                                                    containers = container_sources(
+                                                        candidate.value,
+                                                        level + 1, visited,
+                                                    )
+                                                    selections = []
+                                                    for container in containers:
+                                                        if isinstance(
+                                                            container,
+                                                            (ast.Tuple, ast.List),
+                                                        ):
+                                                            if (
+                                                                isinstance(
+                                                                    candidate.slice,
+                                                                    ast.Constant,
+                                                                )
+                                                                and isinstance(
+                                                                    candidate.slice.value,
+                                                                    int,
+                                                                )
+                                                                and not isinstance(
+                                                                    candidate.slice.value,
+                                                                    bool,
+                                                                )
+                                                                and -len(
+                                                                    container.elts
+                                                                )
+                                                                <= candidate.slice.value
+                                                                < len(container.elts)
+                                                            ):
+                                                                selections.append(
+                                                                    container.elts[
+                                                                        candidate.slice.value
+                                                                    ]
+                                                                )
+                                                            elif not isinstance(
+                                                                candidate.slice,
+                                                                ast.Constant,
+                                                            ):
+                                                                selections.extend(
+                                                                    container.elts
+                                                                )
+                                                        elif isinstance(
+                                                            container, ast.Dict
+                                                        ):
+                                                            for key_node, val in zip(
+                                                                container.keys,
+                                                                container.values,
+                                                            ):
+                                                                if (
+                                                                    isinstance(
+                                                                        key_node,
+                                                                        ast.Constant,
+                                                                    )
+                                                                    and isinstance(
+                                                                        candidate.slice,
+                                                                        ast.Constant,
+                                                                    )
+                                                                ):
+                                                                    if (
+                                                                        key_node.value
+                                                                        == candidate.slice.value
+                                                                    ):
+                                                                        selections = [val]
+                                                                else:
+                                                                    selections.append(val)
+                                                    return [
+                                                        selected
+                                                        for value in selections
+                                                        for selected in container_sources(
+                                                            value, level + 1,
+                                                            visited,
+                                                        )
+                                                    ]
+                                                return [candidate]
+
+                                            owners = container_sources(owner)
                                             for container in owners:
                                                 choices = []
                                                 if isinstance(
