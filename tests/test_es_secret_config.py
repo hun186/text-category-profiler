@@ -12866,69 +12866,69 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
     def test_es_wrapper_deferred_mapping_unpack_time_guard_epochs(self):
         """A deferred custom mapping may load a rebound guard at ** unpack."""
         guard_class = (
-            'class Guard:\\n'
-            '    def __init__(self):\\n'
-            '        self.state = [True]\\n'
-            '    def __bool__(self):\\n'
-            '        return bool(self.state)\\n'
-            'flag = Guard()\\n'
-            'class Deferred:\\n'
-            '    def keys(self):\\n'
-            '        return ("main",)\\n'
-            '    def __getitem__(self, key):\\n'
-            '        return flag\\n'
-            'def deferred(other):\\n'
-            '    return Deferred()\\n'
+            'class Guard:\n'
+            '    def __init__(self):\n'
+            '        self.state = [True]\n'
+            '    def __bool__(self):\n'
+            '        return bool(self.state)\n'
+            'flag = Guard()\n'
+            'class Deferred:\n'
+            '    def keys(self):\n'
+            '        return ("main",)\n'
+            '    def __getitem__(self, key):\n'
+            '        return flag\n'
+            'def deferred(other):\n'
+            '    return Deferred()\n'
         )
         deferred_setup = (
-            'other = Guard()\\n'
-            'source = deferred(other)\\n'
-            'flag = Guard()\\n'
+            'other = Guard()\n'
+            'source = deferred(other)\n'
+            'flag = Guard()\n'
         )
         cases = (
             # Positive: __getitem__ consults the new guard when ** executes,
             # not the guard that was bound when deferred() returned.
-            (deferred_setup + 'holder = {"main": Guard(), **source}\\n',
+            (deferred_setup + 'holder = {"main": Guard(), **source}\n',
              'holder.get("main").state.clear()', False, True),
-            (deferred_setup + 'holder = {"main": Guard(), **source}\\n',
+            (deferred_setup + 'holder = {"main": Guard(), **source}\n',
              'holder["main"].state.clear()', False, True),
-            (deferred_setup + 'holder = {"main": Guard(), **source}\\n'
-             'state = holder.get("main").state\\n',
+            (deferred_setup + 'holder = {"main": Guard(), **source}\n'
+             'state = holder.get("main").state\n',
              'state.clear()', False, True),
-            (deferred_setup + 'staged = source\\n'
-             'holder = {"main": Guard(), **staged}\\n',
+            (deferred_setup + 'staged = source\n'
+             'holder = {"main": Guard(), **staged}\n',
              'holder.get("main").state.clear()', False, True),
             # The first sanitizer already ran before the mutation: the
             # second guard decision cannot resurrect the credential.
-            (deferred_setup + 'holder = {"main": Guard(), **source}\\n',
+            (deferred_setup + 'holder = {"main": Guard(), **source}\n',
              'holder.get("main").state.clear()', True, False),
             # An ordinary dict eagerly captures its values, even when later
             # unpacked after reassigning flag. It is not a deferred mapping.
-            ('source = {"main": flag}\\nflag = Guard()\\n'
-             'holder = {"main": Guard(), **source}\\n',
+            ('source = {"main": flag}\nflag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
              'holder.get("main").state.clear()', False, False),
-            ('source = {"main": flag}\\nflag = Guard()\\n'
-             'holder = {"main": Guard(), **source}\\n',
+            ('source = {"main": flag}\nflag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
              'holder["main"].state.clear()', True, False),
             # Guard rebinding *after* unpack cannot retroactively change the
             # object stored in holder.
-            ('other = Guard()\\nsource = deferred(other)\\n'
-             'holder = {"main": Guard(), **source}\\nflag = Guard()\\n',
+            ('other = Guard()\nsource = deferred(other)\n'
+             'holder = {"main": Guard(), **source}\nflag = Guard()\n',
              'holder.get("main").state.clear()', False, False),
-            (deferred_setup + 'holder = {"main": Guard(), **source}\\n'
-             'flag = Guard()\\n',
+            (deferred_setup + 'holder = {"main": Guard(), **source}\n'
+             'flag = Guard()\n',
              'holder.get("main").state.clear()', False, False),
             # A subsequent explicit key or holder reassignment overrides
             # the possible guard selected by the deferred unpack.
             (deferred_setup
-             + 'holder = {"main": Guard(), **source, "main": Guard()}\\n',
+             + 'holder = {"main": Guard(), **source, "main": Guard()}\n',
              'holder.get("main").state.clear()', False, False),
-            (deferred_setup + 'holder = {"main": Guard(), **source}\\n'
-             'holder = {"main": Guard()}\\n',
+            (deferred_setup + 'holder = {"main": Guard(), **source}\n'
+             'holder = {"main": Guard()}\n',
              'holder.get("main").state.clear()', False, False),
             # An exact later key can deliberately alias the new guard.
             (deferred_setup
-             + 'holder = {"main": Guard(), **source, "main": flag}\\n',
+             + 'holder = {"main": Guard(), **source, "main": flag}\n',
              'holder.get("main").state.clear()', False, True),
         )
         with tempfile.TemporaryDirectory() as directory:
@@ -12945,26 +12945,26 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                       prior=prior):
                         body = (
                             guard_class + setup
-                            + 'extra = {"api_key": None}\\n'
-                            'if flag:\\n    extra["api_key"] = password\\n'
-                            'options = {"api_key": None}\\n'
-                            'options.update(extra)\\n'
-                            + ('if flag:\\n    options["api_key"] = None\\n'
+                            + 'extra = {"api_key": None}\n'
+                            'if flag:\n    extra["api_key"] = password\n'
+                            'options = {"api_key": None}\n'
+                            'options.update(extra)\n'
+                            + ('if flag:\n    options["api_key"] = None\n'
                                if prior else '')
-                            + mutation + '\\n'
-                            'if flag:\\n    options["api_key"] = None\\n'
+                            + mutation + '\n'
+                            'if flag:\n    options["api_key"] = None\n'
                         )
                         wrapper.write_text(
-                            'from elasticsearch import Elasticsearch\\n'
-                            'def connect(password):\\n'
+                            'from elasticsearch import Elasticsearch\n'
+                            'def connect(password):\n'
                             + textwrap.indent(body, '    ')
                             + '    return Elasticsearch("localhost", '
-                            '**options)\\n',
+                            '**options)\n',
                             encoding="utf-8",
                         )
                         caller.write_text(
-                            'from client import connect\\n'
-                            'connect("hardcoded-secret")\\n',
+                            'from client import connect\n'
+                            'connect("hardcoded-secret")\n',
                             encoding="utf-8",
                         )
                         self._runtime_es_module_paths()
