@@ -8871,6 +8871,56 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                             return None
                         return ("source", id(resolved))
 
+                    def proven_eager_mapping(source, depth=0):
+                        """Recognize concrete builtin mapping snapshots, not calls.
+
+                        A builtin dict captures its values when constructed,
+                        whereas a custom mapping may defer __getitem__ until
+                        **mapping. Literal sequence selection preserves that
+                        distinction for e.g. [dict(main=flag)][0] versus
+                        [deferred(other)][0]. Unknown or shadowed constructors
+                        remain opaque; do not assume object identity.
+                        """
+                        if depth > 12:
+                            return False
+                        if isinstance(source, ast.Dict):
+                            return True
+                        if (
+                            isinstance(source, ast.Call)
+                            and isinstance(source.func, ast.Name)
+                            and source.func.id == "dict"
+                            and builtin_dict_name(
+                                source.func, _node_position(source)
+                            )
+                        ):
+                            return True
+                        if (
+                            isinstance(source, ast.Subscript)
+                            and isinstance(source.value, (ast.List, ast.Tuple))
+                        ):
+                            members = source.value.elts
+                            if (
+                                isinstance(source.slice, ast.Constant)
+                                and isinstance(source.slice.value, int)
+                                and not isinstance(source.slice.value, bool)
+                            ):
+                                index = source.slice.value
+                                if -len(members) <= index < len(members):
+                                    return proven_eager_mapping(
+                                        members[index], depth + 1
+                                    )
+                                return False
+                            return bool(members) and all(
+                                proven_eager_mapping(member, depth + 1)
+                                for member in members
+                            )
+                        if isinstance(source, ast.IfExp):
+                            return (
+                                proven_eager_mapping(source.body, depth + 1)
+                                and proven_eager_mapping(source.orelse, depth + 1)
+                            )
+                        return False
+
                     def mapping_selection(mapping, index, depth=0):
                         """Possible selected values and key absence in write order.
 
@@ -8956,19 +9006,19 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                 )
                                 outcomes.extend([*candidates, opaque_guard])
                                 if (
-                                    isinstance(source, ast.Call)
-                                    and isinstance(mapping, ast.Name)
+                                    isinstance(mapping, ast.Name)
                                     and _node_position(source)
                                     < _node_position(mapping)
+                                    and not proven_eager_mapping(source)
                                 ):
-                                    # A custom mapping returned by an earlier
-                                    # opaque call can defer __getitem__ until
-                                    # **mapping executes. That lookup may read
-                                    # the *current* guard after reassignment.
-                                    # Capture at the unpack Name, not at a
-                                    # later mutation site or the source Call.
-                                    # Plain dict literals remain handled by
-                                    # their eagerly captured value nodes.
+                                    # An unproven mapping can defer __getitem__
+                                    # until **mapping, even when the source is
+                                    # a Subscript, conditional, or other AST
+                                    # shape rather than a direct ast.Call.
+                                    # Preserve an unpack-time guard as well as
+                                    # call/source-time object candidates.
+                                    # Proven eager builtin dict snapshots do
+                                    # not acquire aliases after a later rebind.
                                     unpack_guard = ast.Name(
                                         id=name, ctx=ast.Load()
                                     )
@@ -12898,6 +12948,55 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             (deferred_setup + 'staged = source\n'
              'holder = {"main": Guard(), **staged}\n',
              'holder.get("main").state.clear()', False, True),
+            # Source expression shapes alone do not prove eagerness:
+            # a Subscript/conditional may return a custom deferred mapping.
+            ('other = Guard()\nsource = [deferred(other)][0]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('other = Guard()\nsource = (deferred(other),)[0]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder["main"].state.clear()', False, True),
+            ('other = Guard()\n'
+             'source = {"choice": deferred(other)}["choice"]\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            ('other = Guard()\n'
+             'source = deferred(other) if other else deferred(other)\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            # dict() is a proven builtin snapshot and must not inherit a
+            # rebound flag; the same is true inside a literal sequence.
+            ('source = dict(main=flag)\nflag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('source = dict({"main": flag})\nflag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('source = [dict(main=flag)][0]\nflag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('source = ({"main": flag},)[0]\nflag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
+            ('source = dict(main=flag)\nflag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder["main"].state.clear()', True, False),
+            # Shadowed "dict" is user code, not a proven eager builtin.
+            ('other = Guard()\n'
+             'dict = lambda **kwargs: Deferred()\n'
+             'source = dict(main=other)\nflag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, True),
+            # A stable old guard captured by builtin dict is different from
+            # the current flag even if it remains reachable through holder.
+            ('source = dict(main=flag)\nold = flag\n'
+             'flag = Guard()\n'
+             'holder = {"main": Guard(), **source}\n',
+             'holder.get("main").state.clear()', False, False),
             # The first sanitizer already ran before the mutation: the
             # second guard decision cannot resurrect the credential.
             (deferred_setup + 'holder = {"main": Guard(), **source}\n',
