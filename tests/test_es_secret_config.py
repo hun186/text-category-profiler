@@ -9442,22 +9442,64 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                         ):
                                                             continue
                                                         prior_before = _position_before(prior)
-                                                        def same_owner(expr):
-                                                            # Unpack forwarding preserves
-                                                            # references: *[box] or
-                                                            # **{"value": box} reaches box.
+                                                        read_only_dict_methods = {
+                                                            "get", "keys", "items", "values",
+                                                            "copy", "__getitem__", "__contains__",
+                                                            "__len__", "__iter__",
+                                                        }
+
+                                                        def same_owner(
+                                                            expr, depth=0,
+                                                            seen=frozenset(),
+                                                        ):
+                                                            # *args / **kwargs may refer to
+                                                            # named containers. A passed
+                                                            # bound mutator is also an
+                                                            # escape path through its owner.
+                                                            if depth > 12:
+                                                                return False
+                                                            if isinstance(expr, ast.Name):
+                                                                token = _binding_name_token(
+                                                                    expr.id, bindings, expr
+                                                                )
+                                                                if token not in seen:
+                                                                    resolved = _resolve_bound_nodes(
+                                                                        expr, bindings, prior_before
+                                                                    )
+                                                                    if any(
+                                                                        value is not expr
+                                                                        and same_owner(
+                                                                            value, depth + 1,
+                                                                            seen | {token},
+                                                                        )
+                                                                        for value in resolved
+                                                                    ):
+                                                                        return True
+                                                            if isinstance(expr, ast.Attribute):
+                                                                return (
+                                                                    expr.attr not in read_only_dict_methods
+                                                                    and same_owner(
+                                                                        expr.value, depth + 1, seen
+                                                                    )
+                                                                )
                                                             if isinstance(expr, ast.Starred):
-                                                                return same_owner(expr.value)
+                                                                return same_owner(
+                                                                    expr.value, depth + 1, seen
+                                                                )
                                                             if isinstance(
                                                                 expr, (ast.Tuple, ast.List, ast.Set),
                                                             ):
                                                                 return any(
-                                                                    same_owner(item)
+                                                                    same_owner(
+                                                                        item, depth + 1, seen
+                                                                    )
                                                                     for item in expr.elts
                                                                 )
                                                             if isinstance(expr, ast.Dict):
                                                                 return any(
-                                                                    same_owner(item)
+                                                                    same_owner(
+                                                                        item, depth + 1, seen
+                                                                    )
                                                                     for item in expr.values
                                                                 )
                                                             return any(
@@ -9508,10 +9550,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                 ):
                                                                     if (
                                                                         same_owner(callable_node.value)
-                                                                        and callable_node.attr not in {
-                                                                            "get", "keys", "items",
-                                                                            "values", "copy",
-                                                                        }
+                                                                        and callable_node.attr
+                                                                        not in read_only_dict_methods
                                                                     ):
                                                                         return True
                                                             if any(
@@ -14704,6 +14744,221 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
              "box[\"slot\"].get(\"missing\", spread)\n"
              "setter = box.__setitem__\n"
              "setter(\"slot\", custom)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # Named unpack sources and method callbacks preserve owner identity.
+            # named starred positional tuple forwards owner.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "args = (box,)\n"
+             "mutate(*args)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # named starred positional list forwards owner.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "args = [box]\n"
+             "mutate(*args)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # named keyword dict forwards owner.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "kwargs = {\"value\": box}\n"
+             "mutate(**kwargs)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # named double alias positional tuple.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "args = (box,)\n"
+             "forwarded = args\n"
+             "mutate(*forwarded)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # named nested starred tuple.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "args = ([box],)\n"
+             "mutate(*args)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # named nested keyword dict.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "kwargs = {\"value\": (box,)}\n"
+             "mutate(**kwargs)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # callback forwarded bound setitem.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "setter = box.__setitem__\n"
+             "invoke(setter, \"slot\", custom)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # callback forwarded bound update.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "updater = box.update\n"
+             "invoke(updater, {\"slot\": custom})\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # callback forwarded through saved tuple.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "setter = box.__setitem__\n"
+             "callbacks = (setter,)\n"
+             "invoke(*callbacks)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # callback forwarded via kwargs.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "setter = box.__setitem__\n"
+             "kwargs = {\"callback\": setter}\n"
+             "invoke(**kwargs)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # saved builtin getitem is readonly.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "reader = box.__getitem__\n"
+             "reader(\"slot\")\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # saved builtin contains is readonly.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "contains = box.__contains__\n"
+             "contains(\"slot\")\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # direct builtin getitem is readonly.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "box.__getitem__(\"slot\")\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # saved builtin length is readonly.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "length = box.__len__\n"
+             "length()\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # read-only getter callback does not replace owner.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "reader = box.__getitem__\n"
+             "invoke(reader, \"slot\")\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # named unpack of unrelated mapping is safe.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "unrelated = {\"slot\": custom}\n"
+             "args = (unrelated,)\n"
+             "mutate(*args)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # named kwargs unrelated mapping is safe.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "unrelated = {\"slot\": custom}\n"
+             "kwargs = {\"value\": unrelated}\n"
+             "mutate(**kwargs)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # saved callback on unrelated mapping is safe.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "unrelated = {\"slot\": custom}\n"
+             "setter = unrelated.__setitem__\n"
+             "invoke(setter, \"slot\", custom)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # named unpack after get does not retroactively escape.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "args = (box,)\n"
+             "mutate(*args)\n"
              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
              "flag = Guard()\n"
              "holder = {\"main\": Guard(), **source}\n",
