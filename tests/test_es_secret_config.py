@@ -9349,6 +9349,144 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                             # conservative, including methods
                                             # of opaque receivers.
                                             builtin_dict_get = False
+                                            def slot_can_change(
+                                                selection, before, depth=0,
+                                                seen=frozenset(),
+                                            ):
+                                                """A selected literal member is not immutable."""
+                                                if depth > 12:
+                                                    return True
+                                                if isinstance(selection, ast.Name):
+                                                    token = _binding_name_token(
+                                                        selection.id, bindings,
+                                                        selection,
+                                                    )
+                                                    if token in seen:
+                                                        return True
+                                                    resolved = _resolve_bound_nodes(
+                                                        selection, bindings, before
+                                                    )
+                                                    if not resolved or (
+                                                        len(resolved) == 1
+                                                        and resolved[0] is selection
+                                                    ):
+                                                        return True
+                                                    return any(
+                                                        slot_can_change(
+                                                            value,
+                                                            min(
+                                                                before,
+                                                                _node_position(value),
+                                                            )
+                                                            if isinstance(
+                                                                value, (
+                                                                    ast.Subscript,
+                                                                    ast.Call,
+                                                                ),
+                                                            )
+                                                            else before,
+                                                            depth + 1,
+                                                            seen | {token},
+                                                        )
+                                                        for value in resolved
+                                                    )
+                                                getter_selection = (
+                                                    isinstance(selection, ast.Call)
+                                                    and isinstance(
+                                                        selection.func, ast.Attribute
+                                                    )
+                                                    and selection.func.attr == "get"
+                                                    and 1 <= len(selection.args) <= 2
+                                                    and not selection.keywords
+                                                )
+                                                if isinstance(selection, ast.Subscript):
+                                                    owner = selection.value
+                                                    selected_key = selection.slice
+                                                elif getter_selection:
+                                                    owner = selection.func.value
+                                                    selected_key = selection.args[0]
+                                                else:
+                                                    return False
+                                                if slot_can_change(
+                                                    owner, before, depth + 1, seen
+                                                ):
+                                                    return True
+                                                owners = container_sources(owner, before)
+                                                if not owners or not all(
+                                                    isinstance(
+                                                        value,
+                                                        (ast.Dict, ast.List, ast.Tuple),
+                                                    )
+                                                    for value in owners
+                                                ):
+                                                    return True
+                                                for container in owners:
+                                                    created = _node_position(container)
+                                                    for prior in ast.walk(wrapper):
+                                                        at = _node_position(prior)
+                                                        if not created < at < before:
+                                                            continue
+                                                        if getattr(
+                                                            prior, "_binding_scope", None
+                                                        ) is not wrapper:
+                                                            continue
+                                                        if _control_paths_mutually_exclusive(
+                                                            _node_control_path(prior),
+                                                            _node_control_path(change),
+                                                        ):
+                                                            continue
+                                                        prior_before = _position_before(prior)
+                                                        def same_owner(expr):
+                                                            return any(
+                                                                id(candidate) == id(container)
+                                                                for candidate in container_sources(
+                                                                    expr, prior_before
+                                                                )
+                                                            )
+                                                        if isinstance(
+                                                            prior, (
+                                                                ast.Assign, ast.AnnAssign,
+                                                                ast.AugAssign, ast.Delete,
+                                                            ),
+                                                        ):
+                                                            targets = (
+                                                                prior.targets
+                                                                if isinstance(prior, (ast.Assign, ast.Delete))
+                                                                else [prior.target]
+                                                            )
+                                                            for target in targets:
+                                                                if isinstance(target, ast.Subscript):
+                                                                    if not same_owner(target.value):
+                                                                        continue
+                                                                    if not (
+                                                                        isinstance(selected_key, ast.Constant)
+                                                                        and isinstance(target.slice, ast.Constant)
+                                                                        and selected_key.value != target.slice.value
+                                                                    ):
+                                                                        return True
+                                                                elif isinstance(prior, ast.AugAssign):
+                                                                    if same_owner(target):
+                                                                        return True
+                                                        elif isinstance(prior, ast.Call):
+                                                            # Unknown helpers may replace a
+                                                            # selected slot through an alias.
+                                                            # Read-only builtin accessors do not.
+                                                            func = prior.func
+                                                            if isinstance(func, ast.Attribute):
+                                                                if same_owner(func.value) and func.attr not in {
+                                                                    "get", "keys", "items", "values", "copy"
+                                                                }:
+                                                                    return True
+                                                            if any(
+                                                                same_owner(arg)
+                                                                for arg in [
+                                                                    *prior.args,
+                                                                    *(kw.value for kw in prior.keywords),
+                                                                ]
+                                                            ):
+                                                                return True
+                                                return False
+
                                             if (
                                                 isinstance(change.func, ast.Attribute)
                                                 and change.func.attr == "get"
@@ -9368,6 +9506,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                     and all(
                                                         isinstance(value, ast.Dict)
                                                         for value in getter_values
+                                                    )
+                                                    and not slot_can_change(
+                                                        getter_owner, when_before
                                                     )
                                                 )
                                             if not builtin_dict_get and any(
@@ -14184,6 +14325,171 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
               "flag = Guard()\n"
               "holder = {\"main\": Guard(), **source}\n"
               "box[\"slot\"].get(\"missing\", spread)\n",
+             'holder.get("main").state.clear()', False, False),
+            # A selected literal dict may be replaced before get() runs.
+            # direct slot overwrite.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "box[\"slot\"] = custom\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # aliased slot overwrite.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "alias = box\n"
+             "alias[\"slot\"] = custom\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # augmented slot overwrite.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "box[\"slot\"] |= custom\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # nested slot overwrite.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {\"inner\": {}}}\n"
+             "box[\"slot\"][\"inner\"] = custom\n"
+             "box[\"slot\"][\"inner\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # getter nested slot overwrite.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {\"inner\": {}}}\n"
+             "box.get(\"slot\")[\"inner\"] = custom\n"
+             "box.get(\"slot\")[\"inner\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # conditional slot overwrite.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "if option:\n"
+             "    box[\"slot\"] = custom\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # opaque helper may overwrite slot.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "mutate(box)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # unbound slot overwrite.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "dict.__setitem__(box, \"slot\", custom)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # different slot remains safe.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}, \"other\": {}}\n"
+             "box[\"other\"] = custom\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # unrelated container slot remains safe.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "other_box = {\"slot\": {}}\n"
+             "other_box[\"slot\"] = custom\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # read only owner access remains safe.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "box.get(\"slot\")\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # saved alias unaffected by later overwrite.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "saved = box[\"slot\"]\n"
+             "box[\"slot\"] = custom\n"
+             "saved.get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # slot overwrite occurs after get.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "box[\"slot\"] = custom\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # dynamic slot overwrite.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "box[dynamic] = custom\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # list index overwrite.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = [{}]\n"
+             "box[0] = custom\n"
+             "box[0].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # unrelated list index stays safe.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = [{}, {}]\n"
+             "box[1] = custom\n"
+             "box[0].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
              'holder.get("main").state.clear()', False, False),
             # Control-flow alternatives are proven eager only when both
             # possible dict-display selections capture their values.
