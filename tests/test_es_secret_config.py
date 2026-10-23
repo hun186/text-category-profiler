@@ -9007,6 +9007,148 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                     # A source literal is not an immutable
                                     # snapshot, so revoke an absence proof on
                                     # any visible mutation of that same root.
+                                    def container_sources(
+                                        candidate, when, level=0,
+                                        visited=frozenset(),
+                                    ):
+                                        """Follow nested selections to their container."""
+                                        if level > 12:
+                                            return []
+                                        if isinstance(candidate, ast.Name):
+                                            token = _binding_name_token(
+                                                candidate.id, bindings,
+                                                candidate,
+                                            )
+                                            if token in visited:
+                                                return []
+                                            values = _resolve_bound_nodes(
+                                                candidate, bindings, when
+                                            )
+                                            if (
+                                                len(values) == 1
+                                                and values[0] is candidate
+                                            ):
+                                                return []
+                                            return [
+                                                selected
+                                                for value in values
+                                                for selected in container_sources(
+                                                    value, when, level + 1,
+                                                    visited | {token},
+                                                )
+                                            ]
+                                        getter_call = (
+                                            isinstance(candidate, ast.Call)
+                                            and isinstance(
+                                                candidate.func, ast.Attribute
+                                            )
+                                            and candidate.func.attr == "get"
+                                            and len(candidate.args) in (1, 2)
+                                            and not candidate.keywords
+                                        )
+                                        if isinstance(candidate, ast.Subscript) or getter_call:
+                                            index_node = (
+                                                candidate.slice
+                                                if isinstance(candidate, ast.Subscript)
+                                                else candidate.args[0]
+                                            )
+                                            owner_node = (
+                                                candidate.value
+                                                if isinstance(candidate, ast.Subscript)
+                                                else candidate.func.value
+                                            )
+                                            containers = container_sources(
+                                                owner_node, when,
+                                                level + 1, visited,
+                                            )
+                                            selections = []
+                                            for container in containers:
+                                                if isinstance(
+                                                    container,
+                                                    (ast.Tuple, ast.List),
+                                                ):
+                                                    if (
+                                                        isinstance(
+                                                            index_node,
+                                                            ast.Constant,
+                                                        )
+                                                        and isinstance(
+                                                            index_node.value,
+                                                            int,
+                                                        )
+                                                        and -len(
+                                                            container.elts
+                                                        )
+                                                        <= index_node.value
+                                                        < len(container.elts)
+                                                    ):
+                                                        selections.append(
+                                                            container.elts[
+                                                                index_node.value
+                                                            ]
+                                                        )
+                                                    elif not isinstance(
+                                                        index_node,
+                                                        ast.Constant,
+                                                    ):
+                                                        selections.extend(
+                                                            container.elts
+                                                        )
+                                                elif isinstance(
+                                                    container, ast.Dict
+                                                ):
+                                                    for key_node, val in zip(
+                                                        container.keys,
+                                                        container.values,
+                                                    ):
+                                                        if (
+                                                            isinstance(
+                                                                key_node,
+                                                                ast.Constant,
+                                                            )
+                                                            and isinstance(
+                                                                index_node,
+                                                                ast.Constant,
+                                                            )
+                                                        ):
+                                                            if (
+                                                                key_node.value
+                                                                == index_node.value
+                                                            ):
+                                                                selections = [val]
+                                                        else:
+                                                            selections.append(val)
+                                            if getter_call and len(candidate.args) == 2:
+                                                # get() uses its default only when
+                                                # the selected key may be absent.
+                                                # A definite literal key must not
+                                                # cause unrelated-default false alarms.
+                                                definitely_present = (
+                                                    bool(containers)
+                                                    and isinstance(index_node, ast.Constant)
+                                                    and all(
+                                                        isinstance(container, ast.Dict)
+                                                        and any(
+                                                            isinstance(key_node, ast.Constant)
+                                                            and key_node.value == index_node.value
+                                                            for key_node in container.keys
+                                                        )
+                                                        for container in containers
+                                                    )
+                                                )
+                                                if not definitely_present:
+                                                    selections.append(candidate.args[1])
+                                            return [
+                                                selected
+                                                for value in selections
+                                                for selected in container_sources(
+                                                    value, when, level + 1,
+                                                    visited,
+                                                )
+                                            ]
+                                        return [candidate]
+
+
                                     def writes_to_root(
                                         receiver, when, depth=0,
                                         seen=frozenset(),
@@ -9058,148 +9200,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                         else:
                                             owner = None
                                         if owner is not None:
-                                            def container_sources(
-                                                candidate, level=0,
-                                                visited=frozenset(),
-                                            ):
-                                                """Follow nested selections to their container."""
-                                                if level > 12:
-                                                    return []
-                                                if isinstance(candidate, ast.Name):
-                                                    token = _binding_name_token(
-                                                        candidate.id, bindings,
-                                                        candidate,
-                                                    )
-                                                    if token in visited:
-                                                        return []
-                                                    values = _resolve_bound_nodes(
-                                                        candidate, bindings, when
-                                                    )
-                                                    if (
-                                                        len(values) == 1
-                                                        and values[0] is candidate
-                                                    ):
-                                                        return []
-                                                    return [
-                                                        selected
-                                                        for value in values
-                                                        for selected in container_sources(
-                                                            value, level + 1,
-                                                            visited | {token},
-                                                        )
-                                                    ]
-                                                getter_call = (
-                                                    isinstance(candidate, ast.Call)
-                                                    and isinstance(
-                                                        candidate.func, ast.Attribute
-                                                    )
-                                                    and candidate.func.attr == "get"
-                                                    and len(candidate.args) in (1, 2)
-                                                    and not candidate.keywords
-                                                )
-                                                if isinstance(candidate, ast.Subscript) or getter_call:
-                                                    index_node = (
-                                                        candidate.slice
-                                                        if isinstance(candidate, ast.Subscript)
-                                                        else candidate.args[0]
-                                                    )
-                                                    owner_node = (
-                                                        candidate.value
-                                                        if isinstance(candidate, ast.Subscript)
-                                                        else candidate.func.value
-                                                    )
-                                                    containers = container_sources(
-                                                        owner_node,
-                                                        level + 1, visited,
-                                                    )
-                                                    selections = []
-                                                    for container in containers:
-                                                        if isinstance(
-                                                            container,
-                                                            (ast.Tuple, ast.List),
-                                                        ):
-                                                            if (
-                                                                isinstance(
-                                                                    index_node,
-                                                                    ast.Constant,
-                                                                )
-                                                                and isinstance(
-                                                                    index_node.value,
-                                                                    int,
-                                                                )
-                                                                and -len(
-                                                                    container.elts
-                                                                )
-                                                                <= index_node.value
-                                                                < len(container.elts)
-                                                            ):
-                                                                selections.append(
-                                                                    container.elts[
-                                                                        index_node.value
-                                                                    ]
-                                                                )
-                                                            elif not isinstance(
-                                                                index_node,
-                                                                ast.Constant,
-                                                            ):
-                                                                selections.extend(
-                                                                    container.elts
-                                                                )
-                                                        elif isinstance(
-                                                            container, ast.Dict
-                                                        ):
-                                                            for key_node, val in zip(
-                                                                container.keys,
-                                                                container.values,
-                                                            ):
-                                                                if (
-                                                                    isinstance(
-                                                                        key_node,
-                                                                        ast.Constant,
-                                                                    )
-                                                                    and isinstance(
-                                                                        index_node,
-                                                                        ast.Constant,
-                                                                    )
-                                                                ):
-                                                                    if (
-                                                                        key_node.value
-                                                                        == index_node.value
-                                                                    ):
-                                                                        selections = [val]
-                                                                else:
-                                                                    selections.append(val)
-                                                    if getter_call and len(candidate.args) == 2:
-                                                        # get() uses its default only when
-                                                        # the selected key may be absent.
-                                                        # A definite literal key must not
-                                                        # cause unrelated-default false alarms.
-                                                        definitely_present = (
-                                                            bool(containers)
-                                                            and isinstance(index_node, ast.Constant)
-                                                            and all(
-                                                                isinstance(container, ast.Dict)
-                                                                and any(
-                                                                    isinstance(key_node, ast.Constant)
-                                                                    and key_node.value == index_node.value
-                                                                    for key_node in container.keys
-                                                                )
-                                                                for container in containers
-                                                            )
-                                                        )
-                                                        if not definitely_present:
-                                                            selections.append(candidate.args[1])
-                                                    return [
-                                                        selected
-                                                        for value in selections
-                                                        for selected in container_sources(
-                                                            value, level + 1,
-                                                            visited,
-                                                        )
-                                                    ]
-                                                return [candidate]
-
-                                            owners = container_sources(owner)
+                                            owners = container_sources(owner, when)
                                             for container in owners:
                                                 choices = []
                                                 if isinstance(
@@ -9353,15 +9354,14 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                 and change.func.attr == "get"
                                             ):
                                                 getter_owner = change.func.value
-                                                getter_values = (
-                                                    _resolve_bound_nodes(
-                                                        getter_owner, bindings,
-                                                        when_before,
-                                                    )
-                                                    if isinstance(
-                                                        getter_owner, ast.Name
-                                                    )
-                                                    else [getter_owner]
+                                                # Reuse the same source-ordered
+                                                # alias/selection resolver used
+                                                # for escaped mapping roots.
+                                                # A definite builtin dict may
+                                                # be nested in dict/list/tuple
+                                                # selections or getter chains.
+                                                getter_values = container_sources(
+                                                    getter_owner, when_before
                                                 )
                                                 builtin_dict_get = (
                                                     bool(getter_values)
@@ -14063,6 +14063,127 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
               "source = {\"main\": flag}\n"
               "flag = Guard()\n"
               "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # Nested builtin dict receivers are read-only even when their
+            # get() default names the spread; opaque receivers are not.
+            # selected literal dict get with default.
+            ("other = Guard()\n"
+              "spread = {\"other\": deferred(other)}\n"
+              "box = {\"slot\": {\"other\": Guard()}}\n"
+              "box[\"slot\"].get(\"missing\", spread)\n"
+              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+              "flag = Guard()\n"
+              "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # nested literal dict get with default.
+            ("other = Guard()\n"
+              "spread = {\"other\": deferred(other)}\n"
+              "box = {\"slot\": {\"nested\": {\"other\": Guard()}}}\n"
+              "box[\"slot\"][\"nested\"].get(\"missing\", spread)\n"
+              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+              "flag = Guard()\n"
+              "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # getter-produced dict receiver.
+            ("other = Guard()\n"
+              "spread = {\"other\": deferred(other)}\n"
+              "box = {\"slot\": {\"other\": Guard()}}\n"
+              "box.get(\"slot\").get(\"missing\", spread)\n"
+              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+              "flag = Guard()\n"
+              "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # chained getter and subscript receiver.
+            ("other = Guard()\n"
+              "spread = {\"other\": deferred(other)}\n"
+              "box = {\"slot\": {\"nested\": {\"other\": Guard()}}}\n"
+              "box.get(\"slot\")[\"nested\"].get(\"missing\", spread)\n"
+              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+              "flag = Guard()\n"
+              "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # tuple-selected literal dict receiver.
+            ("other = Guard()\n"
+              "spread = {\"other\": deferred(other)}\n"
+              "box = ({\"other\": Guard()},)\n"
+              "box[0].get(\"missing\", spread)\n"
+              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+              "flag = Guard()\n"
+              "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # boolean list selection literal dict receiver.
+            ("other = Guard()\n"
+              "spread = {\"other\": deferred(other)}\n"
+              "box = [{\"other\": Guard()}]\n"
+              "box[False].get(\"missing\", spread)\n"
+              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+              "flag = Guard()\n"
+              "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # alias to selected literal dict receiver.
+            ("other = Guard()\n"
+              "spread = {\"other\": deferred(other)}\n"
+              "box = {\"slot\": {\"other\": Guard()}}\n"
+              "alias = box[\"slot\"]\n"
+              "alias.get(\"missing\", spread)\n"
+              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+              "flag = Guard()\n"
+              "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # unknown helper still captures default.
+            ("other = Guard()\n"
+              "spread = {\"other\": deferred(other)}\n"
+              "box = {\"slot\": {\"other\": Guard()}}\n"
+              "mutate(box[\"slot\"].get(\"missing\", spread))\n"
+              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+              "flag = Guard()\n"
+              "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # custom getter receiver is not proven builtin.
+            ("other = Guard()\n"
+              "spread = {\"other\": deferred(other)}\n"
+              "box = {\"slot\": deferred(other)}\n"
+              "box[\"slot\"].get(\"missing\", spread)\n"
+              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+              "flag = Guard()\n"
+              "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # unknown subscript receiver is not proven builtin.
+            ("other = Guard()\n"
+              "spread = {\"other\": deferred(other)}\n"
+              "box = deferred(other)\n"
+              "box[\"slot\"].get(\"missing\", spread)\n"
+              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+              "flag = Guard()\n"
+              "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # unrelated nested mutator does not escape spread.
+            ("other = Guard()\n"
+              "spread = {\"other\": deferred(other)}\n"
+              "box = {\"slot\": {\"other\": Guard()}}\n"
+              "box[\"slot\"].get(\"missing\", spread)\n"
+              "mutate(box[\"slot\"])\n"
+              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+              "flag = Guard()\n"
+              "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # unknown method with default remains possibly mutating.
+            ("other = Guard()\n"
+              "spread = {\"other\": deferred(other)}\n"
+              "box = {\"slot\": deferred(other)}\n"
+              "box[\"slot\"].custom_method(spread)\n"
+              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+              "flag = Guard()\n"
+              "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # snapshot before nested unknown get.
+            ("other = Guard()\n"
+              "spread = {\"other\": deferred(other)}\n"
+              "box = {\"slot\": deferred(other)}\n"
+              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+              "flag = Guard()\n"
+              "holder = {\"main\": Guard(), **source}\n"
+              "box[\"slot\"].get(\"missing\", spread)\n",
              'holder.get("main").state.clear()', False, False),
             # Control-flow alternatives are proven eager only when both
             # possible dict-display selections capture their values.
