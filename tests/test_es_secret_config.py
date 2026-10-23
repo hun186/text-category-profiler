@@ -9677,6 +9677,14 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                 id(candidate) == id(container)
                                                                 for candidate in container_sources(expr, prior_before)
                                                             )
+                                                        if isinstance(
+                                                            prior, (
+                                                                ast.Assign, ast.AnnAssign,
+                                                                ast.AugAssign, ast.Delete,
+                                                            ),
+                                                        ):
+                                                            targets = (
+                                                                prior.targets
                                                                 if isinstance(prior, (ast.Assign, ast.Delete))
                                                                 else [prior.target]
                                                             )
