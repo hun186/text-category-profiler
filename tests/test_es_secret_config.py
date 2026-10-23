@@ -9451,11 +9451,14 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                         def same_owner(
                                                             expr, depth=0,
                                                             seen=frozenset(),
+                                                            keys_only=False,
                                                         ):
-                                                            # *args / **kwargs may refer to
-                                                            # named containers. A passed
-                                                            # bound mutator is also an
-                                                            # escape path through its owner.
+                                                            # Resolve a single value at the
+                                                            # caller's source position. For
+                                                            # *mapping Python forwards keys;
+                                                            # for **mapping it forwards values.
+                                                            # Sequence elements are passed as
+                                                            # objects, not recursively unpacked.
                                                             if depth > 12:
                                                                 return False
                                                             if isinstance(expr, ast.Name):
@@ -9471,20 +9474,23 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                         and same_owner(
                                                                             value, depth + 1,
                                                                             seen | {token},
+                                                                            keys_only,
                                                                         )
                                                                         for value in resolved
                                                                     ):
                                                                         return True
                                                             if isinstance(expr, ast.Attribute):
                                                                 return (
-                                                                    expr.attr not in read_only_dict_methods
+                                                                    not keys_only
+                                                                    and expr.attr not in read_only_dict_methods
                                                                     and same_owner(
                                                                         expr.value, depth + 1, seen
                                                                     )
                                                                 )
                                                             if isinstance(expr, ast.Starred):
                                                                 return same_owner(
-                                                                    expr.value, depth + 1, seen
+                                                                    expr.value, depth + 1,
+                                                                    seen, keys_only=True,
                                                                 )
                                                             if isinstance(
                                                                 expr, (ast.Tuple, ast.List, ast.Set),
@@ -9496,12 +9502,79 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                     for item in expr.elts
                                                                 )
                                                             if isinstance(expr, ast.Dict):
+                                                                # A *dict passes keys, whereas
+                                                                # normal arguments or **dict
+                                                                # expose dictionary values.
                                                                 return any(
                                                                     same_owner(
-                                                                        item, depth + 1, seen
+                                                                        item, depth + 1, seen,
+                                                                        keys_only=(item is not None),
                                                                     )
-                                                                    for item in expr.values
+                                                                    for item in (
+                                                                        expr.keys if keys_only
+                                                                        else expr.values
+                                                                    )
+                                                                    if item is not None
                                                                 )
+                                                            if isinstance(
+                                                                expr,
+                                                                (ast.ListComp, ast.SetComp,
+                                                                 ast.GeneratorExp, ast.DictComp),
+                                                            ):
+                                                                result = (
+                                                                    expr.key if keys_only
+                                                                    and isinstance(expr, ast.DictComp)
+                                                                    else expr.value
+                                                                    if isinstance(expr, ast.DictComp)
+                                                                    else expr.elt
+                                                                )
+                                                                if same_owner(
+                                                                    result, depth + 1, seen
+                                                                ):
+                                                                    return True
+                                                                # A comprehension's iteration
+                                                                # target names may denote an
+                                                                # owner carried from its input:
+                                                                # [item for item in (box,)].
+                                                                output_names = {
+                                                                    node.id for node in ast.walk(result)
+                                                                    if isinstance(node, ast.Name)
+                                                                }
+                                                                for generator in expr.generators:
+                                                                    targets = {
+                                                                        node.id
+                                                                        for node in ast.walk(generator.target)
+                                                                        if isinstance(node, ast.Name)
+                                                                    }
+                                                                    if output_names & targets and same_owner(
+                                                                        generator.iter, depth + 1, seen
+                                                                    ):
+                                                                        return True
+                                                                return False
+                                                            if isinstance(expr, ast.Subscript) or (
+                                                                isinstance(expr, ast.Call)
+                                                                and isinstance(expr.func, ast.Attribute)
+                                                                and expr.func.attr == "get"
+                                                                and 1 <= len(expr.args) <= 2
+                                                                and not expr.keywords
+                                                            ):
+                                                                # e.g. callbacks=(box.__setitem__,);
+                                                                # callback=callbacks[0].
+                                                                selected = container_sources(
+                                                                    expr, prior_before
+                                                                )
+                                                                if any(
+                                                                    id(candidate) == id(container)
+                                                                    or (
+                                                                        candidate is not expr
+                                                                        and same_owner(
+                                                                            candidate, depth + 1,
+                                                                            seen, keys_only
+                                                                        )
+                                                                    )
+                                                                    for candidate in selected
+                                                                ):
+                                                                    return True
                                                             return any(
                                                                 id(candidate) == id(container)
                                                                 for candidate in container_sources(
@@ -14959,6 +15032,225 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
              "box[\"slot\"].get(\"missing\", spread)\n"
              "args = (box,)\n"
              "mutate(*args)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # Python *dict forwards keys; comprehensions and selected callbacks
+            # preserve source aliases as appropriate.
+            # named positional dict passes only keys.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "args = {\"value\": box}\n"
+             "mutate(*args)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # direct positional dict passes only keys.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "mutate(*{\"value\": box})\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # named positional dict alias passes only keys.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "args = {\"value\": box}\n"
+             "forward = args\n"
+             "mutate(*forward)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # nested dict under positional spread key-only.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "args = {\"value\": {\"nested\": box}}\n"
+             "mutate(*args)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # named double-star dict still forwards value.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "kwargs = {\"value\": box}\n"
+             "mutate(**kwargs)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # positional tuple containing dict exposes values.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "args = ({\"value\": box},)\n"
+             "mutate(*args)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # named list comprehension forwards owner.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "args = [item for item in (box,)]\n"
+             "mutate(*args)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # named generator comprehension forwards owner.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "args = (item for item in (box,))\n"
+             "mutate(*args)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # direct list comprehension forwards owner.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "mutate(*[item for item in (box,)])\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # comprehension explicit owner output.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "args = [box for item in (1,)]\n"
+             "mutate(*args)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # constant output list comprehension does not forward owner.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "args = [123 for item in (box,)]\n"
+             "mutate(*args)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # constant output generator does not forward owner.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "args = (123 for item in (box,))\n"
+             "mutate(*args)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # callback extracted from tuple.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "callbacks = (box.__setitem__,)\n"
+             "callback = callbacks[0]\n"
+             "invoke(callback, \"slot\", custom)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # callback extracted from list.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "callbacks = [box.__setitem__]\n"
+             "callback = callbacks[0]\n"
+             "invoke(callback, \"slot\", custom)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # callback extracted from dict.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "callbacks = {\"set\": box.__setitem__}\n"
+             "callback = callbacks[\"set\"]\n"
+             "invoke(callback, \"slot\", custom)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # callback extracted via dict getter.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "callbacks = {\"set\": box.__setitem__}\n"
+             "callback = callbacks.get(\"set\")\n"
+             "invoke(callback, \"slot\", custom)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # saved callback extracted via tuple alias.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "callbacks = (box.__setitem__,)\n"
+             "alias = callbacks\n"
+             "callback = alias[0]\n"
+             "invoke(callback, \"slot\", custom)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # readonly callback selected from tuple.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "callbacks = (box.__getitem__,)\n"
+             "callback = callbacks[0]\n"
+             "invoke(callback, \"slot\")\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # unrelated callback extracted from tuple.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "other_box = {\"slot\": {}}\n"
+             "callbacks = (other_box.__setitem__,)\n"
+             "callback = callbacks[0]\n"
+             "invoke(callback, \"slot\", custom)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
              "flag = Guard()\n"
              "holder = {\"main\": Guard(), **source}\n",
