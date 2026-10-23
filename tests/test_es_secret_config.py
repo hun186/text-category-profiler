@@ -9421,6 +9421,12 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                 ):
                                                     return True
                                                 for container in owners:
+                                                    # A helper cannot replace a tuple's
+                                                    # selected element. Updating the
+                                                    # referenced builtin dict's contents
+                                                    # also cannot replace its get method.
+                                                    if isinstance(container, ast.Tuple):
+                                                        continue
                                                     created = _node_position(container)
                                                     for prior in ast.walk(wrapper):
                                                         at = _node_position(prior)
@@ -9437,6 +9443,23 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                             continue
                                                         prior_before = _position_before(prior)
                                                         def same_owner(expr):
+                                                            # Unpack forwarding preserves
+                                                            # references: *[box] or
+                                                            # **{"value": box} reaches box.
+                                                            if isinstance(expr, ast.Starred):
+                                                                return same_owner(expr.value)
+                                                            if isinstance(
+                                                                expr, (ast.Tuple, ast.List, ast.Set),
+                                                            ):
+                                                                return any(
+                                                                    same_owner(item)
+                                                                    for item in expr.elts
+                                                                )
+                                                            if isinstance(expr, ast.Dict):
+                                                                return any(
+                                                                    same_owner(item)
+                                                                    for item in expr.values
+                                                                )
                                                             return any(
                                                                 id(candidate) == id(container)
                                                                 for candidate in container_sources(
@@ -9472,11 +9495,25 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                             # selected slot through an alias.
                                                             # Read-only builtin accessors do not.
                                                             func = prior.func
-                                                            if isinstance(func, ast.Attribute):
-                                                                if same_owner(func.value) and func.attr not in {
-                                                                    "get", "keys", "items", "values", "copy"
-                                                                }:
-                                                                    return True
+                                                            # A saved bound method still
+                                                            # mutates its original receiver:
+                                                            # setter = box.__setitem__
+                                                            # setter("slot", custom).
+                                                            funcs = _resolve_bound_nodes(
+                                                                func, bindings, prior_before
+                                                            )
+                                                            for callable_node in funcs:
+                                                                if isinstance(
+                                                                    callable_node, ast.Attribute
+                                                                ):
+                                                                    if (
+                                                                        same_owner(callable_node.value)
+                                                                        and callable_node.attr not in {
+                                                                            "get", "keys", "items",
+                                                                            "values", "copy",
+                                                                        }
+                                                                    ):
+                                                                        return True
                                                             if any(
                                                                 same_owner(arg)
                                                                 for arg in [
@@ -14487,6 +14524,186 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
              "box = [{}, {}]\n"
              "box[1] = custom\n"
              "box[0].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # Forwarded helper arguments, bound-method aliases and immutable tuple slots.
+            # unpacked tuple helper can replace dict slot.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "mutate(*(box,))\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # unpacked list helper can replace dict slot.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "mutate(*[box])\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # double-star dict helper can replace slot.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "mutate(**{\"value\": box})\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # nested star and dictionary helper forwarding.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "mutate(*[(box,)])\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # nested keyword list helper forwarding.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "mutate(**{\"value\": [box]})\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # saved bound setitem mutator.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "setter = box.__setitem__\n"
+             "setter(\"slot\", custom)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # aliased saved bound setitem mutator.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "setter = box.__setitem__\n"
+             "callback = setter\n"
+             "callback(\"slot\", custom)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # saved bound update mutator.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "updater = box.update\n"
+             "updater({\"slot\": custom})\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # saved read-only getter leaves slot builtin.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "reader = box.get\n"
+             "reader(\"slot\")\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # tuple helper cannot replace builtin dict slot.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = ({},)\n"
+             "mutate(box)\n"
+             "box[0].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # tuple starred helper cannot replace builtin dict slot.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = ({},)\n"
+             "mutate(*(box,))\n"
+             "box[0].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # tuple keyword helper cannot replace builtin dict slot.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = ({},)\n"
+             "mutate(**{\"value\": box})\n"
+             "box[0].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # tuple selected builtin dict contents mutation cannot replace get.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = ({},)\n"
+             "mutate(box[0])\n"
+             "box[0].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # immutable tuple nested under replaceable dict slot.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": ({},)}\n"
+             "mutate(box)\n"
+             "box[\"slot\"][0].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, True),
+            # unrelated starred helper forwarding does not touch box.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "unrelated = {\"slot\": custom}\n"
+             "mutate(*(unrelated,))\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # unrelated saved mutator does not touch box.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "unrelated = {\"slot\": custom}\n"
+             "setter = unrelated.__setitem__\n"
+             "setter(\"slot\", custom)\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
+             "flag = Guard()\n"
+             "holder = {\"main\": Guard(), **source}\n",
+             'holder.get("main").state.clear()', False, False),
+            # mutator alias after readonly get cannot retroactively alter type.
+            ("other = Guard()\n"
+             "spread = {\"other\": deferred(other)}\n"
+             "box = {\"slot\": {}}\n"
+             "box[\"slot\"].get(\"missing\", spread)\n"
+             "setter = box.__setitem__\n"
+             "setter(\"slot\", custom)\n"
              "source = {\"choice\": {\"main\": flag}, **spread}[\"choice\"]\n"
              "flag = Guard()\n"
              "holder = {\"main\": Guard(), **source}\n",
