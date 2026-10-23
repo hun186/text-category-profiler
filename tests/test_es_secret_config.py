@@ -9449,111 +9449,211 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                         }
 
                                                         def same_owner(
-                                                            expr, depth=0,
-                                                            seen=frozenset(),
-                                                            keys_only=False,
+                                                            expr, depth=0, seen=frozenset(), keys_only=False,
+                                                            comp_sources=None,
                                                         ):
-                                                            # Resolve a single value at the
-                                                            # caller's source position. For
-                                                            # *mapping Python forwards keys;
-                                                            # for **mapping it forwards values.
-                                                            # Sequence elements are passed as
-                                                            # objects, not recursively unpacked.
+                                                            # Keep unpack semantics attached to the mapping boundary:
+                                                            # *mapping exposes keys; **mapping and .values() expose values.
                                                             if depth > 12:
                                                                 return False
+                                                        
+                                                            def constant_truth(node):
+                                                                if isinstance(node, ast.Constant):
+                                                                    return bool(node.value)
+                                                                if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Not):
+                                                                    result = constant_truth(node.operand)
+                                                                    return None if result is None else not result
+                                                                return None
+                                                        
+                                                            def possible_branches(node):
+                                                                verdict = constant_truth(node.test)
+                                                                if verdict is True:
+                                                                    return [node.body]
+                                                                if verdict is False:
+                                                                    return [node.orelse]
+                                                                return [node.body, node.orelse]
+                                                        
+                                                            def mapping_roots(node, env, nesting=0, visited=frozenset()):
+                                                                """Resolve concrete displays without treating the mapping as a value."""
+                                                                if nesting > 12:
+                                                                    return []
+                                                                if isinstance(node, ast.Dict):
+                                                                    return [node]
+                                                                if isinstance(node, ast.IfExp):
+                                                                    return [
+                                                                        source for branch in possible_branches(node)
+                                                                        for source in mapping_roots(
+                                                                            branch, env, nesting + 1, visited
+                                                                        )
+                                                                    ]
+                                                                if isinstance(node, ast.Name):
+                                                                    if env is not None and node.id in env:
+                                                                        roots = env[node.id]
+                                                                    else:
+                                                                        token = _binding_name_token(node.id, bindings, node)
+                                                                        if token in visited:
+                                                                            return []
+                                                                        visited = visited | {token}
+                                                                        roots = _resolve_bound_nodes(node, bindings, prior_before)
+                                                                    return [
+                                                                        source for root in roots if root is not node
+                                                                        for source in mapping_roots(
+                                                                            root, env, nesting + 1, visited
+                                                                        )
+                                                                    ]
+                                                                return []
+                                                        
+                                                            def mapping_members(node, mode, env, nesting=0):
+                                                                """Get source nodes emitted by a dict view or unpack."""
+                                                                if nesting > 12:
+                                                                    return []
+                                                                members = []
+                                                                for display in mapping_roots(node, env, nesting):
+                                                                    for key, value in zip(display.keys, display.values):
+                                                                        if key is None:
+                                                                            members.extend(
+                                                                                mapping_members(value, mode, env, nesting + 1)
+                                                                            )
+                                                                            continue
+                                                                        if mode == "keys":
+                                                                            members.append(key)
+                                                                        elif mode == "values":
+                                                                            members.append(value)
+                                                                        else:
+                                                                            members.append(
+                                                                                ast.Tuple(elts=[key, value], ctx=ast.Load())
+                                                                            )
+                                                                return members
+                                                        
+                                                            def iterated_sources(node, env, nesting=0):
+                                                                """Approximate yielded objects, not every nested AST descendant."""
+                                                                if nesting > 12:
+                                                                    return []
+                                                                if isinstance(node, (ast.Tuple, ast.List, ast.Set)):
+                                                                    return list(node.elts)
+                                                                if isinstance(node, ast.Dict):
+                                                                    return mapping_members(node, "keys", env, nesting + 1)
+                                                                if isinstance(node, ast.IfExp):
+                                                                    return [
+                                                                        value for branch in possible_branches(node)
+                                                                        for value in iterated_sources(branch, env, nesting + 1)
+                                                                    ]
+                                                                if isinstance(node, ast.Name):
+                                                                    if env is not None and node.id in env:
+                                                                        roots = env[node.id]
+                                                                    else:
+                                                                        roots = _resolve_bound_nodes(node, bindings, prior_before)
+                                                                    return [
+                                                                        value for root in roots if root is not node
+                                                                        for value in iterated_sources(root, env, nesting + 1)
+                                                                    ]
+                                                                if (
+                                                                    isinstance(node, ast.Call)
+                                                                    and isinstance(node.func, ast.Attribute)
+                                                                    and node.func.attr in {"keys", "values", "items"}
+                                                                    and not node.args and not node.keywords
+                                                                ):
+                                                                    return mapping_members(
+                                                                        node.func.value, node.func.attr, env, nesting + 1
+                                                                    )
+                                                                return []
+                                                        
                                                             if isinstance(expr, ast.Name):
-                                                                token = _binding_name_token(
-                                                                    expr.id, bindings, expr
-                                                                )
+                                                                if comp_sources is not None and expr.id in comp_sources:
+                                                                    return any(
+                                                                        item is not expr and same_owner(
+                                                                            item, depth + 1, seen, keys_only, comp_sources
+                                                                        )
+                                                                        for item in comp_sources[expr.id]
+                                                                    )
+                                                                token = _binding_name_token(expr.id, bindings, expr)
                                                                 if token not in seen:
                                                                     resolved = _resolve_bound_nodes(
                                                                         expr, bindings, prior_before
                                                                     )
                                                                     if any(
-                                                                        value is not expr
-                                                                        and same_owner(
-                                                                            value, depth + 1,
-                                                                            seen | {token},
-                                                                            keys_only,
+                                                                        value is not expr and same_owner(
+                                                                            value, depth + 1, seen | {token},
+                                                                            keys_only, comp_sources,
                                                                         )
                                                                         for value in resolved
                                                                     ):
                                                                         return True
+                                                            if isinstance(expr, ast.IfExp):
+                                                                return any(
+                                                                    same_owner(branch, depth + 1, seen, keys_only, comp_sources)
+                                                                    for branch in possible_branches(expr)
+                                                                )
                                                             if isinstance(expr, ast.Attribute):
                                                                 return (
                                                                     not keys_only
                                                                     and expr.attr not in read_only_dict_methods
                                                                     and same_owner(
-                                                                        expr.value, depth + 1, seen
+                                                                        expr.value, depth + 1, seen, False, comp_sources
                                                                     )
                                                                 )
                                                             if isinstance(expr, ast.Starred):
                                                                 return same_owner(
-                                                                    expr.value, depth + 1,
-                                                                    seen, keys_only=True,
+                                                                    expr.value, depth + 1, seen, True, comp_sources
                                                                 )
-                                                            if isinstance(
-                                                                expr, (ast.Tuple, ast.List, ast.Set),
-                                                            ):
+                                                            if isinstance(expr, (ast.Tuple, ast.List, ast.Set)):
                                                                 return any(
-                                                                    same_owner(
-                                                                        item, depth + 1, seen
-                                                                    )
+                                                                    same_owner(item, depth + 1, seen, False, comp_sources)
                                                                     for item in expr.elts
                                                                 )
                                                             if isinstance(expr, ast.Dict):
-                                                                # A *dict passes keys, whereas
-                                                                # normal arguments or **dict
-                                                                # expose dictionary values.
                                                                 return any(
-                                                                    # A selected key OR value
-                                                                    # is a direct forwarded
-                                                                    # argument; only the outer
-                                                                    # mapping selects key-only.
                                                                     same_owner(
                                                                         item, depth + 1, seen,
+                                                                        keys_only if key is None else False,
+                                                                        comp_sources,
                                                                     )
+                                                                    for key, value in zip(expr.keys, expr.values)
                                                                     for item in (
-                                                                        expr.keys if keys_only
-                                                                        else expr.values
+                                                                        [value] if key is None else
+                                                                        [key] if keys_only else [value]
                                                                     )
-                                                                    if item is not None
                                                                 )
                                                             if isinstance(
-                                                                expr,
-                                                                (ast.ListComp, ast.SetComp,
-                                                                 ast.GeneratorExp, ast.DictComp),
+                                                                expr, (ast.ListComp, ast.SetComp, ast.GeneratorExp, ast.DictComp)
                                                             ):
+                                                                # An always-false filter yields nothing. Unknown conditions retain
+                                                                # both possibilities rather than assuming a filter is always true.
+                                                                if any(
+                                                                    constant_truth(predicate) is False
+                                                                    for generator in expr.generators
+                                                                    for predicate in generator.ifs
+                                                                ):
+                                                                    return False
+                                                                env = dict(comp_sources or {})
+                                                                for generator in expr.generators:
+                                                                    sources = iterated_sources(generator.iter, env)
+                                                                    targets = [
+                                                                        node.id for node in ast.walk(generator.target)
+                                                                        if isinstance(node, ast.Name)
+                                                                    ]
+                                                                    for target in targets:
+                                                                        # Bind lexical comprehension targets before analysing
+                                                                        # downstream generators, never to a same-named outer alias.
+                                                                        env[target] = sources
                                                                 result = (
-                                                                    expr.key if keys_only
-                                                                    and isinstance(expr, ast.DictComp)
-                                                                    else expr.value
-                                                                    if isinstance(expr, ast.DictComp)
+                                                                    expr.key if keys_only and isinstance(expr, ast.DictComp)
+                                                                    else expr.value if isinstance(expr, ast.DictComp)
                                                                     else expr.elt
                                                                 )
-                                                                if same_owner(
-                                                                    result, depth + 1, seen
-                                                                ):
-                                                                    return True
-                                                                # A comprehension's iteration
-                                                                # target names may denote an
-                                                                # owner carried from its input:
-                                                                # [item for item in (box,)].
-                                                                output_names = {
-                                                                    node.id for node in ast.walk(result)
-                                                                    if isinstance(node, ast.Name)
-                                                                }
-                                                                for generator in expr.generators:
-                                                                    targets = {
-                                                                        node.id
-                                                                        for node in ast.walk(generator.target)
-                                                                        if isinstance(node, ast.Name)
-                                                                    }
-                                                                    if output_names & targets and same_owner(
-                                                                        generator.iter, depth + 1, seen
-                                                                    ):
-                                                                        return True
-                                                                return False
+                                                                return same_owner(result, depth + 1, seen, False, env)
+                                                            if (
+                                                                isinstance(expr, ast.Call)
+                                                                and isinstance(expr.func, ast.Attribute)
+                                                                and expr.func.attr in {"keys", "values", "items"}
+                                                                and not expr.args and not expr.keywords
+                                                            ):
+                                                                return any(
+                                                                    same_owner(member, depth + 1, seen, False, comp_sources)
+                                                                    for member in mapping_members(
+                                                                        expr.func.value, expr.func.attr, comp_sources
+                                                                    )
+                                                                )
                                                             if isinstance(expr, ast.Subscript) or (
                                                                 isinstance(expr, ast.Call)
                                                                 and isinstance(expr.func, ast.Attribute)
@@ -9561,18 +9661,13 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                 and 1 <= len(expr.args) <= 2
                                                                 and not expr.keywords
                                                             ):
-                                                                # e.g. callbacks=(box.__setitem__,);
-                                                                # callback=callbacks[0].
-                                                                selected = container_sources(
-                                                                    expr, prior_before
-                                                                )
+                                                                selected = container_sources(expr, prior_before)
                                                                 if any(
                                                                     id(candidate) == id(container)
                                                                     or (
                                                                         candidate is not expr
                                                                         and same_owner(
-                                                                            candidate, depth + 1,
-                                                                            seen, keys_only
+                                                                            candidate, depth + 1, seen, keys_only, comp_sources
                                                                         )
                                                                     )
                                                                     for candidate in selected
@@ -9580,18 +9675,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                     return True
                                                             return any(
                                                                 id(candidate) == id(container)
-                                                                for candidate in container_sources(
-                                                                    expr, prior_before
-                                                                )
+                                                                for candidate in container_sources(expr, prior_before)
                                                             )
-                                                        if isinstance(
-                                                            prior, (
-                                                                ast.Assign, ast.AnnAssign,
-                                                                ast.AugAssign, ast.Delete,
-                                                            ),
-                                                        ):
-                                                            targets = (
-                                                                prior.targets
                                                                 if isinstance(prior, (ast.Assign, ast.Delete))
                                                                 else [prior.target]
                                                             )
@@ -15332,6 +15417,52 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             (deferred_setup
              + 'holder = {"main": Guard(), **source, "main": flag}\n',
              'holder.get("main").state.clear()', False, True),
+        )
+        # Codex P2 regression matrix: conditional owners, mapping views,
+        # display spreads, and filtered/chained comprehensions.
+        followup_cases = (
+            ("kwargs = {\"value\": box} if option else {}\nmutate(**kwargs)\n", True, False),
+            ("args = (box,) if option else ()\nmutate(*args)\n", True, False),
+            ("callbacks = (box.__setitem__,) if option else ()\ninvoke(*callbacks)\n", True, False),
+            ("callback = box.__setitem__ if option else None\ninvoke(callback)\n", True, False),
+            ("kwargs = {\"value\": unrelated} if option else {}\nmutate(**kwargs)\n", False, True),
+            ("kwargs = {\"value\": box} if False else {}\nmutate(**kwargs)\n", False, False),
+            ("args = {\"value\": box}\nmutate(*args.values())\n", True, False),
+            ("args = {\"value\": box}\nmutate(*args.items())\n", True, False),
+            ("args = {\"value\": box}\nmutate(*args.keys())\n", False, False),
+            ("mutate(*box.values())\n", False, False),
+            ("callbacks = {box.__setitem__: None}\nargs = {**callbacks}\ninvoke(*args)\n", True, False),
+            ("callbacks = {\"safe\": box.__setitem__}\nargs = {**callbacks}\ninvoke(*args)\n", False, False),
+            ("callbacks = {box.__setitem__: None}\nargs = {**callbacks}\ninvoke(**args)\n", False, False),
+            ("args = [item for item in (box,) if False]\nmutate(*args)\n", False, False),
+            ("args = [item for item in (box,) if True]\nmutate(*args)\n", True, False),
+            ("args = [box for item in (1,) if False]\nmutate(*args)\n", False, False),
+            ("args = (value for mapping in ({\"value\": box},) for value in mapping.values())\nmutate(*args)\n", True, False),
+            ("args = [value for mapping in ({\"value\": box},) for value in mapping.keys()]\nmutate(*args)\n", False, False),
+            ("args = [value for mapping in ({\"value\": box},) for value in mapping.values() if False]\nmutate(*args)\n", False, False),
+            ("kwargs = {\"callback\": box.__setitem__} if option else {}\ninvoke(**kwargs)\n", True, False),
+        )
+        common_setup = (
+            'other = Guard()\n'
+            'spread = {"other": deferred(other)}\n'
+            'box = {"slot": {}}\n'
+        )
+        common_suffix = (
+            'box["slot"].get("missing", spread)\n'
+            'source = {"choice": {"main": flag}, **spread}["choice"]\n'
+            'flag = Guard()\n'
+            'holder = {"main": Guard(), **source}\n'
+        )
+        cases += tuple(
+            (
+                common_setup
+                + ('unrelated = {"slot": {}}\n' if unrelated else '')
+                + statement + common_suffix,
+                'holder.get("main").state.clear()',
+                False,
+                expected,
+            )
+            for statement, expected, unrelated in followup_cases
         )
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
