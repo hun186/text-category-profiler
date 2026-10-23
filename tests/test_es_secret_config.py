@@ -9506,9 +9506,12 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                 # normal arguments or **dict
                                                                 # expose dictionary values.
                                                                 return any(
+                                                                    # A selected key OR value
+                                                                    # is a direct forwarded
+                                                                    # argument; only the outer
+                                                                    # mapping selects key-only.
                                                                     same_owner(
                                                                         item, depth + 1, seen,
-                                                                        keys_only=(item is not None),
                                                                     )
                                                                     for item in (
                                                                         expr.keys if keys_only
