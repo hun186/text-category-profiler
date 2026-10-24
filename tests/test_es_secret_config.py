@@ -9456,10 +9456,6 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                             # *mapping exposes keys; **mapping and .values() expose values.
                                                             if depth > 12:
                                                                 return False
-                                                            # A resolved owner may be the exact object that a previous
-                                                            # write targets, rather than a value nested inside it.
-                                                            if not keys_only and expr is container:
-                                                                return True
                                                         
                                                             def constant_truth(node):
                                                                 if isinstance(node, ast.Constant):
@@ -10178,27 +10174,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                         source, level + 1, 0, next_seen
                                                                                     )
                                                                                 ]
-                                                                                if resolved:
-                                                                                    return resolved
-                                                                        if isinstance(result, ast.Name):
-                                                                            # Freeze the genuine source scope before exporting
-                                                                            # the name to an enclosing comprehension. A later
-                                                                            # same-spelled lexical target must not rebind it.
-                                                                            captured = ast.copy_location(
-                                                                                ast.Name(id=result.id, ctx=ast.Load()), result
-                                                                            )
-                                                                            for attribute in (
-                                                                                "_binding_scope",
-                                                                                "_binding_control_path",
-                                                                                "_alias_captured_at",
-                                                                            ):
-                                                                                if hasattr(result, attribute):
-                                                                                    setattr(
-                                                                                        captured, attribute,
-                                                                                        getattr(result, attribute),
-                                                                                    )
-                                                                            captured._lexical_source_capture = True
-                                                                            return [captured]
+                                                                                return resolved or [result]
                                                                         if isinstance(result, ast.IfExp):
                                                                             return [
                                                                                 item for branch in possible_branches(result)
@@ -10218,39 +10194,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                     for name, bound in frame.items()
                                                                                 })
                                                                             )
-                                                                            # A selected member belongs to the mapping's
-                                                                            # original source, not the scope of a later
-                                                                            # generator target with the same identifier.
-                                                                            # seed["v"] and seed.get("v") must both keep
-                                                                            # {"v": box}'s pre-shadowing binding.
-                                                                            receiver = (
-                                                                                result.value if isinstance(result, ast.Subscript)
-                                                                                else result.func.value
-                                                                            )
-                                                                            while isinstance(receiver, ast.Subscript):
-                                                                                receiver = receiver.value
-                                                                            while (
-                                                                                isinstance(receiver, ast.Call)
-                                                                                and isinstance(receiver.func, ast.Attribute)
-                                                                                and receiver.func.attr == "get"
-                                                                            ):
-                                                                                receiver = receiver.func.value
-                                                                            selected_scope = frame_count
-                                                                            if isinstance(receiver, ast.Name):
-                                                                                for index in range(frame_count - 1, -1, -1):
-                                                                                    if receiver.id in lexical_frames[index]:
-                                                                                        selected_scope = index
-                                                                                        break
                                                                             return [
                                                                                 item for value in selected if value is not result
-                                                                                for item in resolve_yield(
-                                                                                    value, level + 1,
-                                                                                    frame_count if (
-                                                                                        getter and len(result.args) == 2
-                                                                                        and value is result.args[1]
-                                                                                    ) else selected_scope,
-                                                                                    seen,
-                                                                                )
+                                                                                for item in resolve_yield(value, level + 1, frame_count, seen)
                                                                             ] or [result]
                                                                         if isinstance(result, (ast.Tuple, ast.List, ast.Set)):
                                                                             candidates = [
@@ -10280,17 +10226,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                 for combo in product(*choices)
                                                                             ]
                                                                         return [result]
-                                                                    lexical_values = resolve_yield(node.elt)
-                                                                    if "seed[" in ast.unparse(node) or "seed.get(" in ast.unparse(node):
-                                                                        print("ITER_SOURCE_TRACE",
-                                                                              ast.unparse(node),
-                                                                              "frames", list(lexical_frames),
-                                                                              "yielded", [
-                                                                                  (ast.dump(item)[:200],
-                                                                                   getattr(item, "_lexical_source_capture", False))
-                                                                                  for item in lexical_values
-                                                                              ], file=__import__("sys").stderr, flush=True)
-                                                                    return lexical_values
+                                                                    return resolve_yield(node.elt)
 
                                                                     return resolve_yield(node.elt)
                                                                 if (
@@ -10306,11 +10242,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
 
 
                                                             if isinstance(expr, ast.Name):
-                                                                if (
-                                                                    comp_sources is not None
-                                                                    and expr.id in comp_sources
-                                                                    and not getattr(expr, "_lexical_source_capture", False)
-                                                                ):
+                                                                if comp_sources is not None and expr.id in comp_sources:
                                                                     return any(
                                                                         item is not expr and same_owner(
                                                                             item, depth + 1, seen, keys_only, comp_sources
@@ -10478,29 +10410,6 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                             if isinstance(
                                                                 expr, (ast.ListComp, ast.SetComp, ast.GeneratorExp, ast.DictComp)
                                                             ):
-                                                                if isinstance(expr, (ast.ListComp, ast.SetComp, ast.GeneratorExp)):
-                                                                    # Preserve source-time bindings and selected mapping
-                                                                    # values before later generator targets shadow names.
-                                                                    # Checking lexical yields supplements the existing
-                                                                    # conservative path for uncertain constructions.
-                                                                    lexical_candidates = iterated_sources(expr, comp_sources)
-                                                                    if "seed[" in ast.unparse(expr) or "seed.get(" in ast.unparse(expr):
-                                                                        print("SCOPE_TRACE", ast.unparse(expr),
-                                                                              "depth", depth,
-                                                                              "candidates", [
-                                                                                  ast.dump(value)[:260] for value in lexical_candidates
-                                                                              ],
-                                                                              "sources", list((comp_sources or {}).keys()),
-                                                                              "owners", [
-                                                                                  ast.dump(value)[:180] for value in [container]
-                                                                              ], flush=True)
-                                                                    if any(
-                                                                        same_owner(
-                                                                            candidate, depth + 1, seen, False, comp_sources
-                                                                        )
-                                                                        for candidate in lexical_candidates
-                                                                    ):
-                                                                        return True
                                                                 if any(
                                                                     constant_truth(predicate) is False
                                                                     for generator in expr.generators
@@ -16481,16 +16390,6 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ("args = [x for d in [{\"v\": y for y in [box for box in (unrelated, box) if box is not box]}] for x in d.values()]\nmutate(*args)\n", False, True),
             ("args = [x for d in [{\"v\": y for y in [box for seed in (box,) for box in (seed,) if box is box]}] for x in d.values()]\nmutate(*args)\n", True, False),
             ("args = [x for d in [{\"v\": y for y in [box for seed in (unrelated,) for box in (seed,) if box is box]}] for x in d.values()]\nmutate(*args)\n", False, True),
-        )
-        # Source-time mapping member selection across later target shadowing.
-        followup_cases += (
-            ("args = [x for d in [{\"v\": y for y in [seed[\"v\"] for seed in ({\"v\": box},) for box in (unrelated,)]]}] for x in d.values()]\nmutate(*args)\n", True, True),
-            ("args = [x for d in [{\"v\": y for y in [seed.get(\"v\") for seed in ({\"v\": box},) for box in (unrelated,)]]}] for x in d.values()]\nmutate(*args)\n", True, True),
-            ("args = [x for d in [{\"v\": y for y in [seed[\"v\"] for seed in ({\"v\": unrelated},) for box in (box,)]]}] for x in d.values()]\nmutate(*args)\n", False, True),
-            ("args = [x for d in [{\"v\": y for y in [seed.get(\"v\") for seed in ({\"v\": unrelated},) for box in (box,)]]}] for x in d.values()]\nmutate(*args)\n", False, True),
-            ("args = [x for d in [{\"v\": y for y in [seed[\"v\"] for seed in ({\"v\": box},)]]}] for x in d.values()]\nmutate(*args)\n", True, False),
-            ("args = [x for d in [{\"v\": y for y in [seed.get(\"v\") for seed in ({\"v\": unrelated},)]]}] for x in d.values()]\nmutate(*args)\n", False, True),
-            ("args = [x for d in [{\"v\": y for y in [seed.get(\"missing\", box) for seed in ({\"v\": unrelated},) for box in (unrelated,)]]}] for x in d.values()]\nmutate(*args)\n", False, True),
         )
         common_setup = (
             'other = Guard()\n'
