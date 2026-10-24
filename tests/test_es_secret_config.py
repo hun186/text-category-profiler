@@ -10127,24 +10127,58 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                     ):
                                                                         return []
                                                                     local = dict(env or {})
+                                                                    # Each iterable is evaluated before its target is bound.
+                                                                    # Keep that source scope when substituting yielded names:
+                                                                    # [box for box in (unrelated, box)] must retain the outer box.
+                                                                    lexical_frames = []
                                                                     for generator in node.generators:
                                                                         if definitely_empty_iterable(generator.iter, local):
                                                                             return []
+                                                                        before_target = dict(local)
                                                                         sources = iterated_sources(generator.iter, local, nesting + 1)
                                                                         bind_comprehension_target(generator.target, sources, local)
-                                                                    def resolve_yield(result, level=0):
-                                                                        """Substitute inner lexical targets before exporting the yielded object."""
+                                                                        lexical_frames.append({
+                                                                            name: candidates for name, candidates in local.items()
+                                                                            if name not in before_target
+                                                                            or candidates is not before_target[name]
+                                                                        })
+                                                                    def resolve_yield(
+                                                                        result, level=0, frame_count=None, seen=frozenset()
+                                                                    ):
+                                                                        """Substitute lexical targets using their source-time scope."""
+                                                                        if frame_count is None:
+                                                                            frame_count = len(lexical_frames)
                                                                         if level > 12:
                                                                             return []
-                                                                        if isinstance(result, ast.Name) and result.id in local:
-                                                                            return [
-                                                                                item for source in local[result.id] if source is not result
-                                                                                for item in resolve_yield(source, level + 1)
-                                                                            ]
+                                                                        if isinstance(result, ast.Name):
+                                                                            token = (frame_count, result.id)
+                                                                            if token in seen:
+                                                                                # An unresolved cycle is a possible source,
+                                                                                # not proof that no object is yielded.
+                                                                                return [result]
+                                                                            next_seen = seen | {token}
+                                                                            for index in range(frame_count - 1, -1, -1):
+                                                                                bound = lexical_frames[index].get(result.id)
+                                                                                if bound is not None:
+                                                                                    resolved = [
+                                                                                        item for source in bound if source is not result
+                                                                                        for item in resolve_yield(
+                                                                                            source, level + 1, index, next_seen
+                                                                                        )
+                                                                                    ]
+                                                                                    return resolved or [result]
+                                                                            if env is not None and result.id in env:
+                                                                                resolved = [
+                                                                                    item for source in env[result.id] if source is not result
+                                                                                    for item in resolve_yield(
+                                                                                        source, level + 1, 0, next_seen
+                                                                                    )
+                                                                                ]
+                                                                                return resolved or [result]
                                                                         if isinstance(result, ast.IfExp):
                                                                             return [
                                                                                 item for branch in possible_branches(result)
-                                                                                for item in resolve_yield(branch, level + 1)
+                                                                                for item in resolve_yield(branch, level + 1, frame_count, seen)
                                                                             ]
                                                                         getter = (
                                                                             isinstance(result, ast.Call)
@@ -10154,14 +10188,19 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                             and not result.keywords
                                                                         )
                                                                         if isinstance(result, ast.Subscript) or getter:
-                                                                            selected = selected_mapping_values(result, local)
+                                                                            selected = selected_mapping_values(
+                                                                                result, dict(env or {}, **{
+                                                                                    name: bound for frame in lexical_frames[:frame_count]
+                                                                                    for name, bound in frame.items()
+                                                                                })
+                                                                            )
                                                                             return [
                                                                                 item for value in selected if value is not result
-                                                                                for item in resolve_yield(value, level + 1)
+                                                                                for item in resolve_yield(value, level + 1, frame_count, seen)
                                                                             ] or [result]
                                                                         if isinstance(result, (ast.Tuple, ast.List, ast.Set)):
                                                                             candidates = [
-                                                                                resolve_yield(element, level + 1)
+                                                                                resolve_yield(element, level + 1, frame_count, seen)
                                                                                 for element in result.elts
                                                                             ]
                                                                             return [
@@ -10173,9 +10212,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                 [
                                                                                     (key_candidate, value_candidate)
                                                                                     for key_candidate in (
-                                                                                        resolve_yield(key, level + 1) if key is not None else [None]
+                                                                                        resolve_yield(key, level + 1, frame_count, seen) if key is not None else [None]
                                                                                     )
-                                                                                    for value_candidate in resolve_yield(value, level + 1)
+                                                                                    for value_candidate in resolve_yield(value, level + 1, frame_count, seen)
                                                                                 ]
                                                                                 for key, value in zip(result.keys, result.values)
                                                                             ]
@@ -16341,6 +16380,16 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ("args = [x for d in [{\"v\": y for y in [z for z in (unrelated, box) if z is z]}] for x in d.values()]\nmutate(*args)\n", True, True),
             ("args = [x for d in [{\"v\": y for y in [z for z in (box,) if z is not z]}] for x in d.values()]\nmutate(*args)\n", False, False),
             ("args = [x for d in [{\"v\": y for y in (z for z in (box, unrelated) if z is z)}] for x in d.values()]\nmutate(*args)\n", False, True),
+        )
+        # Review regression: comprehension targets shadow lexical source names.
+        followup_cases += (
+            ("args = [x for d in [{\"v\": y for y in [box for box in (unrelated, box) if box is box]}] for x in d.values()]\nmutate(*args)\n", True, True),
+            ("args = [x for d in [{\"v\": y for y in [box for box in (box, unrelated) if box is box]}] for x in d.values()]\nmutate(*args)\n", False, True),
+            ("args = [x for d in [{\"v\": y for y in [box for box in (box,) if box is box]}] for x in d.values()]\nmutate(*args)\n", True, False),
+            ("args = [x for d in [{\"v\": y for y in [box for box in (unrelated,) if box is box]}] for x in d.values()]\nmutate(*args)\n", False, True),
+            ("args = [x for d in [{\"v\": y for y in [box for box in (unrelated, box) if box is not box]}] for x in d.values()]\nmutate(*args)\n", False, True),
+            ("args = [x for d in [{\"v\": y for y in [box for seed in (box,) for box in (seed,) if box is box]}] for x in d.values()]\nmutate(*args)\n", True, False),
+            ("args = [x for d in [{\"v\": y for y in [box for seed in (unrelated,) for box in (seed,) if box is box]}] for x in d.values()]\nmutate(*args)\n", False, True),
         )
         common_setup = (
             'other = Guard()\n'
