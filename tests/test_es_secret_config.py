@@ -9804,10 +9804,51 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                         for group in iteration_groups(generator.iter):
                                                                             states = [[]]
                                                                             for element in group:
-                                                                                if any(
-                                                                                    constant_truth(predicate) is False
+                                                                                def filter_truth(predicate):
+                                                                                    verdict = constant_truth(predicate)
+                                                                                    if verdict is not None:
+                                                                                        return verdict
+                                                                                    if (
+                                                                                        isinstance(generator.target, ast.Name)
+                                                                                        and isinstance(element, ast.Name)
+                                                                                        and isinstance(predicate, ast.Compare)
+                                                                                        and isinstance(predicate.left, ast.Name)
+                                                                                        and predicate.left.id == generator.target.id
+                                                                                        and len(predicate.ops) == 1
+                                                                                        and len(predicate.comparators) == 1
+                                                                                        and isinstance(predicate.comparators[0], ast.Name)
+                                                                                        and isinstance(predicate.ops[0], (ast.Is, ast.IsNot))
+                                                                                    ):
+                                                                                        other = predicate.comparators[0]
+                                                                                        if other.id == element.id:
+                                                                                            equal = True
+                                                                                        else:
+                                                                                            left_sources = _resolve_bound_nodes(
+                                                                                                element, bindings, prior_before
+                                                                                            )
+                                                                                            right_sources = _resolve_bound_nodes(
+                                                                                                other, bindings, prior_before
+                                                                                            )
+                                                                                            stable_types = (ast.Dict, ast.List, ast.Set)
+                                                                                            if (
+                                                                                                len(left_sources) != 1
+                                                                                                or len(right_sources) != 1
+                                                                                                or not isinstance(left_sources[0], stable_types)
+                                                                                                or not isinstance(right_sources[0], stable_types)
+                                                                                            ):
+                                                                                                return None
+                                                                                            equal = id(left_sources[0]) == id(right_sources[0])
+                                                                                        return (
+                                                                                            equal if isinstance(predicate.ops[0], ast.Is)
+                                                                                            else not equal
+                                                                                        )
+                                                                                    return None
+
+                                                                                filter_verdicts = [
+                                                                                    filter_truth(predicate)
                                                                                     for predicate in generator.ifs
-                                                                                ):
+                                                                                ]
+                                                                                if any(verdict is False for verdict in filter_verdicts):
                                                                                     continue
                                                                                 single = ast.comprehension(
                                                                                     target=generator.target,
@@ -9832,8 +9873,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                     and len(pair.elts) == 2
                                                                                 ]
                                                                                 uncertain_filter = any(
-                                                                                    constant_truth(predicate) is None
-                                                                                    for predicate in generator.ifs
+                                                                                    verdict is None
+                                                                                    for verdict in filter_verdicts
                                                                                 )
                                                                                 next_states = []
                                                                                 for prior_state in states:
