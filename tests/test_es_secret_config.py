@@ -10468,6 +10468,18 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                             if isinstance(
                                                                 expr, (ast.ListComp, ast.SetComp, ast.GeneratorExp, ast.DictComp)
                                                             ):
+                                                                if isinstance(expr, (ast.ListComp, ast.SetComp, ast.GeneratorExp)):
+                                                                    # Preserve source-time bindings and selected mapping
+                                                                    # values before later generator targets shadow names.
+                                                                    # Checking lexical yields supplements the existing
+                                                                    # conservative path for uncertain constructions.
+                                                                    if any(
+                                                                        same_owner(
+                                                                            candidate, depth + 1, seen, False, comp_sources
+                                                                        )
+                                                                        for candidate in iterated_sources(expr, comp_sources)
+                                                                    ):
+                                                                        return True
                                                                 if any(
                                                                     constant_truth(predicate) is False
                                                                     for generator in expr.generators
