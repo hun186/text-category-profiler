@@ -10227,6 +10227,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                             ):
                                                                                 receiver = receiver.func.value
                                                                             selected_scope = frame_count
+                                                                            if isinstance(receiver, ast.Name) and receiver.id == "seed":
+                                                                            print("DEBUG_SELECTED", "scope", frame_count, "env", tuple((env or {}).keys()), "selected", tuple(type(v).__name__ for v in selected), "selected_ids", tuple(getattr(v, 'id', '') for v in selected))
                                                                             if isinstance(receiver, ast.Name):
                                                                                 for index in range(frame_count - 1, -1, -1):
                                                                                     if receiver.id in lexical_frames[index]:
@@ -10459,6 +10461,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                             if isinstance(
                                                                 expr, (ast.ListComp, ast.SetComp, ast.GeneratorExp, ast.DictComp)
                                                             ):
+                                                                if isinstance(expr, (ast.ListComp, ast.GeneratorExp)) and any(isinstance(n, ast.Name) and n.id == "seed" for n in ast.walk(expr)):
+                                                                    dbg_candidates = iterated_sources(expr, comp_sources)
+                                                                    print("DEBUG_OWNER", "container", id(container), "candidates", tuple((type(v).__name__, id(v), getattr(v, 'id', ''), tuple(id(x) for x in v.values) if isinstance(v, ast.Dict) else ()) for v in dbg_candidates), "current_names", tuple((comp_sources or {}).keys()))
                                                                 # Follow actual yielded objects, not the final shadowed target env.
                                                                 if isinstance(expr, (ast.ListComp, ast.SetComp, ast.GeneratorExp)):
                                                                     if any(
