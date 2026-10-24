@@ -9046,6 +9046,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                             and len(candidate.args) in (1, 2)
                                             and not candidate.keywords
                                         )
+                                        if isinstance(candidate, ast.Subscript) and isinstance(candidate.value, ast.Name) and candidate.value.id == "outer":
+                                            print("TCP_CONTAINER_ENTER", when, ast.dump(candidate, include_attributes=False)[:160])
                                         if isinstance(candidate, ast.Subscript) or getter_call:
                                             index_node = (
                                                 candidate.slice
@@ -9178,6 +9180,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                 )
                                                 if not definitely_present:
                                                     selections.append(candidate.args[1])
+                                            if isinstance(owner_node, ast.Name) and owner_node.id == "outer":
+                                                print("TCP_CONTAINER_EXIT", [ast.dump(v,include_attributes=False)[:90] for v in selections], [ast.dump(v,include_attributes=False)[:90] for v in containers])
                                             return [
                                                 selected
                                                 for value in selections
@@ -9203,6 +9207,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                         """
                                         if depth > 12:
                                             return False
+                                        if "outer" in ast.dump(receiver, include_attributes=False):
+                                            print("TCP_WRITES", when, ast.dump(receiver, include_attributes=False)[:130])
                                         if id(receiver) == id(root):
                                             return True
                                         if isinstance(receiver, ast.Name):
