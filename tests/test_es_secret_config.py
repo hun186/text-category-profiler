@@ -9131,6 +9131,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                 original_root = containers[0]
                                                 for update in sorted(ast.walk(wrapper), key=_node_position):
                                                     at = _node_position(update)
+                                                    if isinstance(owner_node, ast.Name) and owner_node.id == "outer" and isinstance(update, ast.AugAssign):
+                                                        print("TCP_UNION_CAND", _node_position(original_root), at, when, _control_path_is_prefix(_node_control_path(update), _node_control_path(candidate)), update.target.id if isinstance(update.target, ast.Name) else None)
                                                     if not (_node_position(original_root) < at < when):
                                                         continue
                                                     if not (
@@ -9149,11 +9151,15 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                     prior_sources = container_sources(
                                                         update.target, _position_before(update), level + 1, frozenset()
                                                     )
+                                                    if isinstance(owner_node, ast.Name) and owner_node.id == "outer":
+                                                        print("TCP_UNION_PRIOR", len(prior_sources), [id(v) for v in prior_sources], id(original_root))
                                                     if len(prior_sources) != 1 or prior_sources[0] is not original_root:
                                                         continue
                                                     additions = container_sources(
                                                         update.value, _position_before(update), level + 1, frozenset()
                                                     )
+                                                    if isinstance(owner_node, ast.Name) and owner_node.id == "outer":
+                                                        print("TCP_UNION_RHS", [ast.dump(v, include_attributes=False)[:130] for v in additions])
                                                     if len(additions) != 1 or not isinstance(additions[0], ast.Dict):
                                                         continue
                                                     for incoming_key, incoming_value in zip(additions[0].keys, additions[0].values):
