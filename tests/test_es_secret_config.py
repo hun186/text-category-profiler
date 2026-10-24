@@ -9473,8 +9473,110 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                     return [node.orelse]
                                                                 return [node.body, node.orelse]
                                                         
+                                                            def known_mapping_key(node, level=0):
+                                                                """Resolve literal key aliases at the expression's source position."""
+                                                                if level > 8:
+                                                                    return (False, None)
+                                                                if isinstance(node, ast.Constant):
+                                                                    return (True, node.value)
+                                                                if isinstance(node, ast.Name):
+                                                                    values = _resolve_bound_nodes(
+                                                                        node, bindings, _node_position(node)
+                                                                    )
+                                                                    if len(values) == 1 and values[0] is not node:
+                                                                        return known_mapping_key(values[0], level + 1)
+                                                                if isinstance(node, ast.IfExp):
+                                                                    branches = [
+                                                                        known_mapping_key(branch, level + 1)
+                                                                        for branch in possible_branches(node)
+                                                                    ]
+                                                                    if branches and all(b == branches[0] for b in branches):
+                                                                        return branches[0]
+                                                                return (False, None)
+
+                                                            def selected_mapping_values(node, env, nesting=0, visited=frozenset()):
+                                                                """Trace selected values, honoring preceding direct item writes."""
+                                                                if nesting > 12:
+                                                                    return []
+                                                                is_subscript = isinstance(node, ast.Subscript)
+                                                                is_getter = (
+                                                                    isinstance(node, ast.Call)
+                                                                    and isinstance(node.func, ast.Attribute)
+                                                                    and node.func.attr == "get"
+                                                                    and 1 <= len(node.args) <= 2
+                                                                    and not node.keywords
+                                                                )
+                                                                if not (is_subscript or is_getter):
+                                                                    return []
+                                                                owner = node.value if is_subscript else node.func.value
+                                                                index = node.slice if is_subscript else node.args[0]
+                                                                known_index = known_mapping_key(index)
+                                                                roots = mapping_roots(owner, env, nesting + 1, visited)
+                                                                if not roots:
+                                                                    if env is not None and isinstance(owner, ast.Name) and owner.id in env:
+                                                                        return []  # lexical name shadows an outer binding
+                                                                    return container_sources(node, prior_before)
+
+                                                                selections = []
+                                                                present_everywhere = True
+                                                                for root in roots:
+                                                                    members = mapping_members(root, "items", env, nesting + 1)
+                                                                    matching = []
+                                                                    definite = False
+                                                                    for member in members:
+                                                                        key, value = member.elts
+                                                                        known_key = known_mapping_key(key)
+                                                                        if known_key[0] and known_index[0]:
+                                                                            if known_key[1] == known_index[1]:
+                                                                                matching.append(value)
+                                                                                definite = True
+                                                                        else:
+                                                                            matching.append(value)
+                                                                    # Direct writes to the selected slot supersede the source display.
+                                                                    # Preserve an earlier value if a write is conditional.
+                                                                    if (
+                                                                        isinstance(owner, ast.Name)
+                                                                        and (env is None or owner.id not in env)
+                                                                        and known_index[0]
+                                                                    ):
+                                                                        changes = []
+                                                                        for change in ast.walk(wrapper):
+                                                                            position = _node_position(change)
+                                                                            if not (_node_position(root) < position < _node_position(node)):
+                                                                                continue
+                                                                            if getattr(change, "_binding_scope", None) is not wrapper:
+                                                                                continue
+                                                                            if not isinstance(change, (ast.Assign, ast.AnnAssign)):
+                                                                                continue
+                                                                            targets = (
+                                                                                change.targets if isinstance(change, ast.Assign)
+                                                                                else (change.target,)
+                                                                            )
+                                                                            for target in targets:
+                                                                                if (
+                                                                                    isinstance(target, ast.Subscript)
+                                                                                    and isinstance(target.value, ast.Name)
+                                                                                    and target.value.id == owner.id
+                                                                                    and known_mapping_key(target.slice) == known_index
+                                                                                ):
+                                                                                    changes.append((position, change))
+                                                                        for _, change in sorted(changes, key=lambda item: item[0]):
+                                                                            if not _node_control_path(change):
+                                                                                matching = [change.value]
+                                                                            else:
+                                                                                matching.append(change.value)
+                                                                            definite = True
+                                                                    if not matching:
+                                                                        present_everywhere = False
+                                                                    if not definite:
+                                                                        present_everywhere = False
+                                                                    selections.extend(matching)
+                                                                if is_getter and len(node.args) == 2 and not present_everywhere:
+                                                                    selections.append(node.args[1])
+                                                                return selections
+
                                                             def mapping_roots(node, env, nesting=0, visited=frozenset()):
-                                                                """Resolve concrete dicts from aliases and selected mapping entries."""
+                                                                """Resolve concrete displays through named and lexical selections."""
                                                                 if nesting > 12:
                                                                     return []
                                                                 if isinstance(node, ast.Dict):
@@ -9505,41 +9607,17 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                     and not node.keywords
                                                                 )
                                                                 if isinstance(node, ast.Subscript) or getter:
-                                                                    owner = node.value if isinstance(node, ast.Subscript) else node.func.value
-                                                                    index = node.slice if isinstance(node, ast.Subscript) else node.args[0]
-                                                                    roots = mapping_roots(owner, env, nesting + 1, visited)
-                                                                    if roots:
-                                                                        selected = []
-                                                                        present_everywhere = True
-                                                                        for root in roots:
-                                                                            matching = []
-                                                                            for member in mapping_members(root, "items", env, nesting + 1):
-                                                                                key, value = member.elts
-                                                                                if not isinstance(index, ast.Constant) or not isinstance(key, ast.Constant):
-                                                                                    matching.append(value)
-                                                                                    present_everywhere = False
-                                                                                elif key.value == index.value:
-                                                                                    matching.append(value)
-                                                                            if not matching:
-                                                                                present_everywhere = False
-                                                                            selected.extend(matching)
-                                                                        if getter and len(node.args) == 2 and not present_everywhere:
-                                                                            selected.append(node.args[1])
-                                                                    elif env is not None and isinstance(owner, ast.Name) and owner.id in env:
-                                                                        # A comprehension target shadows its outer spelling.
-                                                                        selected = []
-                                                                    else:
-                                                                        selected = container_sources(node, prior_before)
                                                                     return [
-                                                                        source for candidate in selected if candidate is not node
-                                                                        for source in mapping_roots(
-                                                                            candidate, env, nesting + 1, visited
+                                                                        source for selected in selected_mapping_values(
+                                                                            node, env, nesting + 1, visited
                                                                         )
+                                                                        if selected is not node
+                                                                        for source in mapping_roots(selected, env, nesting + 1, visited)
                                                                     ]
                                                                 return []
 
                                                             def mapping_members(node, mode, env, nesting=0):
-                                                                """Enumerate each feasible dict state with right-biased literal keys."""
+                                                                """Enumerate feasible dict states without conflating alternative spreads."""
                                                                 if nesting > 12:
                                                                     return []
 
@@ -9549,14 +9627,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                     states = [[]]
                                                                     for key, value in zip(display.keys, display.values):
                                                                         if key is None:
-                                                                            # Conditional **sources are alternative execution states:
-                                                                            # do not flatten them before applying key overwrites.
-                                                                            spread_roots = mapping_roots(value, env, level + 1)
-                                                                            additions = [
-                                                                                candidate
-                                                                                for root in spread_roots
-                                                                                for candidate in display_states(root, level + 1)
-                                                                            ] if spread_roots else [[]]
+                                                                            additions = spread_states(value, level + 1)
                                                                         else:
                                                                             additions = [[(key, value)]]
                                                                         next_states = []
@@ -9564,19 +9635,43 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                             for addition in additions:
                                                                                 updated = list(state)
                                                                                 for incoming_key, incoming_value in addition:
-                                                                                    if isinstance(incoming_key, ast.Constant):
+                                                                                    known = known_mapping_key(incoming_key)
+                                                                                    if known[0]:
                                                                                         updated = [
                                                                                             (old_key, old_value)
                                                                                             for old_key, old_value in updated
-                                                                                            if not (
-                                                                                                isinstance(old_key, ast.Constant)
-                                                                                                and old_key.value == incoming_key.value
-                                                                                            )
+                                                                                            if known_mapping_key(old_key) != known
                                                                                         ]
                                                                                     updated.append((incoming_key, incoming_value))
                                                                                 next_states.append(updated)
                                                                         states = next_states
                                                                     return states
+
+                                                                def spread_states(node, level):
+                                                                    if level > 12:
+                                                                        return [[]]
+                                                                    if isinstance(node, ast.IfExp):
+                                                                        return [
+                                                                            state
+                                                                            for branch in possible_branches(node)
+                                                                            for state in spread_states(branch, level + 1)
+                                                                        ]
+                                                                    if isinstance(node, ast.Dict):
+                                                                        return display_states(node, level + 1)
+                                                                    if isinstance(node, ast.Name):
+                                                                        roots = (
+                                                                            env[node.id] if env is not None and node.id in env
+                                                                            else _resolve_bound_nodes(node, bindings, _node_position(node))
+                                                                        )
+                                                                        return [
+                                                                            state for root in roots if root is not node
+                                                                            for state in spread_states(root, level + 1)
+                                                                        ] or [[]]
+                                                                    roots = mapping_roots(node, env, level + 1)
+                                                                    return [
+                                                                        state for root in roots
+                                                                        for state in display_states(root, level + 1)
+                                                                    ] or [[]]  # opaque branch: no *proven* overwrite
 
                                                                 members = []
                                                                 for display in mapping_roots(node, env, nesting):
@@ -9591,7 +9686,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                 return members
 
                                                             def iterated_sources(node, env, nesting=0):
-                                                                """Approximate yielded objects, not every nested AST descendant."""
+                                                                """Approximate objects yielded by an iterable, including nested comps."""
                                                                 if nesting > 12:
                                                                     return []
                                                                 if isinstance(node, (ast.Tuple, ast.List, ast.Set)):
@@ -9612,6 +9707,34 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                         value for root in roots if root is not node
                                                                         for value in iterated_sources(root, env, nesting + 1)
                                                                     ]
+                                                                if isinstance(node, (ast.ListComp, ast.SetComp, ast.GeneratorExp)):
+                                                                    if any(
+                                                                        constant_truth(predicate) is False
+                                                                        for generator in node.generators
+                                                                        for predicate in generator.ifs
+                                                                    ):
+                                                                        return []
+                                                                    local = dict(env or {})
+                                                                    for generator in node.generators:
+                                                                        if definitely_empty_iterable(generator.iter, local):
+                                                                            return []
+                                                                        sources = iterated_sources(generator.iter, local, nesting + 1)
+                                                                        bind_comprehension_target(generator.target, sources, local)
+                                                                    def resolve_yield(result, level=0):
+                                                                        if level > 12:
+                                                                            return []
+                                                                        if isinstance(result, ast.Name) and result.id in local:
+                                                                            return [
+                                                                                item for source in local[result.id] if source is not result
+                                                                                for item in resolve_yield(source, level + 1)
+                                                                            ]
+                                                                        if isinstance(result, ast.IfExp):
+                                                                            return [
+                                                                                item for branch in possible_branches(result)
+                                                                                for item in resolve_yield(branch, level + 1)
+                                                                            ]
+                                                                        return [result]
+                                                                    return resolve_yield(node.elt)
                                                                 if (
                                                                     isinstance(node, ast.Call)
                                                                     and isinstance(node.func, ast.Attribute)
@@ -9622,7 +9745,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                         node.func.value, node.func.attr, env, nesting + 1
                                                                     )
                                                                 return []
-                                                        
+
+
                                                             if isinstance(expr, ast.Name):
                                                                 if comp_sources is not None and expr.id in comp_sources:
                                                                     return any(
@@ -9816,7 +9940,11 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                 and 1 <= len(expr.args) <= 2
                                                                 and not expr.keywords
                                                             ):
-                                                                selected = container_sources(expr, prior_before)
+                                                                selected = (
+                                                                    selected_mapping_values(expr, comp_sources)
+                                                                    if comp_sources is not None
+                                                                    else container_sources(expr, prior_before)
+                                                                )
                                                                 if any(
                                                                     id(candidate) == id(container)
                                                                     or (
@@ -15644,6 +15772,25 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ('args = [x for mapping in ({"args": {"v": box}},) for x in mapping["args"].values()]\nmutate(*args)\n', True, False),
             ('args = [x for mapping in ({"args": {"v": box}},) for x in mapping.get("args").values()]\nmutate(*args)\n', True, False),
             ('args = [x for mapping in ({"args": {"v": unrelated}},) for x in mapping["args"].values()]\nmutate(*args)\n', False, True),
+        )
+        # Codex follow-up: unresolved conditional spreads, source-time slot
+        # rewrites, lexical direct selections, nested comps and aliased keys.
+        followup_cases += (
+            ('args = {"v": box, **({"v": unrelated} if option else dict())}\nmutate(*args.values())\n', True, True),
+            ('args = {"v": unrelated, **({"v": box} if option else dict())}\nmutate(*args.values())\n', True, True),
+            ('args = {"v": box, **({"v": unrelated} if True else dict())}\nmutate(*args.values())\n', False, True),
+            ('outer = {"args": {"v": unrelated}}\nouter["args"] = {"v": box}\nmutate(*outer["args"].values())\n', True, True),
+            ('outer = {"args": {"v": box}}\nouter["args"] = {"v": unrelated}\nmutate(*outer["args"].values())\n', False, True),
+            ('outer = {"args": {"v": unrelated}}\nouter["args"] = {"v": box}\nmutate(*outer.get("args").values())\n', True, True),
+            ('mapping = {"args": unrelated}\nargs = [mapping["args"] for mapping in ({"args": box},)]\nmutate(*args)\n', True, True),
+            ('mapping = {"args": unrelated}\nargs = [mapping.get("args") for mapping in ({"args": box},)]\nmutate(*args)\n', True, True),
+            ('mapping = {"args": box}\nargs = [mapping["args"] for mapping in ({"args": unrelated},)]\nmutate(*args)\n', False, True),
+            ('args = [x for x in [y for y in (box,)]]\nmutate(*args)\n', True, False),
+            ('args = [x for x in [y for y in (unrelated,)]]\nmutate(*args)\n', False, True),
+            ('args = [x for x in [y for y in (box,) if False]]\nmutate(*args)\n', False, False),
+            ('key = "v"\nargs = {"v": box, key: unrelated}\nmutate(*args.values())\n', False, True),
+            ('key = "v"\nargs = {"v": box, **{key: unrelated}}\nmutate(*args.values())\n', False, True),
+            ('key = "v"\nargs = {"v": unrelated, key: box}\nmutate(*args.values())\n', True, True),
         )
         common_setup = (
             'other = Guard()\n'
