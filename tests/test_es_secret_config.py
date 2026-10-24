@@ -9474,7 +9474,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                 return [node.body, node.orelse]
                                                         
                                                             def mapping_roots(node, env, nesting=0, visited=frozenset()):
-                                                                """Resolve concrete displays without treating the mapping as a value."""
+                                                                """Resolve concrete dicts, including source-ordered literal selections."""
                                                                 if nesting > 12:
                                                                     return []
                                                                 if isinstance(node, ast.Dict):
@@ -9501,20 +9501,64 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                             root, env, nesting + 1, visited
                                                                         )
                                                                     ]
+                                                                # A concrete mapping can be selected from another mapping before its
+                                                                # keys()/values()/items() view is expanded. Reuse the existing ordered
+                                                                # selection resolver rather than treating outer["args"] as opaque.
+                                                                getter = (
+                                                                    isinstance(node, ast.Call)
+                                                                    and isinstance(node.func, ast.Attribute)
+                                                                    and node.func.attr == "get"
+                                                                    and 1 <= len(node.args) <= 2
+                                                                    and not node.keywords
+                                                                )
+                                                                if isinstance(node, ast.Subscript) or getter:
+                                                                    return [
+                                                                        source for selected in container_sources(node, prior_before)
+                                                                        if selected is not node
+                                                                        for source in mapping_roots(
+                                                                            selected, env, nesting + 1, visited
+                                                                        )
+                                                                    ]
                                                                 return []
-                                                        
+
                                                             def mapping_members(node, mode, env, nesting=0):
-                                                                """Get source nodes emitted by a dict view or unpack."""
+                                                                """Enumerate dict views with right-biased, last-write-wins keys."""
                                                                 if nesting > 12:
                                                                     return []
-                                                                members = []
-                                                                for display in mapping_roots(node, env, nesting):
+
+                                                                def display_pairs(display, level):
+                                                                    if level > 12:
+                                                                        return []
+                                                                    pairs = []
                                                                     for key, value in zip(display.keys, display.values):
                                                                         if key is None:
-                                                                            members.extend(
-                                                                                mapping_members(value, mode, env, nesting + 1)
-                                                                            )
-                                                                            continue
+                                                                            incoming = [
+                                                                                pair
+                                                                                for root in mapping_roots(value, env, level + 1)
+                                                                                for pair in display_pairs(root, level + 1)
+                                                                            ]
+                                                                        else:
+                                                                            incoming = [(key, value)]
+                                                                        for incoming_key, incoming_value in incoming:
+                                                                            # A dict display's later literal key replaces the value
+                                                                            # retained for that key, including from a later **spread.
+                                                                            if isinstance(incoming_key, ast.Constant):
+                                                                                pairs = [
+                                                                                    (old_key, old_value)
+                                                                                    for old_key, old_value in pairs
+                                                                                    if not (
+                                                                                        isinstance(old_key, ast.Constant)
+                                                                                        and old_key.value == incoming_key.value
+                                                                                    )
+                                                                                ]
+                                                                            pairs.append((incoming_key, incoming_value))
+                                                                    return pairs
+
+                                                                members = []
+                                                                # Different conditional roots are alternatives, never overwrite each
+                                                                # other's entries. Ordering and overwrites apply within each display.
+                                                                for display in mapping_roots(node, env, nesting):
+                                                                    for key, value in display_pairs(display, nesting):
                                                                         if mode == "keys":
                                                                             members.append(key)
                                                                         elif mode == "values":
@@ -9524,7 +9568,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                 ast.Tuple(elts=[key, value], ctx=ast.Load())
                                                                             )
                                                                 return members
-                                                        
+
                                                             def iterated_sources(node, env, nesting=0):
                                                                 """Approximate yielded objects, not every nested AST descendant."""
                                                                 if nesting > 12:
@@ -9614,11 +9658,69 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                         [key] if keys_only else [value]
                                                                     )
                                                                 )
+                                                            definitely_unused = False
+                                                            # Lexical comprehensions are empty when any generator stage has
+                                                            # no elements. Do not equate unknown iterables with known empty ones.
+                                                            def definitely_empty_iterable(node, env, level=0):
+                                                                if level > 12:
+                                                                    return False
+                                                                if isinstance(node, (ast.Tuple, ast.List, ast.Set)):
+                                                                    return not node.elts
+                                                                if isinstance(node, ast.Dict):
+                                                                    return not node.keys
+                                                                if isinstance(node, ast.IfExp):
+                                                                    return all(
+                                                                        definitely_empty_iterable(branch, env, level + 1)
+                                                                        for branch in possible_branches(node)
+                                                                    )
+                                                                if isinstance(node, ast.Name):
+                                                                    if node.id in env:
+                                                                        roots = env[node.id]
+                                                                    else:
+                                                                        roots = _resolve_bound_nodes(node, bindings, prior_before)
+                                                                    return bool(roots) and all(
+                                                                        root is not node
+                                                                        and definitely_empty_iterable(root, env, level + 1)
+                                                                        for root in roots
+                                                                    )
+                                                                if (
+                                                                    isinstance(node, ast.Call)
+                                                                    and isinstance(node.func, ast.Attribute)
+                                                                    and node.func.attr in {"keys", "values", "items"}
+                                                                    and not node.args and not node.keywords
+                                                                ):
+                                                                    roots = mapping_roots(node.func.value, env, level + 1)
+                                                                    return bool(roots) and all(
+                                                                        not root.keys
+                                                                        for root in roots
+                                                                    )
+                                                                return False
+
+                                                            def bind_comprehension_target(target, candidates, env):
+                                                                """Bind each destructured target to the corresponding element."""
+                                                                if isinstance(target, ast.Name):
+                                                                    env[target.id] = candidates
+                                                                    return
+                                                                if isinstance(target, ast.Starred):
+                                                                    bind_comprehension_target(target.value, candidates, env)
+                                                                    return
+                                                                if isinstance(target, (ast.Tuple, ast.List)):
+                                                                    for index, part in enumerate(target.elts):
+                                                                        slot_sources = []
+                                                                        for candidate in candidates:
+                                                                            if isinstance(candidate, (ast.Tuple, ast.List)):
+                                                                                if len(candidate.elts) == len(target.elts):
+                                                                                    slot_sources.append(candidate.elts[index])
+                                                                                elif isinstance(part, ast.Starred):
+                                                                                    slot_sources.extend(candidate.elts[index:])
+                                                                            else:
+                                                                                # Unknown shape: retain a conservative candidate.
+                                                                                slot_sources.append(candidate)
+                                                                        bind_comprehension_target(part, slot_sources, env)
+
                                                             if isinstance(
                                                                 expr, (ast.ListComp, ast.SetComp, ast.GeneratorExp, ast.DictComp)
                                                             ):
-                                                                # An always-false filter yields nothing. Unknown conditions retain
-                                                                # both possibilities rather than assuming a filter is always true.
                                                                 if any(
                                                                     constant_truth(predicate) is False
                                                                     for generator in expr.generators
@@ -9627,21 +9729,17 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                     return False
                                                                 env = dict(comp_sources or {})
                                                                 for generator in expr.generators:
+                                                                    if definitely_empty_iterable(generator.iter, env):
+                                                                        return False
                                                                     sources = iterated_sources(generator.iter, env)
-                                                                    targets = [
-                                                                        node.id for node in ast.walk(generator.target)
-                                                                        if isinstance(node, ast.Name)
-                                                                    ]
-                                                                    for target in targets:
-                                                                        # Bind lexical comprehension targets before analysing
-                                                                        # downstream generators, never to a same-named outer alias.
-                                                                        env[target] = sources
+                                                                    bind_comprehension_target(generator.target, sources, env)
                                                                 result = (
                                                                     expr.key if keys_only and isinstance(expr, ast.DictComp)
                                                                     else expr.value if isinstance(expr, ast.DictComp)
                                                                     else expr.elt
                                                                 )
                                                                 return same_owner(result, depth + 1, seen, False, env)
+
                                                             if (
                                                                 isinstance(expr, ast.Call)
                                                                 and isinstance(expr.func, ast.Attribute)
@@ -15449,6 +15547,25 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ("args = [value for mapping in ({\"value\": box},) for value in mapping.keys()]\nmutate(*args)\n", False, False),
             ("args = [value for mapping in ({\"value\": box},) for value in mapping.values() if False]\nmutate(*args)\n", False, False),
             ("kwargs = {\"callback\": box.__setitem__} if option else {}\ninvoke(**kwargs)\n", True, False),
+        )
+        # Follow-up P2 regression: selected mapping views, overriding spread
+        # keys, destructured comprehension targets and definitely empty inputs.
+        followup_cases += (
+            ('outer = {"args": {"value": box}}\nmutate(*outer["args"].values())\n', True, False),
+            ('outer = {"args": {"value": box}}\nmutate(*outer.get("args").values())\n', True, False),
+            ('outer = {"args": {"value": unrelated}}\nmutate(*outer["args"].values())\n', False, True),
+            ('args = {"value": box, **{"value": unrelated}}\nmutate(*args.values())\n', False, True),
+            ('args = {"value": unrelated, **{"value": box}}\nmutate(*args.values())\n', True, True),
+            ('args = {"value": box, "value": unrelated}\nmutate(*args.values())\n', False, True),
+            ('args = {"value": box, **{"value": unrelated}}\nmutate(*args.items())\n', False, True),
+            ('args = [x for _, mapping in ((None, {"v": box}),) for x in mapping.values()]\nmutate(*args)\n', True, False),
+            ('args = (x for _, mapping in ((None, {"v": box}),) for x in mapping.values())\nmutate(*args)\n', True, False),
+            ('args = [x for _, mapping in ((None, {"v": unrelated}),) for x in mapping.values()]\nmutate(*args)\n', False, True),
+            ('args = [box for item in ()]\nmutate(*args)\n', False, False),
+            ('args = [box for x in (1,) for y in ()]\nmutate(*args)\n', False, False),
+            ('args = (box for item in ())\nmutate(*args)\n', False, False),
+            ('args = [box for item in (1,)]\nmutate(*args)\n', True, False),
+            ('args = [box for x in (1,) for y in (2,)]\nmutate(*args)\n', True, False),
         )
         common_setup = (
             'other = Guard()\n'
