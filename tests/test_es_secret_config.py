@@ -10167,7 +10167,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                     resolved = [
                                                                                         item for source in bound if source is not result
                                                                                         for item in resolve_yield(
-                                                                                            source, level + 1, index, next_seen
+                                                                                            source, level + 1, index, next_seen, source_capture
                                                                                         )
                                                                                     ]
                                                                                     return resolved or [result]
@@ -10175,25 +10175,25 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                 resolved = [
                                                                                     item for source in env[result.id] if source is not result
                                                                                     for item in resolve_yield(
-                                                                                        source, level + 1, 0, next_seen
+                                                                                        source, level + 1, 0, next_seen, source_capture
                                                                                     )
                                                                                 ]
                                                                                 return resolved or [result]
-                                                                                # Read source-time names before a later lexical target shadows them.
-                                                                                if source_capture and frame_count == 0:
-                                                                                    originals = _resolve_bound_nodes(
-                                                                                        result, bindings, _node_position(result)
+                                                                            # Read source-time names before a later lexical target shadows them.
+                                                                            if source_capture and frame_count == 0:
+                                                                                originals = _resolve_bound_nodes(
+                                                                                    result, bindings, _node_position(result)
+                                                                                )
+                                                                                candidates = [
+                                                                                    member
+                                                                                    for original in originals if original is not result
+                                                                                    for member in (
+                                                                                        resolve_yield(original, level + 1, 0, next_seen, True)
+                                                                                        if isinstance(original, ast.Name) else [original]
                                                                                     )
-                                                                                    candidates = [
-                                                                                        member
-                                                                                        for original in originals if original is not result
-                                                                                        for member in (
-                                                                                            resolve_yield(original, level + 1, 0, next_seen, True)
-                                                                                            if isinstance(original, ast.Name) else [original]
-                                                                                        )
-                                                                                    ]
-                                                                                    if candidates:
-                                                                                        return candidates
+                                                                                ]
+                                                                                if candidates:
+                                                                                    return candidates
                                                                         if isinstance(result, ast.IfExp):
                                                                             return [
                                                                                 item for branch in possible_branches(result)
