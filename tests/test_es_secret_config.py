@@ -9594,7 +9594,16 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                         if isinstance(value, ast.Subscript):
                                                                             # Lexical chains may mix dict and tuple/list indexing:
                                                                             # y["v"][0] selects from the dict first, then sequence.
-                                                                            selected = selected_mapping_values(,                                                                                value, env, nesting + 1,                                                                            ),                                                                            if selected:,                                                                                return [,                                                                                    candidate for item in selected,                                                                                    for candidate in lexical_sequence_sources(,                                                                                        item, level + 1,                                                                                    ),                                                                                ]
+                                                                            selected = selected_mapping_values(
+                                                                                value, env, nesting + 1
+                                                                            )
+                                                                            if selected:
+                                                                                return [
+                                                                                    candidate for item in selected
+                                                                                    for candidate in lexical_sequence_sources(
+                                                                                        item, level + 1
+                                                                                    )
+                                                                                ]
                                                                             owners = lexical_sequence_sources(value.value, level + 1)
                                                                             if isinstance(value.slice, ast.Constant) and isinstance(value.slice.value, int) and not isinstance(value.slice.value, bool):
                                                                                 offset = value.slice.value
