@@ -9046,8 +9046,6 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                             and len(candidate.args) in (1, 2)
                                             and not candidate.keywords
                                         )
-                                        if isinstance(candidate, ast.Subscript) and isinstance(candidate.value, ast.Name) and candidate.value.id == "outer":
-                                            print("TCP_CONTAINER_ENTER", when, ast.dump(candidate, include_attributes=False)[:160])
                                         if isinstance(candidate, ast.Subscript) or getter_call:
                                             index_node = (
                                                 candidate.slice
@@ -9120,8 +9118,6 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                 selections = [val]
                                                         else:
                                                             selections.append(val)
-                                            if isinstance(owner_node, ast.Name) and owner_node.id == "outer":
-                                                print("TCP_GATE", type(owner_node).__name__, type(index_node).__name__, len(containers), [type(x).__name__ for x in containers], "root", _node_position(containers[0]) if containers else None, "when", when, "aug", [(_node_position(v), getattr(v.target,"id","?")) for v in ast.walk(wrapper) if isinstance(v,ast.AugAssign)])
                                             # In-place mapping unions mutate a proven original dict rather than
                                             # rebinding it. Resolve definite RHS overwrites at the use-site.
                                             if (
@@ -9131,17 +9127,18 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                 and isinstance(containers[0], ast.Dict)
                                             ):
                                                 original_root = containers[0]
-                                                for update in sorted(ast.walk(wrapper), key=_node_position):
+                                                selection_scope = getattr(candidate, '_binding_scope', wrapper)
+                                                if not isinstance(selection_scope, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                                                    selection_scope = wrapper
+                                                for update in sorted(ast.walk(selection_scope), key=_node_position):
                                                     at = _node_position(update)
-                                                    if isinstance(owner_node, ast.Name) and owner_node.id == "outer" and isinstance(update, ast.AugAssign):
-                                                        print("TCP_UNION_CAND", _node_position(original_root), at, when, _control_path_is_prefix(_node_control_path(update), _node_control_path(candidate)), update.target.id if isinstance(update.target, ast.Name) else None)
                                                     if not (_node_position(original_root) < at < when):
                                                         continue
                                                     if not (
                                                         isinstance(update, ast.AugAssign)
                                                         and isinstance(update.op, ast.BitOr)
                                                         and isinstance(update.target, ast.Name)
-                                                        and getattr(update, '_binding_scope', None) is wrapper
+                                                        and getattr(update, '_binding_scope', None) is selection_scope
                                                     ):
                                                         continue
                                                     if _control_paths_mutually_exclusive(
@@ -9153,15 +9150,11 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                     prior_sources = container_sources(
                                                         update.target, _position_before(update), level + 1, frozenset()
                                                     )
-                                                    if isinstance(owner_node, ast.Name) and owner_node.id == "outer":
-                                                        print("TCP_UNION_PRIOR", len(prior_sources), [id(v) for v in prior_sources], id(original_root))
                                                     if len(prior_sources) != 1 or prior_sources[0] is not original_root:
                                                         continue
                                                     additions = container_sources(
                                                         update.value, _position_before(update), level + 1, frozenset()
                                                     )
-                                                    if isinstance(owner_node, ast.Name) and owner_node.id == "outer":
-                                                        print("TCP_UNION_RHS", [ast.dump(v, include_attributes=False)[:130] for v in additions])
                                                     if len(additions) != 1 or not isinstance(additions[0], ast.Dict):
                                                         continue
                                                     for incoming_key, incoming_value in zip(additions[0].keys, additions[0].values):
@@ -9188,8 +9181,6 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                 )
                                                 if not definitely_present:
                                                     selections.append(candidate.args[1])
-                                            if isinstance(owner_node, ast.Name) and owner_node.id == "outer":
-                                                print("TCP_CONTAINER_EXIT", [ast.dump(v,include_attributes=False)[:90] for v in selections], [ast.dump(v,include_attributes=False)[:90] for v in containers])
                                             return [
                                                 selected
                                                 for value in selections
@@ -9215,8 +9206,6 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                         """
                                         if depth > 12:
                                             return False
-                                        if "outer" in ast.dump(receiver, include_attributes=False):
-                                            print("TCP_WRITES", when, ast.dump(receiver, include_attributes=False)[:130])
                                         if id(receiver) == id(root):
                                             return True
                                         if isinstance(receiver, ast.Name):
