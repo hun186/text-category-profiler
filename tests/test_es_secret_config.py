@@ -9456,6 +9456,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                             # *mapping exposes keys; **mapping and .values() expose values.
                                                             if depth > 12:
                                                                 return False
+                                                            # A selected root is the original mutable object itself.
+                                                            if not keys_only and expr is container:
+                                                                return True
                                                         
                                                             def constant_truth(node):
                                                                 if isinstance(node, ast.Constant):
@@ -10143,7 +10146,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                             or candidates is not before_target[name]
                                                                         })
                                                                     def resolve_yield(
-                                                                        result, level=0, frame_count=None, seen=frozenset()
+                                                                        result, level=0, frame_count=None, seen=frozenset(),
+                                                                        source_capture=False,
                                                                     ):
                                                                         """Substitute lexical targets using their source-time scope."""
                                                                         if frame_count is None:
@@ -10175,10 +10179,25 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                     )
                                                                                 ]
                                                                                 return resolved or [result]
+                                                                                # Read source-time names before a later lexical target shadows them.
+                                                                                if source_capture and frame_count == 0:
+                                                                                    originals = _resolve_bound_nodes(
+                                                                                        result, bindings, _node_position(result)
+                                                                                    )
+                                                                                    candidates = [
+                                                                                        member
+                                                                                        for original in originals if original is not result
+                                                                                        for member in (
+                                                                                            resolve_yield(original, level + 1, 0, next_seen, True)
+                                                                                            if isinstance(original, ast.Name) else [original]
+                                                                                        )
+                                                                                    ]
+                                                                                    if candidates:
+                                                                                        return candidates
                                                                         if isinstance(result, ast.IfExp):
                                                                             return [
                                                                                 item for branch in possible_branches(result)
-                                                                                for item in resolve_yield(branch, level + 1, frame_count, seen)
+                                                                                for item in resolve_yield(branch, level + 1, frame_count, seen, source_capture)
                                                                             ]
                                                                         getter = (
                                                                             isinstance(result, ast.Call)
@@ -10194,13 +10213,43 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                     for name, bound in frame.items()
                                                                                 })
                                                                             )
+                                                                            # Select mapped values in the lexical scope that produced their receiver.
+                                                                            receiver = (
+                                                                                result.value if isinstance(result, ast.Subscript)
+                                                                                else result.func.value
+                                                                            )
+                                                                            while isinstance(receiver, ast.Subscript):
+                                                                                receiver = receiver.value
+                                                                            while (
+                                                                                isinstance(receiver, ast.Call)
+                                                                                and isinstance(receiver.func, ast.Attribute)
+                                                                                and receiver.func.attr == 'get'
+                                                                            ):
+                                                                                receiver = receiver.func.value
+                                                                            selected_scope = frame_count
+                                                                            if isinstance(receiver, ast.Name):
+                                                                                for index in range(frame_count - 1, -1, -1):
+                                                                                    if receiver.id in lexical_frames[index]:
+                                                                                        selected_scope = index
+                                                                                        break
                                                                             return [
                                                                                 item for value in selected if value is not result
-                                                                                for item in resolve_yield(value, level + 1, frame_count, seen)
+                                                                                for item in resolve_yield(
+                                                                                    value, level + 1,
+                                                                                    frame_count if (
+                                                                                        getter and len(result.args) == 2
+                                                                                        and value is result.args[1]
+                                                                                    ) else selected_scope,
+                                                                                    seen,
+                                                                                    not (
+                                                                                        getter and len(result.args) == 2
+                                                                                        and value is result.args[1]
+                                                                                    ),
+                                                                                )
                                                                             ] or [result]
                                                                         if isinstance(result, (ast.Tuple, ast.List, ast.Set)):
                                                                             candidates = [
-                                                                                resolve_yield(element, level + 1, frame_count, seen)
+                                                                                resolve_yield(element, level + 1, frame_count, seen, source_capture)
                                                                                 for element in result.elts
                                                                             ]
                                                                             return [
@@ -10212,9 +10261,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                 [
                                                                                     (key_candidate, value_candidate)
                                                                                     for key_candidate in (
-                                                                                        resolve_yield(key, level + 1, frame_count, seen) if key is not None else [None]
+                                                                                        resolve_yield(key, level + 1, frame_count, seen, source_capture) if key is not None else [None]
                                                                                     )
-                                                                                    for value_candidate in resolve_yield(value, level + 1, frame_count, seen)
+                                                                                    for value_candidate in resolve_yield(value, level + 1, frame_count, seen, source_capture)
                                                                                 ]
                                                                                 for key, value in zip(result.keys, result.values)
                                                                             ]
@@ -10410,6 +10459,13 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                             if isinstance(
                                                                 expr, (ast.ListComp, ast.SetComp, ast.GeneratorExp, ast.DictComp)
                                                             ):
+                                                                # Follow actual yielded objects, not the final shadowed target env.
+                                                                if isinstance(expr, (ast.ListComp, ast.SetComp, ast.GeneratorExp)):
+                                                                    if any(
+                                                                        same_owner(candidate, depth + 1, seen, False, comp_sources)
+                                                                        for candidate in iterated_sources(expr, comp_sources)
+                                                                    ):
+                                                                        return True
                                                                 if any(
                                                                     constant_truth(predicate) is False
                                                                     for generator in expr.generators
@@ -16390,6 +16446,19 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ("args = [x for d in [{\"v\": y for y in [box for box in (unrelated, box) if box is not box]}] for x in d.values()]\nmutate(*args)\n", False, True),
             ("args = [x for d in [{\"v\": y for y in [box for seed in (box,) for box in (seed,) if box is box]}] for x in d.values()]\nmutate(*args)\n", True, False),
             ("args = [x for d in [{\"v\": y for y in [box for seed in (unrelated,) for box in (seed,) if box is box]}] for x in d.values()]\nmutate(*args)\n", False, True),
+        )
+        # Creation-time mapping member scope across lexical shadowing.
+        followup_cases += (
+            ('args = [x for d in [{"v": y for y in [seed["v"] for seed in ({"v": box},) for box in (unrelated,)]]}] for x in d.values()]\nmutate(*args)\n', True, True),
+            ('args = [x for d in [{"v": y for y in [seed.get("v") for seed in ({"v": box},) for box in (unrelated,)]]}] for x in d.values()]\nmutate(*args)\n', True, True),
+            ('args = [x for d in [{"v": y for y in [seed["v"] for seed in ({"v": unrelated},) for box in (box,)]]}] for x in d.values()]\nmutate(*args)\n', False, True),
+            ('args = [x for d in [{"v": y for y in [seed.get("v") for seed in ({"v": unrelated},) for box in (box,)]]}] for x in d.values()]\nmutate(*args)\n', False, True),
+            ('args = [x for d in [{"v": y for y in [seed["v"] for seed in ({"v": box},)]]}] for x in d.values()]\nmutate(*args)\n', True, False),
+            ('args = [x for d in [{"v": y for y in [seed.get("v") for seed in ({"v": unrelated},)]]}] for x in d.values()]\nmutate(*args)\n', False, True),
+            ('args = [x for d in [{"v": y for y in [seed.get("missing", box) for seed in ({"v": unrelated},) for box in (unrelated,)]]}] for x in d.values()]\nmutate(*args)\n', False, True),
+            ('args = [x for d in [{"v": y for y in [seed.get("missing", box) for seed in ({"v": unrelated},)]]}] for x in d.values()]\nmutate(*args)\n', True, False),
+            ('args = [x for d in [{"v": y for y in [seed["v"] for box in (unrelated,) for seed in ({"v": box},)]]}] for x in d.values()]\nmutate(*args)\n', False, True),
+            ('alias = box\nargs = [x for d in [{"v": y for y in [seed["v"] for seed in ({"v": alias},) for alias in (unrelated,)]]}] for x in d.values()]\nmutate(*args)\n', True, True),
         )
         common_setup = (
             'other = Guard()\n'
