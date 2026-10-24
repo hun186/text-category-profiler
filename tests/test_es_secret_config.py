@@ -9121,7 +9121,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                         else:
                                                             selections.append(val)
                                             if isinstance(owner_node, ast.Name) and owner_node.id == "outer":
-                                                print("TCP_GATE", type(owner_node).__name__, type(index_node).__name__, len(containers), [type(x).__name__ for x in containers])
+                                                print("TCP_GATE", type(owner_node).__name__, type(index_node).__name__, len(containers), [type(x).__name__ for x in containers], "root", _node_position(containers[0]) if containers else None, "when", when, "aug", [(_node_position(v), getattr(v.target,"id","?")) for v in ast.walk(wrapper) if isinstance(v,ast.AugAssign)])
                                             # In-place mapping unions mutate a proven original dict rather than
                                             # rebinding it. Resolve definite RHS overwrites at the use-site.
                                             if (
