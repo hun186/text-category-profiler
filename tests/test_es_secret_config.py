@@ -10473,11 +10473,22 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                     # values before later generator targets shadow names.
                                                                     # Checking lexical yields supplements the existing
                                                                     # conservative path for uncertain constructions.
+                                                                    lexical_candidates = iterated_sources(expr, comp_sources)
+                                                                    if "seed[" in ast.unparse(expr) or "seed.get(" in ast.unparse(expr):
+                                                                        print("SCOPE_TRACE", ast.unparse(expr),
+                                                                              "depth", depth,
+                                                                              "candidates", [
+                                                                                  ast.dump(value)[:260] for value in lexical_candidates
+                                                                              ],
+                                                                              "sources", list((comp_sources or {}).keys()),
+                                                                              "owners", [
+                                                                                  ast.dump(value)[:180] for value in [container]
+                                                                              ], flush=True)
                                                                     if any(
                                                                         same_owner(
                                                                             candidate, depth + 1, seen, False, comp_sources
                                                                         )
-                                                                        for candidate in iterated_sources(expr, comp_sources)
+                                                                        for candidate in lexical_candidates
                                                                     ):
                                                                         return True
                                                                 if any(
