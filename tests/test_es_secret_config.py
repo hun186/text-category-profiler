@@ -9118,6 +9118,46 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                 selections = [val]
                                                         else:
                                                             selections.append(val)
+                                            # In-place mapping unions mutate a proven original dict rather than
+                                            # rebinding it. Resolve definite RHS overwrites at the use-site.
+                                            if (
+                                                isinstance(owner_node, ast.Name)
+                                                and isinstance(index_node, ast.Constant)
+                                                and len(containers) == 1
+                                                and isinstance(containers[0], ast.Dict)
+                                            ):
+                                                original_root = containers[0]
+                                                for update in sorted(ast.walk(wrapper), key=_node_position):
+                                                    at = _node_position(update)
+                                                    if not (_node_position(original_root) < at < when):
+                                                        continue
+                                                    if not (
+                                                        isinstance(update, ast.AugAssign)
+                                                        and isinstance(update.op, ast.BitOr)
+                                                        and isinstance(update.target, ast.Name)
+                                                        and getattr(update, '_binding_scope', None) is wrapper
+                                                    ):
+                                                        continue
+                                                    if _control_paths_mutually_exclusive(
+                                                        _node_control_path(update), _node_control_path(candidate)
+                                                    ) or not _control_path_is_prefix(
+                                                        _node_control_path(update), _node_control_path(candidate)
+                                                    ):
+                                                        continue
+                                                    prior_sources = container_sources(
+                                                        update.target, _position_before(update), level + 1, frozenset()
+                                                    )
+                                                    if len(prior_sources) != 1 or prior_sources[0] is not original_root:
+                                                        continue
+                                                    additions = container_sources(
+                                                        update.value, _position_before(update), level + 1, frozenset()
+                                                    )
+                                                    if len(additions) != 1 or not isinstance(additions[0], ast.Dict):
+                                                        continue
+                                                    for incoming_key, incoming_value in zip(additions[0].keys, additions[0].values):
+                                                        if (isinstance(incoming_key, ast.Constant)
+                                                            and incoming_key.value == index_node.value):
+                                                            selections = [incoming_value]
                                             if getter_call and len(candidate.args) == 2:
                                                 # get() uses its default only when
                                                 # the selected key may be absent.
@@ -9757,8 +9797,6 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                             target.value, _position_before(change)
                                                                                         ), change.value,
                                                                                     ))
-                                                                        if isinstance(owner, ast.Name) and owner.id == "outer":
-                                                                            print("TCP_UNION_DEBUG", "roots", receiver_roots, "base", id(root), "changes", [(type(ch).__name__,wr,ast.dump(v,include_attributes=False)[:100]) for _,ch,wr,v in changes])
                                                                         for _, change, write_roots, new_value in sorted(changes, key=lambda item: item[0]):
                                                                             # Overwrite only for a definite same-object receiver.
                                                                             # Rebound or conditional aliases may target another dict.
