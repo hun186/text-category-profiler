@@ -9500,6 +9500,13 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                     return set()
                                                                 if isinstance(node, (ast.Dict, ast.List, ast.Tuple)):
                                                                     return {id(node)}
+                                                                if isinstance(node, ast.IfExp):
+                                                                    return {
+                                                                        origin for branch in possible_branches(node)
+                                                                        for origin in mapping_receiver_origins(
+                                                                            branch, before, nesting + 1, visited
+                                                                        )
+                                                                    }
                                                                 if isinstance(node, ast.Name):
                                                                     token = _binding_name_token(node.id, bindings, node)
                                                                     if token in visited:
@@ -9564,8 +9571,41 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                 roots = mapping_roots(owner, env, nesting + 1, visited)
                                                                 if not roots:
                                                                     if env is not None and isinstance(owner, ast.Name) and owner.id in env:
-                                                                        # A comprehension name shadows the outer variable entirely.
-                                                                        return [node.args[1]] if is_getter and len(node.args) == 2 else []
+                                                                        # A comprehension target may be a tuple/list, not a dict.
+                                                                        # Resolve its indexed slot against the lexical candidates.
+                                                                        def lexical_sequence_slot(candidate, level=0):
+                                                                            if level > 12:
+                                                                                return []
+                                                                            if isinstance(candidate, (ast.Tuple, ast.List)):
+                                                                                if (
+                                                                                    isinstance(index, ast.Constant)
+                                                                                    and isinstance(index.value, int)
+                                                                                    and not isinstance(index.value, bool)
+                                                                                ):
+                                                                                    position = index.value
+                                                                                    if -len(candidate.elts) <= position < len(candidate.elts):
+                                                                                        return [candidate.elts[position]]
+                                                                                    return []
+                                                                                return list(candidate.elts)
+                                                                            if isinstance(candidate, ast.IfExp):
+                                                                                return [
+                                                                                    value for branch in possible_branches(candidate)
+                                                                                    for value in lexical_sequence_slot(branch, level + 1)
+                                                                                ]
+                                                                            if isinstance(candidate, ast.Name) and candidate.id in env:
+                                                                                return [
+                                                                                    value for candidate_root in env[candidate.id]
+                                                                                    if candidate_root is not candidate
+                                                                                    for value in lexical_sequence_slot(candidate_root, level + 1)
+                                                                                ]
+                                                                            return []
+                                                                        chosen = [
+                                                                            value for candidate in env[owner.id]
+                                                                            for value in lexical_sequence_slot(candidate)
+                                                                        ]
+                                                                        if is_getter and len(node.args) == 2 and not chosen:
+                                                                            chosen.append(node.args[1])
+                                                                        return chosen
                                                                     return container_sources(node, prior_before)
 
                                                                 selections = []
@@ -9617,9 +9657,20 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                         )
                                                                                     )
                                                                                 ):
-                                                                                    changes.append((position, change))
-                                                                        for _, change in sorted(changes, key=lambda item: item[0]):
-                                                                            if not _node_control_path(change):
+                                                                                    changes.append((
+                                                                                        position, change,
+                                                                                        mapping_receiver_origins(
+                                                                                            target.value, _position_before(change)
+                                                                                        ),
+                                                                                    ))
+                                                                        for _, change, write_roots in sorted(changes, key=lambda item: item[0]):
+                                                                            # Overwrite only for a definite same-object receiver.
+                                                                            # Rebound or conditional aliases may target another dict.
+                                                                            certain_receiver = (
+                                                                                len(receiver_roots) == 1
+                                                                                and write_roots == receiver_roots
+                                                                            )
+                                                                            if certain_receiver and not _node_control_path(change):
                                                                                 matching = [change.value]
                                                                             else:
                                                                                 matching.append(change.value)
@@ -9637,6 +9688,24 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                     return []
                                                                 if isinstance(node, ast.Dict):
                                                                     return [node]
+                                                                if isinstance(node, ast.DictComp):
+                                                                    # Reuse generator binding + yield substitution for both key
+                                                                    # and value rather than dropping dictionary comprehensions.
+                                                                    pairs = ast.ListComp(
+                                                                        elt=ast.Tuple(
+                                                                            elts=[node.key, node.value], ctx=ast.Load()
+                                                                        ),
+                                                                        generators=node.generators,
+                                                                    )
+                                                                    entries = iterated_sources(pairs, env, nesting + 1)
+                                                                    return [
+                                                                        ast.Dict(
+                                                                            keys=[entry.elts[0]],
+                                                                            values=[entry.elts[1]],
+                                                                        )
+                                                                        for entry in entries
+                                                                        if isinstance(entry, ast.Tuple) and len(entry.elts) == 2
+                                                                    ]
                                                                 if isinstance(node, ast.IfExp):
                                                                     return [
                                                                         source for branch in possible_branches(node)
@@ -15919,6 +15988,19 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ('args = [box for x in [y for y in ()]]\nmutate(*args)\n', False, False),
             ('args = [box for x in (y for y in ())]\nmutate(*args)\n', False, False),
             ('args = [box for x in [y for y in (1,)]]\nmutate(*args)\n', True, False),
+        )
+        # Codex review: lexical sequence slots, dict comprehension sources,
+        # conditional receiver identities and may-alias write precedence.
+        followup_cases += (
+            ('args = [x for x in [y[0] for y in ((box,),)]]\nmutate(*args)\n', True, False),
+            ('args = [x for x in [y[0] for y in ([box],)]]\nmutate(*args)\n', True, False),
+            ('args = [x for x in [y[0] for y in ((unrelated,),)]]\nmutate(*args)\n', False, True),
+            ('args = [x for d in [{"v": y for y in (box,)}] for x in d.values()]\nmutate(*args)\n', True, False),
+            ('args = [x for d in [{"v": y for y in (unrelated,)}] for x in d.values()]\nmutate(*args)\n', False, True),
+            ('outer = {"args": {"v": unrelated}}\nalias = outer if option else {}\nalias["args"] = {"v": box}\nmutate(*outer["args"].values())\n', True, True),
+            ('outer = {"args": {"v": box}}\nalias = outer if option else {}\nalias["args"] = {"v": unrelated}\nmutate(*outer["args"].values())\n', True, True),
+            ('outer = {"args": {"v": box}}\nalias = outer\nif option:\n    alias = {"args": {"v": unrelated}}\nalias["args"] = {"v": unrelated}\nmutate(*outer["args"].values())\n', True, True),
+            ('outer = {"args": {"v": unrelated}}\nalias = outer\nif option:\n    alias = {"args": {"v": box}}\nalias["args"] = {"v": box}\nmutate(*outer["args"].values())\n', True, True),
         )
         common_setup = (
             'other = Guard()\n'
