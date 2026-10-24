@@ -10280,7 +10280,17 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                 for combo in product(*choices)
                                                                             ]
                                                                         return [result]
-                                                                    return resolve_yield(node.elt)
+                                                                    lexical_values = resolve_yield(node.elt)
+                                                                    if "seed[" in ast.unparse(node) or "seed.get(" in ast.unparse(node):
+                                                                        print("ITER_SOURCE_TRACE",
+                                                                              ast.unparse(node),
+                                                                              "frames", list(lexical_frames),
+                                                                              "yielded", [
+                                                                                  (ast.dump(item)[:200],
+                                                                                   getattr(item, "_lexical_source_capture", False))
+                                                                                  for item in lexical_values
+                                                                              ], file=__import__("sys").stderr, flush=True)
+                                                                    return lexical_values
 
                                                                     return resolve_yield(node.elt)
                                                                 if (
