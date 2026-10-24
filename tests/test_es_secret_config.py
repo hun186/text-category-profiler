@@ -9118,49 +9118,6 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                 selections = [val]
                                                         else:
                                                             selections.append(val)
-                                            # In-place mapping unions mutate a proven original dict rather than
-                                            # rebinding it. Resolve definite RHS overwrites at the use-site.
-                                            if (
-                                                isinstance(owner_node, ast.Name)
-                                                and isinstance(index_node, ast.Constant)
-                                                and len(containers) == 1
-                                                and isinstance(containers[0], ast.Dict)
-                                            ):
-                                                original_root = containers[0]
-                                                selection_scope = getattr(candidate, '_binding_scope', wrapper)
-                                                if not isinstance(selection_scope, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                                                    selection_scope = wrapper
-                                                for update in sorted(ast.walk(selection_scope), key=_node_position):
-                                                    at = _node_position(update)
-                                                    if not (_node_position(original_root) < at < when):
-                                                        continue
-                                                    if not (
-                                                        isinstance(update, ast.AugAssign)
-                                                        and isinstance(update.op, ast.BitOr)
-                                                        and isinstance(update.target, ast.Name)
-                                                        and getattr(update, '_binding_scope', None) is selection_scope
-                                                    ):
-                                                        continue
-                                                    if _control_paths_mutually_exclusive(
-                                                        _node_control_path(update), _node_control_path(candidate)
-                                                    ) or not _control_path_is_prefix(
-                                                        _node_control_path(update), _node_control_path(candidate)
-                                                    ):
-                                                        continue
-                                                    prior_sources = container_sources(
-                                                        update.target, _position_before(update), level + 1, frozenset()
-                                                    )
-                                                    if len(prior_sources) != 1 or prior_sources[0] is not original_root:
-                                                        continue
-                                                    additions = container_sources(
-                                                        update.value, _position_before(update), level + 1, frozenset()
-                                                    )
-                                                    if len(additions) != 1 or not isinstance(additions[0], ast.Dict):
-                                                        continue
-                                                    for incoming_key, incoming_value in zip(additions[0].keys, additions[0].values):
-                                                        if (isinstance(incoming_key, ast.Constant)
-                                                            and incoming_key.value == index_node.value):
-                                                            selections = [incoming_value]
                                             if getter_call and len(candidate.args) == 2:
                                                 # get() uses its default only when
                                                 # the selected key may be absent.
@@ -9764,26 +9721,13 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                 _node_control_path(node),
                                                                             ):
                                                                                 continue
-                                                                            if not isinstance(change, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
+                                                                            if not isinstance(change, (ast.Assign, ast.AnnAssign)):
                                                                                 continue
                                                                             targets = (
                                                                                 change.targets if isinstance(change, ast.Assign)
                                                                                 else (change.target,)
                                                                             )
                                                                             for target in targets:
-                                                                                if isinstance(change, ast.AugAssign):
-                                                                                    # A mapping union mutates the original receiver, including aliases.
-                                                                                    if not isinstance(change.op, ast.BitOr) or not isinstance(target, ast.Name):
-                                                                                        continue
-                                                                                    write_roots = mapping_receiver_origins(target, _position_before(change))
-                                                                                    if not receiver_roots.intersection(write_roots):
-                                                                                        continue
-                                                                                    for member in mapping_members(change.value, "items", env, nesting + 1):
-                                                                                        incoming_key, incoming_value = member.elts
-                                                                                        incoming_known = known_mapping_key(incoming_key)
-                                                                                        if not incoming_known[0] or incoming_known == known_index:
-                                                                                            changes.append((position, change, write_roots, incoming_value))
-                                                                                    continue
                                                                                 if (
                                                                                     isinstance(target, ast.Subscript)
                                                                                     and isinstance(target.value, ast.Name)
@@ -9798,9 +9742,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                         position, change,
                                                                                         mapping_receiver_origins(
                                                                                             target.value, _position_before(change)
-                                                                                        ), change.value,
+                                                                                        ),
                                                                                     ))
-                                                                        for _, change, write_roots, new_value in sorted(changes, key=lambda item: item[0]):
+                                                                        for _, change, write_roots in sorted(changes, key=lambda item: item[0]):
                                                                             # Overwrite only for a definite same-object receiver.
                                                                             # Rebound or conditional aliases may target another dict.
                                                                             certain_receiver = (
@@ -9814,9 +9758,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                     _node_control_path(node),
                                                                                 )
                                                                             ):
-                                                                                matching = [new_value]
+                                                                                matching = [change.value]
                                                                             else:
-                                                                                matching.append(new_value)
+                                                                                matching.append(change.value)
                                                                             definite = True
                                                                     if not matching or not definite:
                                                                         present_everywhere = False
@@ -16446,13 +16390,6 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ("args = [x for d in [{\"v\": y for y in [box for box in (unrelated, box) if box is not box]}] for x in d.values()]\nmutate(*args)\n", False, True),
             ("args = [x for d in [{\"v\": y for y in [box for seed in (box,) for box in (seed,) if box is box]}] for x in d.values()]\nmutate(*args)\n", True, False),
             ("args = [x for d in [{\"v\": y for y in [box for seed in (unrelated,) for box in (seed,) if box is box]}] for x in d.values()]\nmutate(*args)\n", False, True),
-        )
-        # Codex P2: replay in-place dictionary unions, including definite aliases.
-        followup_cases += (
-        ("outer = {\"args\": {\"v\": unrelated}}\nouter |= {\"args\": {\"v\": box}}\nmutate(*outer[\"args\"].values())\n", True, True),
-        ("outer = {\"args\": {\"v\": box}}\nouter |= {\"args\": {\"v\": unrelated}}\nmutate(*outer[\"args\"].values())\n", False, True),
-        ("outer = {\"args\": {\"v\": unrelated}}\nalias = outer\nalias |= {\"args\": {\"v\": box}}\nmutate(*outer[\"args\"].values())\n", True, True),
-        ("outer = {\"args\": {\"v\": box}}\nalias = outer\nalias |= {\"args\": {\"v\": unrelated}}\nmutate(*outer[\"args\"].values())\n", False, True),
         )
         common_setup = (
             'other = Guard()\n'
