@@ -9594,21 +9594,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                         if isinstance(value, ast.Subscript):
                                                                             # Lexical chains may mix dict and tuple/list indexing:
                                                                             # y["v"][0] selects from the dict first, then sequence.
-                                                                            if not (
-                                                                                isinstance(value.slice, ast.Constant)
-                                                                                and isinstance(value.slice.value, int)
-                                                                                and not isinstance(value.slice.value, bool)
-                                                                            ):
-                                                                                selected = selected_mapping_values(
-                                                                                    value, env, nesting + 1
-                                                                                )
-                                                                                if selected:
-                                                                                    return [
-                                                                                        candidate for item in selected
-                                                                                        for candidate in lexical_sequence_sources(
-                                                                                            item, level + 1
-                                                                                        )
-                                                                                    ]
+                                                                            selected = selected_mapping_values(,                                                                                value, env, nesting + 1,                                                                            ),                                                                            if selected:,                                                                                return [,                                                                                    candidate for item in selected,                                                                                    for candidate in lexical_sequence_sources(,                                                                                        item, level + 1,                                                                                    ),                                                                                ]
                                                                             owners = lexical_sequence_sources(value.value, level + 1)
                                                                             if isinstance(value.slice, ast.Constant) and isinstance(value.slice.value, int) and not isinstance(value.slice.value, bool):
                                                                                 offset = value.slice.value
@@ -9777,6 +9763,33 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                 ]
                                                                             if isinstance(iterable, (ast.Tuple, ast.List)):
                                                                                 return [list(iterable.elts)]
+                                                                            if isinstance(iterable, (ast.ListComp, ast.GeneratorExp)) and len(iterable.generators) == 1:
+                                                                                inner = iterable.generators[0]
+                                                                                if not inner.is_async and all(constant_truth(f) is True for f in inner.ifs):
+                                                                                    # An ordered inner comprehension yields successive writes only
+                                                                                    # when every element has exactly one proven lexical result.
+                                                                                    ordered = []
+                                                                                    for group in iteration_groups(inner.iter, level + 1):
+                                                                                        values = []
+                                                                                        for element in group:
+                                                                                            isolated = ast.ListComp(
+                                                                                                elt=iterable.elt,
+                                                                                                generators=[ast.comprehension(
+                                                                                                    target=inner.target,
+                                                                                                    iter=ast.Tuple(elts=[element], ctx=ast.Load()),
+                                                                                                    ifs=[], is_async=0,
+                                                                                                )],
+                                                                                            )
+                                                                                            candidates = iterated_sources(isolated, env, nesting + 1)
+                                                                                            if len(candidates) != 1:
+                                                                                                break
+                                                                                            values.append(candidates[0])
+                                                                                        else:
+                                                                                            ordered.append(values)
+                                                                                            continue
+                                                                                        break
+                                                                                    else:
+                                                                                        return ordered
                                                                             if isinstance(iterable, ast.Set):
                                                                                 # Set iteration order is not statically fixed.
                                                                                 return [[member] for member in iterable.elts]
@@ -9820,7 +9833,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                         and isinstance(predicate.ops[0], (ast.Is, ast.IsNot))
                                                                                     ):
                                                                                         other = predicate.comparators[0]
-                                                                                        if other.id == element.id:
+                                                                                        if other.id in {element.id, generator.target.id}:
                                                                                             equal = True
                                                                                         else:
                                                                                             left_sources = _resolve_bound_nodes(
@@ -9887,12 +9900,32 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                         )
                                                                                 states = next_states or states
                                                                                 if len(states) > 96:
-                                                                                    # Never collapse mutually exclusive
-                                                                                    # outputs into a single definite overwrite.
-                                                                                    states = [
-                                                                                        state for state in states
-                                                                                        if any(state)
-                                                                                    ][:96]
+                                                                                    # Bound combinations without dropping feasible final values.
+                                                                                    # Each surviving last-write candidate represents an alternative
+                                                                                    # execution, not another definite write to the same dictionary.
+                                                                                    summaries = []
+                                                                                    witnessed = set()
+                                                                                    for state in states:
+                                                                                        effective = []
+                                                                                        shadowed = set()
+                                                                                        for pair in reversed(state):
+                                                                                            certain_key, key_value = known_mapping_key(pair.elts[0])
+                                                                                            if certain_key:
+                                                                                                key_token = (type(key_value).__name__, repr(key_value))
+                                                                                                if key_token in shadowed:
+                                                                                                    continue
+                                                                                                shadowed.add(key_token)
+                                                                                            effective.append(pair)
+                                                                                        choices = (
+                                                                                            [(('empty',), [])] if not effective else
+                                                                                            [((ast.dump(pair.elts[0]), id(pair.elts[1])), [pair])
+                                                                                             for pair in effective]
+                                                                                        )
+                                                                                        for signature, state_choice in choices:
+                                                                                            if signature not in witnessed:
+                                                                                                witnessed.add(signature)
+                                                                                                summaries.append(state_choice)
+                                                                                    states = summaries
                                                                             histories.extend(states)
                                                                         return [
                                                                             ast.Dict(
@@ -16247,6 +16280,21 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ('outer = {"args": {"v": box}}\nif option:\n    outer["args"] = {"v": unrelated}\n    mutate(*outer["args"].values())\n', False, True),
             ('outer = {"args": {"v": unrelated}}\nif option:\n    outer["args"] = {"v": box}\n    mutate(*outer["args"].values())\n', True, True),
             ('outer = {"args": {"v": box}}\nif option:\n    outer["args"] = {"v": unrelated}\nmutate(*outer["args"].values())\n', True, True),
+        )
+        # Codex next round: integer mapping keys, bounded state alternatives,
+        # deterministic nested comprehensions and lexical identity filters.
+        followup_cases += (
+            ("args = [x for x in [y[0][0] for y in ({0: (box,)},)]]\nmutate(*args)\n", True, False),
+            ("args = [x for x in [y[0][0] for y in ({0: [box]},)]]\nmutate(*args)\n", True, False),
+            ("args = [x for x in [y[0][0] for y in ({0: (unrelated,)},)]]\nmutate(*args)\n", False, True),
+            ("args = [x for d in [{\"v\": y for y in (box, unrelated, unrelated, unrelated, unrelated, unrelated, unrelated, unrelated) if y is box or False}] for x in d.values()]\nmutate(*args)\n", True, True),
+            ("args = [x for d in [{\"v\": y for y in (box, unrelated, unrelated, unrelated, unrelated, unrelated, unrelated) if y is box or False}] for x in d.values()]\nmutate(*args)\n", True, True),
+            ("args = [x for d in [{\"v\": y for y in [z for z in (box, unrelated)]}] for x in d.values()]\nmutate(*args)\n", False, True),
+            ("args = [x for d in [{\"v\": y for y in [z for z in (unrelated, box)]}] for x in d.values()]\nmutate(*args)\n", True, True),
+            ("args = [x for d in [{\"v\": y for y in (z for z in (box, unrelated))}] for x in d.values()]\nmutate(*args)\n", False, True),
+            ("args = [x for d in [{\"v\": y for y in (box,) if y is not y}] for x in d.values()]\nmutate(*args)\n", False, False),
+            ("args = [x for d in [{\"v\": y for y in (box,) if y is y}] for x in d.values()]\nmutate(*args)\n", True, False),
+            ("args = [x for d in [{\"v\": y for y in (unrelated,) if y is not y}] for x in d.values()]\nmutate(*args)\n", False, True),
         )
         common_setup = (
             'other = Guard()\n'
