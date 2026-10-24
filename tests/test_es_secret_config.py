@@ -10194,9 +10194,39 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                     for name, bound in frame.items()
                                                                                 })
                                                                             )
+                                                                            # A selected member belongs to the mapping's
+                                                                            # original source, not the scope of a later
+                                                                            # generator target with the same identifier.
+                                                                            # seed["v"] and seed.get("v") must both keep
+                                                                            # {"v": box}'s pre-shadowing binding.
+                                                                            receiver = (
+                                                                                result.value if isinstance(result, ast.Subscript)
+                                                                                else result.func.value
+                                                                            )
+                                                                            while isinstance(receiver, ast.Subscript):
+                                                                                receiver = receiver.value
+                                                                            while (
+                                                                                isinstance(receiver, ast.Call)
+                                                                                and isinstance(receiver.func, ast.Attribute)
+                                                                                and receiver.func.attr == "get"
+                                                                            ):
+                                                                                receiver = receiver.func.value
+                                                                            selected_scope = frame_count
+                                                                            if isinstance(receiver, ast.Name):
+                                                                                for index in range(frame_count - 1, -1, -1):
+                                                                                    if receiver.id in lexical_frames[index]:
+                                                                                        selected_scope = index
+                                                                                        break
                                                                             return [
                                                                                 item for value in selected if value is not result
-                                                                                for item in resolve_yield(value, level + 1, frame_count, seen)
+                                                                                for item in resolve_yield(
+                                                                                    value, level + 1,
+                                                                                    frame_count if (
+                                                                                        getter and len(result.args) == 2
+                                                                                        and value is result.args[1]
+                                                                                    ) else selected_scope,
+                                                                                    seen,
+                                                                                )
                                                                             ] or [result]
                                                                         if isinstance(result, (ast.Tuple, ast.List, ast.Set)):
                                                                             candidates = [
@@ -16390,6 +16420,16 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ("args = [x for d in [{\"v\": y for y in [box for box in (unrelated, box) if box is not box]}] for x in d.values()]\nmutate(*args)\n", False, True),
             ("args = [x for d in [{\"v\": y for y in [box for seed in (box,) for box in (seed,) if box is box]}] for x in d.values()]\nmutate(*args)\n", True, False),
             ("args = [x for d in [{\"v\": y for y in [box for seed in (unrelated,) for box in (seed,) if box is box]}] for x in d.values()]\nmutate(*args)\n", False, True),
+        )
+        # Source-time mapping member selection across later target shadowing.
+        followup_cases += (
+            ("args = [x for d in [{\"v\": y for y in [seed[\"v\"] for seed in ({\"v\": box},) for box in (unrelated,)]]}] for x in d.values()]\nmutate(*args)\n", True, True),
+            ("args = [x for d in [{\"v\": y for y in [seed.get(\"v\") for seed in ({\"v\": box},) for box in (unrelated,)]]}] for x in d.values()]\nmutate(*args)\n", True, True),
+            ("args = [x for d in [{\"v\": y for y in [seed[\"v\"] for seed in ({\"v\": unrelated},) for box in (box,)]]}] for x in d.values()]\nmutate(*args)\n", False, True),
+            ("args = [x for d in [{\"v\": y for y in [seed.get(\"v\") for seed in ({\"v\": unrelated},) for box in (box,)]]}] for x in d.values()]\nmutate(*args)\n", False, True),
+            ("args = [x for d in [{\"v\": y for y in [seed[\"v\"] for seed in ({\"v\": box},)]]}] for x in d.values()]\nmutate(*args)\n", True, False),
+            ("args = [x for d in [{\"v\": y for y in [seed.get(\"v\") for seed in ({\"v\": unrelated},)]]}] for x in d.values()]\nmutate(*args)\n", False, True),
+            ("args = [x for d in [{\"v\": y for y in [seed.get(\"missing\", box) for seed in ({\"v\": unrelated},) for box in (unrelated,)]]}] for x in d.values()]\nmutate(*args)\n", False, True),
         )
         common_setup = (
             'other = Guard()\n'
