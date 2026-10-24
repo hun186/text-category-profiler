@@ -9497,7 +9497,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                             def mapping_receiver_origins(node, before, nesting=0, visited=frozenset()):
                                                                 """Stable source identities for a receiver, including its named aliases."""
                                                                 if nesting > 12:
-                                                                    return set()
+                                                                    return {None}
                                                                 if isinstance(node, (ast.Dict, ast.List, ast.Tuple)):
                                                                     return {id(node)}
                                                                 if isinstance(node, ast.IfExp):
@@ -9510,16 +9510,19 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                 if isinstance(node, ast.Name):
                                                                     token = _binding_name_token(node.id, bindings, node)
                                                                     if token in visited:
-                                                                        return set()
+                                                                        return {None}
                                                                     resolved = _resolve_bound_nodes(node, bindings, before)
-                                                                    return {
-                                                                        original
-                                                                        for root in resolved if root is not node
+                                                                    roots = [
+                                                                        original for root in resolved if root is not node
                                                                         for original in mapping_receiver_origins(
                                                                             root, before, nesting + 1, visited | {token}
                                                                         )
-                                                                    }
-                                                                return set()
+                                                                    ]
+                                                                    if not roots or any(root is node for root in resolved):
+                                                                        roots.append(None)
+                                                                    return set(roots)
+                                                                # None represents an unresolved possible identity.
+                                                                return {None}
 
                                                             def unknown_mapping_alternative(node, env, nesting=0, visited=frozenset()):
                                                                 """Unknown mapping alternatives must prevent definite key-presence proof."""
@@ -9570,6 +9573,47 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                 known_index = known_mapping_key(index)
                                                                 roots = mapping_roots(owner, env, nesting + 1, visited)
                                                                 if not roots:
+                                                                    # Follow nested indexed sequence selections, including
+                                                                    # y[0][0] where y is an inner comprehension binding.
+                                                                    def lexical_sequence_sources(value, level=0):
+                                                                        if level > 12:
+                                                                            return []
+                                                                        if isinstance(value, ast.Name):
+                                                                            if env is not None and value.id in env:
+                                                                                return [
+                                                                                    candidate
+                                                                                    for root in env[value.id] if root is not value
+                                                                                    for candidate in lexical_sequence_sources(root, level + 1)
+                                                                                ]
+                                                                            return [value]
+                                                                        if isinstance(value, ast.IfExp):
+                                                                            return [
+                                                                                candidate for branch in possible_branches(value)
+                                                                                for candidate in lexical_sequence_sources(branch, level + 1)
+                                                                            ]
+                                                                        if isinstance(value, ast.Subscript):
+                                                                            owners = lexical_sequence_sources(value.value, level + 1)
+                                                                            if isinstance(value.slice, ast.Constant) and isinstance(value.slice.value, int) and not isinstance(value.slice.value, bool):
+                                                                                offset = value.slice.value
+                                                                                return [
+                                                                                    candidate
+                                                                                    for seq in owners if isinstance(seq, (ast.Tuple, ast.List))
+                                                                                    and -len(seq.elts) <= offset < len(seq.elts)
+                                                                                    for candidate in lexical_sequence_sources(seq.elts[offset], level + 1)
+                                                                                ]
+                                                                            return []
+                                                                        return [value]
+                                                                    if is_subscript and env is not None:
+                                                                        sources = lexical_sequence_sources(owner)
+                                                                        if isinstance(index, ast.Constant) and isinstance(index.value, int) and not isinstance(index.value, bool):
+                                                                            offset = index.value
+                                                                            selected = [
+                                                                                candidate.elts[offset]
+                                                                                for candidate in sources if isinstance(candidate, (ast.Tuple, ast.List))
+                                                                                and -len(candidate.elts) <= offset < len(candidate.elts)
+                                                                            ]
+                                                                            if selected:
+                                                                                return selected
                                                                     if env is not None and isinstance(owner, ast.Name) and owner.id in env:
                                                                         # A comprehension target may be a tuple/list, not a dict.
                                                                         # Resolve its indexed slot against the lexical candidates.
@@ -9640,6 +9684,11 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                 continue
                                                                             if getattr(change, "_binding_scope", None) is not wrapper:
                                                                                 continue
+                                                                            if _control_paths_mutually_exclusive(
+                                                                                _node_control_path(change),
+                                                                                _node_control_path(node),
+                                                                            ):
+                                                                                continue
                                                                             if not isinstance(change, (ast.Assign, ast.AnnAssign)):
                                                                                 continue
                                                                             targets = (
@@ -9697,15 +9746,19 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                         ),
                                                                         generators=node.generators,
                                                                     )
-                                                                    entries = iterated_sources(pairs, env, nesting + 1)
-                                                                    return [
-                                                                        ast.Dict(
-                                                                            keys=[entry.elts[0]],
-                                                                            values=[entry.elts[1]],
+                                                                    entries = [
+                                                                        entry for entry in iterated_sources(
+                                                                            pairs, env, nesting + 1
                                                                         )
-                                                                        for entry in entries
-                                                                        if isinstance(entry, ast.Tuple) and len(entry.elts) == 2
+                                                                        if isinstance(entry, ast.Tuple)
+                                                                        and len(entry.elts) == 2
                                                                     ]
+                                                                    # DictComps build a single dict over successive yields.
+                                                                    # mapping_members applies last-write-wins to these keys.
+                                                                    return [ast.Dict(
+                                                                        keys=[entry.elts[0] for entry in entries],
+                                                                        values=[entry.elts[1] for entry in entries],
+                                                                    )]
                                                                 if isinstance(node, ast.IfExp):
                                                                     return [
                                                                         source for branch in possible_branches(node)
@@ -16001,6 +16054,19 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ('outer = {"args": {"v": box}}\nalias = outer if option else {}\nalias["args"] = {"v": unrelated}\nmutate(*outer["args"].values())\n', True, True),
             ('outer = {"args": {"v": box}}\nalias = outer\nif option:\n    alias = {"args": {"v": unrelated}}\nalias["args"] = {"v": unrelated}\nmutate(*outer["args"].values())\n', True, True),
             ('outer = {"args": {"v": unrelated}}\nalias = outer\nif option:\n    alias = {"args": {"v": box}}\nalias["args"] = {"v": box}\nmutate(*outer["args"].values())\n', True, True),
+        )
+        # Regressions for chained slots, unknown receiver identities,
+        # sequential dict-comprehension overwrites and exclusive control paths.
+        followup_cases += (
+            ('args = [x for x in [y[0][0] for y in (((box,),),)]]\nmutate(*args)\n', True, False),
+            ('args = [x for x in [y[0][0] for y in (([box],),)]]\nmutate(*args)\n', True, False),
+            ('args = [x for x in [y[0][0] for y in (((unrelated,),),)]]\nmutate(*args)\n', False, True),
+            ('outer = {"args": {"v": box}}\nalias = outer if option else provider()\nalias["args"] = {"v": unrelated}\nmutate(*outer["args"].values())\n', True, True),
+            ('outer = {"args": {"v": unrelated}}\nalias = outer if option else provider()\nalias["args"] = {"v": box}\nmutate(*outer["args"].values())\n', True, True),
+            ('args = [x for d in [{"v": y for y in (box, unrelated)}] for x in d.values()]\nmutate(*args)\n', False, True),
+            ('args = [x for d in [{"v": y for y in (unrelated, box)}] for x in d.values()]\nmutate(*args)\n', True, True),
+            ('outer = {"args": {"v": unrelated}}\nif option:\n    outer["args"] = {"v": box}\nelse:\n    mutate(*outer["args"].values())\n', False, True),
+            ('outer = {"args": {"v": box}}\nif option:\n    outer["args"] = {"v": unrelated}\nelse:\n    mutate(*outer["args"].values())\n', True, True),
         )
         common_setup = (
             'other = Guard()\n'
