@@ -9757,6 +9757,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                             target.value, _position_before(change)
                                                                                         ), change.value,
                                                                                     ))
+                                                                        if isinstance(owner, ast.Name) and owner.id == "outer":
+                                                                            print("TCP_UNION_DEBUG", "roots", receiver_roots, "base", id(root), "changes", [(type(ch).__name__,wr,ast.dump(v,include_attributes=False)[:100]) for _,ch,wr,v in changes])
                                                                         for _, change, write_roots, new_value in sorted(changes, key=lambda item: item[0]):
                                                                             # Overwrite only for a definite same-object receiver.
                                                                             # Rebound or conditional aliases may target another dict.
