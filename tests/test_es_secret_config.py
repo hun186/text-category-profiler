@@ -16391,6 +16391,13 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ("args = [x for d in [{\"v\": y for y in [box for seed in (box,) for box in (seed,) if box is box]}] for x in d.values()]\nmutate(*args)\n", True, False),
             ("args = [x for d in [{\"v\": y for y in [box for seed in (unrelated,) for box in (seed,) if box is box]}] for x in d.values()]\nmutate(*args)\n", False, True),
         )
+        # Codex P2: replay in-place dictionary unions, including definite aliases.
+        followup_cases += (
+        ("outer = {\"args\": {\"v\": unrelated}}\nouter |= {\"args\": {\"v\": box}}\nmutate(*outer[\"args\"].values())\n", True, True),
+        ("outer = {\"args\": {\"v\": box}}\nouter |= {\"args\": {\"v\": unrelated}}\nmutate(*outer[\"args\"].values())\n", False, True),
+        ("outer = {\"args\": {\"v\": unrelated}}\nalias = outer\nalias |= {\"args\": {\"v\": box}}\nmutate(*outer[\"args\"].values())\n", True, True),
+        ("outer = {\"args\": {\"v\": box}}\nalias = outer\nalias |= {\"args\": {\"v\": unrelated}}\nmutate(*outer[\"args\"].values())\n", False, True),
+        )
         common_setup = (
             'other = Guard()\n'
             'spread = {"other": deferred(other)}\n'
