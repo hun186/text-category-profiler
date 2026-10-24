@@ -10179,7 +10179,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                     )
                                                                                 ]
                                                                                 if resolved:
-                                                                                return resolved
+                                                                                    return resolved
                                                                         if isinstance(result, ast.Name):
                                                                             # Freeze the genuine source scope before exporting
                                                                             # the name to an enclosing comprehension. A later
