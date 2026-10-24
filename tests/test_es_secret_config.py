@@ -9120,6 +9120,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                 selections = [val]
                                                         else:
                                                             selections.append(val)
+                                            if isinstance(owner_node, ast.Name) and owner_node.id == "outer":
+                                                print("TCP_GATE", type(owner_node).__name__, type(index_node).__name__, len(containers), [type(x).__name__ for x in containers])
                                             # In-place mapping unions mutate a proven original dict rather than
                                             # rebinding it. Resolve definite RHS overwrites at the use-site.
                                             if (
