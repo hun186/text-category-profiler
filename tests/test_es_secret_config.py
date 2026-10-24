@@ -9456,6 +9456,10 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                             # *mapping exposes keys; **mapping and .values() expose values.
                                                             if depth > 12:
                                                                 return False
+                                                            # A resolved owner may be the exact object that a previous
+                                                            # write targets, rather than a value nested inside it.
+                                                            if not keys_only and expr is container:
+                                                                return True
                                                         
                                                             def constant_truth(node):
                                                                 if isinstance(node, ast.Constant):
@@ -10174,7 +10178,27 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                         source, level + 1, 0, next_seen
                                                                                     )
                                                                                 ]
-                                                                                return resolved or [result]
+                                                                                if resolved:
+                                                                                return resolved
+                                                                        if isinstance(result, ast.Name):
+                                                                            # Freeze the genuine source scope before exporting
+                                                                            # the name to an enclosing comprehension. A later
+                                                                            # same-spelled lexical target must not rebind it.
+                                                                            captured = ast.copy_location(
+                                                                                ast.Name(id=result.id, ctx=ast.Load()), result
+                                                                            )
+                                                                            for attribute in (
+                                                                                "_binding_scope",
+                                                                                "_binding_control_path",
+                                                                                "_alias_captured_at",
+                                                                            ):
+                                                                                if hasattr(result, attribute):
+                                                                                    setattr(
+                                                                                        captured, attribute,
+                                                                                        getattr(result, attribute),
+                                                                                    )
+                                                                            captured._lexical_source_capture = True
+                                                                            return [captured]
                                                                         if isinstance(result, ast.IfExp):
                                                                             return [
                                                                                 item for branch in possible_branches(result)
@@ -10272,7 +10296,11 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
 
 
                                                             if isinstance(expr, ast.Name):
-                                                                if comp_sources is not None and expr.id in comp_sources:
+                                                                if (
+                                                                    comp_sources is not None
+                                                                    and expr.id in comp_sources
+                                                                    and not getattr(expr, "_lexical_source_capture", False)
+                                                                ):
                                                                     return any(
                                                                         item is not expr and same_owner(
                                                                             item, depth + 1, seen, keys_only, comp_sources
