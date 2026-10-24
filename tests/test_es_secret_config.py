@@ -9454,6 +9454,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                         ):
                                                             # Keep unpack semantics attached to the mapping boundary:
                                                             # *mapping exposes keys; **mapping and .values() expose values.
+                                                            if isinstance(expr, ast.Name) and expr.id == "args":
+                                                                print("TRACE_ARGS", depth, "has_comp_sources", bool(comp_sources), "container", id(container))
                                                             if depth > 12:
                                                                 return False
                                                             # A selected root is the original mutable object itself.
@@ -9774,6 +9776,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
 
                                                             def mapping_roots(node, env, nesting=0, visited=frozenset()):
                                                                 """Resolve concrete displays through named and lexical selections."""
+                                                                if isinstance(node, ast.DictComp) and any(isinstance(n, ast.Name) and n.id == "seed" for n in ast.walk(node)):
+                                                                    print("TRACE_ROOT", nesting, tuple((env or {}).keys()))
                                                                 if nesting > 12:
                                                                     return []
                                                                 if isinstance(node, ast.Dict):
@@ -10102,6 +10106,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
 
                                                             def iterated_sources(node, env, nesting=0):
                                                                 """Approximate objects yielded by an iterable, including nested comps."""
+                                                                if isinstance(node, (ast.ListComp, ast.SetComp, ast.GeneratorExp)) and any(isinstance(n, ast.Name) and n.id == "seed" for n in ast.walk(node)):
+                                                                    print("TRACE_ITER", nesting, tuple((env or {}).keys()), len(node.generators))
                                                                 if nesting > 12:
                                                                     return []
                                                                 if isinstance(node, (ast.Tuple, ast.List, ast.Set)):
