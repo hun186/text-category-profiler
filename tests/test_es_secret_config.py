@@ -10228,7 +10228,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                 receiver = receiver.func.value
                                                                             selected_scope = frame_count
                                                                             if isinstance(receiver, ast.Name) and receiver.id == "seed":
-                                                                            print("DEBUG_SELECTED", "scope", frame_count, "env", tuple((env or {}).keys()), "selected", tuple(type(v).__name__ for v in selected), "selected_ids", tuple(getattr(v, 'id', '') for v in selected))
+                                                                                print("DEBUG_SELECTED", "scope", frame_count, "env", tuple((env or {}).keys()), "selected", tuple(type(v).__name__ for v in selected), "selected_ids", tuple(getattr(v, 'id', '') for v in selected))
                                                                             if isinstance(receiver, ast.Name):
                                                                                 for index in range(frame_count - 1, -1, -1):
                                                                                     if receiver.id in lexical_frames[index]:
