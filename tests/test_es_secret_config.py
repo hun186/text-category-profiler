@@ -9721,13 +9721,26 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                 _node_control_path(node),
                                                                             ):
                                                                                 continue
-                                                                            if not isinstance(change, (ast.Assign, ast.AnnAssign)):
+                                                                            if not isinstance(change, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
                                                                                 continue
                                                                             targets = (
                                                                                 change.targets if isinstance(change, ast.Assign)
                                                                                 else (change.target,)
                                                                             )
                                                                             for target in targets:
+                                                                                if isinstance(change, ast.AugAssign):
+                                                                                    # A mapping union mutates the original receiver, including aliases.
+                                                                                    if not isinstance(change.op, ast.BitOr) or not isinstance(target, ast.Name):
+                                                                                        continue
+                                                                                    write_roots = mapping_receiver_origins(target, _position_before(change))
+                                                                                    if not receiver_roots.intersection(write_roots):
+                                                                                        continue
+                                                                                    for member in mapping_members(change.value, "items", env, nesting + 1):
+                                                                                        incoming_key, incoming_value = member.elts
+                                                                                        incoming_known = known_mapping_key(incoming_key)
+                                                                                        if not incoming_known[0] or incoming_known == known_index:
+                                                                                            changes.append((position, change, write_roots, incoming_value))
+                                                                                    continue
                                                                                 if (
                                                                                     isinstance(target, ast.Subscript)
                                                                                     and isinstance(target.value, ast.Name)
@@ -9742,9 +9755,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                         position, change,
                                                                                         mapping_receiver_origins(
                                                                                             target.value, _position_before(change)
-                                                                                        ),
+                                                                                        ), change.value,
                                                                                     ))
-                                                                        for _, change, write_roots in sorted(changes, key=lambda item: item[0]):
+                                                                        for _, change, write_roots, new_value in sorted(changes, key=lambda item: item[0]):
                                                                             # Overwrite only for a definite same-object receiver.
                                                                             # Rebound or conditional aliases may target another dict.
                                                                             certain_receiver = (
@@ -9758,9 +9771,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                     _node_control_path(node),
                                                                                 )
                                                                             ):
-                                                                                matching = [change.value]
+                                                                                matching = [new_value]
                                                                             else:
-                                                                                matching.append(change.value)
+                                                                                matching.append(new_value)
                                                                             definite = True
                                                                     if not matching or not definite:
                                                                         present_everywhere = False
