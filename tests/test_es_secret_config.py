@@ -9465,6 +9465,26 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                     return None if result is None else not result
                                                                 return None
                                                         
+                                                            def lexical_self_identity_truth(predicate, target):
+                                                                """Prove self-identity for a lexical comprehension target of any element type."""
+                                                                if (
+                                                                    isinstance(target, ast.Name)
+                                                                    and isinstance(predicate, ast.Compare)
+                                                                    and len(predicate.ops) == 1
+                                                                    and isinstance(predicate.ops[0], (ast.Is, ast.IsNot))
+                                                                    and isinstance(predicate.left, ast.Name)
+                                                                    and predicate.left.id == target.id
+                                                                    and len(predicate.comparators) == 1
+                                                                    and isinstance(predicate.comparators[0], ast.Name)
+                                                                    and predicate.comparators[0].id == target.id
+                                                                ):
+                                                                    return isinstance(predicate.ops[0], ast.Is)
+                                                                return None
+
+                                                            def lexical_filter_truth(predicate, target):
+                                                                verdict = constant_truth(predicate)
+                                                                return verdict if verdict is not None else lexical_self_identity_truth(predicate, target)
+
                                                             def possible_branches(node):
                                                                 verdict = constant_truth(node.test)
                                                                 if verdict is True:
@@ -9774,7 +9794,14 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                 return [list(iterable.elts)]
                                                                             if isinstance(iterable, (ast.ListComp, ast.GeneratorExp)) and len(iterable.generators) == 1:
                                                                                 inner = iterable.generators[0]
-                                                                                if not inner.is_async and all(constant_truth(f) is True for f in inner.ifs):
+                                                                                if not inner.is_async and any(
+                                                                                    lexical_filter_truth(f, inner.target) is False for f in inner.ifs
+                                                                                ):
+                                                                                    # Every candidate is excluded, so this one execution is empty.
+                                                                                    return [[]]
+                                                                                if not inner.is_async and all(
+                                                                                    lexical_filter_truth(f, inner.target) is True for f in inner.ifs
+                                                                                ):
                                                                                     # An ordered inner comprehension yields successive writes only
                                                                                     # when every element has exactly one proven lexical result.
                                                                                     ordered = []
@@ -9827,7 +9854,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                             states = [[]]
                                                                             for element in group:
                                                                                 def filter_truth(predicate):
-                                                                                    verdict = constant_truth(predicate)
+                                                                                    verdict = lexical_filter_truth(predicate, generator.target)
                                                                                     if verdict is not None:
                                                                                         return verdict
                                                                                     if (
@@ -16304,6 +16331,16 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ("args = [x for d in [{\"v\": y for y in (box,) if y is not y}] for x in d.values()]\nmutate(*args)\n", False, False),
             ("args = [x for d in [{\"v\": y for y in (box,) if y is y}] for x in d.values()]\nmutate(*args)\n", True, False),
             ("args = [x for d in [{\"v\": y for y in (unrelated,) if y is not y}] for x in d.values()]\nmutate(*args)\n", False, True),
+        )
+        # Review regressions: non-name target self-comparisons and ordered inner filters.
+        followup_cases += (
+            ("args = [x for d in [{\"v\": y for y in ({\"slot\": box},) if y is not y}] for x in d.values()]\nmutate(*args)\n", False, False),
+            ("args = [x for d in [{\"v\": y for y in ([box],) if y is not y}] for x in d.values()]\nmutate(*args)\n", False, False),
+            ("args = [x for d in [{\"v\": box for y in ({\"slot\": box},) if y is y}] for x in d.values()]\nmutate(*args)\n", True, False),
+            ("args = [x for d in [{\"v\": y for y in [z for z in (box, unrelated) if z is z]}] for x in d.values()]\nmutate(*args)\n", False, True),
+            ("args = [x for d in [{\"v\": y for y in [z for z in (unrelated, box) if z is z]}] for x in d.values()]\nmutate(*args)\n", True, True),
+            ("args = [x for d in [{\"v\": y for y in [z for z in (box,) if z is not z]}] for x in d.values()]\nmutate(*args)\n", False, False),
+            ("args = [x for d in [{\"v\": y for y in (z for z in (box, unrelated) if z is z)}] for x in d.values()]\nmutate(*args)\n", False, True),
         )
         common_setup = (
             'other = Guard()\n'
