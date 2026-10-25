@@ -9448,8 +9448,6 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                             "__len__", "__iter__",
                                                         }
 
-                                                        source_name_frames = {}
-
                                                         def same_owner(
                                                             expr, depth=0, seen=frozenset(), keys_only=False,
                                                             comp_sources=None,
@@ -9458,10 +9456,6 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                             # *mapping exposes keys; **mapping and .values() expose values.
                                                             if depth > 12:
                                                                 return False
-                                                            if expr is container:
-                                                                return True
-                                                            if isinstance(expr, (ast.ListComp, ast.GeneratorExp)) and "seed" in ast.dump(expr):
-                                                                print("P2_COMP", ast.dump(expr, include_attributes=False)[:280], len(source_name_frames))
                                                         
                                                             def constant_truth(node):
                                                                 if isinstance(node, ast.Constant):
@@ -10170,6 +10164,17 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                         if level > 12:
                                                                             return []
                                                                         if isinstance(result, ast.Name):
+                                                                            # Resolve a captured mapping member in the source iterable's
+                                                                            # lexical frame, before a later generator can shadow its name.
+                                                                            source_frame = frame_count
+                                                                            for index, generator in enumerate(node.generators[:frame_count]):
+                                                                                if any(member is result for member in ast.walk(generator.iter)):
+                                                                                    source_frame = index
+                                                                                    break
+                                                                            if source_frame < frame_count:
+                                                                                result = copy.copy(result)
+                                                                                result._alias_captured_at = _node_position(result)
+                                                                                frame_count = source_frame
                                                                             token = (frame_count, result.id)
                                                                             if token in seen:
                                                                                 # An unresolved cycle is a possible source,
@@ -10261,24 +10266,6 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
 
 
                                                             if isinstance(expr, ast.Name):
-                                                                if expr.id == "box" and id(expr) in source_name_frames:
-                                                                    print("P2_BOX_CAPTURED", ast.dump(expr), list(source_name_frames[id(expr)]))
-                                                                captured = source_name_frames.get(id(expr))
-                                                                if captured is not None:
-                                                                    if expr.id in captured:
-                                                                        return any(
-                                                                            value is not expr and same_owner(
-                                                                                value, depth + 1, seen, keys_only, captured
-                                                                            ) for value in captured[expr.id]
-                                                                        )
-                                                                    resolved = _resolve_bound_nodes(
-                                                                        expr, bindings, _node_position(expr)
-                                                                    )
-                                                                    return any(
-                                                                        value is not expr and same_owner(
-                                                                            value, depth + 1, seen, keys_only, captured
-                                                                        ) for value in resolved if value is not expr
-                                                                    )
                                                                 if comp_sources is not None and expr.id in comp_sources:
                                                                     return any(
                                                                         item is not expr and same_owner(
@@ -10454,26 +10441,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                 ):
                                                                     return False
                                                                 env = dict(comp_sources or {})
-                                                                for index, generator in enumerate(expr.generators):
-                                                                    if "seed" in ast.dump(expr):
-                                                                        print("P2_GENERATOR", index, ast.dump(generator.iter,include_attributes=False)[:160], list(env))
+                                                                for generator in expr.generators:
                                                                     if definitely_empty_iterable(generator.iter, env):
                                                                         return False
-                                                                    # Only dictionary members shadowed by a later target
-                                                                    # need their original lexical lookup context.
-                                                                    later_targets = {
-                                                                        member.id
-                                                                        for later in expr.generators[index + 1:]
-                                                                        for member in ast.walk(later.target)
-                                                                        if isinstance(member, ast.Name)
-                                                                    }
-                                                                    if later_targets:
-                                                                        for display in ast.walk(generator.iter):
-                                                                            if isinstance(display, ast.Dict):
-                                                                                for value in display.values:
-                                                                                    for name in ast.walk(value):
-                                                                                        if isinstance(name, ast.Name) and isinstance(name.ctx, ast.Load) and name.id in later_targets:
-                                                                                            source_name_frames[id(name)] = dict(env)
                                                                     sources = iterated_sources(generator.iter, env)
                                                                     bind_comprehension_target(generator.target, sources, env)
                                                                 result = (
@@ -16461,7 +16431,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         ("outer = {\"args\": {\"v\": unrelated}}\nalias = outer\nalias |= {\"args\": {\"v\": box}}\nmutate(*outer[\"args\"].values())\n", True, True),
         ("outer = {\"args\": {\"v\": box}}\nalias = outer\nalias |= {\"args\": {\"v\": unrelated}}\nmutate(*outer[\"args\"].values())\n", False, True),
         )
-        # Review P2: mapping values captured before a later generator shadows names.
+        # Source-time mapping selections across comprehension target shadows.
         followup_cases += (
             ("args = [x for x in [seed[\"v\"] for seed in ({\"v\": box},) for box in (unrelated,)]]\nmutate(*args)\n", True, True),
             ("args = [x for x in [seed.get(\"v\") for seed in ({\"v\": box},) for box in (unrelated,)]]\nmutate(*args)\n", True, True),
