@@ -9448,7 +9448,6 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                             "__len__", "__iter__",
                                                         }
 
-                                                        # Capture names as of generator-iterable evaluation.
                                                         source_name_frames = {}
 
                                                         def same_owner(
@@ -9459,6 +9458,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                             # *mapping exposes keys; **mapping and .values() expose values.
                                                             if depth > 12:
                                                                 return False
+                                                            if expr is container:
+                                                                return True
                                                         
                                                             def constant_truth(node):
                                                                 if isinstance(node, ast.Constant):
@@ -10260,23 +10261,19 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                             if isinstance(expr, ast.Name):
                                                                 captured = source_name_frames.get(id(expr))
                                                                 if captured is not None:
-                                                                    captured_values = captured.get(expr.id)
-                                                                    if captured_values is not None:
+                                                                    if expr.id in captured:
                                                                         return any(
-                                                                            item is not expr and same_owner(
-                                                                                item, depth + 1, seen, keys_only, captured
-                                                                            )
-                                                                            for item in captured_values
+                                                                            value is not expr and same_owner(
+                                                                                value, depth + 1, seen, keys_only, captured
+                                                                            ) for value in captured[expr.id]
                                                                         )
-                                                                    token = _binding_name_token(expr.id, bindings, expr)
                                                                     resolved = _resolve_bound_nodes(
                                                                         expr, bindings, _node_position(expr)
                                                                     )
                                                                     return any(
-                                                                        item is not expr and same_owner(
-                                                                            item, depth + 1, seen | {token}, keys_only, captured
-                                                                        )
-                                                                        for item in resolved
+                                                                        value is not expr and same_owner(
+                                                                            value, depth + 1, seen, keys_only, captured
+                                                                        ) for value in resolved if value is not expr
                                                                     )
                                                                 if comp_sources is not None and expr.id in comp_sources:
                                                                     return any(
@@ -10453,13 +10450,24 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                 ):
                                                                     return False
                                                                 env = dict(comp_sources or {})
-                                                                for generator in expr.generators:
+                                                                for index, generator in enumerate(expr.generators):
                                                                     if definitely_empty_iterable(generator.iter, env):
                                                                         return False
-                                                                    # Preserve the environment before the target binds.
-                                                                    for source_node in ast.walk(generator.iter):
-                                                                        if isinstance(source_node, ast.Name) and isinstance(source_node.ctx, ast.Load):
-                                                                            source_name_frames.setdefault(id(source_node), dict(env))
+                                                                    # Only dictionary members shadowed by a later target
+                                                                    # need their original lexical lookup context.
+                                                                    later_targets = {
+                                                                        member.id
+                                                                        for later in expr.generators[index + 1:]
+                                                                        for member in ast.walk(later.target)
+                                                                        if isinstance(member, ast.Name)
+                                                                    }
+                                                                    if later_targets:
+                                                                        for display in ast.walk(generator.iter):
+                                                                            if isinstance(display, ast.Dict):
+                                                                                for value in display.values:
+                                                                                    for name in ast.walk(value):
+                                                                                        if isinstance(name, ast.Name) and isinstance(name.ctx, ast.Load) and name.id in later_targets:
+                                                                                            source_name_frames[id(name)] = dict(env)
                                                                     sources = iterated_sources(generator.iter, env)
                                                                     bind_comprehension_target(generator.target, sources, env)
                                                                 result = (
@@ -16447,14 +16455,14 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
         ("outer = {\"args\": {\"v\": unrelated}}\nalias = outer\nalias |= {\"args\": {\"v\": box}}\nmutate(*outer[\"args\"].values())\n", True, True),
         ("outer = {\"args\": {\"v\": box}}\nalias = outer\nalias |= {\"args\": {\"v\": unrelated}}\nmutate(*outer[\"args\"].values())\n", False, True),
         )
-        # Source-time lexical capture of mapping selection before shadowed targets.
+        # Review P2: mapping values captured before a later generator shadows names.
         followup_cases += (
-            ("args = [x for x in [seed[\"v\"] for seed in ({\"v\": box},) for box in (unrelated,)]]\\nmutate(*args)\\n", True, True),
-            ("args = [x for x in [seed.get(\"v\") for seed in ({\"v\": box},) for box in (unrelated,)]]\\nmutate(*args)\\n", True, True),
-            ("args = [x for x in [seed[\"v\"] for seed in ({\"v\": unrelated},) for box in (box,)]]\\nmutate(*args)\\n", False, True),
-            ("args = [x for x in [seed.get(\"v\") for seed in ({\"v\": unrelated},) for box in (box,)]]\\nmutate(*args)\\n", False, True),
-            ("args = [x for x in [seed[\"v\"] for seed in ({\"v\": box},)]]\\nmutate(*args)\\n", True, False),
-            ("args = [x for x in [seed[\"v\"] for seed in ({\"v\": unrelated},)]]\\nmutate(*args)\\n", False, True),
+            ("args = [x for x in [seed[\"v\"] for seed in ({\"v\": box},) for box in (unrelated,)]]\nmutate(*args)\n", True, True),
+            ("args = [x for x in [seed.get(\"v\") for seed in ({\"v\": box},) for box in (unrelated,)]]\nmutate(*args)\n", True, True),
+            ("args = [x for x in [seed[\"v\"] for seed in ({\"v\": unrelated},) for box in (box,)]]\nmutate(*args)\n", False, True),
+            ("args = [x for x in [seed.get(\"v\") for seed in ({\"v\": unrelated},) for box in (box,)]]\nmutate(*args)\n", False, True),
+            ("args = [x for x in [seed[\"v\"] for seed in ({\"v\": box},)]]\nmutate(*args)\n", True, False),
+            ("args = [x for x in [seed[\"v\"] for seed in ({\"v\": unrelated},)]]\nmutate(*args)\n", False, True),
         )
         common_setup = (
             'other = Guard()\n'
