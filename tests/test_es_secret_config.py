@@ -9770,19 +9770,43 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                                 )
                                                                                             return not isinstance(source, (ast.Dict, ast.DictComp))
 
-                                                                                        def captured_expression(value, at):
-                                                                                            # Clone only expression children; retain binding-scope object identity.
+                                                                                        def captured_expression(value, at, eager=True):
+                                                                                            # Clone expression children, not binding-scope identities.
+                                                                                            # A generator evaluates ONLY its first iterable at creation;
+                                                                                            # its element, filters and later iterables run at consumption.
                                                                                             if not isinstance(value, ast.AST):
                                                                                                 return value
                                                                                             copied = copy.copy(value)
-                                                                                            if isinstance(copied, ast.Name) and isinstance(copied.ctx, ast.Load):
+                                                                                            if eager and isinstance(copied, ast.Name) and isinstance(copied.ctx, ast.Load):
                                                                                                 old = getattr(copied, "_alias_captured_at", None)
                                                                                                 copied._alias_captured_at = min(old, at) if old is not None else at
+                                                                                            if isinstance(value, ast.GeneratorExp):
+                                                                                                copied.elt = captured_expression(value.elt, at, False)
+                                                                                                copied.generators = []
+                                                                                                for index, generator in enumerate(value.generators):
+                                                                                                    clause = copy.copy(generator)
+                                                                                                    clause.target = captured_expression(generator.target, at, False)
+                                                                                                    clause.iter = captured_expression(
+                                                                                                        generator.iter, at, eager and index == 0
+                                                                                                    )
+                                                                                                    clause.ifs = [
+                                                                                                        captured_expression(test, at, False)
+                                                                                                        for test in generator.ifs
+                                                                                                    ]
+                                                                                                    copied.generators.append(clause)
+                                                                                                return copied
+                                                                                            if isinstance(value, ast.Lambda):
+                                                                                                # Defaults bind when lambda is made, its body when called.
+                                                                                                copied.args = captured_expression(value.args, at, eager)
+                                                                                                copied.body = captured_expression(value.body, at, False)
+                                                                                                return copied
                                                                                             for field, nested in ast.iter_fields(value):
                                                                                                 if isinstance(nested, ast.AST):
-                                                                                                    setattr(copied, field, captured_expression(nested, at))
+                                                                                                    setattr(copied, field, captured_expression(nested, at, eager))
                                                                                                 elif isinstance(nested, list):
-                                                                                                    setattr(copied, field, [captured_expression(item, at) for item in nested])
+                                                                                                    setattr(copied, field, [
+                                                                                                        captured_expression(item, at, eager) for item in nested
+                                                                                                    ])
                                                                                             return copied
 
                                                                                         identities = mapping_receiver_origins(expr, before)
@@ -16721,6 +16745,19 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nalias = rhs\nalias[\"args\"] |= {\"v\": box}\nouter |= rhs\nmutate(*outer[\"args\"].values())\n", True, True),
             ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": box}}\nalias = rhs\nalias[\"args\"] |= {\"v\": unrelated}\nouter |= rhs\nmutate(*outer[\"args\"].values())\n", False, True),
             ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nchosen = box\nrhs[\"args\"] |= {\"v\": chosen}\nouter |= rhs\nchosen = unrelated\nmutate(*outer[\"args\"].values())\n", True, True),
+        )
+        # Codex P2: generator bodies defer name lookup; first iterable is eager.
+        followup_cases += (
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nchosen = unrelated\nrhs[\"args\"] = {\"v\": (chosen for item in (0,))}\nouter |= rhs\nchosen = box\nmutate(*(x for seq in outer[\"args\"].values() for x in seq))\n", True, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nchosen = box\nrhs[\"args\"] = {\"v\": (chosen for item in (0,))}\nouter |= rhs\nchosen = unrelated\nmutate(*(x for seq in outer[\"args\"].values() for x in seq))\n", False, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nchosen = box\nrhs[\"args\"] = {\"v\": (value for value in (chosen,))}\nouter |= rhs\nchosen = unrelated\nmutate(*(x for seq in outer[\"args\"].values() for x in seq))\n", True, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nchosen = unrelated\nrhs[\"args\"] = {\"v\": (value for value in (chosen,))}\nouter |= rhs\nchosen = box\nmutate(*(x for seq in outer[\"args\"].values() for x in seq))\n", False, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nchosen = unrelated\nrhs[\"args\"] = {\"v\": (x for group in ((chosen for item in (0,)),) for x in group)}\nouter |= rhs\nchosen = box\nmutate(*(x for seq in outer[\"args\"].values() for x in seq))\n", True, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nchosen = box\nrhs[\"args\"] = {\"v\": (x for group in ((chosen for item in (0,)),) for x in group)}\nouter |= rhs\nchosen = unrelated\nmutate(*(x for seq in outer[\"args\"].values() for x in seq))\n", False, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nchosen = unrelated\nrhs[\"args\"] = {\"v\": (chosen if option else chosen for item in (0,))}\nouter |= rhs\nchosen = box\nmutate(*(x for seq in outer[\"args\"].values() for x in seq))\n", True, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nchosen = box\nrhs[\"args\"] = {\"v\": (chosen if option else chosen for item in (0,))}\nouter |= rhs\nchosen = unrelated\nmutate(*(x for seq in outer[\"args\"].values() for x in seq))\n", False, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nchosen = unrelated\nrhs[\"args\"] = {\"v\": ({\"slot\": chosen}[\"slot\"] for item in (0,))}\nouter |= rhs\nchosen = box\nmutate(*(x for seq in outer[\"args\"].values() for x in seq))\n", True, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nchosen = box\nrhs[\"args\"] = {\"v\": ({\"slot\": chosen}[\"slot\"] for item in (0,))}\nouter |= rhs\nchosen = unrelated\nmutate(*(x for seq in outer[\"args\"].values() for x in seq))\n", False, True),
         )
         common_setup = (
             'other = Guard()\n'
