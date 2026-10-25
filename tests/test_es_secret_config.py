@@ -9460,6 +9460,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                 return False
                                                             if expr is container:
                                                                 return True
+                                                            if isinstance(expr, (ast.ListComp, ast.GeneratorExp)) and "seed" in ast.dump(expr):
+                                                                print("P2_COMP", ast.dump(expr, include_attributes=False)[:280], len(source_name_frames))
                                                         
                                                             def constant_truth(node):
                                                                 if isinstance(node, ast.Constant):
@@ -10259,6 +10261,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
 
 
                                                             if isinstance(expr, ast.Name):
+                                                                if expr.id == "box" and id(expr) in source_name_frames:
+                                                                    print("P2_BOX_CAPTURED", ast.dump(expr), list(source_name_frames[id(expr)]))
                                                                 captured = source_name_frames.get(id(expr))
                                                                 if captured is not None:
                                                                     if expr.id in captured:
@@ -10451,6 +10455,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                     return False
                                                                 env = dict(comp_sources or {})
                                                                 for index, generator in enumerate(expr.generators):
+                                                                    if "seed" in ast.dump(expr):
+                                                                        print("P2_GENERATOR", index, ast.dump(generator.iter,include_attributes=False)[:160], list(env))
                                                                     if definitely_empty_iterable(generator.iter, env):
                                                                         return False
                                                                     # Only dictionary members shadowed by a later target
