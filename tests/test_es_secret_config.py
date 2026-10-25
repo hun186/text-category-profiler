@@ -9735,82 +9735,119 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                     write_roots = mapping_receiver_origins(target, _position_before(change))
                                                                                     if not receiver_roots.intersection(write_roots):
                                                                                         continue
-                                                                                    # Evaluate RHS aliases at the instant of augmentation: a later
-                                                                                    # rhs rebind cannot retroactively alter the union snapshot.
-                                                                                    rhs_time = _position_before(change)
-                                                                                    def union_rhs_roots(expr, depth=0):
-                                                                                        if depth > 12:
+                                                                                    # Snapshot named RHS mappings before each union, including their own writes.
+                                                                                    def rhs_snapshot(expr, before, depth=0):
+                                                                                        if depth > 9:
                                                                                             return []
-                                                                                        if isinstance(expr, ast.Name) and (env is None or expr.id not in env):
-                                                                                            sources = _resolve_bound_nodes(expr, bindings, rhs_time)
-                                                                                            return [
-                                                                                                candidate for source in sources if source is not expr
-                                                                                                for candidate in union_rhs_roots(source, depth + 1)
-                                                                                            ]
-                                                                                        if isinstance(expr, ast.IfExp):
-                                                                                            return [
-                                                                                                candidate for branch in possible_branches(expr)
-                                                                                                for candidate in union_rhs_roots(branch, depth + 1)
-                                                                                            ]
-                                                                                        return mapping_roots(expr, env, nesting + depth + 1)
-                                                                                    
-                                                                                    rhs_roots = union_rhs_roots(change.value)
-                                                                                    rhs_origin_ids = mapping_receiver_origins(change.value, rhs_time)
-                                                                                    rhs_states = []
-                                                                                    for rhs_root in rhs_roots:
-                                                                                        states = mapping_members(rhs_root, "states", env, nesting + 1)
-                                                                                        # The source dictionary may itself have been updated via a named
-                                                                                        # RHS or an alias before the outer union took its snapshot.
-                                                                                        if isinstance(change.value, (ast.Name, ast.IfExp)) and id(rhs_root) in rhs_origin_ids:
-                                                                                            for rhs_change in ast.walk(wrapper):
-                                                                                                rhs_position = _node_position(rhs_change)
-                                                                                                if not (_node_position(rhs_root) < rhs_position < position):
+
+                                                                                        def roots(source, level=0):
+                                                                                            if level > 12:
+                                                                                                return []
+                                                                                            if isinstance(source, ast.Name) and (env is None or source.id not in env):
+                                                                                                resolved = _resolve_bound_nodes(source, bindings, before)
+                                                                                                return [
+                                                                                                    root for candidate in resolved if candidate is not source
+                                                                                                    for root in roots(candidate, level + 1)
+                                                                                                ]
+                                                                                            if isinstance(source, ast.IfExp):
+                                                                                                return [
+                                                                                                    root for branch in possible_branches(source)
+                                                                                                    for root in roots(branch, level + 1)
+                                                                                                ]
+                                                                                            return mapping_roots(source, env, nesting + level + 1)
+
+                                                                                        identities = mapping_receiver_origins(expr, before)
+                                                                                        snapshots = []
+                                                                                        for source_root in roots(expr):
+                                                                                            states = mapping_members(source_root, "states", env, nesting + 1)
+                                                                                            if not isinstance(expr, (ast.Name, ast.IfExp)) or id(source_root) not in identities:
+                                                                                                snapshots.extend(states)
+                                                                                                continue
+
+                                                                                            # ast.walk visits children in tree order, NOT lexical execution order.
+                                                                                            events = []
+                                                                                            for write in ast.walk(wrapper):
+                                                                                                pos = _node_position(write)
+                                                                                                if not (_node_position(source_root) < pos < before):
                                                                                                     continue
-                                                                                                if getattr(rhs_change, "_binding_scope", None) is not wrapper:
+                                                                                                if getattr(write, "_binding_scope", None) is not wrapper:
                                                                                                     continue
                                                                                                 if _control_paths_mutually_exclusive(
-                                                                                                    _node_control_path(rhs_change), _node_control_path(change)
+                                                                                                    _node_control_path(write), _node_control_path(change)
                                                                                                 ):
                                                                                                     continue
-                                                                                                if not isinstance(rhs_change, (ast.Assign, ast.AnnAssign)):
+                                                                                                if not isinstance(write, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
                                                                                                     continue
-                                                                                                rhs_targets = (
-                                                                                                    rhs_change.targets if isinstance(rhs_change, ast.Assign)
-                                                                                                    else (rhs_change.target,)
-                                                                                                )
-                                                                                                for rhs_target in rhs_targets:
-                                                                                                    if not (
-                                                                                                        isinstance(rhs_target, ast.Subscript)
-                                                                                                        and isinstance(rhs_target.value, ast.Name)
-                                                                                                    ):
-                                                                                                        continue
-                                                                                                    target_origins = mapping_receiver_origins(
-                                                                                                        rhs_target.value, _position_before(rhs_change)
+                                                                                                write_targets = write.targets if isinstance(write, ast.Assign) else (write.target,)
+                                                                                                for write_target in write_targets:
+                                                                                                    indexed = (
+                                                                                                        isinstance(write_target, ast.Subscript)
+                                                                                                        and isinstance(write_target.value, ast.Name)
                                                                                                     )
-                                                                                                    if id(rhs_root) not in target_origins:
-                                                                                                        continue
-                                                                                                    definite_receiver = target_origins == {id(rhs_root)}
-                                                                                                    definite_path = _control_path_is_prefix(
-                                                                                                        _node_control_path(rhs_change), _node_control_path(change)
+                                                                                                    union = (
+                                                                                                        isinstance(write, ast.AugAssign)
+                                                                                                        and isinstance(write.op, ast.BitOr)
+                                                                                                        and isinstance(write_target, ast.Name)
                                                                                                     )
-                                                                                                    updated_states = []
+                                                                                                    if not indexed and not union:
+                                                                                                        continue
+                                                                                                    receiver = write_target.value if indexed else write_target
+                                                                                                    write_ids = mapping_receiver_origins(receiver, _position_before(write))
+                                                                                                    if id(source_root) not in write_ids:
+                                                                                                        continue
+                                                                                                    certain = (
+                                                                                                        write_ids == {id(source_root)}
+                                                                                                        and _control_path_is_prefix(
+                                                                                                            _node_control_path(write), _node_control_path(change)
+                                                                                                        )
+                                                                                                    )
+                                                                                                    events.append((pos, write, write_target, certain))
+
+                                                                                            for _, write, write_target, certain in sorted(events, key=lambda item: item[0]):
+                                                                                                next_states = []
+                                                                                                if isinstance(write, ast.AugAssign):
+                                                                                                    # A prior in-place union must be visible to the outer snapshot.
+                                                                                                    additions = rhs_snapshot(write.value, _position_before(write), depth + 1)
+                                                                                                    if not additions:
+                                                                                                        continue
                                                                                                     for state in states:
-                                                                                                        incoming_key = rhs_target.slice
-                                                                                                        key_known = known_mapping_key(incoming_key)
-                                                                                                        remaining = [
-                                                                                                            (key, value) for key, value in state
-                                                                                                            if not key_known[0] or known_mapping_key(key) != key_known
+                                                                                                        if not certain:
+                                                                                                            next_states.append(state)
+                                                                                                        for addition in additions:
+                                                                                                            updated = list(state)
+                                                                                                            for key, value in addition:
+                                                                                                                known = known_mapping_key(key)
+                                                                                                                if known[0]:
+                                                                                                                    updated = [
+                                                                                                                        (old_key, old_value) for old_key, old_value in updated
+                                                                                                                        if known_mapping_key(old_key) != known
+                                                                                                                    ]
+                                                                                                                updated.append((key, value))
+                                                                                                            next_states.append(updated)
+                                                                                                else:
+                                                                                                    key = write_target.slice
+                                                                                                    value = write.value
+                                                                                                    if isinstance(value, ast.Name):
+                                                                                                        # Eager assignment captures this binding before later rebinds.
+                                                                                                        value = copy.copy(value)
+                                                                                                        value._alias_captured_at = _position_before(write)
+                                                                                                    known = known_mapping_key(key)
+                                                                                                    for state in states:
+                                                                                                        if not certain:
+                                                                                                            next_states.append(state)
+                                                                                                        updated = [
+                                                                                                            (old_key, old_value) for old_key, old_value in state
+                                                                                                            if not known[0] or known_mapping_key(old_key) != known
                                                                                                         ]
-                                                                                                        revised = [*remaining, (incoming_key, rhs_change.value)]
-                                                                                                        if not (definite_receiver and definite_path):
-                                                                                                            updated_states.append(state)
-                                                                                                        updated_states.append(revised)
-                                                                                                    states = updated_states
-                                                                                        rhs_states.extend(states)
+                                                                                                        updated.append((key, value))
+                                                                                                        next_states.append(updated)
+                                                                                                states = next_states
+                                                                                            snapshots.extend(states)
+                                                                                        return snapshots
+
+                                                                                    rhs_states = rhs_snapshot(change.value, _position_before(change))
                                                                                     incoming_values = []
-                                                                                    definite_rhs = bool(rhs_states) and not unknown_mapping_alternative(
-                                                                                        change.value, env
-                                                                                    )
+                                                                                    definite_rhs = bool(rhs_states)
                                                                                     for state in rhs_states:
                                                                                         definite_state = False
                                                                                         # Iterate from the final write backwards. A definite selected-key
@@ -16589,6 +16626,20 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": box}}\nrhs[\"args\"] = {\"v\": unrelated}\nouter |= rhs\nmutate(*outer[\"args\"].values())\n", False, True),
             ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nalias = rhs\nalias[\"args\"] = {\"v\": box}\nouter |= rhs\nmutate(*outer[\"args\"].values())\n", True, True),
             ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": box}}\nalias = rhs\nalias[\"args\"] = {\"v\": unrelated}\nouter |= rhs\nmutate(*outer[\"args\"].values())\n", False, True),
+        )
+        # 2026-10-25 Codex P2: RHS in-place unions, captured values, ordering.
+        followup_cases += (
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nrhs |= {\"args\": {\"v\": box}}\nouter |= rhs\nmutate(*outer[\"args\"].values())\n", True, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": box}}\nrhs |= {\"args\": {\"v\": unrelated}}\nouter |= rhs\nmutate(*outer[\"args\"].values())\n", False, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nalias = rhs\nalias |= {\"args\": {\"v\": box}}\nouter |= rhs\nmutate(*outer[\"args\"].values())\n", True, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": box}}\nalias = rhs\nalias |= {\"args\": {\"v\": unrelated}}\nouter |= rhs\nmutate(*outer[\"args\"].values())\n", False, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nchosen = {\"v\": box}\nrhs[\"args\"] = chosen\nouter |= rhs\nchosen = {\"v\": unrelated}\nmutate(*outer[\"args\"].values())\n", True, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nchosen = {\"v\": unrelated}\nrhs[\"args\"] = chosen\nouter |= rhs\nchosen = {\"v\": box}\nmutate(*outer[\"args\"].values())\n", False, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nif option:\n    rhs[\"args\"] = {\"v\": box}\nrhs[\"args\"] = {\"v\": unrelated}\nouter |= rhs\nmutate(*outer[\"args\"].values())\n", False, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": box}}\nif option:\n    rhs[\"args\"] = {\"v\": unrelated}\nrhs[\"args\"] = {\"v\": box}\nouter |= rhs\nmutate(*outer[\"args\"].values())\n", True, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nrhs[\"args\"] = {\"v\": box}\nrhs |= {\"args\": {\"v\": unrelated}}\nouter |= rhs\nmutate(*outer[\"args\"].values())\n", False, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nrhs |= {\"args\": {\"v\": box}}\nrhs[\"args\"] = {\"v\": unrelated}\nouter |= rhs\nmutate(*outer[\"args\"].values())\n", False, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nrhs |= {\"args\": {\"v\": unrelated}}\nrhs[\"args\"] = {\"v\": box}\nouter |= rhs\nmutate(*outer[\"args\"].values())\n", True, True),
         )
         common_setup = (
             'other = Guard()\n'
