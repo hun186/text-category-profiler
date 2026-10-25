@@ -9807,6 +9807,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                                         updated_states.append(revised)
                                                                                                     states = updated_states
                                                                                         rhs_states.extend(states)
+                                                                                    incoming_values = []
                                                                                     definite_rhs = bool(rhs_states) and not unknown_mapping_alternative(
                                                                                         change.value, env
                                                                                     )
