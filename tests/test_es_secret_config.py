@@ -9736,7 +9736,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                     if not receiver_roots.intersection(write_roots):
                                                                                         continue
                                                                                     # Snapshot named RHS mappings before each union, including their own writes.
-                                                                                    def rhs_snapshot(expr, before, depth=0):
+                                                                                    def rhs_snapshot(expr, before, consumer, depth=0):
                                                                                         if depth > 9:
                                                                                             return []
 
@@ -9756,6 +9756,35 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                                 ]
                                                                                             return mapping_roots(source, env, nesting + level + 1)
 
+                                                                                        def rhs_has_opaque(source, level=0):
+                                                                                            if level > 12:
+                                                                                                return True
+                                                                                            if isinstance(source, ast.IfExp):
+                                                                                                return any(rhs_has_opaque(part, level + 1) for part in possible_branches(source))
+                                                                                            if isinstance(source, ast.Name):
+                                                                                                sources = (env[source.id] if env is not None and source.id in env
+                                                                                                           else _resolve_bound_nodes(source, bindings, before))
+                                                                                                return not sources or any(
+                                                                                                    item is source or rhs_has_opaque(item, level + 1)
+                                                                                                    for item in sources
+                                                                                                )
+                                                                                            return not isinstance(source, (ast.Dict, ast.DictComp))
+
+                                                                                        def captured_expression(value, at):
+                                                                                            # Clone only expression children; retain binding-scope object identity.
+                                                                                            if not isinstance(value, ast.AST):
+                                                                                                return value
+                                                                                            copied = copy.copy(value)
+                                                                                            if isinstance(copied, ast.Name) and isinstance(copied.ctx, ast.Load):
+                                                                                                old = getattr(copied, "_alias_captured_at", None)
+                                                                                                copied._alias_captured_at = min(old, at) if old is not None else at
+                                                                                            for field, nested in ast.iter_fields(value):
+                                                                                                if isinstance(nested, ast.AST):
+                                                                                                    setattr(copied, field, captured_expression(nested, at))
+                                                                                                elif isinstance(nested, list):
+                                                                                                    setattr(copied, field, [captured_expression(item, at) for item in nested])
+                                                                                            return copied
+
                                                                                         identities = mapping_receiver_origins(expr, before)
                                                                                         snapshots = []
                                                                                         for source_root in roots(expr):
@@ -9773,7 +9802,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                                 if getattr(write, "_binding_scope", None) is not wrapper:
                                                                                                     continue
                                                                                                 if _control_paths_mutually_exclusive(
-                                                                                                    _node_control_path(write), _node_control_path(change)
+                                                                                                    _node_control_path(write), _node_control_path(consumer)
                                                                                                 ):
                                                                                                     continue
                                                                                                 if not isinstance(write, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
@@ -9798,7 +9827,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                                     certain = (
                                                                                                         write_ids == {id(source_root)}
                                                                                                         and _control_path_is_prefix(
-                                                                                                            _node_control_path(write), _node_control_path(change)
+                                                                                                            _node_control_path(write), _node_control_path(consumer)
                                                                                                         )
                                                                                                     )
                                                                                                     events.append((pos, write, write_target, certain))
@@ -9806,31 +9835,64 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                             for _, write, write_target, certain in sorted(events, key=lambda item: item[0]):
                                                                                                 next_states = []
                                                                                                 if isinstance(write, ast.AugAssign):
-                                                                                                    # A prior in-place union must be visible to the outer snapshot.
-                                                                                                    additions = rhs_snapshot(write.value, _position_before(write), depth + 1)
-                                                                                                    if not additions:
-                                                                                                        continue
+                                                                                                    additions = rhs_snapshot(
+                                                                                                        write.value, _position_before(write), write, depth + 1
+                                                                                                    )
                                                                                                     for state in states:
                                                                                                         if not certain:
                                                                                                             next_states.append(state)
                                                                                                         for addition in additions:
-                                                                                                            updated = list(state)
-                                                                                                            for key, value in addition:
-                                                                                                                known = known_mapping_key(key)
-                                                                                                                if known[0]:
-                                                                                                                    updated = [
-                                                                                                                        (old_key, old_value) for old_key, old_value in updated
-                                                                                                                        if known_mapping_key(old_key) != known
-                                                                                                                    ]
-                                                                                                                updated.append((key, value))
-                                                                                                            next_states.append(updated)
+                                                                                                            addition = [
+                                                                                                                (key, captured_expression(value, _position_before(write)))
+                                                                                                                for key, value in addition
+                                                                                                            ]
+                                                                                                            if isinstance(write_target, ast.Name):
+                                                                                                                # In-place union on the source dictionary.
+                                                                                                                updated = list(state)
+                                                                                                                for key, value in addition:
+                                                                                                                    known = known_mapping_key(key)
+                                                                                                                    if known[0]:
+                                                                                                                        updated = [
+                                                                                                                            (old_key, old_value) for old_key, old_value in updated
+                                                                                                                            if known_mapping_key(old_key) != known
+                                                                                                                        ]
+                                                                                                                    updated.append((key, value))
+                                                                                                                next_states.append(updated)
+                                                                                                            else:
+                                                                                                                # Indexed union operates on the selected CHILD mapping.
+                                                                                                                indexed_key = known_mapping_key(write_target.slice)
+                                                                                                                if not indexed_key[0]:
+                                                                                                                    next_states.append(state)
+                                                                                                                    continue
+                                                                                                                for old_key, old_value in state:
+                                                                                                                    if known_mapping_key(old_key) != indexed_key:
+                                                                                                                        continue
+                                                                                                                    for child_state in mapping_members(
+                                                                                                                        old_value, "states", env, nesting + 1
+                                                                                                                    ):
+                                                                                                                        revised = list(child_state)
+                                                                                                                        for key, value in addition:
+                                                                                                                            known = known_mapping_key(key)
+                                                                                                                            if known[0]:
+                                                                                                                                revised = [
+                                                                                                                                    (old_child_key, old_child_value)
+                                                                                                                                    for old_child_key, old_child_value in revised
+                                                                                                                                    if known_mapping_key(old_child_key) != known
+                                                                                                                                ]
+                                                                                                                            revised.append((key, value))
+                                                                                                                        child_node = ast.Dict(
+                                                                                                                            keys=[key for key, value in revised],
+                                                                                                                            values=[value for key, value in revised],
+                                                                                                                        )
+                                                                                                                        next_states.append([
+                                                                                                                            (key, child_node) if known_mapping_key(key) == indexed_key
+                                                                                                                            else (key, value)
+                                                                                                                            for key, value in state
+                                                                                                                        ])
                                                                                                 else:
                                                                                                     key = write_target.slice
                                                                                                     value = write.value
-                                                                                                    if isinstance(value, ast.Name):
-                                                                                                        # Eager assignment captures this binding before later rebinds.
-                                                                                                        value = copy.copy(value)
-                                                                                                        value._alias_captured_at = _position_before(write)
+                                                                                                value = captured_expression(value, _position_before(write))
                                                                                                     known = known_mapping_key(key)
                                                                                                     for state in states:
                                                                                                         if not certain:
@@ -9843,9 +9905,12 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                                         next_states.append(updated)
                                                                                                 states = next_states
                                                                                             snapshots.extend(states)
+                                                                                        if rhs_has_opaque(expr):
+                                                                                            # An opaque branch may return an empty dict and preserve the old key.
+                                                                                            snapshots.append([])
                                                                                         return snapshots
 
-                                                                                    rhs_states = rhs_snapshot(change.value, _position_before(change))
+                                                                                    rhs_states = rhs_snapshot(change.value, _position_before(change), change)
                                                                                     incoming_values = []
                                                                                     definite_rhs = bool(rhs_states)
                                                                                     for state in rhs_states:
@@ -16640,6 +16705,22 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nrhs[\"args\"] = {\"v\": box}\nrhs |= {\"args\": {\"v\": unrelated}}\nouter |= rhs\nmutate(*outer[\"args\"].values())\n", False, True),
             ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nrhs |= {\"args\": {\"v\": box}}\nrhs[\"args\"] = {\"v\": unrelated}\nouter |= rhs\nmutate(*outer[\"args\"].values())\n", False, True),
             ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nrhs |= {\"args\": {\"v\": unrelated}}\nrhs[\"args\"] = {\"v\": box}\nouter |= rhs\nmutate(*outer[\"args\"].values())\n", True, True),
+        )
+        # Codex P2: unknown RHS branches, eager nested captures, control paths, child |=.
+        followup_cases += (
+            ("outer = {\"args\": {\"v\": box}}\nrhs = {\"args\": {\"v\": unrelated}} if option else provider()\nouter |= rhs\nmutate(*outer[\"args\"].values())\n", True, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": box}} if option else provider()\nouter |= rhs\nmutate(*outer[\"args\"].values())\n", True, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nchosen = box\nrhs[\"args\"] = {\"v\": chosen}\nouter |= rhs\nchosen = unrelated\nmutate(*outer[\"args\"].values())\n", True, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nchosen = unrelated\nrhs[\"args\"] = {\"v\": chosen}\nouter |= rhs\nchosen = box\nmutate(*outer[\"args\"].values())\n", False, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nchosen = box\nrhs[\"args\"] = {\"v\": chosen if option else chosen}\nouter |= rhs\nchosen = unrelated\nmutate(*outer[\"args\"].values())\n", True, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nchosen = unrelated\nrhs[\"args\"] = {\"v\": chosen if option else chosen}\nouter |= rhs\nchosen = box\nmutate(*outer[\"args\"].values())\n", False, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\ninner = {\"args\": {\"v\": unrelated}}\nif option:\n    inner[\"args\"] = {\"v\": box}\nelse:\n    rhs |= inner\nouter |= rhs\nmutate(*outer[\"args\"].values())\n", False, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\ninner = {\"args\": {\"v\": box}}\nif option:\n    inner[\"args\"] = {\"v\": unrelated}\nelse:\n    rhs |= inner\nouter |= rhs\nmutate(*outer[\"args\"].values())\n", True, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nrhs[\"args\"] |= {\"v\": box}\nouter |= rhs\nmutate(*outer[\"args\"].values())\n", True, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": box}}\nrhs[\"args\"] |= {\"v\": unrelated}\nouter |= rhs\nmutate(*outer[\"args\"].values())\n", False, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nalias = rhs\nalias[\"args\"] |= {\"v\": box}\nouter |= rhs\nmutate(*outer[\"args\"].values())\n", True, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": box}}\nalias = rhs\nalias[\"args\"] |= {\"v\": unrelated}\nouter |= rhs\nmutate(*outer[\"args\"].values())\n", False, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nchosen = box\nrhs[\"args\"] |= {\"v\": chosen}\nouter |= rhs\nchosen = unrelated\nmutate(*outer[\"args\"].values())\n", True, True),
         )
         common_setup = (
             'other = Guard()\n'
