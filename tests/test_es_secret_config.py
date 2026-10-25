@@ -9735,11 +9735,23 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                     write_roots = mapping_receiver_origins(target, _position_before(change))
                                                                                     if not receiver_roots.intersection(write_roots):
                                                                                         continue
-                                                                                    for member in mapping_members(change.value, "items", env, nesting + 1):
-                                                                                        incoming_key, incoming_value = member.elts
-                                                                                        incoming_known = known_mapping_key(incoming_key)
-                                                                                        if not incoming_known[0] or incoming_known == known_index:
-                                                                                            changes.append((position, change, write_roots, incoming_value))
+                                                                                    rhs_states = mapping_members(change.value, "states", env, nesting + 1)
+                                                                                    incoming_values = []
+                                                                                    definite_rhs = bool(rhs_states) and not unknown_mapping_alternative(change.value, env)
+                                                                                    for state in rhs_states:
+                                                                                        definite_state = False
+                                                                                        for incoming_key, incoming_value in state:
+                                                                                            incoming_known = known_mapping_key(incoming_key)
+                                                                                            if not incoming_known[0] or incoming_known == known_index:
+                                                                                                incoming_values.append(incoming_value)
+                                                                                            if incoming_known == known_index:
+                                                                                                definite_state = True
+                                                                                        if not definite_state:
+                                                                                            # A state without this key leaves the old entry intact.
+                                                                                            definite_rhs = False
+                                                                                    if incoming_values:
+                                                                                        # Branch alternatives belong to ONE union, never sequential writes.
+                                                                                        changes.append((position, change, write_roots, incoming_values, definite_rhs))
                                                                                     continue
                                                                                 if (
                                                                                     isinstance(target, ast.Subscript)
@@ -9755,14 +9767,15 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                         position, change,
                                                                                         mapping_receiver_origins(
                                                                                             target.value, _position_before(change)
-                                                                                        ), change.value,
+                                                                                        ), [change.value], True,
                                                                                     ))
-                                                                        for _, change, write_roots, new_value in sorted(changes, key=lambda item: item[0]):
+                                                                        for _, change, write_roots, new_values, definite_write in sorted(changes, key=lambda item: item[0]):
                                                                             # Overwrite only for a definite same-object receiver.
                                                                             # Rebound or conditional aliases may target another dict.
                                                                             certain_receiver = (
                                                                                 len(receiver_roots) == 1
                                                                                 and write_roots == receiver_roots
+                                                                                and definite_write
                                                                             )
                                                                             if (
                                                                                 certain_receiver
@@ -9771,9 +9784,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                     _node_control_path(node),
                                                                                 )
                                                                             ):
-                                                                                matching = [new_value]
+                                                                                matching = list(new_values)
                                                                             else:
-                                                                                matching.append(new_value)
+                                                                                matching.extend(new_values)
                                                                             definite = True
                                                                     if not matching or not definite:
                                                                         present_everywhere = False
@@ -10098,6 +10111,11 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                         for state in display_states(root, level + 1)
                                                                     ] or [[]]  # opaque branch: no *proven* overwrite
 
+                                                                if mode == "states":
+                                                                    return [
+                                                                        state for display in mapping_roots(node, env, nesting)
+                                                                        for state in display_states(display, nesting)
+                                                                    ]
                                                                 members = []
                                                                 for display in mapping_roots(node, env, nesting):
                                                                     for state in display_states(display, nesting):
@@ -10171,6 +10189,14 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                 if any(member is result for member in ast.walk(generator.iter)):
                                                                                     source_frame = index
                                                                                     break
+                                                                            captured_at = getattr(result, "_alias_captured_at", None)
+                                                                            if captured_at is not None:
+                                                                                # A named iterable resolves to objects built before this comprehension.
+                                                                                # Those objects must not acquire names shadowed by later generators.
+                                                                                for index, generator in enumerate(node.generators[:frame_count]):
+                                                                                    if captured_at <= _node_position(generator.iter):
+                                                                                        source_frame = min(source_frame, index)
+                                                                                        break
                                                                             if source_frame < frame_count:
                                                                                 result = copy.copy(result)
                                                                                 result._alias_captured_at = _node_position(result)
@@ -10451,6 +10477,19 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                     else expr.value if isinstance(expr, ast.DictComp)
                                                                     else expr.elt
                                                                 )
+                                                                if isinstance(expr, (ast.ListComp, ast.SetComp, ast.GeneratorExp)) and (
+                                                                    isinstance(result, ast.Subscript)
+                                                                    or (isinstance(result, ast.Call)
+                                                                        and isinstance(result.func, ast.Attribute)
+                                                                        and result.func.attr == "get")
+                                                                ):
+                                                                    # The direct comprehension path must use the same source-time
+                                                                    # selection semantics as the nested iterable resolver.
+                                                                    yielded = iterated_sources(expr, comp_sources)
+                                                                    return any(
+                                                                        same_owner(value, depth + 1, seen, False, comp_sources)
+                                                                        for value in yielded
+                                                                    )
                                                                 return same_owner(result, depth + 1, seen, False, env)
 
                                                             if (
@@ -16439,6 +16478,23 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ("args = [x for x in [seed.get(\"v\") for seed in ({\"v\": unrelated},) for box in (box,)]]\nmutate(*args)\n", False, True),
             ("args = [x for x in [seed[\"v\"] for seed in ({\"v\": box},)]]\nmutate(*args)\n", True, False),
             ("args = [x for x in [seed[\"v\"] for seed in ({\"v\": unrelated},)]]\nmutate(*args)\n", False, True),
+        )
+        # Codex follow-up: possible union writes and source-time iterable aliases.
+        followup_cases += (
+            ("outer = {\"args\": {\"v\": box}}\nouter |= ({\"args\": {\"v\": unrelated}} if condition else {})\nmutate(*outer[\"args\"].values())\n", True, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nouter |= ({\"args\": {\"v\": box}} if condition else {})\nmutate(*outer[\"args\"].values())\n", True, True),
+            ("outer = {\"args\": {\"v\": box}}\nouter |= ({\"args\": {\"v\": unrelated}} if condition else {\"args\": {\"v\": unrelated}})\nmutate(*outer[\"args\"].values())\n", False, True),
+            ("outer = {\"args\": {\"v\": box}}\nouter |= {variable_key: {\"v\": unrelated}}\nmutate(*outer[\"args\"].values())\n", True, True),
+            ("outer = {\"args\": {\"v\": box}}\nalias = outer\nalias |= ({\"args\": {\"v\": unrelated}} if condition else {})\nmutate(*outer[\"args\"].values())\n", True, True),
+            ("outer = {\"args\": {\"v\": box}}\nalias = outer\nalias |= {\"args\": {\"v\": unrelated}}\nmutate(*outer[\"args\"].values())\n", False, True),
+            ("seeds = ({\"v\": box},)\nargs = [x for x in [seed[\"v\"] for seed in seeds for box in (unrelated,)]]\nmutate(*args)\n", True, True),
+            ("seeds = ({\"v\": box},)\nargs = [x for x in [seed.get(\"v\") for seed in seeds for box in (unrelated,)]]\nmutate(*args)\n", True, True),
+            ("seeds = ({\"v\": unrelated},)\nargs = [x for x in [seed[\"v\"] for seed in seeds for box in (box,)]]\nmutate(*args)\n", False, True),
+            ("seeds = ({\"v\": unrelated},)\nargs = [x for x in [seed.get(\"v\") for seed in seeds for box in (box,)]]\nmutate(*args)\n", False, True),
+            ("args = [seed[\"v\"] for seed in ({\"v\": box},) for box in (unrelated,)]\nmutate(*args)\n", True, True),
+            ("args = [seed.get(\"v\") for seed in ({\"v\": box},) for box in (unrelated,)]\nmutate(*args)\n", True, True),
+            ("args = [seed[\"v\"] for seed in ({\"v\": unrelated},) for box in (box,)]\nmutate(*args)\n", False, True),
+            ("args = [seed.get(\"v\") for seed in ({\"v\": unrelated},) for box in (box,)]\nmutate(*args)\n", False, True),
         )
         common_setup = (
             'other = Guard()\n'
