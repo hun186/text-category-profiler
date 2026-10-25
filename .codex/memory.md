@@ -8,6 +8,8 @@
 - 維護 Python 文字分類、資料集轉換、BERTScript 結果分析工作區；不要沿用舊 README 的 FastAPI RAG 假設。
 - 已有 isolated real-root smoke profiles、activation-free `python TCFMain.py --doctor`；KI-002 已由 root-level WeiTech lifecycle characterization 解決。Application-side PackageImport/path injection 已收斂，`TRV_deploy` 保留為獨立 legacy snapshot；BL-001 仍需完成 package-root residual inventory 的分類／分流與最終 dependency-light suite。在 H100 real-model acceptance 完成前，不得宣稱完整 runtime 已驗證。
 
+- PR #121 (Elasticsearch credential guard): 2026-10-25 在原分支修正 Codex P2 的條件式／動態 RHS `|=` 替代狀態，以及 eager iterable alias／直接 comprehension 的來源時間解析；程式 commit `cd5ff77616cd111dc44e20b4ee66c9ea70ecf7aa`，新增 14 組正反向 subTest（unittest methods 維持 271）。精確程式 HEAD 的 Push CI #40166810161 與 PR CI #40166819528 均 SUCCESS。**此為 CI 驗證結果，不是正式 Codex Review 清零；下一步須以更新後 HEAD 完成 CI 與新一輪正式 @codex review，核對 receipt、頂層 findings、inline threads、reactions。不得自行 Merge。**
+
 ## Durable Outcomes
 
 1. Root configuration 已由 frozen `PipelinePlan` 與明確 runtime activation 隔離，import 不解析 process argv 或啟動 filesystem/process runtime。
