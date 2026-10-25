@@ -9892,7 +9892,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                                 else:
                                                                                                     key = write_target.slice
                                                                                                     value = write.value
-                                                                                                value = captured_expression(value, _position_before(write))
+                                                                                                    value = captured_expression(value, _position_before(write))
                                                                                                     known = known_mapping_key(key)
                                                                                                     for state in states:
                                                                                                         if not certain:
