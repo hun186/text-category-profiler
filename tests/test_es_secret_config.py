@@ -9740,12 +9740,16 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                     definite_rhs = bool(rhs_states) and not unknown_mapping_alternative(change.value, env)
                                                                                     for state in rhs_states:
                                                                                         definite_state = False
-                                                                                        for incoming_key, incoming_value in state:
+                                                                                        # Iterate from the final write backwards. A definite selected-key
+                                                                                        # write shadows earlier dynamic keys (which may have matched it).
+                                                                                        for incoming_key, incoming_value in reversed(state):
                                                                                             incoming_known = known_mapping_key(incoming_key)
-                                                                                            if not incoming_known[0] or incoming_known == known_index:
-                                                                                                incoming_values.append(incoming_value)
                                                                                             if incoming_known == known_index:
+                                                                                                incoming_values.append(incoming_value)
                                                                                                 definite_state = True
+                                                                                                break
+                                                                                            if not incoming_known[0]:
+                                                                                                incoming_values.append(incoming_value)
                                                                                         if not definite_state:
                                                                                             # A state without this key leaves the old entry intact.
                                                                                             definite_rhs = False
@@ -16495,6 +16499,14 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ("args = [seed.get(\"v\") for seed in ({\"v\": box},) for box in (unrelated,)]\nmutate(*args)\n", True, True),
             ("args = [seed[\"v\"] for seed in ({\"v\": unrelated},) for box in (box,)]\nmutate(*args)\n", False, True),
             ("args = [seed.get(\"v\") for seed in ({\"v\": unrelated},) for box in (box,)]\nmutate(*args)\n", False, True),
+        )
+        # New review P2: definite trailing writes shadow earlier dynamic keys.
+        followup_cases += (
+            ("outer = {\"args\": {\"v\": unrelated}}\nouter |= {variable_key: {\"v\": box}, \"args\": {\"v\": unrelated}}\nmutate(*outer[\"args\"].values())\n", False, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nouter |= {\"args\": {\"v\": unrelated}, variable_key: {\"v\": box}}\nmutate(*outer[\"args\"].values())\n", True, True),
+            ("outer = {\"args\": {\"v\": box}}\nouter |= {variable_key: {\"v\": unrelated}, \"args\": {\"v\": unrelated}}\nmutate(*outer[\"args\"].values())\n", False, True),
+            ("outer = {\"args\": {\"v\": box}}\nalias = outer\nalias |= {variable_key: {\"v\": box}, \"args\": {\"v\": unrelated}}\nmutate(*outer[\"args\"].values())\n", False, True),
+            ("outer = {\"args\": {\"v\": unrelated}}\nalias = outer\nalias |= {variable_key: {\"v\": unrelated}, \"args\": {\"v\": box}}\nmutate(*outer[\"args\"].values())\n", True, True),
         )
         common_setup = (
             'other = Guard()\n'
