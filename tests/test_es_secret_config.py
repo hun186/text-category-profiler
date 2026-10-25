@@ -10376,6 +10376,22 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                             if name not in before_target
                                                                             or candidates is not before_target[name]
                                                                         })
+                                                                    def eager_reference_in_iterable(expression, reference):
+                                                                        # A nested generator's body is NOT evaluated when its
+                                                                        # enclosing iterable produces the generator object.
+                                                                        if expression is reference:
+                                                                            return True
+                                                                        if isinstance(expression, ast.GeneratorExp):
+                                                                            return bool(expression.generators) and eager_reference_in_iterable(
+                                                                                expression.generators[0].iter, reference
+                                                                            )
+                                                                        if isinstance(expression, ast.Lambda):
+                                                                            return eager_reference_in_iterable(expression.args, reference)
+                                                                        return any(
+                                                                            eager_reference_in_iterable(child, reference)
+                                                                            for child in ast.iter_child_nodes(expression)
+                                                                        )
+
                                                                     def resolve_yield(
                                                                         result, level=0, frame_count=None, seen=frozenset()
                                                                     ):
@@ -10388,9 +10404,14 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                             # Resolve a captured mapping member in the source iterable's
                                                                             # lexical frame, before a later generator can shadow its name.
                                                                             source_frame = frame_count
+                                                                            source_eager = False
                                                                             for index, generator in enumerate(node.generators[:frame_count]):
                                                                                 if any(member is result for member in ast.walk(generator.iter)):
                                                                                     source_frame = index
+                                                                                    source_eager = (
+                                                                                        (not isinstance(node, ast.GeneratorExp) or index == 0)
+                                                                                        and eager_reference_in_iterable(generator.iter, result)
+                                                                                    )
                                                                                     break
                                                                             captured_at = getattr(result, "_alias_captured_at", None)
                                                                             if captured_at is not None:
@@ -10402,7 +10423,14 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                         break
                                                                             if source_frame < frame_count:
                                                                                 result = copy.copy(result)
-                                                                                result._alias_captured_at = _node_position(result)
+                                                                                if source_eager:
+                                                                                    # Only eager references inherit the source-time
+                                                                                    # cutoff; nested generator bodies stay live.
+                                                                                    captured_at = getattr(result, "_alias_captured_at", None)
+                                                                                    at = _node_position(result)
+                                                                                    result._alias_captured_at = (
+                                                                                        min(captured_at, at) if captured_at is not None else at
+                                                                                    )
                                                                                 frame_count = source_frame
                                                                             token = (frame_count, result.id)
                                                                             if token in seen:
