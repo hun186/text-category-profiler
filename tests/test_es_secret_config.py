@@ -10254,7 +10254,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                         for source in mapping_roots(branch, env, nesting + 1, visited)
                                                                     ]
                                                                 if isinstance(node, ast.Name):
-                                                                    if env is not None and node.id in env:
+                                                                    lexical_target = env is not None and node.id in env
+                                                                    if lexical_target:
                                                                         roots = env[node.id]
                                                                     else:
                                                                         token = _binding_name_token(node.id, bindings, node)
@@ -10262,9 +10263,20 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                             return []
                                                                         visited = visited | {token}
                                                                         roots = _resolve_bound_nodes(node, bindings, prior_before)
+                                                                    # Materialized dict comprehensions retain the values
+                                                                    # of outer names evaluated at their creation. Do not
+                                                                    # interpret them using later wrapper bindings.
                                                                     return [
                                                                         source for root in roots if root is not node
-                                                                        for source in mapping_roots(root, env, nesting + 1, visited)
+                                                                        for source in mapping_roots(
+                                                                            (
+                                                                                captured_expression(root, _node_position(root))
+                                                                                if not lexical_target and isinstance(root, (ast.DictComp, ast.IfExp))
+                                                                                else root
+                                                                            ),
+                                                                            env if lexical_target else None,
+                                                                            nesting + 1, visited,
+                                                                        )
                                                                     ]
                                                                 getter = (
                                                                     isinstance(node, ast.Call)
@@ -10550,6 +10562,26 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                 )
                                                                                 for combo in product(*choices)
                                                                             ]
+                                                                        if isinstance(result, ast.GeneratorExp) and result.generators:
+                                                                            # A generator yielded by an enclosing comprehension
+                                                                            # captures its first iterable immediately, including
+                                                                            # names supplied by that comprehension's lexical frame.
+                                                                            # Its element/filters/later iterables remain deferred.
+                                                                            first = result.generators[0]
+                                                                            eager_sources = resolve_yield(
+                                                                                first.iter, level + 1, frame_count, seen
+                                                                            ) or [first.iter]
+                                                                            created = []
+                                                                            for source in eager_sources:
+                                                                                nested = copy.copy(result)
+                                                                                nested.generators = list(result.generators)
+                                                                                clause = copy.copy(first)
+                                                                                clause.iter = captured_expression(
+                                                                                    source, _node_position(result)
+                                                                                )
+                                                                                nested.generators[0] = clause
+                                                                                created.append(nested)
+                                                                            return created
                                                                         return [result]
                                                                     return resolve_yield(node.elt)
 
@@ -16856,6 +16888,18 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ("seq = (unrelated,)\nargs = [value for value in seq]\nseq = (box,)\nmutate(*(x for group in (args,) for x in group))\n", False, True),
             ("chosen = unrelated\nargs = ((chosen for item in (0,)) if True else ())\nchosen = box\nmutate(*(x for group in (args,) for x in group))\n", True, True),
             ("chosen = box\nargs = ((chosen for item in (0,)) if True else ())\nchosen = unrelated\nmutate(*(x for group in (args,) for x in group))\n", False, True),
+        )
+        # Codex P2: eager DictComp materialization and nested generators yielded
+        # by comprehensions must preserve their original lexical first iterable.
+        followup_cases += (
+            ("seq = (box,)\nargs = {\"k\": v for v in seq}\nseq = (unrelated,)\nmutate(*(x for group in (args.values(),) for x in group))\n", True, True),
+            ("seq = (unrelated,)\nargs = {\"k\": v for v in seq}\nseq = (box,)\nmutate(*(x for group in (args.values(),) for x in group))\n", False, True),
+            ("seq = (box,)\nargs = {\"k\": v for v in seq}\nalias = args\nseq = (unrelated,)\nmutate(*(x for group in (alias.values(),) for x in group))\n", True, True),
+            ("seq = (unrelated,)\nargs = {\"k\": v for v in seq}\nalias = args\nseq = (box,)\nmutate(*(x for group in (alias.values(),) for x in group))\n", False, True),
+            ("seq = (box,)\nargs = [(x for x in (v,)) for v in seq]\nseq = (unrelated,)\nmutate(*(x for inner in args for x in inner))\n", True, True),
+            ("seq = (unrelated,)\nargs = [(x for x in (v,)) for v in seq]\nseq = (box,)\nmutate(*(x for inner in args for x in inner))\n", False, True),
+            ("seq = (box,)\nargs = [(x for x in (v,)) for v in seq]\nalias = args\nseq = (unrelated,)\nmutate(*(x for inner in alias for x in inner))\n", True, True),
+            ("seq = (unrelated,)\nargs = [(x for x in (v,)) for v in seq]\nalias = args\nseq = (box,)\nmutate(*(x for inner in alias for x in inner))\n", False, True),
         )
         common_setup = (
             'other = Guard()\n'
