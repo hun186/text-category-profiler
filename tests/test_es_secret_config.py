@@ -10360,8 +10360,12 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                         value for root in roots if root is not node
                                                                         for value in iterated_sources(
                                                                             (
+                                                                                # Capture all eagerly evaluated RHS names, not
+                                                                                # just a bare generator. IfExp branches and
+                                                                                # list/set comprehensions also bind sources at
+                                                                                # creation; generator bodies remain deferred.
                                                                                 captured_expression(root, _node_position(root))
-                                                                                if not lexical_target and isinstance(root, ast.GeneratorExp)
+                                                                                if not lexical_target
                                                                                 else root
                                                                             ),
                                                                             env if lexical_target else None,
@@ -16813,6 +16817,20 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ("seq = (unrelated,)\nargs = (value for value in seq)\nseq = (box,)\nmutate(*(x for seq in (args,) for x in seq))\n", False, True),
             ("seq = (box,)\nargs = (value for value in seq)\nalias = args\nmutate(*(x for seq in (alias,) for x in seq))\n", True, True),
             ("seq = (unrelated,)\nargs = (value for value in seq)\nalias = args\nmutate(*(x for seq in (alias,) for x in seq))\n", False, True),
+        )
+        # P2: IfExp-wrapped generators and eager list comprehensions preserve
+        # creation-time sources across later rebinding and consumer shadowing.
+        followup_cases += (
+            ("seq = (box,)\nargs = ((value for value in seq) if True else ())\nseq = (unrelated,)\nmutate(*(x for seq in (args,) for x in seq))\n", True, True),
+            ("seq = (unrelated,)\nargs = ((value for value in seq) if True else ())\nseq = (box,)\nmutate(*(x for seq in (args,) for x in seq))\n", False, True),
+            ("seq = (box,)\nargs = ((value for value in seq) if option else ())\nseq = (unrelated,)\nmutate(*(x for seq in (args,) for x in seq))\n", True, True),
+            ("seq = (unrelated,)\nargs = ((value for value in seq) if option else ())\nseq = (box,)\nmutate(*(x for seq in (args,) for x in seq))\n", False, True),
+            ("seq = (box,)\nargs = [value for value in seq]\nseq = (unrelated,)\nmutate(*(x for seq in (args,) for x in seq))\n", True, True),
+            ("seq = (unrelated,)\nargs = [value for value in seq]\nseq = (box,)\nmutate(*(x for seq in (args,) for x in seq))\n", False, True),
+            ("seq = (box,)\nargs = [value for value in seq]\nseq = (unrelated,)\nmutate(*(x for group in (args,) for x in group))\n", True, True),
+            ("seq = (unrelated,)\nargs = [value for value in seq]\nseq = (box,)\nmutate(*(x for group in (args,) for x in group))\n", False, True),
+            ("chosen = unrelated\nargs = ((chosen for item in (0,)) if True else ())\nchosen = box\nmutate(*(x for group in (args,) for x in group))\n", True, True),
+            ("chosen = box\nargs = ((chosen for item in (0,)) if True else ())\nchosen = unrelated\nmutate(*(x for group in (args,) for x in group))\n", False, True),
         )
         common_setup = (
             'other = Guard()\n'
