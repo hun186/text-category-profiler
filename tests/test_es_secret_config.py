@@ -10345,13 +10345,27 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                         for value in iterated_sources(branch, env, nesting + 1)
                                                                     ]
                                                                 if isinstance(node, ast.Name):
-                                                                    if env is not None and node.id in env:
-                                                                        roots = env[node.id]
-                                                                    else:
-                                                                        roots = _resolve_bound_nodes(node, bindings, prior_before)
+                                                                    lexical_target = env is not None and node.id in env
+                                                                    roots = (
+                                                                        env[node.id] if lexical_target
+                                                                        else _resolve_bound_nodes(node, bindings, prior_before)
+                                                                    )
+                                                                    # A previously assigned iterable belongs to its
+                                                                    # definition scope, not the consuming comprehension's
+                                                                    # target bindings. In particular, a generator's
+                                                                    # first iterable captured names at creation time.
+                                                                    # Keep local lexical targets for inline sources.
                                                                     return [
                                                                         value for root in roots if root is not node
-                                                                        for value in iterated_sources(root, env, nesting + 1)
+                                                                        for value in iterated_sources(
+                                                                            (
+                                                                                captured_expression(root, _node_position(root))
+                                                                                if not lexical_target and isinstance(root, ast.GeneratorExp)
+                                                                                else root
+                                                                            ),
+                                                                            env if lexical_target else None,
+                                                                            nesting + 1,
+                                                                        )
                                                                     ]
                                                                 if isinstance(node, (ast.ListComp, ast.SetComp, ast.GeneratorExp)):
                                                                     if any(
@@ -16786,6 +16800,18 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nchosen = box\nrhs[\"args\"] = {\"v\": (chosen if option else chosen for item in (0,))}\nouter |= rhs\nchosen = unrelated\nmutate(*(x for seq in outer[\"args\"].values() for x in seq))\n", False, True),
             ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nchosen = unrelated\nrhs[\"args\"] = {\"v\": ({\"slot\": chosen}[\"slot\"] for item in (0,))}\nouter |= rhs\nchosen = box\nmutate(*(x for seq in outer[\"args\"].values() for x in seq))\n", True, True),
             ("outer = {\"args\": {\"v\": unrelated}}\nrhs = {\"args\": {\"v\": unrelated}}\nchosen = box\nrhs[\"args\"] = {\"v\": ({\"slot\": chosen}[\"slot\"] for item in (0,))}\nouter |= rhs\nchosen = unrelated\nmutate(*(x for seq in outer[\"args\"].values() for x in seq))\n", False, True),
+        )
+        # P2: named generators capture their first iterable in their lexical
+        # creation scope, not in a consuming comprehension's same-name target.
+        followup_cases += (
+            ("seq = (box,)\nargs = (value for value in seq)\nmutate(*(x for seq in (args,) for x in seq))\n", True, False),
+            ("seq = (unrelated,)\nargs = (value for value in seq)\nmutate(*(x for seq in (args,) for x in seq))\n", False, True),
+            ("seq = (box,)\nargs = (value for value in seq)\nmutate(*(x for group in (args,) for x in group))\n", True, False),
+            ("seq = (unrelated,)\nargs = (value for value in seq)\nmutate(*(x for group in (args,) for x in group))\n", False, True),
+            ("seq = (box,)\nargs = (value for value in seq)\nseq = (unrelated,)\nmutate(*(x for seq in (args,) for x in seq))\n", True, True),
+            ("seq = (unrelated,)\nargs = (value for value in seq)\nseq = (box,)\nmutate(*(x for seq in (args,) for x in seq))\n", False, True),
+            ("seq = (box,)\nargs = (value for value in seq)\nalias = args\nmutate(*(x for seq in (alias,) for x in seq))\n", True, True),
+            ("seq = (unrelated,)\nargs = (value for value in seq)\nalias = args\nmutate(*(x for seq in (alias,) for x in seq))\n", False, True),
         )
         common_setup = (
             'other = Guard()\n'
