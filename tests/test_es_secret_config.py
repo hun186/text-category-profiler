@@ -10271,7 +10271,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                         for source in mapping_roots(
                                                                             (
                                                                                 captured_expression(root, _node_position(root))
-                                                                                if not lexical_target and isinstance(root, (ast.DictComp, ast.IfExp))
+                                                                                if not lexical_target and isinstance(root, (ast.DictComp, ast.IfExp, ast.Subscript))
                                                                                 else root
                                                                             ),
                                                                             env if lexical_target else None,
@@ -10449,7 +10449,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                         )
 
                                                                     def resolve_yield(
-                                                                        result, level=0, frame_count=None, seen=frozenset()
+                                                                        result, level=0, frame_count=None, seen=frozenset(),
+                                                                        local_names=frozenset()
                                                                     ):
                                                                         """Substitute lexical targets using their source-time scope."""
                                                                         if frame_count is None:
@@ -10457,6 +10458,8 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                         if level > 12:
                                                                             return []
                                                                         if isinstance(result, ast.Name):
+                                                                            if result.id in local_names:
+                                                                                return [result]
                                                                             # Resolve a captured mapping member in the source iterable's
                                                                             # lexical frame, before a later generator can shadow its name.
                                                                             source_frame = frame_count
@@ -10515,7 +10518,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                         if isinstance(result, ast.IfExp):
                                                                             return [
                                                                                 item for branch in possible_branches(result)
-                                                                                for item in resolve_yield(branch, level + 1, frame_count, seen)
+                                                                                for item in resolve_yield(branch, level + 1, frame_count, seen, local_names)
                                                                             ]
                                                                         getter = (
                                                                             isinstance(result, ast.Call)
@@ -10533,11 +10536,11 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                             )
                                                                             return [
                                                                                 item for value in selected if value is not result
-                                                                                for item in resolve_yield(value, level + 1, frame_count, seen)
+                                                                                for item in resolve_yield(value, level + 1, frame_count, seen, local_names)
                                                                             ] or [result]
                                                                         if isinstance(result, (ast.Tuple, ast.List, ast.Set)):
                                                                             candidates = [
-                                                                                resolve_yield(element, level + 1, frame_count, seen)
+                                                                                resolve_yield(element, level + 1, frame_count, seen, local_names)
                                                                                 for element in result.elts
                                                                             ]
                                                                             return [
@@ -10549,9 +10552,9 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                 [
                                                                                     (key_candidate, value_candidate)
                                                                                     for key_candidate in (
-                                                                                        resolve_yield(key, level + 1, frame_count, seen) if key is not None else [None]
+                                                                                        resolve_yield(key, level + 1, frame_count, seen, local_names) if key is not None else [None]
                                                                                     )
-                                                                                    for value_candidate in resolve_yield(value, level + 1, frame_count, seen)
+                                                                                    for value_candidate in resolve_yield(value, level + 1, frame_count, seen, local_names)
                                                                                 ]
                                                                                 for key, value in zip(result.keys, result.values)
                                                                             ]
@@ -10562,6 +10565,47 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                                 )
                                                                                 for combo in product(*choices)
                                                                             ]
+                                                                        if isinstance(result, (ast.ListComp, ast.SetComp, ast.DictComp)):
+                                                                            # An eager nested comprehension must keep the enclosing lexical
+                                                                            # values in its iterables and outputs. Its own targets shadow them.
+                                                                            local = set(local_names)
+                                                                            variants = [[]]
+                                                                            for generator in result.generators:
+                                                                                sources = resolve_yield(
+                                                                                    generator.iter, level + 1, frame_count, seen, frozenset(local)
+                                                                                ) or [generator.iter]
+                                                                                variants = [
+                                                                                    [*prefix, (generator, source)]
+                                                                                    for prefix in variants for source in sources
+                                                                                ][:96]
+                                                                                local.update(
+                                                                                    name.id for name in ast.walk(generator.target)
+                                                                                    if isinstance(name, ast.Name) and isinstance(name.ctx, ast.Store)
+                                                                                )
+                                                                            masked = frozenset(local)
+                                                                            if isinstance(result, ast.DictComp):
+                                                                                payloads = [
+                                                                                    (key, value)
+                                                                                    for key in (resolve_yield(result.key, level + 1, frame_count, seen, masked) or [result.key])
+                                                                                    for value in (resolve_yield(result.value, level + 1, frame_count, seen, masked) or [result.value])
+                                                                                ]
+                                                                            else:
+                                                                                payloads = resolve_yield(result.elt, level + 1, frame_count, seen, masked) or [result.elt]
+                                                                            created = []
+                                                                            for clauses in variants:
+                                                                                for payload in payloads:
+                                                                                    cloned = copy.copy(result)
+                                                                                    cloned.generators = []
+                                                                                    for generator, source in clauses:
+                                                                                        clause = copy.copy(generator)
+                                                                                        clause.iter = source
+                                                                                        cloned.generators.append(clause)
+                                                                                    if isinstance(result, ast.DictComp):
+                                                                                        cloned.key, cloned.value = payload
+                                                                                    else:
+                                                                                        cloned.elt = payload
+                                                                                    created.append(cloned)
+                                                                            return created
                                                                         if isinstance(result, ast.GeneratorExp) and result.generators:
                                                                             # A generator yielded by an enclosing comprehension
                                                                             # captures its first iterable immediately, including
@@ -10569,7 +10613,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                             # Its element/filters/later iterables remain deferred.
                                                                             first = result.generators[0]
                                                                             eager_sources = resolve_yield(
-                                                                                first.iter, level + 1, frame_count, seen
+                                                                                first.iter, level + 1, frame_count, seen, local_names
                                                                             ) or [first.iter]
                                                                             created = []
                                                                             for source in eager_sources:
@@ -16900,6 +16944,23 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ("seq = (unrelated,)\nargs = [(x for x in (v,)) for v in seq]\nseq = (box,)\nmutate(*(x for inner in args for x in inner))\n", False, True),
             ("seq = (box,)\nargs = [(x for x in (v,)) for v in seq]\nalias = args\nseq = (unrelated,)\nmutate(*(x for inner in alias for x in inner))\n", True, True),
             ("seq = (unrelated,)\nargs = [(x for x in (v,)) for v in seq]\nalias = args\nseq = (box,)\nmutate(*(x for inner in alias for x in inner))\n", False, True),
+        )
+        # Codex 2026-10-27: nested eager lexical iterables and DictComp selections.
+        followup_cases += (
+            ("seq = (box,)\nargs = [(x for x in [y for y in (v,)]) for v in seq]\nalias = args\nseq = (unrelated,)\nmutate(*(x for inner in alias for x in inner))\n", True, True),
+            ("seq = (unrelated,)\nargs = [(x for x in [y for y in (v,)]) for v in seq]\nalias = args\nseq = (box,)\nmutate(*(x for inner in alias for x in inner))\n", False, True),
+            ("seq = (box,)\nargs = [(x for x in [y for z in (v,) for y in (z,)]) for v in seq]\nseq = (unrelated,)\nmutate(*(x for inner in args for x in inner))\n", True, True),
+            ("seq = (unrelated,)\nargs = [(x for x in [y for z in (v,) for y in (z,)]) for v in seq]\nseq = (box,)\nmutate(*(x for inner in args for x in inner))\n", False, True),
+            ("seq = (box,)\nargs = [(x for x in ([y for y in (v,)] if True else ())) for v in seq]\nseq = (unrelated,)\nmutate(*(x for inner in args for x in inner))\n", True, True),
+            ("seq = (unrelated,)\nargs = [(x for x in ([y for y in (v,)] if True else ())) for v in seq]\nseq = (box,)\nmutate(*(x for inner in args for x in inner))\n", False, True),
+            ("seq = (box,)\nargs = [{\"k\": v for v in seq}][0]\nseq = (unrelated,)\nmutate(*(x for group in (args.values(),) for x in group))\n", True, True),
+            ("seq = (unrelated,)\nargs = [{\"k\": v for v in seq}][0]\nseq = (box,)\nmutate(*(x for group in (args.values(),) for x in group))\n", False, True),
+            ("seq = (box,)\nargs = ({\"k\": v for v in seq},)[0]\nseq = (unrelated,)\nmutate(*(x for group in (args.values(),) for x in group))\n", True, True),
+            ("seq = (unrelated,)\nargs = ({\"k\": v for v in seq},)[0]\nseq = (box,)\nmutate(*(x for group in (args.values(),) for x in group))\n", False, True),
+            ("seq = (box,)\nargs = ([{\"k\": v for v in seq}][0] if True else {})\nseq = (unrelated,)\nmutate(*(x for group in (args.values(),) for x in group))\n", True, True),
+            ("seq = (unrelated,)\nargs = ([{\"k\": v for v in seq}][0] if True else {})\nseq = (box,)\nmutate(*(x for group in (args.values(),) for x in group))\n", False, True),
+            ("seq = (box,)\nargs = [[{\"k\": v for v in seq}]][0][0]\nalias = args\nseq = (unrelated,)\nmutate(*(x for group in (alias.values(),) for x in group))\n", True, True),
+            ("seq = (unrelated,)\nargs = [[{\"k\": v for v in seq}]][0][0]\nalias = args\nseq = (box,)\nmutate(*(x for group in (alias.values(),) for x in group))\n", False, True),
         )
         common_setup = (
             'other = Guard()\n'
