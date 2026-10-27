@@ -1,0 +1,41 @@
+name: Stage 4 Dash Comm Compatibility
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "BertScript/Test_result_Vis.py"
+      - "BertScript/visualization_stage.py"
+      - "tests/test_visualization_stage.py"
+      - "requirements.txt"
+      - ".codex/**"
+      - ".github/workflows/stage4-dash-comm.yml"
+  push:
+    branches:
+      - main
+      - codex/fix-dash-comm-import-diagnostics-20261027
+    paths:
+      - "BertScript/Test_result_Vis.py"
+      - "BertScript/visualization_stage.py"
+      - "tests/test_visualization_stage.py"
+      - "requirements.txt"
+      - ".codex/**"
+      - ".github/workflows/stage4-dash-comm.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-light-stage4:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile changed Stage 4 modules
+        run: python -m py_compile BertScript/Test_result_Vis.py BertScript/visualization_stage.py tests/test_visualization_stage.py
+      - name: Check dependency-light Stage 4 and root orchestration
+        run: python -m unittest -v tests.test_visualization_stage tests.test_tcf_main_characterization tests.test_stage_commands tests.test_project_docs tests.test_runtime_dependency_contract
