@@ -14,7 +14,9 @@
 
 - PR #123 root GPUtil dependency fix: **MERGED 2026-10-27 20:33 Asia/Taipei** at `baec09b9d521be86137d2be18857023b20e51059`; dependency-light hosted contract 9 PASS, ES guard 271 PASS at reviewed PR HEAD. Fresh full root requirements install/repository-wide discovery remains unverified, so `KI-005` remains Open.
 
-- KI-008 Stage 4 Dash idle callback loop (2026-10-27 Windows operator observation): even without GUI interaction, `table_update` → `FilteredDF_update` (null derived filter) → `ChunkDF_update` repeatedly rewrote output. Fix under review: suppress only the no-op derived-filter mount notification *before side effects*, and replace unused `VisDatatable.data` self-Input with State. Need exact-head Hosted CI, formal Codex review and Windows idle + real-filter/pagination validation before declaring resolved.
+- PR #125 Stage 4 Dash idle-loop fix: **MERGED 2026-10-27 23:39 Asia/Taipei** at `9e2be27d629c8496cf3d3768ddff7ea4b9ffa29d`; exact-head Hosted CI and Codex Review PASS. User later confirmed Windows complete classification flow and Dash no longer repeatedly refreshes while idle; real filter/sort/pagination interactions not separately reported, so KI-008 remains open pending that final check.
+
+- KI-009 Windows PyTorch/Transformers backend collision: user observed TensorFlow native DLL failure at `from transformers import BertModel` on another Windows/Anaconda machine. With `USE_TF=0`, `USE_TORCH=1` manually set in the same CMD, `BertModel` import and the full pipeline both ran. A separate PR scopes automatic flags to `TextClassification_transformers.py` (not TF15Bert); Hosted tests and **fresh CMD without manual flags Windows revalidation** are still required.
 
 ## Durable Outcomes
 
