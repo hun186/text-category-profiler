@@ -20,3 +20,10 @@ The first BL-001 residual cleanup moved these prototypes out of `text_category_p
 - `output_prototypes/WTFOutputer_test.py`
 
 They are retained for historical/research value while the remaining package-root residual inventory is classified.
+
+## Residual package-root batch 2 — timestamp corpus generator
+
+- Authoritative implementation: `experiments/timestamp_generator.py` (former `text_category_profiler/Timestamp generator.py`). This manually invoked experiment generates timestamp-text samples under the **caller's current working directory** (`RandomTimeGeneration/` and `total.txt`), not the module directory. Running it has potentially large file and locale side effects; do not execute during ordinary tests.
+- Legacy direct-script command `python "text_category_profiler/Timestamp generator.py"` remains supported by a **thin delegation wrapper**. Normal import of either file no longer generates files or modifies the process locale. Run `python experiments/timestamp_generator.py` for new manual usage.
+- The wrapper can be removed only after external callers have been checked and the old command retired explicitly. The rest of the package-root residual inventory remains open.
+- Targeted regression: `python -m unittest tests.test_timestamp_experiment_boundary`, which uses bounded in-memory generation and checks the old CLI dispatch without producing actual data files.
