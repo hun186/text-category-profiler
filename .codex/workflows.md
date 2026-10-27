@@ -43,6 +43,7 @@
 | 分類器 | 需要已確認模型／fixture 後執行 RunClassfier smoke test；目前待確認 | 影響模型格式、GPU/CPU resource gate 或 output contract |
 | 視覺化 lifecycle | `python -m unittest tests.test_visualization_stage tests.test_tcf_main_characterization tests.test_stage_commands`；`python -m py_compile BertScript/Test_result_Vis.py BertScript/visualization_stage.py` | layout、Dash callback 或部署設定改變時才需 browser/screenshot；lifecycle tests 不啟動 Dash server |
 | Architecture boundaries | `python -m unittest tests.test_package_layout tests.test_project_docs` | import arrows、legacy entrypoints、DatasetConverter boundaries 或 current-state docs 改變 |
+| Timestamp research experiment / legacy CLI shim | `python -m unittest tests.test_timestamp_experiment_boundary tests.test_package_layout tests.test_repository_compile_gate`；`python -m py_compile "experiments/timestamp_generator.py" "text_category_profiler/Timestamp generator.py"` | 這些測試在記憶體內限制產生數量、mock locale／輸出，不啟動真實 5000 次資料生成。真的要大量生成才人工執行 `python experiments/timestamp_generator.py`（輸出至 caller cwd）。 |
 | 匯入外部服務 | 先以 dry-run 或 mock 明確標示；不得把真實 DB/ES 寫入當 smoke test | 會連線 SQL Server、Elasticsearch 或批次寫入資料 |
 
 ## Full-pipeline smoke profiles
