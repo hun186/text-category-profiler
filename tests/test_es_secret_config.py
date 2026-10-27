@@ -9038,6 +9038,17 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                     expand_listcomp,
                                                 )
                                             ]
+                                        if isinstance(candidate, ast.IfExp):
+                                            # A saved conditional selects an eager sequence
+                                            # from a reachable branch, not an opaque object.
+                                            return [
+                                                selected
+                                                for branch in possible_branches(candidate)
+                                                for selected in container_sources(
+                                                    branch, when, level + 1,
+                                                    visited, expand_listcomp,
+                                                )
+                                            ]
                                         getter_call = (
                                             isinstance(candidate, ast.Call)
                                             and isinstance(
@@ -9065,11 +9076,17 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                             selections = []
                                             for container in containers:
                                                 if isinstance(container, ast.ListComp) and expand_listcomp is not None:
-                                                    # Materialize eager list-comprehension items before indexing.
-                                                    # Keep lexical sources in the supplied expander.
-                                                    container = ast.List(
-                                                        elts=expand_listcomp(container), ctx=ast.Load(),
-                                                    )
+                                                    # This resolver returns possible elements, NOT
+                                                    # one result per actual list iteration. A
+                                                    # two-iteration comprehension may yield just one
+                                                    # candidate AST but supports indexing at [1].
+                                                    # Retain all candidates for possible list slots.
+                                                    if (
+                                                        not isinstance(index_node, ast.Constant)
+                                                        or isinstance(index_node.value, int)
+                                                    ):
+                                                        selections.extend(expand_listcomp(container))
+                                                    continue
                                                 if isinstance(
 
                                                     container,
@@ -17107,6 +17124,22 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ("seq = (unrelated,)\nsaved = [[{\"a\": {\"k\": v for v in seq}}] for _ in (0,)]\nargs = saved[0][0].get(\"a\")\nseq = (box,)\nmutate(*(x for group in (args.values(),) for x in group))\n", False, True),
             ("seq = (box,)\nsaved = [{\"a\": {\"k\": v}} for v in seq]\nargs = saved[0].get(\"a\")\nseq = (unrelated,)\nmutate(*(x for group in (args.values(),) for x in group))\n", True, True),
             ("seq = (unrelated,)\nsaved = [{\"a\": {\"k\": v}} for v in seq]\nargs = saved[0].get(\"a\")\nseq = (box,)\nmutate(*(x for group in (args.values(),) for x in group))\n", False, True),
+        )
+        # Follow-up Codex P2: conservative saved ListComp indexing and
+        # conditional container branches, with both source-rebind directions.
+        followup_cases += (
+            ("seq = (box,)\nsaved = [{\"a\": {\"k\": v for v in seq}} for _ in (0, 0)]\nargs = saved[1].get(\"a\")\nseq = (unrelated,)\nmutate(*(x for group in (args.values(),) for x in group))\n", True, True),
+            ("seq = (unrelated,)\nsaved = [{\"a\": {\"k\": v for v in seq}} for _ in (0, 0)]\nargs = saved[1].get(\"a\")\nseq = (box,)\nmutate(*(x for group in (args.values(),) for x in group))\n", False, True),
+            ("seq = (box,)\nsaved = [{\"a\": {\"k\": v for v in seq}} for _ in (0, 0)]\nalias = saved\nargs = alias[-1][\"a\"]\nseq = (unrelated,)\nmutate(*(x for group in (args.values(),) for x in group))\n", True, True),
+            ("seq = (unrelated,)\nsaved = [{\"a\": {\"k\": v for v in seq}} for _ in (0, 0)]\nalias = saved\nargs = alias[-1][\"a\"]\nseq = (box,)\nmutate(*(x for group in (args.values(),) for x in group))\n", False, True),
+            ("seq = (box,)\nsaved = ([{\"a\": {\"k\": v for v in seq}} for _ in (0,)] if True else [])\nargs = saved[0].get(\"a\")\nseq = (unrelated,)\nmutate(*(x for group in (args.values(),) for x in group))\n", True, True),
+            ("seq = (unrelated,)\nsaved = ([{\"a\": {\"k\": v for v in seq}} for _ in (0,)] if True else [])\nargs = saved[0].get(\"a\")\nseq = (box,)\nmutate(*(x for group in (args.values(),) for x in group))\n", False, True),
+            ("seq = (box,)\nsaved = ([] if False else [{\"a\": {\"k\": v for v in seq}} for _ in (0,)])\nargs = saved[0].get(\"a\")\nseq = (unrelated,)\nmutate(*(x for group in (args.values(),) for x in group))\n", True, True),
+            ("seq = (unrelated,)\nsaved = ([] if False else [{\"a\": {\"k\": v for v in seq}} for _ in (0,)])\nargs = saved[0].get(\"a\")\nseq = (box,)\nmutate(*(x for group in (args.values(),) for x in group))\n", False, True),
+            ("seq = (box,)\nsaved = ([{\"a\": {\"k\": v for v in seq}} for _ in (0, 0)] if True else [])\nalias = saved\nargs = alias[1][\"a\"]\nseq = (unrelated,)\nmutate(*(x for group in (args.values(),) for x in group))\n", True, True),
+            ("seq = (unrelated,)\nsaved = ([{\"a\": {\"k\": v for v in seq}} for _ in (0, 0)] if True else [])\nalias = saved\nargs = alias[1][\"a\"]\nseq = (box,)\nmutate(*(x for group in (args.values(),) for x in group))\n", False, True),
+            ("seq = (box,)\nsaved = ([{\"a\": {\"k\": v}} for v in seq] if True else [])\nargs = saved[0].get(\"a\")\nseq = (unrelated,)\nmutate(*(x for group in (args.values(),) for x in group))\n", True, True),
+            ("seq = (unrelated,)\nsaved = ([{\"a\": {\"k\": v}} for v in seq] if True else [])\nargs = saved[0].get(\"a\")\nseq = (box,)\nmutate(*(x for group in (args.values(),) for x in group))\n", False, True),
         )
         common_setup = (
             'other = Guard()\n'
