@@ -28,6 +28,19 @@ class ClassifierPlan:
     activation_command: Optional[str] = None
 
 
+def configure_pytorch_transformers_backend(environ=None):
+    """Choose PyTorch-only Transformers imports for the PyTorch entrypoint.
+
+    Transformers 4.48 can discover an installed but unusable TensorFlow build
+    while importing BertModel. This is called by the *PyTorch script only*,
+    before importing torch/transformers, not in the parent CLI or TF15Bert path.
+    """
+    if environ is None:
+        environ = os.environ
+    environ["USE_TF"] = "0"
+    environ["USE_TORCH"] = "1"
+
+
 def render_pytorch_command(args, dataset_dir, output_dir, classifier_path):
     command = f"python {classifier_path}/{PYTORCH_SCRIPT}"
     if args.train is True:
