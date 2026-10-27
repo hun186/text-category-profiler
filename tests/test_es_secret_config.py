@@ -9009,7 +9009,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                     # any visible mutation of that same root.
                                     def container_sources(
                                         candidate, when, level=0,
-                                        visited=frozenset(),
+                                        visited=frozenset(), expand_listcomp=None,
                                     ):
                                         """Follow nested selections to their container."""
                                         if level > 12:
@@ -9035,6 +9035,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                 for selected in container_sources(
                                                     value, when, level + 1,
                                                     visited | {token},
+                                                    expand_listcomp,
                                                 )
                                             ]
                                         getter_call = (
@@ -9059,13 +9060,30 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                             )
                                             containers = container_sources(
                                                 owner_node, when,
-                                                level + 1, visited,
+                                                level + 1, visited, expand_listcomp,
                                             )
                                             selections = []
+
                                             for container in containers:
+
+                                                if isinstance(container, ast.ListComp) and expand_listcomp is not None:
+
+                                                    # Materialize eager list-comprehension items before indexing.
+
+                                                    # Keep lexical sources in the supplied expander.
+
+                                                    container = ast.List(
+
+                                                        elts=expand_listcomp(container), ctx=ast.Load(),
+
+                                                    )
+
                                                 if isinstance(
+
                                                     container,
+
                                                     (ast.Tuple, ast.List),
+
                                                 ):
                                                     if (
                                                         isinstance(
@@ -9143,7 +9161,7 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                 for value in selections
                                                 for selected in container_sources(
                                                     value, when, level + 1,
-                                                    visited,
+                                                    visited, expand_listcomp,
                                                 )
                                             ]
                                         return [candidate]
@@ -9683,11 +9701,51 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                             chosen.append(node.args[1])
                                                                         return chosen
                                                                     # Selecting from a named eager sequence must retain
+
                                                                     # the creation-time bindings of its nested values.
+
                                                                     # Do not accidentally freeze deferred generator bodies.
+
+                                                                    def expand_saved_listcomp(source):
+
+                                                                        at = _node_position(source)
+
+                                                                        yielded = iterated_sources(
+
+                                                                            captured_expression(source, at), env, nesting + 1,
+
+                                                                        )
+
+                                                                        # resolve_yield may synthesize nodes without source locations;
+
+                                                                        # they still belong to the list construction, not its getter.
+
+                                                                        result = []
+
+                                                                        for value in yielded:
+
+                                                                            item = copy.copy(value)
+
+                                                                            if not hasattr(item, "lineno"):
+
+                                                                                item.lineno, item.col_offset = at
+
+                                                                            result.append(item)
+
+                                                                        return result
+
                                                                     return [
+
                                                                         captured_expression(value, _node_position(value))
-                                                                        for value in container_sources(node, prior_before)
+
+                                                                        for value in container_sources(
+
+                                                                            node, prior_before,
+
+                                                                            expand_listcomp=expand_saved_listcomp,
+
+                                                                        )
+
                                                                     ]
 
                                                                 selections = []
@@ -17056,6 +17114,18 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ("saved = {\"a\": [(x for x in (unrelated,))]}\nargs = saved[\"a\"]\nmutate(*(x for inner in args for x in inner))\n", False, True),
             ("saved = {\"a\": [[box]]}\nargs = saved.get(\"a\") if True else []\nmutate(*(x for inner in args for x in inner))\n", True, False),
             ("saved = {\"a\": [[unrelated]]}\nargs = saved.get(\"a\") if True else []\nmutate(*(x for inner in args for x in inner))\n", False, True),
+        )
+        # Codex P2: resolve eagerly created list-comprehension items before
+        # selected sequence getters and retain source-time bindings.
+        followup_cases += (
+            ("seq = (box,)\nsaved = [{\"a\": {\"k\": v for v in seq}} for _ in (0,)]\nargs = saved[0].get(\"a\")\nseq = (unrelated,)\nmutate(*(x for group in (args.values(),) for x in group))\n", True, True),
+            ("seq = (unrelated,)\nsaved = [{\"a\": {\"k\": v for v in seq}} for _ in (0,)]\nargs = saved[0].get(\"a\")\nseq = (box,)\nmutate(*(x for group in (args.values(),) for x in group))\n", False, True),
+            ("seq = (box,)\nsaved = [{\"a\": {\"k\": v for v in seq}} for _ in (0,)]\nalias = saved\nargs = alias[0][\"a\"]\nseq = (unrelated,)\nmutate(*(x for group in (args.values(),) for x in group))\n", True, True),
+            ("seq = (unrelated,)\nsaved = [{\"a\": {\"k\": v for v in seq}} for _ in (0,)]\nalias = saved\nargs = alias[0][\"a\"]\nseq = (box,)\nmutate(*(x for group in (args.values(),) for x in group))\n", False, True),
+            ("seq = (box,)\nsaved = [[{\"a\": {\"k\": v for v in seq}}] for _ in (0,)]\nargs = saved[0][0].get(\"a\")\nseq = (unrelated,)\nmutate(*(x for group in (args.values(),) for x in group))\n", True, True),
+            ("seq = (unrelated,)\nsaved = [[{\"a\": {\"k\": v for v in seq}}] for _ in (0,)]\nargs = saved[0][0].get(\"a\")\nseq = (box,)\nmutate(*(x for group in (args.values(),) for x in group))\n", False, True),
+            ("seq = (box,)\nsaved = [{\"a\": {\"k\": v}} for v in seq]\nargs = saved[0].get(\"a\")\nseq = (unrelated,)\nmutate(*(x for group in (args.values(),) for x in group))\n", True, True),
+            ("seq = (unrelated,)\nsaved = [{\"a\": {\"k\": v}} for v in seq]\nargs = saved[0].get(\"a\")\nseq = (box,)\nmutate(*(x for group in (args.values(),) for x in group))\n", False, True),
         )
         common_setup = (
             'other = Guard()\n'
