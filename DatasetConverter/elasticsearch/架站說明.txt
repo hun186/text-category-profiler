@@ -14,9 +14,8 @@ elasticsearch-8.5.2\bin\elasticsearch-service start
 
 重設elastic密碼及取得密碼
 elasticsearch-reset-password -u elastic
+取得新密碼後請以環境變數 TCP_ELASTIC_PASSWORD 或部署平台 secret 注入，不要寫入版本庫。
 
-H:Rhhl35kvMf6Xm0U*PTAH
-C:=lJg5OAxH_Oivzo1ZB-1
 
 確認elastic已架
 http://localhost:9200
@@ -30,7 +29,7 @@ http://localhost:5601/app/integrations/browse
 
 
 elasticsearch-create-enrollment-token.bat --scope kibana
-eyJ2ZXIiOiI4LjUuMiIsImFkciI6WyIxMC4xMTIuMC45NDo5MjAwIl0sImZnciI6IjU4NDM4YTlmODBhNzliOGVmMzU0YjU3MTViN2VjNTk2MGRiMjM1OGFlMTBkNDNhYWY5Mjk3MGViN2M4M2RkNWQiLCJrZXkiOiJlanJ6OElRQnR5RFhCQmlXVHplTjpWOFc5REFTMlI3ZWNqN3F2RWFmMk5BIn0=
+<請於部署時即時產生 enrollment token；不要將 token 寫入 repository>
 
 
 取得kibana認證code
