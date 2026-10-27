@@ -112,6 +112,25 @@ Layer B 只有在 root exit 0、production classifier evidence、final `*_rdy_fo
 - 外部服務替代方式：待確認；mock 必須明確揭露，不得冒充正式成功。
 - 測試產物位置與清理方式：待確認；`WorkPool*`、`logs`、模型與 output 目錄需先視為可能有狀態。
 
+## Windows Anaconda：Dash/comm 載入前檢查
+
+當獨立啟動 `Test_result_Vis.py` 的 `import dash` 透過 `dash._jupyter` → `comm.create_comm(target_name="dash")` 拋出 `NotImplementedError: Cannot`，屬於啟動 Python 環境的舊 `comm` 實作與 Dash 不相容；它不是 RunClassfier／CombineTestResult 的模型錯誤。
+
+在**執行 TCFMain.py 的同一個 Anaconda 環境與 Python 解譯器**下，先查明版本與所在路徑：
+
+```powershell
+python -c "import sys, importlib.metadata as m, comm; print(sys.executable); print('comm:', m.version('comm'), comm.__file__); print('dash:', m.version('dash'))"
+```
+
+先備份／複製原本的 Conda 環境，再修復依賴（只升級 `comm`，避免順手升級整套 ML/CUDA 套件）：
+
+```powershell
+python -m pip install --upgrade "comm>=0.2.3"
+python -c "import dash; print(dash.__version__)"
+```
+
+第二行通過後，才重試原本的 Stage 4 命令。若無法安裝或升級，留下上述診斷輸出與 pip dependency conflict 資訊；**不得聲稱 Stage 4 已在 Windows 實機通過**。專案回歸測試不啟動真實 Dash server：`python -m unittest tests.test_visualization_stage tests.test_tcf_main_characterization tests.test_stage_commands`。
+
 ## 常見失敗與替代驗證
 
 | 限制 | 首選驗證 | 安全替代 | 不足之處 |

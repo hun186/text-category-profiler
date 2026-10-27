@@ -16,6 +16,57 @@ class VisualizationStageTests(unittest.TestCase):
     def setUp(self):
         self.stage = importlib.import_module("BertScript.visualization_stage")
 
+    def test_dash_import_uses_dependency_light_importer(self):
+        fake_dash = object()
+        importer = mock.Mock(return_value=fake_dash)
+        self.assertIs(self.stage.import_dash_runtime(importer), fake_dash)
+        importer.assert_called_once_with("dash")
+
+    def test_dash_import_explains_legacy_comm_failure(self):
+        def legacy_importer(name):
+            self.assertEqual(name, "dash")
+            raise NotImplementedError("Cannot ")
+
+        with self.assertRaisesRegex(
+            RuntimeError, r'comm>=0\.2\.3',
+        ) as failure:
+            self.stage.import_dash_runtime(legacy_importer)
+        self.assertIsInstance(failure.exception.__cause__, NotImplementedError)
+        self.assertIn("TCFMain.py", str(failure.exception))
+
+    def test_dash_import_does_not_mask_unrelated_not_implemented(self):
+        original = NotImplementedError("real application failure")
+        def broken_importer(_):
+            raise original
+
+        with self.assertRaises(NotImplementedError) as failure:
+            self.stage.import_dash_runtime(broken_importer)
+        self.assertIs(failure.exception, original)
+
+    def test_dash_script_uses_scoped_import_diagnostic(self):
+        source = Path("BertScript/Test_result_Vis.py").read_text(
+            encoding="utf-8",
+        )
+        root = ast.parse(source)
+        self.assertTrue(any(
+            isinstance(node, ast.Assign)
+            and any(
+                isinstance(target, ast.Name) and target.id == "dash"
+                for target in node.targets
+            )
+            and isinstance(node.value, ast.Call)
+            and isinstance(node.value.func, ast.Attribute)
+            and isinstance(node.value.func.value, ast.Name)
+            and node.value.func.value.id == "visualization_stage"
+            and node.value.func.attr == "import_dash_runtime"
+            for node in root.body
+        ))
+        self.assertFalse(any(
+            isinstance(node, ast.Import)
+            and any(alias.name == "dash" for alias in node.names)
+            for node in root.body
+        ))
+
     def test_plan_preserves_host_and_weitech_options(self):
         args = Namespace(
             TRVWebHost=True,

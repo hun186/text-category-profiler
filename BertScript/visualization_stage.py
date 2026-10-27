@@ -81,6 +81,33 @@ def run_summary_command(command, invoke):
     return invoke(command)
 
 
+
+def import_dash_runtime(import_module=None):
+    """Import Dash with a targeted diagnostic for legacy Jupyter comm errors.
+
+    Dash may initialize optional notebook comms even in a standalone CLI.
+    Older comm distributions raise NotImplementedError("Cannot ") there.
+    Upgrade the environment dependency; do not monkeypatch third-party code.
+    """
+    if import_module is None:
+        from importlib import import_module
+
+    try:
+        return import_module("dash")
+    except NotImplementedError as exc:
+        if str(exc).strip() != "Cannot":
+            raise
+        raise RuntimeError(
+            "Dash import failed while initializing Jupyter comm in the active "
+            "Python environment. Install a compatible comm package with "
+            'python -m pip install --upgrade "comm>=0.2.3" using the SAME '
+            "Python interpreter used to run TCFMain.py; then verify with "
+            'python -c "import dash; print(dash.__version__)". '
+            "This is an environment dependency failure, not a classifier "
+            "or output-merge failure."
+        ) from exc
+
+
 def _replace_suffix(path, old_suffix, new_suffix):
     if not path.endswith(old_suffix):
         raise ValueError("{} does not end with {}".format(path, old_suffix))

@@ -8,9 +8,18 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | `KI-003` | Medium | 已有隔離 root smoke，但尚缺 post-merge real-model/GPU acceptance evidence | 完整 runtime 驗證 | Layer A 啟用時必須 PASS；Layer B 留待明確 real-runtime inputs 與 H100/CUDA acceptance | `tests/test_full_pipeline_smoke.py`、`tests/test_full_pipeline_real_runtime.py`、`.codex/workflows.md` | Open |
 | `KI-005` | Low | 過去根 `requirements.txt` 未宣告 `GPUtil`，repository-wide discovery 因而產生 2 個 dependency errors；目前已補上依賴宣告，仍待全新環境驗證 | lightweight repository-wide validation | 可執行 dependency-light contract tests；仍須安裝 root requirements 並驗證 full discovery 才能關閉 | `tests/test_df_utils.py` → `text_category_profiler.data.df_utils` → `text_category_profiler.core.utilities`；Codex review of PR #119 | Open |
+| `KI-007` | Medium | Windows/Anaconda Stage 4 Dash import 呼叫舊 `comm.create_comm` 時拋出 `NotImplementedError: Cannot` | `Test_result_Vis.py` CLI 視覺化無法啟動，root fail-fast 阻止後續階段 | 同一個 interpreter 檢查 `comm`/Dash 版本，升級 `comm>=0.2.3` 後再驗證 | 2026-10-27 實機日誌；`BertScript/visualization_stage.py` import 診斷 | Open（待 Windows 實機復測） |
 | `KI-006` | High | Elasticsearch credential 曾硬編碼於 repository source/sample config/setup notes；current source 已移除 tracked credential literals，runtime config 改由 `TCP_ELASTIC_PASSWORD` 注入，但既有 Git 歷史仍可能包含舊值，外部輪替狀態尚未確認 | 仍接受舊 credential 的 Elasticsearch 環境 | 立即在 Elasticsearch 端輪替該 credential，部署時以 `TCP_ELASTIC_PASSWORD` 注入；不要把新 secret commit 到 Git | `tests/test_es_secret_config.py` 掃描 current tracked ES surfaces；Git history 未重寫 | Open |
 
 ## Issue Details
+
+### `KI-007` — Windows/Anaconda Dash 匯入時的舊 comm 相容性
+
+- 觀測：2026-10-27 Windows Anaconda 實機完整流程，RunClassfier 與 CombineTestResult 成功；Stage 4 於 `import dash` → `dash._jupyter` → `comm.create_comm(target_name="dash")` 因舊 `comm` 的 `NotImplementedError("Cannot ")` 中斷。
+- 根因界線：`comm` 的舊預設實作沒有無 kernel 的 DummyComm 支援；根 `requirements.txt` 原未明列版本下限。不能因此推斷模型分類 0/7 或 GPU free 0MB 的原因。
+- 專案側：新增 `comm>=0.2.3` 需求與針對該已知錯誤的 import 診斷；不 monkeypatch Jupyter／Dash，亦不吞掉其他 `NotImplementedError`。測試只證明依賴錯誤被正確辨識；實機可用性尚待確認。
+- 修復／驗收：在啟動 `TCFMain.py` 的同一 Python 環境升級 `comm`，驗證 `python -c "import dash; print(dash.__version__)"`，並以原 Stage 4 命令及工作池 handoff 驗證恢復。
+- 狀態：Open，直到 Windows 實機復測；若成功，再更新 Recently Resolved。
 
 ### `KI-006` — Elasticsearch credential 曾進入 Git history
 

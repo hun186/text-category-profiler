@@ -37,7 +37,7 @@ from functools import partial
 from text_category_profiler.core.warning_filters import suppress_known_third_party_warnings_in_workers
 suppress_known_third_party_warnings_in_workers()
 
-import dash
+dash = visualization_stage.import_dash_runtime()
 #import dash_table
 from dash import dash_table
 import dash_bootstrap_components as dbc
