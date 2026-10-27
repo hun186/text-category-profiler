@@ -82,6 +82,29 @@ def run_summary_command(command, invoke):
 
 
 
+def is_spurious_datatable_filter_notification(
+        triggered, *, filter_query, sort_by, derived_query_structure,
+        previous_derived_query_structure):
+    """Ignore only the empty derived-filter event from remounting a DataTable.
+
+    Dash reinitializes derived_filter_query_structure to None when the parent
+    callback replaces the table component. Without this guard that event
+    re-exports the same filtered dataset and starts a chart/table redraw loop.
+    Other user inputs (including clearing a real filter or sort) must proceed.
+    """
+    if len(triggered or ()) != 1:
+        return False
+    event = triggered[0]
+    return (
+        event.get("prop_id") == "VisDatatable.derived_filter_query_structure"
+        and event.get("value") is None
+        and derived_query_structure is None
+        and previous_derived_query_structure is None
+        and not (filter_query or "")
+        and not (sort_by or [])
+    )
+
+
 def import_dash_runtime(import_module=None):
     """Import Dash with a targeted diagnostic for legacy Jupyter comm errors.
 
