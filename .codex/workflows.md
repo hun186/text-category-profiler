@@ -42,6 +42,7 @@
 | 資料轉換 | `python -m unittest tests.test_dataconverter_fixture_integration`；使用 repository 小型 fixture、process workers 與 temporary output，不接觸真實工作池 | 變更 pandas／SQLite output adapter、完整 CLI bootstrap、fixed-test／ES 或 handoff 時仍需擴大驗證 |
 | 分類器 | 需要已確認模型／fixture 後執行 RunClassfier smoke test；目前待確認 | 影響模型格式、GPU/CPU resource gate 或 output contract |
 | 視覺化 lifecycle | `python -m unittest tests.test_visualization_stage tests.test_tcf_main_characterization tests.test_stage_commands`；`python -m py_compile BertScript/Test_result_Vis.py BertScript/visualization_stage.py` | layout、Dash callback 或部署設定改變時才需 browser/screenshot；lifecycle tests 不啟動 Dash server |
+| Dash UI callback / idle redraw | `python -m unittest tests.test_visualization_stage`：確認單獨的 DataTable null derived-filter remount 在輸出檔案前被略過，table data 不再是表格重建 callback 的 self-Input；CI 不執行瀏覽器 | 在 Windows 實機開啟 Stage 4，閒置至少 1 分鐘確認無 table→filter→chart 迴圈或重複磁碟輸出，再各測一次真實篩選、清除、排序及翻頁；沒有現場驗證前 KI-008 不得標示 Resolved |
 | Architecture boundaries | `python -m unittest tests.test_package_layout tests.test_project_docs` | import arrows、legacy entrypoints、DatasetConverter boundaries 或 current-state docs 改變 |
 | 匯入外部服務 | 先以 dry-run 或 mock 明確標示；不得把真實 DB/ES 寫入當 smoke test | 會連線 SQL Server、Elasticsearch 或批次寫入資料 |
 
