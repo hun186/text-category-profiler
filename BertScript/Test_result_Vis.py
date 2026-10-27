@@ -2049,6 +2049,17 @@ def FilteredDF_update(
         #*args
         ):
     
+    # Remounting this table resets its derived filter to None. Ignore that
+    # synthetic event before any logging or filtered-file writes.
+    Old_derived_query_structure = json.loads(Old_derived_filter_query_structure_json)
+    if visualization_stage.is_spurious_datatable_filter_notification(
+            dash.callback_context.triggered,
+            filter_query=filter_query,
+            sort_by=sort_by,
+            derived_query_structure=derived_query_structure,
+            previous_derived_query_structure=Old_derived_query_structure):
+        raise PreventUpdate
+
     callback_start_time = time.time()
     section("Update filtered results", icon="🔎")
     MES = f"使用者登錄IP及伺服器port為{request.remote_addr}, {args.TRVPort},"
@@ -2058,16 +2069,6 @@ def FilteredDF_update(
         logFile="Test_result_Vis_LogIP.log",
         printOnScreen=False,
     )
-    #print("derived_filter_query_structure", derived_query_structure)
-    Old_derived_query_structure = json.loads(Old_derived_filter_query_structure_json)
-    #derived_filter_query_structure = None
-
-    button_id_comp = get_button_id_comp(
-        dash.callback_context, inspect.currentframe().f_code.co_name)
-    if button_id_comp == "VisDatatable.page_current":
-        print("Chinaging Page. Abort FilteredDF_update")
-        raise PreventUpdate
-        
     button_id = get_button_id(
         dash.callback_context, inspect.currentframe().f_code.co_name)
 
@@ -2318,7 +2319,10 @@ args.extend([Input("CutRange", "value")])
 #args.extend([Input('VisDatatable', "derived_filter_query_structure")])
 #args.extend([State('VisDatatable', "page_current")])
 args.extend([Input('Colortable', 'data')])
-args.extend([Input('VisDatatable', 'data')])
+# table_update creates VisDatatable; observing its own data as an Input
+# re-triggers this callback whenever Dash mounts the replacement table.
+# No callback computation uses this argument, so keep it only as State.
+args.extend([State('VisDatatable', 'data')])
 #args.extend([State('Colortable', 'data')])
 #args.extend([State('VisDatatable', "derived_filter_query_structure")])
 #args.extend([State('derived_filter_query_structure', "data")])
