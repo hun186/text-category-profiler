@@ -10,9 +10,11 @@
 
 - PR #121 Elasticsearch credential guard: **MERGED 2026-10-27 19:28 Asia/Taipei** into `main` at merge commit `58c3bddbc2837e202efda98b3bbf30c5902ba458`; final reviewed head `e9bf2cd9ce0bfb27ccd064c570911cef339e898e`. Previous source-time P2 repairs and 271 unittest methods were retained; exact-head Codex review reported no major issues. External Elasticsearch credential rotation remains **KI-006 Open**, since rewriting Git history and revoking the old password are outside that PR.
 
-- PR #122 Windows/Anaconda Stage 4 Dash/comm import compatibility integration includes the reviewed fix at reviewed head `89f2834bf07834e880a7bb849efe476cc6995565`: hosted tests and Codex review passed, but real Windows Dash import/WorkPool handoff acceptance remains **KI-007 Open**. Do not conflate that runtime issue with GPU memory or classifier prediction observations.
+- PR #122 Dash/comm compatibility: **MERGED 2026-10-27 21:06 Asia/Taipei** into main at `4c0f757f4ed1911f06798edf61774a18683c1e0d` after manual merge-conflict resolution. At exact reviewed integration HEAD `c0bab1b5ca9d`, Stage 4 48, GPUtil 9, ES security 271 hosted tests PASS; exact-head Codex found no issues. User subsequently confirmed Windows Dash **starts successfully**, but full WorkPool final handoff is not yet verified, so `KI-007` remains Open.
 
-- KI-005 root dependency correction (2026-10-27): new `codex/declare-gputil-dependency-20261027` branch adds `GPUtil` to `requirements.txt`, dependency-contract regression and lightweight hosted package import check. This addresses the documented missing declaration only; fresh root requirements installation and repository-wide unittest discovery remain unverified, so `KI-005` stays Open. Keep separate from PR #122 and do not merge without user authorization.
+- PR #123 root GPUtil dependency fix: **MERGED 2026-10-27 20:33 Asia/Taipei** at `baec09b9d521be86137d2be18857023b20e51059`; dependency-light hosted contract 9 PASS, ES guard 271 PASS at reviewed PR HEAD. Fresh full root requirements install/repository-wide discovery remains unverified, so `KI-005` remains Open.
+
+- KI-008 Stage 4 Dash idle callback loop (2026-10-27 Windows operator observation): even without GUI interaction, `table_update` → `FilteredDF_update` (null derived filter) → `ChunkDF_update` repeatedly rewrote output. Fix under review: suppress only the no-op derived-filter mount notification *before side effects*, and replace unused `VisDatatable.data` self-Input with State. Need exact-head Hosted CI, formal Codex review and Windows idle + real-filter/pagination validation before declaring resolved.
 
 ## Durable Outcomes
 
