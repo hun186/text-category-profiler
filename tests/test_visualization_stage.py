@@ -67,6 +67,72 @@ class VisualizationStageTests(unittest.TestCase):
             for node in root.body
         ))
 
+    def test_recreated_datatable_empty_derived_filter_is_not_user_input(self):
+        notice = [{"prop_id": "VisDatatable.derived_filter_query_structure",
+                   "value": None}]
+        ignore = self.stage.is_spurious_datatable_filter_notification
+        params = dict(filter_query="", sort_by=[], derived_query_structure=None,
+                      previous_derived_query_structure=None)
+        self.assertTrue(ignore(notice, **params))
+        self.assertFalse(ignore(
+            [{"prop_id": "VisDatatable.sort_by", "value": []}], **params))
+        self.assertFalse(ignore(
+            notice + [{"prop_id": "VisDatatable.sort_by", "value": []}],
+            **params))
+        self.assertFalse(ignore(notice, **dict(params, filter_query="{Rating} > 0")))
+        self.assertFalse(ignore(notice, **dict(params, sort_by=[
+            {"column_id": "Rating", "direction": "desc"}])))
+        self.assertFalse(ignore(notice, **dict(
+            params, previous_derived_query_structure={"operator": "="})))
+        self.assertFalse(ignore(notice, **dict(
+            params, derived_query_structure={"operator": "="})))
+
+    def test_idle_remount_does_not_log_write_or_reprocess_filtered_df(self):
+        source = Path("BertScript/Test_result_Vis.py").read_text(
+            encoding="utf-8")
+        tree = ast.parse(source)
+        callback = next(node for node in tree.body
+                        if isinstance(node, ast.FunctionDef)
+                        and node.name == "FilteredDF_update")
+
+        class PreventUpdate(Exception):
+            pass
+
+        logging = mock.Mock(side_effect=AssertionError(
+            "Synthetic table remount must not enter expensive callback"))
+        ns = {
+            "dash": types.SimpleNamespace(callback_context=types.SimpleNamespace(
+                triggered=[{"prop_id": "VisDatatable.derived_filter_query_structure",
+                            "value": None}])),
+            "json": __import__("json"),
+            "visualization_stage": self.stage,
+            "PreventUpdate": PreventUpdate,
+            "section": logging,
+            "dfOutputer": logging,
+            "MPLOGGER": types.SimpleNamespace(logW=logging),
+        }
+        exec(compile(ast.Module(body=[callback], type_ignores=[]),
+                     "Test_result_Vis.py", "exec"), ns)
+        actual = ns["FilteredDF_update"]
+        kwargs = {name: None for name in
+                  actual.__code__.co_varnames[:actual.__code__.co_argcount]}
+        kwargs.update(
+            Old_derived_filter_query_structure_json="null",
+            filter_query="", sort_by=[], derived_query_structure=None)
+        with self.assertRaises(PreventUpdate):
+            actual(**kwargs)
+        logging.assert_not_called()
+
+    def test_results_table_does_not_listen_to_its_own_data(self):
+        source = Path("BertScript/Test_result_Vis.py").read_text(
+            encoding="utf-8")
+        prefix = source[:source.index("def table_update(")]
+        # The dynamic args list is immediately above the callback function.
+        registration = prefix[prefix.rfind("\nargs = []"):]
+        self.assertIn("State('VisDatatable', 'data')", registration)
+        self.assertNotIn("Input('VisDatatable', 'data')", registration)
+        self.assertIn("Input('VisDatatable', \"page_current\")", registration)
+
     def test_plan_preserves_host_and_weitech_options(self):
         args = Namespace(
             TRVWebHost=True,
