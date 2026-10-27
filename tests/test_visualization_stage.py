@@ -94,6 +94,9 @@ class VisualizationStageTests(unittest.TestCase):
         callback = next(node for node in tree.body
                         if isinstance(node, ast.FunctionDef)
                         and node.name == "FilteredDF_update")
+        # Execute the original function body, not its Dash registration
+        # decorator: the regression harness intentionally has no app/server.
+        callback.decorator_list = []
 
         class PreventUpdate(Exception):
             pass
