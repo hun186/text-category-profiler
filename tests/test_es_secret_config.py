@@ -9063,21 +9063,13 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                 level + 1, visited, expand_listcomp,
                                             )
                                             selections = []
-
                                             for container in containers:
-
                                                 if isinstance(container, ast.ListComp) and expand_listcomp is not None:
-
                                                     # Materialize eager list-comprehension items before indexing.
-
                                                     # Keep lexical sources in the supplied expander.
-
                                                     container = ast.List(
-
                                                         elts=expand_listcomp(container), ctx=ast.Load(),
-
                                                     )
-
                                                 if isinstance(
 
                                                     container,
@@ -9707,45 +9699,34 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                     # Do not accidentally freeze deferred generator bodies.
 
                                                                     def expand_saved_listcomp(source):
-
                                                                         at = _node_position(source)
-
                                                                         yielded = iterated_sources(
-
                                                                             captured_expression(source, at), env, nesting + 1,
-
                                                                         )
-
-                                                                        # resolve_yield may synthesize nodes without source locations;
-
-                                                                        # they still belong to the list construction, not its getter.
-
-                                                                        result = []
-
-                                                                        for value in yielded:
-
-                                                                            item = copy.copy(value)
-
-                                                                            if not hasattr(item, "lineno"):
-
-                                                                                item.lineno, item.col_offset = at
-
-                                                                            result.append(item)
-
-                                                                        return result
-
+                                                                        # The iterable resolver creates synthetic nested AST lists/dicts.
+                                                                        # Every such node belongs to the saved list's construction,
+                                                                        # not the later selection or comprehension consumption.
+                                                                        def with_creation_location(node):
+                                                                            if not isinstance(node, ast.AST):
+                                                                                return node
+                                                                            copied = copy.copy(node)
+                                                                            if not hasattr(copied, "lineno"):
+                                                                                copied.lineno, copied.col_offset = at
+                                                                            for field, value in ast.iter_fields(node):
+                                                                                if isinstance(value, ast.AST):
+                                                                                    setattr(copied, field, with_creation_location(value))
+                                                                                elif isinstance(value, list):
+                                                                                    setattr(copied, field, [
+                                                                                        with_creation_location(item) for item in value
+                                                                                    ])
+                                                                            return copied
+                                                                        return [with_creation_location(value) for value in yielded]
                                                                     return [
-
                                                                         captured_expression(value, _node_position(value))
-
                                                                         for value in container_sources(
-
                                                                             node, prior_before,
-
                                                                             expand_listcomp=expand_saved_listcomp,
-
                                                                         )
-
                                                                     ]
 
                                                                 selections = []
