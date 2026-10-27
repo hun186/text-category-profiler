@@ -9039,11 +9039,21 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                 )
                                             ]
                                         if isinstance(candidate, ast.IfExp):
-                                            # A saved conditional selects an eager sequence
-                                            # from a reachable branch, not an opaque object.
+                                            # This helper is shared by earlier callers, before
+                                            # nested comprehension helpers are defined. Resolve
+                                            # only statically certain conditions; preserve both
+                                            # branches for unknown tests.
+                                            if isinstance(candidate.test, ast.Constant):
+                                                branches = (
+                                                    (candidate.body,)
+                                                    if bool(candidate.test.value)
+                                                    else (candidate.orelse,)
+                                                )
+                                            else:
+                                                branches = (candidate.body, candidate.orelse)
                                             return [
                                                 selected
-                                                for branch in possible_branches(candidate)
+                                                for branch in branches
                                                 for selected in container_sources(
                                                     branch, when, level + 1,
                                                     visited, expand_listcomp,
