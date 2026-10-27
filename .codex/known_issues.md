@@ -21,7 +21,7 @@
 - 修復條件：在 Elasticsearch 端完成 credential rotation，確認舊 credential 已失效，部署改用 secret/environment injection，之後可將本項標記 Resolved。
 - 狀態：Open。
 
-### `KI-005` — lightweight discovery 缺少 GPUtil dependency
+### `KI-005` — GPUtil 根依賴宣告已補齊，待 full discovery 驗證
 
 - 首次確認日期與環境：2026-10-01，PR #119 Codex review 的乾淨安裝環境。
 - 最小重現方式或證據位置：修正前依根 `requirements.txt` 建立環境後執行 `python -m unittest discover -s tests`；`tests/test_df_utils.py` 載入 `text_category_profiler.data.df_utils`，再到 `text_category_profiler.core.utilities` 的 unconditional `import GPUtil`。
