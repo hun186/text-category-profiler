@@ -30,6 +30,7 @@ zhconv
 
 # Visualization and web UI used by Test_result_Vis.py and Dash utilities
 dash
+comm>=0.2.3  # Dash import outside Jupyter requires a non-raising default Comm
 dash-bootstrap-components
 dash-pivottable
 dash-uploader
