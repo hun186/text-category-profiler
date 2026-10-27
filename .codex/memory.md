@@ -12,7 +12,9 @@
 
 - PR #122 Windows/Anaconda Stage 4 Dash/comm import compatibility remains **OPEN, NOT MERGED** at reviewed head `89f2834bf07834e880a7bb849efe476cc6995565`: hosted tests and Codex review passed, but real Windows Dash import/WorkPool handoff acceptance remains **KI-007 Open**. Do not conflate that runtime issue with GPU memory or classifier prediction observations.
 
-- KI-005 root dependency correction (2026-10-27): new `codex/declare-gputil-dependency-20261027` branch adds `GPUtil` to `requirements.txt`, dependency-contract regression and lightweight hosted package import check. This addresses the documented missing declaration only; fresh root requirements installation and repository-wide unittest discovery remain unverified, so `KI-005` stays Open. Keep separate from PR #122 and do not merge without user authorization.
+- KI-005 root dependency correction: PR #123 **MERGED** 2026-10-27 20:33 Asia/Taipei, merge SHA `baec09b9d521be86137d2be18857023b20e51059`. Root `GPUtil` declaration, hosted import/contract test (9 PASS) and ES credential guard (271 PASS) were green at exact reviewed PR head. Full fresh `requirements.txt` install and repository-wide unittest discovery still unverified; KI-005 stays Open.
+
+- BL-001 Phase 3 residual batch 2 (2026-10-27): timestamp corpus generator implementation moved from package root to `experiments/timestamp_generator.py` with its 5000-iteration generation gated by explicit `main()`; old direct-execution path remains a thin import-safe shim until external consumers are confirmed. Dedicated standard-library characterization checks import safety, bounded generation and direct-script delegation. Hosted CI and formal PR review must be verified at the exact final head before merge; BL-001 remains In Progress.
 
 ## Durable Outcomes
 
