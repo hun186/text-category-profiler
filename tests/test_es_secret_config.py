@@ -9682,7 +9682,13 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                         if is_getter and len(node.args) == 2 and not chosen:
                                                                             chosen.append(node.args[1])
                                                                         return chosen
-                                                                    return container_sources(node, prior_before)
+                                                                    # Selecting from a named eager sequence must retain
+                                                                    # the creation-time bindings of its nested values.
+                                                                    # Do not accidentally freeze deferred generator bodies.
+                                                                    return [
+                                                                        captured_expression(value, _node_position(value))
+                                                                        for value in container_sources(node, prior_before)
+                                                                    ]
 
                                                                 selections = []
                                                                 present_everywhere = not unknown_mapping_alternative(owner, env)
@@ -10648,6 +10654,26 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                     return mapping_members(
                                                                         node.func.value, node.func.attr, env, nesting + 1
                                                                     )
+                                                                getter = (
+                                                                    isinstance(node, ast.Call)
+                                                                    and isinstance(node.func, ast.Attribute)
+                                                                    and node.func.attr == "get"
+                                                                    and 1 <= len(node.args) <= 2
+                                                                    and not node.keywords
+                                                                )
+                                                                if isinstance(node, ast.Subscript) or getter:
+                                                                    # A selected mapping value can itself be iterable;
+                                                                    # resolve its elements instead of returning no sources.
+                                                                    return [
+                                                                        item
+                                                                        for value in selected_mapping_values(
+                                                                            node, env, nesting + 1
+                                                                        )
+                                                                        if value is not node
+                                                                        for item in iterated_sources(
+                                                                            value, env, nesting + 1
+                                                                        )
+                                                                    ]
                                                                 return []
 
 
@@ -17002,6 +17028,34 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ("seq = (unrelated,)\nsaved = {\"a\": {\"k\": v for v in seq}}\nargs = saved.get(\"a\") if True else {}\nseq = (box,)\nmutate(*(x for group in (args.values(),) for x in group))\n", False, True),
             ("seq = (box,)\nsaved = {\"a\": {\"k\": v for v in seq}}\nargs = saved.get(\"a\")\nalias = args\nseq = (unrelated,)\nmutate(*(x for group in (alias.values(),) for x in group))\n", True, True),
             ("seq = (unrelated,)\nsaved = {\"a\": {\"k\": v for v in seq}}\nargs = saved.get(\"a\")\nalias = args\nseq = (box,)\nmutate(*(x for group in (alias.values(),) for x in group))\n", False, True),
+        )
+        # Codex P2: preserve eager bindings through named list/tuple selectors;
+        # a getter/subscript can also select an iterable (not only a mapping).
+        followup_cases += (
+            ("seq = (box,)\nsaved = [{\"a\": {\"k\": v for v in seq}}]\nargs = saved[0].get(\"a\")\nseq = (unrelated,)\nmutate(*(x for group in (args.values(),) for x in group))\n", True, True),
+            ("seq = (unrelated,)\nsaved = [{\"a\": {\"k\": v for v in seq}}]\nargs = saved[0].get(\"a\")\nseq = (box,)\nmutate(*(x for group in (args.values(),) for x in group))\n", False, True),
+            ("seq = (box,)\nsaved = ({\"a\": {\"k\": v for v in seq}},)\nargs = saved[0].get(\"a\")\nseq = (unrelated,)\nmutate(*(x for group in (args.values(),) for x in group))\n", True, True),
+            ("seq = (unrelated,)\nsaved = ({\"a\": {\"k\": v for v in seq}},)\nargs = saved[0].get(\"a\")\nseq = (box,)\nmutate(*(x for group in (args.values(),) for x in group))\n", False, True),
+            ("seq = (box,)\nsaved = [{\"a\": {\"k\": v for v in seq}}]\nalias = saved\nargs = alias[0].get(\"a\")\nseq = (unrelated,)\nmutate(*(x for group in (args.values(),) for x in group))\n", True, True),
+            ("seq = (unrelated,)\nsaved = [{\"a\": {\"k\": v for v in seq}}]\nalias = saved\nargs = alias[0].get(\"a\")\nseq = (box,)\nmutate(*(x for group in (args.values(),) for x in group))\n", False, True),
+            ("seq = (box,)\nsaved = [[{\"a\": {\"k\": v for v in seq}}]]\nargs = saved[0][0].get(\"a\")\nseq = (unrelated,)\nmutate(*(x for group in (args.values(),) for x in group))\n", True, True),
+            ("seq = (unrelated,)\nsaved = [[{\"a\": {\"k\": v for v in seq}}]]\nargs = saved[0][0].get(\"a\")\nseq = (box,)\nmutate(*(x for group in (args.values(),) for x in group))\n", False, True),
+            ("seq = (box,)\nsaved = [{\"a\": {\"k\": v for v in seq}}]\nargs = saved[0][\"a\"]\nseq = (unrelated,)\nmutate(*(x for group in (args.values(),) for x in group))\n", True, True),
+            ("seq = (unrelated,)\nsaved = [{\"a\": {\"k\": v for v in seq}}]\nargs = saved[0][\"a\"]\nseq = (box,)\nmutate(*(x for group in (args.values(),) for x in group))\n", False, True),
+            ("saved = {\"a\": [[box]]}\nargs = saved.get(\"a\")\nmutate(*(x for inner in args for x in inner))\n", True, False),
+            ("saved = {\"a\": [[unrelated]]}\nargs = saved.get(\"a\")\nmutate(*(x for inner in args for x in inner))\n", False, True),
+            ("saved = {\"a\": [[box]]}\nargs = saved[\"a\"]\nmutate(*(x for inner in args for x in inner))\n", True, False),
+            ("saved = {\"a\": [[unrelated]]}\nargs = saved[\"a\"]\nmutate(*(x for inner in args for x in inner))\n", False, True),
+            ("saved = {\"a\": [[box]]}\nargs = saved.get(\"a\", [])\nmutate(*(x for inner in args for x in inner))\n", True, False),
+            ("saved = {\"a\": [[unrelated]]}\nargs = saved.get(\"a\", [])\nmutate(*(x for inner in args for x in inner))\n", False, True),
+            ("saved = {\"a\": [[box]]}\nalias = saved\nargs = alias[\"a\"]\nmutate(*(x for inner in args for x in inner))\n", True, False),
+            ("saved = {\"a\": [[unrelated]]}\nalias = saved\nargs = alias[\"a\"]\nmutate(*(x for inner in args for x in inner))\n", False, True),
+            ("saved = {\"a\": [(x for x in (box,))]}\nargs = saved.get(\"a\")\nmutate(*(x for inner in args for x in inner))\n", True, False),
+            ("saved = {\"a\": [(x for x in (unrelated,))]}\nargs = saved.get(\"a\")\nmutate(*(x for inner in args for x in inner))\n", False, True),
+            ("saved = {\"a\": [(x for x in (box,))]}\nargs = saved[\"a\"]\nmutate(*(x for inner in args for x in inner))\n", True, False),
+            ("saved = {\"a\": [(x for x in (unrelated,))]}\nargs = saved[\"a\"]\nmutate(*(x for inner in args for x in inner))\n", False, True),
+            ("saved = {\"a\": [[box]]}\nargs = saved.get(\"a\") if True else []\nmutate(*(x for inner in args for x in inner))\n", True, False),
+            ("saved = {\"a\": [[unrelated]]}\nargs = saved.get(\"a\") if True else []\nmutate(*(x for inner in args for x in inner))\n", False, True),
         )
         common_setup = (
             'other = Guard()\n'
