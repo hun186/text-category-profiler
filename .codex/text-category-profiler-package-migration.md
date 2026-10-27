@@ -91,6 +91,7 @@ text_category_profiler/
 - [ ] 將可獨立執行的匯入／轉換工具移至 `scripts/`，並保留明確 CLI entry behavior。
 - [ ] 將 `*_test.py`、效能比較與研究原型分流到 `tests/` 或 `experiments/`。
   - 2026-10-01 residual batch 1：將 package root 的 `WTFOutputer_test.py`、`df_mpTest.py`、`df_mpTest_ThreadPoolExecutor.py`、`df_mpTest_wrapper.py`、`mp_test.py` 分類為 standalone test/experiment prototypes，原內容移至 repository-level `experiments/` 邊界；本批不刪除原型、不宣稱完成全部 Phase 3 inventory。
+  - 2026-10-27 residual batch 2（本批 PR）：將 `text_category_profiler/Timestamp generator.py` 分類為手動執行的 timestamp corpus research experiment，實作移至 `experiments/timestamp_generator.py`，在新實作以明確 `main()` 保留原 5000 次生成及 cwd-relative 輸出語意；原路徑只保留 import-safe direct-script delegation shim，因 repository 外手動 caller 尚未查證，不先移除。使用 `tests/test_timestamp_experiment_boundary.py` 的 import-safety／bounded generation／old CLI dispatch characterization，加 Hosted `git grep` canonical caller guard。此批不涉及其他 residual root items，Phase 3 保持未完成。
 - [ ] 查證 `Edited_zipfile.py`、`dijkstra_algorithm_master/` 等來源、修改與授權，再決定移至 `vendor/`、以 dependency 取代或移除。
 - [ ] 盤點 `- 複製.py`、日期版本、`old_*`、`deprecated` 檔；先比較差異，再整合、測試、歸檔或刪除。
 
