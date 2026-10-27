@@ -10271,7 +10271,16 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
                                                                         for source in mapping_roots(
                                                                             (
                                                                                 captured_expression(root, _node_position(root))
-                                                                                if not lexical_target and isinstance(root, (ast.DictComp, ast.IfExp, ast.Subscript))
+                                                                                if not lexical_target and (
+                                                                                     isinstance(root, (ast.DictComp, ast.IfExp, ast.Subscript))
+                                                                                     or (
+                                                                                         isinstance(root, ast.Call)
+                                                                                         and isinstance(root.func, ast.Attribute)
+                                                                                         and root.func.attr == "get"
+                                                                                         and 1 <= len(root.args) <= 2
+                                                                                         and not root.keywords
+                                                                                     )
+                                                                                 )
                                                                                 else root
                                                                             ),
                                                                             env if lexical_target else None,
@@ -16961,6 +16970,20 @@ class ElasticsearchSecretConfigTests(unittest.TestCase):
             ("seq = (unrelated,)\nargs = ([{\"k\": v for v in seq}][0] if True else {})\nseq = (box,)\nmutate(*(x for group in (args.values(),) for x in group))\n", False, True),
             ("seq = (box,)\nargs = [[{\"k\": v for v in seq}]][0][0]\nalias = args\nseq = (unrelated,)\nmutate(*(x for group in (alias.values(),) for x in group))\n", True, True),
             ("seq = (unrelated,)\nargs = [[{\"k\": v for v in seq}]][0][0]\nalias = args\nseq = (box,)\nmutate(*(x for group in (alias.values(),) for x in group))\n", False, True),
+        )
+        # Codex P2: saved eager DictComp through selected .get() wrappers.
+        # Both credential and safe rebinding directions remain distinct.
+        followup_cases += (
+            ("seq = (box,)\nargs = {\"a\": {\"k\": v for v in seq}}.get(\"a\")\nseq = (unrelated,)\nmutate(*(x for group in (args.values(),) for x in group))\n", True, True),
+            ("seq = (unrelated,)\nargs = {\"a\": {\"k\": v for v in seq}}.get(\"a\")\nseq = (box,)\nmutate(*(x for group in (args.values(),) for x in group))\n", False, True),
+            ("seq = (box,)\nargs = {\"a\": {\"k\": v for v in seq}}.get(\"a\", {})\nalias = args\nseq = (unrelated,)\nmutate(*(x for group in (alias.values(),) for x in group))\n", True, True),
+            ("seq = (unrelated,)\nargs = {\"a\": {\"k\": v for v in seq}}.get(\"a\", {})\nalias = args\nseq = (box,)\nmutate(*(x for group in (alias.values(),) for x in group))\n", False, True),
+            ("seq = (box,)\nargs = {\"outside\": {\"a\": {\"k\": v for v in seq}}}.get(\"outside\").get(\"a\")\nseq = (unrelated,)\nmutate(*(x for group in (args.values(),) for x in group))\n", True, True),
+            ("seq = (unrelated,)\nargs = {\"outside\": {\"a\": {\"k\": v for v in seq}}}.get(\"outside\").get(\"a\")\nseq = (box,)\nmutate(*(x for group in (args.values(),) for x in group))\n", False, True),
+            ("seq = (box,)\nargs = ({\"a\": {\"k\": v for v in seq}}.get(\"a\") if True else {})\nseq = (unrelated,)\nmutate(*(x for group in (args.values(),) for x in group))\n", True, True),
+            ("seq = (unrelated,)\nargs = ({\"a\": {\"k\": v for v in seq}}.get(\"a\") if True else {})\nseq = (box,)\nmutate(*(x for group in (args.values(),) for x in group))\n", False, True),
+            ("seq = (box,)\nargs = {\"a\": {\"k\": v for v in seq}}[\"a\"] if False else {\"a\": {\"k\": v for v in seq}}.get(\"a\")\nseq = (unrelated,)\nmutate(*(x for group in (args.values(),) for x in group))\n", True, True),
+            ("seq = (unrelated,)\nargs = {\"a\": {\"k\": v for v in seq}}[\"a\"] if False else {\"a\": {\"k\": v for v in seq}}.get(\"a\")\nseq = (box,)\nmutate(*(x for group in (args.values(),) for x in group))\n", False, True),
         )
         common_setup = (
             'other = Guard()\n'
