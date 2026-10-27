@@ -30,7 +30,7 @@
 | Format | 待確認，禁止執行 | repository root | Unverified |
 | Lint | 待確認，禁止執行 | repository root | Unverified |
 | Type check | 待確認，禁止執行 | repository root | Unverified |
-| Lightweight discovery | `python -m unittest discover -s tests` | repository root | Canonical discovery entry；Layer A／B modules 未 opt in 時明確 SKIP。乾淨環境僅依 `requirements.txt` 安裝時，目前會在 `tests/test_df_utils.py` 因缺少 `GPUtil` 產生 2 個已知 dependency errors，因此尚不是 clean PASS gate |
+| Lightweight discovery | `python -m unittest discover -s tests` | repository root | Canonical discovery entry；Layer A／B modules 未 opt in 時明確 SKIP。根 requirements 已補上 `GPUtil`（原先 `tests/test_df_utils.py` 有 2 個相關 dependency errors）；仍待全新環境重跑 repository-wide discovery，尚不能宣稱 clean PASS gate |
 | 完整 test suite | 待確認，禁止執行 | repository root | Unverified：未找到 CI 或 canonical test command |
 
 ## 驗證矩陣

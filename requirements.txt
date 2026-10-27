@@ -16,6 +16,7 @@ xlsxwriter
 # CLI / process / system utilities
 colorama
 psutil
+GPUtil  # GPU utilities imported by text_category_profiler.core.utilities
 setproctitle
 tqdm
 version-parser

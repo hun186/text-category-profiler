@@ -7,7 +7,7 @@
 | ID | 嚴重度 | 問題 | 影響範圍 | Workaround | 證據 | 狀態 |
 | --- | --- | --- | --- | --- | --- | --- |
 | `KI-003` | Medium | 已有隔離 root smoke，但尚缺 post-merge real-model/GPU acceptance evidence | 完整 runtime 驗證 | Layer A 啟用時必須 PASS；Layer B 留待明確 real-runtime inputs 與 H100/CUDA acceptance | `tests/test_full_pipeline_smoke.py`、`tests/test_full_pipeline_real_runtime.py`、`.codex/workflows.md` | Open |
-| `KI-005` | Low | 乾淨環境僅安裝根 `requirements.txt` 時，repository-wide unittest discovery 會因缺少 `GPUtil` 產生 2 個 dependency errors | lightweight repository-wide validation | 先跑與變更範圍相符的 targeted tests；不得把 full discovery 宣稱為 clean PASS gate | `tests/test_df_utils.py` → `text_category_profiler.data.df_utils` → `text_category_profiler.core.utilities`；Codex review of PR #119 | Open |
+| `KI-005` | Low | 過去根 `requirements.txt` 未宣告 `GPUtil`，repository-wide discovery 因而產生 2 個 dependency errors；目前已補上依賴宣告，仍待全新環境驗證 | lightweight repository-wide validation | 可執行 dependency-light contract tests；仍須安裝 root requirements 並驗證 full discovery 才能關閉 | `tests/test_df_utils.py` → `text_category_profiler.data.df_utils` → `text_category_profiler.core.utilities`；Codex review of PR #119 | Open |
 | `KI-007` | Medium | Windows/Anaconda Stage 4 Dash import 呼叫舊 `comm.create_comm` 時拋出 `NotImplementedError: Cannot` | `Test_result_Vis.py` CLI 視覺化無法啟動，root fail-fast 阻止後續階段 | 同一個 interpreter 檢查 `comm`/Dash 版本，升級 `comm>=0.2.3` 後再驗證 | 2026-10-27 實機日誌；`BertScript/visualization_stage.py` import 診斷 | Open（待 Windows 實機復測） |
 | `KI-006` | High | Elasticsearch credential 曾硬編碼於 repository source/sample config/setup notes；current source 已移除 tracked credential literals，runtime config 改由 `TCP_ELASTIC_PASSWORD` 注入，但既有 Git 歷史仍可能包含舊值，外部輪替狀態尚未確認 | 仍接受舊 credential 的 Elasticsearch 環境 | 立即在 Elasticsearch 端輪替該 credential，部署時以 `TCP_ELASTIC_PASSWORD` 注入；不要把新 secret commit 到 Git | `tests/test_es_secret_config.py` 掃描 current tracked ES surfaces；Git history 未重寫 | Open |
 
@@ -30,15 +30,15 @@
 - 修復條件：在 Elasticsearch 端完成 credential rotation，確認舊 credential 已失效，部署改用 secret/environment injection，之後可將本項標記 Resolved。
 - 狀態：Open。
 
-### `KI-005` — lightweight discovery 缺少 GPUtil dependency
+### `KI-005` — GPUtil 根依賴宣告已補齊，待 full discovery 驗證
 
 - 首次確認日期與環境：2026-10-01，PR #119 Codex review 的乾淨安裝環境。
-- 最小重現方式或證據位置：依根 `requirements.txt` 建立環境後執行 `python -m unittest discover -s tests`；`tests/test_df_utils.py` 載入 `text_category_profiler.data.df_utils`，再到 `text_category_profiler.core.utilities` 的 unconditional `import GPUtil`。
-- 預期與實際行為：repository-wide lightweight discovery 原先被文件描述為可直接使用的 dependency-light gate；實際目前產生 2 個 `ModuleNotFoundError: No module named 'GPUtil'`。
+- 最小重現方式或證據位置：修正前依根 `requirements.txt` 建立環境後執行 `python -m unittest discover -s tests`；`tests/test_df_utils.py` 載入 `text_category_profiler.data.df_utils`，再到 `text_category_profiler.core.utilities` 的 unconditional `import GPUtil`。
+- 預期與實際行為：repository-wide lightweight discovery 原先被文件描述為可直接使用的 dependency-light gate；實際修正前產生 2 個 `ModuleNotFoundError: No module named 'GPUtil'`；分支已補上根依賴宣告，尚需在 fresh installed runtime 重驗。
 - 影響、嚴重度與受影響範圍：Low；不代表本次 PackageImport/path migration 回歸，但會阻止以乾淨 `requirements.txt` 環境取得 repository-wide clean PASS evidence。
 - 已知 workaround 及其不足：先執行與修改範圍一致的 targeted tests（例如 `tests.test_package_layout`、`tests.test_project_docs`）；這不能取代最後的 repository-wide clean PASS。
-- 修復條件：明確決定並實作 dependency policy（例如補齊 `GPUtil` dependency，或把不需要 GPU probe 的 lightweight import path 解耦），並取得 fresh repository-wide discovery PASS。
-- 狀態：Open。
+- 修復條件：明確決定並實作 dependency policy（根依賴宣告已補上 `GPUtil`；另外可評估是否解耦不需要 GPU probe 的 lightweight import path），並取得 fresh repository-wide discovery PASS。
+- 狀態：Open（依賴宣告修正已完成；待 fresh root dependency install 與 repository-wide discovery 證據）。
 
 ### `KI-003` — 缺少完整 pipeline smoke test
 
