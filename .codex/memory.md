@@ -26,7 +26,9 @@
 
 - PR #124 BL-001 Phase 3 timestamp experiment：**MERGED 2026-10-28 16:57 Asia/Taipei**，main merge `fec6e8e24de459d3463dbf337d3529d208526287`。時間戳實驗改在 `experiments/timestamp_generator.py` 由 `main()` 明確觸發；原 CLI 路徑為 import-safe wrapper。衝突整合後 exact-head Codex Review 0 Findings、Hosted CI 5/5 PASS；merge 後 main 5/5 PASS。BL-001 仍 In Progress。
 
-- BL-001 本批 Elasticsearch text ingest 分流：`CONTRACT-CLI-002` 由 `scripts/ES_ingest_txt_to_es.py` 擁有，原 `text_category_profiler/ES_ingest_txt_to_es.py` 保留 lazy helpers／原 CLI；將不可用的 bare `ES_utils` 改為 canonical integration import，並確保 import／`--help` 不建立 ES 連線。回歸使用 temporary .txt 和 mock bulk，不等同真實 ES acceptance；BL-001 仍 In Progress。
+- PR #130 BL-001 ES text ingest 分流：**MERGED 2026-10-28 17:19 Asia/Taipei**，main merge `102bcecdfdbaafed7105a485363ee7b7f0d5deaf`；`CONTRACT-CLI-002` 的正式實作位於 `scripts/ES_ingest_txt_to_es.py`，舊路徑保留 CLI/lazy helpers，修正 bare ES_utils import。專屬契約測試 8/8 PASS、Codex Review 0 Findings，合併後 main 6/6 CI PASS；真實 Elasticsearch acceptance 未執行。BL-001 仍 In Progress。
+
+- BL-001 vendor Dijkstra reference 批次：已確認原始 `text_category_profiler/dijkstra_algorithm_master/` 含 MIT LICENSE（2019 Doug Mahugh）、來源 README 與小型 graph fixtures；原始 Python implementation／README／LICENSE／fixtures 均原樣移入 `vendor/dijkstra_algorithm_master/`。舊 Python 路徑只保留 lazy re-export 與 direct-run 相容入口，舊 fixture 與 LICENSE 暫留供外部手動 caller，相容性以 stdlib regression/Hosted CI 驗證。本次不接觸 active classifier；仍需另外處理來源未確認的 `Edited_zipfile.py`，BL-001 未完成。
 
 ## Durable Outcomes
 
