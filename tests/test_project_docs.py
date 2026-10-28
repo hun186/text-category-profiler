@@ -24,6 +24,24 @@ class ProjectDocumentationTests(unittest.TestCase):
         self.assertNotRegex(known_issues, r"`KI-002`[^\n]*\| Open \|")
         self.assertRegex(known_issues, r"Recently Resolved[\s\S]*`KI-002`")
 
+    def test_dash_runtime_acceptance_keeps_unverified_ui_work_open(self):
+        known_issues = (ROOT / ".codex" / "known_issues.md").read_text(
+            encoding="utf-8",
+        )
+        memory = (ROOT / ".codex" / "memory.md").read_text(
+            encoding="utf-8",
+        )
+        open_section = known_issues.split("## Open Issues", 1)[1].split(
+            "## Recently Resolved", 1
+        )[0]
+        resolved_section = known_issues.split("## Recently Resolved", 1)[1]
+        self.assertNotIn("| `KI-007` |", open_section)
+        self.assertIn("| `KI-007` |", resolved_section)
+        self.assertIn("| `KI-008` |", open_section)
+        self.assertIn("| `KI-003` |", open_section)
+        self.assertIn("KI-007 Dash import/startup blocker is Resolved", memory)
+        self.assertIn("KI-008", memory)
+
     def test_known_issues_agrees_with_lightweight_smoke_command(self):
         known_issues = (ROOT / ".codex" / "known_issues.md").read_text(encoding="utf-8")
 

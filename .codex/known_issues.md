@@ -9,8 +9,7 @@
 | `KI-003` | Medium | 已有隔離 root smoke，但尚缺 post-merge real-model/GPU acceptance evidence | 完整 runtime 驗證 | Layer A 啟用時必須 PASS；Layer B 留待明確 real-runtime inputs 與 H100/CUDA acceptance | `tests/test_full_pipeline_smoke.py`、`tests/test_full_pipeline_real_runtime.py`、`.codex/workflows.md` | Open |
 | `KI-005` | Low | 過去根 `requirements.txt` 未宣告 `GPUtil`，repository-wide discovery 因而產生 2 個 dependency errors；目前已補上依賴宣告，仍待全新環境驗證 | lightweight repository-wide validation | 可執行 dependency-light contract tests；仍須安裝 root requirements 並驗證 full discovery 才能關閉 | `tests/test_df_utils.py` → `text_category_profiler.data.df_utils` → `text_category_profiler.core.utilities`；Codex review of PR #119 | Open |
 | `KI-009` | Medium | Windows/Anaconda 安裝 TensorFlow 但其原生 DLL 無法初始化時，PyTorch 的 `from transformers import BertModel` 仍可能間接匯入 TensorFlow 而中止 | Stage 2 `PytorchMMBERT`、`PytorchXLM` 等 transformers 分類入口 | Windows CMD 以 `set "USE_TF=0"`、`set "USE_TORCH=1"` 在同個終端機啟動；本 PR 在 PyTorch 專用入口先設兩旗標 | 使用者 2026-10-28 Windows 實機：未設 env 發生 `_pywrap_tensorflow_internal` DLL 錯誤；設 env 後 BertModel import 及完整流程 PASS | Open（自動設定待 Windows 實機驗收） |
-| `KI-007` | Medium | Windows/Anaconda Stage 4 Dash import 呼叫舊 `comm.create_comm` 時拋出 `NotImplementedError: Cannot` | `Test_result_Vis.py` CLI 視覺化無法啟動，root fail-fast 阻止後續階段 | 同一個 interpreter 檢查 `comm`/Dash 版本，升級 `comm>=0.2.3` 後再驗證 | 2026-10-27 實機日誌；`BertScript/visualization_stage.py` import 診斷 | Open（待 Windows 實機復測） |
-| `KI-008` | Medium | Stage 4 Dash 空閒狀態持續執行 table→filter→chart callbacks；表格重新掛載的空 derived filter 造成重複輸出與洗版 | Windows Dash 前端、輸出磁碟及 CPU | 在未修正版本可先停止 Stage 4 服務避免繼續重複寫檔；本 PR 加入空事件防護與斷開 DataTable 自我 data Input | 2026-10-27 使用者實機輸出；`BertScript/Test_result_Vis.py` callback graph；`tests/test_visualization_stage.py` | Open（待 Windows 實機閒置驗收） |
+| `KI-008` | Medium | Stage 4 Dash 空閒狀態持續執行 table→filter→chart callbacks；表格重新掛載的空 derived filter 造成重複輸出與洗版 | Windows Dash 前端、輸出磁碟及 CPU | 在未修正版本可先停止 Stage 4 服務避免繼續重複寫檔；本 PR 加入空事件防護與斷開 DataTable 自我 data Input | 2026-10-27 使用者實機輸出；`BertScript/Test_result_Vis.py` callback graph；`tests/test_visualization_stage.py` | Open（Windows 閒置洗版已改善；待篩選／排序／翻頁互動驗收） |
 | `KI-006` | High | Elasticsearch credential 曾硬編碼於 repository source/sample config/setup notes；current source 已移除 tracked credential literals，runtime config 改由 `TCP_ELASTIC_PASSWORD` 注入，但既有 Git 歷史仍可能包含舊值，外部輪替狀態尚未確認 | 仍接受舊 credential 的 Elasticsearch 環境 | 立即在 Elasticsearch 端輪替該 credential，部署時以 `TCP_ELASTIC_PASSWORD` 注入；不要把新 secret commit 到 Git | `tests/test_es_secret_config.py` 掃描 current tracked ES surfaces；Git history 未重寫 | Open |
 
 ## Issue Details
@@ -30,13 +29,6 @@
 - 驗證：dependency-light callback helper 行為測試、以 AST 載入 `FilteredDF_update` 證明假事件不觸發檔案/log、以及宣告端的回授保護；Hosted CI 不代表 Windows 瀏覽器長時間 idle 驗收。
 - 關閉條件：使用者 Windows/Anaconda 修正版啟動 Dash，無操作持續觀察至少 1 分鐘不再連續執行 `FilteredDF_update`／`table_update` 或重寫 filtered SQLite/Excel；再操作排序、篩選、翻頁各一次，確認能正常更新且不進入循環。
 
-### `KI-007` — Windows/Anaconda Dash 匯入時的舊 comm 相容性
-
-- 觀測：2026-10-27 Windows Anaconda 實機完整流程，RunClassfier 與 CombineTestResult 成功；Stage 4 於 `import dash` → `dash._jupyter` → `comm.create_comm(target_name="dash")` 因舊 `comm` 的 `NotImplementedError("Cannot ")` 中斷。
-- 根因界線：`comm` 的舊預設實作沒有無 kernel 的 DummyComm 支援；根 `requirements.txt` 原未明列版本下限。不能因此推斷模型分類 0/7 或 GPU free 0MB 的原因。
-- 專案側：新增 `comm>=0.2.3` 需求與針對該已知錯誤的 import 診斷；不 monkeypatch Jupyter／Dash，亦不吞掉其他 `NotImplementedError`。測試只證明依賴錯誤被正確辨識；實機可用性尚待確認。
-- 修復／驗收：在啟動 `TCFMain.py` 的同一 Python 環境升級 `comm`，驗證 `python -c "import dash; print(dash.__version__)"`，並以原 Stage 4 命令及工作池 handoff 驗證恢復。
-- 狀態：Open，直到 Windows 實機復測；若成功，再更新 Recently Resolved。
 
 ### `KI-006` — Elasticsearch credential 曾進入 Git history
 
@@ -71,9 +63,20 @@
 
 | ID | 解決摘要 | 驗證 | 日期 | 相關變更／決策 |
 | --- | --- | --- | --- | --- |
+| `KI-007` | Windows Anaconda Dash import 的舊 `comm` 阻擋已處理；PR #122 補齊 `comm>=0.2.3` 與精確診斷，後續實機確認 Dash 能啟動、分類流程可跑完。KI-003 與 KI-008 的獨立驗收未被此結果取代 | PR #122 exact-head Hosted/Review PASS；2026-10-28 使用者 Windows 實機回報 | 2026-10-28 | PR #122、`BertScript/visualization_stage.py` |
 | `KI-002` | PR #98 已以 temporary filesystem 的 root-level WeiTech lifecycle characterization 覆蓋 queue acquisition、canonical test stages、offered-output delivery 與 processed completion；不再列為 current open issue | `tests/test_tcf_workpool_characterization.py` | 2026-09-22 | PR #98 |
 | `KI-001` | 已確認根目錄有 lightweight discovery command；其 clean-environment dependency gap 目前另由 `KI-005` 追蹤 | `python -m unittest discover -s tests` | 2026-09-15 | `.codex/workflows.md`、`tests/test_project_docs.py` |
 | `KI-004` | 修正 Python mapping 語法與部署範例 placeholder；將 CSS 與資料片段以真實副檔名重新分類，而非偽裝成 Python；移除 legacy FTP 範例的連線資料與 import-time 行為，改為明確拒絕網路操作的 inert compatibility stubs，未建立新網路功能 | `python -m compileall TCFMain.py TCF_Params DatasetConverter BertScript text_category_profiler` exits 0；`python -m unittest tests.test_repository_compile_gate` | 2026-09-17 | `tests/test_repository_compile_gate.py` 與 KI-004 blocker corrections |
+
+### `KI-007` — Windows/Anaconda Dash 匯入時的舊 comm 相容性
+
+- 觀測：2026-10-27 Windows Anaconda 實機完整流程，RunClassfier 與 CombineTestResult 成功；Stage 4 於 `import dash` → `dash._jupyter` → `comm.create_comm(target_name="dash")` 因舊 `comm` 的 `NotImplementedError("Cannot ")` 中斷。
+- 根因界線：`comm` 的舊預設實作沒有無 kernel 的 DummyComm 支援；根 `requirements.txt` 原未明列版本下限。不能因此推斷模型分類 0/7 或 GPU free 0MB 的原因。
+- 專案側：新增 `comm>=0.2.3` 需求與針對該已知錯誤的 import 診斷；不 monkeypatch Jupyter／Dash，亦不吞掉其他 `NotImplementedError`。測試證明依賴錯誤被正確辨識；後續 Windows 實機已確認 Dash 可啟動。
+- 修復／驗收：在啟動 `TCFMain.py` 的同一 Python 環境升級 `comm`，驗證 `python -c "import dash; print(dash.__version__)"`，並以原 Stage 4 命令及工作池 handoff 驗證恢復。
+- 2026-10-28 後續使用者實機回報：Windows 分類流程可完整執行、Dash 已能啟動；故本項 **Dash 匯入阻擋** 結案。未提供逐一列示的 final WorkPool directory／交接 artifact，因此不得以此替代 KI-003 的獨立完整 runtime/GPU acceptance。Dash 篩選／排序／翻頁互動未證實，仍屬 KI-008 Open。
+- 狀態：Resolved（Dash/comm import blocker）。
+
 
 ## 記錄準則
 
