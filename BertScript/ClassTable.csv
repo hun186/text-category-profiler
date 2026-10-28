@@ -385,6 +385,7 @@ CN FTZ-Tianjin,天津自由貿易實驗區,
 CN Finance,中國金融,中國金融、融資、債務、金融發展政策等
 CN Foreign Policy,中國對外政策,中國對外交往方針
 CN Forestry Industry,中國林業,
+CN Government Real Estate Policy,中國政府房地產政策,
 CN History,中國歷史,
 CN Hospitality Company Development,中國接待服務產業公司發展情況或分析,
 CN Hospitality Company Management Right,中國接待服務產業公司經營權,本類係指以接待服務產業公司經營權為主體的分析或消息，如為股市整體分析，屬於Stock Market類別
@@ -424,6 +425,7 @@ CN Politics,中國政治,
 CN Poverty Reduction,中國脫貧,中共脫貧、扶貧
 CN Public Diplomacy,中國公共外交,中共公共外交，公共外交（Public Diplomacy）是指國家政府或政府協同民間力量，透過對外資訊傳播其文化及交流不同的方式，對他國民眾進行闡明、溝通與對話工作，希望創造有利於自身國之國際環境，進而謀求國家利益之最大化。 城市外交亦暫列於於本類。
 CN RORO For Military,中國滾裝船於軍事應用,
+CN Real Estate Industry,中國房地產業,中國房地產、房價、建築業，產業資訊；另房地產物件資訊屬Real Estate Object。
 CN Rural Development,中國農村發展,鄉村、農村發展及振興，Rural Development農村發展以村莊為考量主體，Income And Consumption則著眼人民個體生活品質。
 CN Satellite Technology,中國衛星技術,
 CN Showbiz,中國演藝圈,
@@ -886,7 +888,6 @@ Geoscience,地球科學,
 Global Gold Price,國際黃金價格,
 Global Governance,全球治理,
 Global Law,國際法,
-Government Real Estate Policy,政府房地產政策,
 Greater Bay Area,粵港澳大灣區,粵港澳大灣區是由圍繞中華人民共和國珠江三角洲地區伶仃洋組成的城市群。
 Greater Mekong Subregion,大湄公河次區域經濟合作,大湄公河次區域經濟合作（英文：The Greater Mekong Subregion，縮寫：GMS）是基於湄公河流域的區域經濟合作機制，包括的國家有越南、柬埔寨、寮國、泰國、緬甸、中國。
 Green Economy,綠色經濟,包含：低碳經濟、循環經濟等
@@ -1404,7 +1405,6 @@ Ransomware,勒索軟體,勒索軟體 是一種特殊的惡意軟體，又稱勒�
 Ransomware Notes,勒索軟體勒索信,
 Rare-Earth Ore,稀土元素、礦物,
 Rare-Earth Ore Supply And Demand,稀土元素供需,
-Real Estate Industry,中國房地產業,中國房地產、房價、建築業，產業資訊；另房地產物件資訊屬Real Estate Object。
 Real Estate Object,房地產物件,
 Real Estate Object In Japan,日本房地產物件,
 Real Estate Valuation,房地產估價,
