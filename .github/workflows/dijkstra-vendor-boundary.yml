@@ -1,0 +1,37 @@
+name: Dijkstra Vendor Boundary
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "vendor/**"
+      - "text_category_profiler/dijkstra_algorithm_master/**"
+      - "tests/test_dijkstra_vendor_boundary.py"
+      - ".github/workflows/dijkstra-vendor-boundary.yml"
+  push:
+    branches: [main]
+    paths:
+      - "vendor/**"
+      - "text_category_profiler/dijkstra_algorithm_master/**"
+      - "tests/test_dijkstra_vendor_boundary.py"
+      - ".github/workflows/dijkstra-vendor-boundary.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  vendor-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile unchanged upstream algorithm, shim and tests
+        run: python -m py_compile vendor/dijkstra_algorithm_master/dijkstra_algorithm.py text_category_profiler/dijkstra_algorithm_master/dijkstra_algorithm.py tests/test_dijkstra_vendor_boundary.py
+      - name: Verify vendor provenance and legacy API/CLI
+        run: python -m unittest -v tests.test_dijkstra_vendor_boundary
+      - name: Verify application package and documentation guard
+        run: python -m unittest -v tests.test_package_layout tests.test_project_docs
