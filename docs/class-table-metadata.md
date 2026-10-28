@@ -4,7 +4,9 @@ The authoritative metadata file is BertScript/ClassTable.csv (UTF-8 with BOM). I
 
 BertScript/ClassTable.py retains the public ClassTable dict-of-dicts Python API. Direct BertScript entrypoints and package imports remain supported, with no machine-specific paths or cwd mutation. New active consumers use Explanation only. The historical misspelling Explaination is permitted only inside the one-time migration reader, not in active ClassTable data or Dash UI.
 
-Graph authority remains ClassesTree/data/TopicTree.csv. The prompt file TextClassificationDatasetOptimization/ChatGPT提問模板/2-1.TopicTree_old.csv is currently identical. TopicTree edges remain separate from metadata and both parent AND child endpoints form the node set, including non-hierarchical relations.
+Graph authority remains ClassesTree/data/TopicTree.csv. The historical prompt file TextClassificationDatasetOptimization/ChatGPT提問模板/2-1.TopicTree_old.csv is not the active graph authority and may differ from current TopicTree. TopicTree edges remain separate from metadata and both parent AND child endpoints form the node set, including non-hierarchical relations.
+
+The October 2026 metadata alignment renames `Government Real Estate Policy` → `CN Government Real Estate Policy` (CT: 中國政府房地產政策) and `Real Estate Industry` → `CN Real Estate Industry` (CT: 中國房地產業). The full existing explanation of the industry label is preserved. Both CN-scoped names already appear in the active TopicTree; the two generic old keys are removed, not kept as duplicate aliases. Legacy migration verification includes these two explicit, guarded corrections, while strictly preserving every other label and metadata value.
 
 Validation (stdlib-only):
 
@@ -23,7 +25,7 @@ Reproduce and verify the migration against Hosted GitHub's pre-refactor source:
     git show ec212fd17835dd939b010a680955f95f12593598:BertScript/ClassTable.py > legacy-ClassTable.py
     python -m BertScript.migrate_class_table --source legacy-ClassTable.py --verify BertScript/ClassTable.csv
 
-Snapshot: 1,994 unique legacy labels, 434 nonempty legacy explanations, 3,128 TopicTree edges, and 2,670 graph nodes. Python's last-key-wins behavior preserves the effective historical definition of the duplicated SASF-Accessory-Glasses-Sunglasses label and duplicated Maritime Industry-Ports And Logistics explanation. All unique keys and all other CT/Explanation text are preserved. The four confirmed copy/paste corruptions are corrected: Commerce's unrelated Nice attack explanation is transferred to 2016 Nice Truck Attack, that event's CT is fixed, and ASUS/Samsung CTs no longer say Apple. Other possible semantic issues are not rewritten.
+Snapshot: 1,994 unique legacy labels, 434 nonempty legacy explanations, 3,128 TopicTree edges, and 2,670 graph nodes. Python's last-key-wins behavior preserves the effective historical definition of the duplicated SASF-Accessory-Glasses-Sunglasses label and duplicated Maritime Industry-Ports And Logistics explanation. Except for the explicitly documented label renames, all other unique keys and CT/Explanation text are preserved. The four confirmed copy/paste corruptions are corrected: Commerce's unrelated Nice attack explanation is transferred to 2016 Nice Truck Attack, that event's CT is fixed, and ASUS/Samsung CTs no longer say Apple. Other possible semantic issues are not rewritten.
 
 BertScript/ClassTable - 複製.py is historical backup and deliberately unchanged. Legacy deployment snapshots remain isolated, not silently reworked. The active Dash table column now uses Explanation.
 

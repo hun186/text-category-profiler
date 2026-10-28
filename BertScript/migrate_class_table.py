@@ -53,6 +53,24 @@ def correct_known(table):
             raise MetadataError(f"unexpected {label} source; refusing correction")
         table[label]["CT"] = ct
 
+    # The active TopicTree already uses CN-scoped labels; migrate exactly two
+    # old metadata keys without creating aliases or silently changing others.
+    real_estate_renames = (
+        ("Government Real Estate Policy", "CN Government Real Estate Policy",
+         {"CT": "政府房地產政策", "Explanation": ""},
+         {"CT": "中國政府房地產政策", "Explanation": ""}),
+        ("Real Estate Industry", "CN Real Estate Industry",
+         {"CT": "中國房地產業", "Explanation":
+          "中國房地產、房價、建築業，產業資訊；另房地產物件資訊屬Real Estate Object。"},
+         {"CT": "中國房地產業", "Explanation":
+          "中國房地產、房價、建築業，產業資訊；另房地產物件資訊屬Real Estate Object。"}),
+    )
+    for old_label, new_label, expected, replacement in real_estate_renames:
+        if table.get(old_label) != expected or new_label in table:
+            raise MetadataError(f"unexpected {old_label!r} source; refusing rename")
+        del table[old_label]
+        table[new_label] = replacement
+
 
 def verify(original, actual):
     expected = {k: dict(v) for k, v in original.items()}
@@ -84,7 +102,7 @@ def main(argv=None):
     except (MetadataError, OSError, SyntaxError, ValueError) as exc:
         p.exit(2, f"ERROR: {exc}\n")
     print(f"Migration PASS: source labels={len(old)}, CSV rows={len(actual)}, "
-          f"duplicate source labels={duplicate_keys}; full CT/Explanation/Unicode equivalence verified")
+          f"duplicate source labels={duplicate_keys}; CT/Explanation/Unicode equivalence verified after documented corrections and CN renames")
     return 0
 
 

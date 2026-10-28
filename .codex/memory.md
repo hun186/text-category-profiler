@@ -18,7 +18,9 @@
 
 - KI-009 Windows PyTorch/Transformers backend collision: user observed TensorFlow native DLL failure at `from transformers import BertModel` on another Windows/Anaconda machine. With `USE_TF=0`, `USE_TORCH=1` manually set in the same CMD, `BertModel` import and the full pipeline both ran. A separate PR scopes automatic flags to `TextClassification_transformers.py` (not TF15Bert); Hosted tests and **fresh CMD without manual flags Windows revalidation** are still required.
 
-- PR #127 ClassTable CSV-first metadata 重構：獨立 branch feat/class-table-csv-metadata，從 `main@ec212fd17835dd939b010a680955f95f12593598` 開始；完整 CSV／loader、Dash Explanation migration、TopicTree／candidate validator、replay migration、unittest 與 Hosted CI。此 PR **OPEN / NOT MERGED**，請每次以 Hosted exact head 的 checks/reviews/threads 重新查證，未取得使用者明確 merge 指令不得合併。現有 ClassTable 1,994 labels 與 TopicTree 2,670 nodes 不等同，差集維持警示不自動補寫。
+- PR #127 ClassTable CSV-first metadata 重構：**MERGED 2026-10-28 08:59 Asia/Taipei**，merge commit `513808de4ce7b3fff17f13021aa33c20ce6cead9`；正式 CSV／loader、Dash Explanation、TopicTree validator、遷移驗證與 Hosted CI 已入 main。後續 ClassLabel 更名應同步更新 migration replay 的明確允許修正與 unittest；TopicTree 是 graph authority，仍只以警示呈現既有缺漏。
+
+- 本次中國房地產標籤對齊：正式 TopicTree 已採用 `CN Real Estate Industry` 與 `CN Government Real Estate Policy`，原 CSV 卻保留不帶 CN 的舊 label；以新 PR 實施精確兩筆 metadata key rename、保留原說明及歷史 migration 驗證，不修改正式 TopicTree 或歷史 prompt copy。合併前須確認 Hosted exact-head CI、Codex Review 與 review threads。
 
 ## Durable Outcomes
 

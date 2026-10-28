@@ -38,6 +38,13 @@ class ClassTableTests(unittest.TestCase):
         self.assertEqual(len(actual), 1994)
         self.assertEqual(actual["Academia"], {"CT": "學術", "Explanation": "學術界、學術研究"})
         self.assertNotIn("Explaination", actual["Academia"])
+        self.assertEqual(actual["CN Government Real Estate Policy"],
+                         {"CT": "中國政府房地產政策", "Explanation": ""})
+        self.assertEqual(actual["CN Real Estate Industry"],
+                         {"CT": "中國房地產業", "Explanation":
+                          "中國房地產、房價、建築業，產業資訊；另房地產物件資訊屬Real Estate Object。"})
+        self.assertNotIn("Government Real Estate Policy", actual)
+        self.assertNotIn("Real Estate Industry", actual)
         m.check_round_trip(actual)
 
     def test_unicode_quoting_and_optional_explanation(self):
@@ -125,6 +132,9 @@ class ClassTableTests(unittest.TestCase):
             '"2016 Nice Truck Attack":{"CT":"學術","Explaination":"學術界、學術研究"},'
             '"3C Product News-Asus Product News":{"CT":"Apple產品新聞"},'
             '"3C Product News-Samsung Product News":{"CT":"Apple產品新聞"},'
+            '"Government Real Estate Policy":{"CT":"政府房地產政策"},'
+            '"Real Estate Industry":{"CT":"中國房地產業","Explaination":'
+            '"中國房地產、房價、建築業，產業資訊；另房地產物件資訊屬Real Estate Object。"},'
             '"Example":{"CT":"舊"},"Example":{"CT":"新"}}\n', encoding="utf-8"
         )
         data, duplicates = legacy.read_legacy(path)
@@ -133,6 +143,16 @@ class ClassTableTests(unittest.TestCase):
         transformed = {k: dict(v) for k, v in data.items()}
         legacy.correct_known(transformed)
         legacy.verify(data, transformed)
+        self.assertNotIn("Government Real Estate Policy", transformed)
+        self.assertNotIn("Real Estate Industry", transformed)
+        self.assertEqual(transformed["CN Government Real Estate Policy"]["CT"],
+                         "中國政府房地產政策")
+        self.assertEqual(transformed["CN Real Estate Industry"]["Explanation"],
+                         data["Real Estate Industry"]["Explanation"])
+        wrong = {k: dict(v) for k, v in data.items()}
+        wrong["Real Estate Industry"]["CT"] = "錯誤原文"
+        with self.assertRaisesRegex(m.MetadataError, "refusing rename"):
+            legacy.correct_known(wrong)
 
     def test_retired_spelling_fails_active_consumer_guard(self):
         current = self.root / "current.py"
@@ -155,6 +175,12 @@ class ClassTableTests(unittest.TestCase):
         self.assertEqual(report["ClassTableRows"], 1994)
         self.assertEqual(report["TopicTreeNodes"], 2670)
         self.assertTrue(report["MissingInClassTable"])
+        # Both labels already exist in the current authoritative TopicTree.
+        for label in ("CN Government Real Estate Policy", "CN Real Estate Industry"):
+            self.assertIn(label, m.topic_nodes(m.DEFAULT_TREE))
+            self.assertNotIn(label, report["MissingInClassTable"])
+        for retired in ("Government Real Estate Policy", "Real Estate Industry"):
+            self.assertNotIn(retired, report["OrphanInClassTable"])
 
 
 if __name__ == "__main__":

@@ -112,6 +112,7 @@
 - 相容層：BertScript/ClassTable.py 繼續 export ClassTable dict-of-dicts。以 __file__ 定位同目錄 CSV；import 不改 cwd，亦不依賴機器特定路徑。
 - Consumer：BertScript/Test_result_Vis.py 及其 VisParameters_Format.py、Test_result_Vis_layout.py，DatasetConverter/SMS/SMSMerger.py，text_category_profiler/pipeline/DataConverter_utils.py，ClassesTree/Label_utils.py 的 CT helper。所有 active consumer 僅使用 Explanation；遷移輔助程式才接受舊拼字。
 - Graph authority：ClassesTree/data/TopicTree.csv；ClassTable 僅存 metadata，不存 graph。比較 node 集合需取母類別與子類別 union。原資料不一致僅產生 missing/orphan warning，不推斷／覆寫中文翻譯。
+- 已確認的中國房地產兩筆 ClassLabel 應採 TopicTree 既有 `CN Government Real Estate Policy`、`CN Real Estate Industry`，不保留原 generic keys 為別名；舊資料到現行 CSV 的 migration replay 需明確檢查這兩筆 rename 及其 CT／Explanation，其他內容保持等值。
 - Candidate merge：新增邊.csv 的全端點集合減原 TopicTree 節點，須恰與候選 metadata ClassLabel 集合相同；衝突、缺漏或多餘項均拒絕。指令與 migration replay 見 docs/class-table-metadata.md。
 - 驗證：python -m unittest -v tests.test_class_table_metadata；python -m BertScript.class_table_metadata validate。Hosted workflow 另驗證最初 Python dict 對現有 CSV 的 row count、CT、Explanation、Unicode 等值。
 
