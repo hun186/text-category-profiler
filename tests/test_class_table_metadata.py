@@ -134,6 +134,22 @@ class ClassTableTests(unittest.TestCase):
         legacy.correct_known(transformed)
         legacy.verify(data, transformed)
 
+    def test_retired_spelling_fails_active_consumer_guard(self):
+        current = self.root / "current.py"
+        current.write_text("name = 'Explanation'\n", encoding="utf-8")
+        m.check_active_consumers((current,))
+        current.write_text("name = 'Explaination'\n", encoding="utf-8")
+        with self.assertRaisesRegex(m.MetadataError, "retired metadata key"):
+            m.check_active_consumers((current,))
+
+    def test_dash_ui_field_and_column_format_are_consistent(self):
+        repo = Path(__file__).resolve().parents[1]
+        for name in ("Test_result_Vis.py", "Test_result_Vis_layout.py",
+                     "VisParameters_Format.py"):
+            source = (repo / "BertScript" / name).read_text(encoding="utf-8")
+            self.assertNotIn("Explain" + "ation", source)
+        m.check_active_consumers()
+
     def test_actual_tree_audit_reports_not_auto_fills(self):
         report = m.audit(ClassTable, m.DEFAULT_TREE)
         self.assertEqual(report["ClassTableRows"], 1994)

@@ -178,6 +178,24 @@ def merge_candidates(
     return merged, new_nodes
 
 
+
+def check_active_consumers(paths: tuple[Path, ...] | None = None) -> None:
+    """Refuse retired metadata spelling in maintained visualization consumers."""
+    if paths is None:
+        base = Path(__file__).parent
+        paths = (
+            base / "Test_result_Vis.py",
+            base / "Test_result_Vis_layout.py",
+            base / "VisParameters_Format.py",
+        )
+    # The standalone historical copy and AST migration helper are NOT consumers.
+    legacy_name = "Explain" + "ation"
+    for path in paths:
+        if legacy_name in path.read_text(encoding="utf-8"):
+            raise MetadataError(f"{path}: active code still uses retired metadata key")
+
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Validate/merge ClassTable CSV metadata")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -197,6 +215,7 @@ def main(argv: list[str] | None = None) -> int:
         table = load_class_table(args.csv)
         check_round_trip(table)
         if args.command == "validate":
+            check_active_consumers()
             report = audit(table, args.topic_tree)
             if args.json:
                 print(json.dumps(report, ensure_ascii=False, indent=2))

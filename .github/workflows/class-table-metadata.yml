@@ -8,6 +8,8 @@ on:
       - "BertScript/class_table_metadata.py"
       - "BertScript/migrate_class_table.py"
       - "BertScript/Test_result_Vis.py"
+      - "BertScript/Test_result_Vis_layout.py"
+      - "BertScript/VisParameters_Format.py"
       - "ClassesTree/data/TopicTree.csv"
       - "tests/test_class_table_metadata.py"
       - "docs/class-table-metadata.md"
@@ -40,7 +42,7 @@ jobs:
       - name: Compile active metadata and visualization
         run: python -m py_compile BertScript/ClassTable.py BertScript/class_table_metadata.py BertScript/migrate_class_table.py BertScript/Test_result_Vis.py tests/test_class_table_metadata.py
       - name: Run dependency-light metadata tests
-        run: python -m unittest -v tests.test_class_table_metadata
+        run: python -m unittest -v tests.test_class_table_metadata tests.test_sms_merger_path_contract
       - name: Validate ClassTable against TopicTree (warn-only graph differences)
         run: python -m BertScript.class_table_metadata validate
       - name: Verify full historical migration
