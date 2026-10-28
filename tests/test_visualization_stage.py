@@ -16,6 +16,126 @@ class VisualizationStageTests(unittest.TestCase):
     def setUp(self):
         self.stage = importlib.import_module("BertScript.visualization_stage")
 
+    def test_dash_import_uses_dependency_light_importer(self):
+        fake_dash = object()
+        importer = mock.Mock(return_value=fake_dash)
+        self.assertIs(self.stage.import_dash_runtime(importer), fake_dash)
+        importer.assert_called_once_with("dash")
+
+    def test_dash_import_explains_legacy_comm_failure(self):
+        def legacy_importer(name):
+            self.assertEqual(name, "dash")
+            raise NotImplementedError("Cannot ")
+
+        with self.assertRaisesRegex(
+            RuntimeError, r'comm>=0\.2\.3',
+        ) as failure:
+            self.stage.import_dash_runtime(legacy_importer)
+        self.assertIsInstance(failure.exception.__cause__, NotImplementedError)
+        self.assertIn("TCFMain.py", str(failure.exception))
+
+    def test_dash_import_does_not_mask_unrelated_not_implemented(self):
+        original = NotImplementedError("real application failure")
+        def broken_importer(_):
+            raise original
+
+        with self.assertRaises(NotImplementedError) as failure:
+            self.stage.import_dash_runtime(broken_importer)
+        self.assertIs(failure.exception, original)
+
+    def test_dash_script_uses_scoped_import_diagnostic(self):
+        source = Path("BertScript/Test_result_Vis.py").read_text(
+            encoding="utf-8",
+        )
+        root = ast.parse(source)
+        self.assertTrue(any(
+            isinstance(node, ast.Assign)
+            and any(
+                isinstance(target, ast.Name) and target.id == "dash"
+                for target in node.targets
+            )
+            and isinstance(node.value, ast.Call)
+            and isinstance(node.value.func, ast.Attribute)
+            and isinstance(node.value.func.value, ast.Name)
+            and node.value.func.value.id == "visualization_stage"
+            and node.value.func.attr == "import_dash_runtime"
+            for node in root.body
+        ))
+        self.assertFalse(any(
+            isinstance(node, ast.Import)
+            and any(alias.name == "dash" for alias in node.names)
+            for node in root.body
+        ))
+
+    def test_recreated_datatable_empty_derived_filter_is_not_user_input(self):
+        notice = [{"prop_id": "VisDatatable.derived_filter_query_structure",
+                   "value": None}]
+        ignore = self.stage.is_spurious_datatable_filter_notification
+        params = dict(filter_query="", sort_by=[], derived_query_structure=None,
+                      previous_derived_query_structure=None)
+        self.assertTrue(ignore(notice, **params))
+        self.assertFalse(ignore(
+            [{"prop_id": "VisDatatable.sort_by", "value": []}], **params))
+        self.assertFalse(ignore(
+            notice + [{"prop_id": "VisDatatable.sort_by", "value": []}],
+            **params))
+        self.assertFalse(ignore(notice, **dict(params, filter_query="{Rating} > 0")))
+        self.assertFalse(ignore(notice, **dict(params, sort_by=[
+            {"column_id": "Rating", "direction": "desc"}])))
+        self.assertFalse(ignore(notice, **dict(
+            params, previous_derived_query_structure={"operator": "="})))
+        self.assertFalse(ignore(notice, **dict(
+            params, derived_query_structure={"operator": "="})))
+
+    def test_idle_remount_does_not_log_write_or_reprocess_filtered_df(self):
+        source = Path("BertScript/Test_result_Vis.py").read_text(
+            encoding="utf-8")
+        tree = ast.parse(source)
+        callback = next(node for node in tree.body
+                        if isinstance(node, ast.FunctionDef)
+                        and node.name == "FilteredDF_update")
+        # Execute the original function body, not its Dash registration
+        # decorator: the regression harness intentionally has no app/server.
+        callback.decorator_list = []
+
+        class PreventUpdate(Exception):
+            pass
+
+        logging = mock.Mock(side_effect=AssertionError(
+            "Synthetic table remount must not enter expensive callback"))
+        ns = {
+            "dash": types.SimpleNamespace(callback_context=types.SimpleNamespace(
+                triggered=[{"prop_id": "VisDatatable.derived_filter_query_structure",
+                            "value": None}])),
+            "json": __import__("json"),
+            "visualization_stage": self.stage,
+            "PreventUpdate": PreventUpdate,
+            "section": logging,
+            "dfOutputer": logging,
+            "MPLOGGER": types.SimpleNamespace(logW=logging),
+        }
+        exec(compile(ast.Module(body=[callback], type_ignores=[]),
+                     "Test_result_Vis.py", "exec"), ns)
+        actual = ns["FilteredDF_update"]
+        kwargs = {name: None for name in
+                  actual.__code__.co_varnames[:actual.__code__.co_argcount]}
+        kwargs.update(
+            Old_derived_filter_query_structure_json="null",
+            filter_query="", sort_by=[], derived_query_structure=None)
+        with self.assertRaises(PreventUpdate):
+            actual(**kwargs)
+        logging.assert_not_called()
+
+    def test_results_table_does_not_listen_to_its_own_data(self):
+        source = Path("BertScript/Test_result_Vis.py").read_text(
+            encoding="utf-8")
+        prefix = source[:source.index("def table_update(")]
+        # The dynamic args list is immediately above the callback function.
+        registration = prefix[prefix.rfind("\nargs = []"):]
+        self.assertIn("State('VisDatatable', 'data')", registration)
+        self.assertNotIn("Input('VisDatatable', 'data')", registration)
+        self.assertIn("Input('VisDatatable', \"page_current\")", registration)
+
     def test_plan_preserves_host_and_weitech_options(self):
         args = Namespace(
             TRVWebHost=True,

@@ -1,0 +1,41 @@
+name: Stage 2 PyTorch Transformers Backend Isolation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "BertScript/classifier_stage.py"
+      - "BertScript/TextClassification_transformers.py"
+      - "BertScript/RunClassfier.py"
+      - "tests/test_classifier_stage.py"
+      - "tests/test_torch_compat.py"
+      - ".codex/**"
+      - ".github/workflows/stage2-transformers-backend.yml"
+  push:
+    branches: [main]
+    paths:
+      - "BertScript/classifier_stage.py"
+      - "BertScript/TextClassification_transformers.py"
+      - "BertScript/RunClassfier.py"
+      - "tests/test_classifier_stage.py"
+      - "tests/test_torch_compat.py"
+      - ".codex/**"
+      - ".github/workflows/stage2-transformers-backend.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-light-stage2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile Stage 2 scripts and contracts
+        run: python -m py_compile BertScript/classifier_stage.py BertScript/TextClassification_transformers.py BertScript/RunClassfier.py tests/test_classifier_stage.py
+      - name: Test isolated PyTorch backend behavior and TF legacy preservation
+        run: python -m unittest -v tests.test_classifier_stage tests.test_torch_compat tests.test_tcf_main_characterization tests.test_stage_commands tests.test_runtime_dependency_contract

@@ -37,7 +37,7 @@ from functools import partial
 from text_category_profiler.core.warning_filters import suppress_known_third_party_warnings_in_workers
 suppress_known_third_party_warnings_in_workers()
 
-import dash
+dash = visualization_stage.import_dash_runtime()
 #import dash_table
 from dash import dash_table
 import dash_bootstrap_components as dbc
@@ -602,7 +602,7 @@ def BuildColorDF(ColorDict,ClassTable):
     df_datasetCount = LoadDatasetCount(outputDir, datasetDir)
     ClassTableDF = pd.DataFrame(ClassTable).transpose()
     ColorDF['Chinese'] = ColorDF['Label'].map(ClassTableDF["CT"])
-    ColorDF['Explaination'] = ColorDF['Label'].map(ClassTableDF["Explaination"])
+    ColorDF['Explanation'] = ColorDF['Label'].map(ClassTableDF["Explanation"])
     ColorDF['nAnotSamples'] = ColorDF['Label'].map(df_datasetCount["Loaded Samples Count"]).astype(int, errors='ignore')
     ColorDF_json = ColorDF.to_json(date_format='iso', orient='split')
     #Colortable_style_data_conditional=[
@@ -748,7 +748,7 @@ def Build_ColorTable(
         style_data_conditional = Colortable_style_data_conditional
     return Build_DataArrayTable(
             "Colortable",ColorDF.to_dict('records'),
-            ShownColumns=['Color', 'Label', 'InfoScore','Chinese', 'nAnotSamples', 'Explaination'],
+            ShownColumns=['Color', 'Label', 'InfoScore','Chinese', 'nAnotSamples', 'Explanation'],
             style_cell=Colortable_style_cell,
             style_cell_conditional=Colortable_style_cell_conditional,
             style_data_conditional=style_data_conditional,
@@ -2049,6 +2049,17 @@ def FilteredDF_update(
         #*args
         ):
     
+    # Remounting this table resets its derived filter to None. Ignore that
+    # synthetic event before any logging or filtered-file writes.
+    Old_derived_query_structure = json.loads(Old_derived_filter_query_structure_json)
+    if visualization_stage.is_spurious_datatable_filter_notification(
+            dash.callback_context.triggered,
+            filter_query=filter_query,
+            sort_by=sort_by,
+            derived_query_structure=derived_query_structure,
+            previous_derived_query_structure=Old_derived_query_structure):
+        raise PreventUpdate
+
     callback_start_time = time.time()
     section("Update filtered results", icon="🔎")
     MES = f"使用者登錄IP及伺服器port為{request.remote_addr}, {args.TRVPort},"
@@ -2058,16 +2069,6 @@ def FilteredDF_update(
         logFile="Test_result_Vis_LogIP.log",
         printOnScreen=False,
     )
-    #print("derived_filter_query_structure", derived_query_structure)
-    Old_derived_query_structure = json.loads(Old_derived_filter_query_structure_json)
-    #derived_filter_query_structure = None
-
-    button_id_comp = get_button_id_comp(
-        dash.callback_context, inspect.currentframe().f_code.co_name)
-    if button_id_comp == "VisDatatable.page_current":
-        print("Chinaging Page. Abort FilteredDF_update")
-        raise PreventUpdate
-        
     button_id = get_button_id(
         dash.callback_context, inspect.currentframe().f_code.co_name)
 
@@ -2318,7 +2319,10 @@ args.extend([Input("CutRange", "value")])
 #args.extend([Input('VisDatatable', "derived_filter_query_structure")])
 #args.extend([State('VisDatatable', "page_current")])
 args.extend([Input('Colortable', 'data')])
-args.extend([Input('VisDatatable', 'data')])
+# table_update creates VisDatatable; observing its own data as an Input
+# re-triggers this callback whenever Dash mounts the replacement table.
+# No callback computation uses this argument, so keep it only as State.
+args.extend([State('VisDatatable', 'data')])
 #args.extend([State('Colortable', 'data')])
 #args.extend([State('VisDatatable', "derived_filter_query_structure")])
 #args.extend([State('derived_filter_query_structure', "data")])

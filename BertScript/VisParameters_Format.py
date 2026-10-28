@@ -38,7 +38,7 @@ Colortable_style_cell={
 
 Colortable_style_cell_conditional=[
     {
-        'if': {'column_id': "Explaination"},
+        'if': {'column_id': "Explanation"},
         'width': '700px',
         'minWidth': '300px',
         'maxWidth': '700px',

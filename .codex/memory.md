@@ -10,11 +10,21 @@
 
 - PR #121 Elasticsearch credential guard: **MERGED 2026-10-27 19:28 Asia/Taipei** into `main` at merge commit `58c3bddbc2837e202efda98b3bbf30c5902ba458`; final reviewed head `e9bf2cd9ce0bfb27ccd064c570911cef339e898e`. Previous source-time P2 repairs and 271 unittest methods were retained; exact-head Codex review reported no major issues. External Elasticsearch credential rotation remains **KI-006 Open**, since rewriting Git history and revoking the old password are outside that PR.
 
-- PR #122 Windows/Anaconda Stage 4 Dash/comm import compatibility remains **OPEN, NOT MERGED** at reviewed head `89f2834bf07834e880a7bb849efe476cc6995565`: hosted tests and Codex review passed, but real Windows Dash import/WorkPool handoff acceptance remains **KI-007 Open**. Do not conflate that runtime issue with GPU memory or classifier prediction observations.
+- PR #122 Dash/comm compatibility: **MERGED 2026-10-27 21:06 Asia/Taipei** into main at `4c0f757f4ed1911f06798edf61774a18683c1e0d` after manual merge-conflict resolution. At exact reviewed integration HEAD `c0bab1b5ca9d`, Stage 4 48, GPUtil 9, ES security 271 hosted tests PASS; exact-head Codex found no issues. User subsequently confirmed Windows Dash **starts successfully**, but full WorkPool final handoff is not yet verified, so `KI-007` remains Open.
 
-- KI-005 root dependency correction: PR #123 **MERGED** 2026-10-27 20:33 Asia/Taipei, merge SHA `baec09b9d521be86137d2be18857023b20e51059`. Root `GPUtil` declaration, hosted import/contract test (9 PASS) and ES credential guard (271 PASS) were green at exact reviewed PR head. Full fresh `requirements.txt` install and repository-wide unittest discovery still unverified; KI-005 stays Open.
+- PR #123 root GPUtil dependency fix: **MERGED 2026-10-27 20:33 Asia/Taipei** at `baec09b9d521be86137d2be18857023b20e51059`; dependency-light hosted contract 9 PASS, ES guard 271 PASS at reviewed PR HEAD. Fresh full root requirements install/repository-wide discovery remains unverified, so `KI-005` remains Open.
 
-- BL-001 Phase 3 residual batch 2 (2026-10-27): timestamp corpus generator implementation moved from package root to `experiments/timestamp_generator.py` with its 5000-iteration generation gated by explicit `main()`; old direct-execution path remains a thin import-safe shim until external consumers are confirmed. Dedicated standard-library characterization checks import safety, bounded generation and direct-script delegation. Hosted CI and formal PR review must be verified at the exact final head before merge; BL-001 remains In Progress.
+- PR #125 Stage 4 Dash idle-loop fix: **MERGED 2026-10-27 23:39 Asia/Taipei** at `9e2be27d629c8496cf3d3768ddff7ea4b9ffa29d`; exact-head Hosted CI and Codex Review PASS. User later confirmed Windows complete classification flow and Dash no longer repeatedly refreshes while idle; real filter/sort/pagination interactions not separately reported, so KI-008 remains open pending that final check.
+
+- KI-009 Windows PyTorch/Transformers backend collision: user observed TensorFlow native DLL failure at `from transformers import BertModel` on another Windows/Anaconda machine. With `USE_TF=0`, `USE_TORCH=1` manually set in the same CMD, `BertModel` import and the full pipeline both ran. A separate PR scopes automatic flags to `TextClassification_transformers.py` (not TF15Bert); Hosted tests and **fresh CMD without manual flags Windows revalidation** are still required.
+
+- PR #127 ClassTable CSV-first metadata 重構：**MERGED 2026-10-28 08:59 Asia/Taipei**，merge commit `513808de4ce7b3fff17f13021aa33c20ce6cead9`；正式 CSV／loader、Dash Explanation、TopicTree validator、遷移驗證與 Hosted CI 已入 main。後續 ClassLabel 更名應同步更新 migration replay 的明確允許修正與 unittest；TopicTree 是 graph authority，仍只以警示呈現既有缺漏。
+
+- PR #128 中國房地產分類更名：**MERGED 2026-10-28 11:27 Asia/Taipei**，main merge commit `38b5e1f4a6950193b31ddd7d59871f58cfaabe5b`。`ClassTable.csv` 兩個正式 ClassLabel 對齊 TopicTree 的 `CN Real Estate Industry`／`CN Government Real Estate Policy`，原 Explanation 保留，1,994 筆不變；Hosted 5 項 CI 與 Codex exact-head Review PASS，merge 後 main 的 5 項 CI 亦 PASS。
+
+- BL-001 Phase 3 RAND corpus 原型分流：既有 `text_category_profiler/utilities_RAND.py` 非生產共享 helper，移至 `experiments/rand_corpus_labeling.py`，舊路徑保留 import-safe 相容入口與既有 lazy helper names；新增 stdlib characterization + Hosted CI。只有明確執行才會觸發 RAND SQLite／資料複製，本批沒有實際跑 RAND corpus；BL-001 維持 In Progress。其他獨立 PR #124 不受變更。
+
+- PR #124 BL-001 Phase 3 timestamp experiment：將 `text_category_profiler/Timestamp generator.py` 的大量手動生成流程移至 `experiments/timestamp_generator.py`，只有明確執行 `main()` 才進行 5,000 次生成與 cwd-relative 輸出；舊直接執行路徑留作 import-safe 委派。該 PR 原 HEAD `1b3380313febb20710d2d665e68a1569468b1ca0` 曾通過正式 Codex review、3 項 Hosted CI；因 main 前進造成合併衝突，已保留其他已合併成果並準備在最新 main 整合驗證。BL-001 仍為 In Progress。
 
 ## Durable Outcomes
 

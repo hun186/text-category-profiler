@@ -290,7 +290,7 @@ def serve_layout(
                                         Build_ColorTable(ColorDF)
                                         #Build_DataArrayTable(
                                             #"Colortable",ColorDF.to_dict('records'),
-                                            #ShownColumns=['Color', 'Label', 'InfoScore', 'Chinese', 'Explaination'],
+                                            #ShownColumns=['Color', 'Label', 'InfoScore', 'Chinese', 'Explanation'],
                                             #style_cell=Colortable_style_cell,
                                             #style_cell_conditional=Colortable_style_cell_conditional,
                                             #style_data_conditional=Colortable_style_data_conditional,

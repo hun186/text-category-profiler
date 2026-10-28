@@ -10,7 +10,7 @@ import sys
 
 from BertScript.classifier_stage import (
     ClassifierPlan, activate_classifier, render_pytorch_command,
-    render_tf_command, run_classifier_stage,
+    render_tf_command, run_classifier_stage, configure_pytorch_transformers_backend,
 )
 
 
@@ -113,6 +113,50 @@ class ClassifierStageTests(unittest.TestCase):
                               return_value=(fake_plan, {})):
                 RunClassfier.main([], stage_api=fake_stage)
         self.assertEqual(len(calls), 1)
+
+    def test_pytorch_backend_overrides_only_in_its_own_environment(self):
+        environment = {"USE_TF": "1", "USE_TORCH": "AUTO",
+                       "CUSTOM_FLAG": "preserve"}
+        configure_pytorch_transformers_backend(environment)
+        self.assertEqual(environment, {
+            "USE_TF": "0", "USE_TORCH": "1", "CUSTOM_FLAG": "preserve"})
+        configure_pytorch_transformers_backend(environment)
+        self.assertEqual(environment["USE_TF"], "0")
+
+    def test_pytorch_entrypoint_configures_backend_before_ml_imports(self):
+        source = Path("BertScript/TextClassification_transformers.py").read_text(
+            encoding="utf-8")
+        tree = ast.parse(source)
+        statements = tree.body
+        configure_at = next(
+            i for i, node in enumerate(statements)
+            if isinstance(node, ast.Expr)
+            and isinstance(node.value, ast.Call)
+            and isinstance(node.value.func, ast.Name)
+            and node.value.func.id == "configure_pytorch_transformers_backend")
+        import_at = next(
+            i for i, node in enumerate(statements)
+            if isinstance(node, (ast.Import, ast.ImportFrom))
+            and ((isinstance(node, ast.Import) and any(
+                name.name == "torch" or name.name.startswith("transformers")
+                for name in node.names))
+                 or (isinstance(node, ast.ImportFrom) and (
+                     node.module == "transformers" or node.module == "torch"))))
+        self.assertLess(configure_at, import_at)
+        self.assertTrue(any(
+            isinstance(node, ast.ImportFrom)
+            and node.module == "BertScript.classifier_stage"
+            and any(alias.name == "configure_pytorch_transformers_backend"
+                    for alias in node.names)
+            for node in statements[:configure_at]))
+
+    def test_tf_rendering_does_not_force_pytorch_backend(self):
+        cmd = render_tf_command(
+            args(ModelType="TF15Bert"), "/data", "/model",
+            "python run_classifier.py^\\n", windows=True)
+        self.assertIn("call activate TF1.5", cmd)
+        self.assertNotIn("USE_TF", cmd)
+        self.assertNotIn("USE_TORCH", cmd)
 
     def test_plan_preserves_pytorch_command(self):
         command = render_pytorch_command(args(), "/work_rdy_for_RunClassfier", "/model", "./BertScript")

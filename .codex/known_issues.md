@@ -8,9 +8,35 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | `KI-003` | Medium | 已有隔離 root smoke，但尚缺 post-merge real-model/GPU acceptance evidence | 完整 runtime 驗證 | Layer A 啟用時必須 PASS；Layer B 留待明確 real-runtime inputs 與 H100/CUDA acceptance | `tests/test_full_pipeline_smoke.py`、`tests/test_full_pipeline_real_runtime.py`、`.codex/workflows.md` | Open |
 | `KI-005` | Low | 過去根 `requirements.txt` 未宣告 `GPUtil`，repository-wide discovery 因而產生 2 個 dependency errors；目前已補上依賴宣告，仍待全新環境驗證 | lightweight repository-wide validation | 可執行 dependency-light contract tests；仍須安裝 root requirements 並驗證 full discovery 才能關閉 | `tests/test_df_utils.py` → `text_category_profiler.data.df_utils` → `text_category_profiler.core.utilities`；Codex review of PR #119 | Open |
+| `KI-009` | Medium | Windows/Anaconda 安裝 TensorFlow 但其原生 DLL 無法初始化時，PyTorch 的 `from transformers import BertModel` 仍可能間接匯入 TensorFlow 而中止 | Stage 2 `PytorchMMBERT`、`PytorchXLM` 等 transformers 分類入口 | Windows CMD 以 `set "USE_TF=0"`、`set "USE_TORCH=1"` 在同個終端機啟動；本 PR 在 PyTorch 專用入口先設兩旗標 | 使用者 2026-10-28 Windows 實機：未設 env 發生 `_pywrap_tensorflow_internal` DLL 錯誤；設 env 後 BertModel import 及完整流程 PASS | Open（自動設定待 Windows 實機驗收） |
+| `KI-007` | Medium | Windows/Anaconda Stage 4 Dash import 呼叫舊 `comm.create_comm` 時拋出 `NotImplementedError: Cannot` | `Test_result_Vis.py` CLI 視覺化無法啟動，root fail-fast 阻止後續階段 | 同一個 interpreter 檢查 `comm`/Dash 版本，升級 `comm>=0.2.3` 後再驗證 | 2026-10-27 實機日誌；`BertScript/visualization_stage.py` import 診斷 | Open（待 Windows 實機復測） |
+| `KI-008` | Medium | Stage 4 Dash 空閒狀態持續執行 table→filter→chart callbacks；表格重新掛載的空 derived filter 造成重複輸出與洗版 | Windows Dash 前端、輸出磁碟及 CPU | 在未修正版本可先停止 Stage 4 服務避免繼續重複寫檔；本 PR 加入空事件防護與斷開 DataTable 自我 data Input | 2026-10-27 使用者實機輸出；`BertScript/Test_result_Vis.py` callback graph；`tests/test_visualization_stage.py` | Open（待 Windows 實機閒置驗收） |
 | `KI-006` | High | Elasticsearch credential 曾硬編碼於 repository source/sample config/setup notes；current source 已移除 tracked credential literals，runtime config 改由 `TCP_ELASTIC_PASSWORD` 注入，但既有 Git 歷史仍可能包含舊值，外部輪替狀態尚未確認 | 仍接受舊 credential 的 Elasticsearch 環境 | 立即在 Elasticsearch 端輪替該 credential，部署時以 `TCP_ELASTIC_PASSWORD` 注入；不要把新 secret commit 到 Git | `tests/test_es_secret_config.py` 掃描 current tracked ES surfaces；Git history 未重寫 | Open |
 
 ## Issue Details
+
+### `KI-009` — PyTorch 分類入口間接載入無法初始化的 TensorFlow DLL
+
+- 實機故障：Windows/Anaconda `TextClassification_transformers.py` 在 `from transformers import BertModel` → `transformers.image_transforms` → `import tensorflow` 時，`_pywrap_tensorflow_internal` 初始化失敗；尚無證據可歸因 CPU AVX 或 VC++ runtime。
+- 已驗證 workaround：使用者在同一 Windows CMD 執行 `set "USE_TF=0"`、`set "USE_TORCH=1"` 後，`BertModel` 匯入正常，完整分類流程跑完；這只驗證手動設定，不等於本 PR 的自動設定已實機驗收。
+- 專案側修正：`TextClassification_transformers.py` 屬 PyTorch 專用執行入口，在 `torch` / `transformers` 匯入之前呼叫 dependency-light `configure_pytorch_transformers_backend`，將本程序 `USE_TF=0`、`USE_TORCH=1`；`TF15Bert` 的 batch/runtime 路徑未修改。
+- 關閉條件：Windows/Anaconda **全新 CMD、不手動設兩旗標**，確認 `USE_TF`／`USE_TORCH` 非預設 workaround，再實際執行 `TCFMain.py` 的 PyTorch 分類流程直到 Stage 2／後續 handoff 成功；TF15Bert 可用性另行按原有流程驗證。Hosted CI 的 AST/helper/runtime isolation tests 不能取代 Windows TensorFlow DLL 現場驗證。
+
+### `KI-008` — Stage 4 Dash 閒置時 callback 反覆觸發
+
+- 2026-10-27 Windows 實機現象：未操作 UI 時重複出現 `table_update`、`FilteredDF_update`（空 `derived_filter_query_structure=None`、無 query/sort）、`ChunkDF_update`，每回又輸出 `FilteredPreambleCols_df`；畫面與 console 反覆洗版。
+- 已確認的程式路徑：`table_update` 每次重建 `VisDatatableCard` 內的 DataTable，原本又將自身重建的 `VisDatatable.data` 作為 Input；table mount 亦可重設 derived filter，造成無操作的 filter→chart→table 回授。
+- 修正分支：僅在 **單一** `VisDatatable.derived_filter_query_structure=None` 事件、前次/本次 filter 皆 None、query 與 sort 均空白時，在任何磁碟輸出及 log 前 `PreventUpdate`；真正排序、設定/清除非空 filter、label/keyword input 仍交由原 callback；另外把沒被使用的 table `data` 自我 Input 降為 State，保留 page_current、page size、cut range、顏色與篩選真正互動入口。
+- 驗證：dependency-light callback helper 行為測試、以 AST 載入 `FilteredDF_update` 證明假事件不觸發檔案/log、以及宣告端的回授保護；Hosted CI 不代表 Windows 瀏覽器長時間 idle 驗收。
+- 關閉條件：使用者 Windows/Anaconda 修正版啟動 Dash，無操作持續觀察至少 1 分鐘不再連續執行 `FilteredDF_update`／`table_update` 或重寫 filtered SQLite/Excel；再操作排序、篩選、翻頁各一次，確認能正常更新且不進入循環。
+
+### `KI-007` — Windows/Anaconda Dash 匯入時的舊 comm 相容性
+
+- 觀測：2026-10-27 Windows Anaconda 實機完整流程，RunClassfier 與 CombineTestResult 成功；Stage 4 於 `import dash` → `dash._jupyter` → `comm.create_comm(target_name="dash")` 因舊 `comm` 的 `NotImplementedError("Cannot ")` 中斷。
+- 根因界線：`comm` 的舊預設實作沒有無 kernel 的 DummyComm 支援；根 `requirements.txt` 原未明列版本下限。不能因此推斷模型分類 0/7 或 GPU free 0MB 的原因。
+- 專案側：新增 `comm>=0.2.3` 需求與針對該已知錯誤的 import 診斷；不 monkeypatch Jupyter／Dash，亦不吞掉其他 `NotImplementedError`。測試只證明依賴錯誤被正確辨識；實機可用性尚待確認。
+- 修復／驗收：在啟動 `TCFMain.py` 的同一 Python 環境升級 `comm`，驗證 `python -c "import dash; print(dash.__version__)"`，並以原 Stage 4 命令及工作池 handoff 驗證恢復。
+- 狀態：Open，直到 Windows 實機復測；若成功，再更新 Recently Resolved。
 
 ### `KI-006` — Elasticsearch credential 曾進入 Git history
 

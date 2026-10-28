@@ -27,6 +27,8 @@
 | 單獨分類 | `python BertScript/RunClassfier.py ...` | repository root | Verified as stage command assembled by `TCFMain.py`；未 smoke test |
 | 單獨結果合併 | `python BertScript/CombineTestResult.py ...` | repository root | Verified as stage command assembled by `TCFMain.py`；未 smoke test |
 | 單獨視覺化分析 | `python BertScript/Test_result_Vis.py ...` | repository root | Verified as stage command assembled by `TCFMain.py`；未 smoke test |
+| ClassTable metadata validator | `python -m BertScript.class_table_metadata validate --json` | repository root | Hosted CI 在 PR #127 初版 HEAD 驗證通過；不一致的 graph sets 僅 warning，`--strict-tree` 才視為失敗 |
+| ClassTable dependency-light tests | `python -m unittest -v tests.test_class_table_metadata` | repository root | Hosted ClassTable workflow 有此測試；不等同完整 ML acceptance |
 | Format | 待確認，禁止執行 | repository root | Unverified |
 | Lint | 待確認，禁止執行 | repository root | Unverified |
 | Type check | 待確認，禁止執行 | repository root | Unverified |
@@ -42,8 +44,10 @@
 | 資料轉換 | `python -m unittest tests.test_dataconverter_fixture_integration`；使用 repository 小型 fixture、process workers 與 temporary output，不接觸真實工作池 | 變更 pandas／SQLite output adapter、完整 CLI bootstrap、fixed-test／ES 或 handoff 時仍需擴大驗證 |
 | 分類器 | 需要已確認模型／fixture 後執行 RunClassfier smoke test；目前待確認 | 影響模型格式、GPU/CPU resource gate 或 output contract |
 | 視覺化 lifecycle | `python -m unittest tests.test_visualization_stage tests.test_tcf_main_characterization tests.test_stage_commands`；`python -m py_compile BertScript/Test_result_Vis.py BertScript/visualization_stage.py` | layout、Dash callback 或部署設定改變時才需 browser/screenshot；lifecycle tests 不啟動 Dash server |
-| Architecture boundaries | `python -m unittest tests.test_package_layout tests.test_project_docs` | import arrows、legacy entrypoints、DatasetConverter boundaries 或 current-state docs 改變 |
+| Dash UI callback / idle redraw | `python -m unittest tests.test_visualization_stage`：確認單獨的 DataTable null derived-filter remount 在輸出檔案前被略過，table data 不再是表格重建 callback 的 self-Input；CI 不執行瀏覽器 | 在 Windows 實機開啟 Stage 4，閒置至少 1 分鐘確認無 table→filter→chart 迴圈或重複磁碟輸出，再各測一次真實篩選、清除、排序及翻頁；沒有現場驗證前 KI-008 不得標示 Resolved |
+| ClassTable metadata / GUI field | `python -m unittest -v tests.test_class_table_metadata`（純 stdlib）；`tests.test_sms_merger_path_contract` 需要 pandas，另於安裝完整資料轉換依賴的環境驗證、`python -m BertScript.class_table_metadata validate`；另確認 Dash 欄位／樣式皆改為 Explanation，及歷史 migration replay | full ML／瀏覽器只在實際有相關行為變更時擴大 |
 | Timestamp research experiment / legacy CLI shim | `python -m unittest tests.test_timestamp_experiment_boundary tests.test_package_layout tests.test_repository_compile_gate`；`python -m py_compile "experiments/timestamp_generator.py" "text_category_profiler/Timestamp generator.py"` | 這些測試在記憶體內限制產生數量、mock locale／輸出，不啟動真實 5000 次資料生成。真的要大量生成才人工執行 `python experiments/timestamp_generator.py`（輸出至 caller cwd）。 |
+| Architecture boundaries | `python -m unittest tests.test_package_layout tests.test_project_docs` | import arrows、legacy entrypoints、DatasetConverter boundaries 或 current-state docs 改變 |
 | 匯入外部服務 | 先以 dry-run 或 mock 明確標示；不得把真實 DB/ES 寫入當 smoke test | 會連線 SQL Server、Elasticsearch 或批次寫入資料 |
 
 ## Full-pipeline smoke profiles
@@ -112,6 +116,42 @@ Layer B 只有在 root exit 0、production classifier evidence、final `*_rdy_fo
 - 測試是否允許網路：待確認；預設不讓測試依賴網路成功。
 - 外部服務替代方式：待確認；mock 必須明確揭露，不得冒充正式成功。
 - 測試產物位置與清理方式：待確認；`WorkPool*`、`logs`、模型與 output 目錄需先視為可能有狀態。
+
+## Windows／Anaconda：PyTorch 分類與 TensorFlow DLL 後端隔離
+
+`BertScript/TextClassification_transformers.py` 為 PyTorch 專用入口，現會在首次載入 PyTorch／Hugging Face Transformers **之前**將本 Python 子程序的 `USE_TF=0`、`USE_TORCH=1`，避免同環境已安裝卻無法載入的 TensorFlow DLL 中斷 `from transformers import BertModel`。這不是修復 TensorFlow DLL 本身；也**不會**修改上層 `TCFMain.py` 或 `TF15Bert` 的 shell/batch 執行路徑。
+
+這個自動隔離只有 dependency-light／Hosted CI 驗證；Windows 先前通過的是**手動**設定環境變數的完整流程。要驗收自動修正，使用新的 **Anaconda Prompt (CMD)**，不要先執行 `set USE_TF`／`set USE_TORCH`，在與既有工作相同的 Python 環境檢查：
+
+```bat
+echo USE_TF=%USE_TF%
+echo USE_TORCH=%USE_TORCH%
+python -c "import sys; print(sys.executable)"
+python -c "from transformers import BertModel; print('BertModel import OK')"
+```
+
+最後一個單獨 `BertModel` 匯入在 **TensorFlow 壞掉且未手動隔離**的機器上仍可能報錯，這**不是**自動修正失效，因為只有 `TextClassification_transformers.py` 專用入口才啟用後端隔離。應使用原本的 `TCFMain.py` PyTorch 分類指令跑完 Stage 2／後續交接，並檢查未再出現 `_pywrap_tensorflow_internal` DLL traceback。不要為了避開 DLL 問題擅自全域移除 TensorFlow，舊 `TF15Bert` 路徑需保留。
+
+Hosted CI 驗證：`python -m unittest -v tests.test_classifier_stage tests.test_torch_compat tests.test_tcf_main_characterization tests.test_stage_commands tests.test_runtime_dependency_contract`（Stage 2 PyTorch Transformers Backend Isolation workflow）；CI 未安裝壞掉的 Windows TensorFlow DLL，不能宣稱 Windows 免手動設定已通過。
+
+## Windows Anaconda：Dash/comm 載入前檢查
+
+當獨立啟動 `Test_result_Vis.py` 的 `import dash` 透過 `dash._jupyter` → `comm.create_comm(target_name="dash")` 拋出 `NotImplementedError: Cannot`，屬於啟動 Python 環境的舊 `comm` 實作與 Dash 不相容；它不是 RunClassfier／CombineTestResult 的模型錯誤。
+
+在**執行 TCFMain.py 的同一個 Anaconda 環境與 Python 解譯器**下，先查明版本與所在路徑：
+
+```powershell
+python -c "import sys, importlib.metadata as m, comm; print(sys.executable); print('comm:', m.version('comm'), comm.__file__); print('dash:', m.version('dash'))"
+```
+
+先備份／複製原本的 Conda 環境，再修復依賴（只升級 `comm`，避免順手升級整套 ML/CUDA 套件）：
+
+```powershell
+python -m pip install --upgrade "comm>=0.2.3"
+python -c "import dash; print(dash.__version__)"
+```
+
+第二行通過後，才重試原本的 Stage 4 命令。若無法安裝或升級，留下上述診斷輸出與 pip dependency conflict 資訊；**不得聲稱 Stage 4 已在 Windows 實機通過**。專案回歸測試不啟動真實 Dash server：`python -m unittest tests.test_visualization_stage tests.test_tcf_main_characterization tests.test_stage_commands`。
 
 ## 常見失敗與替代驗證
 
