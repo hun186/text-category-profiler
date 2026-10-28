@@ -91,6 +91,7 @@ text_category_profiler/
 - [ ] 將可獨立執行的匯入／轉換工具移至 `scripts/`，並保留明確 CLI entry behavior。
 - [ ] 將 `*_test.py`、效能比較與研究原型分流到 `tests/` 或 `experiments/`。
   - 2026-10-01 residual batch 1：將 package root 的 `WTFOutputer_test.py`、`df_mpTest.py`、`df_mpTest_ThreadPoolExecutor.py`、`df_mpTest_wrapper.py`、`mp_test.py` 分類為 standalone test/experiment prototypes，原內容移至 repository-level `experiments/` 邊界；本批不刪除原型、不宣稱完成全部 Phase 3 inventory。
+  - 2026-10-28 residual batch RAND：`text_category_profiler/utilities_RAND.py` 為手動 RAND corpus 分類與複製實驗，並非跨 stage 共享 helper；原本在 import 時載入已遷移的 bare `df_utils`、`utilities` provider。實作移至 `experiments/rand_corpus_labeling.py`，保留舊路徑的 direct-run 相容入口，原 `LoadTree`／`GetSubNodes`／`RANDLoader` 仍可懶載入；只有明確執行或取得 metadata 才載入依賴。新 stdlib 測試檢查 import 不碰資料、舊呼叫相容與直接執行委派，未連線真實 SQLite、複製 RAND 文件或跑模型。本批不代表 Phase 3／BL-001 完成。
 - [ ] 查證 `Edited_zipfile.py`、`dijkstra_algorithm_master/` 等來源、修改與授權，再決定移至 `vendor/`、以 dependency 取代或移除。
 - [ ] 盤點 `- 複製.py`、日期版本、`old_*`、`deprecated` 檔；先比較差異，再整合、測試、歸檔或刪除。
 

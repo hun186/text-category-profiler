@@ -20,7 +20,9 @@
 
 - PR #127 ClassTable CSV-first metadata 重構：**MERGED 2026-10-28 08:59 Asia/Taipei**，merge commit `513808de4ce7b3fff17f13021aa33c20ce6cead9`；正式 CSV／loader、Dash Explanation、TopicTree validator、遷移驗證與 Hosted CI 已入 main。後續 ClassLabel 更名應同步更新 migration replay 的明確允許修正與 unittest；TopicTree 是 graph authority，仍只以警示呈現既有缺漏。
 
-- 本次中國房地產標籤對齊：正式 TopicTree 已採用 `CN Real Estate Industry` 與 `CN Government Real Estate Policy`，原 CSV 卻保留不帶 CN 的舊 label；以新 PR 實施精確兩筆 metadata key rename、保留原說明及歷史 migration 驗證，不修改正式 TopicTree 或歷史 prompt copy。合併前須確認 Hosted exact-head CI、Codex Review 與 review threads。
+- PR #128 中國房地產分類更名：**MERGED 2026-10-28 11:27 Asia/Taipei**，main merge commit `38b5e1f4a6950193b31ddd7d59871f58cfaabe5b`。`ClassTable.csv` 兩個正式 ClassLabel 對齊 TopicTree 的 `CN Real Estate Industry`／`CN Government Real Estate Policy`，原 Explanation 保留，1,994 筆不變；Hosted 5 項 CI 與 Codex exact-head Review PASS，merge 後 main 的 5 項 CI 亦 PASS。
+
+- BL-001 Phase 3 RAND corpus 原型分流：既有 `text_category_profiler/utilities_RAND.py` 非生產共享 helper，移至 `experiments/rand_corpus_labeling.py`，舊路徑保留 import-safe 相容入口與既有 lazy helper names；新增 stdlib characterization + Hosted CI。只有明確執行才會觸發 RAND SQLite／資料複製，本批沒有實際跑 RAND corpus；BL-001 維持 In Progress。其他獨立 PR #124 不受變更。
 
 ## Durable Outcomes
 
