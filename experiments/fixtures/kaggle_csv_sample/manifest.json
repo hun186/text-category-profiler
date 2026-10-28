@@ -1,0 +1,162 @@
+{
+  "purpose": "Historical Kaggle-style CSV extraction experiment inputs and emitted text samples; not production dataset fixtures",
+  "source_main_sha": "b50b4418cd8920de6e8200859a8e3b6dd8151295",
+  "entries": [
+    {
+      "old_path": "text_category_profiler/csvSample/123_456_789_好棒棒_1.txt",
+      "new_path": "experiments/fixtures/kaggle_csv_sample/csvSample/123_456_789_好棒棒_1.txt",
+      "sha": "8d48179d35973862591e3748c3ff686c308901ab",
+      "size_bytes": 9
+    },
+    {
+      "old_path": "text_category_profiler/csvSample/123_456_789_好棒棒_2.txt",
+      "new_path": "experiments/fixtures/kaggle_csv_sample/csvSample/123_456_789_好棒棒_2.txt",
+      "sha": "8d48179d35973862591e3748c3ff686c308901ab",
+      "size_bytes": 9
+    },
+    {
+      "old_path": "text_category_profiler/csvSample/123_456_789_好棒棒_3.txt",
+      "new_path": "experiments/fixtures/kaggle_csv_sample/csvSample/123_456_789_好棒棒_3.txt",
+      "sha": "8d48179d35973862591e3748c3ff686c308901ab",
+      "size_bytes": 9
+    },
+    {
+      "old_path": "text_category_profiler/csvSample/123_456_789_好棒棒_4.txt",
+      "new_path": "experiments/fixtures/kaggle_csv_sample/csvSample/123_456_789_好棒棒_4.txt",
+      "sha": "8d48179d35973862591e3748c3ff686c308901ab",
+      "size_bytes": 9
+    },
+    {
+      "old_path": "text_category_profiler/csvSample/123_456_789_好棒棒_5.txt",
+      "new_path": "experiments/fixtures/kaggle_csv_sample/csvSample/123_456_789_好棒棒_5.txt",
+      "sha": "8d48179d35973862591e3748c3ff686c308901ab",
+      "size_bytes": 9
+    },
+    {
+      "old_path": "text_category_profiler/csvSample/123_456_789_好棒棒.txt",
+      "new_path": "experiments/fixtures/kaggle_csv_sample/csvSample/123_456_789_好棒棒.txt",
+      "sha": "8d48179d35973862591e3748c3ff686c308901ab",
+      "size_bytes": 9
+    },
+    {
+      "old_path": "text_category_profiler/csvSample/124_458_7823_12345678888888888888_1.txt",
+      "new_path": "experiments/fixtures/kaggle_csv_sample/csvSample/124_458_7823_12345678888888888888_1.txt",
+      "sha": "298fc63b71376088dbd88e030d5def10d47e50d4",
+      "size_bytes": 53
+    },
+    {
+      "old_path": "text_category_profiler/csvSample/124_458_7823_12345678888888888888_10.txt",
+      "new_path": "experiments/fixtures/kaggle_csv_sample/csvSample/124_458_7823_12345678888888888888_10.txt",
+      "sha": "addf19a9b5bc9a295d90a09cdd5352bf0270e9a0",
+      "size_bytes": 53
+    },
+    {
+      "old_path": "text_category_profiler/csvSample/124_458_7823_12345678888888888888_11.txt",
+      "new_path": "experiments/fixtures/kaggle_csv_sample/csvSample/124_458_7823_12345678888888888888_11.txt",
+      "sha": "298fc63b71376088dbd88e030d5def10d47e50d4",
+      "size_bytes": 53
+    },
+    {
+      "old_path": "text_category_profiler/csvSample/124_458_7823_12345678888888888888_2.txt",
+      "new_path": "experiments/fixtures/kaggle_csv_sample/csvSample/124_458_7823_12345678888888888888_2.txt",
+      "sha": "addf19a9b5bc9a295d90a09cdd5352bf0270e9a0",
+      "size_bytes": 53
+    },
+    {
+      "old_path": "text_category_profiler/csvSample/124_458_7823_12345678888888888888_3.txt",
+      "new_path": "experiments/fixtures/kaggle_csv_sample/csvSample/124_458_7823_12345678888888888888_3.txt",
+      "sha": "298fc63b71376088dbd88e030d5def10d47e50d4",
+      "size_bytes": 53
+    },
+    {
+      "old_path": "text_category_profiler/csvSample/124_458_7823_12345678888888888888_4.txt",
+      "new_path": "experiments/fixtures/kaggle_csv_sample/csvSample/124_458_7823_12345678888888888888_4.txt",
+      "sha": "addf19a9b5bc9a295d90a09cdd5352bf0270e9a0",
+      "size_bytes": 53
+    },
+    {
+      "old_path": "text_category_profiler/csvSample/124_458_7823_12345678888888888888_5.txt",
+      "new_path": "experiments/fixtures/kaggle_csv_sample/csvSample/124_458_7823_12345678888888888888_5.txt",
+      "sha": "298fc63b71376088dbd88e030d5def10d47e50d4",
+      "size_bytes": 53
+    },
+    {
+      "old_path": "text_category_profiler/csvSample/124_458_7823_12345678888888888888_6.txt",
+      "new_path": "experiments/fixtures/kaggle_csv_sample/csvSample/124_458_7823_12345678888888888888_6.txt",
+      "sha": "addf19a9b5bc9a295d90a09cdd5352bf0270e9a0",
+      "size_bytes": 53
+    },
+    {
+      "old_path": "text_category_profiler/csvSample/124_458_7823_12345678888888888888_7.txt",
+      "new_path": "experiments/fixtures/kaggle_csv_sample/csvSample/124_458_7823_12345678888888888888_7.txt",
+      "sha": "298fc63b71376088dbd88e030d5def10d47e50d4",
+      "size_bytes": 53
+    },
+    {
+      "old_path": "text_category_profiler/csvSample/124_458_7823_12345678888888888888_8.txt",
+      "new_path": "experiments/fixtures/kaggle_csv_sample/csvSample/124_458_7823_12345678888888888888_8.txt",
+      "sha": "addf19a9b5bc9a295d90a09cdd5352bf0270e9a0",
+      "size_bytes": 53
+    },
+    {
+      "old_path": "text_category_profiler/csvSample/124_458_7823_12345678888888888888_9.txt",
+      "new_path": "experiments/fixtures/kaggle_csv_sample/csvSample/124_458_7823_12345678888888888888_9.txt",
+      "sha": "298fc63b71376088dbd88e030d5def10d47e50d4",
+      "size_bytes": 53
+    },
+    {
+      "old_path": "text_category_profiler/csvSample/124_458_7823_12345678888888888888.txt",
+      "new_path": "experiments/fixtures/kaggle_csv_sample/csvSample/124_458_7823_12345678888888888888.txt",
+      "sha": "addf19a9b5bc9a295d90a09cdd5352bf0270e9a0",
+      "size_bytes": 53
+    },
+    {
+      "old_path": "text_category_profiler/csvSample/124_458_7823_abcdef_1.txt",
+      "new_path": "experiments/fixtures/kaggle_csv_sample/csvSample/124_458_7823_abcdef_1.txt",
+      "sha": "d96dc95707c20a371b14928ee42071f00e00b645",
+      "size_bytes": 6
+    },
+    {
+      "old_path": "text_category_profiler/csvSample/124_458_7823_abcdef_2.txt",
+      "new_path": "experiments/fixtures/kaggle_csv_sample/csvSample/124_458_7823_abcdef_2.txt",
+      "sha": "d96dc95707c20a371b14928ee42071f00e00b645",
+      "size_bytes": 6
+    },
+    {
+      "old_path": "text_category_profiler/csvSample/124_458_7823_abcdef_3.txt",
+      "new_path": "experiments/fixtures/kaggle_csv_sample/csvSample/124_458_7823_abcdef_3.txt",
+      "sha": "d96dc95707c20a371b14928ee42071f00e00b645",
+      "size_bytes": 6
+    },
+    {
+      "old_path": "text_category_profiler/csvSample/124_458_7823_abcdef_4.txt",
+      "new_path": "experiments/fixtures/kaggle_csv_sample/csvSample/124_458_7823_abcdef_4.txt",
+      "sha": "d96dc95707c20a371b14928ee42071f00e00b645",
+      "size_bytes": 6
+    },
+    {
+      "old_path": "text_category_profiler/csvSample/124_458_7823_abcdef_5.txt",
+      "new_path": "experiments/fixtures/kaggle_csv_sample/csvSample/124_458_7823_abcdef_5.txt",
+      "sha": "d96dc95707c20a371b14928ee42071f00e00b645",
+      "size_bytes": 6
+    },
+    {
+      "old_path": "text_category_profiler/csvSample/124_458_7823_abcdef.txt",
+      "new_path": "experiments/fixtures/kaggle_csv_sample/csvSample/124_458_7823_abcdef.txt",
+      "sha": "d96dc95707c20a371b14928ee42071f00e00b645",
+      "size_bytes": 6
+    },
+    {
+      "old_path": "text_category_profiler/KaggleExtraction/csvSample - 複製.txt",
+      "new_path": "experiments/fixtures/kaggle_csv_sample/KaggleExtraction/csvSample - 複製.txt",
+      "sha": "85b1ae3945a86244fc9850076fda35920928b235",
+      "size_bytes": 228
+    },
+    {
+      "old_path": "text_category_profiler/KaggleExtraction/csvSample.txt",
+      "new_path": "experiments/fixtures/kaggle_csv_sample/KaggleExtraction/csvSample.txt",
+      "sha": "85b1ae3945a86244fc9850076fda35920928b235",
+      "size_bytes": 228
+    }
+  ]
+}
