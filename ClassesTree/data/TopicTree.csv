@@ -560,6 +560,8 @@ TW Economic Infrastructure,TW Economic Infrastructure-Transportation,20230115151
 TW Finance,TW Stock Market,202210121547,,
 TW Industrial Development,TW Agriculture Industry,202304022042,,
 TW Industrial Development,TW Company Development,202304051001,,
+TW Industrial Development,TW Real Estate Industry,202610011644,,
+TW Real Estate Industry,TW Government Real Estate Policy,202610011644,,
 TW Company Development,TW Technology Company Development,202304051001,,
 TW Technology Company Development,TW Technology Company Revenue,202304051001,,
 TW Technology Company Development,TW Technology Company Management Right,202304051001,,
@@ -944,9 +946,9 @@ Social Security,Asylum Seeker Affairs,202303151103,,
 Refugee Crisis,Climate Refugee,202303151103,,
 Population,Aging Affairs,202303201757,,
 Boao Forum,Aging Affairs In Boao Forum,202303201757,,
-CN Industrial Development,Real Estate Industry,202109010940,,
-Real Estate Industry,Government Real Estate Policy,202210140901,,
-Real Estate Industry,CERP-Real Estate Industry,202211152152,,
+CN Industrial Development,CN Real Estate Industry,202109010940,,
+CN Real Estate Industry,CN Government Real Estate Policy,202210140901,,
+CN Real Estate Industry,CERP-Real Estate Industry,202211152152,,
 Industrial Development,Tourism Industry,202303091014,,
 CN City Development,CN Rural Development,202109010940,,
 CN Agriculture Industry,CN Rural Development,202408191458,,
@@ -3127,3 +3129,13 @@ UN Projects-UN80 Initiative,UN80 Initiative-Secretariat Efficiency And Administr
 UN Projects-UN80 Initiative,UN80 Initiative-Mandate Creation Implementation And Review,202609161228,contains,新增底層細緻類別；依UN80工作流2聚焦任務授權的建立、執行、檢視與生命週期改革；目標類別：聯合國財政危機與聯合國80改革；＠ChatGPT
 UN Projects-UN80 Initiative,UN80 Initiative-Structural Changes And Programme Realignment,202609161228,contains,新增底層細緻類別；依UN80工作流3聚焦組織結構變革、實體整併與方案調整；目標類別：聯合國財政危機與聯合國80改革；＠ChatGPT
 Global Governance,UN Governance And Reform,202609161228,contains,新增結構型交叉父類別；聯合國治理與改革亦屬全球治理之直接下位主題；目標類別：聯合國財政危機與聯合國80改革；＠ChatGPT
+CN Economics,CN Real Estate Crisis And Weak Domestic Demand,202610011653,contains,新增主要層級；建立中國房地產危機與內需疲弱複合經濟主題，作為房市危機與內需疲弱兩條穩定分支的共同語意錨點；目標類別：中國房地產危機與內需疲弱；＠ChatGPT
+CN Real Estate Crisis And Weak Domestic Demand,CN Real Estate Crisis,202610011653,contains,新增必要中間節點；以中國房地產危機作為房企財務壓力與住宅市場調整的穩定語意錨點；目標類別：中國房地產危機與內需疲弱；＠ChatGPT
+CN Real Estate Crisis And Weak Domestic Demand,CN Weak Domestic Demand,202610011653,contains,新增必要中間節點；以中國內需疲弱作為居民消費與總體需求不足的穩定語意錨點；目標類別：中國房地產危機與內需疲弱；＠ChatGPT
+CN Real Estate Crisis,CN Real Estate Crisis-Developer Debt And Restructuring,202610011653,contains,新增底層細緻類別；依房企資產負債表與債務處置主軸區分違約、流動性、清盤及債務重組；目標類別：中國房地產危機與內需疲弱；＠ChatGPT
+CN Real Estate Crisis,CN Real Estate Crisis-Housing Sales Prices Inventory And Delivery,202610011653,contains,新增底層細緻類別；依住宅市場運行主軸涵蓋銷售、價格、庫存、施工與預售交付；目標類別：中國房地產危機與內需疲弱；＠ChatGPT
+CN Weak Domestic Demand,CN Weak Domestic Demand-Household Consumption Confidence And Savings,202610011653,contains,新增底層細緻類別；聚焦居民端消費支出、消費信心、收入預期與預防性儲蓄等需求機制；目標類別：中國房地產危機與內需疲弱；＠ChatGPT
+CN Weak Domestic Demand,CN Weak Domestic Demand-Aggregate Demand And Investment Weakness,202610011653,contains,新增底層細緻類別；聚焦總體內需、固定與民間投資、需求缺口及其對成長與價格的壓力；目標類別：中國房地產危機與內需疲弱；＠ChatGPT
+CN Real Estate Industry,CN Real Estate Crisis,202610011653,contains,新增結構型交叉父類別；將房地產危機直接納入既有中國房地產業分支，補充產業維度之直接上下位關係；目標類別：中國房地產危機與內需疲弱；＠ChatGPT
+CN Finance,CN Real Estate Crisis-Developer Debt And Restructuring,202610011653,contains,新增結構型交叉父類別；將房企債務與重組葉節點納入既有中國金融分支，補充公司債務與金融風險維度；目標類別：中國房地產危機與內需疲弱；＠ChatGPT
+CN Income And Consumption,CN Weak Domestic Demand-Household Consumption Confidence And Savings,202610011653,contains,新增結構型交叉父類別；將居民消費、信心與儲蓄葉節點納入既有中國收入與消費分支；目標類別：中國房地產危機與內需疲弱；＠ChatGPT
