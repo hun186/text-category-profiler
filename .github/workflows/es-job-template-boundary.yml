@@ -1,0 +1,39 @@
+name: ES Job Template Boundary
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "text_category_profiler/ArtCluESJobTemplate.py"
+      - "text_category_profiler/integrations/es_job_template.py"
+      - "text_category_profiler/integrations/ES_JOB_TEMPLATE.md"
+      - "tests/test_es_job_template_boundary.py"
+      - ".github/workflows/es-job-template-boundary.yml"
+  push:
+    branches: [main]
+    paths:
+      - "text_category_profiler/ArtCluESJobTemplate.py"
+      - "text_category_profiler/integrations/es_job_template.py"
+      - "text_category_profiler/integrations/ES_JOB_TEMPLATE.md"
+      - "tests/test_es_job_template_boundary.py"
+      - ".github/workflows/es-job-template-boundary.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  es-job-template:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile canonical module, facade and characterization
+        run: python -m py_compile text_category_profiler/integrations/es_job_template.py text_category_profiler/ArtCluESJobTemplate.py tests/test_es_job_template_boundary.py
+      - name: Verify historical template and import-time environment contract
+        run: python -m unittest -v tests.test_es_job_template_boundary
+      - name: Verify architecture and documentation
+        run: python -m unittest -v tests.test_package_layout tests.test_project_docs

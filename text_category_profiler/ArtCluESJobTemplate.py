@@ -1,17 +1,13 @@
-import os
+"""Legacy Elasticsearch job-template module.
 
-esJobTemplate = {
-    "es_tokens" : {
-        #"host" : "http://localhost:9200",
-        "host" : "https://localhost:9200",
-        "user" : "elastic",
-        "password" : os.environ.get("TCP_ELASTIC_PASSWORD")
-    },
-	"indexnameTemplate" : "movies_%m",
-	#"startDay" : "2022-12-01T00:00:00Z",
-	#"endDay" : "2022-12-10T20:00:00Z",
-    #"langCode" : "C",
-    "langCodeList" : ["C","E","J"],
-    "Vis_ESFileNameMode": "subject_id", #"","subject_id",
-    #"selectedMessage":True
-}
+Re-evaluate the canonical dictionary for each module execution, matching
+the historical import/reload/runpy behavior: TCP_ELASTIC_PASSWORD is read at
+that execution's environment snapshot. No Elasticsearch client is initialized.
+"""
+from pathlib import Path
+from runpy import run_path
+
+_CONFIG_PATH = Path(__file__).resolve().parent / "integrations" / "es_job_template.py"
+esJobTemplate = run_path(str(_CONFIG_PATH))["esJobTemplate"]
+
+__all__ = ["esJobTemplate"]

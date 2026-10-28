@@ -28,7 +28,7 @@
 
 - PR #130 BL-001 ES text ingest 分流：**MERGED 2026-10-28 17:19 Asia/Taipei**，main merge `102bcecdfdbaafed7105a485363ee7b7f0d5deaf`；`CONTRACT-CLI-002` 的正式實作位於 `scripts/ES_ingest_txt_to_es.py`，舊路徑保留 CLI/lazy helpers，修正 bare ES_utils import。專屬契約測試 8/8 PASS、Codex Review 0 Findings，合併後 main 6/6 CI PASS；真實 Elasticsearch acceptance 未執行。BL-001 仍 In Progress。
 
-- BL-001 vendor Dijkstra reference 批次：已確認原始 `text_category_profiler/dijkstra_algorithm_master/` 含 MIT LICENSE（2019 Doug Mahugh）、來源 README 與小型 graph fixtures；原始 Python implementation／README／LICENSE／fixtures 均原樣移入 `vendor/dijkstra_algorithm_master/`。舊 Python 路徑只保留 lazy re-export 與 direct-run 相容入口，舊 fixture 與 LICENSE 暫留供外部手動 caller，相容性以 stdlib regression/Hosted CI 驗證。本次不接觸 active classifier；仍需另外處理來源未確認的 `Edited_zipfile.py`，BL-001 未完成。
+- BL-001 Phase 3 vendor 與配置分流：PR #131 Dijkstra MIT 範例已合併（`474d28a49847`）、PR #133 修改版 CPython v3.7.17 GBK ZIP 與 PSF LICENSE 已合併（`680608b1f04b`），#133 合併後 Hosted CI 7/7 PASS。當前一批獨立整理 legacy `ArtCluESJobTemplate.py`：權威設定搬至 `text_category_profiler/integrations/es_job_template.py`，完整保留原始 Git blob／每次執行模組的環境變數 snapshot／可變 dict 與舊 import，僅驗證 import 及設定，不驗證真實 ES。BL-001 仍 In Progress。
 
 ## Durable Outcomes
 
