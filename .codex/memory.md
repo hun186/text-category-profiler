@@ -18,6 +18,8 @@
 
 - KI-009 Windows PyTorch/Transformers backend collision: user observed TensorFlow native DLL failure at `from transformers import BertModel` on another Windows/Anaconda machine. With `USE_TF=0`, `USE_TORCH=1` manually set in the same CMD, `BertModel` import and the full pipeline both ran. A separate PR scopes automatic flags to `TextClassification_transformers.py` (not TF15Bert); Hosted tests and **fresh CMD without manual flags Windows revalidation** are still required.
 
+- PR #127 ClassTable CSV-first metadata 重構：獨立 branch feat/class-table-csv-metadata，從 `main@ec212fd17835dd939b010a680955f95f12593598` 開始；完整 CSV／loader、Dash Explanation migration、TopicTree／candidate validator、replay migration、unittest 與 Hosted CI。此 PR **OPEN / NOT MERGED**，請每次以 Hosted exact head 的 checks/reviews/threads 重新查證，未取得使用者明確 merge 指令不得合併。現有 ClassTable 1,994 labels 與 TopicTree 2,670 nodes 不等同，差集維持警示不自動補寫。
+
 ## Durable Outcomes
 
 1. Root configuration 已由 frozen `PipelinePlan` 與明確 runtime activation 隔離，import 不解析 process argv 或啟動 filesystem/process runtime。

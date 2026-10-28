@@ -1,0 +1,51 @@
+name: ClassTable CSV Metadata Contract
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "BertScript/ClassTable.py"
+      - "BertScript/ClassTable.csv"
+      - "BertScript/class_table_metadata.py"
+      - "BertScript/migrate_class_table.py"
+      - "BertScript/Test_result_Vis.py"
+      - "BertScript/Test_result_Vis_layout.py"
+      - "BertScript/VisParameters_Format.py"
+      - "ClassesTree/data/TopicTree.csv"
+      - "tests/test_class_table_metadata.py"
+      - "docs/class-table-metadata.md"
+      - ".github/workflows/class-table-metadata.yml"
+  push:
+    branches: [main]
+    paths:
+      - "BertScript/ClassTable.py"
+      - "BertScript/ClassTable.csv"
+      - "BertScript/class_table_metadata.py"
+      - "BertScript/migrate_class_table.py"
+      - "BertScript/Test_result_Vis.py"
+      - "ClassesTree/data/TopicTree.csv"
+      - "tests/test_class_table_metadata.py"
+      - ".github/workflows/class-table-metadata.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  class-table:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile active metadata and visualization
+        run: python -m py_compile BertScript/ClassTable.py BertScript/class_table_metadata.py BertScript/migrate_class_table.py BertScript/Test_result_Vis.py tests/test_class_table_metadata.py
+      - name: Run dependency-light metadata tests
+        run: python -m unittest -v tests.test_class_table_metadata
+      - name: Validate ClassTable against TopicTree (warn-only graph differences)
+        run: python -m BertScript.class_table_metadata validate
+      - name: Verify full historical migration
+        run: |
+          git show ec212fd17835dd939b010a680955f95f12593598:BertScript/ClassTable.py > old-ClassTable.py
+          python -m BertScript.migrate_class_table --source old-ClassTable.py --verify BertScript/ClassTable.csv

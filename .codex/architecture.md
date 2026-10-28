@@ -21,6 +21,7 @@
 | Result analysis / visualization | `CombineTestResult.py` 保留既有 pandas/SQLite computation 與 direct-script composition；`result_combination_stage.py` 的 `ResultCombinationPlan` 定義 authoritative canonical inputs、ready/running activation、成功才交給 visualization-ready suffix。`Test_result_Vis.py` 保留 Dash computation、layouts 與 callbacks；dependency-light `visualization_stage.py` 的 `VisualizationPlan` 定義 ready/running activation、hosted decision 與成功 completion handoff | prediction result、dataset DB、label list、visualization host/port intent | combined SQLite／分析資料／Dash UI | `BertScript/CombineTestResult.py`, `BertScript/result_combination_stage.py`, `BertScript/Test_result_Vis.py`, `BertScript/visualization_stage.py` |
 | Shared utilities | 依領域提供 core、data、concurrency、pipeline、text、visualization 與 integrations 工具 | 跨模組 utility calls | 共用 helper behavior | `text_category_profiler/<domain>/` |
 | Class tree tools | label tree 與分類樹視覺化／分析 | topic tree、labels | tree analysis／visualization | `ClassesTree/` |
+| ClassTable display metadata | 類別 CT／Explanation 顯示 metadata；CSV 為權威、Python loader 提供既有 dict API，與 TopicTree graph 職責分離 | `BertScript/ClassTable.csv` | 類別 CT／Explanation 對應、Dash 欄位、人工維護／CSV merge | `BertScript/ClassTable.py`, `BertScript/class_table_metadata.py` |
 | Dataset optimization workspace | 以提示模板盤點 taxonomy 缺口、查核當前議題、設計類別與來源索引；由正文抓取工具將公開來源轉為待審核文本 | topic tree、代理人查核結果、來源索引 ZIP | 新增邊／子圖、來源索引、標記正文、抓取與驗證報告 | `TextClassificationDatasetOptimization/` |
 
 ## 主要資料流

@@ -12,6 +12,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | `CONTRACT-CLI-001` | CLI | Text classification flow args | `text_category_profiler/pipeline/TCF_utils.py` | `TCFMain.py`, DatasetConverter, BertScript | `ClassfierOptionParser()` | Draft / currently used |
 | `CONTRACT-FILE-001` | File handoff | Classifier dataset directory | `DatasetConverter/` | `BertScript/RunClassfier.py`, `TCFMain.py` | Stage scripts and filename checks | Draft / currently used |
+| `CONTRACT-FILE-004` | CSV / Python API | ClassTable display metadata | `BertScript/ClassTable.csv`, `ClassTable.py` | Dash / SMS / DataConverter tools | `class_table_metadata.py` | CSV authoritative; compatibility dict retained |
 | `CONTRACT-FILE-003` | File input | Topic tree taxonomy CSV files | `ClassesTree/` / project data owner | `DatasetConverter/DataConverter.py`, tree viewers | `--TopicTreeDir`, `--TopicTreeFiles`, `ClassesTree/ClassesTree_utils.py` | Draft / currently used |
 | `CONTRACT-FILE-002` | File handoff | Prediction/result analysis artifacts | `BertScript/RunClassfier.py`, `CombineTestResult.py` | `Test_result_Vis.py`, work pool output | Stage scripts and backup filename patterns | Draft / currently used |
 | `CONTRACT-CLI-002` | CLI / external service | Elasticsearch text ingestion tool | `text_category_profiler/ES_ingest_txt_to_es.py` | Operators / data import jobs | argparse in script | Optional / unverified in root flow |
@@ -103,6 +104,16 @@
 - 版本與相容性：目前無 schema version；新增或移除 tree CSV 檔名需透過 `--TopicTreeFiles` 顯式傳遞並同步相關 viewer。
 - 安全與敏感資訊：taxonomy label 通常非憑證，但仍可能透露內部分類策略；提交或輸出前需確認可分享範圍。
 - 契約測試：可用最小 CSV fixture 測 `LoadTree(..., TreeSourceDir=...)`；完整流程 fixture 待建立。
+
+
+### CONTRACT-FILE-004 ClassTable metadata CSV / Python API
+
+- 權威資料：BertScript/ClassTable.csv，UTF-8 BOM，固定欄位順序 ClassLabel,CT,Explanation，依英文 ClassLabel deterministic sorting。ClassLabel 不可空白／重複，CT 不可空白，Explanation 可空；重複 CT 只提示 warning。
+- 相容層：BertScript/ClassTable.py 繼續 export ClassTable dict-of-dicts。以 __file__ 定位同目錄 CSV；import 不改 cwd，亦不依賴機器特定路徑。
+- Consumer：BertScript/Test_result_Vis.py 及其 VisParameters_Format.py、Test_result_Vis_layout.py，DatasetConverter/SMS/SMSMerger.py，text_category_profiler/pipeline/DataConverter_utils.py，ClassesTree/Label_utils.py 的 CT helper。所有 active consumer 僅使用 Explanation；遷移輔助程式才接受舊拼字。
+- Graph authority：ClassesTree/data/TopicTree.csv；ClassTable 僅存 metadata，不存 graph。比較 node 集合需取母類別與子類別 union。原資料不一致僅產生 missing/orphan warning，不推斷／覆寫中文翻譯。
+- Candidate merge：新增邊.csv 的全端點集合減原 TopicTree 節點，須恰與候選 metadata ClassLabel 集合相同；衝突、缺漏或多餘項均拒絕。指令與 migration replay 見 docs/class-table-metadata.md。
+- 驗證：python -m unittest -v tests.test_class_table_metadata；python -m BertScript.class_table_metadata validate。Hosted workflow 另驗證最初 Python dict 對現有 CSV 的 row count、CT、Explanation、Unicode 等值。
 
 ## Deprecated／Migration
 

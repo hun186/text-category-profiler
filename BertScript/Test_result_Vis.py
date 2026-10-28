@@ -602,7 +602,7 @@ def BuildColorDF(ColorDict,ClassTable):
     df_datasetCount = LoadDatasetCount(outputDir, datasetDir)
     ClassTableDF = pd.DataFrame(ClassTable).transpose()
     ColorDF['Chinese'] = ColorDF['Label'].map(ClassTableDF["CT"])
-    ColorDF['Explaination'] = ColorDF['Label'].map(ClassTableDF["Explaination"])
+    ColorDF['Explanation'] = ColorDF['Label'].map(ClassTableDF["Explanation"])
     ColorDF['nAnotSamples'] = ColorDF['Label'].map(df_datasetCount["Loaded Samples Count"]).astype(int, errors='ignore')
     ColorDF_json = ColorDF.to_json(date_format='iso', orient='split')
     #Colortable_style_data_conditional=[
@@ -748,7 +748,7 @@ def Build_ColorTable(
         style_data_conditional = Colortable_style_data_conditional
     return Build_DataArrayTable(
             "Colortable",ColorDF.to_dict('records'),
-            ShownColumns=['Color', 'Label', 'InfoScore','Chinese', 'nAnotSamples', 'Explaination'],
+            ShownColumns=['Color', 'Label', 'InfoScore','Chinese', 'nAnotSamples', 'Explanation'],
             style_cell=Colortable_style_cell,
             style_cell_conditional=Colortable_style_cell_conditional,
             style_data_conditional=style_data_conditional,
