@@ -46,6 +46,9 @@ class ClassTableTests(unittest.TestCase):
         self.assertNotIn("Government Real Estate Policy", actual)
         self.assertNotIn("Real Estate Industry", actual)
         m.check_round_trip(actual)
+        # The committed file itself must stay in canonical ClassLabel order.
+        self.assertEqual(m.DEFAULT_CSV.read_text(encoding="utf-8-sig"),
+                         m.table_to_csv(actual))
 
     def test_unicode_quoting_and_optional_explanation(self):
         p = self.csv_file("chinese.csv", [
