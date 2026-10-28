@@ -1,0 +1,46 @@
+name: Timestamp Experiment Boundary
+
+on:
+  push:
+    branches: [main, codex/phase3-timestamp-experiment-boundary-20261027]
+    paths:
+      - "experiments/timestamp_generator.py"
+      - "text_category_profiler/Timestamp generator.py"
+      - "tests/test_timestamp_experiment_boundary.py"
+      - ".codex/**"
+      - "experiments/README.md"
+      - ".github/workflows/timestamp-experiment-boundary.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "experiments/timestamp_generator.py"
+      - "text_category_profiler/Timestamp generator.py"
+      - "tests/test_timestamp_experiment_boundary.py"
+      - ".codex/**"
+      - "experiments/README.md"
+      - ".github/workflows/timestamp-experiment-boundary.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  experiment-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify canonical application has no timestamp experiment caller
+        shell: bash
+        run: |
+          if git grep -n -E 'Timestamp generator[.]py|experiments/timestamp_generator|import timestamp_generator' -- TCFMain.py TCF_Params DatasetConverter BertScript text_category_profiler ':!text_category_profiler/Timestamp generator.py'; then
+            echo 'A canonical application caller still references the timestamp experiment'
+            exit 1
+          fi
+      - name: Compile experiment and compatibility entrypoint
+        run: python -m py_compile "experiments/timestamp_generator.py" "text_category_profiler/Timestamp generator.py" "tests/test_timestamp_experiment_boundary.py"
+      - name: Run dependency-light characterization and package gates
+        run: python -m unittest -v tests.test_timestamp_experiment_boundary tests.test_package_layout tests.test_project_docs tests.test_repository_compile_gate

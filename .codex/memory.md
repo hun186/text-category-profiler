@@ -24,6 +24,8 @@
 
 - BL-001 Phase 3 RAND corpus 原型分流：既有 `text_category_profiler/utilities_RAND.py` 非生產共享 helper，移至 `experiments/rand_corpus_labeling.py`，舊路徑保留 import-safe 相容入口與既有 lazy helper names；新增 stdlib characterization + Hosted CI。只有明確執行才會觸發 RAND SQLite／資料複製，本批沒有實際跑 RAND corpus；BL-001 維持 In Progress。其他獨立 PR #124 不受變更。
 
+- PR #124 BL-001 Phase 3 timestamp experiment：將 `text_category_profiler/Timestamp generator.py` 的大量手動生成流程移至 `experiments/timestamp_generator.py`，只有明確執行 `main()` 才進行 5,000 次生成與 cwd-relative 輸出；舊直接執行路徑留作 import-safe 委派。該 PR 原 HEAD `1b3380313febb20710d2d665e68a1569468b1ca0` 曾通過正式 Codex review、3 項 Hosted CI；因 main 前進造成合併衝突，已保留其他已合併成果並準備在最新 main 整合驗證。BL-001 仍為 In Progress。
+
 ## Durable Outcomes
 
 1. Root configuration 已由 frozen `PipelinePlan` 與明確 runtime activation 隔離，import 不解析 process argv 或啟動 filesystem/process runtime。
