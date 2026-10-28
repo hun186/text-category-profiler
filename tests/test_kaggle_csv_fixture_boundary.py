@@ -68,10 +68,10 @@ class KaggleCSVFixtureBoundaryTests(unittest.TestCase):
 
     def test_repository_scripts_have_no_literal_moved_csv_sample_paths(self):
         forbidden = (
-            "csvSample.txt",
-            "csvSample - 複製.txt",
-            "csvSample/",
-            "csvSample\\\\",
+            "KaggleExtraction/csvSample.txt",
+            "KaggleExtraction" + chr(92) + "csvSample.txt",
+            "csvSample/123_",
+            "csvSample" + chr(92) + "123_",
         )
         source_suffixes = {".py", ".bat", ".ps1", ".sh"}
         violations = []
@@ -87,6 +87,19 @@ class KaggleCSVFixtureBoundaryTests(unittest.TestCase):
             if any(name in text for name in forbidden):
                 violations.append(relative)
         self.assertEqual(violations, [], "Update script references to migrated sample paths")
+
+    def test_manual_kaggle_csv_example_uses_repo_relative_fixture(self):
+        source = (ROOT / "text_category_profiler/pipeline/DataConverter_utils.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("Path(__file__).resolve().parents[2]", source)
+        self.assertIn('"kaggle_csv_sample"', source)
+        self.assertIn('"KaggleExtraction" / "csvSample.txt"', source)
+        self.assertIn("ROOTPATH = os.path.dirname(FN)", source)
+        self.assertNotIn(
+            "TopicClassification" + chr(92) + "text_category_profiler" + chr(92) + "KaggleExtraction",
+            source,
+        )
 
     def test_other_manual_kaggle_json_example_is_not_relocated(self):
         source = (ROOT / "text_category_profiler/data/df_utils.py").read_text(

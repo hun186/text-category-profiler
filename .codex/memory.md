@@ -32,7 +32,7 @@
 
 - BL-001 Phase 3 CLI selector 分流：將 `text_category_profiler/selector.py` 的原始 source（Git blob `136a4caea6f9`）完整搬至 `text_category_profiler/cli/selector.py`，舊 import 保留三個 class 與 `Fore`/`Back`/`Style` 相容 re-export。使用 stdlib mock colorama/curses 與 input 驗證單選、多選、default、重試及 explicit curses，未使用真實終端、未改原有 mutable defaults。package-root 的研究資料及最終 dependency-light suite 仍待另外處理，BL-001 In Progress。
 
-- BL-001 Phase 3 Kaggle CSV sample fixtures：保留 `text_category_profiler/KaggleExtraction/` 兩個相同內容的 CSV 範例與 `text_category_profiler/csvSample/` 24 個輸出 txt 的完整 Git blob，共 26 檔、1,182 bytes，移至 `experiments/fixtures/kaggle_csv_sample/`。內附 JSON manifest 記錄每個歷史路徑、SHA、大小；stdlib tests/CI 做完整性、重複內容與 source path 引用檢查。歷史原路徑移除、不建立 Windows symlink；外部手動腳本須改路徑。根資料中的 `Similarity.tsv`、`RAGTest.json`、Excel、PDF、相似度測試文檔等仍待分批分類，BL-001 不標 Done。
+- BL-001 Phase 3 Kaggle CSV sample fixtures：保留 `text_category_profiler/KaggleExtraction/` 兩個相同內容的 CSV 範例與 `text_category_profiler/csvSample/` 24 個輸出 txt 的完整 Git blob，共 26 檔、1,182 bytes，移至 `experiments/fixtures/kaggle_csv_sample/`。內附 JSON manifest 記錄每個歷史路徑、SHA、大小；stdlib tests/CI 做完整性、重複內容與 source path 引用檢查；Hosted CI 首輪發現 `pipeline/DataConverter_utils.py` 的 `__main__` 手動 CSV 範例仍用舊 Windows 絕對路徑，已改為依 `__file__` 定位遷移後的 fixture 並新增回歸檢查，原迴圈仍保留。歷史原路徑移除、不建立 Windows symlink；外部手動腳本須改路徑。根資料中的 `Similarity.tsv`、`RAGTest.json`、Excel、PDF、相似度測試文檔等仍待分批分類，BL-001 不標 Done。
 
 ## Durable Outcomes
 

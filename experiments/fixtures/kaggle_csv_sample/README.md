@@ -19,8 +19,11 @@ are retained for investigation, not deduplicated.
 Git history retains the original paths and copies. No legacy path alias or
 Windows symlink is added; external manual scripts referencing those exact
 old data paths have not been inventoried and must update their paths.
-Repository code regression tests reject direct references to moved sample
-names. The unrelated manual `KaggleExtraction/us/ads.json` reference in
+The manual `__main__` CSV example in
+`text_category_profiler/pipeline/DataConverter_utils.py` was updated to
+resolve the new fixture from its `__file__` path instead of the historical
+machine-specific Windows absolute path; its input loop and output behavior
+are unchanged. Repository source tests reject stale literal paths. The unrelated manual `KaggleExtraction/us/ads.json` reference in
 `text_category_profiler/data/df_utils.py` is deliberately **not** part of
 this input fixture; it remains unchanged.
 

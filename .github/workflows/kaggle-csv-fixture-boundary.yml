@@ -8,6 +8,7 @@ on:
       - "text_category_profiler/csvSample/**"
       - "experiments/fixtures/kaggle_csv_sample/**"
       - "tests/test_kaggle_csv_fixture_boundary.py"
+      - "text_category_profiler/pipeline/DataConverter_utils.py"
       - ".github/workflows/kaggle-csv-fixture-boundary.yml"
       - ".codex/**"
   push:
@@ -17,6 +18,7 @@ on:
       - "text_category_profiler/csvSample/**"
       - "experiments/fixtures/kaggle_csv_sample/**"
       - "tests/test_kaggle_csv_fixture_boundary.py"
+      - "text_category_profiler/pipeline/DataConverter_utils.py"
       - ".github/workflows/kaggle-csv-fixture-boundary.yml"
       - ".codex/**"
   workflow_dispatch:
@@ -34,7 +36,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Syntax-check fixture boundary regression
-        run: python -m py_compile tests/test_kaggle_csv_fixture_boundary.py
+        run: python -m py_compile tests/test_kaggle_csv_fixture_boundary.py text_category_profiler/pipeline/DataConverter_utils.py
       - name: Check all 26 source blobs and cross-file path references
         run: python -m unittest -v tests.test_kaggle_csv_fixture_boundary
       - name: Check architecture and documentation

@@ -380,8 +380,14 @@ if __name__=='__main__':
     Columns = ["Time","Sen","Rec","Rec2","text","unknown"]
     ctxCols = ["text"]
     SaveFNCols = ["Sen","Rec","Rec2","text"]
-    FN = r"D:\shared\TopicClassification\text_category_profiler\KaggleExtraction\csvSample.txt"
-    ROOTPATH = r"D:\shared\TopicClassification\text_category_profiler\KaggleExtraction"
+    from pathlib import Path
+    # Resolve the migrated CSV example from this file, not the caller's cwd.
+    FN = str(
+        Path(__file__).resolve().parents[2]
+        / "experiments" / "fixtures" / "kaggle_csv_sample"
+        / "KaggleExtraction" / "csvSample.txt"
+    )
+    ROOTPATH = os.path.dirname(FN)
     for file in OSWALK(ROOTPATH):
         KDE = KaggleDatasetExtractor(
             filename=FN,Columns=Columns,ctxCols=ctxCols,SaveFNCols=SaveFNCols,
