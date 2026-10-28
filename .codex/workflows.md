@@ -113,6 +113,23 @@ Layer B 只有在 root exit 0、production classifier evidence、final `*_rdy_fo
 - 外部服務替代方式：待確認；mock 必須明確揭露，不得冒充正式成功。
 - 測試產物位置與清理方式：待確認；`WorkPool*`、`logs`、模型與 output 目錄需先視為可能有狀態。
 
+## Windows／Anaconda：PyTorch 分類與 TensorFlow DLL 後端隔離
+
+`BertScript/TextClassification_transformers.py` 為 PyTorch 專用入口，現會在首次載入 PyTorch／Hugging Face Transformers **之前**將本 Python 子程序的 `USE_TF=0`、`USE_TORCH=1`，避免同環境已安裝卻無法載入的 TensorFlow DLL 中斷 `from transformers import BertModel`。這不是修復 TensorFlow DLL 本身；也**不會**修改上層 `TCFMain.py` 或 `TF15Bert` 的 shell/batch 執行路徑。
+
+這個自動隔離只有 dependency-light／Hosted CI 驗證；Windows 先前通過的是**手動**設定環境變數的完整流程。要驗收自動修正，使用新的 **Anaconda Prompt (CMD)**，不要先執行 `set USE_TF`／`set USE_TORCH`，在與既有工作相同的 Python 環境檢查：
+
+```bat
+echo USE_TF=%USE_TF%
+echo USE_TORCH=%USE_TORCH%
+python -c "import sys; print(sys.executable)"
+python -c "from transformers import BertModel; print('BertModel import OK')"
+```
+
+最後一個單獨 `BertModel` 匯入在 **TensorFlow 壞掉且未手動隔離**的機器上仍可能報錯，這**不是**自動修正失效，因為只有 `TextClassification_transformers.py` 專用入口才啟用後端隔離。應使用原本的 `TCFMain.py` PyTorch 分類指令跑完 Stage 2／後續交接，並檢查未再出現 `_pywrap_tensorflow_internal` DLL traceback。不要為了避開 DLL 問題擅自全域移除 TensorFlow，舊 `TF15Bert` 路徑需保留。
+
+Hosted CI 驗證：`python -m unittest -v tests.test_classifier_stage tests.test_torch_compat tests.test_tcf_main_characterization tests.test_stage_commands tests.test_runtime_dependency_contract`（Stage 2 PyTorch Transformers Backend Isolation workflow）；CI 未安裝壞掉的 Windows TensorFlow DLL，不能宣稱 Windows 免手動設定已通過。
+
 ## Windows Anaconda：Dash/comm 載入前檢查
 
 當獨立啟動 `Test_result_Vis.py` 的 `import dash` 透過 `dash._jupyter` → `comm.create_comm(target_name="dash")` 拋出 `NotImplementedError: Cannot`，屬於啟動 Python 環境的舊 `comm` 實作與 Dash 不相容；它不是 RunClassfier／CombineTestResult 的模型錯誤。

@@ -8,9 +8,16 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
-import setproctitle
-
+# This script is the PyTorch-only classifier entrypoint. Disable optional
+# TensorFlow discovery before importing any ML runtime; otherwise an installed
+# but incompatible Windows TensorFlow DLL can break "from transformers import BertModel".
+# The TF15Bert entrypoint is separate and deliberately unaffected.
 import os
+from BertScript.classifier_stage import configure_pytorch_transformers_backend
+
+configure_pytorch_transformers_backend()
+
+import setproctitle
 import torch
 import re
 import math
