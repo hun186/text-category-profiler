@@ -1,0 +1,43 @@
+name: ES TXT Ingest Script Boundary
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/ES_ingest_txt_to_es.py"
+      - "scripts/__init__.py"
+      - "scripts/README.md"
+      - "text_category_profiler/ES_ingest_txt_to_es.py"
+      - "tests/test_es_ingest_script_boundary.py"
+      - ".github/workflows/es-ingest-script-boundary.yml"
+      - ".codex/contracts.md"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/ES_ingest_txt_to_es.py"
+      - "scripts/__init__.py"
+      - "scripts/README.md"
+      - "text_category_profiler/ES_ingest_txt_to_es.py"
+      - "tests/test_es_ingest_script_boundary.py"
+      - ".github/workflows/es-ingest-script-boundary.yml"
+      - ".codex/contracts.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  es-ingest-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile script, legacy shim and tests
+        run: python -m py_compile scripts/ES_ingest_txt_to_es.py text_category_profiler/ES_ingest_txt_to_es.py tests/test_es_ingest_script_boundary.py
+      - name: Run dependency-light CLI and data contract tests
+        run: python -m unittest -v tests.test_es_ingest_script_boundary
+      - name: Run package and documentation regression tests
+        run: python -m unittest -v tests.test_package_layout tests.test_project_docs tests.test_repository_compile_gate

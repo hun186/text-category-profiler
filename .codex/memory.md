@@ -24,7 +24,9 @@
 
 - BL-001 Phase 3 RAND corpus 原型分流：既有 `text_category_profiler/utilities_RAND.py` 非生產共享 helper，移至 `experiments/rand_corpus_labeling.py`，舊路徑保留 import-safe 相容入口與既有 lazy helper names；新增 stdlib characterization + Hosted CI。只有明確執行才會觸發 RAND SQLite／資料複製，本批沒有實際跑 RAND corpus；BL-001 維持 In Progress。其他獨立 PR #124 不受變更。
 
-- PR #124 BL-001 Phase 3 timestamp experiment：將 `text_category_profiler/Timestamp generator.py` 的大量手動生成流程移至 `experiments/timestamp_generator.py`，只有明確執行 `main()` 才進行 5,000 次生成與 cwd-relative 輸出；舊直接執行路徑留作 import-safe 委派。該 PR 原 HEAD `1b3380313febb20710d2d665e68a1569468b1ca0` 曾通過正式 Codex review、3 項 Hosted CI；因 main 前進造成合併衝突，已保留其他已合併成果並準備在最新 main 整合驗證。BL-001 仍為 In Progress。
+- PR #124 BL-001 Phase 3 timestamp experiment：**MERGED 2026-10-28 16:57 Asia/Taipei**，main merge `fec6e8e24de459d3463dbf337d3529d208526287`。時間戳實驗改在 `experiments/timestamp_generator.py` 由 `main()` 明確觸發；原 CLI 路徑為 import-safe wrapper。衝突整合後 exact-head Codex Review 0 Findings、Hosted CI 5/5 PASS；merge 後 main 5/5 PASS。BL-001 仍 In Progress。
+
+- BL-001 本批 Elasticsearch text ingest 分流：`CONTRACT-CLI-002` 由 `scripts/ES_ingest_txt_to_es.py` 擁有，原 `text_category_profiler/ES_ingest_txt_to_es.py` 保留 lazy helpers／原 CLI；將不可用的 bare `ES_utils` 改為 canonical integration import，並確保 import／`--help` 不建立 ES 連線。回歸使用 temporary .txt 和 mock bulk，不等同真實 ES acceptance；BL-001 仍 In Progress。
 
 ## Durable Outcomes
 

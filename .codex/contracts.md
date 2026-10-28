@@ -15,7 +15,7 @@
 | `CONTRACT-FILE-004` | CSV / Python API | ClassTable display metadata | `BertScript/ClassTable.csv`, `ClassTable.py` | Dash / SMS / DataConverter tools | `class_table_metadata.py` | CSV authoritative; compatibility dict retained |
 | `CONTRACT-FILE-003` | File input | Topic tree taxonomy CSV files | `ClassesTree/` / project data owner | `DatasetConverter/DataConverter.py`, tree viewers | `--TopicTreeDir`, `--TopicTreeFiles`, `ClassesTree/ClassesTree_utils.py` | Draft / currently used |
 | `CONTRACT-FILE-002` | File handoff | Prediction/result analysis artifacts | `BertScript/RunClassfier.py`, `CombineTestResult.py` | `Test_result_Vis.py`, work pool output | Stage scripts and backup filename patterns | Draft / currently used |
-| `CONTRACT-CLI-002` | CLI / external service | Elasticsearch text ingestion tool | `text_category_profiler/ES_ingest_txt_to_es.py` | Operators / data import jobs | argparse in script | Optional / unverified in root flow |
+| `CONTRACT-CLI-002` | CLI / external service | Elasticsearch text ingestion tool | `scripts/ES_ingest_txt_to_es.py` with legacy wrapper | Operators / data import jobs | argparse in script | Optional / unverified in root flow |
 
 ## 通用相容性規則
 
@@ -79,7 +79,7 @@
 
 - 類型：CLI / external service
 - 狀態：Draft / optional
-- 權威定義：`text_category_profiler/ES_ingest_txt_to_es.py` argparse。
+- 權威定義：`scripts/ES_ingest_txt_to_es.py` 的 `main(argv=None)` argparse；`text_category_profiler/ES_ingest_txt_to_es.py` 保留原 CLI 與 Python function names 作 lazy compatibility wrapper。
 - Producer／Owner：ES ingestion utility。
 - Consumer：手動或批次資料匯入操作者。
 - 輸入：`--index/-i`、`--dir/-d`、`--host`、`--batch`、`--lang`、`--user`、`--op`、`--dedup-by-content`。
@@ -88,7 +88,7 @@
 - 錯誤／失敗語意：待確認。
 - 版本與相容性：待確認。
 - 安全與敏感資訊：不要記錄真實 ES host、credentials 或 documents。
-- 契約測試：待確認。
+- 契約測試：`python -m unittest -v tests.test_es_ingest_script_boundary` 使用臨時檔、stub ES integration、CLI `--help`，不連線也不寫入真實索引；正式 ES/版本相容性未經現場驗證。
 
 ### `CONTRACT-FILE-003` Topic tree taxonomy CSV files
 
