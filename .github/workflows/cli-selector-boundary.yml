@@ -1,0 +1,39 @@
+name: CLI Selector Boundary
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "text_category_profiler/selector.py"
+      - "text_category_profiler/cli/**"
+      - "tests/test_cli_selector_boundary.py"
+      - ".github/workflows/cli-selector-boundary.yml"
+      - ".codex/**"
+  push:
+    branches: [main]
+    paths:
+      - "text_category_profiler/selector.py"
+      - "text_category_profiler/cli/**"
+      - "tests/test_cli_selector_boundary.py"
+      - ".github/workflows/cli-selector-boundary.yml"
+      - ".codex/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cli-selector-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile canonical module and old import facade
+        run: python -m py_compile text_category_profiler/cli/selector.py text_category_profiler/selector.py tests/test_cli_selector_boundary.py
+      - name: Characterize CLI selectors without terminal or external dependencies
+        run: python -m unittest -v tests.test_cli_selector_boundary
+      - name: Architecture and documentation regressions
+        run: python -m unittest -v tests.test_package_layout tests.test_project_docs tests.test_repository_compile_gate
