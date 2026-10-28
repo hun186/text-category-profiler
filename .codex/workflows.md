@@ -48,6 +48,7 @@
 | ClassTable metadata / GUI field | `python -m unittest -v tests.test_class_table_metadata`（純 stdlib）；`tests.test_sms_merger_path_contract` 需要 pandas，另於安裝完整資料轉換依賴的環境驗證、`python -m BertScript.class_table_metadata validate`；另確認 Dash 欄位／樣式皆改為 Explanation，及歷史 migration replay | full ML／瀏覽器只在實際有相關行為變更時擴大 |
 | Timestamp research experiment / legacy CLI shim | `python -m unittest tests.test_timestamp_experiment_boundary tests.test_package_layout tests.test_repository_compile_gate`；`python -m py_compile "experiments/timestamp_generator.py" "text_category_profiler/Timestamp generator.py"` | 這些測試在記憶體內限制產生數量、mock locale／輸出，不啟動真實 5000 次資料生成。真的要大量生成才人工執行 `python experiments/timestamp_generator.py`（輸出至 caller cwd）。 |
 | Architecture boundaries | `python -m unittest tests.test_package_layout tests.test_project_docs` | import arrows、legacy entrypoints、DatasetConverter boundaries 或 current-state docs 改變 |
+| Elasticsearch TXT ingest CLI | `python -m unittest -v tests.test_es_ingest_script_boundary`；`python -m py_compile scripts/ES_ingest_txt_to_es.py text_category_profiler/ES_ingest_txt_to_es.py`；read-only `python scripts/ES_ingest_txt_to_es.py --help` | 只有實際導入受控測試 Elasticsearch 時才驗證遠端 API／索引 mapping；dependency-light mock 無法證明真實 ES 相容性，禁止以 bulk 寫入作一般 smoke test |
 | 匯入外部服務 | 先以 dry-run 或 mock 明確標示；不得把真實 DB/ES 寫入當 smoke test | 會連線 SQL Server、Elasticsearch 或批次寫入資料 |
 
 ## Full-pipeline smoke profiles
