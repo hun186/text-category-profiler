@@ -176,7 +176,9 @@ class ClassTableTests(unittest.TestCase):
     def test_actual_tree_audit_reports_not_auto_fills(self):
         report = m.audit(ClassTable, m.DEFAULT_TREE)
         self.assertEqual(report["ClassTableRows"], 1994)
-        self.assertEqual(report["TopicTreeNodes"], 2670)
+        # The active TopicTree grows independently of ClassTable metadata.
+        # Guard against accidental large graph truncation, not legitimate new nodes.
+        self.assertGreaterEqual(report["TopicTreeNodes"], 2670)
         self.assertTrue(report["MissingInClassTable"])
         # Both labels already exist in the current authoritative TopicTree.
         for label in ("CN Government Real Estate Policy", "CN Real Estate Industry"):
