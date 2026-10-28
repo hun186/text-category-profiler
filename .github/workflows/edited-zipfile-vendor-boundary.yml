@@ -1,0 +1,37 @@
+name: Edited ZIP CPython Vendor Boundary
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "text_category_profiler/Edited_zipfile.py"
+      - "vendor/cpython37_zipfile_gbk/**"
+      - "tests/test_edited_zipfile_vendor_boundary.py"
+      - ".github/workflows/edited-zipfile-vendor-boundary.yml"
+  push:
+    branches: [main]
+    paths:
+      - "text_category_profiler/Edited_zipfile.py"
+      - "vendor/cpython37_zipfile_gbk/**"
+      - "tests/test_edited_zipfile_vendor_boundary.py"
+      - ".github/workflows/edited-zipfile-vendor-boundary.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  zipfile-vendor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Syntax-check original module, shim and tests
+        run: python -m py_compile vendor/cpython37_zipfile_gbk/zipfile.py text_category_profiler/Edited_zipfile.py tests/test_edited_zipfile_vendor_boundary.py
+      - name: Verify original Git blob, license and legacy GBK decoding
+        run: python -m unittest -v tests.test_edited_zipfile_vendor_boundary
+      - name: Verify layout and project docs
+        run: python -m unittest -v tests.test_package_layout tests.test_project_docs

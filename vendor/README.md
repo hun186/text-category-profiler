@@ -20,3 +20,11 @@ location in a separately reviewed change.
 
 No upstream update, dependency replacement or algorithm fix is included in
 this relocation.
+
+## CPython-derived ZIP support
+
+`cpython37_zipfile_gbk/` is an **unmodified relocation** of the repository's
+historical, patched CPython 3.7.17 `zipfile.py` copy. It retains the original
+8-line CP437-to-GBK local patch, carries the actual upstream CPython `LICENSE`
+(separate from the Dijkstra MIT license), and documents the precise differences
+in its own README. The former module path remains an import-safe facade.
