@@ -30,6 +30,8 @@
 
 - BL-001 Phase 3 vendor 與配置分流：PR #131 Dijkstra MIT 範例已合併（`474d28a49847`）、PR #133 修改版 CPython v3.7.17 GBK ZIP 與 PSF LICENSE 已合併（`680608b1f04b`），#133 合併後 Hosted CI 7/7 PASS。當前一批獨立整理 legacy `ArtCluESJobTemplate.py`：權威設定搬至 `text_category_profiler/integrations/es_job_template.py`，完整保留原始 Git blob／每次執行模組的環境變數 snapshot／可變 dict 與舊 import，僅驗證 import 及設定，不驗證真實 ES。BL-001 仍 In Progress。
 
+- BL-001 Phase 3 CLI selector 分流：將 `text_category_profiler/selector.py` 的原始 source（Git blob `136a4caea6f9`）完整搬至 `text_category_profiler/cli/selector.py`，舊 import 保留三個 class 與 `Fore`/`Back`/`Style` 相容 re-export。使用 stdlib mock colorama/curses 與 input 驗證單選、多選、default、重試及 explicit curses，未使用真實終端、未改原有 mutable defaults。package-root 的研究資料及最終 dependency-light suite 仍待另外處理，BL-001 In Progress。
+
 ## Durable Outcomes
 
 1. Root configuration 已由 frozen `PipelinePlan` 與明確 runtime activation 隔離，import 不解析 process argv 或啟動 filesystem/process runtime。
