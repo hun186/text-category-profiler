@@ -11,8 +11,11 @@ keys, default values, and import-time environment-variable snapshot:
   `user` and all other template fields remain unchanged.
 - No HTTP client is created and no ES connection is made by importing either
   the canonical or old module.
-- The old module path re-exports the **same mutable dictionary instance**,
-  not a separately reloaded configuration.
+- The old module path **re-executes the canonical source** when imported,
+  reloaded, or evaluated with `runpy.run_path`: it creates its own mutable
+  dictionary snapshot using the environment at that execution time, just as
+  the original standalone module did. It does not share a cached dict with
+  the canonical module.
 
 Treat the template as *legacy optional configuration*, not a verified
 production Elasticsearch service or credentials provider. Never commit real

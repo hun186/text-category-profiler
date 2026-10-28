@@ -45,7 +45,8 @@ class ESJobTemplateBoundaryTests(unittest.TestCase):
             importlib.import_module(old_name if first == "legacy" else new_name)
             old = importlib.import_module(old_name).esJobTemplate
             new = importlib.import_module(new_name).esJobTemplate
-            assert old is new
+            assert old is not new
+            assert old == new
             assert new == {
                 "es_tokens": {
                     "host": "https://localhost:9200",
@@ -71,7 +72,8 @@ class ESJobTemplateBoundaryTests(unittest.TestCase):
             new = importlib.import_module(
                 "text_category_profiler.integrations.es_job_template"
             )
-            assert old.esJobTemplate is new.esJobTemplate
+            assert old.esJobTemplate is not new.esJobTemplate
+            assert old.esJobTemplate == new.esJobTemplate
             assert old.esJobTemplate["es_tokens"]["password"] == "test-value-not-real"
             os.environ["TCP_ELASTIC_PASSWORD"] = "changed-after-import"
             assert new.esJobTemplate["es_tokens"]["password"] == "test-value-not-real"
@@ -79,15 +81,42 @@ class ESJobTemplateBoundaryTests(unittest.TestCase):
         result = run_fresh_interpreter(code, password="test-value-not-real")
         self.assertEqual(result.returncode, 0, result.stderr)
 
-    def test_mutations_remain_shared_through_legacy_alias(self):
+    def test_legacy_mapping_mutations_do_not_change_canonical_snapshot(self):
         code = textwrap.dedent("""
             from text_category_profiler.ArtCluESJobTemplate import esJobTemplate
             from text_category_profiler.integrations.es_job_template import (
                 esJobTemplate as canonical,
             )
-            assert canonical is esJobTemplate
+            assert canonical is not esJobTemplate
+            assert canonical == esJobTemplate
             esJobTemplate["Vis_ESFileNameMode"] = "temporary-example"
-            assert canonical["Vis_ESFileNameMode"] == "temporary-example"
+            assert canonical["Vis_ESFileNameMode"] == "subject_id"
+        """)
+        result = run_fresh_interpreter(code)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_legacy_runpy_re_evaluates_environment_when_canonical_cached(self):
+        code = textwrap.dedent("""
+            import importlib
+            import os
+            from pathlib import Path
+            import runpy
+            canonical = importlib.import_module(
+                "text_category_profiler.integrations.es_job_template"
+            )
+            assert canonical.esJobTemplate["es_tokens"]["password"] is None
+            os.environ["TCP_ELASTIC_PASSWORD"] = "sentinel-secret"
+            path = Path("text_category_profiler/ArtCluESJobTemplate.py")
+            fresh = runpy.run_path(str(path))
+            assert fresh["esJobTemplate"]["es_tokens"]["password"] == "sentinel-secret"
+            assert canonical.esJobTemplate["es_tokens"]["password"] is None
+            old = importlib.import_module(
+                "text_category_profiler.ArtCluESJobTemplate"
+            )
+            assert old.esJobTemplate["es_tokens"]["password"] == "sentinel-secret"
+            os.environ["TCP_ELASTIC_PASSWORD"] = "updated-test-value"
+            reloaded = importlib.reload(old)
+            assert reloaded.esJobTemplate["es_tokens"]["password"] == "updated-test-value"
         """)
         result = run_fresh_interpreter(code)
         self.assertEqual(result.returncode, 0, result.stderr)
