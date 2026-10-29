@@ -1,7 +1,7 @@
 {
-  "schema_version": 4,
+  "schema_version": 5,
   "source_main_sha": "b50b4418cd8920de6e8200859a8e3b6dd8151295",
-  "purpose": "Bounded byte-exact BL-001 inventory: four root paths still unrelocated and eight samples relocated to research fixtures, including two original punctuation comparison samples. Not an exhaustive caller scan.",
+  "purpose": "Bounded byte-exact BL-001 inventory: one original package-root FTP marker retained and eleven archived research/legacy files relocated unchanged. Not a full caller audit or provenance/license assertion.",
   "external_callers": "unverified; original paths retained for unrelocated entries only",
   "entries": [
     {
@@ -70,19 +70,22 @@
       "path": "text_category_profiler/EmojiAlll.txt",
       "sha": "b603c8a3979c057b104ddb002aa50ff0588cdd9a",
       "size_bytes": 36516,
-      "classification": "legacy/unknown"
+      "classification": "legacy/unknown",
+      "relocated_path": "experiments/fixtures/legacy_text_tables/EmojiAlll.txt"
     },
     {
       "path": "text_category_profiler/特殊符號表.txt",
       "sha": "f41651e616f86ca2c24f6bca9a1ed3242a7f1be7",
       "size_bytes": 27063,
-      "classification": "legacy/unknown"
+      "classification": "legacy/unknown",
+      "relocated_path": "experiments/fixtures/legacy_text_tables/特殊符號表.txt"
     },
     {
       "path": "text_category_profiler/total.txt",
       "sha": "21a5d2114b23f18c4d0a9b76f3a6cd9502f06133",
       "size_bytes": 216074,
-      "classification": "legacy/unknown"
+      "classification": "legacy/unknown",
+      "relocated_path": "experiments/fixtures/legacy_text_tables/total.txt"
     }
   ]
 }

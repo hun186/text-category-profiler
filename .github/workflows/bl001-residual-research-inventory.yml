@@ -9,6 +9,7 @@ on:
       - "experiments/fixtures/research_samples/**"
       - "experiments/fixtures/chinese_similarity/**"
       - "experiments/fixtures/text_normalization/**"
+      - "experiments/fixtures/legacy_text_tables/**"
       - "text_category_profiler/FTPTEST/**"
       - "text_category_profiler/testFix*.txt"
       - "text_category_profiler/text/similarity_utils.py"
@@ -29,6 +30,7 @@ on:
       - "experiments/fixtures/research_samples/**"
       - "experiments/fixtures/chinese_similarity/**"
       - "experiments/fixtures/text_normalization/**"
+      - "experiments/fixtures/legacy_text_tables/**"
       - ".github/workflows/bl001-residual-research-inventory.yml"
       - ".codex/**"
   workflow_dispatch:
@@ -48,9 +50,9 @@ jobs:
         with:
           python-version: "3.11"
       - name: Validate Python syntax
-        run: python -m py_compile tests/test_residual_research_inventory.py tests/test_punctuation_fixture_boundary.py text_category_profiler/text/similarity_utils.py text_category_profiler/core/utilities.py
+        run: python -m py_compile tests/test_residual_research_inventory.py tests/test_punctuation_fixture_boundary.py tests/test_legacy_text_tables_boundary.py text_category_profiler/text/similarity_utils.py text_category_profiler/core/utilities.py
       - name: Verify preserved data and known legacy callers
-        run: python -m unittest -v tests.test_residual_research_inventory tests.test_punctuation_fixture_boundary
+        run: python -m unittest -v tests.test_residual_research_inventory tests.test_punctuation_fixture_boundary tests.test_legacy_text_tables_boundary
       - name: Verify package layout and current documents
         run: python -m unittest -v tests.test_package_layout tests.test_project_docs tests.test_repository_compile_gate
       - name: Check commit whitespace
