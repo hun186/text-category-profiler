@@ -84,6 +84,8 @@ text_category_profiler/
 
 ### Phase 3：將非共用內容分流
 
+- 2026-10-29 punctuation sample fixture split：`text_category_profiler/testFix.txt`（83 bytes；blob `e0bedf8bd7f5f940a187c807960ef76c9e5755df`）及 `testFix - 複製.txt`（59 bytes；blob `f890fe1ef548af6096588bc88464cc67fdf8b106`）以**相同原 Git blob** 分流至 `experiments/fixtures/text_normalization/`。保留全形中文逗號差異；`bl001_residual_inventory.json` v4 記錄 12 筆原始資料中 8 筆已分流、4 筆維持原路徑。原位保全測試與新的 stdlib boundary test 核對 SHA、大小、舊路徑不存在、標點差異，並用受限第一方 Python 靜態掃描確認沒有直接檔名引用；這不等於外部／動態 caller 已查清。`FTPTEST/abc.txt` 在 `DatasetConverter/DataConverter.py` 有直接字串命中，因此本次刻意不移動，另三個文字表亦不變。BL-001 In Progress。
+
 - 2026-10-29 Chinese similarity manual fixture split：原 `text_category_profiler/` 的陳德銘相似度研究 TXT 2 件與歷史輸出 XLSX 2 件（合計 19,310 bytes）已按原 Git blob 身分搬至 `experiments/fixtures/chinese_similarity/`；`bl001_residual_inventory.json` 更新 v3，12 筆保留原始身分，其中 6 筆有 `relocated_path`、6 筆仍在原處。已確認手動 caller `InnerCrossSimilarityForTextListTest()` 原來以 cwd `open(FN)` 讀兩個樣本，現在使用 `Path(__file__).resolve().parents[2]` 對中文輸入解析固定 fixture；既有 `saveFN=FN.rpartition(".")[0]+".xlsx"` 完整保留，依原樣輸出到 caller cwd，不會寫入歷史 XLSX fixture。隔離 stdlib 測試以 stub 驗證輸入路徑與輸出 basename，不執行相似度算法、不重建 xlsx。註解的其他手動檔名仍依原先 cwd 路徑；repo 外／動態 caller、資料來源授權未驗證。BL-001 In Progress。
 
 - 2026-10-29 similarity research experiment preservation：在 `text_category_profiler/切片相似度比對法測試/` 確認 27 個原始 Git blob（12 個 `.xlsx` 實驗輸出、15 個 `.txt` 樣本／研究文本），總計 824,594 bytes；建立 `experiments/fixtures/bl001_similarity_experiment_inventory.json` 記錄每筆相對路徑、Git blob SHA、大小、資料群組與副檔名，並以 stdlib 依檔案清單、blob 身分、ZIP 容器簽章及三組 4 個 Excel／一組 15 個 TXT 進行原地保全驗證。無資料檔移動、修改或模型／相似度流程執行；外部／動態 caller、文件來源授權尚未驗證，後續移檔需單獨確立相容性。BL-001 仍 In Progress。
