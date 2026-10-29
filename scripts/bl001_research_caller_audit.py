@@ -17,11 +17,14 @@ RESIDUAL = "experiments/fixtures/bl001_residual_inventory.json"
 SIMILARITY = "experiments/fixtures/bl001_similarity_experiment_inventory.json"
 SKIP_PREFIXES = (
     "BertScript/TRV_deploy/",
+    "BertScript/Dash-by-Plotly-master/",
+    "BertScript/dash-cytoscape-master/",
     "vendor/",
     "tests/",
     "experiments/",
     ".codex/",
 )
+SKIP_PARTS = {"tests", "experiments", "vendor", "__pycache__", ".venv", "node_modules"}
 LIMITATIONS = [
     "Only tracked Python files in this checkout are scanned.",
     "Historical deployment snapshots, vendor, tests, and experiments are excluded.",
@@ -53,6 +56,13 @@ def load_catalog(root):
     return sorted(targets, key=lambda x: x["original_path"])
 
 
+def first_party_python_path(name):
+    """Exclude vendored/archived trees and nested test/experiment trees."""
+    if not name.endswith(".py") or name.startswith(SKIP_PREFIXES):
+        return False
+    return not any(part in SKIP_PARTS for part in Path(name).parts)
+
+
 def tracked_python_sources(root):
     result = subprocess.run(
         ["git", "ls-files", "-z", "--", "*.py"],
@@ -61,10 +71,7 @@ def tracked_python_sources(root):
     names = sorted(os.fsdecode(name) for name in result.stdout.split(b"\0") if name)
     return [
         name for name in names
-        if not name.startswith(SKIP_PREFIXES)
-        and not any(part in {"__pycache__", ".venv", "node_modules"}
-                    for part in Path(name).parts)
-        and (root / name).is_file()
+        if first_party_python_path(name) and (root / name).is_file()
     ]
 
 
@@ -82,7 +89,8 @@ def scan_source(source_path, source_text, targets):
             if (isinstance(node, ast.Constant)
                     and isinstance(node.value, str)
                     and hasattr(node, "lineno")):
-                string_literals_by_line[node.lineno].append(node.value)
+                for line_no in range(node.lineno, getattr(node, "end_lineno", node.lineno) + 1):
+                    string_literals_by_line[line_no].append(node.value)
     by_name = defaultdict(list)
     for item in targets:
         by_name[item["basename"]].append(item)
