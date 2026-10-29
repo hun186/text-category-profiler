@@ -7,6 +7,7 @@ import ast
 import hashlib
 from pathlib import Path
 import unittest
+import warnings
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -61,13 +62,16 @@ class ChineseSimilarityFixtureTests(unittest.TestCase):
         namespace = fn.__globals__
         calls = []
         original_open = open
+        opened_files = []
 
         def read_expected_fixture(path, mode="rt", encoding=None):
             source = Path(path)
             self.assertTrue(source.is_absolute())
             self.assertEqual(source.parent, NEW)
             self.assertIn(source.name, [BASE + ".txt", BASE + "_space.txt"])
-            return original_open(source, mode=mode, encoding=encoding)
+            handle = original_open(source, mode=mode, encoding=encoding)
+            opened_files.append(handle)
+            return handle
 
         def fake_similarity(left, right, saveFN):
             self.assertEqual(left, right)
@@ -86,7 +90,15 @@ class ChineseSimilarityFixtureTests(unittest.TestCase):
             name: (NEW / name).read_bytes()
             for name in EXPECTED if name.endswith(".xlsx")
         }
-        fn()
+        with warnings.catch_warnings(record=True) as notices:
+            warnings.simplefilter("always", ResourceWarning)
+            fn()
+        self.assertFalse(
+            [w for w in notices if issubclass(w.category, ResourceWarning)],
+            "Manual caller must not emit unclosed file ResourceWarnings",
+        )
+        self.assertEqual(len(opened_files), 2)
+        self.assertTrue(all(stream.closed for stream in opened_files))
         self.assertEqual(calls, [BASE + ".xlsx", BASE + "_space.xlsx"])
         for name, data in frozen_before.items():
             self.assertEqual((NEW / name).read_bytes(), data)

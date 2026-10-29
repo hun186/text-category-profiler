@@ -204,7 +204,8 @@ def InnerCrossSimilarityForTextListTest():
     #testFN= "InnerCrossSimilarityForTextList.txt"
     for FN in testFNList:
         inputFN = fixture_root / FN if FN.startswith("陈德铭呼吁美方为中国赴美企业提供公平公正商业环境") else FN
-        inputArt = open(inputFN,mode='rt',encoding='utf-8').read()
+        with open(inputFN, mode='rt', encoding='utf-8') as input_file:
+            inputArt = input_file.read()
         textList1 = textList2 = wrap(inputArt, 256)
         #textList1 = textList2 = wrap(inputArt, 4)
         #print("")
