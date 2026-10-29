@@ -1,7 +1,7 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "source_main_sha": "b50b4418cd8920de6e8200859a8e3b6dd8151295",
-  "purpose": "Byte-exact BL-001 inventory: ten unrelocated research/legacy paths plus two research samples moved to experiments/fixtures/research_samples/. Not an exhaustive caller scan.",
+  "purpose": "Bounded byte-exact BL-001 inventory: six root paths still unrelocated and six preserved research samples moved outside package root (including Chinese similarity TXT/XLSX). Not an exhaustive caller scan.",
   "external_callers": "unverified; original paths retained for unrelocated entries only",
   "entries": [
     {
@@ -26,25 +26,29 @@
       "path": "text_category_profiler/陈德铭呼吁美方为中国赴美企业提供公平公正商业环境.txt",
       "sha": "f7746d15b8f245ec281331ef4e69662dc874b0fb",
       "size_bytes": 2304,
-      "classification": "test/experiment"
+      "classification": "test/experiment",
+      "relocated_path": "experiments/fixtures/chinese_similarity/陈德铭呼吁美方为中国赴美企业提供公平公正商业环境.txt"
     },
     {
       "path": "text_category_profiler/陈德铭呼吁美方为中国赴美企业提供公平公正商业环境_space.txt",
       "sha": "bd25bc335ba2cc0f6dd0301dbdccf83c496b2150",
       "size_bytes": 3060,
-      "classification": "test/experiment"
+      "classification": "test/experiment",
+      "relocated_path": "experiments/fixtures/chinese_similarity/陈德铭呼吁美方为中国赴美企业提供公平公正商业环境_space.txt"
     },
     {
       "path": "text_category_profiler/陈德铭呼吁美方为中国赴美企业提供公平公正商业环境.xlsx",
       "sha": "26c6439ca50fc1d21a5909a8a3b18d2802d49e74",
       "size_bytes": 6822,
-      "classification": "test/experiment"
+      "classification": "test/experiment",
+      "relocated_path": "experiments/fixtures/chinese_similarity/陈德铭呼吁美方为中国赴美企业提供公平公正商业环境.xlsx"
     },
     {
       "path": "text_category_profiler/陈德铭呼吁美方为中国赴美企业提供公平公正商业环境_space.xlsx",
       "sha": "cb00157b9ca927f2976a5134b270639fda6fb675",
       "size_bytes": 7124,
-      "classification": "test/experiment"
+      "classification": "test/experiment",
+      "relocated_path": "experiments/fixtures/chinese_similarity/陈德铭呼吁美方为中国赴美企业提供公平公正商业环境_space.xlsx"
     },
     {
       "path": "text_category_profiler/RAGTest.json",
