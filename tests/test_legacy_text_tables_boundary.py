@@ -53,7 +53,8 @@ class LegacyTextTablesBoundaryTests(unittest.TestCase):
         self.assertTrue(any("external" in item for item in result["limitations"]))
 
     def test_deployment_ftp_marker_is_untouched(self):
-        marker = OLD_DIR / "FTPTEST/abc.txt"
+        self.assertFalse((OLD_DIR / "FTPTEST/abc.txt").exists())
+        marker = ROOT / "experiments/fixtures/legacy_ftp_marker/abc.txt"
         self.assertEqual(blob_sha(marker.read_bytes()),
                          "f2ba8f84ab5c1bce84a7b441cb1959cfc7093b7f")
 
