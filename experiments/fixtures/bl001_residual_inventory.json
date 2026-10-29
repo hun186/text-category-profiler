@@ -1,8 +1,8 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "source_main_sha": "b50b4418cd8920de6e8200859a8e3b6dd8151295",
-  "purpose": "Bounded, byte-exact preservation inventory for unrelocated BL-001 package-root research/legacy data. Not an exhaustive caller scan.",
-  "external_callers": "unverified; original paths retained",
+  "purpose": "Byte-exact BL-001 inventory: ten unrelocated research/legacy paths plus two research samples moved to experiments/fixtures/research_samples/. Not an exhaustive caller scan.",
+  "external_callers": "unverified; original paths retained for unrelocated entries only",
   "entries": [
     {
       "path": "text_category_profiler/FTPTEST/abc.txt",
@@ -50,13 +50,15 @@
       "path": "text_category_profiler/RAGTest.json",
       "sha": "4df2b417d2f19720218edc1d52ff9e847a385389",
       "size_bytes": 10156,
-      "classification": "test/experiment"
+      "classification": "test/experiment",
+      "relocated_path": "experiments/fixtures/research_samples/RAGTest.json"
     },
     {
       "path": "text_category_profiler/Similarity.tsv",
       "sha": "9fe2e4ad6660e64a2f3befd7011735340865b345",
       "size_bytes": 34615,
-      "classification": "test/experiment"
+      "classification": "test/experiment",
+      "relocated_path": "experiments/fixtures/research_samples/Similarity.tsv"
     },
     {
       "path": "text_category_profiler/EmojiAlll.txt",
