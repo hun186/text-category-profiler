@@ -84,6 +84,8 @@ text_category_profiler/
 
 ### Phase 3：將非共用內容分流
 
+- 2026-10-29 bounded residual preservation inventory：以 `experiments/fixtures/bl001_residual_inventory.json` 列出 12 項尚留在 package root 的研究／legacy 資料，保存 main 上的 Git blob SHA 與位元組長度；`tests/test_residual_research_inventory.py` 驗證原路徑、`testFix` 全形標點差異、`FTPTEST/abc.txt` 與 deployment snapshot 的相同內容，以及相似度手動測試的 caller-cwd `open(FN)`。`RAGTest.json` 在 `core/utilities.py` 目前只見註解範例。這是**非窮盡清單**，GitHub code search 已遇到速率限制，不能宣稱外部或 repository-wide caller 已完全盤點；本批**不移檔、不改 runtime、不宣稱 BL-001 Done**。`Table of locales - MoodleDocs.pdf` 與 `切片相似度比對法測試/` 仍待另批處理。
+
 - [ ] 將 `DataConverter_utils*.py` 的 domain logic 移回 `DatasetConverter/`，維持 dataset contract。
 - [ ] 將分類器、模型與 GPU/CPU runtime 專用程式移回 `BertScript/` 的適當子模組。
 - [ ] 將 Dash、Plotly、graph 與 reusable components 移至 visualization 邊界。

@@ -6,7 +6,7 @@
 
 - 初始化狀態：`INITIALIZED`。
 - 維護 Python 文字分類、資料集轉換、BERTScript 結果分析工作區；不要沿用舊 README 的 FastAPI RAG 假設。
-- 已有 isolated real-root smoke profiles、activation-free `python TCFMain.py --doctor`；KI-002 已由 root-level WeiTech lifecycle characterization 解決。Application-side PackageImport/path injection 已收斂，`TRV_deploy` 保留為獨立 legacy snapshot；BL-001 仍需完成 package-root residual inventory 的分類／分流與最終 dependency-light suite。在 H100 real-model acceptance 完成前，不得宣稱完整 runtime 已驗證。
+- 已有 isolated real-root smoke profiles、activation-free `python TCFMain.py --doctor`；KI-002 已由 root-level WeiTech lifecycle characterization 解決。Application-side PackageImport/path injection 已收斂，`TRV_deploy` 保留為獨立 legacy snapshot；BL-001 仍需完成 package-root residual inventory 的分類／分流與最終 dependency-light suite。新增 bounded 12-file research preservation inventory 測試僅保護已知 Git blobs／原路徑與手動 cwd 呼叫；GitHub code search 受限且外部 caller 尚未確認，研究檔未移動，最終 discovery 仍未驗收。在 H100 real-model acceptance 完成前，不得宣稱完整 runtime 已驗證。
 
 - PR #121 Elasticsearch credential guard: **MERGED 2026-10-27 19:28 Asia/Taipei** into `main` at merge commit `58c3bddbc2837e202efda98b3bbf30c5902ba458`; final reviewed head `e9bf2cd9ce0bfb27ccd064c570911cef339e898e`. Previous source-time P2 repairs and 271 unittest methods were retained; exact-head Codex review reported no major issues. External Elasticsearch credential rotation remains **KI-006 Open**, since rewriting Git history and revoking the old password are outside that PR.
 
