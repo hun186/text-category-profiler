@@ -1,0 +1,47 @@
+name: BL-001 Research Fixture Relocation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "experiments/fixtures/research_samples/**"
+      - "experiments/fixtures/bl001_residual_inventory.json"
+      - "tests/test_relocated_research_fixtures.py"
+      - "tests/test_residual_research_inventory.py"
+      - "text_category_profiler/RAGTest.json"
+      - "text_category_profiler/Similarity.tsv"
+      - "text_category_profiler/core/utilities.py"
+      - ".github/workflows/bl001-research-fixture-boundary.yml"
+      - ".codex/**"
+  push:
+    branches: [main]
+    paths:
+      - "experiments/fixtures/research_samples/**"
+      - "experiments/fixtures/bl001_residual_inventory.json"
+      - "tests/test_relocated_research_fixtures.py"
+      - "tests/test_residual_research_inventory.py"
+      - "text_category_profiler/core/utilities.py"
+      - ".github/workflows/bl001-research-fixture-boundary.yml"
+      - ".codex/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  research-fixture-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile touched Python files
+        run: python -m py_compile tests/test_relocated_research_fixtures.py tests/test_residual_research_inventory.py text_category_profiler/core/utilities.py
+      - name: Test historical blobs and architecture/doc boundaries
+        run: python -m unittest -v tests.test_relocated_research_fixtures tests.test_residual_research_inventory tests.test_package_layout tests.test_project_docs tests.test_repository_compile_gate
+      - name: Verify whitespace
+        run: git diff --check HEAD^ HEAD
