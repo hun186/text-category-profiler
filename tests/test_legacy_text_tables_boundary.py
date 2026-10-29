@@ -61,7 +61,7 @@ class LegacyTextTablesBoundaryTests(unittest.TestCase):
         readme = (ARCHIVE_DIR / "README.md").read_text(encoding="utf-8")
         self.assertIn("external", readme)
         self.assertIn("provenance", readme)
-        self.assertIn("original Git blob", readme)
+        self.assertIn("Original Git blob SHA-1", " ".join(readme.split()))
 
 
 if __name__ == "__main__":
