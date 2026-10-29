@@ -1,0 +1,50 @@
+name: BL-001 Residual Research Inventory
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "tests/test_residual_research_inventory.py"
+      - "experiments/fixtures/bl001_residual_inventory.json"
+      - "text_category_profiler/FTPTEST/**"
+      - "text_category_profiler/testFix*.txt"
+      - "text_category_profiler/text/similarity_utils.py"
+      - "text_category_profiler/core/utilities.py"
+      - "text_category_profiler/RAGTest.json"
+      - "text_category_profiler/Similarity.tsv"
+      - "text_category_profiler/EmojiAlll.txt"
+      - "text_category_profiler/特殊符號表.txt"
+      - "text_category_profiler/total.txt"
+      - ".github/workflows/bl001-residual-research-inventory.yml"
+      - ".codex/**"
+  push:
+    branches: [main]
+    paths:
+      - "tests/test_residual_research_inventory.py"
+      - "experiments/fixtures/bl001_residual_inventory.json"
+      - ".github/workflows/bl001-residual-research-inventory.yml"
+      - ".codex/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  research-inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Validate Python syntax
+        run: python -m py_compile tests/test_residual_research_inventory.py text_category_profiler/text/similarity_utils.py text_category_profiler/core/utilities.py
+      - name: Verify preserved data and known legacy callers
+        run: python -m unittest -v tests.test_residual_research_inventory
+      - name: Verify package layout and current documents
+        run: python -m unittest -v tests.test_package_layout tests.test_project_docs tests.test_repository_compile_gate
+      - name: Check commit whitespace
+        run: git diff --check HEAD^ HEAD

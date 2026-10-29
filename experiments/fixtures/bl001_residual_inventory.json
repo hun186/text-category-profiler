@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "source_main_sha": "b50b4418cd8920de6e8200859a8e3b6dd8151295",
+  "purpose": "Bounded, byte-exact preservation inventory for unrelocated BL-001 package-root research/legacy data. Not an exhaustive caller scan.",
+  "external_callers": "unverified; original paths retained",
+  "entries": [
+    {
+      "path": "text_category_profiler/FTPTEST/abc.txt",
+      "sha": "f2ba8f84ab5c1bce84a7b441cb1959cfc7093b7f",
+      "size_bytes": 3,
+      "classification": "legacy/unknown"
+    },
+    {
+      "path": "text_category_profiler/testFix.txt",
+      "sha": "e0bedf8bd7f5f940a187c807960ef76c9e5755df",
+      "size_bytes": 83,
+      "classification": "test/experiment"
+    },
+    {
+      "path": "text_category_profiler/testFix - 複製.txt",
+      "sha": "f890fe1ef548af6096588bc88464cc67fdf8b106",
+      "size_bytes": 59,
+      "classification": "test/experiment"
+    },
+    {
+      "path": "text_category_profiler/陈德铭呼吁美方为中国赴美企业提供公平公正商业环境.txt",
+      "sha": "f7746d15b8f245ec281331ef4e69662dc874b0fb",
+      "size_bytes": 2304,
+      "classification": "test/experiment"
+    },
+    {
+      "path": "text_category_profiler/陈德铭呼吁美方为中国赴美企业提供公平公正商业环境_space.txt",
+      "sha": "bd25bc335ba2cc0f6dd0301dbdccf83c496b2150",
+      "size_bytes": 3060,
+      "classification": "test/experiment"
+    },
+    {
+      "path": "text_category_profiler/陈德铭呼吁美方为中国赴美企业提供公平公正商业环境.xlsx",
+      "sha": "26c6439ca50fc1d21a5909a8a3b18d2802d49e74",
+      "size_bytes": 6822,
+      "classification": "test/experiment"
+    },
+    {
+      "path": "text_category_profiler/陈德铭呼吁美方为中国赴美企业提供公平公正商业环境_space.xlsx",
+      "sha": "cb00157b9ca927f2976a5134b270639fda6fb675",
+      "size_bytes": 7124,
+      "classification": "test/experiment"
+    },
+    {
+      "path": "text_category_profiler/RAGTest.json",
+      "sha": "4df2b417d2f19720218edc1d52ff9e847a385389",
+      "size_bytes": 10156,
+      "classification": "test/experiment"
+    },
+    {
+      "path": "text_category_profiler/Similarity.tsv",
+      "sha": "9fe2e4ad6660e64a2f3befd7011735340865b345",
+      "size_bytes": 34615,
+      "classification": "test/experiment"
+    },
+    {
+      "path": "text_category_profiler/EmojiAlll.txt",
+      "sha": "b603c8a3979c057b104ddb002aa50ff0588cdd9a",
+      "size_bytes": 36516,
+      "classification": "legacy/unknown"
+    },
+    {
+      "path": "text_category_profiler/特殊符號表.txt",
+      "sha": "f41651e616f86ca2c24f6bca9a1ed3242a7f1be7",
+      "size_bytes": 27063,
+      "classification": "legacy/unknown"
+    },
+    {
+      "path": "text_category_profiler/total.txt",
+      "sha": "21a5d2114b23f18c4d0a9b76f3a6cd9502f06133",
+      "size_bytes": 216074,
+      "classification": "legacy/unknown"
+    }
+  ]
+}
