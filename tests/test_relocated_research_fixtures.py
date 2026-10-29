@@ -79,6 +79,51 @@ class ResearchFixtureBoundaryTests(unittest.TestCase):
             for line in matching
         ))
 
+    def test_louvain_manual_sample_points_to_relocated_fixture(self):
+        # Verify the __main__ sample's expression without importing graph
+        # dependencies or executing full Louvain clustering.
+        source = ROOT / "text_category_profiler/visualization/Graph_utils.py"
+        module = ast.parse(source.read_text(encoding="utf-8"))
+        main_guard = next(
+            node for node in module.body
+            if isinstance(node, ast.If)
+            and isinstance(node.test, ast.Compare)
+            and isinstance(node.test.left, ast.Name)
+            and node.test.left.id == "__name__"
+        )
+        assignment = next(
+            node for node in main_guard.body
+            if isinstance(node, ast.Assign)
+            and any(
+                isinstance(target, ast.Name) and target.id == "SimilarityFile"
+                for target in node.targets
+            )
+            and isinstance(node.value, ast.Call)
+            and isinstance(node.value.func, ast.Name)
+            and node.value.func.id == "str"
+        )
+        expression = ast.unparse(assignment.value.args[0])
+        self.assertIn("Path(__file__).resolve().parents[2]", expression)
+        self.assertIn("'experiments'", expression)
+        self.assertIn("'fixtures'", expression)
+        self.assertIn("'research_samples'", expression)
+        self.assertIn("'Similarity.tsv'", expression)
+        self.assertEqual(
+            source.resolve().parents[2]
+            / "experiments/fixtures/research_samples/Similarity.tsv",
+            DEST / "Similarity.tsv",
+        )
+
+    def test_original_similarity_tsv_contains_59_louvain_nodes(self):
+        rows = (DEST / "Similarity.tsv").read_text(encoding="utf-8").splitlines()
+        nodes = set()
+        for row in rows:
+            fields = row.split("\t")
+            self.assertEqual(len(fields), 4)
+            nodes.update(fields[:2])
+            self.assertGreaterEqual(float(fields[2]), 0)
+        self.assertEqual(len(nodes), 59)
+
     def test_no_old_direct_literal_paths_in_python_sources(self):
         needles = (
             'file="RAGTest.json"',
@@ -87,6 +132,7 @@ class ResearchFixtureBoundaryTests(unittest.TestCase):
             '"text_category_profiler/Similarity.tsv"',
             'file="Similarity.tsv"',
             'file=\'Similarity.tsv\'',
+            "SimilarityFile = r'Similarity.tsv'",
         )
         offenders = []
         for path in ROOT.rglob("*.py"):

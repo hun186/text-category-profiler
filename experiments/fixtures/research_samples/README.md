@@ -24,6 +24,13 @@ guarantee that every dynamic/external/manual caller has been inspected.
 A local script that hardcodes the former location needs an explicit update.
 No Windows symlink, implicit fallback, or compatibility duplicate is added.
 
+The direct-run Louvain example in
+`text_category_profiler/visualization/Graph_utils.py` previously opened the
+bare filename `Similarity.tsv` from the process working directory. It now
+resolves the unchanged fixture from the repository root using `__file__`.
+The existing `load_graph(path)` public behavior remains unchanged; lightweight
+tests characterize 59 graph nodes but do **not** run Louvain clustering.
+
 The separate Chinese-named similarity test documents still used by the manual
 `InnerCrossSimilarityForTextListTest()` cwd-relative `open(FN)` remain at
 their original locations. Do not conflate them with `Similarity.tsv`.
