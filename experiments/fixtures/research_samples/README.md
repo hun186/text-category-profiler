@@ -8,12 +8,18 @@ These are research fixtures, **not** runtime application package data.
 | `Similarity.tsv` | `text_category_profiler/Similarity.tsv` | `9fe2e4ad6660e64a2f3befd7011735340865b345` | 34615 |
 
 Both blobs are reused without parsing, rewriting, transcoding, or regeneration.
+
+**Historical format caveat:** `RAGTest.json` contains two back-to-back JSON
+arrays (9 and 5 records), not a single valid JSON document. A single
+`json.loads()` / `JsonHandler.load()` call fails with `Extra data`. To consume
+this historical fixture, explicitly use an incremental JSON decoder and keep
+the arrays separate; do not silently alter the original Git blob.
 The filenames and data are historical; their external source provenance and
 redistribution licenses were **not** established in this migration.
 
-The only known repository caller for `RAGTest.json` is a commented-out manual
-`JsonHandler` example in `text_category_profiler/core/utilities.py`; its
-example path is now relative to the repository root. This is **not** a
+The only known repository mention of `RAGTest.json` in application code is a
+commented-out manual example in `text_category_profiler/core/utilities.py`;
+it now documents the new fixture path and warns against single-document parsing. This is **not** a
 guarantee that every dynamic/external/manual caller has been inspected.
 A local script that hardcodes the former location needs an explicit update.
 No Windows symlink, implicit fallback, or compatibility duplicate is added.

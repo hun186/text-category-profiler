@@ -1657,7 +1657,8 @@ if __name__ == '__main__':
     varRepeat = 1
     #MemDictTest(varPre = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"*varRepeat)
     #InnerCrossSimilarityForTextListTest()
-    #RAGChunks = JsonHandler(file="experiments/fixtures/research_samples/RAGTest.json").load()
+    # Research fixture: experiments/fixtures/research_samples/RAGTest.json
+    # Two concatenated JSON arrays; one JsonHandler.load() would fail.
     #OptionSelector(options={"Chinese":"中文","English":"英文","NoExp":""}).proc()
     #InteractiveOptionSelector(options={"Chinese1":"3333333333中文","English":"英文","NoExp":""}).proc()
     #print(getIP())

@@ -36,15 +36,29 @@ class ResearchFixtureBoundaryTests(unittest.TestCase):
             with self.subTest(name=name):
                 self.assertFalse((ROOT / "text_category_profiler" / name).exists())
 
-    def test_rag_research_json_shape(self):
-        values = json.loads((DEST / "RAGTest.json").read_text(encoding="utf-8"))
-        self.assertIsInstance(values, list)
-        self.assertGreater(len(values), 0)
+    def test_rag_research_concatenated_json_arrays_shape(self):
+        # The committed sample contains TWO consecutive JSON arrays. Do not
+        # normalize it or pretend it is one standard json.load() document.
+        text = (DEST / "RAGTest.json").read_text(encoding="utf-8")
+        decoder = json.JSONDecoder()
+        cursor = 0
+        groups = []
+        while cursor < len(text):
+            while cursor < len(text) and text[cursor].isspace():
+                cursor += 1
+            if cursor == len(text):
+                break
+            group, next_cursor = decoder.raw_decode(text, cursor)
+            self.assertGreater(next_cursor, cursor)
+            self.assertIsInstance(group, list)
+            groups.append(group)
+            cursor = next_cursor
+        self.assertEqual([len(group) for group in groups], [9, 5])
         self.assertTrue(all(
             isinstance(item, dict)
             and isinstance(item.get("title"), str)
             and isinstance(item.get("content"), str)
-            for item in values
+            for group in groups for item in group
         ))
 
     def test_similarity_tsv_sample_shape(self):
