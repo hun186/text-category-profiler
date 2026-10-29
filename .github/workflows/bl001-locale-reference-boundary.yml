@@ -1,0 +1,40 @@
+name: BL-001 Historical Locale PDF Reference Boundary
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "tests/test_locale_reference_boundary.py"
+      - "docs/references/**"
+      - "text_category_profiler/Table of locales - MoodleDocs.pdf"
+      - ".github/workflows/bl001-locale-reference-boundary.yml"
+      - ".codex/**"
+  push:
+    branches: [main]
+    paths:
+      - "tests/test_locale_reference_boundary.py"
+      - "docs/references/**"
+      - ".github/workflows/bl001-locale-reference-boundary.yml"
+      - ".codex/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  locale-pdf-reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Validate test syntax
+        run: python -m py_compile tests/test_locale_reference_boundary.py
+      - name: Validate locale reference and existing research boundaries
+        run: python -m unittest -v tests.test_locale_reference_boundary tests.test_residual_research_inventory tests.test_package_layout tests.test_project_docs tests.test_repository_compile_gate
+      - name: Check whitespace
+        run: git diff --check HEAD^ HEAD
