@@ -1,0 +1,52 @@
+name: BL-001 Static Research Caller Audit
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/bl001_research_caller_audit.py"
+      - "tests/test_bl001_research_caller_audit.py"
+      - "experiments/fixtures/bl001_residual_inventory.json"
+      - "experiments/fixtures/bl001_similarity_experiment_inventory.json"
+      - ".github/workflows/bl001-research-caller-audit.yml"
+      - ".codex/**"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/bl001_research_caller_audit.py"
+      - "tests/test_bl001_research_caller_audit.py"
+      - "experiments/fixtures/bl001_residual_inventory.json"
+      - "experiments/fixtures/bl001_similarity_experiment_inventory.json"
+      - ".github/workflows/bl001-research-caller-audit.yml"
+      - ".codex/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  caller-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Check source syntax
+        run: python -m py_compile scripts/bl001_research_caller_audit.py tests/test_bl001_research_caller_audit.py
+      - name: Verify auditor and existing BL-001 boundaries
+        run: python -m unittest -v tests.test_bl001_research_caller_audit tests.test_residual_research_inventory tests.test_similarity_experiment_inventory tests.test_relocated_research_fixtures tests.test_locale_reference_boundary tests.test_package_layout tests.test_project_docs tests.test_repository_compile_gate
+      - name: Generate bounded static reference report
+        run: python scripts/bl001_research_caller_audit.py --output artifacts/bl001-research-caller-audit.json
+      - name: Preserve evidence for manual caller triage
+        uses: actions/upload-artifact@v4
+        with:
+          name: bl001-research-caller-audit
+          path: artifacts/bl001-research-caller-audit.json
+          retention-days: 30
+          if-no-files-found: error
+      - name: Check whitespace
+        run: git diff --check HEAD^ HEAD
