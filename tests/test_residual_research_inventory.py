@@ -26,7 +26,7 @@ class ResidualResearchInventoryTests(unittest.TestCase):
         cls.entries = cls.manifest["entries"]
 
     def test_bounded_manifest_has_unique_package_root_paths(self):
-        self.assertEqual(self.manifest["schema_version"], 3)
+        self.assertEqual(self.manifest["schema_version"], 4)
         self.assertEqual(len(self.entries), 12)
         self.assertEqual(len({item["path"] for item in self.entries}), 12)
         self.assertTrue(all(
@@ -38,7 +38,7 @@ class ResidualResearchInventoryTests(unittest.TestCase):
             {"legacy/unknown", "test/experiment"},
         )
         self.assertEqual(self.manifest["external_callers"], "unverified; original paths retained for unrelocated entries only")
-        self.assertEqual(sum("relocated_path" in e for e in self.entries), 6)
+        self.assertEqual(sum("relocated_path" in e for e in self.entries), 8)
 
     def test_original_paths_and_git_blobs_are_preserved(self):
         for item in self.entries:
@@ -55,7 +55,7 @@ class ResidualResearchInventoryTests(unittest.TestCase):
                 self.assertEqual(git_blob_sha(data), item["sha"])
 
     def test_punctuation_variant_fixtures_are_not_identical(self):
-        path = ROOT / "text_category_profiler"
+        path = ROOT / "experiments/fixtures/text_normalization"
         mixed = (path / "testFix.txt").read_bytes()
         plain = (path / "testFix - 複製.txt").read_bytes()
         self.assertNotEqual(mixed, plain)
