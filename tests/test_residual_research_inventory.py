@@ -26,7 +26,7 @@ class ResidualResearchInventoryTests(unittest.TestCase):
         cls.entries = cls.manifest["entries"]
 
     def test_bounded_manifest_has_unique_package_root_paths(self):
-        self.assertEqual(self.manifest["schema_version"], 5)
+        self.assertEqual(self.manifest["schema_version"], 6)
         self.assertEqual(len(self.entries), 12)
         self.assertEqual(len({item["path"] for item in self.entries}), 12)
         self.assertTrue(all(
@@ -37,8 +37,8 @@ class ResidualResearchInventoryTests(unittest.TestCase):
             {item["classification"] for item in self.entries},
             {"legacy/unknown", "test/experiment"},
         )
-        self.assertEqual(self.manifest["external_callers"], "unverified; original paths retained for unrelocated entries only")
-        self.assertEqual(sum("relocated_path" in e for e in self.entries), 11)
+        self.assertEqual(self.manifest["external_callers"], "unverified; all twelve original package-root sample paths are absent")
+        self.assertEqual(sum("relocated_path" in e for e in self.entries), 12)
 
     def test_original_paths_and_git_blobs_are_preserved(self):
         for item in self.entries:
@@ -63,7 +63,8 @@ class ResidualResearchInventoryTests(unittest.TestCase):
         self.assertNotIn("，".encode("utf-8"), plain)
 
     def test_ftp_marker_has_identical_legacy_deployment_snapshot(self):
-        source = ROOT / "text_category_profiler/FTPTEST/abc.txt"
+        source = ROOT / "experiments/fixtures/legacy_ftp_marker/abc.txt"
+        self.assertFalse((ROOT / "text_category_profiler/FTPTEST/abc.txt").exists())
         snapshot = ROOT / (
             "BertScript/TRV_deploy/deploy-dash-with-gcp-master/"
             "TRV/PythonModule/utils/FTPTEST/abc.txt"

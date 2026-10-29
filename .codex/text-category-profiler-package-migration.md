@@ -84,6 +84,8 @@ text_category_profiler/
 
 ### Phase 3：將非共用內容分流
 
+- 2026-10-30 FTP marker：將原 `text_category_profiler/FTPTEST/abc.txt`（3 bytes；Git blob `f2ba8f84ab5c1bce84a7b441cb1959cfc7093b7f`）按原物件分流到 `experiments/fixtures/legacy_ftp_marker/abc.txt`；獨立的 `TRV_deploy` snapshot 同內容原位保留。`DatasetConverter/DataConverter.py` 的唯一字串命中是三引號 `rowlist sample` 範例，未發現實際 `open`/FTP 呼叫；用 AST 與保全測試明確驗證。manifest v6 中原 12 筆均已標示 relocated_path，但仍有其他 package-root artifacts、27 筆原位實驗資料、外部／動態 callers 與資料授權尚未確認，不足以宣稱 BL-001 Done。同批新增 Hosted Python 3.11 fresh dependency-light `python -m unittest discover -s tests` 流程（安裝輕量資料依賴及 GPUtil，明確不啟用 H100/model runtime），待 CI 實證結果。
+
 - 2026-10-30 legacy text tables preservation：`EmojiAlll.txt`（36,516 bytes；blob `b603c8a3979c057b104ddb002aa50ff0588cdd9a`）、`特殊符號表.txt`（27,063 bytes；blob `f41651e616f86ca2c24f6bca9a1ed3242a7f1be7`）、`total.txt`（216,074 bytes；blob `21a5d2114b23f18c4d0a9b76f3a6cd9502f06133`）保留完全相同原 Git blob 分流到 `experiments/fixtures/legacy_text_tables/`，manifest v5 12 筆中 11 筆搬出。重新核對第一方 Python 靜態檔名字面引用無命中、blob/大小一致、舊路徑消失；未確認這三份文字表實際功能、來源授權或外部／動態使用。`FTPTEST/abc.txt` 仍在原位，因 `DatasetConverter/DataConverter.py` 存在直接 `abc.txt` 字串命中；是否為同一檔案的實際讀取仍需個別追蹤。完整 discovery 尚未驗收，BL-001 In Progress。
 
 - 2026-10-29 punctuation sample fixture split：`text_category_profiler/testFix.txt`（83 bytes；blob `e0bedf8bd7f5f940a187c807960ef76c9e5755df`）及 `testFix - 複製.txt`（59 bytes；blob `f890fe1ef548af6096588bc88464cc67fdf8b106`）以**相同原 Git blob** 分流至 `experiments/fixtures/text_normalization/`。保留全形中文逗號差異；`bl001_residual_inventory.json` v4 記錄 12 筆原始資料中 8 筆已分流、4 筆維持原路徑。原位保全測試與新的 stdlib boundary test 核對 SHA、大小、舊路徑不存在、標點差異，並用受限第一方 Python 靜態掃描確認沒有直接檔名引用；這不等於外部／動態 caller 已查清。`FTPTEST/abc.txt` 在 `DatasetConverter/DataConverter.py` 有直接字串命中，因此本次刻意不移動，另三個文字表亦不變。BL-001 In Progress。

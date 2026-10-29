@@ -1,14 +1,15 @@
 {
-  "schema_version": 5,
+  "schema_version": 6,
   "source_main_sha": "b50b4418cd8920de6e8200859a8e3b6dd8151295",
-  "purpose": "Bounded byte-exact BL-001 inventory: one original package-root FTP marker retained and eleven archived research/legacy files relocated unchanged. Not a full caller audit or provenance/license assertion.",
-  "external_callers": "unverified; original paths retained for unrelocated entries only",
+  "purpose": "Bounded byte-exact BL-001 inventory: all 12 known historical package-root research/legacy files were relocated unchanged. Neither external caller compatibility nor full BL-001 completion is proven.",
+  "external_callers": "unverified; all twelve original package-root sample paths are absent",
   "entries": [
     {
       "path": "text_category_profiler/FTPTEST/abc.txt",
       "sha": "f2ba8f84ab5c1bce84a7b441cb1959cfc7093b7f",
       "size_bytes": 3,
-      "classification": "legacy/unknown"
+      "classification": "legacy/unknown",
+      "relocated_path": "experiments/fixtures/legacy_ftp_marker/abc.txt"
     },
     {
       "path": "text_category_profiler/testFix.txt",
