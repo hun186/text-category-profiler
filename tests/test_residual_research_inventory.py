@@ -26,7 +26,7 @@ class ResidualResearchInventoryTests(unittest.TestCase):
         cls.entries = cls.manifest["entries"]
 
     def test_bounded_manifest_has_unique_package_root_paths(self):
-        self.assertEqual(self.manifest["schema_version"], 2)
+        self.assertEqual(self.manifest["schema_version"], 3)
         self.assertEqual(len(self.entries), 12)
         self.assertEqual(len({item["path"] for item in self.entries}), 12)
         self.assertTrue(all(
@@ -38,7 +38,7 @@ class ResidualResearchInventoryTests(unittest.TestCase):
             {"legacy/unknown", "test/experiment"},
         )
         self.assertEqual(self.manifest["external_callers"], "unverified; original paths retained for unrelocated entries only")
-        self.assertEqual(sum("relocated_path" in e for e in self.entries), 2)
+        self.assertEqual(sum("relocated_path" in e for e in self.entries), 6)
 
     def test_original_paths_and_git_blobs_are_preserved(self):
         for item in self.entries:
@@ -70,7 +70,7 @@ class ResidualResearchInventoryTests(unittest.TestCase):
         )
         self.assertEqual(git_blob_sha(source.read_bytes()), git_blob_sha(snapshot.read_bytes()))
 
-    def test_manual_similarity_caller_still_uses_cwd_relative_filenames(self):
+    def test_manual_similarity_caller_resolves_chinese_input_fixtures(self):
         path = ROOT / "text_category_profiler/text/similarity_utils.py"
         module = ast.parse(path.read_text(encoding="utf-8"))
         function = next(
@@ -84,15 +84,16 @@ class ResidualResearchInventoryTests(unittest.TestCase):
         }
         self.assertIn(CHEN_BASE + ".txt", strings)
         self.assertIn(CHEN_BASE + "_space.txt", strings)
+        self.assertIn("chinese_similarity", strings)
         self.assertTrue(any(
             isinstance(item, ast.Call)
             and isinstance(item.func, ast.Name)
             and item.func.id == "open"
             and item.args
             and isinstance(item.args[0], ast.Name)
-            and item.args[0].id == "FN"
+            and item.args[0].id == "inputFN"
             for item in ast.walk(function)
-        ), "Manual caller's open(FN) relies on caller cwd; relocation requires a plan")
+        ), "Manual caller must read resolved fixture inputFN")
 
     def test_ragtest_reference_in_legacy_example_is_comment_only(self):
         path = ROOT / "text_category_profiler/core/utilities.py"

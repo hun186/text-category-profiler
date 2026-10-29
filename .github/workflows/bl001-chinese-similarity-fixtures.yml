@@ -1,0 +1,46 @@
+name: BL-001 Chinese Similarity Fixtures
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "experiments/fixtures/chinese_similarity/**"
+      - "experiments/fixtures/bl001_residual_inventory.json"
+      - "text_category_profiler/text/similarity_utils.py"
+      - "text_category_profiler/陈德铭呼吁美方为中国赴美企业提供公平公正商业环境*"
+      - "tests/test_chinese_similarity_fixture_boundary.py"
+      - "tests/test_residual_research_inventory.py"
+      - "tests/test_bl001_research_caller_audit.py"
+      - ".github/workflows/bl001-chinese-similarity-fixtures.yml"
+      - ".codex/**"
+  push:
+    branches: [main]
+    paths:
+      - "experiments/fixtures/chinese_similarity/**"
+      - "experiments/fixtures/bl001_residual_inventory.json"
+      - "text_category_profiler/text/similarity_utils.py"
+      - "tests/test_chinese_similarity_fixture_boundary.py"
+      - ".github/workflows/bl001-chinese-similarity-fixtures.yml"
+      - ".codex/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  chinese-similarity-fixtures:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile source and tests
+        run: python -m py_compile text_category_profiler/text/similarity_utils.py tests/test_chinese_similarity_fixture_boundary.py tests/test_residual_research_inventory.py
+      - name: Verify byte-exact history and manual caller
+        run: python -m unittest -v tests.test_chinese_similarity_fixture_boundary tests.test_residual_research_inventory tests.test_bl001_research_caller_audit tests.test_similarity_experiment_inventory tests.test_relocated_research_fixtures tests.test_package_layout tests.test_project_docs tests.test_repository_compile_gate
+      - name: Check whitespace
+        run: git diff --check HEAD^ HEAD

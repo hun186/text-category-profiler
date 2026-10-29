@@ -175,6 +175,13 @@ def InnerCrossSimilarityForTextList(
     return SimilarityDict
             
 def InnerCrossSimilarityForTextListTest():
+    # Two active Chinese input fixtures are read independently of cwd;
+    # generated Excel output filenames remain relative to caller cwd.
+    from pathlib import Path
+    fixture_root = (
+        Path(__file__).resolve().parents[2]
+        / "experiments" / "fixtures" / "chinese_similarity"
+    )
     testFNList = [
         #"期末指数投资按公允价值占基金资产净值比例大小排序的所有权益投资.txt",
         #"中国科学院科技战略咨询研究院（筹）与民进中央举行合作交流座谈会.txt",
@@ -196,7 +203,9 @@ def InnerCrossSimilarityForTextListTest():
         ]
     #testFN= "InnerCrossSimilarityForTextList.txt"
     for FN in testFNList:
-        inputArt = open(FN,mode='rt',encoding='utf-8').read()
+        inputFN = fixture_root / FN if FN.startswith("陈德铭呼吁美方为中国赴美企业提供公平公正商业环境") else FN
+        with open(inputFN, mode='rt', encoding='utf-8') as input_file:
+            inputArt = input_file.read()
         textList1 = textList2 = wrap(inputArt, 256)
         #textList1 = textList2 = wrap(inputArt, 4)
         #print("")
