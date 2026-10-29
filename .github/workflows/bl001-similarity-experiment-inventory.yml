@@ -1,0 +1,41 @@
+name: BL-001 Similarity Experiment Preservation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "experiments/fixtures/bl001_similarity_experiment_inventory.json"
+      - "tests/test_similarity_experiment_inventory.py"
+      - "text_category_profiler/切片相似度比對法測試/**"
+      - ".github/workflows/bl001-similarity-experiment-inventory.yml"
+      - ".codex/**"
+  push:
+    branches: [main]
+    paths:
+      - "experiments/fixtures/bl001_similarity_experiment_inventory.json"
+      - "tests/test_similarity_experiment_inventory.py"
+      - "text_category_profiler/切片相似度比對法測試/**"
+      - ".github/workflows/bl001-similarity-experiment-inventory.yml"
+      - ".codex/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  similarity-experiment-inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile dependency-light checks
+        run: python -m py_compile tests/test_similarity_experiment_inventory.py
+      - name: Check exact historical artifacts and active documentation
+        run: python -m unittest -v tests.test_similarity_experiment_inventory tests.test_residual_research_inventory tests.test_locale_reference_boundary tests.test_package_layout tests.test_project_docs tests.test_repository_compile_gate
+      - name: Check whitespace
+        run: git diff --check HEAD^ HEAD
