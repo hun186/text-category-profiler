@@ -6,6 +6,7 @@ on:
     paths:
       - "tests/test_residual_research_inventory.py"
       - "experiments/fixtures/bl001_residual_inventory.json"
+      - "experiments/fixtures/research_samples/**"
       - "text_category_profiler/FTPTEST/**"
       - "text_category_profiler/testFix*.txt"
       - "text_category_profiler/text/similarity_utils.py"
@@ -22,6 +23,7 @@ on:
     paths:
       - "tests/test_residual_research_inventory.py"
       - "experiments/fixtures/bl001_residual_inventory.json"
+      - "experiments/fixtures/research_samples/**"
       - ".github/workflows/bl001-residual-research-inventory.yml"
       - ".codex/**"
   workflow_dispatch:

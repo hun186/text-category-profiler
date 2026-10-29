@@ -232,7 +232,11 @@ def build_Louvain(WeightEdgeList=[],WeightEdgeFile=""):
 
 if __name__ == '__main__':
     SimilarityFile = r'SimilarityEdge.txt'
-    SimilarityFile = r'Similarity.tsv'
+    from pathlib import Path
+    SimilarityFile = str(
+        Path(__file__).resolve().parents[2]
+        / "experiments" / "fixtures" / "research_samples" / "Similarity.tsv"
+    )
 
     communities = build_Louvain(SimilarityFile)
     count = 0

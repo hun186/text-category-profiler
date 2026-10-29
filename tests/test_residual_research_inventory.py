@@ -26,7 +26,7 @@ class ResidualResearchInventoryTests(unittest.TestCase):
         cls.entries = cls.manifest["entries"]
 
     def test_bounded_manifest_has_unique_package_root_paths(self):
-        self.assertEqual(self.manifest["schema_version"], 1)
+        self.assertEqual(self.manifest["schema_version"], 2)
         self.assertEqual(len(self.entries), 12)
         self.assertEqual(len({item["path"] for item in self.entries}), 12)
         self.assertTrue(all(
@@ -37,13 +37,19 @@ class ResidualResearchInventoryTests(unittest.TestCase):
             {item["classification"] for item in self.entries},
             {"legacy/unknown", "test/experiment"},
         )
-        self.assertEqual(self.manifest["external_callers"], "unverified; original paths retained")
+        self.assertEqual(self.manifest["external_callers"], "unverified; original paths retained for unrelocated entries only")
+        self.assertEqual(sum("relocated_path" in e for e in self.entries), 2)
 
     def test_original_paths_and_git_blobs_are_preserved(self):
         for item in self.entries:
             with self.subTest(path=item["path"]):
-                path = ROOT / item["path"]
-                self.assertTrue(path.is_file(), "Do not move before reviewing callers")
+                old_path = ROOT / item["path"]
+                if "relocated_path" in item:
+                    self.assertFalse(old_path.exists(), "Relocated source must not reappear")
+                    path = ROOT / item["relocated_path"]
+                else:
+                    path = old_path
+                self.assertTrue(path.is_file(), "Preserve each tracked Git blob")
                 data = path.read_bytes()
                 self.assertEqual(len(data), item["size_bytes"])
                 self.assertEqual(git_blob_sha(data), item["sha"])
