@@ -12,7 +12,11 @@ import os
 from pathlib import Path, PurePosixPath
 import subprocess
 
-from scripts.bl001_legacy_root_audit import load_catalog
+# Keep the script directly executable without mutating sys.path or cwd.
+if __package__ in (None, ""):
+    from bl001_legacy_root_audit import load_catalog
+else:
+    from scripts.bl001_legacy_root_audit import load_catalog
 
 ROOT = Path(__file__).resolve().parents[1]
 OWNERSHIP_PATH = "experiments/fixtures/bl001_package_ownership.json"
