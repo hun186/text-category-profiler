@@ -48,7 +48,7 @@ def load_catalog(root):
     for item in similarity["entries"]:
         targets.append({
             "original_path": item["path"],
-            "current_path": item["path"],
+            "current_path": item.get("relocated_path", item["path"]),
             "basename": Path(item["path"]).name,
         })
     assert len(targets) == 39, "Unexpected bounded inventory size"

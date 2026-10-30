@@ -1,93 +1,105 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "source_main_sha": "f00f503376a797cc05869dfd901aad50e3cbf929",
   "root": "text_category_profiler/切片相似度比對法測試",
-  "purpose": "Bounded, byte-exact on-site preservation inventory of legacy similarity experiment source texts and derived spreadsheet outputs. Not an exhaustive caller audit, and no files are relocated.",
-  "external_callers": "unverified; original paths retained",
+  "purpose": "Bounded byte-exact inventory of 27 historical similarity research files. Twelve XLSX experiment outputs are archived unchanged outside the application package; fifteen original TXT research inputs remain at their original paths. Not an exhaustive caller audit.",
+  "external_callers": "unverified; 15 original TXT source paths retained; 12 historical XLSX output paths relocated",
   "entries": [
     {
       "path": "text_category_profiler/切片相似度比對法測試/difflib_without_digits_assimilation/中国科学院科技战略咨询研究院（筹）与民进中央举行合作交流座谈会.xlsx",
       "sha": "b1733c9d846782ad00287516832e703baaacb8ee",
       "size_bytes": 7137,
       "group": "difflib_without_digits_assimilation",
-      "format": "xlsx"
+      "format": "xlsx",
+      "relocated_path": "experiments/fixtures/similarity_experiment_outputs/difflib_without_digits_assimilation/中国科学院科技战略咨询研究院（筹）与民进中央举行合作交流座谈会.xlsx"
     },
     {
       "path": "text_category_profiler/切片相似度比對法測試/difflib_without_digits_assimilation/冀航警43_24 航标动态.xlsx",
       "sha": "46b2a049f78614ba8b12a7c60accff5d0df6c429",
       "size_bytes": 7036,
       "group": "difflib_without_digits_assimilation",
-      "format": "xlsx"
+      "format": "xlsx",
+      "relocated_path": "experiments/fixtures/similarity_experiment_outputs/difflib_without_digits_assimilation/冀航警43_24 航标动态.xlsx"
     },
     {
       "path": "text_category_profiler/切片相似度比對法測試/difflib_without_digits_assimilation/期末指数投资按公允价值占基金资产净值比例大小排序的所有权益投资.xlsx",
       "sha": "1357289212c8c919b1a4f221692f3085a195e13d",
       "size_bytes": 11975,
       "group": "difflib_without_digits_assimilation",
-      "format": "xlsx"
+      "format": "xlsx",
+      "relocated_path": "experiments/fixtures/similarity_experiment_outputs/difflib_without_digits_assimilation/期末指数投资按公允价值占基金资产净值比例大小排序的所有权益投资.xlsx"
     },
     {
       "path": "text_category_profiler/切片相似度比對法測試/difflib_without_digits_assimilation/澜沧江—湄公河合作第三次领导人会议万象宣言.xlsx",
       "sha": "94524b6bc01fa7320b7297c188c92a92bc199501",
       "size_bytes": 15371,
       "group": "difflib_without_digits_assimilation",
-      "format": "xlsx"
+      "format": "xlsx",
+      "relocated_path": "experiments/fixtures/similarity_experiment_outputs/difflib_without_digits_assimilation/澜沧江—湄公河合作第三次领导人会议万象宣言.xlsx"
     },
     {
       "path": "text_category_profiler/切片相似度比對法測試/jaro_similarity_with_digits_assimilation/中国科学院科技战略咨询研究院（筹）与民进中央举行合作交流座谈会.xlsx",
       "sha": "51a49f9b54a089f3a1a794252481898697df5e46",
       "size_bytes": 6932,
       "group": "jaro_similarity_with_digits_assimilation",
-      "format": "xlsx"
+      "format": "xlsx",
+      "relocated_path": "experiments/fixtures/similarity_experiment_outputs/jaro_similarity_with_digits_assimilation/中国科学院科技战略咨询研究院（筹）与民进中央举行合作交流座谈会.xlsx"
     },
     {
       "path": "text_category_profiler/切片相似度比對法測試/jaro_similarity_with_digits_assimilation/冀航警43_24 航标动态.xlsx",
       "sha": "111e7150151cb8dc3f3890b63404c38247fd4624",
       "size_bytes": 6923,
       "group": "jaro_similarity_with_digits_assimilation",
-      "format": "xlsx"
+      "format": "xlsx",
+      "relocated_path": "experiments/fixtures/similarity_experiment_outputs/jaro_similarity_with_digits_assimilation/冀航警43_24 航标动态.xlsx"
     },
     {
       "path": "text_category_profiler/切片相似度比對法測試/jaro_similarity_with_digits_assimilation/期末指数投资按公允价值占基金资产净值比例大小排序的所有权益投资.xlsx",
       "sha": "b1c53782888ce3e85b6ef6494e56f0caf0a7e27f",
       "size_bytes": 13193,
       "group": "jaro_similarity_with_digits_assimilation",
-      "format": "xlsx"
+      "format": "xlsx",
+      "relocated_path": "experiments/fixtures/similarity_experiment_outputs/jaro_similarity_with_digits_assimilation/期末指数投资按公允价值占基金资产净值比例大小排序的所有权益投资.xlsx"
     },
     {
       "path": "text_category_profiler/切片相似度比對法測試/jaro_similarity_with_digits_assimilation/澜沧江—湄公河合作第三次领导人会议万象宣言.xlsx",
       "sha": "909f2d9a66f845c5acf371a463d6f22891114a0c",
       "size_bytes": 16260,
       "group": "jaro_similarity_with_digits_assimilation",
-      "format": "xlsx"
+      "format": "xlsx",
+      "relocated_path": "experiments/fixtures/similarity_experiment_outputs/jaro_similarity_with_digits_assimilation/澜沧江—湄公河合作第三次领导人会议万象宣言.xlsx"
     },
     {
       "path": "text_category_profiler/切片相似度比對法測試/jaro_similarity_without_digits_assimilation/中国科学院科技战略咨询研究院（筹）与民进中央举行合作交流座谈会.xlsx",
       "sha": "81c36a2617e9546a2509a1b87d3e0e040e80eefc",
       "size_bytes": 6933,
       "group": "jaro_similarity_without_digits_assimilation",
-      "format": "xlsx"
+      "format": "xlsx",
+      "relocated_path": "experiments/fixtures/similarity_experiment_outputs/jaro_similarity_without_digits_assimilation/中国科学院科技战略咨询研究院（筹）与民进中央举行合作交流座谈会.xlsx"
     },
     {
       "path": "text_category_profiler/切片相似度比對法測試/jaro_similarity_without_digits_assimilation/冀航警43_24 航标动态.xlsx",
       "sha": "0a5da1188a1f17ecb3d028f033a957b50b79cf5b",
       "size_bytes": 6926,
       "group": "jaro_similarity_without_digits_assimilation",
-      "format": "xlsx"
+      "format": "xlsx",
+      "relocated_path": "experiments/fixtures/similarity_experiment_outputs/jaro_similarity_without_digits_assimilation/冀航警43_24 航标动态.xlsx"
     },
     {
       "path": "text_category_profiler/切片相似度比對法測試/jaro_similarity_without_digits_assimilation/期末指数投资按公允价值占基金资产净值比例大小排序的所有权益投资.xlsx",
       "sha": "11081356d0ff7f6da292d3c247e47410e2ac0fa6",
       "size_bytes": 13147,
       "group": "jaro_similarity_without_digits_assimilation",
-      "format": "xlsx"
+      "format": "xlsx",
+      "relocated_path": "experiments/fixtures/similarity_experiment_outputs/jaro_similarity_without_digits_assimilation/期末指数投资按公允价值占基金资产净值比例大小排序的所有权益投资.xlsx"
     },
     {
       "path": "text_category_profiler/切片相似度比對法測試/jaro_similarity_without_digits_assimilation/澜沧江—湄公河合作第三次领导人会议万象宣言.xlsx",
       "sha": "206fab161db9289183fa51de725274fc0f1be973",
       "size_bytes": 16263,
       "group": "jaro_similarity_without_digits_assimilation",
-      "format": "xlsx"
+      "format": "xlsx",
+      "relocated_path": "experiments/fixtures/similarity_experiment_outputs/jaro_similarity_without_digits_assimilation/澜沧江—湄公河合作第三次领导人会议万象宣言.xlsx"
     },
     {
       "path": "text_category_profiler/切片相似度比對法測試/test Document/An Intensified Approach to Combatting the Islamic State_tika.txt",

@@ -6,7 +6,10 @@ on:
     paths:
       - "experiments/fixtures/bl001_similarity_experiment_inventory.json"
       - "tests/test_similarity_experiment_inventory.py"
+      - "tests/test_bl001_research_caller_audit.py"
+      - "scripts/bl001_research_caller_audit.py"
       - "text_category_profiler/切片相似度比對法測試/**"
+      - "experiments/fixtures/similarity_experiment_outputs/**"
       - ".github/workflows/bl001-similarity-experiment-inventory.yml"
       - ".codex/**"
   push:
@@ -14,7 +17,10 @@ on:
     paths:
       - "experiments/fixtures/bl001_similarity_experiment_inventory.json"
       - "tests/test_similarity_experiment_inventory.py"
+      - "tests/test_bl001_research_caller_audit.py"
+      - "scripts/bl001_research_caller_audit.py"
       - "text_category_profiler/切片相似度比對法測試/**"
+      - "experiments/fixtures/similarity_experiment_outputs/**"
       - ".github/workflows/bl001-similarity-experiment-inventory.yml"
       - ".codex/**"
   workflow_dispatch:
@@ -34,8 +40,8 @@ jobs:
         with:
           python-version: "3.11"
       - name: Compile dependency-light checks
-        run: python -m py_compile tests/test_similarity_experiment_inventory.py
+        run: python -m py_compile tests/test_similarity_experiment_inventory.py tests/test_bl001_research_caller_audit.py scripts/bl001_research_caller_audit.py
       - name: Check exact historical artifacts and active documentation
-        run: python -m unittest -v tests.test_similarity_experiment_inventory tests.test_residual_research_inventory tests.test_locale_reference_boundary tests.test_package_layout tests.test_project_docs tests.test_repository_compile_gate
+        run: python -m unittest -v tests.test_similarity_experiment_inventory tests.test_bl001_research_caller_audit tests.test_residual_research_inventory tests.test_locale_reference_boundary tests.test_package_layout tests.test_project_docs tests.test_repository_compile_gate
       - name: Check whitespace
         run: git diff --check HEAD^ HEAD

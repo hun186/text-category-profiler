@@ -33,33 +33,51 @@ class SimilarityExperimentInventoryTests(unittest.TestCase):
         cls.root = ROOT / cls.manifest["root"]
 
     def test_manifest_scope_and_original_paths(self):
-        self.assertEqual(self.manifest["schema_version"], 1)
+        self.assertEqual(self.manifest["schema_version"], 2)
         self.assertEqual(len(self.entries), 27)
+        self.assertEqual(sum("relocated_path" in item for item in self.entries), 12)
+        self.assertTrue(all(("relocated_path" in item) == (item["format"] == "xlsx") for item in self.entries))
         self.assertEqual(len({entry["path"] for entry in self.entries}), 27)
         self.assertEqual(sum(item["size_bytes"] for item in self.entries), 824594)
         self.assertEqual(
             self.manifest["external_callers"],
-            "unverified; original paths retained",
+            "unverified; 15 original TXT source paths retained; 12 historical XLSX output paths relocated",
         )
         for item in self.entries:
             with self.subTest(path=item["path"]):
                 self.assertTrue(item["path"].startswith(self.manifest["root"] + "/"))
                 self.assertIn(item["group"], GROUPS)
                 self.assertIn(item["format"], {"txt", "xlsx"})
-                self.assertTrue((ROOT / item["path"]).is_file())
+                self.assertTrue((ROOT / item.get("relocated_path", item["path"])).is_file())
 
     def test_complete_directory_file_set_is_preserved(self):
         actual = {
             item.relative_to(ROOT).as_posix()
             for item in self.root.rglob("*") if item.is_file()
         }
-        expected = {item["path"] for item in self.entries}
+        expected = {item["path"] for item in self.entries if item["format"] == "txt"}
         self.assertEqual(actual, expected)
+        archive = ROOT / "experiments/fixtures/similarity_experiment_outputs"
+        archived = {
+            path.relative_to(ROOT).as_posix()
+            for path in archive.rglob("*")
+            if path.is_file() and path.name != "README.md"
+        }
+        self.assertEqual(
+            archived,
+            {item["relocated_path"] for item in self.entries if item["format"] == "xlsx"},
+        )
+        self.assertEqual(len(archived), 12)
+        self.assertTrue((archive / "README.md").is_file())
+        for item in self.entries:
+            if item["format"] == "xlsx":
+                with self.subTest(old_path=item["path"]):
+                    self.assertFalse((ROOT / item["path"]).exists())
 
     def test_every_historical_git_blob_preserved(self):
         for item in self.entries:
             with self.subTest(path=item["path"]):
-                data = (ROOT / item["path"]).read_bytes()
+                data = (ROOT / item.get("relocated_path", item["path"])).read_bytes()
                 self.assertEqual(len(data), item["size_bytes"])
                 self.assertEqual(git_blob_sha(data), item["sha"])
 
@@ -83,12 +101,12 @@ class SimilarityExperimentInventoryTests(unittest.TestCase):
         for item in self.entries:
             if item["format"] == "xlsx":
                 with self.subTest(path=item["path"]):
-                    with (ROOT / item["path"]).open("rb") as handle:
+                    with (ROOT / item["relocated_path"]).open("rb") as handle:
                         self.assertEqual(handle.read(4), b"PK\x03\x04")
 
     def test_inventory_does_not_claim_all_callers_are_known(self):
         self.assertIn("Not an exhaustive caller audit", self.manifest["purpose"])
-        self.assertEqual(self.manifest["external_callers"], "unverified; original paths retained")
+        self.assertEqual(self.manifest["external_callers"], "unverified; 15 original TXT source paths retained; 12 historical XLSX output paths relocated")
 
 
 if __name__ == "__main__":
