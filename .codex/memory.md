@@ -4,6 +4,9 @@
 
 ## Current Focus
 
+- BL-001 canonical consumer evidence follow-up：PR #152 結構盤點 71 tracked package files（58 canonical domain-owned、13 legacy）；PR #153 對 58 件中的 44 個 canonical Python 模組新增 bounded first-party AST import report，逐個標示 qualified-import 語法命中、package-internal vs TCFMain/DatasetConverter/BertScript 等來源區域；另列 literal importlib/runpy 候選、bare import 候選與 syntax errors，CI 上傳 JSON。未命中不是 dead code；source area 不是可靠 runtime stage，imports 未執行，無 repo 外/動態證據，不移除任何 module，BL-001 In Progress。
+
+
 - BL-001 tracked-package structural census：由 hosted Git tree 確認 `text_category_profiler/` 當前 71 tracked blobs。新 `experiments/fixtures/bl001_package_ownership.json` 人工明列其中 58 個 canonical domain-owned package files（含必要文件與 initializer），舊 manifest 的 13 個相容／vendor assets 仍保留原 Git blob；`scripts/bl001_package_census.py` 以 stdlib 對照 git ls-files、讀檔 SHA/大小、domain owner、legacy canonical target，新增 Hosted evidence artifact 和 regression。明確只證明靜態結構歸屬，不代表 58 件均跨 stage active 使用、外部／動態 caller 已驗證或完整 runtime acceptance。BL-001 仍 In Progress。
 
 
