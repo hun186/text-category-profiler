@@ -1,0 +1,69 @@
+name: BL-001 Fresh Dependency-Light Discovery
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/bl001-fresh-lightweight-discovery.yml"
+      - "tests/**"
+      - "requirements.txt"
+      - "text_category_profiler/**"
+      - "DatasetConverter/**"
+      - "BertScript/**"
+      - "TCF_Params/**"
+      - "TCFMain.py"
+      - "experiments/fixtures/**"
+      - ".codex/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/bl001-fresh-lightweight-discovery.yml"
+      - "tests/**"
+      - "requirements.txt"
+      - "text_category_profiler/**"
+      - "DatasetConverter/**"
+      - "BertScript/**"
+      - "TCF_Params/**"
+      - "TCFMain.py"
+      - "experiments/fixtures/**"
+      - ".codex/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-light-discovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TCP_RUN_FULL_PIPELINE_SMOKE: "0"
+      TCP_RUN_REAL_PIPELINE_SMOKE: "0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install targeted data and GPU-utility dependencies (no model runtimes)
+        run: |
+          python -m pip install --disable-pip-version-check \
+            numpy pandas scipy GPUtil psutil opencc-python-reimplemented \
+            setproctitle version-parser colorama tqdm xlsxwriter \
+            openpyxl python-dateutil pymongo elasticsearch pytz
+      - name: Run entire repository unittest discovery without model opt-ins
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m unittest discover -s tests 2>&1 | tee bl001-full-unittest-discovery.log
+      - name: Preserve full discovery output even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bl001-full-unittest-discovery
+          path: bl001-full-unittest-discovery.log
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Check PR whitespace
+        run: git diff --check HEAD^ HEAD

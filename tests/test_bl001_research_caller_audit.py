@@ -18,7 +18,7 @@ class ResearchCallerAuditTests(unittest.TestCase):
             "experiments/fixtures/research_samples/RAGTest.json",
         )
         self.assertEqual(
-            sum(x["original_path"] != x["current_path"] for x in targets), 11
+            sum(x["original_path"] != x["current_path"] for x in targets), 12
         )
 
     def test_ast_literals_and_comments_are_not_conflated(self):

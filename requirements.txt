@@ -12,6 +12,7 @@ numpy
 pandas
 openpyxl
 xlsxwriter
+pytz  # Explicit DB_utils import; pandas versions may not install it transitively
 
 # CLI / process / system utilities
 colorama

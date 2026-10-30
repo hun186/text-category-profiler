@@ -2,7 +2,7 @@
 
 > 類型：可持續執行的重構工作清單。後續 Codex 任務應一次處理一個可驗證批次，完成後更新本檔核取方塊與 `.codex/backlog.md` 狀態。
 
-> 目前狀態：application-side package namespace、path injection 與 deployment boundary 已收斂；`TRV_deploy` 保留為獨立 legacy snapshot。Phase 5 的 legacy path/container 與 current-state 文件同步已完成，但 `text_category_profiler/` root 仍有 Phase 0–3 所追蹤的 research/test/script/vendor/legacy artifact 候選需要逐批分類與分流；完成後還需 fresh dependency-light suite 才能將 `BL-001` 標記 Done。
+> 目前狀態：application-side package namespace、path injection 與 deployment boundary 已收斂；`TRV_deploy` 保留為獨立 legacy snapshot。Phase 5 的 legacy path/container 與 current-state 文件同步已完成，但 `text_category_profiler/` root 仍有 Phase 0–3 所追蹤的 research/test/script/vendor/legacy artifact 候選需要逐批分類與分流；PR #145 已有 fresh targeted lightweight full discovery 912 OK（2 opt-in SKIP）證據，但仍須完成剩餘分流與合併後最新 main 驗收才能將 `BL-001` 標記 Done。
 
 ## 目標
 
@@ -83,6 +83,8 @@ text_category_profiler/
 - [ ] 移除已由新模組取代的重複實作，不保留兩份可分歧的 source of truth。
 
 ### Phase 3：將非共用內容分流
+
+- 2026-10-30 FTP marker：將原 `text_category_profiler/FTPTEST/abc.txt`（3 bytes；Git blob `f2ba8f84ab5c1bce84a7b441cb1959cfc7093b7f`）按原物件分流到 `experiments/fixtures/legacy_ftp_marker/abc.txt`；獨立的 `TRV_deploy` snapshot 同內容原位保留。`DatasetConverter/DataConverter.py` 的唯一字串命中是三引號 `rowlist sample` 範例，未發現實際 `open`/FTP 呼叫；用 AST 與保全測試明確驗證。manifest v6 中原 12 筆均已標示 relocated_path，但仍有其他 package-root artifacts、27 筆原位實驗資料、外部／動態 callers 與資料授權尚未確認，不足以宣稱 BL-001 Done。同批新增 Hosted Python 3.11 fresh dependency-light `python -m unittest discover -s tests` 流程（安裝輕量資料依賴及 GPUtil，明確不啟用 H100/model runtime），實測 PR #145 HEAD `56f0bf9c37a4`、Hosted run `41024022467` **912 tests OK（skipped=2）**，完整證據 artifact `12963076869`；沒有安裝全 root requirements，也沒有執行模型／GPU／WorkPool。
 
 - 2026-10-30 legacy text tables preservation：`EmojiAlll.txt`（36,516 bytes；blob `b603c8a3979c057b104ddb002aa50ff0588cdd9a`）、`特殊符號表.txt`（27,063 bytes；blob `f41651e616f86ca2c24f6bca9a1ed3242a7f1be7`）、`total.txt`（216,074 bytes；blob `21a5d2114b23f18c4d0a9b76f3a6cd9502f06133`）保留完全相同原 Git blob 分流到 `experiments/fixtures/legacy_text_tables/`，manifest v5 12 筆中 11 筆搬出。重新核對第一方 Python 靜態檔名字面引用無命中、blob/大小一致、舊路徑消失；未確認這三份文字表實際功能、來源授權或外部／動態使用。`FTPTEST/abc.txt` 仍在原位，因 `DatasetConverter/DataConverter.py` 存在直接 `abc.txt` 字串命中；是否為同一檔案的實際讀取仍需個別追蹤。完整 discovery 尚未驗收，BL-001 In Progress。
 
