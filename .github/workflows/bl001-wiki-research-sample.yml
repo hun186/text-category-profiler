@@ -1,0 +1,36 @@
+name: BL-001 Historical Wiki Research Text Boundary
+
+on:
+  pull_request:
+    paths:
+      - "text_category_profiler/sample_data/**"
+      - "experiments/fixtures/wiki_article/**"
+      - "tests/test_wiki_research_sample_boundary.py"
+      - ".github/workflows/bl001-wiki-research-sample.yml"
+      - ".codex/**"
+  push:
+    branches: [main]
+    paths:
+      - "text_category_profiler/sample_data/**"
+      - "experiments/fixtures/wiki_article/**"
+      - "tests/test_wiki_research_sample_boundary.py"
+      - ".github/workflows/bl001-wiki-research-sample.yml"
+      - ".codex/**"
+  workflow_dispatch:
+
+jobs:
+  research-wiki-fixture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile boundary test
+        run: python -m py_compile tests/test_wiki_research_sample_boundary.py
+      - name: Verify historical bytes and package boundary
+        run: python -m unittest -v tests.test_wiki_research_sample_boundary tests.test_package_layout tests.test_project_docs tests.test_repository_compile_gate
+      - name: Check whitespace
+        run: git diff --check HEAD^ HEAD
