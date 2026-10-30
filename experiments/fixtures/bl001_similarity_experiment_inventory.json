@@ -1,9 +1,9 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "source_main_sha": "f00f503376a797cc05869dfd901aad50e3cbf929",
   "root": "text_category_profiler/切片相似度比對法測試",
-  "purpose": "Bounded byte-exact inventory of 27 historical similarity research files. Twelve XLSX experiment outputs are archived unchanged outside the application package; fifteen original TXT research inputs remain at their original paths. Not an exhaustive caller audit.",
-  "external_callers": "unverified; 15 original TXT source paths retained; 12 historical XLSX output paths relocated",
+  "purpose": "Bounded byte-exact inventory of 27 historical similarity research artifacts. Twelve XLSX and fifteen TXT Git blobs are archived unchanged outside the application package. Not an exhaustive caller audit.",
+  "external_callers": "unverified; 15 TXT inputs and 12 XLSX outputs relocated with original blobs; computed/manual/external callers not established",
   "entries": [
     {
       "path": "text_category_profiler/切片相似度比對法測試/difflib_without_digits_assimilation/中国科学院科技战略咨询研究院（筹）与民进中央举行合作交流座谈会.xlsx",
@@ -106,105 +106,120 @@
       "sha": "5e2a6ce60613809b27f37c1c09eceee74ffd9f60",
       "size_bytes": 33209,
       "group": "test Document",
-      "format": "txt"
+      "format": "txt",
+      "relocated_path": "experiments/fixtures/similarity_experiment_inputs/test Document/An Intensified Approach to Combatting the Islamic State_tika.txt"
     },
     {
       "path": "text_category_profiler/切片相似度比對法測試/test Document/Asad Under Fire_ Five Scenarios for the Future of Syria_tika.txt",
       "sha": "a67531c2dbd77a7e0d0a13dd0bb4555378910718",
       "size_bytes": 59722,
       "group": "test Document",
-      "format": "txt"
+      "format": "txt",
+      "relocated_path": "experiments/fixtures/similarity_experiment_inputs/test Document/Asad Under Fire_ Five Scenarios for the Future of Syria_tika.txt"
     },
     {
       "path": "text_category_profiler/切片相似度比對法測試/test Document/China’s Blue Water Navy Strategy and its Implications_tika.txt",
       "sha": "f16635e9a59611bbcd55d99473033deb6def4f5c",
       "size_bytes": 32326,
       "group": "test Document",
-      "format": "txt"
+      "format": "txt",
+      "relocated_path": "experiments/fixtures/similarity_experiment_inputs/test Document/China’s Blue Water Navy Strategy and its Implications_tika.txt"
     },
     {
       "path": "text_category_profiler/切片相似度比對法測試/test Document/China's Tailored Coercion and Its Rivals' Actions and Responses_tika.txt",
       "sha": "e00cd0d7178601bb41d2fd51f594b3792bd155ac",
       "size_bytes": 49279,
       "group": "test Document",
-      "format": "txt"
+      "format": "txt",
+      "relocated_path": "experiments/fixtures/similarity_experiment_inputs/test Document/China's Tailored Coercion and Its Rivals' Actions and Responses_tika.txt"
     },
     {
       "path": "text_category_profiler/切片相似度比對法測試/test Document/InnerCrossSimilarityTest.txt",
       "sha": "f3aaa7557dbe11f0baf5481c1ea8ad7fcdf96281",
       "size_bytes": 23,
       "group": "test Document",
-      "format": "txt"
+      "format": "txt",
+      "relocated_path": "experiments/fixtures/similarity_experiment_inputs/test Document/InnerCrossSimilarityTest.txt"
     },
     {
       "path": "text_category_profiler/切片相似度比對法測試/test Document/Iran_Military_Power_LR.txt",
       "sha": "9b7d07b9f27dec29abf3f58992a78a6fce1ac97d",
       "size_bytes": 315223,
       "group": "test Document",
-      "format": "txt"
+      "format": "txt",
+      "relocated_path": "experiments/fixtures/similarity_experiment_inputs/test Document/Iran_Military_Power_LR.txt"
     },
     {
       "path": "text_category_profiler/切片相似度比對法測試/test Document/Social-ecological drivers of metropolitan residents’ comfort living with wildlife_tika.txt",
       "sha": "990ea16c7e4e5b685a7f4e182e3aacf8bfe3afe5",
       "size_bytes": 108447,
       "group": "test Document",
-      "format": "txt"
+      "format": "txt",
+      "relocated_path": "experiments/fixtures/similarity_experiment_inputs/test Document/Social-ecological drivers of metropolitan residents’ comfort living with wildlife_tika.txt"
     },
     {
       "path": "text_category_profiler/切片相似度比對法測試/test Document/Two Weeks of Chaos_ Inside Elon Musk’s Takeover of Twitter.txt",
       "sha": "7e6684d28ca8edbdc96aa03d7d66cc3770fdf23d",
       "size_bytes": 17981,
       "group": "test Document",
-      "format": "txt"
+      "format": "txt",
+      "relocated_path": "experiments/fixtures/similarity_experiment_inputs/test Document/Two Weeks of Chaos_ Inside Elon Musk’s Takeover of Twitter.txt"
     },
     {
       "path": "text_category_profiler/切片相似度比對法測試/test Document/Why is Elon Musk’s Twitter takeover increasing hate speech.txt",
       "sha": "b4a4d7ee6d71671a5ec54cb39a8e006dab9b8614",
       "size_bytes": 3199,
       "group": "test Document",
-      "format": "txt"
+      "format": "txt",
+      "relocated_path": "experiments/fixtures/similarity_experiment_inputs/test Document/Why is Elon Musk’s Twitter takeover increasing hate speech.txt"
     },
     {
       "path": "text_category_profiler/切片相似度比對法測試/test Document/中国科学院科技战略咨询研究院（筹）与民进中央举行合作交流座谈会.txt",
       "sha": "cd1fd661c243568f52095070e9bfac16bd562d76",
       "size_bytes": 2327,
       "group": "test Document",
-      "format": "txt"
+      "format": "txt",
+      "relocated_path": "experiments/fixtures/similarity_experiment_inputs/test Document/中国科学院科技战略咨询研究院（筹）与民进中央举行合作交流座谈会.txt"
     },
     {
       "path": "text_category_profiler/切片相似度比對法測試/test Document/冀航警43_24 航标动态.txt",
       "sha": "2e1277ace943a4f11eeb0ad12f7d3ca56d41ddc6",
       "size_bytes": 2063,
       "group": "test Document",
-      "format": "txt"
+      "format": "txt",
+      "relocated_path": "experiments/fixtures/similarity_experiment_inputs/test Document/冀航警43_24 航标动态.txt"
     },
     {
       "path": "text_category_profiler/切片相似度比對法測試/test Document/期末指数投资按公允价值占基金资产净值比例大小排序的所有权益投资.txt",
       "sha": "eeddb575bbf2f8514cfce3d887f818661eff46a6",
       "size_bytes": 8051,
       "group": "test Document",
-      "format": "txt"
+      "format": "txt",
+      "relocated_path": "experiments/fixtures/similarity_experiment_inputs/test Document/期末指数投资按公允价值占基金资产净值比例大小排序的所有权益投资.txt"
     },
     {
       "path": "text_category_profiler/切片相似度比對法測試/test Document/澜沧江—湄公河合作第三次领导人会议万象宣言.txt",
       "sha": "12bf9bbf3b7269f97867d033ac7a826961b0092f",
       "size_bytes": 15079,
       "group": "test Document",
-      "format": "txt"
+      "format": "txt",
+      "relocated_path": "experiments/fixtures/similarity_experiment_inputs/test Document/澜沧江—湄公河合作第三次领导人会议万象宣言.txt"
     },
     {
       "path": "text_category_profiler/切片相似度比對法測試/test Document/缅甸：300 万人急需救生援助和保护.txt",
       "sha": "a26d662851bc5e67cd6ccd1392210e04ddd63459",
       "size_bytes": 6479,
       "group": "test Document",
-      "format": "txt"
+      "format": "txt",
+      "relocated_path": "experiments/fixtures/similarity_experiment_inputs/test Document/缅甸：300 万人急需救生援助和保护.txt"
     },
     {
       "path": "text_category_profiler/切片相似度比對法測試/test Document/肖锋：对中美航行自由之争的思考之附件：原文阅读.txt",
       "sha": "5daa88cf60240214feb21fa02713c6febbab3e76",
       "size_bytes": 43090,
       "group": "test Document",
-      "format": "txt"
+      "format": "txt",
+      "relocated_path": "experiments/fixtures/similarity_experiment_inputs/test Document/肖锋：对中美航行自由之争的思考之附件：原文阅读.txt"
     }
   ]
 }

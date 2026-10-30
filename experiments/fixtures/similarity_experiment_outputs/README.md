@@ -4,11 +4,12 @@ These 12 Excel workbooks are previous research outputs, relocated from
 `text_category_profiler/切片相似度比對法測試/` without changing **any bytes**
 or their original subdirectory groups and basenames. Every original Git blob
 SHA-1, file size and old/new path is recorded in
-`experiments/fixtures/bl001_similarity_experiment_inventory.json` (schema v2).
+`experiments/fixtures/bl001_similarity_experiment_inventory.json` (schema v3).
 
-The separate 15 research input TXT files were deliberately **not moved**.
-The existing manual similarity examples still refer to some TXT basenames,
-and their full external/dynamic caller behavior has not been verified.
+The 15 historical TXT inputs have also been moved byte-exactly to
+`experiments/fixtures/similarity_experiment_inputs/test Document/`.
+Commented historical manual examples now resolve those names by module-relative
+paths. External/dynamic caller behavior remains unverified.
 
 These workbooks are **frozen historical outputs**, not active save destinations.
 If a research script uses an old cwd-relative path, update that script
