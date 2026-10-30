@@ -84,7 +84,7 @@ text_category_profiler/
 
 ### Phase 3：將非共用內容分流
 
-- 2026-10-30 wiki article research sample：獨立的 `text_category_profiler/sample_data/俄烏戰爭@wiki`（83,123 bytes，blob `85e7f0573296fe49f603a6bec14c043b378e64db`）保留完整原始 Git blob，分流到 `experiments/fixtures/wiki_article/`；不重新抓取 Wikipedia、修訂研究內容或聲稱來源授權已釐清。原路徑移除且無相容 symlink，Git tracked Python 檔名字面引用由 stdlib 回歸測試防護；動態／外部 callers 與真正原始版本資訊尚未驗證。BL-001 繼續 In Progress。
+- 2026-10-30 wiki article research sample：獨立的 `text_category_profiler/sample_data/俄烏戰爭@wiki`（83,123 bytes，blob `85e7f0573296fe49f603a6bec14c043b378e64db`）保留完整原始 Git blob，分流到 `experiments/fixtures/wiki_article/`；不重新抓取 Wikipedia、修訂研究內容或聲稱來源授權已釐清。原路徑移除且無相容 symlink；Hosted 測試發現 `text_category_profiler/integrations/ES_utils.py` 的手動 ES upsert 範例有實際 cwd-relative `sample_data` 檔案讀取，已改以 `__file__` 導向 fixture，並用隔離 AST/helper 測試（不載入或寫入 ES）及 Git tracked Python 檔名稽核防護；動態／外部 callers 與真正原始版本資訊尚未驗證。BL-001 繼續 In Progress。
 
 - 2026-10-30 similarity historical output split：原 `text_category_profiler/切片相似度比對法測試/` 的 12 個歷史 `.xlsx` 實驗輸出以**相同 Git blob SHA、相同相對分組/檔名**分流至 `experiments/fixtures/similarity_experiment_outputs/`，其餘 15 個 `.txt` 研究輸入維持原路徑；manifest 更新 schema v2，記錄每個 output 的 `relocated_path`。保全測試同時檢查原 output 路徑不存在、完整新目錄集合、三組四個 XLSX 原位元組、ZIP header，以及 TXT 未變。`scripts/bl001_research_caller_audit.py` 能辨識原/新雙路徑與同名檔歧義；不以無直接命中推論外部或動態 caller 不存在、不執行相似度演算法、不重建 XLSX，來源授權仍未驗證。BL-001 In Progress。
 

@@ -3,6 +3,7 @@ from pprint import pprint
 import json
 import yaml
 import os
+from pathlib import Path
 
 from elasticsearch import Elasticsearch, helpers
 from elasticsearch.exceptions import ConnectionError, NotFoundError, RequestError
@@ -206,6 +207,14 @@ def es_browse(index_name=INDEX_NAME, size=10, query=None):
     print(f"📄 Retrieved {len(results)} docs from index '{index_name}'")
     return results
 
+def _wiki_research_sample_path(subject):
+    """Resolve the historical wiki corpus independently of caller cwd.
+
+    This helper only locates a local research fixture; it does not call ES.
+    """
+    return Path(__file__).resolve().parents[2] / "experiments" / "fixtures" / "wiki_article" / subject
+
+
 def es_upsert_test_data():
     sj_ct = []
     uuid = "bae-22332331345"
@@ -301,7 +310,7 @@ TVB主播：「美國政府據報針對半導體行業部署新關稅安排。�
     sj_ct.append((uuid,subject,content))
     uuid = "bce-4795"
     subject = "俄烏戰爭@wiki"
-    with open(os.path.join("sample_data",subject),'rt',encoding='utf-8') as fp:
+    with _wiki_research_sample_path(subject).open('rt', encoding='utf-8') as fp:
         content = fp.read()
     sj_ct.append((uuid,subject,content))
     #for idx in range(0,len(sj_ct)):

@@ -2,6 +2,7 @@
 
 Pure stdlib/file checks only. No model, dataset pipeline or network calls.
 """
+import ast
 import hashlib
 from pathlib import Path
 import subprocess
@@ -33,13 +34,13 @@ class WikiResearchSampleBoundaryTests(unittest.TestCase):
         self.assertTrue(NEW.is_file())
         self.assertNotIn("text_category_profiler", NEW.relative_to(ROOT).parts)
 
-    def test_no_tracked_python_source_uses_historical_filename(self):
-        # An explicit literal check, not an exhaustive dynamic/external caller audit.
+    def test_only_known_es_manual_caller_retains_sample_filename(self):
+        # Bounded lexical guard: dynamic / external callers remain unverified.
         proc = subprocess.run(
             ["git", "ls-files", "-z", "--", "*.py"],
             cwd=ROOT, capture_output=True, check=True,
         )
-        offenders = []
+        hits = []
         for raw in proc.stdout.split(b"\0"):
             if not raw:
                 continue
@@ -47,10 +48,40 @@ class WikiResearchSampleBoundaryTests(unittest.TestCase):
             path = ROOT / name
             if path == Path(__file__).resolve() or not path.is_file():
                 continue
-            source = path.read_text(encoding="utf-8", errors="replace")
-            if OLD.name in source:
-                offenders.append(name)
-        self.assertEqual(offenders, [], "Review callers before changing source paths")
+            if OLD.name in path.read_text(encoding="utf-8", errors="replace"):
+                hits.append(name)
+        self.assertEqual(hits, ["text_category_profiler/integrations/ES_utils.py"])
+
+    def test_es_manual_caller_uses_cwd_independent_fixture_without_es(self):
+        # Extract ONLY the path helper AST; never import ES_utils or invoke ES writes.
+        es_source = ROOT / "text_category_profiler/integrations/ES_utils.py"
+        module = ast.parse(es_source.read_text(encoding="utf-8"))
+        helper = next(
+            node for node in module.body
+            if isinstance(node, ast.FunctionDef)
+            and node.name == "_wiki_research_sample_path"
+        )
+        caller = next(
+            node for node in module.body
+            if isinstance(node, ast.FunctionDef) and node.name == "es_upsert_test_data"
+        )
+        calls = [
+            node for node in ast.walk(caller)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "_wiki_research_sample_path"
+        ]
+        self.assertEqual(len(calls), 1)
+        safe_module = ast.fix_missing_locations(
+            ast.Module(body=[helper], type_ignores=[])
+        )
+        namespace = {"Path": Path, "__file__": str(es_source)}
+        exec(compile(safe_module, str(es_source), "exec"), namespace)
+        self.assertEqual(namespace["_wiki_research_sample_path"](OLD.name), NEW)
+        self.assertNotIn(
+            'os.path.join("sample_data",subject)',
+            es_source.read_text(encoding="utf-8"),
+        )
 
     def test_readme_discloses_provenance_and_compatibility_limits(self):
         readme = README.read_text(encoding="utf-8")
