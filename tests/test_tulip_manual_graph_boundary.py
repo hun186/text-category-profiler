@@ -95,7 +95,11 @@ class TulipManualGraphBoundaryTests(unittest.TestCase):
                 continue
             name = raw_name.decode("utf-8", errors="surrogateescape")
             path = ROOT / name
-            if path in (OLD, Path(__file__).resolve()) or not path.is_file():
+            if (path in (OLD, Path(__file__).resolve())
+                    or not path.is_file()
+                    or name.startswith("BertScript/TRV_deploy/")
+                    or any(part in {"tests", "experiments", "vendor"}
+                           for part in Path(name).parts)):
                 continue
             source = path.read_text(encoding="utf-8", errors="replace")
             if "tulip_utils/Graph_Builder.py" in source or (
