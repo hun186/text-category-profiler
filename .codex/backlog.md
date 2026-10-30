@@ -6,7 +6,7 @@
 
 | ID | 優先度 | 狀態 | 項目 | 為何延後 | 完成條件 | 相依／阻擋 |
 | --- | --- | --- | --- | --- | --- | --- |
-| `BL-001` | High | In Progress | 將 `text_category_profiler/` 收斂為職責明確的 application package；詳見 [`text-category-profiler-package-migration.md`](text-category-profiler-package-migration.md) | Application-side path injection、legacy `PackageImport.py` providers、machine-specific `PythonModule` paths與 deployment 邊界已收斂；12 筆 bounded legacy/research manifest 已分流，PR #145 fresh targeted discovery 912 OK（2 SKIP）；PR #146 又將 12 個歷史 XLSX 原 Git blob 分流、保留 15 個 TXT 原位，但其他 package-root 內容及外部／動態 callers 仍需依 Phase 0–3 查證 | 達成本計畫的整體完成條件，完成剩餘 package-root 內容分流，且在最新 hosted head 上取得 fresh dependency-light test suite 通過證據 | 先處理 `text_category_profiler/` root 的 residual inventory（tests/experiments/scripts/vendor/legacy），再做最終 lightweight suite；H100/CUDA acceptance 由 `KI-003` 獨立追蹤 |
+| `BL-001` | High | In Progress | 將 `text_category_profiler/` 收斂為職責明確的 application package；詳見 [`text-category-profiler-package-migration.md`](text-category-profiler-package-migration.md) | Application-side path injection、legacy `PackageImport.py` providers、machine-specific `PythonModule` paths與 deployment 邊界已收斂；12 筆 bounded legacy/research manifest 已分流，PR #145 fresh targeted discovery 912 OK（2 SKIP）；PR #146 又將 12 個歷史 XLSX 原 Git blob 分流、保留 15 個 TXT 原位，另將 wiki article 研究樣本按原 Git blob 分流；其他 package-root 內容及外部／動態 callers 仍需依 Phase 0–3 查證 | 達成本計畫的整體完成條件，完成剩餘 package-root 內容分流，且在最新 hosted head 上取得 fresh dependency-light test suite 通過證據 | 先處理 `text_category_profiler/` root 的 residual inventory（tests/experiments/scripts/vendor/legacy），再做最終 lightweight suite；H100/CUDA acceptance 由 `KI-003` 獨立追蹤 |
 
 ## Candidate Ideas
 
