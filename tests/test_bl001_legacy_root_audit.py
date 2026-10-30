@@ -91,16 +91,19 @@ class LegacyRootAuditTests(unittest.TestCase):
         _, _, _, error = scan_source("broken.py", "if :\n", load_catalog(ROOT))
         self.assertEqual(error, "SyntaxError")
 
-    def test_real_manual_db_utils_bare_import_is_reported_not_resolved(self):
+    def test_real_manual_db_utils_uses_canonical_template_no_bare_candidate(self):
+        source = ROOT / "text_category_profiler/data/DB_utils.py"
+        parsed = ast.parse(source.read_text(encoding="utf-8"))
+        imports = [
+            node for node in ast.walk(parsed)
+            if isinstance(node, ast.ImportFrom)
+            and node.module == "text_category_profiler.integrations.es_job_template"
+        ]
+        self.assertEqual(len(imports), 1)
+        self.assertEqual([alias.name for alias in imports[0].names], ["esJobTemplate"])
         data = audit(ROOT, ["text_category_profiler/data/DB_utils.py"])
-        bare = data["unresolved_bare_import_candidates"]
-        matches = [x for x in bare if x["name"] == "ArtCluESJobTemplate"]
-        self.assertTrue(matches)
-        self.assertIn(
-            "text_category_profiler/ArtCluESJobTemplate.py",
-            matches[0]["candidate_targets"],
-        )
-        self.assertEqual(matches[0]["source"], "text_category_profiler/data/DB_utils.py")
+        self.assertEqual(data["unresolved_bare_import_candidates"], [])
+        self.assertEqual(data["parse_errors"], [])
 
     def test_stage4_uses_canonical_tulip_visualization_module(self):
         file = ROOT / "BertScript/Test_result_Vis.py"

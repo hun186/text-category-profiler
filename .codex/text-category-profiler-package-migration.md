@@ -84,6 +84,9 @@ text_category_profiler/
 
 ### Phase 3：將非共用內容分流
 
+- 2026-10-31 manual DB_utils ES template bare import follow-up：PR #150 的 AST report 顯示 `text_category_profiler/data/DB_utils.py` 在 `__main__` 使用 `from ArtCluESJobTemplate import esJobTemplate`，取決於隱式 sys.path；此獨立批次改為 canonical `text_category_profiler.integrations.es_job_template`，保持 template 的 keys/default/env snapshot（第一次 canonical import 時）及預覽 + SQLConcat 順序。純 stdlib 測試抽取 `__main__` AST 使用 fake ES-job builder、redaction、OSWALK、SQLConcat 執行，禁止外部 I/O；legacy audit 對這個 in-repo caller 預期 unresolved bare-import 歸零，仍不推論 repo 外／動態 consumer。此變更不證明 `DB_utils.py` 真實 standalone runtime 在未設定套件搜尋路徑、ES、SQL、模型環境可執行。BL-001 In Progress。
+
+
 - 2026-10-30 bounded legacy root import audit：`text_category_profiler/` 直接根目錄 7 個 Python entry（6 個兼容入口、1 空 package marker），外加老 Dijkstra 路徑 5 個資源和舊 Tulip 模組兼容入口 1 件，合計 13 個追蹤項目建立 SHA/大小/canonical 目的地 inventory 與 stdlib AST import 靜態稽核；CI 輸出可供人工檢視的 JSON 報告。舊路徑均維持原樣，並明確辨別全名 AST import、未確定的 bare-import（DB_utils 手動入口）、字串候選、語法解析失敗；不能宣稱非 Python、動態、repo 外或手動 caller 已查清。歷史 Dijkstra README 的 legacy 相容註解與 vendor 上游 README 不同，僅要求 LICENSE 和兩份 graph fixtures 位元組相同。BL-001 仍 In Progress，最終 Phase 0–3 census 尚未完成。
 
 
