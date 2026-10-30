@@ -18,8 +18,19 @@ class ResearchCallerAuditTests(unittest.TestCase):
             "experiments/fixtures/research_samples/RAGTest.json",
         )
         self.assertEqual(
-            sum(x["original_path"] != x["current_path"] for x in targets), 12
+            sum(x["original_path"] != x["current_path"] for x in targets), 24
         )
+
+    def test_archived_workbooks_have_unique_group_preserving_paths(self):
+        files = load_catalog(ROOT)
+        books = [x for x in files if x["original_path"].startswith(
+            "text_category_profiler/切片相似度比對法測試/"
+        ) and x["original_path"].endswith(".xlsx")]
+        self.assertEqual(len(books), 12)
+        self.assertEqual(len({x["current_path"] for x in books}), 12)
+        self.assertTrue(all(x["current_path"].startswith(
+            "experiments/fixtures/similarity_experiment_outputs/"
+        ) for x in books))
 
     def test_ast_literals_and_comments_are_not_conflated(self):
         targets = [{"original_path": "data/example.txt",
