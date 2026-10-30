@@ -1,0 +1,53 @@
+name: BL-001 Full Tracked Package Structural Census
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "text_category_profiler/**"
+      - "experiments/fixtures/bl001_package_ownership.json"
+      - "experiments/fixtures/bl001_legacy_root_inventory.json"
+      - "scripts/bl001_package_census.py"
+      - "tests/test_bl001_package_census.py"
+      - ".github/workflows/bl001-package-census.yml"
+      - ".codex/**"
+  push:
+    branches: [main]
+    paths:
+      - "text_category_profiler/**"
+      - "experiments/fixtures/bl001_package_ownership.json"
+      - "experiments/fixtures/bl001_legacy_root_inventory.json"
+      - "scripts/bl001_package_census.py"
+      - "tests/test_bl001_package_census.py"
+      - ".github/workflows/bl001-package-census.yml"
+      - ".codex/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package-census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile bounded source
+        run: python -m py_compile scripts/bl001_package_census.py tests/test_bl001_package_census.py
+      - name: Verify census and other package boundary tests
+        run: python -m unittest -v tests.test_bl001_package_census tests.test_bl001_legacy_root_audit tests.test_package_layout tests.test_project_docs tests.test_repository_compile_gate
+      - name: Generate structured structural inventory evidence
+        run: python scripts/bl001_package_census.py --output artifacts/bl001-package-census.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bl001-structural-package-census
+          path: artifacts/bl001-package-census.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Verify whitespace
+        run: git diff --check HEAD^ HEAD

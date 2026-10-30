@@ -1,0 +1,297 @@
+{
+  "schema_version": 1,
+  "baseline_main_sha": "0231ec55517bf41e5e53e26e0f2efb2ddb68a88c",
+  "scope": "Exact tracked paths of canonical domain-owned package code and docs; structural ownership only, not evidence of cross-stage use, execution or external caller coverage",
+  "entries": [
+    {
+      "path": "text_category_profiler/cli/README.md",
+      "domain": "cli",
+      "kind": "domain_document"
+    },
+    {
+      "path": "text_category_profiler/cli/__init__.py",
+      "domain": "cli",
+      "kind": "package_initializer"
+    },
+    {
+      "path": "text_category_profiler/cli/selector.py",
+      "domain": "cli",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/concurrency/MP_utils.py",
+      "domain": "concurrency",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/concurrency/__init__.py",
+      "domain": "concurrency",
+      "kind": "package_initializer"
+    },
+    {
+      "path": "text_category_profiler/concurrency/istarmap.py",
+      "domain": "concurrency",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/concurrency/istarmap2.py",
+      "domain": "concurrency",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/concurrency/patch_mp_connection.py",
+      "domain": "concurrency",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/core/__init__.py",
+      "domain": "core",
+      "kind": "package_initializer"
+    },
+    {
+      "path": "text_category_profiler/core/conformer.py",
+      "domain": "core",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/core/log_display.py",
+      "domain": "core",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/core/model_paths.py",
+      "domain": "core",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/core/optional_config.py",
+      "domain": "core",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/core/progress_utils.py",
+      "domain": "core",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/core/torch_compat.py",
+      "domain": "core",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/core/utilities.py",
+      "domain": "core",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/core/utilities_path.py",
+      "domain": "core",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/core/warning_filters.py",
+      "domain": "core",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/data/DB_utils.py",
+      "domain": "data",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/data/__init__.py",
+      "domain": "data",
+      "kind": "package_initializer"
+    },
+    {
+      "path": "text_category_profiler/data/df_utils.py",
+      "domain": "data",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/data/json_utils.py",
+      "domain": "data",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/diagnostics/__init__.py",
+      "domain": "diagnostics",
+      "kind": "package_initializer"
+    },
+    {
+      "path": "text_category_profiler/diagnostics/checks.py",
+      "domain": "diagnostics",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/diagnostics/device.py",
+      "domain": "diagnostics",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/diagnostics/full_pipeline.py",
+      "domain": "diagnostics",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/diagnostics/python_dispatch.py",
+      "domain": "diagnostics",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/diagnostics/smoke_classifier.py",
+      "domain": "diagnostics",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/execution/__init__.py",
+      "domain": "execution",
+      "kind": "package_initializer"
+    },
+    {
+      "path": "text_category_profiler/execution/process.py",
+      "domain": "execution",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/filesystem/__init__.py",
+      "domain": "filesystem",
+      "kind": "package_initializer"
+    },
+    {
+      "path": "text_category_profiler/filesystem/legacy.py",
+      "domain": "filesystem",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/integrations/ES_JOB_TEMPLATE.md",
+      "domain": "integrations",
+      "kind": "domain_document"
+    },
+    {
+      "path": "text_category_profiler/integrations/ES_utils.py",
+      "domain": "integrations",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/integrations/Email_utils.py",
+      "domain": "integrations",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/integrations/FTP_utils.py",
+      "domain": "integrations",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/integrations/__init__.py",
+      "domain": "integrations",
+      "kind": "package_initializer"
+    },
+    {
+      "path": "text_category_profiler/integrations/es_job_template.py",
+      "domain": "integrations",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/pipeline/DataConverter_utils.py",
+      "domain": "pipeline",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/pipeline/DataConverter_utils_Parameters.py",
+      "domain": "pipeline",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/pipeline/TCF_utils.py",
+      "domain": "pipeline",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/pipeline/TextClassfier_utils.py",
+      "domain": "pipeline",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/pipeline/__init__.py",
+      "domain": "pipeline",
+      "kind": "package_initializer"
+    },
+    {
+      "path": "text_category_profiler/pipeline/commands.py",
+      "domain": "pipeline",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/pipeline/configuration.py",
+      "domain": "pipeline",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/pipeline/defaults.py",
+      "domain": "pipeline",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/pipeline/orchestrator.py",
+      "domain": "pipeline",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/pipeline/workpool.py",
+      "domain": "pipeline",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/text/TextProcessor_utils.py",
+      "domain": "text",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/text/__init__.py",
+      "domain": "text",
+      "kind": "package_initializer"
+    },
+    {
+      "path": "text_category_profiler/text/similarity_utils.py",
+      "domain": "text",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/visualization/Dash_utils.py",
+      "domain": "visualization",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/visualization/DataVisualization_utils.py",
+      "domain": "visualization",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/visualization/Graph_utils.py",
+      "domain": "visualization",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/visualization/TULIP_BOUNDARY.md",
+      "domain": "visualization",
+      "kind": "domain_document"
+    },
+    {
+      "path": "text_category_profiler/visualization/__init__.py",
+      "domain": "visualization",
+      "kind": "package_initializer"
+    },
+    {
+      "path": "text_category_profiler/visualization/reusable_components.py",
+      "domain": "visualization",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/visualization/tulip_graph_builder.py",
+      "domain": "visualization",
+      "kind": "domain_module"
+    }
+  ]
+}

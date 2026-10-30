@@ -84,6 +84,9 @@ text_category_profiler/
 
 ### Phase 3：將非共用內容分流
 
+- 2026-10-31 full tracked package structural census：`text_category_profiler/` 目前完整 Git tracked tree 有 71 個檔案：58 個 canonical `cli/concurrency/core/data/diagnostics/execution/filesystem/integrations/pipeline/text/visualization` 領域檔案（含 docs、init），與既有 13 個 legacy compatibility/vendor/marker。兩份獨立 manifest 的 path union 透過 `git ls-files` 完整比對，SHA/長度與 legacy canonical target 可由 stdlib 重現；Hosted 產生完整 JSON artifact，新增未分類 path 必須明確處理。這是**路徑／責任歸屬的結構盤點**，不能推論全部 canonical code 都是有證據的跨階段 shared helper，也無法排除 repo 外／非 Python／動態 callers；phase 0–3 中開放的業務職責／CLI／外部驗收仍需另行查證，BL-001 In Progress。
+
+
 - 2026-10-31 manual DB_utils ES template bare import follow-up：PR #150 的 AST report 顯示 `text_category_profiler/data/DB_utils.py` 在 `__main__` 使用 `from ArtCluESJobTemplate import esJobTemplate`，取決於隱式 sys.path；此獨立批次改為 canonical `text_category_profiler.integrations.es_job_template`，保持 template 的 keys/default/env snapshot（第一次 canonical import 時）及預覽 + SQLConcat 順序。純 stdlib 測試抽取 `__main__` AST 使用 fake ES-job builder、redaction、OSWALK、SQLConcat 執行，禁止外部 I/O；legacy audit 對這個 in-repo caller 預期 unresolved bare-import 歸零，仍不推論 repo 外／動態 consumer。此變更不證明 `DB_utils.py` 真實 standalone runtime 在未設定套件搜尋路徑、ES、SQL、模型環境可執行。BL-001 In Progress。
 
 
