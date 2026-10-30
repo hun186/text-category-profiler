@@ -4,6 +4,9 @@
 
 ## Current Focus
 
+- BL-001 tracked-package structural census：由 hosted Git tree 確認 `text_category_profiler/` 當前 71 tracked blobs。新 `experiments/fixtures/bl001_package_ownership.json` 人工明列其中 58 個 canonical domain-owned package files（含必要文件與 initializer），舊 manifest 的 13 個相容／vendor assets 仍保留原 Git blob；`scripts/bl001_package_census.py` 以 stdlib 對照 git ls-files、讀檔 SHA/大小、domain owner、legacy canonical target，新增 Hosted evidence artifact 和 regression。明確只證明靜態結構歸屬，不代表 58 件均跨 stage active 使用、外部／動態 caller 已驗證或完整 runtime acceptance。BL-001 仍 In Progress。
+
+
 - BL-001 DB_utils manual ES-template caller follow-up：PR #150 靜態稽核唯一 unresolved bare import 是 `text_category_profiler/data/DB_utils.py` direct-script `from ArtCluESJobTemplate import esJobTemplate`。本批修正成 canonical `from text_category_profiler.integrations.es_job_template import esJobTemplate`，不在 import-time 載入 ES/連線；用 stdlib AST 隔離只執行 `if __name__ == '__main__'` code block，stub `BuildESJobList`、redaction/logging、`OSWALK`／`SQLConcat`，驗證入口行為與未產生真實 filesystem、SQL、ES side effect。原完整 `DB_utils` 模組仍有 optional heavy dependencies，故不宣稱直接 CLI/模型/ES 實機驗收；外部與動態 callers 未完整確證，BL-001 In Progress。
 
 
