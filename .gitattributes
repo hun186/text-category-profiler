@@ -3,4 +3,4 @@
 
 # Keep the original historical Tulip experiment byte-identical, including
 # pre-existing trailing spaces. Other files retain normal whitespace checks.
-experiments/tulip_graph_builder.py whitespace=-blank-at-eol
+text_category_profiler/visualization/tulip_graph_builder.py whitespace=-blank-at-eol

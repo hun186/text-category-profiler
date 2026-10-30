@@ -5,8 +5,9 @@ on:
     branches: [main]
     paths:
       - "text_category_profiler/tulip_utils/**"
-      - "experiments/tulip_graph_builder.py"
-      - "experiments/tulip_graph_builder.README.md"
+      - "BertScript/Test_result_Vis.py"
+      - "text_category_profiler/visualization/tulip_graph_builder.py"
+      - "text_category_profiler/visualization/TULIP_BOUNDARY.md"
       - "tests/test_tulip_manual_graph_boundary.py"
       - ".github/workflows/bl001-tulip-manual-graph.yml"
       - ".codex/**"
@@ -14,8 +15,9 @@ on:
     branches: [main]
     paths:
       - "text_category_profiler/tulip_utils/**"
-      - "experiments/tulip_graph_builder.py"
-      - "experiments/tulip_graph_builder.README.md"
+      - "BertScript/Test_result_Vis.py"
+      - "text_category_profiler/visualization/tulip_graph_builder.py"
+      - "text_category_profiler/visualization/TULIP_BOUNDARY.md"
       - "tests/test_tulip_manual_graph_boundary.py"
       - ".github/workflows/bl001-tulip-manual-graph.yml"
       - ".codex/**"
@@ -36,7 +38,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Check syntax
-        run: python -m py_compile text_category_profiler/tulip_utils/Graph_Builder.py experiments/tulip_graph_builder.py tests/test_tulip_manual_graph_boundary.py
+        run: python -m py_compile text_category_profiler/tulip_utils/Graph_Builder.py text_category_profiler/visualization/tulip_graph_builder.py tests/test_tulip_manual_graph_boundary.py
       - name: Verify optional research boundary without Tulip
         run: python -m unittest -v tests.test_tulip_manual_graph_boundary tests.test_package_layout tests.test_project_docs tests.test_repository_compile_gate
       - name: Whitespace check

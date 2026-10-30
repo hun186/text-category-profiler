@@ -4,7 +4,7 @@
 
 ## Current Focus
 
-- BL-001 下一個 bounded batch：24,232-byte Tulip graph manual research module 保留 Git blob 原樣搬至 `experiments/tulip_graph_builder.py`；舊 `text_category_profiler/tulip_utils/Graph_Builder.py` 保留 lazy facade，避免在 import 時要求 `tulip`/`tulipgui`。使用 stdlib 回歸測試保護來源身分和明確手動執行；外部／動態 caller 未確證，BL-001 不提前 Done。
+- BL-001 Tulip Stage 4 active visualization：CI 與 Codex review 發現 `BertScript/Test_result_Vis.py` 的 `BuildGraph` / `ClusterMetaNodeGraph` 是實際使用中的 import，不能把原模組當作孤立研究實驗。24,232-byte Git blob `8d6919e56381e30003c7582ecb78f0490f04c857` 保全於 `text_category_profiler/visualization/tulip_graph_builder.py`；Stage 4 更新到 domain canonical import，舊 `tulip_utils/Graph_Builder.py` 為 lazy facade。原始碼歷史 trailing whitespace 以單檔 .gitattributes 例外保全；不啟動 Tulip GUI/ES/模型。外部／動態 caller 未確證，BL-001 不提前 Done。
 
 - 初始化狀態：`INITIALIZED`。
 - 維護 Python 文字分類、資料集轉換、BERTScript 結果分析工作區；不要沿用舊 README 的 FastAPI RAG 假設。

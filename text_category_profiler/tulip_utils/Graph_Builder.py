@@ -1,6 +1,6 @@
 """Legacy path for a manual, optional Tulip graph demonstration.
 
-The original historical source is preserved at experiments/tulip_graph_builder.py.
+The original historical source is preserved at text_category_profiler/visualization/tulip_graph_builder.py.
 The facade delays importing heavy/optional Tulip dependencies until a public
 attribute is accessed. External callers of this path are not fully verified.
 """
@@ -22,7 +22,7 @@ __all__ = (
 def __getattr__(name):
     if name.startswith("_") or name == "main":
         raise AttributeError(name)
-    implementation = import_module("experiments.tulip_graph_builder")
+    implementation = import_module("text_category_profiler.visualization.tulip_graph_builder")
     return getattr(implementation, name)
 
 

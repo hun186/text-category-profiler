@@ -2,6 +2,7 @@
 
 No real Tulip/tulipgui, model, ES, filesystem writes or GUI are used.
 """
+import ast
 import hashlib
 import importlib
 from pathlib import Path
@@ -14,8 +15,8 @@ from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[1]
 OLD = ROOT / "text_category_profiler/tulip_utils/Graph_Builder.py"
-NEW = ROOT / "experiments/tulip_graph_builder.py"
-README = ROOT / "experiments/tulip_graph_builder.README.md"
+NEW = ROOT / "text_category_profiler/visualization/tulip_graph_builder.py"
+README = ROOT / "text_category_profiler/visualization/TULIP_BOUNDARY.md"
 ORIGINAL_BLOB = "8d6919e56381e30003c7582ecb78f0490f04c857"
 ORIGINAL_SIZE = 24232
 SYMBOLS = (
@@ -47,7 +48,7 @@ class TulipManualGraphBoundaryTests(unittest.TestCase):
              "import text_category_profiler.tulip_utils.Graph_Builder as m; "
              "assert 'tulip' not in sys.modules; "
              "assert 'tulipgui' not in sys.modules; "
-             "assert 'experiments.tulip_graph_builder' not in sys.modules; "
+             "assert 'text_category_profiler.visualization.tulip_graph_builder' not in sys.modules; "
              "assert callable(m.main)"],
             cwd=ROOT, text=True, capture_output=True, timeout=20, check=False,
         )
@@ -69,7 +70,7 @@ class TulipManualGraphBoundaryTests(unittest.TestCase):
                 getattr(legacy, "not_a_real_symbol")
         self.assertEqual(loader.call_count, len(SYMBOLS) + 3)
         self.assertTrue(all(
-            call.args == ("experiments.tulip_graph_builder",)
+            call.args == ("text_category_profiler.visualization.tulip_graph_builder",)
             for call in loader.call_args_list
         ))
 
@@ -103,10 +104,26 @@ class TulipManualGraphBoundaryTests(unittest.TestCase):
                 offenders.append(name)
         self.assertEqual(offenders, [], "Investigate caller before removing shim")
 
+    def test_stage4_imports_domain_implementation_not_historical_facade(self):
+        source = ROOT / "BertScript/Test_result_Vis.py"
+        parsed = ast.parse(source.read_text(encoding="utf-8"))
+        imports = [
+            node for node in parsed.body
+            if isinstance(node, ast.ImportFrom)
+            and node.module == "text_category_profiler.visualization.tulip_graph_builder"
+        ]
+        names = {alias.name for node in imports for alias in node.names}
+        self.assertEqual(names, {"BuildGraph", "ClusterMetaNodeGraph"})
+        self.assertFalse(any(
+            isinstance(node, ast.ImportFrom)
+            and node.module == "text_category_profiler.tulip_utils.Graph_Builder"
+            for node in parsed.body
+        ))
+
     def test_documentation_preserves_optional_dependency_and_provenance(self):
         source = README.read_text(encoding="utf-8")
         for value in (
-            "experiments/tulip_graph_builder.py",
+            "text_category_profiler/visualization/tulip_graph_builder.py",
             "text_category_profiler/tulip_utils/Graph_Builder.py",
             ORIGINAL_BLOB,
             "unverified",
