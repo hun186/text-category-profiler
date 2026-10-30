@@ -28,7 +28,7 @@ SKIP_PARTS = {"vendor", "tests", "experiments", "__pycache__", ".venv", "node_mo
 LIMITATIONS = [
     "Only tracked in-repository first-party Python sources were scanned.",
     "Historical deployment snapshots, vendor, tests and experiments were excluded.",
-    "Only explicit AST imports and string-literal filename/module hints are detected.",
+    "Only explicit AST imports, unresolved bare-import candidates, and string-literal filename/module hints are detected.",
     "String hints do not prove file I/O, execution, or a runtime dependency.",
     "Manual, external, generated, non-Python, dynamic imports and computed paths remain unverified.",
 ]
@@ -83,7 +83,10 @@ def scan_source(source_path, source_text, catalog):
         (x["path"], target_module(x["path"]))
         for x in catalog if x["category"] == "compat_entrypoint"
     ]
-    refs, hints, parse_error = [], [], None
+    bare_lookup = defaultdict(list)
+    for path, module in targets:
+        bare_lookup[Path(path).stem].append(path)
+    refs, hints, bare_candidates, parse_error = [], [], [], None
     try:
         tree = ast.parse(source_text, filename=source_path)
     except (SyntaxError, ValueError) as exc:
@@ -108,6 +111,25 @@ def scan_source(source_path, source_text, catalog):
                             "module": module, "target": path,
                             "evidence": "ast_import",
                         })
+            # A plain import such as 'from ArtCluESJobTemplate import ...'
+            # may be a legacy script-path import. Do not pretend resolution
+            # is certain: no import, sys.path or cwd is executed here.
+            bare_names = []
+            if isinstance(node, ast.Import):
+                bare_names = [
+                    alias.name for alias in node.names if "." not in alias.name
+                ]
+            elif (isinstance(node, ast.ImportFrom) and node.level == 0
+                  and node.module and "." not in node.module):
+                bare_names = [node.module]
+            for name in bare_names:
+                if name in bare_lookup:
+                    bare_candidates.append({
+                        "source": source_path, "line": node.lineno,
+                        "name": name,
+                        "candidate_targets": sorted(bare_lookup[name]),
+                        "evidence": "unresolved_bare_import",
+                    })
             if isinstance(node, ast.Constant) and isinstance(node.value, str):
                 for path, module in targets:
                     if path in node.value or (module and module in node.value):
@@ -129,19 +151,21 @@ def scan_source(source_path, source_text, catalog):
     refs = list({(x["source"], x["line"], x["target"]): x for x in refs}.values())
     refs.sort(key=lambda x: (x["source"], x["line"], x["target"]))
     hints.sort(key=lambda x: (x["source"], x["line"], x["target"]))
-    return refs, hints, parse_error
+    bare_candidates.sort(key=lambda x: (x["source"], x["line"], x["name"]))
+    return refs, hints, bare_candidates, parse_error
 
 
 def audit(root=ROOT, source_paths=None):
     root = Path(root)
     catalog = load_catalog(root)
     source_paths = tracked_sources(root) if source_paths is None else source_paths
-    imports, hints, errors = [], [], []
+    imports, hints, bare_imports, errors = [], [], [], []
     for source in source_paths:
         text = (root / source).read_text(encoding="utf-8", errors="replace")
-        i, h, error = scan_source(source, text, catalog)
+        i, h, bare, error = scan_source(source, text, catalog)
         imports.extend(i)
         hints.extend(h)
+        bare_imports.extend(bare)
         if error:
             errors.append({"source": source, "error_type": error})
     actual_root = sorted(
@@ -171,6 +195,9 @@ def audit(root=ROOT, source_paths=None):
         "root_files_match_catalog": actual_root == expected_root,
         "preservation": preserved,
         "ast_imports": sorted(imports, key=lambda x: (x["source"], x["line"], x["target"])),
+        "unresolved_bare_import_candidates": sorted(
+            bare_imports, key=lambda x: (x["source"], x["line"], x["name"])
+        ),
         "string_reference_candidates": sorted(hints, key=lambda x: (x["source"], x["line"], x["target"])),
         "parse_errors": errors,
     }
@@ -192,12 +219,13 @@ def main():
         parser.error("Legacy package-root inventory differs from reviewed baseline")
     print(
         "Audited %d tracked Python files, %d residual items, %d AST import edges, "
-        "%d literal/path hints and %d syntax parse errors. "
+        "%d unresolved bare imports, %d literal/path hints and %d syntax parse errors. "
         "External and computed callers remain unverified."
         % (
             data["tracked_python_files_scanned"],
             data["catalogued_residual_entries"],
             len(data["ast_imports"]),
+            len(data["unresolved_bare_import_candidates"]),
             len(data["string_reference_candidates"]),
             len(data["parse_errors"]),
         )

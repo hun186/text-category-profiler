@@ -4,7 +4,7 @@
 
 ## Current Focus
 
-- BL-001 residual legacy root boundary batch：主 package 直接根目錄 7 個 Python entry（6 compatibility facade + `__init__`）、巢狀 Dijkstra 5 個既有資源與 Tulip facade 1 個，合計 13 個原 Git blob 建立 bounded inventory；新增 `scripts/bl001_legacy_root_audit.py` 純 stdlib first-party AST import 與字串候選參照稽核、Hosted artifact、用實際 Stage 4 canonical Tulip import regression 防止誤判。這不是完整外部／動態 caller 証明，未移動或刪除現存相容入口、BL-001 仍 In Progress。
+- BL-001 residual legacy root boundary batch（Codex 找到 `DB_utils.py` 手動 entrypoint 使用 `from ArtCluESJobTemplate import ...`）：稽核另回報 unresolved bare-import candidates，不宣稱是確定的 canonical import edge。前一版 Tulip boundary scan 會誤將測試字串當 caller，已修正為只掃 first-party application。其他交接：主 package 直接根目錄 7 個 Python entry（6 compatibility facade + `__init__`）、巢狀 Dijkstra 5 個既有資源與 Tulip facade 1 個，合計 13 個原 Git blob 建立 bounded inventory；新增 `scripts/bl001_legacy_root_audit.py` 純 stdlib first-party AST import 與字串候選參照稽核、Hosted artifact、用實際 Stage 4 canonical Tulip import regression 防止誤判。這不是完整外部／動態 caller 証明，未移動或刪除現存相容入口、BL-001 仍 In Progress。
 
 
 - BL-001 Tulip Stage 4 active visualization：CI 與 Codex review 發現 `BertScript/Test_result_Vis.py` 的 `BuildGraph` / `ClusterMetaNodeGraph` 是實際使用中的 import，不能把原模組當作孤立研究實驗。24,232-byte Git blob `8d6919e56381e30003c7582ecb78f0490f04c857` 保全於 `text_category_profiler/visualization/tulip_graph_builder.py`；Stage 4 更新到 domain canonical import，舊 `tulip_utils/Graph_Builder.py` 為 lazy facade。原始碼歷史 trailing whitespace 以單檔 .gitattributes 例外保全；不啟動 Tulip GUI/ES/模型。外部／動態 caller 未確證，BL-001 不提前 Done。

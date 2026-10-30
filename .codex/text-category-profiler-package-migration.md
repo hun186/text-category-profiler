@@ -84,7 +84,7 @@ text_category_profiler/
 
 ### Phase 3：將非共用內容分流
 
-- 2026-10-30 bounded legacy root import audit：`text_category_profiler/` 直接根目錄 7 個 Python entry（6 個兼容入口、1 空 package marker），外加老 Dijkstra 路徑 5 個資源和舊 Tulip 模組兼容入口 1 件，合計 13 個追蹤項目建立 SHA/大小/canonical 目的地 inventory 與 stdlib AST import 靜態稽核；CI 輸出可供人工檢視的 JSON 報告。舊路徑均維持原樣，並明確辨別實際 import、字串候選、語法解析失敗；不能宣稱非 Python、動態、repo 外或手動 caller 已查清。歷史 Dijkstra README 的 legacy 相容註解與 vendor 上游 README 不同，僅要求 LICENSE 和兩份 graph fixtures 位元組相同。BL-001 仍 In Progress，最終 Phase 0–3 census 尚未完成。
+- 2026-10-30 bounded legacy root import audit：`text_category_profiler/` 直接根目錄 7 個 Python entry（6 個兼容入口、1 空 package marker），外加老 Dijkstra 路徑 5 個資源和舊 Tulip 模組兼容入口 1 件，合計 13 個追蹤項目建立 SHA/大小/canonical 目的地 inventory 與 stdlib AST import 靜態稽核；CI 輸出可供人工檢視的 JSON 報告。舊路徑均維持原樣，並明確辨別全名 AST import、未確定的 bare-import（DB_utils 手動入口）、字串候選、語法解析失敗；不能宣稱非 Python、動態、repo 外或手動 caller 已查清。歷史 Dijkstra README 的 legacy 相容註解與 vendor 上游 README 不同，僅要求 LICENSE 和兩份 graph fixtures 位元組相同。BL-001 仍 In Progress，最終 Phase 0–3 census 尚未完成。
 
 
 - 2026-10-30 Tulip Stage 4 visualization boundary：原 `text_category_profiler/tulip_utils/Graph_Builder.py` 之 Git blob `8d6919e56381e30003c7582ecb78f0490f04c857`（24,232 bytes）按 byte 完全相同移至 `text_category_profiler/visualization/tulip_graph_builder.py`，因 Hosted CI 與 Codex Review 確認 `BertScript/Test_result_Vis.py` 為實際 active caller，必須歸屬 visualization 領域而非 experiments。Stage 4 canonical imports 已同步更新；舊路徑保留 lazy facade 和手動 main() 轉送。舊原始碼尾端空白以單檔 .gitattributes 例外保留，而其他新檔繼續 git diff --check。增加 stdlib blob/hash、Stage 4 AST caller、lazy import 及委派測試；未啟動 Tulip GUI、模型、ES 或 WorkPool。外部／動態 callers 與舊 globals/star imports 尚未全面認證，BL-001 In Progress。

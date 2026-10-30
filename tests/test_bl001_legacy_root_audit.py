@@ -47,13 +47,15 @@ class LegacyRootAuditTests(unittest.TestCase):
         source = (
             "import text_category_profiler.selector as old_selector\n"
             "from text_category_profiler import ArtCluESJobTemplate as art\n"
+            "from ArtCluESJobTemplate import esJobTemplate\n"
+            "import Edited_zipfile as zip_patch\n"
             "from text_category_profiler.tulip_utils.Graph_Builder import BuildGraph\n"
             "from text_category_profiler.dijkstra_algorithm_master "
             "import dijkstra_algorithm as dj\n"
             "# text_category_profiler/selector.py old path\n"
             "x = 'text_category_profiler.utilities_RAND'\n"
         )
-        imports, hints, error = scan_source("sample.py", source, catalog)
+        imports, hints, bare, error = scan_source("sample.py", source, catalog)
         self.assertIsNone(error)
         self.assertEqual(
             {x["module"] for x in imports},
@@ -64,6 +66,15 @@ class LegacyRootAuditTests(unittest.TestCase):
                 "text_category_profiler.dijkstra_algorithm_master.dijkstra_algorithm",
             },
         )
+        self.assertEqual(
+            {x["name"] for x in bare},
+            {"ArtCluESJobTemplate", "Edited_zipfile"},
+        )
+        self.assertTrue(all(
+            x["evidence"] == "unresolved_bare_import"
+            and len(x["candidate_targets"]) >= 1
+            for x in bare
+        ))
         self.assertTrue(any(x["evidence"] == "text_or_comment" for x in hints))
         self.assertTrue(any(x["evidence"] == "ast_string_literal" for x in hints))
 
@@ -77,8 +88,19 @@ class LegacyRootAuditTests(unittest.TestCase):
             target_module("text_category_profiler/tulip_utils/Graph_Builder.py"),
             "text_category_profiler.tulip_utils.Graph_Builder",
         )
-        _, _, error = scan_source("broken.py", "if :\n", load_catalog(ROOT))
+        _, _, _, error = scan_source("broken.py", "if :\n", load_catalog(ROOT))
         self.assertEqual(error, "SyntaxError")
+
+    def test_real_manual_db_utils_bare_import_is_reported_not_resolved(self):
+        data = audit(ROOT, ["text_category_profiler/data/DB_utils.py"])
+        bare = data["unresolved_bare_import_candidates"]
+        matches = [x for x in bare if x["name"] == "ArtCluESJobTemplate"]
+        self.assertTrue(matches)
+        self.assertIn(
+            "text_category_profiler/ArtCluESJobTemplate.py",
+            matches[0]["candidate_targets"],
+        )
+        self.assertEqual(matches[0]["source"], "text_category_profiler/data/DB_utils.py")
 
     def test_stage4_uses_canonical_tulip_visualization_module(self):
         file = ROOT / "BertScript/Test_result_Vis.py"
