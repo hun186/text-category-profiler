@@ -58,7 +58,7 @@ def _valid_relative_path(path):
     if not isinstance(path, str) or not path.startswith("text_category_profiler/"):
         return False
     parts = PurePosixPath(path).parts
-    return ".." not in parts and "\" not in path and len(parts) >= 2
+    return ".." not in parts and "\\" not in path and len(parts) >= 2
 
 
 def verify_catalogs(tracked, root=ROOT):
