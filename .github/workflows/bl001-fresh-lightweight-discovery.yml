@@ -51,7 +51,7 @@ jobs:
           python -m pip install --disable-pip-version-check \
             numpy pandas scipy GPUtil psutil opencc-python-reimplemented \
             setproctitle version-parser colorama tqdm xlsxwriter \
-            openpyxl python-dateutil pymongo elasticsearch
+            openpyxl python-dateutil pymongo elasticsearch pytz
       - name: Run entire repository unittest discovery without model opt-ins
         shell: bash
         run: |
