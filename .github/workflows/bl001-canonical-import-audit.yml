@@ -1,0 +1,65 @@
+name: BL-001 Canonical Import Evidence Audit
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "text_category_profiler/**"
+      - "DatasetConverter/**"
+      - "BertScript/**"
+      - "ClassesTree/**"
+      - "TCFMain.py"
+      - "TCF_Params/**"
+      - "scripts/bl001_canonical_import_audit.py"
+      - "scripts/bl001_legacy_root_audit.py"
+      - "scripts/bl001_package_census.py"
+      - "tests/test_bl001_canonical_import_audit.py"
+      - "experiments/fixtures/bl001_package_ownership.json"
+      - ".github/workflows/bl001-canonical-import-audit.yml"
+      - ".codex/**"
+  push:
+    branches: [main]
+    paths:
+      - "text_category_profiler/**"
+      - "DatasetConverter/**"
+      - "BertScript/**"
+      - "ClassesTree/**"
+      - "TCFMain.py"
+      - "TCF_Params/**"
+      - "scripts/bl001_canonical_import_audit.py"
+      - "scripts/bl001_legacy_root_audit.py"
+      - "scripts/bl001_package_census.py"
+      - "tests/test_bl001_canonical_import_audit.py"
+      - "experiments/fixtures/bl001_package_ownership.json"
+      - ".github/workflows/bl001-canonical-import-audit.yml"
+      - ".codex/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canonical-import-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile dependency-light audit
+        run: python -m py_compile scripts/bl001_canonical_import_audit.py tests/test_bl001_canonical_import_audit.py
+      - name: Test canonical import evidence and package boundaries
+        run: python -m unittest -v tests.test_bl001_canonical_import_audit tests.test_bl001_package_census tests.test_bl001_legacy_root_audit tests.test_package_layout tests.test_project_docs tests.test_repository_compile_gate
+      - name: Generate reviewable module-by-module evidence JSON
+        run: python scripts/bl001_canonical_import_audit.py --output artifacts/bl001-canonical-import-evidence.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bl001-canonical-import-evidence
+          path: artifacts/bl001-canonical-import-evidence.json
+          retention-days: 30
+          if-no-files-found: error
+      - name: Check whitespace
+        run: git diff --check HEAD^ HEAD

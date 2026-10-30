@@ -84,6 +84,9 @@ text_category_profiler/
 
 ### Phase 3：將非共用內容分流
 
+- 2026-10-31 canonical module consumer evidence：在 PR #152 71 個 Git tracked package 路徑完整 census 基礎上，對 44 個 domain-owned Python modules 建立 bounded first-party AST import report。區分完整 qualified imports（含 `from package import module`／相對 imports）、literal importlib/runpy 候選、bare import unresolved candidates；按 source area `TCFMain.py`／DatasetConverter／BertScript／ClassesTree／TCF_Params／package-internal／scripts 分開，但**不推論實際 runtime stage**。此批只新增無執行副作用的報告與測試，保留全部程式碼；未命中不代表 unused，跨 stage/externals 功能性驗收與所有開放 Phase 0–3 TODO 仍待完成，BL-001 In Progress。
+
+
 - 2026-10-31 full tracked package structural census：`text_category_profiler/` 目前完整 Git tracked tree 有 71 個檔案：58 個 canonical `cli/concurrency/core/data/diagnostics/execution/filesystem/integrations/pipeline/text/visualization` 領域檔案（含 docs、init），與既有 13 個 legacy compatibility/vendor/marker。兩份獨立 manifest 的 path union 透過 `git ls-files` 完整比對，SHA/長度與 legacy canonical target 可由 stdlib 重現；Hosted 產生完整 JSON artifact，新增未分類 path 必須明確處理。這是**路徑／責任歸屬的結構盤點**，不能推論全部 canonical code 都是有證據的跨階段 shared helper，也無法排除 repo 外／非 Python／動態 callers；phase 0–3 中開放的業務職責／CLI／外部驗收仍需另行查證，BL-001 In Progress。
 
 
