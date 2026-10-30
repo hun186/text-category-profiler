@@ -115,5 +115,86 @@ class CanonicalImportEvidenceTests(unittest.TestCase):
         self.assertEqual(err, "SyntaxError")
 
 
+    def test_nearby_provider_classification_is_filename_only(self):
+        from scripts.bl001_canonical_import_audit import nearby_provider_evidence
+
+        available = {
+            "BertScript/MP_utils.py", "BertScript/utilities.py",
+            "BertScript/reusable_components.py",
+            "text_category_profiler/concurrency/istarmap.py",
+        }
+        same = nearby_provider_evidence("BertScript/df_utils.py", "utilities", available)
+        self.assertEqual(same["provider_filename_evidence"], "same_directory_provider_filename")
+        self.assertEqual(same["same_directory_provider_paths"], ["BertScript/utilities.py"])
+        parent = nearby_provider_evidence(
+            "BertScript/pages/labelViewer/layout_interactivity.py",
+            "reusable_components", available,
+        )
+        self.assertEqual(parent["provider_filename_evidence"], "ancestor_directory_provider_filename")
+        self.assertEqual(parent["ancestor_directory_provider_paths"], ["BertScript/reusable_components.py"])
+        no_provider = nearby_provider_evidence("DatasetConverter/df_utils.py", "MP_utils", available)
+        self.assertEqual(no_provider["provider_filename_evidence"], "no_nearby_first_party_provider_filename")
+        self.assertFalse(no_provider["runtime_provider_resolved"])
+
+    def test_seven_unreferenced_modules_have_entrypoint_syntax_report(self):
+        data = audit(ROOT, [])
+        missing = {
+            "text_category_profiler.concurrency.patch_mp_connection",
+            "text_category_profiler.data.json_utils",
+            "text_category_profiler.diagnostics.python_dispatch",
+            "text_category_profiler.diagnostics.smoke_classifier",
+            "text_category_profiler.integrations.Email_utils",
+            "text_category_profiler.integrations.FTP_utils",
+            "text_category_profiler.visualization.DataVisualization_utils",
+        }
+        rows = {row["module"]: row for row in data["module_evidence"]}
+        self.assertEqual(set(missing) - set(rows), set())
+        guard = {name for name in missing if rows[name]["top_level_main_guard_present"]}
+        self.assertEqual(guard, {
+            "text_category_profiler.data.json_utils",
+            "text_category_profiler.diagnostics.python_dispatch",
+            "text_category_profiler.diagnostics.smoke_classifier",
+        })
+        self.assertTrue(all(not rows[name]["direct_run_verified"] for name in missing))
+        self.assertFalse(data["runtime_verified"])
+
+    def test_bare_imports_reflect_real_provider_paths_without_claiming_resolution(self):
+        data = audit(ROOT)
+        candidates = data["unresolved_bare_import_candidates"]
+        self.assertEqual(len(candidates), 15)
+        self.assertEqual(
+            data["summary"]["bare_same_directory_provider"]
+            + data["summary"]["bare_ancestor_directory_provider"]
+            + data["summary"]["bare_no_nearby_first_party_provider"], 15,
+        )
+        self.assertTrue(all(not c["runtime_provider_resolved"] for c in candidates))
+        stage_local = next(
+            c for c in candidates if c["source"] == "BertScript/df_utils.py"
+            and c["bare_name"] == "MP_utils"
+        )
+        self.assertEqual(stage_local["same_directory_provider_paths"], ["BertScript/MP_utils.py"])
+        ancestor = next(
+            c for c in candidates
+            if c["source"] == "BertScript/pages/labelViewer/layout_interactivity.py"
+        )
+        self.assertIn("BertScript/reusable_components.py", ancestor["ancestor_directory_provider_paths"])
+        missing = next(
+            c for c in candidates
+            if c["source"] == "DatasetConverter/df_utils.py" and c["bare_name"] == "utilities"
+        )
+        self.assertEqual(missing["provider_filename_evidence"], "no_nearby_first_party_provider_filename")
+
+    def test_main_guard_detector_rejects_function_local_false_positive(self):
+        from scripts.bl001_canonical_import_audit import has_top_level_main_guard
+
+        self.assertFalse(has_top_level_main_guard(
+            "def wrapped():\n    if __name__ == '__main__':\n        pass\n"
+        ))
+        self.assertTrue(has_top_level_main_guard(
+            "if '__main__' == __name__:\n    pass\n"
+        ))
+        self.assertFalse(has_top_level_main_guard("if __name__ == 'other':\n    pass\n"))
+
+
 if __name__ == "__main__":
     unittest.main()

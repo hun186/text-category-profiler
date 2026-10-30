@@ -4,6 +4,9 @@
 
 ## Current Focus
 
+- BL-001 bare-name provider follow-up（PR #154）：PR #153 在 201 個 first-party Python files 找到 44 個 canonical modules 的 468 個 qualified import syntax occurrences、7 個無命中模組、15 個 bare-import 候選。此批增加 runtime-free filename provenance：對 15 件逐筆回報同目錄、上層目錄或無鄰近第一方 provider，同時為 44 模組提供 top-level `__main__` guard 靜態證據，專門回報 7 件無命中中的 direct-script 入口候選。這**不是 import resolution**，沒有任何資料、CLI 或 module 刪除；後續仍需查 Python `sys.path` 與外部／動態 caller，BL-001 In Progress。
+
+
 - BL-001 canonical consumer evidence follow-up：PR #152 結構盤點 71 tracked package files（58 canonical domain-owned、13 legacy）；PR #153 對 58 件中的 44 個 canonical Python 模組新增 bounded first-party AST import report，逐個標示 qualified-import 語法命中、package-internal vs TCFMain/DatasetConverter/BertScript 等來源區域；另列 literal importlib/runpy 候選、bare import 候選與 syntax errors，CI 上傳 JSON。未命中不是 dead code；source area 不是可靠 runtime stage，imports 未執行，無 repo 外/動態證據，不移除任何 module，BL-001 In Progress。
 
 

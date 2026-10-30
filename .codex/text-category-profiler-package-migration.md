@@ -84,6 +84,9 @@ text_category_profiler/
 
 ### Phase 3：將非共用內容分流
 
+- 2026-10-31 bare-import provenance follow-up：PR #153 靜態報告中 15 件候選，需區分 `BertScript` stage-local 同名模組及 `DatasetConverter` 缺少 sibling provider 的未決候選。本批為每件候選新增 first-party tracked Python sibling/ancestor 路徑證據，**不假定 Python 實際 import resolution**；對 7 個 scoped-import 零命中的 canonical modules，加入 top-level `__main__` guard evidence（仍未直接執行）。不搬移／刪除程式，runtime/sys.path/外部動態 caller 仍待驗證，BL-001 In Progress。
+
+
 - 2026-10-31 canonical module consumer evidence：在 PR #152 71 個 Git tracked package 路徑完整 census 基礎上，對 44 個 domain-owned Python modules 建立 bounded first-party AST import report。區分完整 qualified imports（含 `from package import module`／相對 imports）、literal importlib/runpy 候選、bare import unresolved candidates；按 source area `TCFMain.py`／DatasetConverter／BertScript／ClassesTree／TCF_Params／package-internal／scripts 分開，但**不推論實際 runtime stage**。此批只新增無執行副作用的報告與測試，保留全部程式碼；未命中不代表 unused，跨 stage/externals 功能性驗收與所有開放 Phase 0–3 TODO 仍待完成，BL-001 In Progress。
 
 
