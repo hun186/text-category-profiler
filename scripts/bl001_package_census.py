@@ -31,7 +31,7 @@ LIMITATIONS = [
 
 def git_blob_sha(data):
     return hashlib.sha1(
-        ("blob %d" % len(data)).encode("ascii") + b"\\0" + data
+        ("blob %d" % len(data)).encode("ascii") + b"\0" + data
     ).hexdigest()
 
 
@@ -41,7 +41,7 @@ def tracked_package_files(root=ROOT):
         cwd=root, check=True, capture_output=True, timeout=30,
     )
     return {
-        os.fsdecode(name) for name in result.stdout.split(b"\\0") if name
+        os.fsdecode(name) for name in result.stdout.split(b"\0") if name
     }
 
 
@@ -58,7 +58,7 @@ def _valid_relative_path(path):
     if not isinstance(path, str) or not path.startswith("text_category_profiler/"):
         return False
     parts = PurePosixPath(path).parts
-    return ".." not in parts and "\\" not in path and len(parts) >= 2
+    return ".." not in parts and "\" not in path and len(parts) >= 2
 
 
 def verify_catalogs(tracked, root=ROOT):
@@ -164,7 +164,7 @@ def main():
     report = audit_package()
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
-        json.dumps(report, ensure_ascii=False, indent=2) + "\\n",
+        json.dumps(report, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
     print(
