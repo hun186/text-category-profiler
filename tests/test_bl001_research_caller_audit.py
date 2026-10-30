@@ -18,7 +18,7 @@ class ResearchCallerAuditTests(unittest.TestCase):
             "experiments/fixtures/research_samples/RAGTest.json",
         )
         self.assertEqual(
-            sum(x["original_path"] != x["current_path"] for x in targets), 24
+            sum(x["original_path"] != x["current_path"] for x in targets), 39
         )
 
     def test_archived_workbooks_have_unique_group_preserving_paths(self):
@@ -31,6 +31,17 @@ class ResearchCallerAuditTests(unittest.TestCase):
         self.assertTrue(all(x["current_path"].startswith(
             "experiments/fixtures/similarity_experiment_outputs/"
         ) for x in books))
+
+    def test_all_historical_txt_inputs_have_unique_archive_paths(self):
+        targets = load_catalog(ROOT)
+        inputs = [x for x in targets if x["original_path"].startswith(
+            "text_category_profiler/切片相似度比對法測試/test Document/"
+        )]
+        self.assertEqual(len(inputs), 15)
+        self.assertEqual(len({x["current_path"] for x in inputs}), 15)
+        self.assertTrue(all(x["current_path"].startswith(
+            "experiments/fixtures/similarity_experiment_inputs/test Document/"
+        ) for x in inputs))
 
     def test_ast_literals_and_comments_are_not_conflated(self):
         targets = [{"original_path": "data/example.txt",
