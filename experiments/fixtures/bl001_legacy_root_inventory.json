@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "baseline_main_sha": "5fc358b2b1c308ee9e888ff8339dc58f14b91732",
+  "scope": "Git-tracked root-level Python modules and known nested legacy Dijkstra/Tulip compatibility entries; intentionally not a full package inventory",
+  "external_callers": "unverified; in-repository AST imports and path/string literals are only bounded evidence",
+  "entries": [
+    {
+      "path": "text_category_profiler/__init__.py",
+      "category": "package_marker",
+      "canonical_path": "text_category_profiler/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "size_bytes": 0,
+      "reason": "Keep empty application namespace marker",
+      "external_callers": "unverified"
+    },
+    {
+      "path": "text_category_profiler/ArtCluESJobTemplate.py",
+      "category": "compat_entrypoint",
+      "canonical_path": "text_category_profiler/integrations/es_job_template.py",
+      "sha": "03e01f21967fc9a23bf442c6148d05a4a80733d7",
+      "size_bytes": 509,
+      "reason": "Re-executes template on each legacy import/reload/runpy",
+      "external_callers": "unverified"
+    },
+    {
+      "path": "text_category_profiler/ES_ingest_txt_to_es.py",
+      "category": "compat_entrypoint",
+      "canonical_path": "scripts/ES_ingest_txt_to_es.py",
+      "sha": "44a9a6b1f4af08ac9fee2525e3681225163f72d8",
+      "size_bytes": 880,
+      "reason": "Lazy ingestion tool imports and direct-run script forwarding",
+      "external_callers": "unverified"
+    },
+    {
+      "path": "text_category_profiler/Edited_zipfile.py",
+      "category": "compat_entrypoint",
+      "canonical_path": "vendor/cpython37_zipfile_gbk/zipfile.py",
+      "sha": "0d80fc9c3f7c3ec24b37b8b3f9e2f46adcbc29b9",
+      "size_bytes": 1026,
+      "reason": "Legacy CPython ZIP patch CLI and named exports",
+      "external_callers": "unverified"
+    },
+    {
+      "path": "text_category_profiler/Timestamp generator.py",
+      "category": "compat_entrypoint",
+      "canonical_path": "experiments/timestamp_generator.py",
+      "sha": "84e811b2bcaabe8f15c701ca789c28ba44c829fe",
+      "size_bytes": 609,
+      "reason": "Historical standalone timestamp command and output semantics",
+      "external_callers": "unverified"
+    },
+    {
+      "path": "text_category_profiler/selector.py",
+      "category": "compat_entrypoint",
+      "canonical_path": "text_category_profiler/cli/selector.py",
+      "sha": "4edcffae3e07dfcbdaf22e122017caf20cef8921",
+      "size_bytes": 562,
+      "reason": "Legacy terminal selector imports",
+      "external_callers": "unverified"
+    },
+    {
+      "path": "text_category_profiler/utilities_RAND.py",
+      "category": "compat_entrypoint",
+      "canonical_path": "experiments/rand_corpus_labeling.py",
+      "sha": "67c82e892533564c2afd7b3cd08b8270cff7cb44",
+      "size_bytes": 684,
+      "reason": "Legacy RAND sample and direct-run semantics",
+      "external_callers": "unverified"
+    },
+    {
+      "path": "text_category_profiler/tulip_utils/Graph_Builder.py",
+      "category": "compat_entrypoint",
+      "canonical_path": "text_category_profiler/visualization/tulip_graph_builder.py",
+      "sha": "5d04c0233c76a0494da728a4569cb63bc9f6414d",
+      "size_bytes": 1389,
+      "reason": "Legacy Tulip API and direct-run path; canonical Stage 4 imports moved",
+      "external_callers": "unverified"
+    },
+    {
+      "path": "text_category_profiler/dijkstra_algorithm_master/dijkstra_algorithm.py",
+      "category": "compat_entrypoint",
+      "canonical_path": "vendor/dijkstra_algorithm_master/dijkstra_algorithm.py",
+      "sha": "989d66a3ffc3b72ddeaa027c0359d788d6f06d8b",
+      "size_bytes": 1063,
+      "reason": "Historical Dijkstra import/direct-run wrapper",
+      "external_callers": "unverified"
+    },
+    {
+      "path": "text_category_profiler/dijkstra_algorithm_master/LICENSE",
+      "category": "legacy_vendor_asset",
+      "canonical_path": "vendor/dijkstra_algorithm_master/LICENSE",
+      "sha": "5dcbd7256e423889fa3107d92c5a16675455eadd",
+      "size_bytes": 1068,
+      "reason": "Retain original legal notice with old manual path",
+      "external_callers": "unverified"
+    },
+    {
+      "path": "text_category_profiler/dijkstra_algorithm_master/README.md",
+      "category": "legacy_vendor_asset",
+      "canonical_path": "vendor/dijkstra_algorithm_master/README.md",
+      "sha": "c7dee13956e29a13529dc034fb288bc9dbf5cd38",
+      "size_bytes": 892,
+      "reason": "Legacy README contains compatibility note, unlike upstream",
+      "external_callers": "unverified"
+    },
+    {
+      "path": "text_category_profiler/dijkstra_algorithm_master/simple_graph.txt",
+      "category": "legacy_vendor_asset",
+      "canonical_path": "vendor/dijkstra_algorithm_master/simple_graph.txt",
+      "sha": "3726bcb42fffa2d985a2bf2bda5a351aa5c22e2d",
+      "size_bytes": 71,
+      "reason": "Retain original graph basename and bytes for external cwd scripts",
+      "external_callers": "unverified"
+    },
+    {
+      "path": "text_category_profiler/dijkstra_algorithm_master/seattle_area.txt",
+      "category": "legacy_vendor_asset",
+      "canonical_path": "vendor/dijkstra_algorithm_master/seattle_area.txt",
+      "sha": "9a5ab05b0b2e25aa6215bfaae8b28dee4e81d021",
+      "size_bytes": 513,
+      "reason": "Retain original graph basename and bytes for external cwd scripts",
+      "external_callers": "unverified"
+    }
+  ]
+}

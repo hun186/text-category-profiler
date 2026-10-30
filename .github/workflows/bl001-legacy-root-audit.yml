@@ -1,0 +1,55 @@
+name: BL-001 Residual Legacy Root Caller Audit
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/bl001_legacy_root_audit.py"
+      - "tests/test_bl001_legacy_root_audit.py"
+      - "experiments/fixtures/bl001_legacy_root_inventory.json"
+      - ".github/workflows/bl001-legacy-root-audit.yml"
+      - "text_category_profiler/*.py"
+      - "text_category_profiler/dijkstra_algorithm_master/**"
+      - "text_category_profiler/tulip_utils/**"
+      - ".codex/**"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/bl001_legacy_root_audit.py"
+      - "tests/test_bl001_legacy_root_audit.py"
+      - "experiments/fixtures/bl001_legacy_root_inventory.json"
+      - ".github/workflows/bl001-legacy-root-audit.yml"
+      - "text_category_profiler/*.py"
+      - "text_category_profiler/dijkstra_algorithm_master/**"
+      - "text_category_profiler/tulip_utils/**"
+      - ".codex/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  legacy-root-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Check dependency-light sources
+        run: python -m py_compile scripts/bl001_legacy_root_audit.py tests/test_bl001_legacy_root_audit.py
+      - name: Verify root inventory and compatibility boundaries
+        run: python -m unittest -v tests.test_bl001_legacy_root_audit tests.test_dijkstra_vendor_boundary tests.test_tulip_manual_graph_boundary tests.test_package_layout tests.test_project_docs tests.test_repository_compile_gate
+      - name: Generate bounded audit evidence artifact
+        run: python scripts/bl001_legacy_root_audit.py --output artifacts/bl001-legacy-root-audit.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bl001-legacy-root-consumers
+          path: artifacts/bl001-legacy-root-audit.json
+          retention-days: 30
+          if-no-files-found: error
+      - name: Check whitespace
+        run: git diff --check HEAD^ HEAD
