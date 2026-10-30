@@ -1,0 +1,53 @@
+name: BL-001 DB Utils Manual ES Template Import
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "text_category_profiler/data/DB_utils.py"
+      - "text_category_profiler/integrations/es_job_template.py"
+      - "text_category_profiler/ArtCluESJobTemplate.py"
+      - "tests/test_db_utils_manual_es_template_import.py"
+      - "tests/test_bl001_legacy_root_audit.py"
+      - ".github/workflows/bl001-db-utils-es-template.yml"
+      - ".codex/**"
+  push:
+    branches: [main]
+    paths:
+      - "text_category_profiler/data/DB_utils.py"
+      - "text_category_profiler/integrations/es_job_template.py"
+      - "text_category_profiler/ArtCluESJobTemplate.py"
+      - "tests/test_db_utils_manual_es_template_import.py"
+      - "tests/test_bl001_legacy_root_audit.py"
+      - ".github/workflows/bl001-db-utils-es-template.yml"
+      - ".codex/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  db-utils-es-template:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Syntax check
+        run: python -m py_compile text_category_profiler/data/DB_utils.py tests/test_db_utils_manual_es_template_import.py
+      - name: Verify no-service manual CLI and residual audit contracts
+        run: python -m unittest -v tests.test_db_utils_manual_es_template_import tests.test_es_job_template_boundary tests.test_bl001_legacy_root_audit tests.test_package_layout tests.test_project_docs tests.test_repository_compile_gate
+      - name: Generate revised bounded caller audit
+        run: python scripts/bl001_legacy_root_audit.py --output artifacts/bl001-legacy-root-audit.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bl001-db-utils-es-template-audit
+          path: artifacts/bl001-legacy-root-audit.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Verify patch whitespace
+        run: git diff --check HEAD^ HEAD

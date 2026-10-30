@@ -855,7 +855,7 @@ def ensure_schema(cnx, table: str, df: pd.DataFrame, must_cols: list[str], debug
 if __name__ == '__main__':
     #MongoTest()
     #sqlite3QueryTest()
-    from ArtCluESJobTemplate import esJobTemplate
+    from text_category_profiler.integrations.es_job_template import esJobTemplate
     esJobs = BuildESJobList(esJobTemplate,startDay="20230903",endDay="20240218")
     for esJob in esJobs[:2]:
         DictIndentPrint(_redact_es_job_for_logging(esJob))
