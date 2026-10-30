@@ -1,2 +1,6 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Keep the original historical Tulip experiment byte-identical, including
+# pre-existing trailing spaces. Other files retain normal whitespace checks.
+text_category_profiler/visualization/tulip_graph_builder.py whitespace=-blank-at-eol

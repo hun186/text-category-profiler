@@ -84,6 +84,9 @@ text_category_profiler/
 
 ### Phase 3：將非共用內容分流
 
+- 2026-10-30 Tulip Stage 4 visualization boundary：原 `text_category_profiler/tulip_utils/Graph_Builder.py` 之 Git blob `8d6919e56381e30003c7582ecb78f0490f04c857`（24,232 bytes）按 byte 完全相同移至 `text_category_profiler/visualization/tulip_graph_builder.py`，因 Hosted CI 與 Codex Review 確認 `BertScript/Test_result_Vis.py` 為實際 active caller，必須歸屬 visualization 領域而非 experiments。Stage 4 canonical imports 已同步更新；舊路徑保留 lazy facade 和手動 main() 轉送。舊原始碼尾端空白以單檔 .gitattributes 例外保留，而其他新檔繼續 git diff --check。增加 stdlib blob/hash、Stage 4 AST caller、lazy import 及委派測試；未啟動 Tulip GUI、模型、ES 或 WorkPool。外部／動態 callers 與舊 globals/star imports 尚未全面認證，BL-001 In Progress。
+
+
 - 2026-10-30 similarity historical TXT input split：原 `text_category_profiler/切片相似度比對法測試/test Document/` 15 份 TXT（與前批 12 份 XLSX 共同組成 27 個歷史檔案、824,594 bytes）依原 Git blob SHA 與檔名完整搬至 `experiments/fixtures/similarity_experiment_inputs/test Document/`；manifest schema v3 為 27 件全部記錄 relocated_path。歷史研究文本未重新產生、解碼或處理。 `InnerCrossSimilarityForTextListTest()` 兩份啟用中文 fixture 路徑不變，先前僅註解的 TXT 例子改從 `__file__` 定位；XLSX 仍輸出 caller cwd。以隔離 AST/stub 測試 15 份輸入讀取及歷史完整性；未執行 NLP、ES、模型或資料管線，外部／動態 callers 及原始資料授權仍未查證。BL-001 In Progress。
 
 

@@ -136,8 +136,8 @@ from ClassesTree.ClassesTree_utils import GetSubTopics
 from ClassesTree.ClassesTree_utils import BuildInfoScoreTable
 from ClassesTree.ClassesTree_utils import BuildSubTopicsDict
 #from ClassesTree.Visualization.jaal.jaalViewer import JaalViewMain
-from text_category_profiler.tulip_utils.Graph_Builder import ClusterMetaNodeGraph
-from text_category_profiler.tulip_utils.Graph_Builder import BuildGraph
+from text_category_profiler.visualization.tulip_graph_builder import ClusterMetaNodeGraph
+from text_category_profiler.visualization.tulip_graph_builder import BuildGraph
 from text_category_profiler.text.TextProcessor_utils import textReader
 from text_category_profiler.core.conformer import freeGPUConformer
 from text_category_profiler.core.utilities import getIP
