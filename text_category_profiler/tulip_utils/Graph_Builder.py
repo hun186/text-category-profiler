@@ -33,8 +33,8 @@ def __dir__():
 def main():
     """Explicitly run the relocated original historical direct-script demo."""
     experiment = (
-        Path(__file__).resolve().parents[2]
-        / "experiments" / "tulip_graph_builder.py"
+        Path(__file__).resolve().parents[1]
+        / "visualization" / "tulip_graph_builder.py"
     )
     runpy.run_path(str(experiment), run_name="__main__")
 
