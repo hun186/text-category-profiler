@@ -44,9 +44,28 @@ class EmbeddedTreePanelTests(unittest.TestCase):
         self.assertEqual(graph.elements, [])
         self.assertFalse(find(app.layout, "JaalViewerCardDetails").open)
         self.assertEqual(find(app.layout, "JaalAllowFull").value, [])
+        # The original Jaal Viewer entry must be visible without clicking a
+        # top-level Details wrapper; only the graph itself remains collapsed.
+        import dash_bootstrap_components as dbc
+        self.assertIsInstance(app.layout, dbc.Card)
+        self.assertIn("Classes Tree Jaal Viewer",
+                      str(app.layout.children[0].children.children))
         self.assertTrue(any("JaalGraph.elements" in k for k in app.callback_map))
         self.assertFalse(any(getattr(x, "src", "").endswith(":8053")
                              for x in app.layout.children if x is not None))
+
+    def test_missing_cytoscape_keeps_visible_install_card(self):
+        from BertScript import embedded_tree_panel as panel
+        import dash_bootstrap_components as dbc
+        with mock.patch.object(panel, "cyto", None):
+            app = self.Dash(__name__)
+            app.layout = panel.build_tree_panel()
+            panel.register_tree_callbacks(app)
+        self.assertIsInstance(app.layout, dbc.Card)
+        rendered = str(app.layout)
+        self.assertIn("Classes Tree Jaal Viewer", rendered)
+        self.assertIn("python -m pip install dash-cytoscape", rendered)
+        self.assertNotIn("JaalGraph.elements", str(app.callback_map))
 
     def test_deny_full_without_consent_and_clear_without_io(self):
         from BertScript import embedded_tree_panel as panel

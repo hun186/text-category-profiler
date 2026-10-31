@@ -8,7 +8,12 @@ from __future__ import annotations
 import csv
 
 from dash import Input, Output, State, ctx, dcc, html, no_update
-import dash_cytoscape as cyto
+import dash_bootstrap_components as dbc
+
+try:
+    import dash_cytoscape as cyto
+except ImportError:
+    cyto = None  # Keep the Stage 4 page visible with a clear install message.
 
 from ClassesTree.Visualization.embedded_tree import (
     GraphLimitError, draw_graph,
@@ -50,65 +55,82 @@ FULL_STYLESHEET[0] = {
 
 
 def build_tree_panel():
-    """Construct controls only; never read CSV or create graph elements here."""
-    return html.Div([
-        html.Details([
-            html.Summary("分類樹互動檢視器（內嵌於主站）"),
+    """An always-visible Stage 4 card; only the graph contents are lazy.
+
+    A missing optional Cytoscape package must not make the entire Stage 4
+    application disappear or obscure the old Jaal Viewer entry point.
+    """
+    heading = dbc.CardHeader(
+        html.H3("Classes Tree Jaal Viewer｜分類樹互動檢視器（內嵌版）")
+    )
+    if cyto is None:
+        return dbc.Card([
+            heading,
+            dbc.CardBody([
+                html.P("分類樹入口已載入，但尚未安裝 Dash Cytoscape，無法繪圖。"),
+                html.Code("python -m pip install dash-cytoscape"),
+                html.P("安裝完成後，請重新啟動 Stage 4 主網頁服務。"
+                       "此版本不需要另外啟動 8053 port。"),
+            ]),
+        ], style={"width": "100%", "margin": "16px 0"})
+
+    return dbc.Card([
+        heading,
+        dbc.CardBody([
+            html.P("操作面板保持顯示；圖形預設不載入，也不會啟動第二個 port。"
+                   "輸入英文 ClassLabel，再按「繪製子樹」。"
+                   "要擴展範圍，先點圖上的節點，再按「展開所選節點」。"),
             html.Div([
-                html.P("預設不載入分類圖。輸入英文 ClassLabel 後才繪製子樹；"
-                       "點選圖上節點，可再按「展開所選節點」。"),
-                html.Div([
-                    html.Label("類別名稱"),
-                    dcc.Input(id="JaalRoot", type="text", value="TW Affairs",
-                              debounce=True, style={"width": "340px", "maxWidth": "95%"}),
-                    html.Label("子樹深度"),
-                    dcc.Dropdown(id="JaalDepth", value=2, clearable=False,
-                                 options=[{"label": str(n), "value": n}
-                                          for n in range(1, 6)],
-                                 style={"width": "100px"}),
-                    html.Label("節點上限"),
-                    dcc.Dropdown(id="JaalMaxNodes", value=150, clearable=False,
-                                 options=[{"label": str(n), "value": n}
-                                          for n in (50, 150, 300, 600, 1000)],
-                                 style={"width": "130px"}),
-                ], style={"display": "flex", "gap": "12px", "alignItems": "center",
-                          "flexWrap": "wrap"}),
-                html.Div([
-                    html.Button("繪製子樹", id="btn_JaalViewer", n_clicks=0),
-                    html.Button("展開所選節點", id="btn_JaalViewerExpand", n_clicks=0),
-                    html.Button("清空畫布", id="btn_JaalViewerClear", n_clicks=0),
-                ], style={"display": "flex", "gap": "12px", "margin": "12px 0",
-                          "flexWrap": "wrap"}),
-                html.Details([
-                    html.Summary("全圖模式（可能耗用較多瀏覽器資源）"),
-                    dcc.Checklist(
-                        id="JaalAllowFull",
-                        options=[{"label": "我了解全圖可能需要較多資源，並同意載入",
-                                  "value": "yes"}],
-                        value=[],
-                    ),
-                    html.Button("確認繪製完整分類圖", id="btn_JaalViewerFull",
-                                n_clicks=0),
-                    html.P("全圖僅在按下確認按鈕後載入，不套用力導向物理模擬，"
-                           "並設有節點及邊數量硬限制。"),
-                ]),
-                html.Div(id="JaalStatus", role="status",
-                         children="尚未載入圖形；不會啟動第二個 port。"),
-                html.Div(id="JaalSelected", children="尚未選取節點。"),
-                html.Details([
-                    html.Summary("展開／收合圖形"),
-                    cyto.Cytoscape(
-                        id="JaalGraph", elements=[],
-                        layout=SUBGRAPH_LAYOUT,
-                        stylesheet=BASE_STYLESHEET,
-                        style=GRAPH_STYLE,
-                        minZoom=0.05, maxZoom=4,
-                        wheelSensitivity=0.2,
-                    ),
-                ], id="JaalViewerCardDetails", open=False),
-            ], style={"padding": "12px"}),
-        ], open=False),
-    ], style={"width": "100%"})
+                html.Label("類別名稱"),
+                dcc.Input(id="JaalRoot", type="text", value="TW Affairs",
+                          debounce=True, style={"width": "340px", "maxWidth": "95%"}),
+                html.Label("子樹深度"),
+                dcc.Dropdown(id="JaalDepth", value=2, clearable=False,
+                             options=[{"label": str(n), "value": n}
+                                      for n in range(1, 6)],
+                             style={"width": "100px"}),
+                html.Label("節點上限"),
+                dcc.Dropdown(id="JaalMaxNodes", value=150, clearable=False,
+                             options=[{"label": str(n), "value": n}
+                                      for n in (50, 150, 300, 600, 1000)],
+                             style={"width": "130px"}),
+            ], style={"display": "flex", "gap": "12px", "alignItems": "center",
+                      "flexWrap": "wrap"}),
+            html.Div([
+                html.Button("繪製子樹", id="btn_JaalViewer", n_clicks=0),
+                html.Button("展開所選節點", id="btn_JaalViewerExpand", n_clicks=0),
+                html.Button("清空畫布", id="btn_JaalViewerClear", n_clicks=0),
+            ], style={"display": "flex", "gap": "12px", "margin": "12px 0",
+                      "flexWrap": "wrap"}),
+            html.Details([
+                html.Summary("全圖模式（可能耗用較多瀏覽器資源）"),
+                dcc.Checklist(
+                    id="JaalAllowFull",
+                    options=[{"label": "我了解全圖可能需要較多資源，並同意載入",
+                              "value": "yes"}],
+                    value=[],
+                ),
+                html.Button("確認繪製完整分類圖", id="btn_JaalViewerFull",
+                            n_clicks=0),
+                html.P("全圖僅在按下確認按鈕後載入，不套用力導向物理模擬，"
+                       "並設有節點及邊數量硬限制。"),
+            ], open=False),
+            html.Div(id="JaalStatus", role="status",
+                     children="尚未載入圖形；按「繪製子樹」後顯示。"),
+            html.Div(id="JaalSelected", children="尚未選取節點。"),
+            html.Details([
+                html.Summary("展開／收合圖形"),
+                cyto.Cytoscape(
+                    id="JaalGraph", elements=[],
+                    layout=SUBGRAPH_LAYOUT,
+                    stylesheet=BASE_STYLESHEET,
+                    style=GRAPH_STYLE,
+                    minZoom=0.05, maxZoom=4,
+                    wheelSensitivity=0.2,
+                ),
+            ], id="JaalViewerCardDetails", open=False),
+        ]),
+    ], style={"width": "100%", "margin": "16px 0"})
 
 
 def render_action(action, *, root, depth, max_nodes, confirmed,
@@ -145,6 +167,10 @@ def render_action(action, *, root, depth, max_nodes, confirmed,
 
 
 def register_tree_callbacks(app):
+    if cyto is None:
+        # No missing-output callbacks: show the install guidance instead.
+        return
+
     @app.callback(
         Output("JaalGraph", "elements"),
         Output("JaalGraph", "layout"),

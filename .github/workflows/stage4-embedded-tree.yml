@@ -44,7 +44,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install minimal Dash graph dependencies (no model or Jaal server)
-        run: python -m pip install dash dash-cytoscape
+        run: python -m pip install dash dash-cytoscape dash-bootstrap-components
       - name: Compile graph backend, panel, Stage 4 and regression tests
         run: python -m py_compile ClassesTree/Visualization/embedded_tree.py BertScript/embedded_tree_panel.py BertScript/Test_result_Vis.py tests/test_embedded_tree_data.py tests/test_embedded_tree_panel.py
       - name: Run real taxonomy, resource guard, and Dash callback contract tests
