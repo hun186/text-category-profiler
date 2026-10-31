@@ -1,0 +1,53 @@
+name: Stage 4 Embedded Lazy Taxonomy Graph
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "ClassesTree/Visualization/embedded_tree.py"
+      - "BertScript/embedded_tree_panel.py"
+      - "BertScript/Test_result_Vis.py"
+      - "ClassesTree/data/TopicTree.csv"
+      - "ClassesTree/data/TopicTree_AK4.csv"
+      - "ClassesTree/data/ClassTable.csv"
+      - "tests/test_embedded_tree_data.py"
+      - "tests/test_embedded_tree_panel.py"
+      - "requirements.txt"
+      - ".github/workflows/stage4-embedded-tree.yml"
+  push:
+    branches: [main]
+    paths:
+      - "ClassesTree/Visualization/embedded_tree.py"
+      - "BertScript/embedded_tree_panel.py"
+      - "BertScript/Test_result_Vis.py"
+      - "ClassesTree/data/TopicTree.csv"
+      - "ClassesTree/data/TopicTree_AK4.csv"
+      - "ClassesTree/data/ClassTable.csv"
+      - "tests/test_embedded_tree_data.py"
+      - "tests/test_embedded_tree_panel.py"
+      - "requirements.txt"
+      - ".github/workflows/stage4-embedded-tree.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lazy-embedded-tree:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install minimal Dash graph dependencies (no model or Jaal server)
+        run: python -m pip install dash dash-cytoscape
+      - name: Compile graph backend, panel, Stage 4 and regression tests
+        run: python -m py_compile ClassesTree/Visualization/embedded_tree.py BertScript/embedded_tree_panel.py BertScript/Test_result_Vis.py tests/test_embedded_tree_data.py tests/test_embedded_tree_panel.py
+      - name: Run real taxonomy, resource guard, and Dash callback contract tests
+        run: python -m unittest -v tests.test_embedded_tree_data tests.test_embedded_tree_panel
+      - name: Check whitespace
+        run: git diff --check HEAD^ HEAD
