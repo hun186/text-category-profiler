@@ -8,7 +8,7 @@ import argparse
 import ast
 from collections import defaultdict
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 # Both python scripts/bl001_canonical_import_audit.py and module import work.
 if __package__ in (None, ""):
@@ -25,6 +25,8 @@ LIMITATIONS = [
     "A module with no explicit scoped import may have dynamic, plugin, direct-script, external or other callers.",
     "Sources exclude tests, experiments, vendors, copied Dash examples and TRV_deploy, following the earlier bounded audit.",
     "Calls with computed import strings, non-Python launchers, source generated at runtime and outside-repository callers remain unverified.",
+    "A nearby filename is evidence of a candidate provider, not Python import resolution or actual execution.",
+    "A __main__ guard only proves CLI entrypoint syntax, not direct-run compatibility.",
     "No model, GPU, SQL, Elasticsearch, WorkPool or UI acceptance performed.",
 ]
 
@@ -66,6 +68,70 @@ def resolve_from(path, node):
     prefix = parts[: len(parts) - node.level + 1]
     suffix = node.module.split(".") if node.module else []
     return ".".join(prefix + suffix)
+
+
+
+def nearby_provider_evidence(source_path, name, tracked):
+    """Identify *possible* filename-based providers, never resolve imports.
+
+    A sibling is in the source directory; an ancestor provider is in one of its
+    parent directories within this repository. Runtime sys.path, cwd,
+    package context and import hooks are not evaluated.
+    """
+    directory = PurePosixPath(source_path).parent
+    sibling, ancestors = [], []
+    current = directory
+    while str(current) != ".":
+        paths = [
+            str(current / (name + ".py")),
+            str(current / name / "__init__.py"),
+        ]
+        found = sorted(p for p in paths if p in tracked)
+        if current == directory:
+            sibling.extend(found)
+        else:
+            ancestors.extend(found)
+        current = current.parent
+    if sibling:
+        category = "same_directory_provider_filename"
+    elif ancestors:
+        category = "ancestor_directory_provider_filename"
+    else:
+        category = "no_nearby_first_party_provider_filename"
+    return {
+        "provider_filename_evidence": category,
+        "same_directory_provider_paths": sibling,
+        "ancestor_directory_provider_paths": sorted(ancestors),
+        "runtime_provider_resolved": False,
+    }
+
+
+def has_top_level_main_guard(text):
+    """Syntactic __name__ == '__main__' marker, not a CLI run result."""
+    try:
+        tree = ast.parse(text)
+    except (SyntaxError, ValueError):
+        return False
+
+    def is_main_name(node):
+        return isinstance(node, ast.Name) and node.id == "__name__"
+
+    def is_main_literal(node):
+        return isinstance(node, ast.Constant) and node.value == "__main__"
+
+    for statement in tree.body:
+        if not isinstance(statement, ast.If):
+            continue
+        test = statement.test
+        if (isinstance(test, ast.Compare) and len(test.ops) == 1
+                and isinstance(test.ops[0], ast.Eq)
+                and len(test.comparators) == 1
+                and ((is_main_name(test.left)
+                      and is_main_literal(test.comparators[0]))
+                     or (is_main_literal(test.left)
+                         and is_main_name(test.comparators[0])))):
+            return True
+    return False
 
 
 def scan_source(path, source, targets):
@@ -153,7 +219,8 @@ def audit(root=ROOT, sources=None):
     )):
         raise AssertionError("Package structural census must pass before import audit")
     targets = canonical_modules(root)
-    selected = tracked_sources(root) if sources is None else sources
+    scoped_sources = tracked_sources(root)
+    selected = scoped_sources if sources is None else sources
     qualified, dynamic, bare, unresolved, parse_errors = [], [], [], [], []
     for path in selected:
         data = (root / path).read_text(encoding="utf-8", errors="replace")
@@ -164,6 +231,15 @@ def audit(root=ROOT, sources=None):
         unresolved.extend(u)
         if error:
             parse_errors.append({"source": path, "error_type": error})
+    # Enrich bare-import candidates without silently treating any filename
+    # as the actual loaded provider.
+    available_paths = set(scoped_sources)
+    for candidate in bare:
+        candidate.update(
+            nearby_provider_evidence(
+                candidate["source"], candidate["bare_name"], available_paths
+            )
+        )
     by_module = defaultdict(list)
     for edge in qualified:
         by_module[edge["target_module"]].append(edge)
@@ -178,6 +254,10 @@ def audit(root=ROOT, sources=None):
             "qualified_import_occurrences": len(edges),
             "first_party_nonpackage_areas": areas,
             "has_explicit_scoped_qualified_import": bool(edges),
+            "top_level_main_guard_present": has_top_level_main_guard(
+                (root / path).read_text(encoding="utf-8", errors="replace")
+            ),
+            "direct_run_verified": False,
             "status": (
                 "explicit_import_syntax_observed" if edges
                 else "no_scoped_explicit_import_observed"
@@ -197,6 +277,23 @@ def audit(root=ROOT, sources=None):
             "modules_without_scoped_import_syntax": sum(not by_module[m] for m in targets),
             "dynamic_import_string_candidates": len(dynamic),
             "unresolved_bare_imports": len(bare),
+            "bare_same_directory_provider": sum(
+                x["provider_filename_evidence"] == "same_directory_provider_filename"
+                for x in bare
+            ),
+            "bare_ancestor_directory_provider": sum(
+                x["provider_filename_evidence"] == "ancestor_directory_provider_filename"
+                for x in bare
+            ),
+            "bare_no_nearby_first_party_provider": sum(
+                x["provider_filename_evidence"] == "no_nearby_first_party_provider_filename"
+                for x in bare
+            ),
+            "no_scoped_import_with_main_guard": sum(
+                row["top_level_main_guard_present"]
+                and not row["has_explicit_scoped_qualified_import"]
+                for row in module_rows
+            ),
             "parse_errors": len(parse_errors),
         },
         "module_evidence": module_rows,
