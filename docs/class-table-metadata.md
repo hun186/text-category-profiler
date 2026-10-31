@@ -1,8 +1,8 @@
 # ClassTable metadata: CSV-first contract
 
-The authoritative metadata file is BertScript/ClassTable.csv (UTF-8 with BOM). Its fixed schema is ClassLabel,CT,Explanation,Notes. Rows are sorted deterministically by exact English ClassLabel, with required unique ClassLabel and nonempty CT; Explanation and Notes may be empty. Existing 1,994 entries have blank Notes after the additive schema migration; their ClassLabel, CT, and Explanation are unchanged. Duplicate CT values are warnings rather than errors.
+The authoritative metadata file is ClassesTree/data/ClassTable.csv (UTF-8 with BOM). Its fixed schema is ClassLabel,CT,Explanation,Notes. Rows are sorted deterministically by exact English ClassLabel, with required unique ClassLabel and nonempty CT; Explanation and Notes may be empty. Existing 1,994 entries have blank Notes after the additive schema migration; their ClassLabel, CT, and Explanation are unchanged. Duplicate CT values are warnings rather than errors.
 
-BertScript/ClassTable.py has been removed to avoid confusion with the authoritative CSV. All maintained callers now use the stdlib-only loader `BertScript.class_table_metadata.load_class_table()`, returning the same ClassLabel → {CT, Explanation, Notes} dictionary. Both direct-run scripts and package imports resolve the CSV relative to the loader's `__file__`, without machine-specific paths or cwd mutation. The historical misspelling Explaination is permitted only inside the one-time migration reader, not in active metadata or Dash UI.
+BertScript/ClassTable.py has been removed to avoid confusion with the authoritative CSV. All maintained callers now use the stdlib-only loader `BertScript.class_table_metadata.load_class_table()`, returning the same ClassLabel → {CT, Explanation, Notes} dictionary. Both direct-run scripts and package imports resolve the repository-owned `ClassesTree/data/ClassTable.csv` by using the loader's `__file__` to find the repository root, without machine-specific paths or cwd mutation. The CSV and `ClassesTree/data/TopicTree.csv` are colocated but have separate metadata and graph ownership. The historical misspelling Explaination is permitted only inside the one-time migration reader, not in active metadata or Dash UI.
 
 External Python callers must migrate as follows:
 
@@ -11,7 +11,7 @@ from BertScript.class_table_metadata import load_class_table
 ClassTable = load_class_table()
 ```
 
-The old `from ClassTable import ClassTable` and `from BertScript.ClassTable import ClassTable` interfaces no longer work. This is an intentional Python import compatibility change; ClassTable.csv and TopicTree data are unchanged.
+The old `from ClassTable import ClassTable` and `from BertScript.ClassTable import ClassTable` interfaces no longer work. This remains an intentional Python import compatibility change. Moving the authoritative ClassTable CSV changes its filesystem path but **not its bytes**, schema, or TopicTree graph. External scripts using the former `BertScript/ClassTable.csv` file path must update it.
 
 Notes（備註）可記錄類別來源、修訂理由及 AI 提議，與表示類別定義的 Explanation 分開，不應用 Notes 覆寫分類說明。建議 AI 自動生成紀錄格式：
 
@@ -23,7 +23,7 @@ Notes（備註）可記錄類別來源、修訂理由及 AI 提議，與表示�
 - 未來自動蒐集文本代理人應先產生 **候選 CSV 與 PR/diff**，確認類別去重、TopicTree 節點關係及人工審核後，才合併到正式 ClassTable；**Notes 文字不具備授權或自動核准功能**。避免尚未審核的類別直接進入分類資料集與視覺化。
 - `BertScript.class_table_metadata.load_class_table()` 回傳的 dict-of-dicts 保留 `CT`、`Explanation`、`Notes` 鍵；CSV 讀寫、候選合併與 Unicode/逗號/換行必須保全備註內容。舊版三欄輸入須先轉成四欄再交給正式 validator。
 
-Graph authority remains ClassesTree/data/TopicTree.csv. The historical prompt file TextClassificationDatasetOptimization/ChatGPT提問模板/2-1.TopicTree_old.csv is not the active graph authority and may differ from current TopicTree. TopicTree edges remain separate from metadata and both parent AND child endpoints form the node set, including non-hierarchical relations.
+Graph authority remains ClassesTree/data/TopicTree.csv, next to the new ClassTable CSV location. The historical prompt file TextClassificationDatasetOptimization/ChatGPT提問模板/2-1.TopicTree_old.csv is not the active graph authority and may differ from current TopicTree. TopicTree edges remain separate from metadata and both parent AND child endpoints form the node set, including non-hierarchical relations.
 
 The October 2026 metadata alignment renames `Government Real Estate Policy` → `CN Government Real Estate Policy` (CT: 中國政府房地產政策) and `Real Estate Industry` → `CN Real Estate Industry` (CT: 中國房地產業). The full existing explanation of the industry label is preserved. Both CN-scoped names already appear in the active TopicTree; the two generic old keys are removed, not kept as duplicate aliases. Legacy migration verification includes these two explicit, guarded corrections, while strictly preserving every other label and metadata value.
 
@@ -42,7 +42,7 @@ Candidate ClassLabels MUST equal (all parent/child nodes in 新增邊.csv) minus
 Reproduce and verify the migration against Hosted GitHub's pre-refactor source:
 
     git show ec212fd17835dd939b010a680955f95f12593598:BertScript/ClassTable.py > legacy-ClassTable.py
-    python -m BertScript.migrate_class_table --source legacy-ClassTable.py --verify BertScript/ClassTable.csv
+    python -m BertScript.migrate_class_table --source legacy-ClassTable.py --verify ClassesTree/data/ClassTable.csv
 
 Snapshot: 1,994 unique legacy labels, 434 nonempty legacy explanations, 3,128 TopicTree edges, and 2,670 graph nodes. Python's last-key-wins behavior preserves the effective historical definition of the duplicated SASF-Accessory-Glasses-Sunglasses label and duplicated Maritime Industry-Ports And Logistics explanation. Except for the explicitly documented label renames, all other unique keys and CT/Explanation text are preserved. The four confirmed copy/paste corruptions are corrected: Commerce's unrelated Nice attack explanation is transferred to 2016 Nice Truck Attack, that event's CT is fixed, and ASUS/Samsung CTs no longer say Apple. Other possible semantic issues are not rewritten.
 

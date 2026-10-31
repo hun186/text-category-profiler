@@ -12,7 +12,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | `CONTRACT-CLI-001` | CLI | Text classification flow args | `text_category_profiler/pipeline/TCF_utils.py` | `TCFMain.py`, DatasetConverter, BertScript | `ClassfierOptionParser()` | Draft / currently used |
 | `CONTRACT-FILE-001` | File handoff | Classifier dataset directory | `DatasetConverter/` | `BertScript/RunClassfier.py`, `TCFMain.py` | Stage scripts and filename checks | Draft / currently used |
-| `CONTRACT-FILE-004` | CSV / Python API | ClassTable display metadata | `BertScript/ClassTable.csv`, `ClassTable.py` | Dash / SMS / DataConverter tools | `class_table_metadata.py` | CSV authoritative; compatibility dict retained |
+| `CONTRACT-FILE-004` | CSV / Python API | ClassTable display metadata | `ClassesTree/data/ClassTable.csv`, `BertScript/class_table_metadata.py` | Dash / SMS / DataConverter tools | `class_table_metadata.py` | CSV authoritative; compatibility dict retained |
 | `CONTRACT-FILE-003` | File input | Topic tree taxonomy CSV files | `ClassesTree/` / project data owner | `DatasetConverter/DataConverter.py`, tree viewers | `--TopicTreeDir`, `--TopicTreeFiles`, `ClassesTree/ClassesTree_utils.py` | Draft / currently used |
 | `CONTRACT-FILE-002` | File handoff | Prediction/result analysis artifacts | `BertScript/RunClassfier.py`, `CombineTestResult.py` | `Test_result_Vis.py`, work pool output | Stage scripts and backup filename patterns | Draft / currently used |
 | `CONTRACT-CLI-002` | CLI / external service | Elasticsearch text ingestion tool | `scripts/ES_ingest_txt_to_es.py` with legacy wrapper | Operators / data import jobs | argparse in script | Optional / unverified in root flow |
@@ -108,8 +108,8 @@
 
 ### CONTRACT-FILE-004 ClassTable metadata CSV / Python API
 
-- 權威資料：BertScript/ClassTable.csv，UTF-8 BOM，固定欄位順序 ClassLabel,CT,Explanation,Notes，依英文 ClassLabel deterministic sorting。ClassLabel 不可空白／重複，CT 不可空白，Explanation、Notes 可空；重複 CT 只提示 warning。現有 1,994 筆 Notes 初始全為空白，既有 CT／Explanation 不更動。
-- Python 讀取介面：使用 `from BertScript.class_table_metadata import load_class_table`，再呼叫 `ClassTable = load_class_table()`；維持 CT／Explanation／Notes dict-of-dicts，使用 loader 的 `__file__` 定位同目錄 CSV，import 不改 cwd。已依使用者要求移除 `BertScript/ClassTable.py`；內部 active consumers 已更新，外部舊匯入者須自行遷移。
+- 權威資料：ClassesTree/data/ClassTable.csv（與 TopicTree.csv 同目錄），UTF-8 BOM，固定欄位順序 ClassLabel,CT,Explanation,Notes，依英文 ClassLabel deterministic sorting。ClassLabel 不可空白／重複，CT 不可空白，Explanation、Notes 可空；重複 CT 只提示 warning。現有 1,994 筆 Notes 初始全為空白，既有 CT／Explanation 不更動。
+- Python 讀取介面：使用 `from BertScript.class_table_metadata import load_class_table`，再呼叫 `ClassTable = load_class_table()`；維持 CT／Explanation／Notes dict-of-dicts，使用 loader 的 `__file__` 推導 repository 根目錄及 `ClassesTree/data/ClassTable.csv`（不假設 loader 同目錄），import 不改 cwd。已依使用者要求移除 `BertScript/ClassTable.py`；內部 active consumers 已更新，外部舊匯入者須自行遷移。
 - Consumer：BertScript/Test_result_Vis.py 及其 VisParameters_Format.py、Test_result_Vis_layout.py，DatasetConverter/SMS/SMSMerger.py，text_category_profiler/pipeline/DataConverter_utils.py，ClassesTree/Label_utils.py 的 CT helper。所有 active consumer 僅使用 Explanation；遷移輔助程式才接受舊拼字。
 - Graph authority：ClassesTree/data/TopicTree.csv；ClassTable 僅存 metadata，不存 graph。比較 node 集合需取母類別與子類別 union。原資料不一致僅產生 missing/orphan warning，不推斷／覆寫中文翻譯。
 - 已確認的中國房地產兩筆 ClassLabel 應採 TopicTree 既有 `CN Government Real Estate Policy`、`CN Real Estate Industry`，不保留原 generic keys 為別名；舊資料到現行 CSV 的 migration replay 需明確檢查這兩筆 rename 及其 CT／Explanation，其他內容保持等值。

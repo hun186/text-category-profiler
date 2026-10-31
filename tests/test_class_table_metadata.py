@@ -151,7 +151,9 @@ class ClassTableTests(unittest.TestCase):
 
     def test_import_does_not_change_cwd_and_uses_adjacent_resource(self):
         cwd = Path.cwd()
-        self.assertEqual(m.DEFAULT_CSV, Path(m.__file__).with_name("ClassTable.csv"))
+        self.assertEqual(m.DEFAULT_CSV, m.DEFAULT_TREE.with_name("ClassTable.csv"))
+        self.assertEqual(m.DEFAULT_CSV.parent, Path(__file__).resolve().parents[1] / "ClassesTree" / "data")
+        self.assertTrue(m.DEFAULT_TREE.is_file())
         self.assertEqual(m.load_class_table(), ClassTable)
         self.assertEqual(Path.cwd(), cwd)
 
