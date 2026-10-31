@@ -16,6 +16,7 @@ from BertScript.class_table_metadata import (
     DEFAULT_CSV,
     MetadataError,
     load_class_table,
+    topic_nodes,
 )
 
 NOTE_KINDS = ("AI新增", "AI補充")
@@ -93,6 +94,36 @@ def audit_proposals(
     }
 
 
+def audit_proposed_graph_nodes(
+    additions: list[str],
+    *,
+    base_tree: str | Path,
+    proposed_edges: str | Path,
+) -> dict[str, object]:
+    """Match proposed new graph node identities to AI新增 labels only.
+
+    Graph relationship semantics, article evidence, cyclicity and actual
+    authorization are NOT checked here. This never reads/writes official
+    metadata output files; only the two supplied graph CSVs are read.
+    """
+    original = topic_nodes(base_tree)
+    added = topic_nodes(proposed_edges) - original
+    expected = set(additions)
+    missing_in_edges = sorted(expected - added)
+    missing_in_candidates = sorted(added - expected)
+    if missing_in_edges or missing_in_candidates:
+        raise MetadataError(
+            "AI additions / proposed edge-node mismatch: "
+            f"missing_in_edges={missing_in_edges}, "
+            f"missing_in_candidates={missing_in_candidates}"
+        )
+    return {
+        "GraphNodeAlignment": "matched",
+        "NewGraphNodes": sorted(added),
+        "GraphRelationshipsApproved": False,
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Read-only validation of AI ClassTable proposals (not approval)"
@@ -100,11 +131,19 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--base", type=Path, default=DEFAULT_CSV)
     parser.add_argument("--candidates", type=Path, required=True)
     parser.add_argument("--json", action="store_true")
+    parser.add_argument("--base-tree", type=Path)
+    parser.add_argument("--edges", type=Path)
     args = parser.parse_args(argv)
+    if (args.base_tree is None) != (args.edges is None):
+        parser.error("--base-tree and --edges must be provided together")
     try:
         report = audit_proposals(
             load_class_table(args.base), load_class_table(args.candidates)
         )
+        if args.base_tree is not None:
+            report.update(audit_proposed_graph_nodes(
+                report["AI新增"], base_tree=args.base_tree, proposed_edges=args.edges
+            ))
     except (MetadataError, OSError) as exc:
         parser.exit(2, f"ERROR: {exc}\n")
     if args.json:

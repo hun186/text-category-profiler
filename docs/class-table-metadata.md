@@ -86,3 +86,24 @@ validate proposed TopicTree edges, verify semantic correctness, or approve
 any changes. Those checks and a human review remain mandatory before
 any separate, explicitly authorized merge process. Passing preflight is
 never an Auto-Merge authorization for AI-generated taxonomy/data changes.
+
+
+### Optional TopicTree proposed-node alignment (read-only)
+
+For candidate graph expansions, pair an original TopicTree snapshot with a
+separate CSV of proposed graph edges:
+
+```bash
+python -m BertScript.class_table_ai_proposals --candidates ClassTable_候選.csv --base-tree ClassesTree/data/TopicTree.csv --edges TopicTree_新增邊.csv --json
+```
+
+Both `--base-tree` and `--edges` are required together. The set of
+parent/child endpoints newly introduced by proposed edges, relative to the
+original TopicTree, must be exactly the AI新增 candidate ClassLabels.
+Unmatched new nodes or candidates missing proposed edges are rejected.
+Existing graph nodes may serve as attachment points. Omit both options
+for metadata-only candidate checks that do not propose new graph nodes.
+
+Passing this **does not approve** edge direction, taxonomy meaning,
+duplicates, cycles, source claims or any change to official CSV data.
+The report explicitly retains `GraphRelationshipsApproved: false`.
