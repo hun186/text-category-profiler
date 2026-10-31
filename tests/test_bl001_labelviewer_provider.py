@@ -8,6 +8,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 VIEW = ROOT / "BertScript" / "pages" / "labelViewer" / "layout_interactivity.py"
 PROVIDER = ROOT / "BertScript" / "reusable_components.py"
+MAIN_STAGE4 = ROOT / "BertScript" / "Test_result_Vis.py"
 
 
 def module_ast(path):
@@ -31,6 +32,46 @@ class LabelViewerProviderTests(unittest.TestCase):
             and isinstance(node.value, ast.Name) and node.value.id == "rc"
         }
         self.assertEqual(used, {"Row", "CustomSlider"})
+
+    def test_main_stage4_uses_explicit_local_provider_with_existing_api(self):
+        # The Stage 4 script is also directly executable: importing the bare
+        # reusable_components name depends on sys.path and can select a
+        # different module from the intended BertScript provider.
+        tree = module_ast(MAIN_STAGE4)
+        qualified = [
+            node for node in tree.body
+            if isinstance(node, ast.ImportFrom)
+            and node.module == "BertScript"
+            and any(alias.name == "reusable_components" and alias.asname == "rc"
+                    for alias in node.names)
+        ]
+        self.assertEqual(len(qualified), 1)
+        self.assertFalse(any(
+            isinstance(node, ast.Import)
+            and any(alias.name == "reusable_components" for alias in node.names)
+            for node in ast.walk(tree)
+        ))
+        used = {
+            node.attr for node in ast.walk(tree)
+            if isinstance(node, ast.Attribute)
+            and isinstance(node.value, ast.Name) and node.value.id == "rc"
+        }
+        self.assertEqual(
+            used, {"Row", "Col", "Card", "CardContent", "CustomSlider",
+                   "CustomRangeSlider"},
+        )
+        provider = module_ast(PROVIDER)
+        functions = {
+            node.name for node in provider.body
+            if isinstance(node, ast.FunctionDef)
+        }
+        assigns = {
+            target.id for node in provider.body if isinstance(node, ast.Assign)
+            for target in node.targets if isinstance(target, ast.Name)
+        }
+        self.assertTrue(used <= functions | assigns)
+        # Check the real provider module identity without starting Dash.
+        self.assertEqual(qualified[0].module, "BertScript")
 
     def test_provider_api_remains_defined_without_importing_dash(self):
         tree = module_ast(PROVIDER)

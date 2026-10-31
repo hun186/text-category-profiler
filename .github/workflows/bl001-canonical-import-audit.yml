@@ -52,7 +52,7 @@ jobs:
       - name: Compile dependency-light audit
         run: python -m py_compile scripts/bl001_canonical_import_audit.py tests/test_bl001_canonical_import_audit.py
       - name: Test canonical import evidence and package boundaries
-        run: python -m unittest -v tests.test_bl001_canonical_import_audit tests.test_bl001_package_census tests.test_bl001_legacy_root_audit tests.test_package_layout tests.test_project_docs tests.test_repository_compile_gate
+        run: python -m unittest -v tests.test_bl001_canonical_import_audit tests.test_bl001_labelviewer_provider tests.test_bl001_package_census tests.test_bl001_legacy_root_audit tests.test_package_layout tests.test_project_docs tests.test_repository_compile_gate
       - name: Generate reviewable module-by-module evidence JSON
         run: python scripts/bl001_canonical_import_audit.py --output artifacts/bl001-canonical-import-evidence.json
       - uses: actions/upload-artifact@v4

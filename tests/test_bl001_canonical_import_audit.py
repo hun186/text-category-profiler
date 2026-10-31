@@ -161,11 +161,11 @@ class CanonicalImportEvidenceTests(unittest.TestCase):
     def test_bare_imports_reflect_real_provider_paths_without_claiming_resolution(self):
         data = audit(ROOT)
         candidates = data["unresolved_bare_import_candidates"]
-        self.assertEqual(len(candidates), 1)
+        self.assertEqual(len(candidates), 0)
         self.assertEqual(
             data["summary"]["bare_same_directory_provider"]
             + data["summary"]["bare_ancestor_directory_provider"]
-            + data["summary"]["bare_no_nearby_first_party_provider"], 1,
+            + data["summary"]["bare_no_nearby_first_party_provider"], 0,
         )
         self.assertEqual(data["summary"]["bare_no_nearby_first_party_provider"], 0)
         self.assertFalse(any(
