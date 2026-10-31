@@ -53,3 +53,36 @@ Tests:
     python -m unittest -v tests.test_class_table_metadata tests.test_class_table_csv_only
 
 Hosted workflow checks migration equivalence, metadata, compile, and regression tests, not full ML/GPU integration.
+
+## AI candidate provenance preflight (BL-002, read-only)
+
+A dataset-collection agent should write a separate **candidate-only** CSV with the
+same four columns, never update `ClassesTree/data/ClassTable.csv` directly. A
+candidate's Notes must use one of these exact prefixes:
+
+```text
+AI新增｜日期=2026-10-31｜來源=可追溯新聞來源或文件識別｜理由=現有分類範圍不足｜狀態=待人工審核
+AI補充｜日期=2026-10-31｜來源=可追溯新聞來源或文件識別｜理由=補強原有說明｜狀態=待人工審核
+```
+
+To validate candidate metadata **without writing anything**:
+
+```bash
+python -m BertScript.class_table_ai_proposals --candidates ClassTable_候選.csv --json
+python -m unittest -v tests.test_class_table_ai_proposals
+```
+
+The check verifies Notes field order and nonblank source/reason, canonical ISO
+date, pending-review status, and correct use of AI新增 (new ClassLabel) versus
+AI補充 (existing ClassLabel with unchanged human CT). A changed Explanation
+in an AI補充 candidate is **only a suggestion**: this tool does not merge or
+overwrite that content. A value like `狀態=已核准` is rejected because a
+candidate file cannot grant its own approval. Each candidate must have valid
+ClassTable CSV schema; duplicate labels are rejected by the existing loader.
+
+**Limits:** A nonblank source is not proof that the source is genuine or
+relevant. This stage does not fetch articles, de-duplicate documents,
+validate proposed TopicTree edges, verify semantic correctness, or approve
+any changes. Those checks and a human review remain mandatory before
+any separate, explicitly authorized merge process. Passing preflight is
+never an Auto-Merge authorization for AI-generated taxonomy/data changes.
