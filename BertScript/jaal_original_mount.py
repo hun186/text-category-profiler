@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from collections import OrderedDict, deque
 import hashlib
+from pathlib import Path
 from threading import RLock
 
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
@@ -21,6 +22,11 @@ ORDINARY_NODE_LIMIT = 250
 HEAVY_NODE_LIMIT = 3000
 HEAVY_EDGE_LIMIT = 5000
 MAX_LIVE_GRAPHS = 3
+
+# Bundled with Stage 4; the original Jaal stylesheet is CDN-hosted, which
+# cannot be the only styling source for an iframe in an offline deployment.
+STAGE4_ASSETS = Path(__file__).resolve().parent / "assets"
+LOCAL_BOOTSTRAP = "bootstrap@5.3.1/bootstrap.min.css"
 
 
 def subtree_stats(root):
@@ -41,6 +47,38 @@ def subtree_stats(root):
     return {"nodes": len(selected), "edges": edge_count, "root": root}
 
 
+def _normalize_original_jaal_logo(layout):
+    """Constrain Jaal's inline logo without replacing its layout/controls.
+
+    Upstream Jaal uses html.Img(width="80px"); the HTML width attribute
+    expects an integer and can be ignored, exposing the large source bitmap.
+    Scope this patch to that exact inline PNG logo in the embedded app.
+    """
+    from dash import html
+
+    pending = [layout]
+    while pending:
+        item = pending.pop()
+        if (isinstance(item, html.Img)
+                and isinstance(getattr(item, "src", None), str)
+                and item.src.startswith("data:image/png;base64,")
+                and getattr(item, "width", None) == "80px"):
+            item.width = 80
+            item.style = {
+                **(getattr(item, "style", None) or {}),
+                "width": "80px",
+                "height": "auto",
+                "maxWidth": "100%",
+            }
+            return True
+        children = getattr(item, "children", None)
+        if isinstance(children, (list, tuple)):
+            pending.extend(children)
+        elif children is not None and not isinstance(children, (str, int, float)):
+            pending.append(children)
+    return False
+
+
 def prefix_original_jaal(original_app, prefix):
     """Preserve Jaal's actual layout/callbacks in a correctly prefixed Dash.
 
@@ -54,12 +92,21 @@ def prefix_original_jaal(original_app, prefix):
 
     if not prefix.startswith("/") or not prefix.endswith("/"):
         raise ValueError("Jaal mount prefix must be an absolute slash path")
+    if not (STAGE4_ASSETS / LOCAL_BOOTSTRAP).is_file():
+        raise RuntimeError("Stage 4 bundled Bootstrap stylesheet is missing")
     child_app = Dash(
         __name__,
         requests_pathname_prefix=prefix,
         routes_pathname_prefix="/",
-        external_stylesheets=list(original_app.config.external_stylesheets),
+        assets_folder=str(STAGE4_ASSETS),
+        # Keep upstream styles, but serve the required Bootstrap grid from
+        # this same-origin submount. The original CDN can be unavailable.
+        external_stylesheets=[
+            prefix + "assets/" + LOCAL_BOOTSTRAP,
+            *list(original_app.config.external_stylesheets),
+        ],
     )
+    _normalize_original_jaal_logo(original_app.layout)
     child_app.layout = original_app.layout
     child_app.callback_map.update(original_app.callback_map)
     child_app._callback_list.extend(original_app._callback_list)

@@ -69,6 +69,23 @@ QueryRoot 的原版 Jaal 實例，避免無上限耗用記憶體；改變根類�
 這個 Jaal 區塊包含原本 UI 的篩選、顏色與大小設定，輕量區塊維持
 獨立，兩者不會互相覆蓋。
 
+### 原版 Jaal 嵌入版排版／Logo 修復
+
+原版 Jaal 的 `html.Img(width="80px")` 使用不合法的 HTML 圖片寬度字串，
+某些瀏覽器會忽略而顯示原圖尺寸；同時 Jaal 原本從外部 CDN 引入
+Bootstrap 版面樣式，一旦連線被擋，左側 Search／Filter／Color／Size
+與右側 visdcc graph 的 `dbc.Row`／`dbc.Col` 25%／75% 格線會失效。
+同 port 嵌入版現在只針對原版內嵌 Logo 正規化為數字 `width=80`
+及 80px CSS，並從現有 `BertScript/assets/bootstrap@5.3.1/bootstrap.min.css`
+提供同源樣式；不修改原版 Jaal 的獨立 8053 CLI、原先網路繪製選項、
+篩選 callback 或圖形資料。這也是為離線／封閉網路場景保留的本地資源。
+
+Hosted `Stage 4 Original Jaal Same-Port Compatibility` 檢查會實際 GET
+同源 Bootstrap CSS、驗證子路徑正確，並解析原版 Dash layout JSON
+檢查 Logo 寬度、視覺化 network 及各種 callback 是否保留。它不是
+Windows 真實瀏覽器的視覺截圖驗收；若更新後畫面仍被放大，請提供
+該 iframe 的 DevTools Network（CSS 200/404）與瀏覽器縮放比例以查明。
+
 真實 Windows 主頁／Jaal 全量互動仍需實機驗收（尤其版本相容性、
 跨欄顯示與瀏覽器效能）；CI 使用小型原版 Jaal app 驗證同 port
 資源及 callback 路徑，不等同 2,648 節點實際順暢繪圖。
