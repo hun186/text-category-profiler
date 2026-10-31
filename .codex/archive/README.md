@@ -6,7 +6,7 @@
 
 | 檔案 | 內容範圍 | 歸檔日期 | 來源 active 文件 | 讀取時機 |
 | --- | --- | --- | --- | --- |
-| 目前無歸檔 | — | — | — | — |
+| [`memory-focus-history-2026-10-31.md`](memory-focus-history-2026-10-31.md) | 2026-10-27～10-31 既有 Current Focus 33 筆歷史詳細記錄（部分 PR 原標 Pending，須以 GitHub 重查） | 2026-10-31 | `.codex/memory.md` | 追溯已取代的 PR 設計與交接細節，不作 current-state 證據 |
 
 ## 歸檔原則
 

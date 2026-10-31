@@ -42,6 +42,33 @@ class ProjectDocumentationTests(unittest.TestCase):
         self.assertIn("KI-007 Dash import/startup blocker is Resolved", memory)
         self.assertIn("KI-008", memory)
 
+    def test_current_focus_bounded_and_historical_handoffs_preserved(self):
+        memory = (ROOT / ".codex" / "memory.md").read_text(encoding="utf-8")
+        current = memory.split("## Current Focus", 1)[1].split(
+            "## Durable Outcomes", 1
+        )[0]
+        items = [line for line in current.splitlines() if line.startswith("- ")]
+        self.assertGreaterEqual(len(items), 1)
+        self.assertLessEqual(len(items), 10, "Current Focus is not a PR activity log")
+        self.assertLessEqual(len(memory.encode("utf-8")), 24 * 1024)
+        archive_path = (
+            ROOT / ".codex" / "archive"
+            / "memory-focus-history-2026-10-31.md"
+        )
+        archive = archive_path.read_text(encoding="utf-8")
+        index = (ROOT / ".codex" / "archive" / "README.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(archive_path.name, index)
+        self.assertIn("Historical Current Focus", archive)
+        self.assertIn("PR #165", archive)
+        self.assertIn("PR #162", archive)
+        self.assertIn("KI-003", memory)
+        self.assertIn("KI-008", memory)
+        self.assertIn("KI-006", memory)
+        self.assertIn("BL-001", memory)
+        self.assertIn("BL-002", memory)
+
     def test_known_issues_agrees_with_lightweight_smoke_command(self):
         known_issues = (ROOT / ".codex" / "known_issues.md").read_text(encoding="utf-8")
 
