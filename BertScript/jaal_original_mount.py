@@ -41,17 +41,39 @@ def subtree_stats(root):
     return {"nodes": len(selected), "edges": edge_count, "root": root}
 
 
+def prefix_original_jaal(original_app, prefix):
+    """Preserve Jaal's actual layout/callbacks in a correctly prefixed Dash.
+
+    Jaal.create() constructs Dash without a path argument; modern Dash marks
+    the prefix read-only. A new Dash instance supplies the path *at creation*,
+    then reuses Jaal's registered callback objects and complete UI unchanged.
+    This small adapter uses Dash callback registry internals, so the Hosted
+    real-Jaal WSGI smoke test guards future Dash library updates.
+    """
+    from dash import Dash
+
+    if not prefix.startswith("/") or not prefix.endswith("/"):
+        raise ValueError("Jaal mount prefix must be an absolute slash path")
+    child_app = Dash(
+        __name__,
+        requests_pathname_prefix=prefix,
+        routes_pathname_prefix="/",
+        external_stylesheets=list(original_app.config.external_stylesheets),
+    )
+    child_app.layout = original_app.layout
+    child_app.callback_map.update(original_app.callback_map)
+    child_app._callback_list.extend(original_app._callback_list)
+    if not child_app.callback_map or len(child_app.callback_map) != len(original_app.callback_map):
+        raise RuntimeError("Original Jaal callbacks could not be preserved")
+    return child_app
+
+
 def _make_original_jaal(root, prefix):
-    """Re-use the exact historic builder and Jaal layout/callbacks."""
+    """Re-use exact historic Jaal data pipeline, layout, and UI callbacks."""
     from ClassesTree.Visualization.jaal.jaalViewer import JaalViewMain
 
-    dash_app = JaalViewMain(QueryRoot=root, createMode=True)
-    # A WSGI sub-mount strips this prefix from PATH_INFO for the child Flask
-    # routes, but Jaal's Dash front-end must request resources with the prefix.
-    dash_app.config.requests_pathname_prefix = prefix
-    if dash_app.config.requests_pathname_prefix != prefix:
-        raise RuntimeError("Jaal Dash requests prefix was not configured")
-    return dash_app
+    original_app = JaalViewMain(QueryRoot=root, createMode=True)
+    return prefix_original_jaal(original_app, prefix)
 
 
 def _response(start_response, status, message):
