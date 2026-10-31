@@ -27,6 +27,7 @@ LIMITATIONS = [
     "Calls with computed import strings, non-Python launchers, source generated at runtime and outside-repository callers remain unverified.",
     "A nearby filename is evidence of a candidate provider, not Python import resolution or actual execution.",
     "A __main__ guard only proves CLI entrypoint syntax, not direct-run compatibility.",
+    "BertScript relative imports are syntax-only package references; no direct-script runtime resolution is implied.",
     "No model, GPU, SQL, Elasticsearch, WorkPool or UI acceptance performed.",
 ]
 
@@ -60,7 +61,11 @@ def resolve_from(path, node):
     """Return absolute import base for qualified/relative AST ImportFrom."""
     if node.level == 0:
         return node.module or ""
-    if not path.startswith("text_category_profiler/"):
+    # Both roots are tracked Python packages. BertScript's historical
+    # migration CLI legitimately uses "from .class_table_metadata ..." under
+    # its package execution branch. This resolves the *syntax* only, never
+    # asserts that a direct-script process has an active __package__.
+    if not path.startswith(("text_category_profiler/", "BertScript/")):
         return None
     parts = path[:-3].split("/")[:-1]  # package of current source
     if node.level > len(parts):
