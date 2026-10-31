@@ -72,11 +72,19 @@ class CSVOnlyClassTableTests(unittest.TestCase):
         for path in first_party_sources():
             with self.subTest(source=str(path.relative_to(ROOT))):
                 self.assertNotIn(old_path, path.read_text(encoding="utf-8-sig"))
+        # Current source and interface definitions must not use the retired
+        # pathname; a migration document may quote it as historical context.
         for name in (".github/workflows/class-table-metadata.yml",
-                     "docs/class-table-metadata.md",
                      ".codex/architecture.md", ".codex/contracts.md"):
             with self.subTest(source=name):
                 self.assertNotIn(old_path, (ROOT / name).read_text(encoding="utf-8"))
+        documentation = (ROOT / "docs/class-table-metadata.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(
+            "The authoritative metadata file is ClassesTree/data/ClassTable.csv",
+            documentation,
+        )
 
     def test_loader_retains_existing_dict_contract(self):
         table = load_class_table()
