@@ -98,7 +98,7 @@ class GraphUtilsCanonicalImportTests(unittest.TestCase):
             (ROOT / path).read_text(encoding="utf-8")
             for path in ["DatasetConverter/df_utils.py", "DatasetConverter/old_MP_utils.py"]
         ]
-        self.assertIn("from MP_utils import MPlogger", texts[0])
+        self.assertIn("from DatasetConverter.old_MP_utils import MPlogger, multicoreJob", texts[0])
         self.assertIn("from text_category_profiler.concurrency.MP_utils import timeNow", texts[1])
 
 

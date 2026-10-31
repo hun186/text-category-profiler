@@ -161,13 +161,13 @@ class CanonicalImportEvidenceTests(unittest.TestCase):
     def test_bare_imports_reflect_real_provider_paths_without_claiming_resolution(self):
         data = audit(ROOT)
         candidates = data["unresolved_bare_import_candidates"]
-        self.assertEqual(len(candidates), 13)
+        self.assertEqual(len(candidates), 9)
         self.assertEqual(
             data["summary"]["bare_same_directory_provider"]
             + data["summary"]["bare_ancestor_directory_provider"]
-            + data["summary"]["bare_no_nearby_first_party_provider"], 13,
+            + data["summary"]["bare_no_nearby_first_party_provider"], 9,
         )
-        self.assertEqual(data["summary"]["bare_no_nearby_first_party_provider"], 4)
+        self.assertEqual(data["summary"]["bare_no_nearby_first_party_provider"], 0)
         self.assertFalse(any(
             item["source"] == "DatasetConverter/old_MP_utils.py"
             and item["bare_name"] == "utilities"
@@ -188,11 +188,10 @@ class CanonicalImportEvidenceTests(unittest.TestCase):
             if c["source"] == "BertScript/pages/labelViewer/layout_interactivity.py"
         )
         self.assertIn("BertScript/reusable_components.py", ancestor["ancestor_directory_provider_paths"])
-        missing = next(
-            c for c in candidates
-            if c["source"] == "DatasetConverter/df_utils.py" and c["bare_name"] == "utilities"
-        )
-        self.assertEqual(missing["provider_filename_evidence"], "no_nearby_first_party_provider_filename")
+        self.assertFalse(any(
+            item["source"] in {"DatasetConverter/df_utils.py", "DatasetConverter/old_MP_utils.py"}
+            for item in candidates
+        ))
 
     def test_main_guard_detector_rejects_function_local_false_positive(self):
         from scripts.bl001_canonical_import_audit import has_top_level_main_guard

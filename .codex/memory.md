@@ -4,7 +4,7 @@
 
 ## Current Focus
 
-- BL-001 legacy `old_MP_utils` clock import follow-up（本次 PR，驗證／Review 待完成）：PR #155 已將 `Graph_utils` 的 catch-all fallback 移除、main `75326c64`。本批僅將 `DatasetConverter/old_MP_utils.py` 的無 nearby provider `from utilities import timeNow` 改成明確的 `text_category_profiler.concurrency.MP_utils.timeNow`，其實作與 `DatasetConverter/old_utilities.py.timeNow` 一致；以 stdlib AST/no-services tests 保護預設與自訂時間格式、legacy log 路徑及 import failure propagation，並更新 bare-import audit 基準。尚餘 `DatasetConverter/df_utils.py` 4 件 bare imports 未查證；完整 direct-run／外部動態 caller、模型／ES／GPU 仍未驗收，BL-001 保持 In Progress。
+- BL-001 `DatasetConverter/df_utils.py` legacy provider closure（本批 PR，CI／Review 待完成）：PR #156 已在 2026-10-31 合併到 main `a160636b7fb7411dfe7e9b8d926f298591f1ccbc`，21/21 Hosted checks PASS，正式 Codex Review completed、0 findings。本批把 legacy `df_utils` 四個 bare imports 指向現有 `DatasetConverter.old_MP_utils`（維持 static `MPlogger.logW` 與舊 `multicoreJob`）及 `DatasetConverter.old_utilities`（保留 `hash`、`ShowElapsedTime` 舊介面）；新增 stdlib/no-service AST tests，並校正 bare-import audit 13→9 件，無 nearby provider 4→0。這只代表 first-party scoped AST 候選已改善；舊版直接 CLI、外部／動態 caller 與 Stage 真實運行尚未驗證。BL-001 In Progress，不宣稱 final acceptance。
 
 
 - BL-001 bare-name provider follow-up（PR #154）：PR #153 在 201 個 first-party Python files 找到 44 個 canonical modules 的 468 個 qualified import syntax occurrences、7 個無命中模組、15 個 bare-import 候選。此批增加 runtime-free filename provenance：對 15 件逐筆回報同目錄、上層目錄或無鄰近第一方 provider，同時為 44 模組提供 top-level `__main__` guard 靜態證據，專門回報 7 件無命中中的 direct-script 入口候選。這**不是 import resolution**，沒有任何資料、CLI 或 module 刪除；後續仍需查 Python `sys.path` 與外部／動態 caller，BL-001 In Progress。
