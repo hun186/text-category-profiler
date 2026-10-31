@@ -10,10 +10,8 @@ import numpy as np
 #import pyodbc
 #import pymysql
 #import charts
-from MP_utils import MPlogger
-from MP_utils import multicoreJob
-from utilities import hash
-from utilities import ShowElapsedTime
+from DatasetConverter.old_MP_utils import MPlogger, multicoreJob
+from DatasetConverter.old_utilities import hash, ShowElapsedTime
 
 
 '''
