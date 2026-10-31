@@ -4,6 +4,8 @@
 
 ## Current Focus
 
+- Stage 4 Jaal Viewer 可見性修復（本批 PR，待 CI/Review）：PR #165 將原有明顯卡片換成預設收合 `html.Details`，使用者因此找不到入口；主頁恢復常駐顯示的「Classes Tree Jaal Viewer｜分類樹互動檢視器」卡片與操作控制，只折疊未載入的圖形和昂貴的全圖操作。新增缺少 `dash-cytoscape` 時的可見安裝提示與防退步測試；保留預設空畫布、不啟動 8053 與全圖明確同意。未驗證 Windows 實機瀏覽器。
+
 - Stage 4 內嵌分類樹（本批 PR，CI／Review 待驗證）：使用者要求不再以另一個 port 8053 顯示 Jaal iframe，主 Dash 應用改用 `dash-cytoscape` 畫布＋同站 callbacks；初始空 `elements=[]`，只有明確點子樹／點節點後人工展開／勾選全圖確認才讀取 authoritative TopicTree+AK4 與 ClassTable。預設 150 節點、深度 2、子樹最大 1,000；全圖超過 4,000 節點或 8,000 邊拒絕、採不帶 physics 的 grid。舊 Jaal CLI 獨立保留；無瀏覽器／GPU 實機驗證不得宣稱完成，詳見 `docs/embedded-class-tree.md`。
 
 - ClassTable taxonomy data relocation（本批 PR，CI／Review 待驗證）：應使用者要求，將原 `BertScript/ClassTable.csv` 原 Git blob 位元組不變搬至 `ClassesTree/data/ClassTable.csv`，與 `TopicTree.csv` 同目錄但語意分離。仍由 `BertScript.class_table_metadata.load_class_table()` 以 `__file__` 推導 repository-root-anchored CSV，不需改動 Dash／SMS／DataConverter 的 Python import。同步更新路徑測試、元資料 Hosted workflow、歷史 migration verify 指令與 current-state docs；外部直接讀取舊 CSV 路徑的 caller 需調整，真實模型/GPU/Windows Dash 未驗證。

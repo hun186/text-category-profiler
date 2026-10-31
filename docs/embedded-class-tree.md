@@ -8,7 +8,7 @@
 
 ## 使用方式
 
-1. 在 Stage 4 Dash 主頁展開「分類樹互動檢視器（內嵌於主站）」；初始只有空白畫布，
+1. 在 Stage 4 Dash 主頁找到**常駐顯示的「Classes Tree Jaal Viewer｜分類樹互動檢視器（內嵌版）」卡片**；初始只有空白畫布，
    \`elements=[]\`，不讀取 CSV、不計算全樹、不另開服務。
 2. 輸入確切的英文 ClassLabel，例如 \`TW Affairs\` 或
    \`Spacetime Singularity Of Tree\`，選擇深度（預設 2）與節點上限（預設 150），
@@ -19,7 +19,7 @@
    全圖不做物理力導向布局且隱藏大量文字標籤，減少瀏覽器壓力；
    超過 4,000 節點或 8,000 關係時直接拒絕全圖，改用子樹。
 5. 主頁不需其他網路設定，但 Python 環境必須安裝 \`dash-cytoscape\`
-   （已列在根目錄 \`requirements.txt\`）。更新部署版本時需同步安裝依賴。
+   （已列在根目錄 \`requirements.txt\`）。更新部署版本時需同步安裝依賴；若尚未安裝，卡片仍會顯示安裝提示，且不會讓整個主頁因缺套件而失效。
 
 後端讀取 \`ClassesTree/data/TopicTree.csv\`、\`TopicTree_AK4.csv\` 的有向邊，
 中文名稱讀取同目錄 \`ClassTable.csv\`。解析僅在點擊繪製／展開／已確認全圖後執行，
