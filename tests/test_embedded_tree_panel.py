@@ -28,16 +28,15 @@ class EmbeddedTreePanelTests(unittest.TestCase):
         def find(component, wanted):
             if getattr(component, "id", None) == wanted:
                 return component
-            for child in (getattr(component, "children", None) or []):
-                if isinstance(child, (list, tuple)):
-                    for part in child:
-                        result = find(part, wanted)
-                        if result is not None:
-                            return result
-                else:
-                    result = find(child, wanted)
-                    if result is not None:
-                        return result
+            children = getattr(component, "children", None)
+            if children is None or isinstance(children, (str, int, float)):
+                return None
+            if not isinstance(children, (list, tuple)):
+                children = [children]
+            for child in children:
+                result = find(child, wanted)
+                if result is not None:
+                    return result
             return None
 
         graph = find(app.layout, "JaalGraph")

@@ -140,7 +140,6 @@ from text_category_profiler.visualization.tulip_graph_builder import ClusterMeta
 from text_category_profiler.visualization.tulip_graph_builder import BuildGraph
 from text_category_profiler.text.TextProcessor_utils import textReader
 from text_category_profiler.core.conformer import freeGPUConformer
-from text_category_profiler.core.utilities import getIP
 
 from Test_result_Vis_utils import GetInfoScoreStastic
 from Test_result_Vis_utils import GetClassOfMostPieces
@@ -155,6 +154,7 @@ from Test_result_Vis_utils import BinMissionVerifier
 #from Test_result_Vis_utils import VisDfToRowTagsList
 #from Test_result_Vis_utils import BuildClassesPivotTable
 from BertScript.class_table_metadata import load_class_table
+from BertScript.embedded_tree_panel import build_tree_panel, register_tree_callbacks
 
 ClassTable = load_class_table()
 from VisParameters import SimilarPiecesExemptMethod
@@ -175,6 +175,7 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP],
                 meta_tags=[{'name': 'viewport', 'content': 'width=device-width, initial-scale=1'}])
 callback_manager_labelViewer.attach_to_app(app)
+register_tree_callbacks(app)
 
 #app = dash.Dash(__name__)
 #print("callback_manager_labelViewer att")
@@ -761,16 +762,6 @@ def Build_ColorTable(
 def Build_LabelSelector(app,Roots=[]):
     #return layout_interactivity.create_layout(app,df)
     return layout_interactivity.create_layout(app,Roots=Roots)
-
-def Build_JaalViewCard():
-    #JaalViewMain(createMode = True)
-    #JaalViewMain()
-    #jaalIP = "http://localhost:8053/"
-    jaalIP = f"http://{getIP()}:8053"
-    print("jaalIP",jaalIP)
-    #time.sleep(10)
-    return html.Iframe(src=jaalIP,
-                style={"height": "1067px", "width": "100%"})
 
 def ISMarksAnalysis(df):
     #SortedIS = list(df['InfoScoreSum'].sort_values().reset_index(drop=True))
@@ -2911,15 +2902,6 @@ def PickTopicInParentOrChildTopicBar(
 def updateLabelSelector(n_clicks,CurrentTopic):
     return Build_LabelSelector(app,Roots=[CurrentTopic])
 
-@app.callback(
-    Output("JaalViewerCard", "children"),
-    Output("JaalViewerCardDetails", "open"),
-    Input("btn_JaalViewer", "n_clicks"),
-    prevent_initial_call=True,
-)
-def buildJaalIframe(n_clicks):
-    return Build_JaalViewCard(),True
-
 #%%============================================================
 def serve_layout():
 #def serve_layout(datasetDir):
@@ -3157,52 +3139,7 @@ def serve_layout():
                 #style={"width": "35rem"},
             )
         ], open = True),
-        rc.Row([
-            rc.Col(
-                html.Details([
-                    html.Summary('Classes Tree Jaal Viewer'),
-                        dbc.Card(
-                            [
-                                dbc.CardHeader(html.H2("Classes Tree Jaal Viewer")),
-                                dbc.CardBody(
-                                    children = [
-                                        html.Div([
-                                            html.Button("繪製分類樹互動Jaal窗格,http@8053", id="btn_JaalViewer"),
-                                            ],className = 'col-6'),
-                                    ]
-                                    ),
-                            ],
-                            color="light",
-                            #style={"width": "35rem"},
-                        )
-                ], open = True),
-                width=9
-            ),
-        ]),
-        html.Details([
-            rc.Row([                
-                html.Div([
-                    dbc.Card(
-                        [
-                            dbc.CardHeader(html.H2("分類樹互動Jaal窗格")),
-                            dbc.CardBody(
-                                id="JaalViewerCard",
-                                ),
-                        ],
-                        #color="warning",
-                        ),
-                    rc.Row([
-                        html.H2('pandas Query語法：id.str.contains("TW Affairs")\n'),
-                        html.H2('ancestors.str.contains("#T#TW Affairs#T#")\n'),
-                        html.H2('Color Nodes by Positivity, Size Nodes by InfoScore_Level, Size Edges by endpoint_LGPdepth_weight\n'),
-                        html.H2('filter on nodes: LGPdepth>12&ancestors.str.contains("#T#CN")\n'),
-                        html.H2('filter on edges: endpoint_LGPdepth_weight<5\n'),
-                        
-                        ]),
-                    ],className = 'col-12'),
-            ]),
-        ],open = False,id='JaalViewerCardDetails'),
-        
+        build_tree_panel(),
         rc.Row([
             rc.Col(
                 dbc.Card(

@@ -36,6 +36,7 @@ comm>=0.2.3  # Dash import outside Jupyter requires a non-raising default Comm
 dash-bootstrap-components
 dash-pivottable
 dash-uploader
+dash-cytoscape  # On-demand same-port taxonomy graph; replaces remote Jaal iframe
 flask
 matplotlib
 networkx
