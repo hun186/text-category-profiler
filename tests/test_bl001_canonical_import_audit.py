@@ -55,6 +55,31 @@ class CanonicalImportEvidenceTests(unittest.TestCase):
         )
         self.assertTrue(all(x["area"] == "package_internal" for x in q))
 
+    def test_stage_package_relative_migration_import_is_not_falsely_unresolved(self):
+        # Syntax under if __package__ is valid for python -m execution;
+        # this does not certify the standalone CLI runtime path.
+        source = (
+            "if __package__:\\n"
+            "    from .class_table_metadata import load_class_table\\n"
+            "else:\\n"
+            "    from class_table_metadata import load_class_table\\n"
+        )
+        import ast
+        statement = ast.parse(source).body[0].body[0]
+        self.assertEqual(
+            resolve_from("BertScript/migrate_class_table.py", statement),
+            "BertScript.class_table_metadata",
+        )
+        self.assertIsNone(resolve_from("DatasetConverter/legacy.py", statement))
+        q, dynamic, bare, unresolved, error = scan_source(
+            "BertScript/migrate_class_table.py", source, canonical_modules(ROOT)
+        )
+        self.assertEqual((q, dynamic, bare, unresolved), ([], [], [], []))
+        self.assertIsNone(error)
+        real = audit(ROOT, ["BertScript/migrate_class_table.py"])
+        self.assertEqual(real["unresolved_relative_imports"], [])
+        self.assertFalse(real["runtime_verified"])
+
     def test_dynamic_and_bare_candidates_never_count_as_qualified_edges(self):
         src = (
             "import importlib\n"
