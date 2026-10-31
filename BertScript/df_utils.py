@@ -9,10 +9,8 @@ from collections import Counter
 #import pyodbc
 #import pymysql
 #import charts
-from MP_utils import MPlogger
-from MP_utils import multicoreJob
-from utilities import hash
-from utilities import ShowElapsedTime
+from BertScript.MP_utils import MPlogger, multicoreJob
+from BertScript.utilities import hash, ShowElapsedTime
 
 
 '''
