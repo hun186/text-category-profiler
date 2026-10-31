@@ -4,7 +4,7 @@
 
 ## Current Focus
 
-- BL-001 `DatasetConverter/df_utils.py` legacy provider closure（本批 PR，CI／Review 待完成）：PR #156 已在 2026-10-31 合併到 main `a160636b7fb7411dfe7e9b8d926f298591f1ccbc`，21/21 Hosted checks PASS，正式 Codex Review completed、0 findings。本批把 legacy `df_utils` 四個 bare imports 指向現有 `DatasetConverter.old_MP_utils`（維持 static `MPlogger.logW` 與舊 `multicoreJob`）及 `DatasetConverter.old_utilities`（保留 `hash`、`ShowElapsedTime` 舊介面）；新增 stdlib/no-service AST tests，並校正 bare-import audit 13→9 件，無 nearby provider 4→0。這只代表 first-party scoped AST 候選已改善；舊版直接 CLI、外部／動態 caller 與 Stage 真實運行尚未驗證。BL-001 In Progress，不宣稱 final acceptance。
+- BL-001 shared `core.utilities` MPlogger import fallback closure（本批 PR，CI／Review 待完成）：PR #156、#157 已合併到 main（#157 merge `f465cb7e6e0ceec3537dabf7e5118920651968a3`），各自 21/21 Hosted CI PASS、正式 Codex exact-head Review 無 Findings。先前已處理 `DatasetConverter` 的 5 個 no-nearby-provider bare imports；本批另外移除 `text_category_profiler/core/utilities.py` 中 catch-all `except: from .MP_utils import MPlogger`：正式優先來源是 `text_category_profiler.concurrency.MP_utils`，而現行 core package 不存在這個 sibling provider。新增 no-service AST regression，確認 canonical 匯入與真實錯誤傳播、保留新版 `MPlogger` instance API，不碰其他 core algorithms。這不是 direct-run、重型 import、模型／GPU／外部 caller acceptance；BL-001 仍 In Progress。
 
 
 - BL-001 bare-name provider follow-up（PR #154）：PR #153 在 201 個 first-party Python files 找到 44 個 canonical modules 的 468 個 qualified import syntax occurrences、7 個無命中模組、15 個 bare-import 候選。此批增加 runtime-free filename provenance：對 15 件逐筆回報同目錄、上層目錄或無鄰近第一方 provider，同時為 44 模組提供 top-level `__main__` guard 靜態證據，專門回報 7 件無命中中的 direct-script 入口候選。這**不是 import resolution**，沒有任何資料、CLI 或 module 刪除；後續仍需查 Python `sys.path` 與外部／動態 caller，BL-001 In Progress。
