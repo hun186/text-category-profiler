@@ -14,7 +14,9 @@ from text_category_profiler.data.df_utils import CSVtodf
 from text_category_profiler.core.utilities import getMFNFromFN
 from text_category_profiler.core.utilities import removeStrPrefix
 from text_category_profiler.core.utilities import ConvertTimeStrFMT
-from BertScript.ClassTable import ClassTable
+from BertScript.class_table_metadata import load_class_table
+
+ClassTable = load_class_table()
 
 CPBatFN = "CPAntCSV.bat"
 testResSQL = "test_results_verification.sql3"
