@@ -4,6 +4,11 @@
 
 ## Current Focus
 
+- **Hosted state checked 2026-10-31 22:32 Asia/Taipei:** original full Jaal same-port UI PR #167 is **MERGED** to main at `4933b78d843d380e63c4d5f7c5114d01307f06bb`; post-merge Jaal CI succeeded and latest-head Codex review summary for `357fbc164a35` completed with no unresolved findings. The older Jaal entries below describe work at their historical PR heads, not current open PRs. Windows browser/large-tree acceptance remains pending. The obsolete PR #53 was closed without merging on 2026-10-31 after verifying its 744-commit divergence and superseding DatasetConverter boundaries; any unique historical behavior requires a fresh, independently tested PR.
+
+- **Current development / BL-002 (this PR, Hosted CI and Codex Review pending):** added dependency-free `BertScript.class_table_ai_proposals` read-only candidate CSV gate, with AI新增/AI補充 Notes provenance/date/pending-review checks, unchanged existing CT, and an explicit non-approval JSON result. Dedicated unittest and ClassTable workflow added. No official CSV/TopicTree rewrite, no agent/article crawling, no source truth verification, no automatic approval. Future BL-002 phases require document evidence deduplication, edge validation and human review.
+
+
 - 恢復原版 Jaal 進階檢視器（本批 PR，CI／Review 待驗證）：使用者強調原版 Jaal 的 vis.js 外觀、完整 Search/Filter/Color/Size 特別調整過，不得以輕量 Dash Cytoscape 冒充。Stage 4 新增第二個可見區塊，以同 port WSGI 子路徑按鈕後按需掛載 `JaalViewMain(createMode=True)`，復用原版 Jaal 全部 layout/callbacks；修正 `Jaal.create()` 無 `host` 參數的舊錯。首次開啟主頁不生成 Jaal app；超過 250 節點需明確大型圖同意，超過 3,000 節點或 5,000 邊拒絕，最多 3 個 server-process 圖形實例。完整模型／Windows 瀏覽器效果未驗證。文件：`docs/embedded-class-tree.md`。
 
 - Stage 4 Jaal Viewer 可見性修復（本批 PR，待 CI/Review）：PR #165 將原有明顯卡片換成預設收合 `html.Details`，使用者因此找不到入口；主頁恢復常駐顯示的「Classes Tree Jaal Viewer｜分類樹互動檢視器」卡片與操作控制，只折疊未載入的圖形和昂貴的全圖操作。新增缺少 `dash-cytoscape` 時的可見安裝提示與防退步測試；保留預設空畫布、不啟動 8053 與全圖明確同意。未驗證 Windows 實機瀏覽器。

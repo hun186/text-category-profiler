@@ -15,7 +15,7 @@
 | `CONTRACT-FILE-004` | CSV / Python API | ClassTable display metadata | `ClassesTree/data/ClassTable.csv`, `BertScript/class_table_metadata.py` | Dash / SMS / DataConverter tools | `class_table_metadata.py` | CSV authoritative; compatibility dict retained |
 | `CONTRACT-FILE-003` | File input | Topic tree taxonomy CSV files | `ClassesTree/` / project data owner | `DatasetConverter/DataConverter.py`, tree viewers | `--TopicTreeDir`, `--TopicTreeFiles`, `ClassesTree/ClassesTree_utils.py` | Draft / currently used |
 | `CONTRACT-FILE-002` | File handoff | Prediction/result analysis artifacts | `BertScript/RunClassfier.py`, `CombineTestResult.py` | `Test_result_Vis.py`, work pool output | Stage scripts and backup filename patterns | Draft / currently used |
-| `CONTRACT-CLI-002` | CLI / external service | Elasticsearch text ingestion tool | `scripts/ES_ingest_txt_to_es.py` with legacy wrapper | Operators / data import jobs | argparse in script | Optional / unverified in root flow |
+| `CONTRACT-CLI-003` | Read-only CLI | AI ClassTable candidate provenance preflight | `BertScript/class_table_ai_proposals.py` | AI taxonomy proposal reviewers | `audit_proposals()`, `parse_provenance()`, CLI | Candidate-only; no approval/write |\n| `CONTRACT-CLI-002` | CLI / external service | Elasticsearch text ingestion tool | `scripts/ES_ingest_txt_to_es.py` with legacy wrapper | Operators / data import jobs | argparse in script | Optional / unverified in root flow |
 
 ## 通用相容性規則
 
@@ -122,3 +122,13 @@
 | 舊契約 | 替代契約 | 過渡方式 | 移除條件／日期 |
 | --- | --- | --- | --- |
 | 目前沒有已確認項目 | — | — | — |
+
+
+### `CONTRACT-CLI-003` AI ClassTable candidate provenance preflight
+
+- Invocation: `python -m BertScript.class_table_ai_proposals --candidates PATH [--base PATH] [--json]`; default base is `ClassesTree/data/ClassTable.csv`.
+- Both files must use the four-column `ClassLabel,CT,Explanation,Notes` schema; duplicate ClassLabels and blank CTs are rejected by the existing loader.
+- AI candidate Notes must be `AI新增｜日期=YYYY-MM-DD｜來源=...｜理由=...｜狀態=待人工審核` or `AI補充` with the same fields. Source and reason must be nonempty, but are **not verified** for truth by this parser.
+- AI新增 may only name ClassLabels absent from the base. AI補充 may only name existing ClassLabels and must keep the existing CT unchanged; its Explanation is a human-review suggestion only.
+- Successful JSON emits counts, label lists, explicit `Approved: false` and `AuthoritativeFilesModified: false`. Errors exit 2, no output files are ever written. Passing validation grants **no** authorization to merge a candidate CSV into official metadata or add graph edges.
+- Boundary not yet implemented in BL-002: source/article verification, deduplication, proposed TopicTree edge validation, revision history, and human acceptance tracking.
