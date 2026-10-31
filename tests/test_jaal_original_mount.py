@@ -1,4 +1,5 @@
 """Original Jaal preserved under same-port WSGI, with explicit lazy activation."""
+import json
 from pathlib import Path
 import unittest
 from unittest import mock
@@ -81,16 +82,67 @@ class OriginalJaalMountTests(unittest.TestCase):
         self.assertEqual(created[0], ("A", url))
         self.assertIn(url, response.get_data(as_text=True),
                       "Dash resource prefixes must remain same-origin and mounted")
+        # The iframe must not rely exclusively on a remotely hosted Bootstrap
+        # stylesheet. Without its 25/75% grid, Jaal's UI and graph spill out.
+        local_css = url + "assets/bootstrap@5.3.1/bootstrap.min.css"
+        self.assertIn(local_css, response.get_data(as_text=True))
+        css_response = client.get(local_css)
+        self.assertEqual(css_response.status_code, 200)
+        self.assertIn(b".row{", css_response.data)
+        self.assertIn(b".col-9{", css_response.data)
         layout = client.get(url + "_dash-layout")
         callbacks = client.get(url + "_dash-dependencies")
         self.assertEqual(layout.status_code, 200, layout.get_data(as_text=True)[:300])
         self.assertEqual(callbacks.status_code, 200, callbacks.get_data(as_text=True)[:300])
+        tree = json.loads(layout.get_data(as_text=True))
+        elements = []
+
+        def collect(item):
+            if isinstance(item, dict):
+                if "props" in item:
+                    elements.append(item)
+                for child in item.values():
+                    collect(child)
+            elif isinstance(item, list):
+                for child in item:
+                    collect(child)
+
+        collect(tree)
+        logo = [
+            item["props"] for item in elements
+            if item.get("type") == "Img"
+            and str(item["props"].get("src", "")).startswith("data:image/png;base64,")
+        ]
+        self.assertEqual(len(logo), 1)
+        self.assertEqual(logo[0]["width"], 80)
+        self.assertEqual(logo[0]["style"]["width"], "80px")
+        self.assertEqual(logo[0]["style"]["height"], "auto")
+        network = [
+            item["props"] for item in elements
+            if item["props"].get("id") == "graph"
+        ]
+        self.assertEqual(len(network), 1)
+        self.assertEqual(network[0]["options"]["height"], "600px")
         serialized = callbacks.get_data(as_text=True)
         for original_control in ("search_graph", "filter_nodes", "filter_edges",
                                  "color_nodes", "color_edges",
                                  "size_nodes", "size_edges"):
             self.assertIn(original_control, serialized)
         self.assertEqual(len(created), 1, "reuse one mounted app within same root")
+
+    def test_logo_normalization_does_not_rewrite_other_images(self):
+        from dash import html
+        from BertScript.jaal_original_mount import _normalize_original_jaal_logo
+        photo = html.Img(src="https://example.org/photo.png", width=800)
+        newer_logo = html.Img(src="data:image/png;base64,AAAA", width=80)
+        legacy_logo = html.Img(src="data:image/png;base64,BBBB", width="80px")
+        tree = html.Div([photo, html.Div([newer_logo, legacy_logo])])
+        self.assertTrue(_normalize_original_jaal_logo(tree))
+        self.assertEqual(legacy_logo.width, 80)
+        self.assertEqual(legacy_logo.style["width"], "80px")
+        self.assertEqual(photo.width, 800)
+        self.assertEqual(newer_logo.width, 80)
+        self.assertFalse(_normalize_original_jaal_logo(tree))
 
     def test_ordinary_large_and_absolute_resource_limits(self):
         from BertScript.jaal_original_mount import OriginalJaalRouter
