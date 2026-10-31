@@ -126,5 +126,94 @@ class CandidateGateTests(unittest.TestCase):
                 metadata.load_class_table(candidate)
 
 
+    @staticmethod
+    def write_edges(path, edges):
+        import csv
+        with path.open("w", encoding="utf-8-sig", newline="") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(["#母類別", "子類別", "日期", "關係", "備註"])
+            for parent, child in edges:
+                writer.writerow([parent, child, "20261031", "contains", ""])
+
+    def test_proposed_edges_match_exact_ai_addition_nodes(self):
+        with TemporaryDirectory() as directory:
+            base_tree = Path(directory) / "tree.csv"
+            proposed = Path(directory) / "new-edges.csv"
+            self.write_edges(base_tree, [("Root", "Existing")])
+            self.write_edges(proposed, [("Root", "New"), ("New", "Another")])
+            result = gate.audit_proposed_graph_nodes(
+                ["New", "Another"], base_tree=base_tree, proposed_edges=proposed
+            )
+            self.assertEqual(result["GraphNodeAlignment"], "matched")
+            self.assertEqual(result["NewGraphNodes"], ["Another", "New"])
+            self.assertFalse(result["GraphRelationshipsApproved"])
+
+    def test_proposed_edges_reject_unproposed_graph_nodes(self):
+        with TemporaryDirectory() as directory:
+            base_tree = Path(directory) / "tree.csv"
+            proposed = Path(directory) / "edges.csv"
+            self.write_edges(base_tree, [("Root", "Old")])
+            self.write_edges(proposed, [("Root", "New"), ("New", "Unexpected")])
+            with self.assertRaisesRegex(metadata.MetadataError,
+                                        "missing_in_candidates=.*Unexpected"):
+                gate.audit_proposed_graph_nodes(
+                    ["New"], base_tree=base_tree, proposed_edges=proposed
+                )
+
+    def test_proposed_edges_reject_unconnected_ai_additions(self):
+        with TemporaryDirectory() as directory:
+            base_tree = Path(directory) / "tree.csv"
+            proposed = Path(directory) / "edges.csv"
+            self.write_edges(base_tree, [("Root", "Old")])
+            self.write_edges(proposed, [("Root", "New")])
+            with self.assertRaisesRegex(metadata.MetadataError,
+                                        "missing_in_edges=.*Absent"):
+                gate.audit_proposed_graph_nodes(
+                    ["New", "Absent"], base_tree=base_tree,
+                    proposed_edges=proposed,
+                )
+
+    def test_graph_cli_requires_pair_of_graph_arguments(self):
+        with TemporaryDirectory() as directory:
+            for flag in ("--base-tree", "--edges"):
+                with self.subTest(flag=flag):
+                    with contextlib.redirect_stderr(io.StringIO()):
+                        with self.assertRaises(SystemExit) as raised:
+                            gate.main(["--candidates", str(Path(directory) / "not-read.csv"),
+                                       flag, "one.csv"])
+                    self.assertEqual(raised.exception.code, 2)
+
+    def test_graph_cli_reports_aligned_labels_without_file_writes(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            base = root / "base.csv"
+            candidate = root / "candidate.csv"
+            base_tree = root / "tree.csv"
+            edges = root / "edges.csv"
+            base.write_text(metadata.table_to_csv(self.base), encoding="utf-8")
+            candidate.write_text(metadata.table_to_csv({
+                "New": row("新增", notes=note())
+            }), encoding="utf-8")
+            self.write_edges(base_tree, [("Root", "Existing")])
+            self.write_edges(edges, [("Root", "New")])
+            paths = (base, candidate, base_tree, edges)
+            original = tuple(p.read_bytes() for p in paths)
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output):
+                result = gate.main([
+                    "--base", str(base), "--candidates", str(candidate),
+                    "--base-tree", str(base_tree), "--edges", str(edges),
+                    "--json",
+                ])
+            self.assertEqual(result, 0)
+            report = json.loads(output.getvalue())
+            self.assertEqual(report["GraphNodeAlignment"], "matched")
+            self.assertFalse(report["GraphRelationshipsApproved"])
+            self.assertFalse(report["Approved"])
+            self.assertEqual(tuple(p.read_bytes() for p in paths), original)
+            self.assertEqual(sorted(p.name for p in root.iterdir()),
+                             sorted(p.name for p in paths))
+
+
 if __name__ == "__main__":
     unittest.main()
