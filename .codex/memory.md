@@ -4,7 +4,9 @@
 
 ## Current Focus
 
-- ClassTable CSV-only retirement（本批 PR，CI／Review 待驗證）：使用者要求移除 `BertScript/ClassTable.py` 以免與權威 `ClassTable.csv` 混淆。使用 `BertScript.class_table_metadata.load_class_table()` 統一讀取原四欄 CSV 與 dict-of-dicts API，替換 Dash、SMSMerger、DataConverter 以及相依的測試、CI、文件；新增全第一方 Python import 防退步稽核。舊模組匯入不再相容，外部 caller 需修改；歷史 `ClassTable - 複製.py` 保留僅供研究。完整模型／GPU／Windows UI 未驗證；須 CI、正式 Codex Review、Merge Gate 才能標記已合併。
+- ClassTable taxonomy data relocation（本批 PR，CI／Review 待驗證）：應使用者要求，將原 `BertScript/ClassTable.csv` 原 Git blob 位元組不變搬至 `ClassesTree/data/ClassTable.csv`，與 `TopicTree.csv` 同目錄但語意分離。仍由 `BertScript.class_table_metadata.load_class_table()` 以 `__file__` 推導 repository-root-anchored CSV，不需改動 Dash／SMS／DataConverter 的 Python import。同步更新路徑測試、元資料 Hosted workflow、歷史 migration verify 指令與 current-state docs；外部直接讀取舊 CSV 路徑的 caller 需調整，真實模型/GPU/Windows Dash 未驗證。
+
+- ClassTable CSV-only retirement（PR #163 已合併，PR HEAD Hosted CI 23/23 PASS、正式 Codex Review 0 Findings；main merge `9ac6953397db`）：使用者要求移除 `BertScript/ClassTable.py` 以免與權威 `ClassTable.csv` 混淆。使用 `BertScript.class_table_metadata.load_class_table()` 統一讀取原四欄 CSV 與 dict-of-dicts API，替換 Dash、SMSMerger、DataConverter 以及相依的測試、CI、文件；新增全第一方 Python import 防退步稽核。舊模組匯入不再相容，外部 caller 需修改；歷史 `ClassTable - 複製.py` 保留僅供研究。完整模型／GPU／Windows UI 未驗證；須 CI、正式 Codex Review、Merge Gate 才能標記已合併。
 
 - ClassTable Notes schema + AI 提議標記（PR #159 已於 2026-10-31 合併，main `78e566fa1dae`，合併後 Hosted CI PASS）：使用者規劃未來在自動蒐文時改善 ClassTable，新增第四欄 `Notes`（備註），舊 1,994 筆原值不動、Notes 空白，ClassTable dict-of-dicts 保留 CT/Explanation 並保全 Notes；約定 `AI新增`/`AI補充`、日期、來源、理由、`待人工審核`，不可把備註當核准。候選 PR 人工審查後才進權威 CSV；更新 migration verify 比對舊 CT/Explanation 但不誤判新增 Notes，更新 CLI/test/docs。BL-001 尚未 Done；PR #156–#158 已於 main 合併，#158 merge `e9ddbebb9dcc019e551f78ed4bfcc0d1e650c40b`、PR-head 21/21 PASS、正式 Review 0 Findings，merge 後 main 21/21 PASS。
 

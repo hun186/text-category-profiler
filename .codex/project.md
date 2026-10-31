@@ -49,7 +49,7 @@
 | `TCF_Params/` | 預設參數、工作池根目錄、流程常數 | 修改 CLI 預設、任務模式、工作池／模型路徑 |
 | `DatasetConverter/` | 資料集轉換與樣本處理；內部依 `core/`、`sources/`、`adapters/` 分流 | 修改輸入資料轉 TSV／SQLite／分類資料集流程 |
 | `BertScript/` | BERT／XLM 分類、結果合併、視覺化 | 修改模型訓練／推論、分類結果合併或 Dash 視覺化 |
-| `ClassesTree/` | 類別樹與標籤工具 | 修改 taxonomy、label tree、圖形視覺化 |
+| `ClassesTree/` | 類別樹與標籤工具；`data/TopicTree.csv` 為類別關係、`data/ClassTable.csv` 為中文名稱／說明／備註的獨立權威檔 | 修改 taxonomy、label tree、顯示 metadata、圖形視覺化 |
 | `TextClassificationDatasetOptimization/` | AI 代理人提示模板、taxonomy 擴充、來源索引、訓練集 PoC 與正文抓取工具 | 盤點類別缺口、連結當前議題、建立／驗證訓練文本 |
 | `text_category_profiler/` | 依 `core`、`data`、`concurrency`、`pipeline`、`text`、`visualization`、`integrations` 分流的共用 utilities | 修改跨模組共用行為、檔案系統、SQLite、多程序或外部整合工具 |
 | `tests/` | 不依賴模型/資料的輕量功能測試 | 修改 console helper、README/requirements 契約或可無副作用測試的 utility |
