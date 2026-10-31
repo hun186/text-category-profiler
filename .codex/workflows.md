@@ -28,7 +28,7 @@
 | 單獨結果合併 | `python BertScript/CombineTestResult.py ...` | repository root | Verified as stage command assembled by `TCFMain.py`；未 smoke test |
 | 單獨視覺化分析 | `python BertScript/Test_result_Vis.py ...` | repository root | Verified as stage command assembled by `TCFMain.py`；未 smoke test |
 | ClassTable metadata validator | `python -m BertScript.class_table_metadata validate --json` | repository root | Hosted CI 在 PR #127 初版 HEAD 驗證通過；不一致的 graph sets 僅 warning，`--strict-tree` 才視為失敗 |
-| ClassTable dependency-light tests | `python -m unittest -v tests.test_class_table_metadata` | repository root | Hosted ClassTable workflow 有此測試；不等同完整 ML acceptance |
+| ClassTable Notes provenance / AI future proposal | `python -m unittest -v tests.test_class_table_metadata`；`python -m BertScript.class_table_metadata validate --json`；`python -m py_compile BertScript/class_table_metadata.py BertScript/migrate_class_table.py`；Hosted `ClassTable CSV Metadata Contract` workflow additionally verifies historical migration and 1,994-row output | `ClassLabel,CT,Explanation,Notes` 順序固定、空 Notes 與 AI 文字/引號/逗號/換行 round-trip 保全，舊 CT/Explanation strict migration replay；Notes 並非 AI 自動 merge 核准。 |\n| ClassTable dependency-light tests | `python -m unittest -v tests.test_class_table_metadata` | repository root | Hosted ClassTable workflow 有此測試；不等同完整 ML acceptance |
 | Format | 待確認，禁止執行 | repository root | Unverified |
 | Lint | 待確認，禁止執行 | repository root | Unverified |
 | Type check | 待確認，禁止執行 | repository root | Unverified |
