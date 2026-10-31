@@ -2,7 +2,7 @@ import os
 import multiprocessing as mp
 import numpy as np
 import pandas as pd
-from utilities import timeNow
+from BertScript.utilities import timeNow
 
 class MPlogger():
     def logW(MES=None, logFile="mp_processing_log.txt"):

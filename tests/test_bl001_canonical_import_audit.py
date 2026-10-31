@@ -161,11 +161,11 @@ class CanonicalImportEvidenceTests(unittest.TestCase):
     def test_bare_imports_reflect_real_provider_paths_without_claiming_resolution(self):
         data = audit(ROOT)
         candidates = data["unresolved_bare_import_candidates"]
-        self.assertEqual(len(candidates), 9)
+        self.assertEqual(len(candidates), 4)
         self.assertEqual(
             data["summary"]["bare_same_directory_provider"]
             + data["summary"]["bare_ancestor_directory_provider"]
-            + data["summary"]["bare_no_nearby_first_party_provider"], 9,
+            + data["summary"]["bare_no_nearby_first_party_provider"], 4,
         )
         self.assertEqual(data["summary"]["bare_no_nearby_first_party_provider"], 0)
         self.assertFalse(any(
@@ -178,11 +178,10 @@ class CanonicalImportEvidenceTests(unittest.TestCase):
             for item in candidates
         ))
         self.assertTrue(all(not c["runtime_provider_resolved"] for c in candidates))
-        stage_local = next(
-            c for c in candidates if c["source"] == "BertScript/df_utils.py"
-            and c["bare_name"] == "MP_utils"
-        )
-        self.assertEqual(stage_local["same_directory_provider_paths"], ["BertScript/MP_utils.py"])
+        self.assertFalse(any(
+            item["source"] in {"BertScript/df_utils.py", "BertScript/MP_utils.py"}
+            for item in candidates
+        ))
         ancestor = next(
             c for c in candidates
             if c["source"] == "BertScript/pages/labelViewer/layout_interactivity.py"
