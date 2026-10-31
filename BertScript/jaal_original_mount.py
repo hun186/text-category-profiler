@@ -11,7 +11,6 @@ import hashlib
 from threading import RLock
 
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
-from werkzeug.wsgi import pop_path_info
 
 from ClassesTree.Visualization.embedded_tree import load_graph
 
@@ -131,8 +130,15 @@ class OriginalJaalRouter:
                         + "。請檢查 Stage 4 終端機紀錄、jaal/visdcc 安裝和資料。"
                     )
             child_app = self._apps[key]
-        child_environ = environ.copy()
-        popped = pop_path_info(child_environ)
-        if popped != key:
+        # Werkzeug 3 no longer exports pop_path_info. Split exactly the
+        # registered hash segment; preserve SCRIPT_NAME for the sub-mounted
+        # Dash application without touching the parent WSGI environment.
+        prefix = "/" + key
+        if path != prefix and not path.startswith(prefix + "/"):
             return _response(start_response, "404 Not Found", "路徑無效。")
+        child_environ = environ.copy()
+        child_environ["SCRIPT_NAME"] = (
+            environ.get("SCRIPT_NAME", "") + prefix
+        )
+        child_environ["PATH_INFO"] = path[len(prefix):] or "/"
         return child_app.server.wsgi_app(child_environ, start_response)
