@@ -132,3 +132,11 @@
 - AI新增 may only name ClassLabels absent from the base. AI補充 may only name existing ClassLabels and must keep the existing CT unchanged; its Explanation is a human-review suggestion only.
 - Successful JSON emits counts, label lists, explicit `Approved: false` and `AuthoritativeFilesModified: false`. Errors exit 2, no output files are ever written. Passing validation grants **no** authorization to merge a candidate CSV into official metadata or add graph edges.
 - Boundary not yet implemented in BL-002: source/article verification, deduplication, proposed TopicTree edge validation, revision history, and human acceptance tracking.
+
+
+### CONTRACT-CLI-003 optional graph alignment extension
+
+- Optional paired flags: `--base-tree PATH --edges PATH`; one flag alone is a usage error (exit 2).
+- Added-edge parent+child endpoint set minus original-tree nodes must equal AI新增 candidate labels exactly. Existing anchor nodes are allowed.
+- On a match the JSON response includes `GraphNodeAlignment: matched`, sorted `NewGraphNodes`, and `GraphRelationshipsApproved: false`.
+- This is only identity-level graph consistency; no source checking, edge-semantic approval, duplicate-edge guard, or automatic edit/merge. The candidate-only CLI without graph arguments remains unchanged.
