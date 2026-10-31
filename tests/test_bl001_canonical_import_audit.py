@@ -59,10 +59,10 @@ class CanonicalImportEvidenceTests(unittest.TestCase):
         # Syntax under if __package__ is valid for python -m execution;
         # this does not certify the standalone CLI runtime path.
         source = (
-            "if __package__:\\n"
-            "    from .class_table_metadata import load_class_table\\n"
-            "else:\\n"
-            "    from class_table_metadata import load_class_table\\n"
+            "if __package__:\n"
+            "    from .class_table_metadata import load_class_table\n"
+            "else:\n"
+            "    from class_table_metadata import load_class_table\n"
         )
         import ast
         statement = ast.parse(source).body[0].body[0]
