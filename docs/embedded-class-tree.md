@@ -37,3 +37,38 @@ Hosted \`Stage 4 Embedded Lazy Taxonomy Graph\` 工作流程在 Python 3.11 安�
 這些測試**不會**啟動全圖或 Jaal server，也不代表實際 Windows/手機瀏覽器互動驗收。
 實機仍需驗證展開後空畫布、選根、點節點、展開、清空、未確認全圖拒絕、
 與明確確認全圖時的瀏覽器回應。
+
+
+## 原版 Jaal 進階區塊（保留完整視覺效果）
+
+此區塊與前述 Dash Cytoscape 輕量分類樹**同時存在**，保留原本使用
+`ClassesTree/Visualization/jaal/jaalViewer.py` + `Jaal.create()`
+產生的 Search、Filter（pandas query）、Color、Size、vis.js hover/physics/
+節點大小與邊權重等整套 UI；**不是**以 Cytoscape 重做 Jaal 功能。
+
+操作：展開 Stage 4 主頁（無須獨立開 8053），在下方常駐可見的
+「原版 Jaal 進階檢視器」輸入英文 `QueryRoot`，點「載入原版 Jaal」。
+預設 `TW Affairs`，目前完整子樹約 77 節點。若子樹超過 250 節點，
+先勾「大型子樹」確認後才能繪製。硬限制 3,000 節點或 5,000 邊，
+超過拒絕並請使用更小的根節點。
+
+**啟動行為**：主頁初始只顯示控制面板，沒有 iframe，沒有
+`Jaal.create()`、沒有載入 Jaal 的節點資料。使用者明確按下按鈕後
+才建立同源 iframe（路徑 `/jaal-original/<hash>/`），真正首個
+iframe HTTP 請求才建立與緩存原版 Jaal Dash app。底層透過
+Werkzeug DispatcherMiddleware 轉送到同一個 Flask/WSGI port，
+不啟動第二個服務。每個 Stage 4 worker 同時最多保留三個不同
+QueryRoot 的原版 Jaal 實例，避免無上限耗用記憶體；改變根類別重新
+載入，回呼與視覺設定會重設。單機多 worker 各自有實例與狀態；
+以主站 process-local 行為為準，不宣稱跨 worker session 同步。
+
+如尚未安裝，先於主站 Python 環境執行
+`python -m pip install jaal`，並確認相容的 `dash`、`visdcc`、
+`dash-bootstrap-components`；更新後重新啟動主站，必要時瀏覽器
+`Ctrl+F5`。直接開啟未由主頁啟用的子路徑會回傳 404。
+這個 Jaal 區塊包含原本 UI 的篩選、顏色與大小設定，輕量區塊維持
+獨立，兩者不會互相覆蓋。
+
+真實 Windows 主頁／Jaal 全量互動仍需實機驗收（尤其版本相容性、
+跨欄顯示與瀏覽器效能）；CI 使用小型原版 Jaal app 驗證同 port
+資源及 callback 路徑，不等同 2,648 節點實際順暢繪圖。

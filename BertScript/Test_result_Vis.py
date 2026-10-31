@@ -155,6 +155,7 @@ from Test_result_Vis_utils import BinMissionVerifier
 #from Test_result_Vis_utils import BuildClassesPivotTable
 from BertScript.class_table_metadata import load_class_table
 from BertScript.embedded_tree_panel import build_tree_panel, register_tree_callbacks
+from BertScript.jaal_original_panel import build_original_jaal_panel, register_original_jaal
 
 ClassTable = load_class_table()
 from VisParameters import SimilarPiecesExemptMethod
@@ -176,6 +177,7 @@ app = dash.Dash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP],
                 meta_tags=[{'name': 'viewport', 'content': 'width=device-width, initial-scale=1'}])
 callback_manager_labelViewer.attach_to_app(app)
 register_tree_callbacks(app)
+register_original_jaal(app)
 
 #app = dash.Dash(__name__)
 #print("callback_manager_labelViewer att")
@@ -3140,6 +3142,7 @@ def serve_layout():
             )
         ], open = True),
         build_tree_panel(),
+        build_original_jaal_panel(),
         rc.Row([
             rc.Col(
                 dbc.Card(

@@ -4,6 +4,8 @@
 
 ## Current Focus
 
+- 恢復原版 Jaal 進階檢視器（本批 PR，CI／Review 待驗證）：使用者強調原版 Jaal 的 vis.js 外觀、完整 Search/Filter/Color/Size 特別調整過，不得以輕量 Dash Cytoscape 冒充。Stage 4 新增第二個可見區塊，以同 port WSGI 子路徑按鈕後按需掛載 `JaalViewMain(createMode=True)`，復用原版 Jaal 全部 layout/callbacks；修正 `Jaal.create()` 無 `host` 參數的舊錯。首次開啟主頁不生成 Jaal app；超過 250 節點需明確大型圖同意，超過 3,000 節點或 5,000 邊拒絕，最多 3 個 server-process 圖形實例。完整模型／Windows 瀏覽器效果未驗證。文件：`docs/embedded-class-tree.md`。
+
 - Stage 4 Jaal Viewer 可見性修復（本批 PR，待 CI/Review）：PR #165 將原有明顯卡片換成預設收合 `html.Details`，使用者因此找不到入口；主頁恢復常駐顯示的「Classes Tree Jaal Viewer｜分類樹互動檢視器」卡片與操作控制，只折疊未載入的圖形和昂貴的全圖操作。新增缺少 `dash-cytoscape` 時的可見安裝提示與防退步測試；保留預設空畫布、不啟動 8053 與全圖明確同意。未驗證 Windows 實機瀏覽器。
 
 - Stage 4 內嵌分類樹（本批 PR，CI／Review 待驗證）：使用者要求不再以另一個 port 8053 顯示 Jaal iframe，主 Dash 應用改用 `dash-cytoscape` 畫布＋同站 callbacks；初始空 `elements=[]`，只有明確點子樹／點節點後人工展開／勾選全圖確認才讀取 authoritative TopicTree+AK4 與 ClassTable。預設 150 節點、深度 2、子樹最大 1,000；全圖超過 4,000 節點或 8,000 邊拒絕、採不帶 physics 的 grid。舊 Jaal CLI 獨立保留；無瀏覽器／GPU 實機驗證不得宣稱完成，詳見 `docs/embedded-class-tree.md`。

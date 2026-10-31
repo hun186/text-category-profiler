@@ -174,7 +174,11 @@ def JaalViewMain(
     
     #QueryRoot = "CN Affairs"
     #QueryRoot = args.QueryRoot
-    node_df = node_df.query(f'ancestors.str.contains("#T#{QueryRoot}#T#")')
+    # Literal membership avoids regex metacharacters and pandas query
+    # interpolation when the main page lets users choose a QueryRoot.
+    node_df = node_df.loc[
+        node_df["ancestors"].str.contains(f"#T#{QueryRoot}#T#", regex=False, na=False)
+    ]
     edge_df = edge_df.loc[edge_df["from"].isin(node_df["id"]) & edge_df["to"].isin(node_df["id"])]
     #print("edge_df",edge_df)
     #print("-"*50)
@@ -218,9 +222,9 @@ def JaalViewMain(
                   }
               }
     if createMode == True:
+        # Jaal.create() creates the original Dash UI and callbacks, but
+        # unlike .plot(), does not accept a host or port parameter.
         return Jaal(edge_df, node_df).create(
-            #host = '0.0.0.0',
-            host = hostIP,
             directed=directed,
             vis_opts=vis_opts,
             )
