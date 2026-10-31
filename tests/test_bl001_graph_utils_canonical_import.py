@@ -99,7 +99,7 @@ class GraphUtilsCanonicalImportTests(unittest.TestCase):
             for path in ["DatasetConverter/df_utils.py", "DatasetConverter/old_MP_utils.py"]
         ]
         self.assertIn("from MP_utils import MPlogger", texts[0])
-        self.assertIn("from utilities import timeNow", texts[1])
+        self.assertIn("from text_category_profiler.concurrency.MP_utils import timeNow", texts[1])
 
 
 if __name__ == "__main__":
