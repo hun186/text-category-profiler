@@ -26,7 +26,9 @@ from text_category_profiler.data.df_utils import dfListToXLS
 from text_category_profiler.pipeline.TCF_utils import datasetDirOutputDirPickers
 
 from DatasetConverter.EXTConverter.ExtractionRule import ExtractionRuleDict
-from BertScript.ClassTable import ClassTable
+from BertScript.class_table_metadata import load_class_table
+
+ClassTable = load_class_table()
 
 from ClassesTree.ClassesTree_utils import GetSubNodes
 from ClassesTree.ClassesTree_utils import LoadTree

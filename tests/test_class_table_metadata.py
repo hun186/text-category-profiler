@@ -6,7 +6,7 @@ import unittest
 
 from BertScript import class_table_metadata as m
 from BertScript import migrate_class_table as legacy
-from BertScript.ClassTable import ClassTable
+ClassTable = m.load_class_table()
 
 
 class ClassTableTests(unittest.TestCase):

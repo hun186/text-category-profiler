@@ -154,7 +154,9 @@ from VisParameters import BinMissionDict
 from Test_result_Vis_utils import BinMissionVerifier
 #from Test_result_Vis_utils import VisDfToRowTagsList
 #from Test_result_Vis_utils import BuildClassesPivotTable
-from ClassTable import ClassTable
+from BertScript.class_table_metadata import load_class_table
+
+ClassTable = load_class_table()
 from VisParameters import SimilarPiecesExemptMethod
 from VisParameters_Format import MT_style_cell,MT_style_cell_conditional
 from VisParameters_Format import Colortable_style_cell,Colortable_style_cell_conditional,Colortable_style_header

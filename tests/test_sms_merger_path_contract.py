@@ -34,8 +34,8 @@ def _stub_modules(*, calls=None, class_table=None):
     for name in ("getMFNFromFN", "removeStrPrefix", "ConvertTimeStrFMT"):
         setattr(utilities, name, calls.get(name, _unexpected(name)))
 
-    provider = types.ModuleType("BertScript.ClassTable")
-    provider.ClassTable = class_table if class_table is not None else {}
+    provider = types.ModuleType("BertScript.class_table_metadata")
+    provider.load_class_table = lambda: class_table if class_table is not None else {}
     return {
         df_utils.__name__: df_utils,
         utilities.__name__: utilities,
@@ -73,10 +73,10 @@ class SMSMergerPathContractTests(unittest.TestCase):
         self.assertIn("Path(__file__).resolve().parents[2]", source)
         first_local_import = min(
             source.index("from text_category_profiler"),
-            source.index("from BertScript.ClassTable import ClassTable"),
+            source.index("from BertScript.class_table_metadata import load_class_table"),
         )
         self.assertLess(source.index("sys.path.insert"), first_local_import)
-        self.assertIn("BertScript.ClassTable", imported)
+        self.assertIn("BertScript.class_table_metadata", imported)
         self.assertNotIn("ClassTable", imported)
 
         main_guards = [
@@ -130,7 +130,7 @@ class SMSMergerPathContractTests(unittest.TestCase):
             def checked_import(name, *args, **kwargs):
                 if name in (
                     "text_category_profiler.data.df_utils",
-                    "BertScript.ClassTable",
+                    "BertScript.class_table_metadata",
                 ):
                     assert repository_root in sys.path, sys.path
                     assert os.getcwd() == expected_cwd, os.getcwd()
@@ -161,8 +161,9 @@ class SMSMergerPathContractTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 23, result.stderr)
 
     def test_repository_class_table_is_the_explicit_provider(self):
-        from BertScript.ClassTable import ClassTable
+        from BertScript.class_table_metadata import load_class_table
 
+        ClassTable = load_class_table()
         self.assertIsInstance(ClassTable, dict)
         for key in ("Commerce", "Academic Research"):
             self.assertIn(key, ClassTable)
