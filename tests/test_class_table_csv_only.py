@@ -61,7 +61,22 @@ class CSVOnlyClassTableTests(unittest.TestCase):
     def test_no_active_python_class_table_file(self):
         self.assertFalse((ROOT / "BertScript" / "ClassTable.py").exists())
         self.assertTrue(DEFAULT_CSV.is_file())
-        self.assertEqual(DEFAULT_CSV, ROOT / "BertScript" / "ClassTable.csv")
+        self.assertEqual(DEFAULT_CSV, ROOT / "ClassesTree" / "data" / "ClassTable.csv")
+        self.assertFalse((ROOT / "BertScript" / "ClassTable.csv").exists())
+        self.assertEqual(DEFAULT_CSV.parent,
+                         ROOT / "ClassesTree" / "data")
+        self.assertTrue((DEFAULT_CSV.parent / "TopicTree.csv").is_file())
+
+    def test_no_stale_csv_path_in_maintained_consumers_or_contracts(self):
+        old_path = "BertScript/" + "ClassTable.csv"
+        for path in first_party_sources():
+            with self.subTest(source=str(path.relative_to(ROOT))):
+                self.assertNotIn(old_path, path.read_text(encoding="utf-8-sig"))
+        for name in (".github/workflows/class-table-metadata.yml",
+                     "docs/class-table-metadata.md",
+                     ".codex/architecture.md", ".codex/contracts.md"):
+            with self.subTest(source=name):
+                self.assertNotIn(old_path, (ROOT / name).read_text(encoding="utf-8"))
 
     def test_loader_retains_existing_dict_contract(self):
         table = load_class_table()

@@ -14,8 +14,9 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 HEADERS = ("ClassLabel", "CT", "Explanation", "Notes")
-DEFAULT_CSV = Path(__file__).with_name("ClassTable.csv")
-DEFAULT_TREE = Path(__file__).resolve().parents[1] / "ClassesTree" / "data" / "TopicTree.csv"
+TAXONOMY_DATA_DIR = Path(__file__).resolve().parents[1] / "ClassesTree" / "data"
+DEFAULT_CSV = TAXONOMY_DATA_DIR / "ClassTable.csv"
+DEFAULT_TREE = TAXONOMY_DATA_DIR / "TopicTree.csv"
 
 
 class MetadataError(ValueError):
