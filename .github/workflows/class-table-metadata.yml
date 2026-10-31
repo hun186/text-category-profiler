@@ -3,9 +3,12 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - "BertScript/ClassTable.py"
       - "BertScript/ClassTable.csv"
       - "BertScript/class_table_metadata.py"
+      - "DatasetConverter/SMS/SMSMerger.py"
+      - "text_category_profiler/pipeline/DataConverter_utils.py"
+      - "tests/test_sms_merger_path_contract.py"
+      - "tests/test_class_table_csv_only.py"
       - "BertScript/migrate_class_table.py"
       - "BertScript/Test_result_Vis.py"
       - "BertScript/Test_result_Vis_layout.py"
@@ -17,9 +20,12 @@ on:
   push:
     branches: [main]
     paths:
-      - "BertScript/ClassTable.py"
       - "BertScript/ClassTable.csv"
       - "BertScript/class_table_metadata.py"
+      - "DatasetConverter/SMS/SMSMerger.py"
+      - "text_category_profiler/pipeline/DataConverter_utils.py"
+      - "tests/test_sms_merger_path_contract.py"
+      - "tests/test_class_table_csv_only.py"
       - "BertScript/migrate_class_table.py"
       - "BertScript/Test_result_Vis.py"
       - "ClassesTree/data/TopicTree.csv"
@@ -40,9 +46,9 @@ jobs:
         with:
           python-version: "3.11"
       - name: Compile active metadata and visualization
-        run: python -m py_compile BertScript/ClassTable.py BertScript/class_table_metadata.py BertScript/migrate_class_table.py BertScript/Test_result_Vis.py tests/test_class_table_metadata.py
+        run: python -m py_compile BertScript/class_table_metadata.py BertScript/migrate_class_table.py BertScript/Test_result_Vis.py DatasetConverter/SMS/SMSMerger.py text_category_profiler/pipeline/DataConverter_utils.py tests/test_class_table_metadata.py tests/test_class_table_csv_only.py tests/test_sms_merger_path_contract.py
       - name: Run dependency-light metadata tests
-        run: python -m unittest -v tests.test_class_table_metadata
+        run: python -m unittest -v tests.test_class_table_metadata tests.test_class_table_csv_only
       - name: Validate ClassTable against TopicTree (warn-only graph differences)
         run: python -m BertScript.class_table_metadata validate
       - name: Verify full historical migration
