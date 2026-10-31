@@ -32,7 +32,8 @@ class OriginalJaalMountTests(unittest.TestCase):
         self.assertIn("JaalOriginalLargeConsent", rendered)
         self.assertIn("JaalOriginalFrame", rendered)
         self.assertNotIn("Iframe(", rendered)
-        self.assertNotIn("8053", rendered)
+        self.assertNotIn("src='http://", rendered)
+        self.assertNotIn("src=\"http://", rendered)
 
     def test_lazy_same_port_wsgimount_with_dynamic_callback_paths(self):
         from flask import Flask
@@ -56,10 +57,10 @@ class OriginalJaalMountTests(unittest.TestCase):
                                  columns=["from", "to"])
             nodes = pd.DataFrame([("A", 1), ("B", 2), ("C", 3)],
                                  columns=["id", "depth"])
+            from BertScript.jaal_original_mount import prefix_original_jaal
             app = Jaal(edges, nodes).create(directed=True,
                                             vis_opts={"height": "600px"})
-            app.config.requests_pathname_prefix = prefix
-            return app
+            return prefix_original_jaal(app, prefix)
 
         router = OriginalJaalRouter(build_app=make_small_original_app)
         router.mount(server)
