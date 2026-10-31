@@ -4,10 +4,12 @@
 
 ## Current Focus
 
+- ClassTable CSV-only retirement（本批 PR，CI／Review 待驗證）：使用者要求移除 `BertScript/ClassTable.py` 以免與權威 `ClassTable.csv` 混淆。使用 `BertScript.class_table_metadata.load_class_table()` 統一讀取原四欄 CSV 與 dict-of-dicts API，替換 Dash、SMSMerger、DataConverter 以及相依的測試、CI、文件；新增全第一方 Python import 防退步稽核。舊模組匯入不再相容，外部 caller 需修改；歷史 `ClassTable - 複製.py` 保留僅供研究。完整模型／GPU／Windows UI 未驗證；須 CI、正式 Codex Review、Merge Gate 才能標記已合併。
+
 - ClassTable Notes schema + AI 提議標記（PR #159 已於 2026-10-31 合併，main `78e566fa1dae`，合併後 Hosted CI PASS）：使用者規劃未來在自動蒐文時改善 ClassTable，新增第四欄 `Notes`（備註），舊 1,994 筆原值不動、Notes 空白，ClassTable dict-of-dicts 保留 CT/Explanation 並保全 Notes；約定 `AI新增`/`AI補充`、日期、來源、理由、`待人工審核`，不可把備註當核准。候選 PR 人工審查後才進權威 CSV；更新 migration verify 比對舊 CT/Explanation 但不誤判新增 Notes，更新 CLI/test/docs。BL-001 尚未 Done；PR #156–#158 已於 main 合併，#158 merge `e9ddbebb9dcc019e551f78ed4bfcc0d1e650c40b`、PR-head 21/21 PASS、正式 Review 0 Findings，merge 後 main 21/21 PASS。
 
 
-- BL-001 multiprocessing istarmap provider follow-up（本批 PR，CI／Review 待驗證）：`text_category_profiler/concurrency/MP_utils.py` 依 Python 3.8 分支明確載入 `concurrency.istarmap2` 或 `concurrency.istarmap`，移除 bare import 與廣泛例外捕捉，保留既有 patch side effect；新增 stdlib AST 與 isolated fake-Pool characterization。尚有 BertScript Stage 4 bare `reusable_components` 一筆，真實大型多程序與外部 caller 未驗證，BL-001 In Progress。
+- BL-001 multiprocessing istarmap provider follow-up（PR #162 已合併，PR HEAD Hosted CI 21/21 PASS，正式 Codex Review 0 Findings，main merge `4249595ebbf4`）：`text_category_profiler/concurrency/MP_utils.py` 依 Python 3.8 分支明確載入 `concurrency.istarmap2` 或 `concurrency.istarmap`，移除 bare import 與廣泛例外捕捉，保留既有 patch side effect；新增 stdlib AST 與 isolated fake-Pool characterization。尚有 BertScript Stage 4 bare `reusable_components` 一筆，真實大型多程序與外部 caller 未驗證，BL-001 In Progress。
 
 - BL-001 labelViewer provider follow-up（PR #161 已合併，exact-head CI 21/21 PASS、正式 Codex Review 0 Findings，main merge `4086ed8424d3`）：將 `BertScript/pages/labelViewer/layout_interactivity.py` 的 bare `reusable_components` import 指向既有 `BertScript.reusable_components`，保留 `rc.Row`／`rc.CustomSlider` API 與元件輸出，新增無 Dash/server 的 AST 與 stub characterization。這不是完整 Dash UI 操作驗收，也不證明其他 bare imports 或外部 caller 已解析，BL-001 In Progress。
 
