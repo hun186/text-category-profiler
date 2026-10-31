@@ -1,0 +1,49 @@
+name: Stage 4 Original Jaal Same-Port Compatibility
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "BertScript/jaal_original_mount.py"
+      - "BertScript/jaal_original_panel.py"
+      - "BertScript/Test_result_Vis.py"
+      - "ClassesTree/Visualization/jaal/jaalViewer.py"
+      - "tests/test_jaal_original_mount.py"
+      - "requirements.txt"
+      - ".github/workflows/stage4-original-jaal.yml"
+  push:
+    branches: [main]
+    paths:
+      - "BertScript/jaal_original_mount.py"
+      - "BertScript/jaal_original_panel.py"
+      - "BertScript/Test_result_Vis.py"
+      - "ClassesTree/Visualization/jaal/jaalViewer.py"
+      - "tests/test_jaal_original_mount.py"
+      - "requirements.txt"
+      - ".github/workflows/stage4-original-jaal.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  original-jaal-wsgi:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install real Jaal + Dash for WSGI compatibility check
+        run: python -m pip install dash dash-bootstrap-components dash-cytoscape jaal pandas
+      - name: Compile changed modules
+        run: python -m py_compile BertScript/jaal_original_mount.py BertScript/jaal_original_panel.py BertScript/Test_result_Vis.py ClassesTree/Visualization/jaal/jaalViewer.py tests/test_jaal_original_mount.py
+      - name: Check original Jaal UI, lazy mount, callback and same-port assets
+        run: python -m unittest -v tests.test_jaal_original_mount
+      - name: Check Jaal direct-script path compatibility
+        run: python -m unittest -v tests.test_jaal_viewer_path_contract
+      - name: Check whitespace
+        run: git diff --check HEAD^ HEAD
