@@ -65,7 +65,7 @@ class ClassTableTests(unittest.TestCase):
 
     def test_ai_notes_roundtrip_and_preserve_original_explanation(self):
         note = ('AI新增｜日期=2026-10-31｜來源=https://example.org/doc?a=1,b=2'
-                '｜理由=從新聞抽取的「測試, 新類別」\\n仍待核對'
+                '｜理由=從新聞抽取的「測試, 新類別」\n仍待核對'
                 '｜狀態=待人工審核')
         p = self.csv_file("annotated.csv", [
             ["AI Label", "測試標籤", "既有說明", note],
@@ -84,13 +84,13 @@ class ClassTableTests(unittest.TestCase):
 
     def test_notes_are_optional_but_schema_is_required(self):
         result = {"One": {"CT": "一", "Explanation": "說明"}}
-        self.assertIn("One,一,說明,\\n", m.table_to_csv(result))
+        self.assertIn("One,一,說明,\n", m.table_to_csv(result))
         self.assertEqual(
             m.rows_to_table(list(csv.DictReader(m.table_to_csv(result).splitlines(keepends=True))))["One"]["Notes"],
             "",
         )
         p = self.root / "old.csv"
-        p.write_text("ClassLabel,CT,Explanation\\nOne,一,說明\\n", encoding="utf-8")
+        p.write_text("ClassLabel,CT,Explanation\nOne,一,說明\n", encoding="utf-8")
         with self.assertRaisesRegex(m.MetadataError, "expected CSV columns"):
             m.load_class_table(p)
 
