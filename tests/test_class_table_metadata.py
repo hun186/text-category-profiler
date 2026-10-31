@@ -20,7 +20,8 @@ class ClassTableTests(unittest.TestCase):
         with p.open("w", encoding="utf-8-sig", newline="") as f:
             w = csv.writer(f)
             w.writerow(m.HEADERS)
-            w.writerows(values)
+            w.writerows([list(row) + ([""] if len(row) == 3 else [])
+                         for row in values])
         return p
 
     def graph(self, name, edges):
@@ -36,13 +37,14 @@ class ClassTableTests(unittest.TestCase):
         actual = m.load_class_table()
         self.assertEqual(actual, ClassTable)
         self.assertEqual(len(actual), 1994)
-        self.assertEqual(actual["Academia"], {"CT": "學術", "Explanation": "學術界、學術研究"})
+        self.assertEqual(actual["Academia"], {"CT": "學術", "Explanation": "學術界、學術研究", "Notes": ""})
         self.assertNotIn("Explaination", actual["Academia"])
         self.assertEqual(actual["CN Government Real Estate Policy"],
-                         {"CT": "中國政府房地產政策", "Explanation": ""})
+                         {"CT": "中國政府房地產政策", "Explanation": "", "Notes": ""})
         self.assertEqual(actual["CN Real Estate Industry"],
                          {"CT": "中國房地產業", "Explanation":
-                          "中國房地產、房價、建築業，產業資訊；另房地產物件資訊屬Real Estate Object。"})
+                          "中國房地產、房價、建築業，產業資訊；另房地產物件資訊屬Real Estate Object。",
+                          "Notes": ""})
         self.assertNotIn("Government Real Estate Policy", actual)
         self.assertNotIn("Real Estate Industry", actual)
         m.check_round_trip(actual)
@@ -58,7 +60,39 @@ class ClassTableTests(unittest.TestCase):
         table = m.load_class_table(p)
         self.assertEqual(table["Test"]["Explanation"], '逗號,引號"和\n換行')
         self.assertEqual(table["NoExplain"]["Explanation"], "")
+        self.assertEqual(table["NoExplain"]["Notes"], "")
         m.check_round_trip(table)
+
+    def test_ai_notes_roundtrip_and_preserve_original_explanation(self):
+        note = ('AI新增｜日期=2026-10-31｜來源=https://example.org/doc?a=1,b=2'
+                '｜理由=從新聞抽取的「測試, 新類別」\\n仍待核對'
+                '｜狀態=待人工審核')
+        p = self.csv_file("annotated.csv", [
+            ["AI Label", "測試標籤", "既有說明", note],
+            ["Existing", "現有類別", "保留原本資料", "人工備註：原有類別"],
+        ])
+        table = m.load_class_table(p)
+        self.assertEqual(table["AI Label"]["Notes"], note)
+        self.assertEqual(table["AI Label"]["Explanation"], "既有說明")
+        self.assertEqual(table["Existing"]["Notes"], "人工備註：原有類別")
+        m.check_round_trip(table)
+        self.assertEqual(m.rows_to_table(m.read_rows(p)), table)
+        self.assertEqual(
+            m.rows_to_table(list(csv.DictReader(m.table_to_csv(table).splitlines(keepends=True)))),
+            table,
+        )
+
+    def test_notes_are_optional_but_schema_is_required(self):
+        result = {"One": {"CT": "一", "Explanation": "說明"}}
+        self.assertIn("One,一,說明,\\n", m.table_to_csv(result))
+        self.assertEqual(
+            m.rows_to_table(list(csv.DictReader(m.table_to_csv(result).splitlines(keepends=True))))["One"]["Notes"],
+            "",
+        )
+        p = self.root / "old.csv"
+        p.write_text("ClassLabel,CT,Explanation\\nOne,一,說明\\n", encoding="utf-8")
+        with self.assertRaisesRegex(m.MetadataError, "expected CSV columns"):
+            m.load_class_table(p)
 
     def test_duplicate_label_rejected(self):
         p = self.csv_file("dup.csv", [["A", "甲", ""], ["A", "乙", ""]])
@@ -77,13 +111,13 @@ class ClassTableTests(unittest.TestCase):
         p.write_text("ClassLabel,CT,Explaination\nA,中,\n", encoding="utf-8")
         with self.assertRaises(m.MetadataError):
             m.load_class_table(p)
-        p.write_text('ClassLabel,CT,Explanation\n"oops,中,\n', encoding="utf-8")
+        p.write_text('ClassLabel,CT,Explanation,Notes\n"oops,中,,\n', encoding="utf-8")
         with self.assertRaises(m.MetadataError):
             m.load_class_table(p)
 
     def test_sorted_csv(self):
         data = {"Z": {"CT": "末"}, "A": {"CT": "首"}}
-        self.assertEqual(m.table_to_csv(data).splitlines()[1:], ["A,首,", "Z,末,"])
+        self.assertEqual(m.table_to_csv(data).splitlines()[1:], ["A,首,,", "Z,末,,"])
         m.check_round_trip(data)
 
     def test_graph_endpoint_union_and_duplicate_ct_warning(self):
@@ -122,7 +156,7 @@ class ClassTableTests(unittest.TestCase):
         self.assertEqual(Path.cwd(), cwd)
 
     def test_known_four_corrections(self):
-        self.assertEqual(ClassTable["Commerce"], {"CT": "商務", "Explanation": ""})
+        self.assertEqual(ClassTable["Commerce"], {"CT": "商務", "Explanation": "", "Notes": ""})
         self.assertEqual(ClassTable["2016 Nice Truck Attack"]["CT"], "2016尼斯卡車襲擊事件")
         self.assertIn("尼斯襲擊", ClassTable["2016 Nice Truck Attack"]["Explanation"])
         self.assertEqual(ClassTable["3C Product News-Asus Product News"]["CT"], "ASUS產品新聞")
@@ -148,6 +182,12 @@ class ClassTableTests(unittest.TestCase):
         legacy.verify(data, transformed)
         self.assertNotIn("Government Real Estate Policy", transformed)
         self.assertNotIn("Real Estate Industry", transformed)
+        # Notes is not part of the historic source contract; annotations are
+        # retained and do not fail the CT/Explanation migration comparison.
+        transformed["CN Government Real Estate Policy"]["Notes"] = (
+            "AI補充｜日期=2026-10-31｜來源=文字樣本｜理由=補齊描述｜狀態=待人工審核"
+        )
+        legacy.verify(data, transformed)
         self.assertEqual(transformed["CN Government Real Estate Policy"]["CT"],
                          "中國政府房地產政策")
         self.assertEqual(transformed["CN Real Estate Industry"]["Explanation"],
