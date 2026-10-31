@@ -1,8 +1,18 @@
 # ClassTable metadata: CSV-first contract
 
-The authoritative metadata file is BertScript/ClassTable.csv (UTF-8 with BOM). Its fixed schema is ClassLabel,CT,Explanation. Rows are sorted deterministically by exact English ClassLabel, with required unique ClassLabel and nonempty CT; Explanation may be empty. Duplicate CT values are warnings rather than errors.
+The authoritative metadata file is BertScript/ClassTable.csv (UTF-8 with BOM). Its fixed schema is ClassLabel,CT,Explanation,Notes. Rows are sorted deterministically by exact English ClassLabel, with required unique ClassLabel and nonempty CT; Explanation and Notes may be empty. Existing 1,994 entries have blank Notes after the additive schema migration; their ClassLabel, CT, and Explanation are unchanged. Duplicate CT values are warnings rather than errors.
 
 BertScript/ClassTable.py retains the public ClassTable dict-of-dicts Python API. Direct BertScript entrypoints and package imports remain supported, with no machine-specific paths or cwd mutation. New active consumers use Explanation only. The historical misspelling Explaination is permitted only inside the one-time migration reader, not in active ClassTable data or Dash UI.
+
+Notes（備註）可記錄類別來源、修訂理由及 AI 提議，與表示類別定義的 Explanation 分開，不應用 Notes 覆寫分類說明。建議 AI 自動生成紀錄格式：
+
+    AI新增｜日期=2026-10-31｜來源=https://example.org/article｜理由=經多篇文本識別為現有類別缺口｜狀態=待人工審核
+    AI補充｜日期=2026-10-31｜來源=https://example.org/article｜理由=補強現有類別的辨別條件｜狀態=待人工審核
+
+- `AI新增` 指 AI **提議**新增類別，`AI補充` 指 AI **提議**補強既有欄位；只表示來源，不等於品質合格或已獲批准。人工可在 Notes 自由編寫備註。
+- AI 應保留來源 URL/來源識別、日期、理由與 `待人工審核` 狀態；若無可靠證據不可杜撰來源。多次修訂請保留原紀錄或於 PR 留下變更歷程，不得直接覆寫人工作出的說明。
+- 未來自動蒐集文本代理人應先產生 **候選 CSV 與 PR/diff**，確認類別去重、TopicTree 節點關係及人工審核後，才合併到正式 ClassTable；**Notes 文字不具備授權或自動核准功能**。避免尚未審核的類別直接進入分類資料集與視覺化。
+- `BertScript.ClassTable.ClassTable` 的 dict-of-dicts 保留 `CT`、`Explanation` 鍵並新增 `Notes` 鍵；CSV 讀寫、候選合併與 Unicode/逗號/換行必須保全備註內容。舊版三欄輸入須先轉成四欄再交給正式 validator。
 
 Graph authority remains ClassesTree/data/TopicTree.csv. The historical prompt file TextClassificationDatasetOptimization/ChatGPT提問模板/2-1.TopicTree_old.csv is not the active graph authority and may differ from current TopicTree. TopicTree edges remain separate from metadata and both parent AND child endpoints form the node set, including non-hierarchical relations.
 

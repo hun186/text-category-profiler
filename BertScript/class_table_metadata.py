@@ -13,7 +13,7 @@ from collections import defaultdict
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-HEADERS = ("ClassLabel", "CT", "Explanation")
+HEADERS = ("ClassLabel", "CT", "Explanation", "Notes")
 DEFAULT_CSV = Path(__file__).with_name("ClassTable.csv")
 DEFAULT_TREE = Path(__file__).resolve().parents[1] / "ClassesTree" / "data" / "TopicTree.csv"
 
@@ -51,12 +51,13 @@ def rows_to_table(rows: list[dict[str, str]]) -> dict[str, dict[str, str]]:
         label = row["ClassLabel"]
         if label in table:
             raise MetadataError(f"duplicate ClassLabel: {label!r}")
-        table[label] = {"CT": row["CT"], "Explanation": row["Explanation"]}
+        table[label] = {"CT": row["CT"], "Explanation": row["Explanation"],
+                        "Notes": row["Notes"]}
     return table
 
 
 def load_class_table(path: str | Path = DEFAULT_CSV) -> dict[str, dict[str, str]]:
-    """Return existing dict-of-dicts API without changing cwd or machine paths."""
+    """Return the dict-of-dicts API including optional Notes for provenance."""
     return rows_to_table(read_rows(path))
 
 
@@ -66,7 +67,8 @@ def table_to_csv(table: dict[str, dict[str, str]]) -> str:
     writer.writerow(HEADERS)
     for label in sorted(table):
         record = table[label]
-        writer.writerow((label, record["CT"], record.get("Explanation", "")))
+        writer.writerow((label, record["CT"], record.get("Explanation", ""),
+                         record.get("Notes", "")))
     return stream.getvalue()
 
 
@@ -78,7 +80,8 @@ def check_round_trip(table: dict[str, dict[str, str]]) -> None:
         raise MetadataError("CSV serialization lost its column schema")
     recovered = rows_to_table(list(reader))
     normalized = {
-        key: {"CT": value["CT"], "Explanation": value.get("Explanation", "")}
+        key: {"CT": value["CT"], "Explanation": value.get("Explanation", ""),
+              "Notes": value.get("Notes", "")}
         for key, value in table.items()
     }
     if recovered != normalized:

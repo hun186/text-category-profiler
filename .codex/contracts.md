@@ -108,12 +108,12 @@
 
 ### CONTRACT-FILE-004 ClassTable metadata CSV / Python API
 
-- 權威資料：BertScript/ClassTable.csv，UTF-8 BOM，固定欄位順序 ClassLabel,CT,Explanation，依英文 ClassLabel deterministic sorting。ClassLabel 不可空白／重複，CT 不可空白，Explanation 可空；重複 CT 只提示 warning。
-- 相容層：BertScript/ClassTable.py 繼續 export ClassTable dict-of-dicts。以 __file__ 定位同目錄 CSV；import 不改 cwd，亦不依賴機器特定路徑。
+- 權威資料：BertScript/ClassTable.csv，UTF-8 BOM，固定欄位順序 ClassLabel,CT,Explanation,Notes，依英文 ClassLabel deterministic sorting。ClassLabel 不可空白／重複，CT 不可空白，Explanation、Notes 可空；重複 CT 只提示 warning。現有 1,994 筆 Notes 初始全為空白，既有 CT／Explanation 不更動。
+- 相容層：BertScript/ClassTable.py 繼續 export ClassTable dict-of-dicts；保留 CT、Explanation 並新增 Notes 文字鍵。以 __file__ 定位同目錄 CSV；import 不改 cwd，亦不依賴機器特定路徑。
 - Consumer：BertScript/Test_result_Vis.py 及其 VisParameters_Format.py、Test_result_Vis_layout.py，DatasetConverter/SMS/SMSMerger.py，text_category_profiler/pipeline/DataConverter_utils.py，ClassesTree/Label_utils.py 的 CT helper。所有 active consumer 僅使用 Explanation；遷移輔助程式才接受舊拼字。
 - Graph authority：ClassesTree/data/TopicTree.csv；ClassTable 僅存 metadata，不存 graph。比較 node 集合需取母類別與子類別 union。原資料不一致僅產生 missing/orphan warning，不推斷／覆寫中文翻譯。
 - 已確認的中國房地產兩筆 ClassLabel 應採 TopicTree 既有 `CN Government Real Estate Policy`、`CN Real Estate Industry`，不保留原 generic keys 為別名；舊資料到現行 CSV 的 migration replay 需明確檢查這兩筆 rename 及其 CT／Explanation，其他內容保持等值。
-- Candidate merge：新增邊.csv 的全端點集合減原 TopicTree 節點，須恰與候選 metadata ClassLabel 集合相同；衝突、缺漏或多餘項均拒絕。指令與 migration replay 見 docs/class-table-metadata.md。
+- AI 備註來源約定：Notes 可用 `AI新增｜日期=...｜來源=...｜理由=...｜狀態=待人工審核` 或 `AI補充`；只標示產生者與證據、不是批准紀錄。AI 蒐文、提議修改應先送候選 CSV/PR 經 review，再套用正式 metadata；不因此自動改動 TopicTree 或接受新增標籤。歷史 source migration 仍只對 CT／Explanation 做嚴格等值比對，Notes 內容保全。\n- Candidate merge：新增邊.csv 的全端點集合減原 TopicTree 節點，須恰與候選 metadata ClassLabel 集合相同；衝突、缺漏或多餘項均拒絕。指令與 migration replay 見 docs/class-table-metadata.md。
 - 驗證：python -m unittest -v tests.test_class_table_metadata；python -m BertScript.class_table_metadata validate。Hosted workflow 另驗證最初 Python dict 對現有 CSV 的 row count、CT、Explanation、Unicode 等值。
 
 ## Deprecated／Migration

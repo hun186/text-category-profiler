@@ -77,8 +77,15 @@ def verify(original, actual):
     correct_known(expected)
     if len(expected) != len(actual) or set(expected) != set(actual):
         raise MetadataError("row count or ClassLabel set differs")
-    if expected != actual:
-        diff = [k for k in expected if expected[k] != actual[k]]
+    # Historical migration verifies the authoritative legacy fields only.
+    # Notes is a later-added provenance field; its content must round-trip
+    # but must not make a correct legacy migration appear to have changed.
+    legacy_fields = {
+        label: {"CT": item["CT"], "Explanation": item["Explanation"]}
+        for label, item in actual.items()
+    }
+    if expected != legacy_fields:
+        diff = [k for k in expected if expected[k] != legacy_fields[k]]
         raise MetadataError(f"CT/Explanation mismatch: {diff[:20]}")
     check_round_trip(actual)
 

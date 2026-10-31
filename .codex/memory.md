@@ -4,7 +4,7 @@
 
 ## Current Focus
 
-- BL-001 shared `core.utilities` MPlogger import fallback closure（本批 PR，CI／Review 待完成）：PR #156、#157 已合併到 main（#157 merge `f465cb7e6e0ceec3537dabf7e5118920651968a3`），各自 21/21 Hosted CI PASS、正式 Codex exact-head Review 無 Findings。先前已處理 `DatasetConverter` 的 5 個 no-nearby-provider bare imports；本批另外移除 `text_category_profiler/core/utilities.py` 中 catch-all `except: from .MP_utils import MPlogger`：正式優先來源是 `text_category_profiler.concurrency.MP_utils`，而現行 core package 不存在這個 sibling provider。新增 no-service AST regression，確認 canonical 匯入與真實錯誤傳播、保留新版 `MPlogger` instance API，不碰其他 core algorithms。這不是 direct-run、重型 import、模型／GPU／外部 caller acceptance；BL-001 仍 In Progress。
+- ClassTable Notes schema + AI 提議標記（本批 PR，CI／Review 待完成）：使用者規劃未來在自動蒐文時改善 ClassTable，新增第四欄 `Notes`（備註），舊 1,994 筆原值不動、Notes 空白，ClassTable dict-of-dicts 保留 CT/Explanation 並保全 Notes；約定 `AI新增`/`AI補充`、日期、來源、理由、`待人工審核`，不可把備註當核准。候選 PR 人工審查後才進權威 CSV；更新 migration verify 比對舊 CT/Explanation 但不誤判新增 Notes，更新 CLI/test/docs。BL-001 尚未 Done；PR #156–#158 已於 main 合併，#158 merge `e9ddbebb9dcc019e551f78ed4bfcc0d1e650c40b`、PR-head 21/21 PASS、正式 Review 0 Findings，merge 後 main 21/21 PASS。
 
 
 - BL-001 bare-name provider follow-up（PR #154）：PR #153 在 201 個 first-party Python files 找到 44 個 canonical modules 的 468 個 qualified import syntax occurrences、7 個無命中模組、15 個 bare-import 候選。此批增加 runtime-free filename provenance：對 15 件逐筆回報同目錄、上層目錄或無鄰近第一方 provider，同時為 44 模組提供 top-level `__main__` guard 靜態證據，專門回報 7 件無命中中的 direct-script 入口候選。這**不是 import resolution**，沒有任何資料、CLI 或 module 刪除；後續仍需查 Python `sys.path` 與外部／動態 caller，BL-001 In Progress。
