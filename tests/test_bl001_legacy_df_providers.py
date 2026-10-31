@@ -79,7 +79,7 @@ class LegacyDataFrameProvidersTests(unittest.TestCase):
             and node.func.value.id == "MPlogger"
             and node.func.attr == "logW"
         ]
-        self.assertEqual(len(calls), 6)
+        self.assertEqual(len(calls), 7)
 
     def test_legacy_hash_accepts_text_and_bytes_and_legacy_none(self):
         fn = definition(UTILITY, ast.FunctionDef, "hash")
