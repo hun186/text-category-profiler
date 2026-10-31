@@ -2,10 +2,10 @@
 import collections
 import random
 
-try:
-    from text_category_profiler.core.utilities import flattenList
-except:
-    from utilities import flattenList
+# Use the repository-owned implementation. The previous catch-all fallback
+# silently hid initialization failures and could load an unrelated bare
+# "utilities" module from the caller's search path.
+from text_category_profiler.core.utilities import flattenList
 def ComputeComponent(edges):
     #nodes = [edge[0],edge[1] for edge in edges]
     nodes = set(flattenList(edges))

@@ -161,12 +161,17 @@ class CanonicalImportEvidenceTests(unittest.TestCase):
     def test_bare_imports_reflect_real_provider_paths_without_claiming_resolution(self):
         data = audit(ROOT)
         candidates = data["unresolved_bare_import_candidates"]
-        self.assertEqual(len(candidates), 15)
+        self.assertEqual(len(candidates), 14)
         self.assertEqual(
             data["summary"]["bare_same_directory_provider"]
             + data["summary"]["bare_ancestor_directory_provider"]
-            + data["summary"]["bare_no_nearby_first_party_provider"], 15,
+            + data["summary"]["bare_no_nearby_first_party_provider"], 14,
         )
+        self.assertEqual(data["summary"]["bare_no_nearby_first_party_provider"], 5)
+        self.assertFalse(any(
+            item["source"] == "text_category_profiler/visualization/Graph_utils.py"
+            for item in candidates
+        ))
         self.assertTrue(all(not c["runtime_provider_resolved"] for c in candidates))
         stage_local = next(
             c for c in candidates if c["source"] == "BertScript/df_utils.py"

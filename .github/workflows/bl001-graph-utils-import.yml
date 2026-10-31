@@ -1,0 +1,39 @@
+name: BL-001 Graph Utils Canonical Import
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "text_category_profiler/visualization/Graph_utils.py"
+      - "tests/test_bl001_graph_utils_canonical_import.py"
+      - ".github/workflows/bl001-graph-utils-import.yml"
+      - ".codex/**"
+  push:
+    branches: [main]
+    paths:
+      - "text_category_profiler/visualization/Graph_utils.py"
+      - "tests/test_bl001_graph_utils_canonical_import.py"
+      - ".github/workflows/bl001-graph-utils-import.yml"
+      - ".codex/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  graph-utils-import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile changed Python files
+        run: python -m py_compile text_category_profiler/visualization/Graph_utils.py tests/test_bl001_graph_utils_canonical_import.py
+      - name: Run no-service graph import and layout tests
+        run: python -m unittest -v tests.test_bl001_graph_utils_canonical_import tests.test_package_layout tests.test_project_docs tests.test_repository_compile_gate
+      - name: Verify patch whitespace
+        run: git diff --check HEAD^ HEAD
