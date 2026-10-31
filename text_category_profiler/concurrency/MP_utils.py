@@ -64,16 +64,10 @@ def IsVersionValid(
 
 if IsVersionValid(LBD="3.8.0"):
     print_once("🐍 python version >= 3.8, using istarmap2.py in MP_utils.py")
-    try:
-        import istarmap2 as istarmap # import to apply patch
-    except:
-        import text_category_profiler.concurrency.istarmap2 as istarmap # import to apply patch
+    import text_category_profiler.concurrency.istarmap2 as istarmap  # patch Pool.istarmap
 else:
     print_once("🐍 python version < 3.8, using istarmap.py in MP_utils.py")
-    try:
-        import istarmap # import to apply patch
-    except:
-        import text_category_profiler.concurrency.istarmap # import to apply patch
+    import text_category_profiler.concurrency.istarmap as istarmap  # patch Pool.istarmap
 '''
 pyver = float('.'.join(python_version().split(".")[:2]))
 
