@@ -10,7 +10,7 @@ from dash import html
 
 import dash_cytoscape as cyto
 from pages.labelViewer.demos import dash_reusable_components as drc
-import reusable_components as rc  # see reusable_components.py
+import BertScript.reusable_components as rc  # explicit stage-local module
 
 #from text_category_profiler.pipeline.TCF_utils import GetTreeFilePath
 
