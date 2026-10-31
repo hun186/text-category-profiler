@@ -4,6 +4,9 @@
 
 ## Current Focus
 
+- BL-001 `Graph_utils` ambiguity closure（PR #155）：PR #154 的 15 個 bare-name candidates 中，`text_category_profiler/visualization/Graph_utils.py` 唯一從 canonical `flattenList` import 發生任意 Exception 就轉往 `from utilities import flattenList`，會遮蔽真實 dependency failure、且附近無第一方 provider。此批保留既有 canonical 路徑但移除 catch-all/bare fallback，新增 stdlib AST no-services characterization 檢查實際 import 語法、匯入錯誤傳播與 `ComputeComponent` 分群不變；其它 5 個候選屬 `DatasetConverter` legacy/manual scripts，需獨立核對版本與 CLI；BL-001 In Progress。
+
+
 - BL-001 bare-name provider follow-up（PR #154）：PR #153 在 201 個 first-party Python files 找到 44 個 canonical modules 的 468 個 qualified import syntax occurrences、7 個無命中模組、15 個 bare-import 候選。此批增加 runtime-free filename provenance：對 15 件逐筆回報同目錄、上層目錄或無鄰近第一方 provider，同時為 44 模組提供 top-level `__main__` guard 靜態證據，專門回報 7 件無命中中的 direct-script 入口候選。這**不是 import resolution**，沒有任何資料、CLI 或 module 刪除；後續仍需查 Python `sys.path` 與外部／動態 caller，BL-001 In Progress。
 
 

@@ -84,6 +84,9 @@ text_category_profiler/
 
 ### Phase 3：將非共用內容分流
 
+- 2026-10-31 `Graph_utils` canonical import fix：在 PR #154 6 件 `no_nearby_first_party_provider_filename` 中，視覺化 `Graph_utils.py` 的 `try: from text_category_profiler.core.utilities import flattenList; except: from utilities import flattenList` catch-all 會將 canonical 依賴失敗遮蔽成未明確來源匯入。本批只移除該 fallback，使用原本優先的 qualified import；用 AST no-service tests 保護解析、錯誤透傳與 connected-component contract。剩下 5 個 `DatasetConverter/df_utils.py`、`DatasetConverter/old_MP_utils.py` 仍待逐一確認 legacy 相容性，不改動且不能宣稱整批已清零。BL-001 In Progress。
+
+
 - 2026-10-31 bare-import provenance follow-up：PR #153 靜態報告中 15 件候選，需區分 `BertScript` stage-local 同名模組及 `DatasetConverter` 缺少 sibling provider 的未決候選。本批為每件候選新增 first-party tracked Python sibling/ancestor 路徑證據，**不假定 Python 實際 import resolution**；對 7 個 scoped-import 零命中的 canonical modules，加入 top-level `__main__` guard evidence（仍未直接執行）。不搬移／刪除程式，runtime/sys.path/外部動態 caller 仍待驗證，BL-001 In Progress。
 
 
