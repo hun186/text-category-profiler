@@ -58,10 +58,7 @@ import socket
 #except:
 #    pass
 
-try:
-    from text_category_profiler.concurrency.MP_utils import MPlogger
-except:
-    from .MP_utils import MPlogger
+from text_category_profiler.concurrency.MP_utils import MPlogger
 
 import zipfile 
 #import py7zr
