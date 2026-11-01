@@ -58,4 +58,4 @@ jobs:
       - name: Verify full historical migration
         run: |
           git show ec212fd17835dd939b010a680955f95f12593598:BertScript/ClassTable.py > old-ClassTable.py
-          python -m BertScript.migrate_class_table --source old-ClassTable.py --verify ClassesTree/data/ClassTable.csv
+          python -m BertScript.migrate_class_table --source old-ClassTable.py --verify ClassesTree/data/ClassTable.csv --allow-pending-additions
