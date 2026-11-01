@@ -124,13 +124,31 @@ def _jaal_layout_options(base_options, mode):
             "treeSpacing": 220,
         }
         options["physics"] = {"enabled": False}
-        edges = options.setdefault("edges", {})
-        edges["smooth"] = {
+        options.setdefault("edges", {})["smooth"] = {
             "enabled": True,
             "type": "cubicBezier",
             "forceDirection": "vertical",
             "roundness": 0.28,
         }
+    else:
+        # visdcc forwards updates via net.setOptions(), which MERGES with
+        # previous vis-network options. Omitting hierarchy/physics/smooth
+        # would leave the tree layout enabled after switching back.
+        options.setdefault("layout", {})["hierarchical"] = {"enabled": False}
+        baseline_physics = base_options.get("physics", {})
+        if isinstance(baseline_physics, dict):
+            options.setdefault("physics", {})["enabled"] = baseline_physics.get(
+                "enabled", True
+            )
+        else:
+            options["physics"] = {"enabled": bool(baseline_physics)}
+        baseline_smooth = base_options.get("edges", {}).get("smooth")
+        options.setdefault("edges", {})["smooth"] = (
+            deepcopy(baseline_smooth) if baseline_smooth is not None else
+            # Explicit vis-network defaults needed to reverse cubicBezier.
+            {"enabled": True, "type": "dynamic",
+             "forceDirection": "none", "roundness": 0.5}
+        )
     return options
 
 
