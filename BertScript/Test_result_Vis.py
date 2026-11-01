@@ -9,6 +9,13 @@ if str(REPOSITORY_ROOT) not in sys.path:
 
 from BertScript import visualization_stage
 
+# Special-case a local Jaal-only viewer BEFORE importing Dash analysis,
+# model/data dependencies or scanning/mutating the WorkPool. In particular,
+# completed *_rdy_for_Spike datasets must never be renamed just to see Jaal.
+if __name__ == "__main__" and "--viewer-only" in sys.argv[1:]:
+    from BertScript.jaal_viewer_only import main as viewer_only_main
+    raise SystemExit(viewer_only_main(sys.argv[1:]))
+
 #import utilities_DB
 import numpy as np
 import pandas as pd
