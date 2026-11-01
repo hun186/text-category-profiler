@@ -56,7 +56,8 @@ class OriginalJaalMountTests(unittest.TestCase):
 
         def make_small_original_app(root, prefix):
             created.append((root, prefix))
-            edges = pd.DataFrame([("A", "B"), ("B", "C")],
+            edges = pd.DataFrame([("A", "CN Intelligence And Espionage Against TW"),
+                                  ("CN Intelligence And Espionage Against TW", "TW Affairs")],
                                  columns=["from", "to"])
             nodes = pd.DataFrame([
                 ("A", 1), ("CN Intelligence And Espionage Against TW", 2),
@@ -148,7 +149,7 @@ class OriginalJaalMountTests(unittest.TestCase):
         node_payload = network[0]["data"]["nodes"]
         long_node = next(item for item in node_payload if item["id"] ==
                          "CN Intelligence And Espionage Against TW")
-        self.assertIn("\\n", long_node["label"])
+        self.assertIn(chr(10), long_node["label"])
         self.assertEqual(long_node["title"], long_node["id"])
         self.assertEqual(long_node["id"], "CN Intelligence And Espionage Against TW")
         self.assertTrue(any(item["id"] == "TW Affairs" and
