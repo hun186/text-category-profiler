@@ -3,11 +3,30 @@ import unittest
 
 from ClassesTree.Visualization.jaal.label_format import (
     MAX_LABEL_LINES, MAX_LABEL_LINE_CHARS, wrapped_classlabel,
-    search_full_classlabel,
+    search_full_classlabel, LABEL_RENDERER_REVISION, prepare_embedded_jaal_nodes,
 )
 
 
 class EmbeddedJaalLabelFormatTests(unittest.TestCase):
+    def test_production_label_adapter_preserves_id_and_input_dataframe(self):
+        try:
+            import pandas as pd
+        except ImportError as exc:
+            self.skipTest(f"Optional pandas integration dependency absent: {exc}")
+        full = "CN Intelligence And Espionage Against TW"
+        frame = pd.DataFrame([{"id": full, "depth": 2},
+                              {"id": "TW Affairs", "depth": 0}])
+        formatted = prepare_embedded_jaal_nodes(frame)
+        self.assertNotIn("label", frame.columns)
+        self.assertEqual(formatted.loc[0, "id"], full)
+        self.assertEqual(formatted.loc[0, "title"], full)
+        self.assertIn(chr(10), formatted.loc[0, "label"])
+        self.assertEqual(formatted.loc[1, "label"], "TW Affairs")
+        self.assertEqual(formatted["depth"].tolist(), [2, 0])
+        self.assertEqual(LABEL_RENDERER_REVISION, "multiline-labels-v2")
+        with self.assertRaisesRegex(ValueError, "id column"):
+            prepare_embedded_jaal_nodes(pd.DataFrame({"label": ["hi"]}))
+
     def test_short_label_stays_unchanged(self):
         self.assertEqual(wrapped_classlabel("TW Affairs"), "TW Affairs")
 

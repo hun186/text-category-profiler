@@ -228,11 +228,9 @@ def JaalViewMain(
         # Only presentation text changes; IDs, edges and original filtering
         # columns remain untouched. Standalone Jaal.plot stays unchanged.
         from ClassesTree.Visualization.jaal.label_format import (
-            search_full_classlabel, wrapped_classlabel,
+            prepare_embedded_jaal_nodes, search_full_classlabel,
         )
-        node_df = node_df.copy()
-        node_df["label"] = node_df["id"].map(wrapped_classlabel)
-        node_df["title"] = node_df["id"]
+        node_df = prepare_embedded_jaal_nodes(node_df)
         # Jaal.create() creates the original Dash UI and callbacks, but
         # unlike .plot(), does not accept a host or port parameter.
         embedded_jaal = Jaal(edge_df, node_df)

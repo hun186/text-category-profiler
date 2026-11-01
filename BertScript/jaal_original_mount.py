@@ -274,6 +274,10 @@ def _add_embedded_jaal_sidebar_toggle(layout):
         title="隱藏左側設定，讓分類圖展開",
         **{"aria-label": "收合或展開 Jaal 左側設定面板"},
     )
+    # Read the revision from the imported Python module, never Git Desktop's
+    # checked-out HEAD: an old server process must keep showing its OLD badge.
+    from ClassesTree.Visualization.jaal.label_format import LABEL_RENDERER_REVISION
+
     mode_choice = dcc.RadioItems(
         id="jaal-original-layout-mode",
         options=[
@@ -287,6 +291,11 @@ def _add_embedded_jaal_sidebar_toggle(layout):
     )
     toolbar = html.Div(
         [toggle, html.Span("顯示模式："), mode_choice,
+         html.Span("標籤版本：" + LABEL_RENDERER_REVISION,
+                   id="jaal-original-label-revision",
+                   title="這是當前 Python 服務實際載入的標籤版本；"
+                         "若更新 Git 後仍看不到此版本，請完全停止 8059 服務再重新啟動",
+                   style={"fontSize": "12px", "color": "#475569"}),
          html.Span("階層模式：長標籤自動換行；過密時可放大／拖曳查看",
                    id="jaal-original-hierarchy-hint",
                    style={"fontSize": "12px", "color": "#475569"}),
