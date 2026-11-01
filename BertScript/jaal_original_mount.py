@@ -15,6 +15,7 @@ from threading import RLock
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
 from ClassesTree.Visualization.embedded_tree import load_graph
+from ClassesTree.Visualization.jaal.label_format import enable_embedded_jaal_global_node_shapes
 
 
 MOUNT_PATH = "/jaal-original"
@@ -103,24 +104,6 @@ def _remove_embedded_jaal_outer_row_gutters(layout):
         classes = (row.className or "").split()
         if "g-0" not in classes:
             row.className = " ".join([*classes, "g-0"])
-
-
-def enable_embedded_jaal_global_node_shapes(jaal_instance):
-    """Remove only Jaal's embedded per-node dot override for mode-specific boxes.
-
-    vis-network gives per-node 'shape' precedence over options.nodes.shape.
-    Upstream parse_dataframe hardcodes 'shape': 'dot'; hierarchy could
-    therefore never draw a space-reserving box without this adapter.
-    """
-    for collection in (jaal_instance.data, jaal_instance.filtered_data):
-        if not isinstance(collection, dict) or not isinstance(collection.get("nodes"), list):
-            raise RuntimeError("Original Jaal node payload contract changed")
-        for node in collection["nodes"]:
-            if "shape" in node:
-                if node["shape"] != "dot":
-                    raise RuntimeError("Original Jaal unexpected per-node shape")
-                del node["shape"]
-    return jaal_instance
 
 
 def _jaal_layout_options(base_options, mode):

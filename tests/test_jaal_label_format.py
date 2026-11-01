@@ -29,7 +29,7 @@ class EmbeddedJaalLabelFormatTests(unittest.TestCase):
 
     def test_box_shape_override_removed_without_changing_data(self):
         from types import SimpleNamespace
-        from BertScript.jaal_original_mount import (
+        from ClassesTree.Visualization.jaal.label_format import (
             enable_embedded_jaal_global_node_shapes,
         )
         one = {"id": "Long Label", "label": "Long\\nLabel",
