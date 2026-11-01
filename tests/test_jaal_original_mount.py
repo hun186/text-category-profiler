@@ -141,6 +141,18 @@ class OriginalJaalMountTests(unittest.TestCase):
         }
         self.assertIn("jaal-original-content", components_by_id)
         self.assertEqual(components_by_id["jaal-original-content"]["type"], "Div")
+        # Upstream Jaal's two top-level dbc.Rows are not inside a Bootstrap
+        # .container. Standard negative row gutters overflow the iframe by
+        # a few pixels, triggering a horizontal *and then* vertical scrollbar.
+        # g-0 fixes geometry, rather than clipping true overflow.
+        jaal_root = components_by_id["jaal-original-content"]["props"]["children"]
+        self.assertEqual(jaal_root["type"], "Div")
+        outer_rows = jaal_root["props"]["children"]
+        self.assertEqual(len(outer_rows), 2)
+        for row in outer_rows:
+            self.assertEqual(row["type"], "Row")
+            self.assertIn("g-0", row["props"]["className"].split())
+        self.assertIn(b".g-0{", css_response.data)
         sidebar = components_by_id["jaal-original-settings-column"]
         graph_column = components_by_id["jaal-original-graph-column"]
         toggle = components_by_id["jaal-original-sidebar-toggle"]
@@ -222,6 +234,28 @@ class OriginalJaalMountTests(unittest.TestCase):
                                  "size_nodes", "size_edges"):
             self.assertIn(original_control, serialized)
         self.assertEqual(len(created), 1, "reuse one mounted app within same root")
+
+    def test_only_jaal_outer_rows_get_zero_gutters(self):
+        from dash import html
+        import dash_bootstrap_components as dbc
+        from BertScript.jaal_original_mount import (
+            _remove_embedded_jaal_outer_row_gutters,
+        )
+        nested = dbc.Row(html.Div("Preserved"), className="nested")
+        logo = dbc.Row(html.Span("Logo"), className="column flex-display")
+        graph = dbc.Row([dbc.Col(nested), dbc.Col(html.Div("Graph"))],
+                        className="column flex-display")
+        root = html.Div([logo, graph])
+        _remove_embedded_jaal_outer_row_gutters(root)
+        self.assertEqual(logo.className, "column flex-display g-0")
+        self.assertEqual(graph.className, "column flex-display g-0")
+        self.assertEqual(nested.className, "nested",
+                         "nested Filter/Color layout must remain unchanged")
+        _remove_embedded_jaal_outer_row_gutters(root)
+        self.assertEqual(graph.className.count("g-0"), 1,
+                         "normalizing twice must not stack CSS classes")
+        with self.assertRaisesRegex(RuntimeError, "structure changed"):
+            _remove_embedded_jaal_outer_row_gutters(html.Div([logo]))
 
     def test_iframe_fallback_is_bounded_when_javascript_is_disabled(self):
         from BertScript.jaal_original_panel import build_original_jaal_iframe
