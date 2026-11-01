@@ -74,7 +74,7 @@ test("both collapsed layouts preserve one original node each, label plus count o
     n=f.component.nn.get();
     assert.equal(n.find(x=>x.id==="D").hidden,false);
     assert.equal(n.find(x=>x.id==="B").label,"B");
-    assert.equal(f.component.ee.get().filter(e=>!e.hidden).length,3);
+    assert.equal(f.component.ee.get().filter(e=>!e.hidden).length,4); // cross-parent edge retained
     f.click("B");
     assert.equal(f.component.nn.get().find(x=>x.id==="D").hidden,true);
     // Click root once: hide both branches; one bubble with 3 unique descendants.
@@ -113,4 +113,24 @@ test("long labels remain bounded, leaves have no zero counter, no code interpola
   const dangerous='X"); throw Error("unsafe"); //';
   const code=apply("network-collapsed",{nodes:[{id:dangerous}],edges:[]});
   assert.ok(!code.includes(dangerous));
+});
+
+test("multiple edges and self loops do not inflate unique descendants",()=>{
+  const g=collapse.graphModel({
+    nodes:["A","B"].map(id=>({id})),
+    edges:[["A","B"],["A","B"],["A","A"]].map(([from,to])=>({from,to}))
+  });
+  assert.equal(g.uniqueDescendants("A"),1);
+  assert.equal(g.uniqueDescendants("B"),0);
+});
+
+test("collapsed mode respects original Search/Filter hidden flags and restores",()=>{
+  const f=fixture({nodes:["A","B","C"],edges:[["A","B"],["B","C"]]});
+  f.nodes[1].hidden=true;
+  f.run("network-collapsed");
+  assert.equal(f.component.nn.get().find(n=>n.id==="B").hidden,true);
+  f.click("A"); // Collapse the root.
+  f.run("hierarchical");
+  assert.equal(f.component.nn.get().find(n=>n.id==="B").hidden,true);
+  assert.equal(f.component.nn.get().find(n=>n.id==="C").hidden,false);
 });
