@@ -132,7 +132,7 @@
 - AI candidate Notes must be `AI新增｜日期=YYYY-MM-DD｜來源=...｜理由=...｜狀態=待人工審核` or `AI補充` with the same fields. Source and reason must be nonempty, but are **not verified** for truth by this parser.
 - AI新增 may only name ClassLabels absent from the base. AI補充 may only name existing ClassLabels and must keep the existing CT unchanged; its Explanation is a human-review suggestion only.
 - Successful JSON emits counts, label lists, explicit `Approved: false` and `AuthoritativeFilesModified: false`. Errors exit 2, no output files are ever written. Passing validation grants **no** authorization to merge a candidate CSV into official metadata or add graph edges.
-- Boundary not yet implemented in BL-002: source/article verification, deduplication, proposed TopicTree edge validation, revision history, and human acceptance tracking.
+- BL-002 now supports optional **local** TXT byte integrity and exact source-reference matching through `--evidence-manifest PATH`; it rejects duplicate exact source identifiers and duplicate SHA-256 content. This does not establish genuine source origin, semantic relevance, near-duplicate articles, approval or revision tracking. Real article fetch/verification and human acceptance remain unimplemented.
 
 
 ### CONTRACT-CLI-003 optional graph alignment extension
@@ -140,4 +140,13 @@
 - Optional paired flags: `--base-tree PATH --edges PATH`; one flag alone is a usage error (exit 2).
 - Added-edge parent+child endpoint set minus original-tree nodes must equal AI新增 candidate labels exactly. Existing anchor nodes are allowed.
 - On a match the JSON response includes `GraphNodeAlignment: matched`, sorted `NewGraphNodes`, and `GraphRelationshipsApproved: false`.
-- This is only identity-level graph consistency; no source checking, edge-semantic approval, duplicate-edge guard, or automatic edit/merge. The candidate-only CLI without graph arguments remains unchanged.
+- Proposed graph checks also reject exact duplicate/self edges and introduced literal `contains` cycles, but do not approve edge semantics, non-hierarchical relations or automatic merge. The candidate-only CLI without graph arguments remains unchanged.
+
+
+### CONTRACT-CLI-003 optional local evidence manifest
+
+- Optional flag: `--evidence-manifest PATH`; no other CLI flags or defaults change.
+- Manifest is UTF-8 JSON with exactly `schema_version: 1` and `articles`, each article providing `source`, `file` (relative POSIX path under manifest parent), `sha256` (lowercase hex SHA-256 of exact local file bytes).
+- Input boundaries: 1–1,000 local article files, each nonempty and at most 10 MB. Reject duplicate source strings, duplicate content digests, missing Notes source bindings, bad hash/path/schema and directory escapes (including symlinks).
+- Source identifiers are matched *exactly*. This does not canonicalize URLs, verify actual external origin, perform content relevance review or detect semantic near-duplicates. Return flags `SourceAuthenticityVerified: false`, `EvidenceSemanticRelevanceVerified: false`, `Approved: false`, `AuthoritativeFilesModified: false`.
+- No source article or CSV is modified; on error exit 2 without approval. No HTTP requests or arbitrary filesystem writes.

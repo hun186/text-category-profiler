@@ -9,10 +9,12 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 from datetime import date
 from itertools import chain
 import json
 from pathlib import Path
+import re
 
 from BertScript.class_table_metadata import (
     DEFAULT_CSV,
@@ -203,6 +205,94 @@ def audit_proposed_graph_nodes(
     }
 
 
+
+MAX_EVIDENCE_ARTICLES = 1000
+MAX_ARTICLE_BYTES = 10_000_000
+SHA256_PATTERN = re.compile(r"[0-9a-f]{64}\\Z")
+
+
+def audit_local_article_evidence(
+    candidates: dict[str, dict[str, str]], manifest_path: str | Path
+) -> dict[str, object]:
+    """Verify local file integrity and exact source bindings, without fetching.
+
+    Source identity is an opaque exact Notes value: no URL authenticity or
+    document semantic relevance is inferred. The manifest directory is the
+    permitted file boundary, including after symlink resolution.
+    """
+    manifest_path = Path(manifest_path)
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
+    except (UnicodeError, ValueError) as exc:
+        raise MetadataError("invalid JSON evidence manifest") from exc
+    if not isinstance(manifest, dict) or set(manifest) != {"schema_version", "articles"}:
+        raise MetadataError("evidence manifest requires schema_version and articles")
+    records = manifest["articles"]
+    if manifest["schema_version"] != 1 or not isinstance(records, list) or not (
+        1 <= len(records) <= MAX_EVIDENCE_ARTICLES
+    ):
+        raise MetadataError("invalid evidence schema version or article count")
+    root = manifest_path.parent.resolve()
+    by_source: dict[str, str] = {}
+    by_hash: dict[str, str] = {}
+    for index, item in enumerate(records):
+        if not isinstance(item, dict) or set(item) != {"source", "file", "sha256"}:
+            raise MetadataError(f"evidence article {index}: expected source/file/sha256")
+        source, rel, expected = item["source"], item["file"], item["sha256"]
+        if not isinstance(source, str) or not source or source != source.strip():
+            raise MetadataError(f"evidence article {index}: invalid source identifier")
+        if not isinstance(rel, str) or (
+            not rel or "\\\\" in rel or
+            any(part in ("", ".", "..") for part in rel.split("/"))
+            or Path(rel).is_absolute()
+        ):
+            raise MetadataError(f"evidence article {index}: unsafe relative file path")
+        if not isinstance(expected, str) or not SHA256_PATTERN.fullmatch(expected):
+            raise MetadataError(f"evidence article {index}: invalid sha256")
+        if source in by_source:
+            raise MetadataError(f"duplicate evidence source identifier at article {index}")
+        target = (root / rel).resolve()
+        try:
+            target.relative_to(root)
+        except ValueError as exc:
+            raise MetadataError(f"evidence article {index}: path escapes manifest directory") from exc
+        if not target.is_file():
+            raise MetadataError(f"evidence article {index}: missing article text file")
+        if target.stat().st_size > MAX_ARTICLE_BYTES:
+            raise MetadataError(f"evidence article {index}: text exceeds size limit")
+        digest = hashlib.sha256()
+        size = 0
+        with target.open("rb") as handle:
+            for block in iter(lambda: handle.read(65536), b""):
+                size += len(block)
+                if size > MAX_ARTICLE_BYTES:
+                    raise MetadataError(f"evidence article {index}: text exceeds size limit")
+                digest.update(block)
+        if size == 0 or digest.hexdigest() != expected:
+            raise MetadataError(f"evidence article {index}: empty or sha256 mismatch")
+        if expected in by_hash:
+            raise MetadataError(f"duplicate article content at article {index}")
+        by_source[source] = rel
+        by_hash[expected] = source
+    used = {
+        parse_provenance(row.get("Notes", ""), label)[1]["來源"]
+        for label, row in candidates.items()
+    }
+    missing = sorted(used - by_source.keys())
+    if missing:
+        raise MetadataError(f"candidate sources not found in evidence manifest: {missing}")
+    return {
+        "EvidenceArticlesChecked": len(records),
+        "CandidateSourcesMatched": len(used),
+        "UnusedEvidenceArticles": len(by_source.keys() - used),
+        "EvidenceByteHashesVerified": True,
+        "SourceAuthenticityVerified": False,
+        "EvidenceSemanticRelevanceVerified": False,
+        "Approved": False,
+        "AuthoritativeFilesModified": False,
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Read-only validation of AI ClassTable proposals (not approval)"
@@ -212,13 +302,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--base-tree", type=Path)
     parser.add_argument("--edges", type=Path)
+    parser.add_argument("--evidence-manifest", type=Path)
     args = parser.parse_args(argv)
     if (args.base_tree is None) != (args.edges is None):
         parser.error("--base-tree and --edges must be provided together")
     try:
-        report = audit_proposals(
-            load_class_table(args.base), load_class_table(args.candidates)
-        )
+        candidates = load_class_table(args.candidates)
+        report = audit_proposals(load_class_table(args.base), candidates)
+        if args.evidence_manifest is not None:
+            report.update(audit_local_article_evidence(candidates, args.evidence_manifest))
         if args.base_tree is not None:
             report.update(audit_proposed_graph_nodes(
                 report["AI新增"], base_tree=args.base_tree, proposed_edges=args.edges

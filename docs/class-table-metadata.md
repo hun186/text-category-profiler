@@ -137,3 +137,46 @@ hierarchy. A successful report includes `ProposedEdgesStructurallyChecked`.
 Passing this **does not approve** edge direction, taxonomy meaning, source
 claims, relationships of other types, or any change to official CSV data.
 The report explicitly retains `GraphRelationshipsApproved: false`.
+
+
+### Optional local article integrity and deduplication (read-only)
+
+For offline dataset-collection proposals, an agent may supply a separate JSON
+manifest and local TXT article snapshots. This is **optional** and does not
+change the existing provenance-only invocation. Example `evidence.json` next to
+`articles/a.txt`:
+
+```json
+{
+  "schema_version": 1,
+  "articles": [
+    {
+      "source": "https://example.org/news/1",
+      "file": "articles/a.txt",
+      "sha256": "<64 lowercase SHA-256 hex characters for the exact UTF-8 TXT bytes>"
+    }
+  ]
+}
+```
+
+```bash
+python -m BertScript.class_table_ai_proposals --candidates ClassTable_候選.csv --evidence-manifest evidence.json --json
+```
+
+`source` is an exact string identifier: it must match the `來源` value in
+candidate Notes. The tool reads files **only inside** the manifest folder
+(including symlink destinations), verifies SHA-256 against actual bytes, rejects
+empty/oversized (greater than 10 MB) files, duplicate source identifiers,
+identical source content under different identifiers, missing candidate source
+links and malformed manifests. Maximum 1,000 manifest articles. It performs no
+network requests and never modifies the input articles, candidate CSV or
+authoritative taxonomy. An unused evidence article is counted but not treated
+as proof of relevance.
+
+This checks local bytes and exact identifiers, **not** whether a URL exists,
+whether its claimed news origin is genuine, whether the text supports the
+proposed category, near-duplicate/paraphrased content, or whether a human has
+approved it. The JSON response explicitly keeps `Approved: false`,
+`SourceAuthenticityVerified: false` and
+`EvidenceSemanticRelevanceVerified: false`. Do not use this gate to
+merge AI proposals into ClassTable/TopicTree automatically.

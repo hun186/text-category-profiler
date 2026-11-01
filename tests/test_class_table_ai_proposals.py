@@ -2,6 +2,7 @@
 
 import contextlib
 import io
+import hashlib
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -231,6 +232,120 @@ class CandidateGateTests(unittest.TestCase):
             )
             self.assertEqual(report["ProposedEdgesStructurallyChecked"], 2)
             self.assertFalse(report["GraphRelationshipsApproved"])
+
+
+    def test_local_article_manifest_links_exact_notes_and_stays_read_only(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            article = root / "article.txt"
+            article.write_text("中文新聞正文和來源證據", encoding="utf-8")
+            source = "https://example.org/news/1"
+            manifest = root / "evidence.json"
+            manifest.write_text(json.dumps({
+                "schema_version": 1,
+                "articles": [{
+                    "source": source, "file": "article.txt",
+                    "sha256": hashlib.sha256(article.read_bytes()).hexdigest(),
+                }],
+            }), encoding="utf-8")
+            candidates = {"New": row("新增", notes=note(source=source))}
+            baseline = {p.name: p.read_bytes() for p in root.iterdir()}
+            result = gate.audit_local_article_evidence(candidates, manifest)
+            self.assertEqual(result["EvidenceArticlesChecked"], 1)
+            self.assertEqual(result["CandidateSourcesMatched"], 1)
+            self.assertTrue(result["EvidenceByteHashesVerified"])
+            self.assertFalse(result["SourceAuthenticityVerified"])
+            self.assertFalse(result["EvidenceSemanticRelevanceVerified"])
+            self.assertFalse(result["Approved"])
+            self.assertEqual(baseline, {p.name: p.read_bytes() for p in root.iterdir()})
+
+    def test_local_evidence_rejects_missing_source_and_duplicate_content(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            article = root / "article.txt"
+            article.write_text("sample", encoding="utf-8")
+            digest = hashlib.sha256(article.read_bytes()).hexdigest()
+            manifest = root / "evidence.json"
+            def write(items):
+                manifest.write_text(
+                    json.dumps({"schema_version": 1, "articles": items}),
+                    encoding="utf-8",
+                )
+            one = {"source": "doc-1", "file": "article.txt", "sha256": digest}
+            write([one])
+            with self.assertRaisesRegex(metadata.MetadataError, "not found"):
+                gate.audit_local_article_evidence(
+                    {"New": row("新增", notes=note(source="not-in-manifest"))}, manifest)
+            write([one, {"source": "doc-2", "file": "article.txt", "sha256": digest}])
+            with self.assertRaisesRegex(metadata.MetadataError, "duplicate article content"):
+                gate.audit_local_article_evidence(
+                    {"New": row("新增", notes=note(source="doc-1"))}, manifest)
+            write([one, one])
+            with self.assertRaisesRegex(metadata.MetadataError, "duplicate evidence source"):
+                gate.audit_local_article_evidence(
+                    {"New": row("新增", notes=note(source="doc-1"))}, manifest)
+
+    def test_local_evidence_rejects_tampering_and_escape(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            article = root / "article.txt"
+            article.write_text("unaltered", encoding="utf-8")
+            manifest = root / "evidence.json"
+            candidates = {"New": row("新增", notes=note(source="doc"))}
+            def check(rel, digest):
+                manifest.write_text(json.dumps({
+                    "schema_version": 1,
+                    "articles": [{"source": "doc", "file": rel, "sha256": digest}],
+                }), encoding="utf-8")
+                return gate.audit_local_article_evidence(candidates, manifest)
+            digest = hashlib.sha256(article.read_bytes()).hexdigest()
+            with self.assertRaisesRegex(metadata.MetadataError, "unsafe relative"):
+                check("../article.txt", digest)
+            with self.assertRaisesRegex(metadata.MetadataError, "unsafe relative"):
+                check("..\\\\article.txt", digest)
+            with self.assertRaisesRegex(metadata.MetadataError, "sha256 mismatch"):
+                check("article.txt", "0" * 64)
+            if hasattr(Path, "symlink_to"):
+                outside = root.parent / (root.name + "-outside.txt")
+                outside.write_text("outside", encoding="utf-8")
+                link = root / "link.txt"
+                try:
+                    link.symlink_to(outside)
+                    with self.assertRaisesRegex(metadata.MetadataError, "escapes"):
+                        check("link.txt", hashlib.sha256(outside.read_bytes()).hexdigest())
+                except (NotImplementedError, OSError):
+                    pass
+                finally:
+                    outside.unlink(missing_ok=True)
+
+    def test_local_evidence_cli_keeps_official_files_untouched(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            base = root / "base.csv"
+            candidates = root / "candidates.csv"
+            article = root / "a.txt"
+            manifest = root / "manifest.json"
+            base.write_text(metadata.table_to_csv(self.base), encoding="utf-8")
+            candidates.write_text(metadata.table_to_csv({
+                "New": row("新增", notes=note(source="local-a")),
+            }), encoding="utf-8")
+            article.write_text("正文", encoding="utf-8")
+            manifest.write_text(json.dumps({
+                "schema_version": 1,
+                "articles": [{"source": "local-a", "file": "a.txt",
+                              "sha256": hashlib.sha256(article.read_bytes()).hexdigest()}],
+            }), encoding="utf-8")
+            before = {p.name: p.read_bytes() for p in root.iterdir()}
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output):
+                self.assertEqual(gate.main([
+                    "--base", str(base), "--candidates", str(candidates),
+                    "--evidence-manifest", str(manifest), "--json",
+                ]), 0)
+            result = json.loads(output.getvalue())
+            self.assertEqual(result["EvidenceArticlesChecked"], 1)
+            self.assertFalse(result["Approved"])
+            self.assertEqual(before, {p.name: p.read_bytes() for p in root.iterdir()})
 
     def test_graph_cli_requires_pair_of_graph_arguments(self):
         with TemporaryDirectory() as directory:
