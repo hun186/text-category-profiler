@@ -132,8 +132,10 @@ class CandidateGateTests(unittest.TestCase):
         with path.open("w", encoding="utf-8-sig", newline="") as handle:
             writer = csv.writer(handle)
             writer.writerow(["#母類別", "子類別", "日期", "關係", "備註"])
-            for parent, child in edges:
-                writer.writerow([parent, child, "20261031", "contains", ""])
+            for edge in edges:
+                parent, child = edge[:2]
+                relation = edge[2] if len(edge) > 2 else "contains"
+                writer.writerow([parent, child, "20261031", relation, ""])
 
     def test_proposed_edges_match_exact_ai_addition_nodes(self):
         with TemporaryDirectory() as directory:
@@ -145,6 +147,7 @@ class CandidateGateTests(unittest.TestCase):
                 ["New", "Another"], base_tree=base_tree, proposed_edges=proposed
             )
             self.assertEqual(result["GraphNodeAlignment"], "matched")
+            self.assertEqual(result["ProposedEdgesStructurallyChecked"], 2)
             self.assertEqual(result["NewGraphNodes"], ["Another", "New"])
             self.assertFalse(result["GraphRelationshipsApproved"])
 
@@ -172,6 +175,62 @@ class CandidateGateTests(unittest.TestCase):
                     ["New", "Absent"], base_tree=base_tree,
                     proposed_edges=proposed,
                 )
+
+
+    def test_proposed_edges_reject_self_references(self):
+        with TemporaryDirectory() as directory:
+            base = Path(directory) / "base.csv"
+            proposed = Path(directory) / "proposed.csv"
+            self.write_edges(base, [("Root", "Existing")])
+            self.write_edges(proposed, [("New", "New"), ("Root", "New")])
+            with self.assertRaisesRegex(metadata.MetadataError, "self-edge"):
+                gate.audit_proposed_graph_nodes(
+                    ["New"], base_tree=base, proposed_edges=proposed
+                )
+
+    def test_proposed_edges_reject_exact_duplicate_relations(self):
+        with TemporaryDirectory() as directory:
+            base = Path(directory) / "base.csv"
+            proposed = Path(directory) / "proposed.csv"
+            self.write_edges(base, [("Root", "Existing")])
+            for rows in (
+                [("Root", "New"), ("Root", "New")],
+                [("Root", "Existing"), ("Root", "New")],
+            ):
+                with self.subTest(rows=rows):
+                    self.write_edges(proposed, rows)
+                    with self.assertRaisesRegex(metadata.MetadataError, "duplicate"):
+                        gate.audit_proposed_graph_nodes(
+                            ["New"], base_tree=base, proposed_edges=proposed
+                        )
+
+    def test_proposed_contains_cycle_is_rejected_without_updating_graph(self):
+        with TemporaryDirectory() as directory:
+            base = Path(directory) / "base.csv"
+            proposed = Path(directory) / "proposed.csv"
+            self.write_edges(base, [("Root", "Existing")])
+            self.write_edges(proposed, [("Existing", "New"), ("New", "Root")])
+            original = (base.read_bytes(), proposed.read_bytes())
+            with self.assertRaisesRegex(metadata.MetadataError, "contains.*cycle"):
+                gate.audit_proposed_graph_nodes(
+                    ["New"], base_tree=base, proposed_edges=proposed
+                )
+            self.assertEqual((base.read_bytes(), proposed.read_bytes()), original)
+
+    def test_nonhierarchical_reciprocal_relation_is_not_called_a_contains_cycle(self):
+        with TemporaryDirectory() as directory:
+            base = Path(directory) / "base.csv"
+            proposed = Path(directory) / "proposed.csv"
+            self.write_edges(base, [("Root", "Existing")])
+            self.write_edges(proposed, [
+                ("Root", "New", "contains"),
+                ("New", "Root", "can be improved with"),
+            ])
+            report = gate.audit_proposed_graph_nodes(
+                ["New"], base_tree=base, proposed_edges=proposed
+            )
+            self.assertEqual(report["ProposedEdgesStructurallyChecked"], 2)
+            self.assertFalse(report["GraphRelationshipsApproved"])
 
     def test_graph_cli_requires_pair_of_graph_arguments(self):
         with TemporaryDirectory() as directory:

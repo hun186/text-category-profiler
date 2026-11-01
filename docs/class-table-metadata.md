@@ -126,6 +126,14 @@ Unmatched new nodes or candidates missing proposed edges are rejected.
 Existing graph nodes may serve as attachment points. Omit both options
 for metadata-only candidate checks that do not propose new graph nodes.
 
-Passing this **does not approve** edge direction, taxonomy meaning,
-duplicates, cycles, source claims or any change to official CSV data.
+Preflight additionally rejects self-edges, exact duplicate `(parent, child, relation)`
+triples (whether repeated within the proposal or already present in the original
+TopicTree), and **new directed cycles involving a proposed literal `contains`**
+relationship. The same endpoints with a different relation are not considered
+an exact duplicate. Existing graph anomalies are not reclassified by this
+candidate-only check, and non-`contains` relations are not presumed to be a
+hierarchy. A successful report includes `ProposedEdgesStructurallyChecked`.
+
+Passing this **does not approve** edge direction, taxonomy meaning, source
+claims, relationships of other types, or any change to official CSV data.
 The report explicitly retains `GraphRelationshipsApproved: false`.
