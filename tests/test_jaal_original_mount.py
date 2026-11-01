@@ -356,9 +356,9 @@ class OriginalJaalMountTests(unittest.TestCase):
                 self.assertEqual(options["layout"]["hierarchical"]["direction"], "UD")
                 self.assertEqual(options["layout"]["hierarchical"]["sortMethod"],
                                  "directed")
-                self.assertEqual(options["layout"]["hierarchical"]["nodeSpacing"], 245)
-                self.assertEqual(options["layout"]["hierarchical"]["treeSpacing"], 310)
-                self.assertEqual(options["layout"]["hierarchical"]["levelSeparation"], 205)
+                self.assertEqual(options["layout"]["hierarchical"]["nodeSpacing"], 285)
+                self.assertEqual(options["layout"]["hierarchical"]["treeSpacing"], 370)
+                self.assertEqual(options["layout"]["hierarchical"]["levelSeparation"], 260)
                 self.assertEqual(options["nodes"]["shape"], "box")
                 self.assertEqual(options["nodes"]["widthConstraint"], {"maximum": 178})
                 self.assertEqual(options["nodes"]["margin"], 12)
