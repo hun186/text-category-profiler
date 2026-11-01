@@ -28,7 +28,9 @@ class OriginalJaalMountTests(unittest.TestCase):
             result = panel.build_original_jaal_panel()
             app.layout = result
         rendered = str(result)
-        self.assertIn("原版 Jaal 進階檢視器", rendered)
+        self.assertIn("Jaal 進階檢視器", rendered)
+        self.assertIn("載入 Jaal", rendered)
+        self.assertNotIn("原版 Jaal", rendered)
         self.assertIn("JaalOriginalRoot", rendered)
         self.assertIn("JaalOriginalLargeConsent", rendered)
         self.assertIn("JaalOriginalFrame", rendered)
@@ -135,6 +137,7 @@ class OriginalJaalMountTests(unittest.TestCase):
         ]
         self.assertEqual(len(network), 1)
         self.assertEqual(network[0]["options"]["height"], "600px")
+        self.assertNotIn("hierarchical", network[0]["options"].get("layout", {}))
         components_by_id = {
             item["props"]["id"]: item for item in elements
             if isinstance(item["props"].get("id"), str)
@@ -159,6 +162,16 @@ class OriginalJaalMountTests(unittest.TestCase):
         sidebar = components_by_id["jaal-original-settings-column"]
         graph_column = components_by_id["jaal-original-graph-column"]
         toggle = components_by_id["jaal-original-sidebar-toggle"]
+        mode = components_by_id["jaal-original-layout-mode"]["props"]
+        self.assertEqual(mode["value"], "network")
+        self.assertEqual(mode["options"], [
+            {"label": "網狀", "value": "network"},
+            {"label": "階層樹狀", "value": "hierarchical"},
+        ])
+        self.assertIn("jaal-original-layout-mode",
+                      json.dumps(graph_column, ensure_ascii=False))
+        self.assertNotIn("jaal-original-layout-mode",
+                         json.dumps(sidebar, ensure_ascii=False))
         self.assertEqual(sidebar["props"]["width"], 3)
         # Upstream Jaal vertically centers the shorter settings card; the
         # embedded view must start at row top even when sections are hidden.
@@ -180,6 +193,19 @@ class OriginalJaalMountTests(unittest.TestCase):
             and "jaal-original-graph-column.width" in dep["output"]
         ]
         self.assertEqual(len(sidebar_callback), 1)
+        # The new options callback must not compete with Jaal's existing
+        # Search/Filter/Color/Size callback for graph.data.
+        graph_option_callbacks = [
+            dep for dep in dependencies if dep["output"] == "graph.options"
+        ]
+        self.assertEqual(len(graph_option_callbacks), 1)
+        self.assertTrue(any(
+            item["id"] == "jaal-original-layout-mode"
+            and item["property"] == "value"
+            for item in graph_option_callbacks[0]["inputs"]
+        ))
+        self.assertTrue(any("graph.data" in dep["output"]
+                            for dep in dependencies))
         self.assertTrue(any("jaal-original-sidebar-toggle" in str(dep)
                             for dep in dependencies))
         self.assertTrue(any(
@@ -226,6 +252,33 @@ class OriginalJaalMountTests(unittest.TestCase):
                              expected_width)
             self.assertIn(expected_text,
                           changed["jaal-original-sidebar-toggle"]["children"])
+        baseline_options = network[0]["options"]
+        for choice in ("hierarchical", "network"):
+            result = client.post(
+                url + "_dash-update-component",
+                json={
+                    "output": "graph.options",
+                    "outputs": {"id": "graph", "property": "options"},
+                    "inputs": [{"id": "jaal-original-layout-mode",
+                                "property": "value", "value": choice}],
+                    "state": [],
+                    "changedPropIds": ["jaal-original-layout-mode.value"],
+                },
+            )
+            self.assertEqual(result.status_code, 200,
+                             result.get_data(as_text=True)[:450])
+            options = result.get_json()["response"]["graph"]["options"]
+            if choice == "hierarchical":
+                self.assertEqual(options["layout"]["hierarchical"]["direction"], "UD")
+                self.assertEqual(options["layout"]["hierarchical"]["sortMethod"],
+                                 "directed")
+                self.assertFalse(options["physics"]["enabled"])
+                self.assertTrue(options["edges"]["arrows"]["to"])
+                self.assertEqual(options["height"], "600px")
+            else:
+                self.assertEqual(options, baseline_options,
+                                 "Switch back must restore ALL original Jaal options")
+        self.assertEqual(len(created), 1, "mode toggle must reuse mounted Jaal")
         self.assertEqual(len(created), 1, "toggle must reuse mounted Jaal")
         # Graph data and all original user settings remain in the same tree.
         self.assertEqual(
@@ -237,6 +290,30 @@ class OriginalJaalMountTests(unittest.TestCase):
                                  "size_nodes", "size_edges"):
             self.assertIn(original_control, serialized)
         self.assertEqual(len(created), 1, "reuse one mounted app within same root")
+
+    def test_hierarchical_mode_is_reversible_and_preserves_original_options(self):
+        from BertScript.jaal_original_mount import _jaal_layout_options
+        original = {
+            "height": "600px", "width": "100%",
+            "interaction": {"hover": True},
+            "physics": {"stabilization": {"iterations": 100}},
+            "edges": {"arrows": {"to": True}, "width": 2},
+            "nodes": {"font": {"size": 15}},
+        }
+        import copy
+        snapshot = copy.deepcopy(original)
+        tree = _jaal_layout_options(original, "hierarchical")
+        self.assertTrue(tree["layout"]["hierarchical"]["enabled"])
+        self.assertEqual(tree["layout"]["hierarchical"]["direction"], "UD")
+        self.assertEqual(tree["layout"]["hierarchical"]["sortMethod"], "directed")
+        self.assertFalse(tree["physics"]["enabled"])
+        self.assertEqual(tree["edges"]["smooth"]["type"], "cubicBezier")
+        self.assertEqual(tree["nodes"], original["nodes"])
+        self.assertEqual(tree["edges"]["arrows"], original["edges"]["arrows"])
+        self.assertEqual(_jaal_layout_options(original, "network"), snapshot)
+        self.assertEqual(original, snapshot, "source settings must not be mutated")
+        with self.assertRaisesRegex(ValueError, "Unsupported"):
+            _jaal_layout_options(original, "invalid")
 
     def test_only_jaal_outer_rows_get_zero_gutters(self):
         from dash import html
