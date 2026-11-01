@@ -46,7 +46,7 @@ Hosted \`Stage 4 Embedded Lazy Taxonomy Graph\` 工作流程在 Python 3.11 安�
 在專案根目錄的 Windows CMD／Anaconda Prompt 執行：
 
 ```bat
-python BertScript\\Test_result_Vis.py --viewer-only -p 8059
+python BertScript\Test_result_Vis.py --viewer-only -p 8059
 ```
 
 或在 Windows 直接執行專案根目錄的
