@@ -77,7 +77,7 @@ QueryRoot 的原版 Jaal 實例，避免無上限耗用記憶體；改變根類�
 **階層樹狀**時，用相同節點與關係啟用 vis.js
 `layout.hierarchical.enabled`（`direction=UD`、`sortMethod=directed`）、
 停用物理力，並以垂直 cubicBezier 曲線顯示關係；
-切回網狀時，因 visdcc 的 `setOptions` 會合併既有選項而非取代，會明確設 `hierarchical.enabled=false`、恢復原始 physics 開關與設定、並把樹狀 cubicBezier 曲線還原為原始設定（若未指定則使用 vis-network 的 dynamic 預設），同時保留其餘原始 Jaal options。
+切回網狀時，因 visdcc 的 `setOptions` 會合併既有選項而非取代，會明確設 `hierarchical.enabled=false`、還原樹狀 cubicBezier 為原始設定（未指定則 dynamic 預設），並在階層引擎完成內部狀態還原後，透過短暫的一次性計時回呼**第二次**設定 physics.enabled，以避免被 vis.js 舊布局備份覆寫。計時器其餘時間停用，快速切回階層時不會誤啟動 physics；其餘原始 Jaal options 保留。
 
 切換僅更新既有 `visdcc.Network(id="graph").options`，不更動
 `graph.data`、Search／Filter／Color／Size 已選設定、左側面板收合，
