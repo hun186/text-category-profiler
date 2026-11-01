@@ -239,6 +239,10 @@ def JaalViewMain(
         # Patch only this embedded Jaal instance before its callbacks are
         # registered; independent Jaal.plot() remains upstream unchanged.
         embedded_jaal._callback_search_graph = search_full_classlabel
+        from BertScript.jaal_original_mount import (
+            enable_embedded_jaal_global_node_shapes,
+        )
+        enable_embedded_jaal_global_node_shapes(embedded_jaal)
         return embedded_jaal.create(
             directed=directed,
             vis_opts=vis_opts,
