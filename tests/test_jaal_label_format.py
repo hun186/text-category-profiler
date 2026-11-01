@@ -9,7 +9,10 @@ from ClassesTree.Visualization.jaal.label_format import (
 
 class EmbeddedJaalLabelFormatTests(unittest.TestCase):
     def test_production_label_adapter_preserves_id_and_input_dataframe(self):
-        import pandas as pd
+        try:
+            import pandas as pd
+        except ImportError as exc:
+            self.skipTest(f"Optional pandas integration dependency absent: {exc}")
         full = "CN Intelligence And Espionage Against TW"
         frame = pd.DataFrame([{"id": full, "depth": 2},
                               {"id": "TW Affairs", "depth": 0}])
