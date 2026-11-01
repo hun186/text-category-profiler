@@ -328,7 +328,11 @@ class OriginalJaalMountTests(unittest.TestCase):
         self.assertEqual(tick.status_code, 200,
                          tick.get_data(as_text=True)[:450])
         ticks = tick.get_json()["response"]
-        self.assertTrue(ticks["graph"]["options"]["physics"]["enabled"])
+        restored_options = ticks["graph"]["options"]
+        self.assertTrue(restored_options["physics"]["enabled"])
+        self.assertEqual(restored_options["edges"]["smooth"]["type"], "dynamic")
+        self.assertEqual(restored_options["edges"]["smooth"]["forceDirection"], "none")
+        self.assertEqual(restored_options["edges"]["smooth"]["roundness"], 0.5)
         self.assertTrue(ticks["jaal-original-physics-restore"]["disabled"])
         # Racing mode changes cannot re-enable physics in hierarchy mode.
         raced = client.post(
@@ -417,6 +421,28 @@ class OriginalJaalMountTests(unittest.TestCase):
         self.assertEqual(effective_network["edges"]["smooth"]["type"], "dynamic")
         self.assertEqual(effective_network["edges"]["smooth"]["forceDirection"], "none")
         self.assertEqual(effective_network["edges"]["arrows"], snapshot["edges"]["arrows"])
+
+        # LayoutEngine's exit-hierarchy backup can overwrite the stage-1
+        # settings (physics to false and smooth to a bare boolean True).
+        # That boolean changes only smooth.enabled in the vis.js parser,
+        # leaving the tree's cubicBezier curve settings in place. Stage 2
+        # must explicitly restore all affected options after the backup.
+        after_engine_exit = copy.deepcopy(effective_network)
+        after_engine_exit["physics"]["enabled"] = False
+        after_engine_exit["edges"]["smooth"].update({
+            "enabled": True, "type": "cubicBezier",
+            "forceDirection": "vertical", "roundness": 0.28,
+        })
+        stage2 = {
+            "physics": {"enabled": snapshot["physics"].get("enabled", True)},
+            "edges": {"smooth": reset["edges"]["smooth"]},
+        }
+        final_state = merge_options(after_engine_exit, stage2)
+        self.assertTrue(final_state["physics"]["enabled"])
+        self.assertEqual(final_state["edges"]["smooth"]["type"], "dynamic")
+        self.assertEqual(final_state["edges"]["smooth"]["forceDirection"], "none")
+        self.assertEqual(final_state["edges"]["smooth"]["roundness"], 0.5)
+        self.assertEqual(final_state["edges"]["arrows"], snapshot["edges"]["arrows"])
         with self.assertRaisesRegex(ValueError, "Unsupported"):
             _jaal_layout_options(original, "invalid")
 
