@@ -112,10 +112,13 @@ def _jaal_layout_options(base_options, mode):
     The network may contain cross-links and more than one parent. Hierarchical
     layout is a directed *view* of those same edges, not a rewritten tree.
     """
-    if mode not in ("network", "hierarchical"):
+    if mode not in ("network", "hierarchical", "network-collapsed",
+                    "hierarchical-collapsed"):
         raise ValueError("Unsupported Jaal layout mode")
+    collapsed = mode.endswith("-collapsed")
+    hierarchical = mode.startswith("hierarchical")
     options = deepcopy(base_options)
-    if mode == "hierarchical":
+    if hierarchical:
         options.setdefault("layout", {})["hierarchical"] = {
             "enabled": True,
             "direction": "UD",
@@ -158,6 +161,13 @@ def _jaal_layout_options(base_options, mode):
             "margin": deepcopy(base_options.get("nodes", {}).get("margin", 0)),
             "borderWidth": deepcopy(base_options.get("nodes", {}).get("borderWidth", 1)),
         })
+        if collapsed:
+            # Structural bubbles are real original nodes, with no duplicate
+            # virtual IDs and no automatic physics-based spatial clustering.
+            options.setdefault("nodes", {}).update({
+                "shape": "box", "widthConstraint": {"maximum": 178},
+                "margin": 10,
+            })
         baseline_physics = base_options.get("physics", {})
         if isinstance(baseline_physics, dict):
             options.setdefault("physics", {})["enabled"] = baseline_physics.get(
@@ -196,7 +206,7 @@ def _register_embedded_jaal_layout_mode(app, base_options):
         triggered = callback_context.triggered[0]["prop_id"].split(".", 1)[0]
         if triggered == "jaal-original-physics-restore":
             # A quick switch back to hierarchy must never reactivate physics.
-            if mode != "network":
+            if mode not in ("network", "network-collapsed"):
                 return no_update, True
             baseline = base_options.get("physics", {})
             enabled = baseline.get("enabled", True) if isinstance(
@@ -205,7 +215,7 @@ def _register_embedded_jaal_layout_mode(app, base_options):
             # Exiting hierarchy also restores vis.js' saved edge.smooth
             # boolean, masking our first-phase smooth.type reset. Restore
             # both affected effective settings *after* that internal merge.
-            reset = _jaal_layout_options(base_options, "network")
+            reset = _jaal_layout_options(base_options, mode)
             return {
                 "physics": {"enabled": enabled},
                 "edges": {"smooth": reset["edges"]["smooth"]},
@@ -214,9 +224,9 @@ def _register_embedded_jaal_layout_mode(app, base_options):
                     for key in ("shape", "widthConstraint", "margin", "borderWidth")
                 },
             }, True
-        if mode == "hierarchical":
+        if mode in ("hierarchical", "hierarchical-collapsed"):
             return _jaal_layout_options(base_options, mode), True
-        if mode == "network":
+        if mode in ("network", "network-collapsed"):
             # Step 1: exit hierarchical layout, restoring original vis.js
             # settings. LayoutEngine can still override physics.enabled.
             # Step 2: timer tick restores enabled after the React update.
@@ -320,8 +330,10 @@ def _add_embedded_jaal_sidebar_toggle(layout):
     mode_choice = dcc.RadioItems(
         id="jaal-original-layout-mode",
         options=[
-            {"label": "網狀", "value": "network"},
-            {"label": "階層樹狀", "value": "hierarchical"},
+            {"label": "網狀（全展開）", "value": "network"},
+            {"label": "網狀（收攏）", "value": "network-collapsed"},
+            {"label": "階層（全展開）", "value": "hierarchical"},
+            {"label": "階層（收攏）", "value": "hierarchical-collapsed"},
         ],
         value="network",
         inline=True,
@@ -335,7 +347,8 @@ def _add_embedded_jaal_sidebar_toggle(layout):
                    title="這是當前 Python 服務實際載入的標籤版本；"
                          "若更新 Git 後仍看不到此版本，請完全停止 8059 服務再重新啟動",
                    style={"fontSize": "12px", "color": "#475569"}),
-         html.Span("階層模式：框狀節點為多行文字保留空間；可縮放／拖曳",
+         html.Span("收攏模式：節點下方數字＝不同子孫節點數；點擊展開／收合一層。"
+                   " 原本全展開模式保留。",
                    id="jaal-original-hierarchy-hint",
                    style={"fontSize": "12px", "color": "#475569"}),
          dcc.Interval(id="jaal-original-physics-restore",

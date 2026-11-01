@@ -181,6 +181,9 @@ class OriginalJaalMountTests(unittest.TestCase):
         runtime_js = client.get(url + "assets/16.jaal_visible_labels.js")
         self.assertEqual(runtime_js.status_code, 200)
         self.assertIn("this.nn", runtime_js.get_data(as_text=True))
+        structural_js = client.get(url + "assets/17.jaal_structural_collapse.js")
+        self.assertEqual(structural_js.status_code, 200)
+        self.assertIn("uniqueDescendants", structural_js.get_data(as_text=True))
         search_dep = next(d for d in deps if "graph.data" in d["output"])
         self.assertTrue(any(inp["id"] == "search_graph" for inp in search_dep["inputs"]))
         for search_term in ("CN Intelligence And Espionage Against TW",
@@ -244,8 +247,10 @@ class OriginalJaalMountTests(unittest.TestCase):
         self.assertTrue(restore_timer["disabled"])
         self.assertEqual(restore_timer["interval"], 300)
         self.assertEqual(mode["options"], [
-            {"label": "網狀", "value": "network"},
-            {"label": "階層樹狀", "value": "hierarchical"},
+            {"label": "網狀（全展開）", "value": "network"},
+            {"label": "網狀（收攏）", "value": "network-collapsed"},
+            {"label": "階層（全展開）", "value": "hierarchical"},
+            {"label": "階層（收攏）", "value": "hierarchical-collapsed"},
         ])
         self.assertIn("jaal-original-layout-mode",
                       json.dumps(graph_column, ensure_ascii=False))
@@ -340,7 +345,7 @@ class OriginalJaalMountTests(unittest.TestCase):
             self.assertIn(expected_text,
                           changed["jaal-original-sidebar-toggle"]["children"])
         baseline_options = network[0]["options"]
-        for choice in ("hierarchical", "network"):
+        for choice in ("hierarchical", "hierarchical-collapsed", "network", "network-collapsed"):
             result = client.post(
                 url + "_dash-update-component",
                 json={
@@ -365,10 +370,10 @@ class OriginalJaalMountTests(unittest.TestCase):
             changed_mode = result.get_json()["response"]
             self.assertEqual(
                 changed_mode["jaal-original-physics-restore"]["disabled"],
-                choice == "hierarchical",
+                choice.startswith("hierarchical"),
             )
             options = changed_mode["graph"]["options"]
-            if choice == "hierarchical":
+            if choice.startswith("hierarchical"):
                 self.assertEqual(options["layout"]["hierarchical"]["direction"], "UD")
                 self.assertEqual(options["layout"]["hierarchical"]["sortMethod"],
                                  "directed")
@@ -383,9 +388,14 @@ class OriginalJaalMountTests(unittest.TestCase):
                 self.assertEqual(options["height"], "600px")
             else:
                 self.assertFalse(options["layout"]["hierarchical"]["enabled"])
-                self.assertEqual(options["nodes"]["shape"], "dot")
-                self.assertFalse(options["nodes"]["widthConstraint"])
-                self.assertEqual(options["nodes"]["margin"], 0)
+                if choice == "network-collapsed":
+                    self.assertEqual(options["nodes"]["shape"], "box")
+                    self.assertEqual(options["nodes"]["widthConstraint"], {"maximum": 178})
+                    self.assertEqual(options["nodes"]["margin"], 10)
+                else:
+                    self.assertEqual(options["nodes"]["shape"], "dot")
+                    self.assertFalse(options["nodes"]["widthConstraint"])
+                    self.assertEqual(options["nodes"]["margin"], 0)
                 self.assertTrue(options["physics"]["enabled"])
                 self.assertEqual(options["physics"]["stabilization"],
                                  baseline_options["physics"]["stabilization"])
