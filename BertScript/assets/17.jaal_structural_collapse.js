@@ -97,13 +97,19 @@
     return visible;
   }
 
+  function reconcileDataset(dataset, rows) {
+    // Unlike hidden nodes, absent nodes reserve no hierarchical layout space.
+    const expected = new Set(rows.map(row => String(row.id)));
+    const remove = dataset.getIds().filter(id => !expected.has(String(id)));
+    if (remove.length) dataset.remove(remove);
+    if (rows.length) dataset.update(rows); // Adds missing IDs and refreshes styles.
+  }
+
   function project(instance) {
     const state = instance.__jaalStructural;
     if (!state || !COLLAPSED.has(state.mode)) return;
     const source = instance.props && instance.props.data;
     if (!source || !instance.nn || !instance.ee) return;
-    const baseNodes = new Map(source.nodes.map(n => [String(n.id), n]));
-    const baseEdges = new Map(source.edges.map(e => [String(e.id), e]));
     let shown = visibleIds(state.model, state.expanded);
     // Upstream Jaal Search hides every non-matching node. A deep match
     // must remain reachable in collapsed mode: show the unique matching
@@ -126,29 +132,49 @@
         }
       }
     }
-    instance.nn.update(instance.nn.get().map(node => {
-      const id = String(node.id);
-      const base = baseNodes.get(id) || {};
+    const projectedNodes = source.nodes.map(base => {
+      const id = String(base.id);
       const count = state.model.uniqueDescendants(id);
       const bubble = count > 0 && !state.expanded.has(id) &&
         !searchAncestors.has(id);
       return {
-        id: node.id,
+        ...base,
         hidden: !shown.has(id) || (!searchActive && Boolean(base.hidden)),
         label: displayName(id) + (bubble ? "\n" + count : ""),
       };
+    });
+    const projectedEdges = source.edges.map(base => ({
+      ...base,
+      hidden: !shown.has(String(base.from)) ||
+        !shown.has(String(base.to)) ||
+        !(state.expanded.has(String(base.from)) ||
+          (searchActive && searchAncestors.has(String(base.from)))) ||
+        Boolean(base.hidden),
     }));
-    instance.ee.update(instance.ee.get().map(edge => {
-      const base = baseEdges.get(String(edge.id)) || {};
-      return {
-        id: edge.id,
-        hidden: !shown.has(String(edge.from)) ||
-          !shown.has(String(edge.to)) ||
-          !(state.expanded.has(String(edge.from)) ||
-            (searchActive && searchAncestors.has(String(edge.from)))) ||
-          Boolean(base.hidden),
-      };
-    }));
+    if (state.mode === "hierarchical-collapsed") {
+      // Completely exclude unseen nodes from the hierarchical layout.
+      // Remove edges first; reinsert nodes before their connecting edges.
+      const nodes = projectedNodes.filter(node => !node.hidden);
+      const edges = projectedEdges.filter(edge => !edge.hidden);
+      const current = new Set(instance.nn.getIds().map(String));
+      const desired = new Set(nodes.map(node => String(node.id)));
+      const changed = current.size !== desired.size ||
+        [...current].some(id => !desired.has(id)) || !state.compactActive;
+      reconcileDataset(instance.ee, []); // Reattach only visible valid edges.
+      reconcileDataset(instance.nn, nodes);
+      reconcileDataset(instance.ee, edges);
+      state.compactActive = true;
+      if (changed && instance.net && typeof instance.net.fit === "function" &&
+          nodes.length) {
+        instance.net.fit({nodes: nodes.map(node => node.id), animation: false});
+      }
+    } else {
+      // Preserve the existing natural network-cluster layout.
+      // Recover IDs physically removed in a preceding collapsed hierarchy.
+      reconcileDataset(instance.nn, projectedNodes);
+      reconcileDataset(instance.ee, projectedEdges);
+      state.compactActive = false;
+    }
   }
 
   function restore() {
@@ -157,16 +183,14 @@
     state.mode = null;
     const source = this.props && this.props.data;
     if (!source || !this.nn || !this.ee) return;
-    const baseNodes = new Map(source.nodes.map(n => [String(n.id), n]));
-    const baseEdges = new Map(source.edges.map(e => [String(e.id), e]));
-    this.nn.update(this.nn.get().map(n => {
-      const origin = baseNodes.get(String(n.id)) || {};
-      return {id: n.id, hidden: Boolean(origin.hidden)};
-    }));
-    this.ee.update(this.ee.get().map(e => {
-      const origin = baseEdges.get(String(e.id)) || {};
-      return {id: e.id, hidden: Boolean(origin.hidden)};
-    }));
+    // Restore the exact Jaal source nodes and edges after compact mode.
+    reconcileDataset(this.nn, source.nodes.map(node => ({
+      ...node, hidden: Boolean(node.hidden),
+    })));
+    reconcileDataset(this.ee, source.edges.map(edge => ({
+      ...edge, hidden: Boolean(edge.hidden),
+    })));
+    state.compactActive = false;
   }
 
   function activate(mode) {
