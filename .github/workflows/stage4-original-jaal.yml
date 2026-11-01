@@ -6,10 +6,13 @@ on:
     paths:
       - "BertScript/jaal_original_mount.py"
       - "BertScript/jaal_original_panel.py"
+      - "BertScript/jaal_viewer_only.py"
+      - "run-jaal-viewer-only.bat"
       - "BertScript/assets/15.jaal_embedded_autoheight.js"
       - "BertScript/Test_result_Vis.py"
       - "ClassesTree/Visualization/jaal/jaalViewer.py"
       - "tests/test_jaal_original_mount.py"
+      - "tests/test_jaal_viewer_only.py"
       - "tests/jaal_autoheight.test.cjs"
       - "requirements.txt"
       - ".github/workflows/stage4-original-jaal.yml"
@@ -18,10 +21,13 @@ on:
     paths:
       - "BertScript/jaal_original_mount.py"
       - "BertScript/jaal_original_panel.py"
+      - "BertScript/jaal_viewer_only.py"
+      - "run-jaal-viewer-only.bat"
       - "BertScript/assets/15.jaal_embedded_autoheight.js"
       - "BertScript/Test_result_Vis.py"
       - "ClassesTree/Visualization/jaal/jaalViewer.py"
       - "tests/test_jaal_original_mount.py"
+      - "tests/test_jaal_viewer_only.py"
       - "tests/jaal_autoheight.test.cjs"
       - "requirements.txt"
       - ".github/workflows/stage4-original-jaal.yml"
@@ -44,9 +50,9 @@ jobs:
       - name: Install real Jaal + Dash for WSGI compatibility check
         run: python -m pip install dash dash-bootstrap-components dash-cytoscape jaal pandas
       - name: Compile changed modules
-        run: python -m py_compile BertScript/jaal_original_mount.py BertScript/jaal_original_panel.py BertScript/Test_result_Vis.py ClassesTree/Visualization/jaal/jaalViewer.py tests/test_jaal_original_mount.py
+        run: python -m py_compile BertScript/jaal_original_mount.py BertScript/jaal_original_panel.py BertScript/Test_result_Vis.py ClassesTree/Visualization/jaal/jaalViewer.py tests/test_jaal_original_mount.py BertScript/jaal_viewer_only.py tests/test_jaal_viewer_only.py
       - name: Check original Jaal UI, lazy mount, callback and same-port assets
-        run: python -m unittest -v tests.test_jaal_original_mount
+        run: python -m unittest -v tests.test_jaal_original_mount tests.test_jaal_viewer_only
       - name: Check Jaal direct-script path compatibility
         run: python -m unittest -v tests.test_jaal_viewer_path_contract
       - uses: actions/setup-node@v4
