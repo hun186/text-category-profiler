@@ -13,7 +13,7 @@
     var ds = this.nn;
     if (!ds || typeof ds.get !== "function" || typeof ds.update !== "function") return;
     function displayLabel(value) {
-      var remaining = String(value).replace(/\\s+/g, " ").trim();
+      var remaining = String(value).replace(/\s+/g, " ").trim();
       var lines = [];
       while (remaining && lines.length < 3) {
         if (remaining.length <= 17) {
@@ -30,7 +30,7 @@
         var last = lines.length - 1;
         lines[last] = lines[last].slice(0, 16) + "…";
       }
-      return lines.join("\\n");
+      return lines.join("\n");
     }
     var changes = ds.get().map(function (node) {
       return {id: node.id, label: displayLabel(node.id)};
