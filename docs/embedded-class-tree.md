@@ -39,6 +39,42 @@ Hosted \`Stage 4 Embedded Lazy Taxonomy Graph\` 工作流程在 Python 3.11 安�
 與明確確認全圖時的瀏覽器回應。
 
 
+## 唯讀 GUI 直接啟動（無 WorkPool、免重新分類）
+
+如果只要測試 Jaal 分類樹互動（包括網狀／階層樹狀切換），
+不需要從 `TCFMain.py` 或完整 Stage 4 流程開始。
+在專案根目錄的 Windows CMD／Anaconda Prompt 執行：
+
+```bat
+python BertScript\\Test_result_Vis.py --viewer-only -p 8059
+```
+
+或在 Windows 直接執行專案根目錄的
+`run-jaal-viewer-only.bat`（同樣是本機 port 8059）。
+開啟 `http://127.0.0.1:8059/`，輸入根類別後按「載入 Jaal」。
+
+這個模式在載入 Stage 4 其餘大型依賴及資料集掃描前就分流，
+**只**建立原本的同 port Jaal card；只綁定
+`127.0.0.1`、不使用公開網路界面，不呼叫
+`datasetDirOutputDirPickers`、不啟動模型／分類分析、
+不修改 `WorkPool`、不執行資料夾重新命名或 Stage 4 的
+`_rdy_for_TestResultVis → _is_running_TestResultVis → _rdy_for_Spike`
+交接。若資料集已在 `_rdy_for_Spike`，**不要把它手動改名回去**。
+停止 GUI（Ctrl+C）不會推進 WorkPool 階段。
+
+**範圍限制：** `--viewer-only` 是獨立 Jaal 分類關係檢視，不是
+「重新載入完整 Stage 4 分析結果」。原有 DataTable、統計圖表與
+模型結果仍只能經正式 Stage 4 資料流程取得；
+此模式仍需安裝相容的 Dash／Jaal／visdcc，
+按「載入 Jaal」才會依 TopicTree 解析有界子樹。
+如果 8059 已被占用，可用 `-p 8060` 更換本地 port。
+它與原來的 Jaal-only `createMode` 都不應寫入正式 taxonomy。
+
+Hosted Jaal CI 包含 `tests.test_jaal_viewer_only`：
+驗證實際 `Test_result_Vis.py --viewer-only --help` 在無資料／模型的
+空工作目錄可用、服務固定 loopback、無 WorkPool rename、
+啟動主頁沒有預載 iframe，並保留原有 Jaal Search／Filter／Color／Size。
+
 ## Jaal 進階檢視器（保留完整視覺效果）
 
 此區塊與前述 Dash Cytoscape 輕量分類樹**同時存在**，保留原本使用
