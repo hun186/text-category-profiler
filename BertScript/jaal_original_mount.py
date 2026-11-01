@@ -221,7 +221,14 @@ def prefix_original_jaal(original_app, prefix):
     )
     _normalize_original_jaal_logo(original_app.layout)
     _add_embedded_jaal_sidebar_toggle(original_app.layout)
-    child_app.layout = original_app.layout
+    # A stable content boundary lets the *child* iframe measure actual
+    # rendered height (logo + controls + graph), independent of the original
+    # visdcc graph's 600px canvas and the parent's initial fallback height.
+    # Keep the original Jaal layout and callbacks nested, not recreated.
+    from dash import html
+    child_app.layout = html.Div(
+        original_app.layout, id="jaal-original-content"
+    )
     child_app.callback_map.update(original_app.callback_map)
     child_app._callback_list.extend(original_app._callback_list)
     if not child_app.callback_map or len(child_app.callback_map) != len(original_app.callback_map):
