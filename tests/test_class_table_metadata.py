@@ -36,7 +36,8 @@ class ClassTableTests(unittest.TestCase):
     def test_real_api_and_unicode_roundtrip(self):
         actual = m.load_class_table()
         self.assertEqual(actual, ClassTable)
-        self.assertEqual(len(actual), 1994)
+        self.assertGreaterEqual(len(actual), 1994)
+        self.assertEqual(len(actual), len(m.read_rows(m.DEFAULT_CSV)))
         self.assertEqual(actual["Academia"], {"CT": "學術", "Explanation": "學術界、學術研究", "Notes": ""})
         self.assertNotIn("Explaination", actual["Academia"])
         self.assertEqual(actual["CN Government Real Estate Policy"],
@@ -51,6 +52,18 @@ class ClassTableTests(unittest.TestCase):
         # The committed file itself must stay in canonical ClassLabel order.
         self.assertEqual(m.DEFAULT_CSV.read_text(encoding="utf-8-sig"),
                          m.table_to_csv(actual))
+
+    def test_curated_metadata_splits_have_exact_reviewed_values(self):
+        # These five historical CT/Explanation deviations are explicit and
+        # reviewable, not a blanket exemption for any legacy metadata drift.
+        table = m.load_class_table()
+        self.assertEqual(set(legacy.CURATED_METADATA_OVERRIDES), {
+            "Agriculture", "Fishery", "Forestry",
+            "BD-Acknowledgements", "BD-Bibliography",
+        })
+        for label, expected in legacy.CURATED_METADATA_OVERRIDES.items():
+            with self.subTest(label=label):
+                self.assertEqual(table[label], expected)
 
     def test_unicode_quoting_and_optional_explanation(self):
         p = self.csv_file("chinese.csv", [
@@ -190,6 +203,34 @@ class ClassTableTests(unittest.TestCase):
             "AI補充｜日期=2026-10-31｜來源=文字樣本｜理由=補齊描述｜狀態=待人工審核"
         )
         legacy.verify(data, transformed)
+        # The default historical verifier remains exact; only an explicit
+        # opt-in accepts newer AI metadata entries still pending review.
+        extended = {label: dict(values) for label, values in transformed.items()}
+        extended["Proposed"] = {
+            "CT": "新分類",
+            "Explanation": "保留人工審核",
+            "Notes": (
+                "AI新增｜日期=2026-10-31｜來源=測試資料"
+                "｜理由=新標籤｜目標類別=測試｜狀態=待人工審核"
+            ),
+        }
+        with self.assertRaisesRegex(m.MetadataError, "ClassLabel set differs"):
+            legacy.verify(data, extended)
+        legacy.verify(data, extended, allow_pending_additions=True)
+        edited = {label: dict(values) for label, values in extended.items()}
+        edited["Commerce"]["CT"] = "被悄悄覆寫"
+        with self.assertRaisesRegex(m.MetadataError, "CT/Explanation mismatch"):
+            legacy.verify(data, edited, allow_pending_additions=True)
+        edited = {label: dict(values) for label, values in extended.items()}
+        edited["Proposed"]["Notes"] = (
+            "AI新增｜日期=2026-10-31｜來源=測試"
+            "｜理由=新標籤｜狀態=已核准"
+        )
+        with self.assertRaisesRegex(m.MetadataError, "待人工審核"):
+            legacy.verify(data, edited, allow_pending_additions=True)
+        edited["Proposed"]["Notes"] = ""
+        with self.assertRaisesRegex(m.MetadataError, "AI新增"):
+            legacy.verify(data, edited, allow_pending_additions=True)
         self.assertEqual(transformed["CN Government Real Estate Policy"]["CT"],
                          "中國政府房地產政策")
         self.assertEqual(transformed["CN Real Estate Industry"]["Explanation"],
@@ -217,7 +258,8 @@ class ClassTableTests(unittest.TestCase):
 
     def test_actual_tree_audit_reports_not_auto_fills(self):
         report = m.audit(ClassTable, m.DEFAULT_TREE)
-        self.assertEqual(report["ClassTableRows"], 1994)
+        self.assertGreaterEqual(report["ClassTableRows"], 1994)
+        self.assertEqual(report["ClassTableRows"], len(m.read_rows(m.DEFAULT_CSV)))
         # The active TopicTree grows independently of ClassTable metadata.
         # Guard against accidental large graph truncation, not legitimate new nodes.
         self.assertGreaterEqual(report["TopicTreeNodes"], 2670)

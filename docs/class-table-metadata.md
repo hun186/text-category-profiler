@@ -1,6 +1,6 @@
 # ClassTable metadata: CSV-first contract
 
-The authoritative metadata file is ClassesTree/data/ClassTable.csv (UTF-8 with BOM). Its fixed schema is ClassLabel,CT,Explanation,Notes. Rows are sorted deterministically by exact English ClassLabel, with required unique ClassLabel and nonempty CT; Explanation and Notes may be empty. Existing 1,994 entries have blank Notes after the additive schema migration; their ClassLabel, CT, and Explanation are unchanged. Duplicate CT values are warnings rather than errors.
+The authoritative metadata file is ClassesTree/data/ClassTable.csv (UTF-8 with BOM). Its fixed schema is ClassLabel,CT,Explanation,Notes. Rows are sorted deterministically by exact English ClassLabel, with required unique ClassLabel and nonempty CT; Explanation and Notes may be empty. The 1,994 historical entries were preserved, and the active CSV now has 2,013 unique labels, including 19 later-added metadata rows with AI proposal Notes still marked 待人工審核. Their presence is not proof of human approval or independently verified news evidence. Duplicate CT values are warnings rather than errors.
 
 BertScript/ClassTable.py has been removed to avoid confusion with the authoritative CSV. All maintained callers now use the stdlib-only loader `BertScript.class_table_metadata.load_class_table()`, returning the same ClassLabel → {CT, Explanation, Notes} dictionary. Both direct-run scripts and package imports resolve the repository-owned `ClassesTree/data/ClassTable.csv` by using the loader's `__file__` to find the repository root, without machine-specific paths or cwd mutation. The CSV and `ClassesTree/data/TopicTree.csv` are colocated but have separate metadata and graph ownership. The historical misspelling Explaination is permitted only inside the one-time migration reader, not in active metadata or Dash UI.
 
@@ -43,6 +43,28 @@ Reproduce and verify the migration against Hosted GitHub's pre-refactor source:
 
     git show ec212fd17835dd939b010a680955f95f12593598:BertScript/ClassTable.py > legacy-ClassTable.py
     python -m BertScript.migrate_class_table --source legacy-ClassTable.py --verify ClassesTree/data/ClassTable.csv
+
+The command above intentionally remains a **strict 1,994-row exact historical
+comparison** and now fails on the expanded active metadata. For current CI,
+explicitly permit only additional rows retaining pending AI provenance:
+
+    python -m BertScript.migrate_class_table --source legacy-ClassTable.py --verify ClassesTree/data/ClassTable.csv --allow-pending-additions
+
+This opt-in mode still requires **all historical labels and CT/Explanation
+values to match**, except five exact, explicitly frozen later edits: Agriculture,
+Fishery and Forestry split former semicolon-delimited CT synonyms into CT /
+Explanation / Notes, while BD-Acknowledgements and BD-Bibliography moved their
+historical tab-prefixed descriptions into Notes. The five expected final
+records are frozen in `migrate_class_table.CURATED_METADATA_OVERRIDES` and
+validated against the real CSV by tests; any other change fails. It
+never allows missing legacy rows, and
+rejects additions without nonempty AI新增 date/source/reason plus the final
+`狀態=待人工審核` marker. It also accepts an optional `目標類別` field
+present in the existing 19 rows; this is not an approval, independent source
+check, or permission for the AI candidate preflight to accept a different
+schema. The canonical ClassLabel sort and duplicate/schema checks remain
+required. Neither mode writes to CSV when called with `--verify`.
+
 
 Snapshot: 1,994 unique legacy labels, 434 nonempty legacy explanations, 3,128 TopicTree edges, and 2,670 graph nodes. Python's last-key-wins behavior preserves the effective historical definition of the duplicated SASF-Accessory-Glasses-Sunglasses label and duplicated Maritime Industry-Ports And Logistics explanation. Except for the explicitly documented label renames, all other unique keys and CT/Explanation text are preserved. The four confirmed copy/paste corruptions are corrected: Commerce's unrelated Nice attack explanation is transferred to 2016 Nice Truck Attack, that event's CT is fixed, and ASUS/Samsung CTs no longer say Apple. Other possible semantic issues are not rewritten.
 
