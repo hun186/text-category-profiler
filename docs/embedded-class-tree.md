@@ -90,6 +90,31 @@ Hosted 測試會在原版 Jaal 的子路徑 HTTP 介面實測收合／展開
 實際 Windows 瀏覽器中的 network canvas resize 與功能互動需使用者
 確認，不能把 Hosted HTTP 測試視為視覺驗收完成。
 
+### 原版 Jaal 下方大面積空白：iframe 自動適應高度
+
+先前 Stage 4 的原版 Jaal iframe 固定 `height: 1100px`，但 Jaal
+網路畫布本身 `vis_opts.height = 600px`。這會在圖形／控制面板的
+實際內容結束後留下多餘空白，收合左側設定後尤為明顯。
+
+嵌入版現在提供 `800px` 的初始／無 JavaScript 備援高度，待
+Dash 在 iframe 中渲染原版 Jaal 後，才由同源的
+`BertScript/assets/15.jaal_embedded_autoheight.js` 以
+`ResizeObserver` 量測 `jaal-original-content` 元素的
+實際底部，對父 iframe 設定適當高度（最低 640、最高 1,600px，
+附 16px 內距）。收合／展開設定面板或瀏覽器改變寬度後會重算。
+由於是同源同 port，不需要額外通訊服務或跨站訊息。
+不會重建網路、調整 `graph.data`、變更原版 600px 視圖高度、
+強制 `fit()` 或重設縮放位置；超出高度安全上限的長表單仍可在
+iframe 內捲動。直接開獨立 8053 Jaal 及主頁未按「載入」前的
+行為均不變。
+
+Hosted CI 除原有 Jaal WSGI／callback 測試外，新增無瀏覽器
+Node 隔離測試，驗證初始渲染、Dash 延後 hydration、
+收合／展開後高度更新、上下界及非 Jaal 頁面不被影響。
+Windows 實際瀏覽器的畫布空白／重繪情況仍須實機驗收：
+若圖形本身的 600px canvas 內部節點集中在上半部，
+此修正不會把原圖 zoom 改掉，仍可能需要另外分析物理布局。
+
 ### 原版 Jaal 嵌入版排版／Logo 修復
 
 原版 Jaal 的 `html.Img(width="80px")` 使用不合法的 HTML 圖片寬度字串，

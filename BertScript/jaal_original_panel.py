@@ -39,6 +39,24 @@ def build_original_jaal_panel():
     ], style={"width": "100%", "margin": "16px 0"})
 
 
+def build_original_jaal_iframe(src):
+    """Render a same-origin iframe; the child sizes it to actual Jaal content.
+
+    The initial 800px height remains usable if browser JS cannot run.
+    """
+    return html.Iframe(
+        src=src,
+        className="jaal-original-iframe",
+        style={
+            "width": "100%",
+            "height": "800px",
+            "display": "block",
+            "border": "1px solid #cbd5e1",
+        },
+        title="原版 Jaal 分類樹進階操作",
+    )
+
+
 def register_original_jaal(app):
     router.mount(app.server)
 
@@ -60,12 +78,7 @@ def register_original_jaal(app):
         except (ValueError, OSError) as exc:
             return no_update, f"原版 Jaal 尚未載入：{exc}"
         return (
-            html.Iframe(
-                src=src,
-                style={"width": "100%", "height": "1100px",
-                       "border": "1px solid #cbd5e1"},
-                title="原版 Jaal 分類樹進階操作",
-            ),
+            build_original_jaal_iframe(src),
             f"已要求載入：{stats['root']}；"
             f"{stats['nodes']:,} 個節點／{stats['edges']:,} 條關係。"
             "原版 Jaal 的 Search／Filter／Color／Size 在下方窗格操作。",
