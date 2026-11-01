@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from collections import OrderedDict, deque
 import hashlib
+from copy import deepcopy
 from pathlib import Path
 from threading import RLock
 
@@ -104,6 +105,48 @@ def _remove_embedded_jaal_outer_row_gutters(layout):
             row.className = " ".join([*classes, "g-0"])
 
 
+def _jaal_layout_options(base_options, mode):
+    """Return independent vis.js options; never mutate the original settings.
+
+    The network may contain cross-links and more than one parent. Hierarchical
+    layout is a directed *view* of those same edges, not a rewritten tree.
+    """
+    if mode not in ("network", "hierarchical"):
+        raise ValueError("Unsupported Jaal layout mode")
+    options = deepcopy(base_options)
+    if mode == "hierarchical":
+        options.setdefault("layout", {})["hierarchical"] = {
+            "enabled": True,
+            "direction": "UD",
+            "sortMethod": "directed",
+            "levelSeparation": 145,
+            "nodeSpacing": 175,
+            "treeSpacing": 220,
+        }
+        options["physics"] = {"enabled": False}
+        edges = options.setdefault("edges", {})
+        edges["smooth"] = {
+            "enabled": True,
+            "type": "cubicBezier",
+            "forceDirection": "vertical",
+            "roundness": 0.28,
+        }
+    return options
+
+
+def _register_embedded_jaal_layout_mode(app, base_options):
+    """Only graph.options changes; the original graph.data callbacks remain."""
+    from dash import Input, Output
+
+    @app.callback(
+        Output("graph", "options"),
+        Input("jaal-original-layout-mode", "value"),
+        prevent_initial_call=True,
+    )
+    def choose_layout(mode):
+        return _jaal_layout_options(base_options, mode)
+
+
 def _add_embedded_jaal_sidebar_toggle(layout):
     """Add a toggle without rebuilding the original Jaal graph or controls.
 
@@ -111,7 +154,7 @@ def _add_embedded_jaal_sidebar_toggle(layout):
     in the graph column so it remains reachable when the sidebar is hidden.
     """
     import dash_bootstrap_components as dbc
-    from dash import html
+    from dash import dcc, html
 
     def descendants(component):
         pending = [component]
@@ -155,17 +198,38 @@ def _add_embedded_jaal_sidebar_toggle(layout):
         "align-items": "flex-start",
     }
     graph.id = "jaal-original-graph-column"
+    # Make a defensive snapshot before any user-driven options callback.
+    # graph.children is Jaal's existing visdcc.Network, not a replacement.
+    network = graph.children
+    if (getattr(network, "id", None) != "graph"
+            or not isinstance(getattr(network, "options", None), dict)):
+        raise RuntimeError("Original Jaal network/options contract changed")
+    base_options = deepcopy(network.options)
     toggle = html.Button(
         "◀ 收合左側設定", id="jaal-original-sidebar-toggle", n_clicks=0,
         className="btn btn-outline-secondary btn-sm",
         title="隱藏左側設定，讓分類圖展開",
         **{"aria-label": "收合或展開 Jaal 左側設定面板"},
     )
+    mode_choice = dcc.RadioItems(
+        id="jaal-original-layout-mode",
+        options=[
+            {"label": "網狀", "value": "network"},
+            {"label": "階層樹狀", "value": "hierarchical"},
+        ],
+        value="network",
+        inline=True,
+        labelStyle={"marginRight": "12px", "cursor": "pointer"},
+        inputStyle={"marginRight": "4px"},
+    )
     toolbar = html.Div(
-        toggle,
+        [toggle, html.Span("顯示模式："), mode_choice],
         style={
             "display": "flex",
+            "alignItems": "center",
             "justifyContent": "flex-start",
+            "gap": "12px",
+            "flexWrap": "wrap",
             "padding": "6px 4px",
             "position": "sticky",
             "top": "0",
@@ -174,6 +238,7 @@ def _add_embedded_jaal_sidebar_toggle(layout):
         },
     )
     graph.children = [toolbar, graph.children]
+    return base_options
 
 
 def _sidebar_toggle_geometry(clicks):
@@ -254,7 +319,7 @@ def prefix_original_jaal(original_app, prefix):
     )
     _normalize_original_jaal_logo(original_app.layout)
     _remove_embedded_jaal_outer_row_gutters(original_app.layout)
-    _add_embedded_jaal_sidebar_toggle(original_app.layout)
+    base_options = _add_embedded_jaal_sidebar_toggle(original_app.layout)
     # A stable content boundary lets the *child* iframe measure actual
     # rendered height (logo + controls + graph), independent of the original
     # visdcc graph's 600px canvas and the parent's initial fallback height.
@@ -268,6 +333,7 @@ def prefix_original_jaal(original_app, prefix):
     if not child_app.callback_map or len(child_app.callback_map) != len(original_app.callback_map):
         raise RuntimeError("Original Jaal callbacks could not be preserved")
     _register_embedded_jaal_sidebar_toggle(child_app)
+    _register_embedded_jaal_layout_mode(child_app, base_options)
     return child_app
 
 
