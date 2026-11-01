@@ -1,5 +1,6 @@
 """Jaal GUI-only mode must never activate the Stage 4 WorkPool lifecycle."""
 import ast
+import json
 from pathlib import Path
 import subprocess
 import sys
@@ -84,7 +85,7 @@ class ViewerOnlyLauncherTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         layout = app.server.test_client().get("/_dash-layout")
         self.assertEqual(layout.status_code, 200)
-        data = layout.get_data(as_text=True)
+        data = json.dumps(layout.get_json(), ensure_ascii=False)
         self.assertIn("Jaal 進階檢視器", data)
         self.assertIn("JaalOriginalFrame", data)
         self.assertNotIn('"type":"Iframe"', data)
