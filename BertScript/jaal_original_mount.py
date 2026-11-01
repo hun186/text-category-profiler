@@ -179,7 +179,14 @@ def _register_embedded_jaal_layout_mode(app, base_options):
             enabled = baseline.get("enabled", True) if isinstance(
                 baseline, dict
             ) else bool(baseline)
-            return {"physics": {"enabled": enabled}}, True
+            # Exiting hierarchy also restores vis.js' saved edge.smooth
+            # boolean, masking our first-phase smooth.type reset. Restore
+            # both affected effective settings *after* that internal merge.
+            reset = _jaal_layout_options(base_options, "network")
+            return {
+                "physics": {"enabled": enabled},
+                "edges": {"smooth": reset["edges"]["smooth"]},
+            }, True
         if mode == "hierarchical":
             return _jaal_layout_options(base_options, mode), True
         if mode == "network":
