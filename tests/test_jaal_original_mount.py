@@ -58,8 +58,13 @@ class OriginalJaalMountTests(unittest.TestCase):
             created.append((root, prefix))
             edges = pd.DataFrame([("A", "B"), ("B", "C")],
                                  columns=["from", "to"])
-            nodes = pd.DataFrame([("A", 1), ("B", 2), ("C", 3)],
-                                 columns=["id", "depth"])
+            nodes = pd.DataFrame([
+                ("A", 1), ("CN Intelligence And Espionage Against TW", 2),
+                ("TW Affairs", 3),
+            ], columns=["id", "depth"])
+            from ClassesTree.Visualization.jaal.label_format import wrapped_classlabel
+            nodes["label"] = nodes["id"].map(wrapped_classlabel)
+            nodes["title"] = nodes["id"]
             from BertScript.jaal_original_mount import prefix_original_jaal
             app = Jaal(edges, nodes).create(directed=True,
                                             vis_opts={"height": "600px"})
@@ -138,6 +143,16 @@ class OriginalJaalMountTests(unittest.TestCase):
         self.assertEqual(len(network), 1)
         self.assertEqual(network[0]["options"]["height"], "600px")
         self.assertNotIn("hierarchical", network[0]["options"].get("layout", {}))
+        # Real Jaal/visdcc must preserve explicit newline-bearing display
+        # labels in the HTTP Dash layout, not merely advertise options.
+        node_payload = network[0]["data"]["nodes"]
+        long_node = next(item for item in node_payload if item["id"] ==
+                         "CN Intelligence And Espionage Against TW")
+        self.assertIn("\\n", long_node["label"])
+        self.assertEqual(long_node["title"], long_node["id"])
+        self.assertEqual(long_node["id"], "CN Intelligence And Espionage Against TW")
+        self.assertTrue(any(item["id"] == "TW Affairs" and
+                            item["label"] == "TW Affairs" for item in node_payload))
         components_by_id = {
             item["props"]["id"]: item for item in elements
             if isinstance(item["props"].get("id"), str)
@@ -571,6 +586,8 @@ class OriginalJaalSourceContractTests(unittest.TestCase):
         self.assertIn("JaalViewMain(", jaal)
         self.assertIn("Jaal(edge_df, node_df).plot(", jaal)
         self.assertIn("Jaal(edge_df, node_df).create(", jaal)
+        self.assertIn('node_df["label"] = node_df["id"].map(wrapped_classlabel)', jaal)
+        self.assertIn('node_df["title"] = node_df["id"]', jaal)
         # Jaal.create() cannot take host=; original .plot() can.
         create = jaal.split("if createMode == True:", 1)[1].split("else:", 1)[0]
         self.assertNotIn("host = hostIP", create)
