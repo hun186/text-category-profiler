@@ -23,7 +23,7 @@ class EmbeddedJaalLabelFormatTests(unittest.TestCase):
         self.assertIn(chr(10), formatted.loc[0, "label"])
         self.assertEqual(formatted.loc[1, "label"], "TW Affairs")
         self.assertEqual(formatted["depth"].tolist(), [2, 0])
-        self.assertEqual(LABEL_RENDERER_REVISION, "hierarchical-box-labels-v3")
+        self.assertEqual(LABEL_RENDERER_REVISION, "canvas-multiline-v4")
         with self.assertRaisesRegex(ValueError, "id column"):
             prepare_embedded_jaal_nodes(pd.DataFrame({"label": ["hi"]}))
 

@@ -9,6 +9,7 @@ on:
       - "BertScript/jaal_viewer_only.py"
       - "run-jaal-viewer-only.bat"
       - "BertScript/assets/15.jaal_embedded_autoheight.js"
+      - "BertScript/assets/16.jaal_visible_labels.js"
       - "BertScript/Test_result_Vis.py"
       - "ClassesTree/Visualization/jaal/jaalViewer.py"
       - "ClassesTree/Visualization/jaal/label_format.py"
@@ -16,6 +17,7 @@ on:
       - "tests/test_jaal_label_format.py"
       - "tests/test_jaal_viewer_only.py"
       - "tests/jaal_autoheight.test.cjs"
+      - "tests/jaal_visible_labels.test.cjs"
       - "requirements.txt"
       - ".github/workflows/stage4-original-jaal.yml"
   push:
@@ -65,6 +67,7 @@ jobs:
       - name: Verify Jaal iframe auto-height sizing and sidebar reflow
         run: |
           node --check BertScript/assets/15.jaal_embedded_autoheight.js
-          node --test tests/jaal_autoheight.test.cjs
+          node --check BertScript/assets/16.jaal_visible_labels.js
+          node --test tests/jaal_autoheight.test.cjs tests/jaal_visible_labels.test.cjs
       - name: Check whitespace
         run: git diff --check HEAD^ HEAD

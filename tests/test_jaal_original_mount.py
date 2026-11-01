@@ -165,6 +165,22 @@ class OriginalJaalMountTests(unittest.TestCase):
         # Exercise actual upstream Jaal Search callback through mounted
         # Dash HTTP, with a full phrase that spans explicit line breaks.
         deps = json.loads(client.get(url + "_dash-dependencies").get_data(as_text=True))
+        # In addition to server graph.data, a clientside callback must
+        # update the *actually rendered* visdcc DataSet (graph.run).
+        canvas = [d for d in deps if d["output"] == "graph.run"]
+        self.assertEqual(len(canvas), 1)
+        self.assertTrue(canvas[0]["clientside_function"])
+        self.assertEqual(canvas[0]["clientside_function"]["namespace"],
+                         "jaal_visible_labels")
+        self.assertEqual(canvas[0]["clientside_function"]["function_name"],
+                         "apply")
+        self.assertEqual(
+            {v["id"] for v in canvas[0]["inputs"]},
+            {"graph", "jaal-original-layout-mode"},
+        )
+        runtime_js = client.get(url + "assets/16.jaal_visible_labels.js")
+        self.assertEqual(runtime_js.status_code, 200)
+        self.assertIn("this.nn", runtime_js.get_data(as_text=True))
         search_dep = next(d for d in deps if "graph.data" in d["output"])
         self.assertTrue(any(inp["id"] == "search_graph" for inp in search_dep["inputs"]))
         for search_term in ("CN Intelligence And Espionage Against TW",
@@ -237,7 +253,7 @@ class OriginalJaalMountTests(unittest.TestCase):
                       json.dumps(graph_column, ensure_ascii=False))
         self.assertIn("jaal-original-label-revision",
                       json.dumps(graph_column, ensure_ascii=False))
-        self.assertIn("hierarchical-box-labels-v3",
+        self.assertIn("canvas-multiline-v4",
                       json.dumps(graph_column, ensure_ascii=False))
         self.assertNotIn("jaal-original-layout-mode",
                          json.dumps(sidebar, ensure_ascii=False))

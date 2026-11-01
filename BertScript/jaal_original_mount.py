@@ -224,6 +224,27 @@ def _register_embedded_jaal_layout_mode(app, base_options):
         raise ValueError("Unsupported Jaal layout mode")
 
 
+def _register_embedded_jaal_visible_labels(app):
+    """Project label text onto visdcc's live vis.DataSet when Dash data changes.
+
+    Dash's initial graph.data may contain explicit newlines yet the user's
+    browser can still paint long one-line labels. visdcc's documented 'run'
+    prop executes on Network.render, after a prop update. Keep this in a
+    separate output from Jaal's seven original graph.data inputs.
+    """
+    from dash import Input, Output, ClientsideFunction
+
+    app.clientside_callback(
+        ClientsideFunction(
+            namespace="jaal_visible_labels", function_name="apply"
+        ),
+        Output("graph", "run"),
+        Input("jaal-original-layout-mode", "value"),
+        Input("graph", "data"),
+        prevent_initial_call=False,
+    )
+
+
 def _add_embedded_jaal_sidebar_toggle(layout):
     """Add a toggle without rebuilding the original Jaal graph or controls.
 
@@ -429,6 +450,7 @@ def prefix_original_jaal(original_app, prefix):
         raise RuntimeError("Original Jaal callbacks could not be preserved")
     _register_embedded_jaal_sidebar_toggle(child_app)
     _register_embedded_jaal_layout_mode(child_app, base_options)
+    _register_embedded_jaal_visible_labels(child_app)
     return child_app
 
 
