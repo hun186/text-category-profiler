@@ -152,7 +152,10 @@ class OriginalJaalMountTests(unittest.TestCase):
         for row in outer_rows:
             self.assertEqual(row["type"], "Row")
             self.assertIn("g-0", row["props"]["className"].split())
-        self.assertIn(b".g-0{", css_response.data)
+        # Bootstrap minifies these as grouped selectors, not ".g-0{".
+        # Both horizontal and vertical gutter variables must be zero.
+        self.assertIn(b".g-0,.gx-0{--bs-gutter-x:0", css_response.data)
+        self.assertIn(b".g-0,.gy-0{--bs-gutter-y:0", css_response.data)
         sidebar = components_by_id["jaal-original-settings-column"]
         graph_column = components_by_id["jaal-original-graph-column"]
         toggle = components_by_id["jaal-original-sidebar-toggle"]
