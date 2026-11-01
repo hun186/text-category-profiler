@@ -69,6 +69,27 @@ QueryRoot 的原版 Jaal 實例，避免無上限耗用記憶體；改變根類�
 這個 Jaal 區塊包含原本 UI 的篩選、顏色與大小設定，輕量區塊維持
 獨立，兩者不會互相覆蓋。
 
+### 原版 Jaal 左側設定面板收合／展開
+
+在已載入的原版 Jaal 子視窗中，圖形區上方有常駐可見的
+**「◀ 收合左側設定」**按鈕。按下後 Search／Filter／Color／Size
+左側設定區隱藏，右側分類圖從 Bootstrap 9 欄（75%）擴展成
+12 欄（100%）；按**「▶ 展開左側設定」**可恢復原本 3／9 欄。
+按鈕放在圖形欄內，所以隱藏設定區後仍可操作；不必重新選擇
+根類別或重新載入 Jaal。鍵盤可聚焦並按 Enter／Space 操作。
+
+這個功能只套在 **same-port 內嵌版**：保留原版 Jaal 的圖形
+`graph.data`、原有所有 Search／Filter／Color／Size 回呼與選擇，
+不重新建立 visdcc.Network、不改物理力選項、也不呼叫 `fit()`
+重設使用者視角。欄寬變更後透過瀏覽器 `resize` 通知
+vis.js 重算容器尺寸。獨立 8053 CLI 視窗仍維持原樣。
+每次重新載入整個 iframe 時，設定區會回到預設展開狀態。
+
+Hosted 測試會在原版 Jaal 的子路徑 HTTP 介面實測收合／展開
+回傳的 12 欄與 9 欄、原圖未重建及所有原版 callbacks 仍存在。
+實際 Windows 瀏覽器中的 network canvas resize 與功能互動需使用者
+確認，不能把 Hosted HTTP 測試視為視覺驗收完成。
+
 ### 原版 Jaal 嵌入版排版／Logo 修復
 
 原版 Jaal 的 `html.Img(width="80px")` 使用不合法的 HTML 圖片寬度字串，
