@@ -13,24 +13,33 @@ function fixture(spec) {
   const makeSet = values => ({
     items:values.map(i=>({...i})),
     get(){return this.items.map(i=>({...i}));},
+    getIds(){return this.items.map(i=>i.id);},
+    remove(ids) {
+      const gone=new Set(ids.map(String));
+      this.items=this.items.filter(item=>!gone.has(String(item.id)));
+    },
     update(changes){
       for(const update of changes){
         const target=this.items.find(item=>item.id===update.id);
-        assert.ok(target,"node and edge ID must remain unchanged");
-        Object.assign(target,update);
+        if(target) Object.assign(target,update);
+        else this.items.push({...update});
       }
     }
   });
+  const fitCalls=[];
   const component={
     nn:makeSet(nodes),ee:makeSet(edges),props:{data:{nodes,edges}},
-    net:{on(event,fn){assert.equal(event,"click");listeners.set(event,fn);}}
+    net:{
+      on(event,fn){assert.equal(event,"click");listeners.set(event,fn);},
+      fit(options){fitCalls.push(options);}
+    }
   };
   function run(mode){
     const command=apply(mode,component.props.data);
     assert.ok(command);
     new Function(command).call(component);
   }
-  return {component,nodes,edges,run,click:id=>{
+  return {component,nodes,edges,fitCalls,run,click:id=>{
     assert.ok(listeners.has("click"));
     listeners.get("click")({nodes:[id]});
   }};
@@ -63,12 +72,18 @@ test("both collapsed layouts preserve one original node each, label plus count o
       edges:[["A","B"],["A","C"],["B","D"],["C","D"]]});
     f.run(mode);
     let n=f.component.nn.get();
-    assert.equal(n.length,4);
+    assert.equal(n.length,mode==="hierarchical-collapsed"?3:4);
+    if(mode==="hierarchical-collapsed"){
+      assert.deepEqual(f.component.nn.getIds(),["A","B","C"]);
+      assert.equal(f.component.ee.getIds().length,2);
+      assert.deepEqual(f.fitCalls.at(-1).nodes,["A","B","C"]);
+    }
     assert.equal(n.find(x=>x.id==="A").hidden,false);
     assert.equal(n.find(x=>x.id==="A").label,"A");
     assert.equal(n.find(x=>x.id==="B").label,"B\n1");
     assert.equal(n.find(x=>x.id==="C").label,"C\n1");
-    assert.equal(n.find(x=>x.id==="D").hidden,true);
+    if(mode==="hierarchical-collapsed") assert.equal(n.find(x=>x.id==="D"),undefined);
+    else assert.equal(n.find(x=>x.id==="D").hidden,true);
     assert.equal(f.component.ee.get().filter(e=>!e.hidden).length,2);
     f.click("B");
     n=f.component.nn.get();
@@ -76,14 +91,22 @@ test("both collapsed layouts preserve one original node each, label plus count o
     assert.equal(n.find(x=>x.id==="B").label,"B");
     assert.equal(f.component.ee.get().filter(e=>!e.hidden).length,3); // C still collapsed
     f.click("B");
-    assert.equal(f.component.nn.get().find(x=>x.id==="D").hidden,true);
+    if(mode==="hierarchical-collapsed")
+      assert.equal(f.component.nn.get().find(x=>x.id==="D"),undefined);
+    else assert.equal(f.component.nn.get().find(x=>x.id==="D").hidden,true);
     // Click root once: hide both branches; one bubble with 3 unique descendants.
     f.click("A");
     n=f.component.nn.get();
     assert.equal(n.find(x=>x.id==="A").label,"A\n3");
     assert.equal(n.filter(x=>!x.hidden).length,1);
-    assert.equal(n.find(x=>x.id==="B").color,"#abcdef");
-    assert.equal(n.find(x=>x.id==="D").title,"D");
+    if(mode==="hierarchical-collapsed") {
+      assert.deepEqual(f.component.nn.getIds(),["A"]);
+      assert.equal(f.component.ee.getIds().length,0);
+      assert.deepEqual(f.fitCalls.at(-1).nodes,["A"]);
+    } else {
+      assert.equal(n.find(x=>x.id==="B").color,"#abcdef");
+      assert.equal(n.find(x=>x.id==="D").title,"D");
+    }
   }
 });
 
@@ -146,13 +169,13 @@ test("Search reveals a deep match and its ancestors, not sibling branches",()=>{
   assert.deepEqual(nodes.filter(n=>!n.hidden).map(n=>n.id),["A","B","C"]);
   assert.equal(nodes.find(n=>n.id==="A").label,"A");
   assert.equal(nodes.find(n=>n.id==="B").label,"B");
-  assert.equal(nodes.find(n=>n.id==="S").hidden,true);
+  assert.equal(nodes.find(n=>n.id==="S"),undefined);
   assert.equal(f.component.ee.get().filter(e=>!e.hidden).length,2);
   f.click("A"); // Search remains authoritative until cleared.
   assert.equal(f.component.nn.get().find(n=>n.id==="C").hidden,false);
   f.nodes.forEach(n=>{n.hidden=false;});
   f.run("hierarchical-collapsed");
-  assert.equal(f.component.nn.get().find(n=>n.id==="C").hidden,true);
+  assert.equal(f.component.nn.get().find(n=>n.id==="C"),undefined);
   f.click("B");
   assert.equal(f.component.nn.get().find(n=>n.id==="C").hidden,false);
 });
@@ -165,4 +188,54 @@ test("Search through two parents reveals one shared match without double count",
   assert.deepEqual(f.component.nn.get().filter(n=>!n.hidden).map(n=>n.id),
     ["A","B","C","D"]);
   assert.equal(f.component.ee.get().filter(e=>!e.hidden).length,4);
+});
+
+
+test("hierarchical collapse really removes hidden IDs and reflows after toggles",()=>{
+  const f=fixture({nodes:["A","B","C","D","E"],
+    edges:[["A","B"],["A","C"],["B","D"],["D","E"]]});
+  f.run("hierarchical-collapsed");
+  assert.deepEqual(f.component.nn.getIds(),["A","B","C"]);
+  assert.equal(f.component.ee.getIds().length,2);
+  assert.deepEqual(f.fitCalls.at(-1).nodes,["A","B","C"]);
+  f.click("B");
+  assert.deepEqual(new Set(f.component.nn.getIds()),new Set(["A","B","C","D"]));
+  assert.deepEqual(new Set(f.fitCalls.at(-1).nodes),new Set(["A","B","C","D"]));
+  assert.equal(f.component.ee.getIds().length,3);
+  f.click("B");
+  assert.deepEqual(new Set(f.component.nn.getIds()),new Set(["A","B","C"]));
+  f.run("network");
+  assert.equal(f.component.nn.getIds().length,5);
+  assert.equal(f.component.ee.getIds().length,4);
+  assert.equal(f.component.nn.get().find(n=>n.id==="E").title,"E");
+  assert.equal(f.component.nn.get().find(n=>n.id==="E").color,"#abcdef");
+  assert.equal(f.component.nn.get().find(n=>n.id==="E").label,"E");
+});
+
+test("network collapse rehydrates full DataSets after compact hierarchy",()=>{
+  const f=fixture({nodes:["A","B","C","D"],
+    edges:[["A","B"],["B","C"],["C","D"]]});
+  f.run("hierarchical-collapsed");
+  assert.equal(f.component.nn.getIds().length,2);
+  const oldFit=f.fitCalls.length;
+  f.run("network-collapsed");
+  assert.equal(f.component.nn.getIds().length,4);
+  assert.equal(f.component.ee.getIds().length,3);
+  assert.equal(f.fitCalls.length,oldFit,"network retains natural force layout");
+  assert.equal(f.component.nn.get().find(n=>n.id==="D").hidden,true);
+  f.click("B");
+  assert.equal(f.component.nn.get().find(n=>n.id==="C").hidden,false);
+});
+
+test("hierarchy Search only lays out matching ancestors then restores filters",()=>{
+  const f=fixture({nodes:["A","B","C","D"],
+    edges:[["A","B"],["B","C"],["A","D"]]});
+  f.nodes.forEach(n=>{n.hidden=n.id!=="C";});
+  f.run("hierarchical-collapsed");
+  assert.deepEqual(new Set(f.component.nn.getIds()),new Set(["A","B","C"]));
+  assert.equal(f.component.ee.getIds().length,2);
+  f.run("hierarchical");
+  assert.equal(f.component.nn.getIds().length,4);
+  assert.equal(f.component.nn.get().find(n=>n.id==="D").hidden,true);
+  assert.equal(f.component.nn.get().find(n=>n.id==="C").hidden,false);
 });
