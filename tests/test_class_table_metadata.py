@@ -53,6 +53,18 @@ class ClassTableTests(unittest.TestCase):
         self.assertEqual(m.DEFAULT_CSV.read_text(encoding="utf-8-sig"),
                          m.table_to_csv(actual))
 
+    def test_curated_metadata_splits_have_exact_reviewed_values(self):
+        # These five historical CT/Explanation deviations are explicit and
+        # reviewable, not a blanket exemption for any legacy metadata drift.
+        table = m.load_class_table()
+        self.assertEqual(set(legacy.CURATED_METADATA_OVERRIDES), {
+            "Agriculture", "Fishery", "Forestry",
+            "BD-Acknowledgements", "BD-Bibliography",
+        })
+        for label, expected in legacy.CURATED_METADATA_OVERRIDES.items():
+            with self.subTest(label=label):
+                self.assertEqual(table[label], expected)
+
     def test_unicode_quoting_and_optional_explanation(self):
         p = self.csv_file("chinese.csv", [
             ["Test", "中文、資料", '逗號,引號"和\n換行'],
