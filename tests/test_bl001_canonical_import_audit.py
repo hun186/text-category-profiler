@@ -1,9 +1,11 @@
 """Focused AST characterization for bounded canonical-module import evidence."""
 import unittest
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from scripts.bl001_canonical_import_audit import (
-    ROOT, LIMITATIONS, audit, canonical_modules, resolve_from,
+    ROOT, LIMITATIONS, ACTIVE_ENTRYPOINTS, active_entrypoint_inventory,
+    audit, canonical_modules, resolve_from,
     scan_source, source_area,
 )
 
@@ -15,6 +17,40 @@ class CanonicalImportEvidenceTests(unittest.TestCase):
         self.assertIn("text_category_profiler.visualization.tulip_graph_builder", targets)
         self.assertNotIn("text_category_profiler.ArtCluESJobTemplate", targets)
         self.assertNotIn("text_category_profiler.core", targets)
+
+
+    def test_canonical_five_entrypoints_have_structural_ast_evidence_only(self):
+        entries = active_entrypoint_inventory(ROOT)
+        self.assertEqual(len(entries), 5)
+        self.assertEqual(
+            [x["path"] for x in entries],
+            [path for _, path in ACTIVE_ENTRYPOINTS],
+        )
+        self.assertEqual(len({x["role"] for x in entries}), 5)
+        self.assertTrue(all(x["ast_parse"] == "ok" for x in entries))
+        self.assertTrue(all(not x["runtime_execution_verified"] for x in entries))
+        self.assertTrue(all(not x["external_caller_verified"] for x in entries))
+        report = audit(ROOT, [])
+        self.assertEqual(report["summary"]["canonical_entrypoints_tracked"], 5)
+        self.assertEqual(report["canonical_entrypoint_inventory"], entries)
+        self.assertFalse(report["runtime_verified"])
+
+    def test_canonical_entrypoint_audit_fails_closed_on_missing_or_invalid(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            for _, path in ACTIVE_ENTRYPOINTS:
+                file = root / path
+                file.parent.mkdir(parents=True, exist_ok=True)
+                file.write_text("if __name__ == '__main__':\n    pass\n",
+                                encoding="utf-8")
+            self.assertEqual(len(active_entrypoint_inventory(root)), 5)
+            bad = root / ACTIVE_ENTRYPOINTS[1][1]
+            bad.write_text("from \n", encoding="utf-8")
+            with self.assertRaisesRegex(AssertionError, "not parseable"):
+                active_entrypoint_inventory(root)
+            bad.unlink()
+            with self.assertRaisesRegex(AssertionError, "missing"):
+                active_entrypoint_inventory(root)
 
     def test_explicit_absolute_imports_and_from_package_resolve(self):
         src = (

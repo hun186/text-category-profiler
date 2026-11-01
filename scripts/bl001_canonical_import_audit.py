@@ -29,7 +29,51 @@ LIMITATIONS = [
     "A __main__ guard only proves CLI entrypoint syntax, not direct-run compatibility.",
     "BertScript relative imports are syntax-only package references; no direct-script runtime resolution is implied.",
     "No model, GPU, SQL, Elasticsearch, WorkPool or UI acceptance performed.",
+    "Canonical entrypoint inventory only checks file presence and AST syntax, not executed command-line dispatch.",
 ]
+
+
+# Stable canonical CLI/stage entrypoint roles. Presence and parseability are
+# evidence of tracked source structure, not dispatch or end-to-end execution.
+ACTIVE_ENTRYPOINTS = (
+    ("root_orchestrator", "TCFMain.py"),
+    ("dataset_converter", "DatasetConverter/DataConverter.py"),
+    ("classifier_runner", "BertScript/RunClassfier.py"),
+    ("result_combiner", "BertScript/CombineTestResult.py"),
+    ("visualization", "BertScript/Test_result_Vis.py"),
+)
+
+
+def active_entrypoint_inventory(root=ROOT):
+    """Fail closed on a missing/unparseable canonical source, without imports.
+
+    This inventory does not validate the CLI command, the WorkPool, model
+    runtime or third-party dependency availability.
+    """
+    root = Path(root)
+    seen_roles, seen_paths, entries = set(), set(), []
+    for role, path in ACTIVE_ENTRYPOINTS:
+        if role in seen_roles or path in seen_paths:
+            raise AssertionError(f"Duplicate entrypoint role or path: {role}: {path}")
+        seen_roles.add(role)
+        seen_paths.add(path)
+        source = root / path
+        if not source.is_file():
+            raise AssertionError(f"Canonical entrypoint missing: {path}")
+        content = source.read_text(encoding="utf-8", errors="replace")
+        try:
+            ast.parse(content, filename=path)
+        except (SyntaxError, ValueError) as exc:
+            raise AssertionError(f"Canonical entrypoint not parseable: {path}") from exc
+        entries.append({
+            "role": role,
+            "path": path,
+            "ast_parse": "ok",
+            "top_level_main_guard_syntax": has_top_level_main_guard(content),
+            "runtime_execution_verified": False,
+            "external_caller_verified": False,
+        })
+    return entries
 
 
 def canonical_modules(root=ROOT):
@@ -224,6 +268,7 @@ def audit(root=ROOT, sources=None):
     )):
         raise AssertionError("Package structural census must pass before import audit")
     targets = canonical_modules(root)
+    entrypoints = active_entrypoint_inventory(root)
     scoped_sources = tracked_sources(root)
     selected = scoped_sources if sources is None else sources
     qualified, dynamic, bare, unresolved, parse_errors = [], [], [], [], []
@@ -277,6 +322,7 @@ def audit(root=ROOT, sources=None):
         "summary": {
             "scanned_python_sources": len(selected),
             "canonical_modules": len(targets),
+            "canonical_entrypoints_tracked": len(entrypoints),
             "qualified_import_occurrences": len(qualified),
             "modules_with_explicit_import_syntax": sum(bool(by_module[m]) for m in targets),
             "modules_without_scoped_import_syntax": sum(not by_module[m] for m in targets),
@@ -302,6 +348,7 @@ def audit(root=ROOT, sources=None):
             "parse_errors": len(parse_errors),
         },
         "module_evidence": module_rows,
+        "canonical_entrypoint_inventory": entrypoints,
         "qualified_imports": qualified,
         "dynamic_import_candidates": dynamic,
         "unresolved_bare_import_candidates": bare,
