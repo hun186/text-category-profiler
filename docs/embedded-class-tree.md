@@ -115,6 +115,25 @@ QueryRoot 的原版 Jaal 實例，避免無上限耗用記憶體；改變根類�
 停用物理力，並以垂直 cubicBezier 曲線顯示關係；
 切回網狀時，因 visdcc 的 `setOptions` 會合併既有選項而非取代，會明確設 `hierarchical.enabled=false`、還原樹狀 cubicBezier 為原始設定（未指定則 dynamic 預設），並在階層引擎完成內部狀態還原後，透過短暫的一次性計時回呼**第二次**設定 physics.enabled 與完整原始 edge smoothing，以避免被 vis.js 舊布局備份覆寫。計時器其餘時間停用，快速切回階層時不會誤啟動 physics；其餘原始 Jaal options 保留。
 
+### 階層模式長類別名稱防重疊（同埠 Jaal）
+
+階層圖中同一層含大量英文 ClassLabel 時，原先 175px 的節點間距
+不足以容納完整單行文字。內嵌 Jaal 的 **階層模式**現在對節點
+標籤設定 vis-network `nodes.widthConstraint.maximum=145`，使有空白
+的英文長名稱依寬度自動換行；同時將水平同層間距改為 245、
+不同樹間距 310、垂直層距 205，並保留導向邊及既有的
+Search／Filter／Color／Size。沒有變更 ClassLabel、邊、選取狀態
+或完整原始圖形資料。顯示過密時仍可放大／拖曳，或從更細的根類別載入；
+**不宣稱 77 個節點全部在單一螢幕寬度下都能同時清楚閱讀**。
+
+切回**網狀**時，由於 visdcc／vis-network 對 options 採合併更新，
+會明確還原原本的 `nodes.widthConstraint`（未設定則 `false`），
+並連同原本的 physics 與 edge smoothing 一併透過既有的
+一次性 timer 恢復，避免網狀模式仍受階層標籤換行限制。
+這只修改同 port 內嵌版；獨立的 Jaal CLI 原樣保留。
+Hosted 回歸測試包含 options、WSGI callback 與反覆切換，
+真正 Windows 瀏覽器視覺間距仍需實機確認。
+
 切換僅更新既有 `visdcc.Network(id="graph").options`，不更動
 `graph.data`、Search／Filter／Color／Size 已選設定、左側面板收合，
 也不重新建立 Jaal Dash app 或開新 port。載入另一個根類別時會
