@@ -302,7 +302,7 @@ class CandidateGateTests(unittest.TestCase):
             with self.assertRaisesRegex(metadata.MetadataError, "unsafe relative"):
                 check("../article.txt", digest)
             with self.assertRaisesRegex(metadata.MetadataError, "unsafe relative"):
-                check("..\\\\article.txt", digest)
+                check(".." + chr(92) + "article.txt", digest)
             with self.assertRaisesRegex(metadata.MetadataError, "sha256 mismatch"):
                 check("article.txt", "0" * 64)
             if hasattr(Path, "symlink_to"):

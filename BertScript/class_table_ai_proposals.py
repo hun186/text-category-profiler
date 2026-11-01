@@ -208,7 +208,7 @@ def audit_proposed_graph_nodes(
 
 MAX_EVIDENCE_ARTICLES = 1000
 MAX_ARTICLE_BYTES = 10_000_000
-SHA256_PATTERN = re.compile(r"[0-9a-f]{64}\\Z")
+SHA256_PATTERN = re.compile("[0-9a-f]{64}")
 
 
 def audit_local_article_evidence(
@@ -228,7 +228,7 @@ def audit_local_article_evidence(
     if not isinstance(manifest, dict) or set(manifest) != {"schema_version", "articles"}:
         raise MetadataError("evidence manifest requires schema_version and articles")
     records = manifest["articles"]
-    if manifest["schema_version"] != 1 or not isinstance(records, list) or not (
+    if type(manifest["schema_version"]) is not int or manifest["schema_version"] != 1 or not isinstance(records, list) or not (
         1 <= len(records) <= MAX_EVIDENCE_ARTICLES
     ):
         raise MetadataError("invalid evidence schema version or article count")
@@ -242,7 +242,7 @@ def audit_local_article_evidence(
         if not isinstance(source, str) or not source or source != source.strip():
             raise MetadataError(f"evidence article {index}: invalid source identifier")
         if not isinstance(rel, str) or (
-            not rel or "\\\\" in rel or
+            not rel or chr(92) in rel or
             any(part in ("", ".", "..") for part in rel.split("/"))
             or Path(rel).is_absolute()
         ):
