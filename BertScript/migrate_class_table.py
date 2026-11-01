@@ -32,6 +32,24 @@ CURATED_METADATA_OVERRIDES = {
 }
 
 
+# Exact corresponding pre-migration source values for the five later
+# human-readable metadata splits. An opt-in comparison applies these guarded
+# corrections to the *expected* baseline, then still compares all records.
+CURATED_SOURCE_FIELDS = {
+    "Agriculture": {"CT": "農業;農藝;農學", "Explanation": ""},
+    "Fishery": {"CT": "漁業;水產業", "Explanation": ""},
+    "Forestry": {"CT": "林業;林學", "Explanation": ""},
+    "BD-Acknowledgements": {
+        "CT": "致謝詞",
+        "Explanation": "\t有時作為序言的一部分而不是單獨的部分。這部分有時被放在書後附屬資料中。它記錄了那些為本書的創作做出貢獻的人。",
+    },
+    "BD-Bibliography": {
+        "CT": "參考書目",
+        "Explanation": "\t撰寫正文時參考的其他作品清單，在非小說類書籍或研究論文中最常見。",
+    },
+}
+
+
 def read_legacy(path):
     tree = ast.parse(Path(path).read_text(encoding="utf-8-sig"))
     found = [n.value for n in tree.body if isinstance(n, ast.Assign)
@@ -131,19 +149,25 @@ def verify(original, actual, *, allow_pending_additions=False):
         )
     # Preserve all historical CT/Explanation values even when opt-in AI
     # additions extend the official CSV. New rows remain unapproved.
-    differences = []
-    for label, item in expected.items():
-        legacy_fields = {
-            "CT": actual[label]["CT"],
-            "Explanation": actual[label]["Explanation"],
-        }
-        if item == legacy_fields:
-            continue
-        if (allow_pending_additions
-                and label in CURATED_METADATA_OVERRIDES
-                and actual[label] == CURATED_METADATA_OVERRIDES[label]):
-            continue
-        differences.append(label)
+    if allow_pending_additions:
+        # Reconcile only five exact, separately documented post-migration
+        # field splits. Reject any unexpected historical source or current
+        # target; this is an explicit correction, not a skipped comparison.
+        for label, corrected in CURATED_METADATA_OVERRIDES.items():
+            if label not in expected:
+                continue  # Small synthetic legacy fixtures need not contain all five.
+            if expected[label] != CURATED_SOURCE_FIELDS[label]:
+                raise MetadataError(f"{label!r}: unexpected historical source for guarded correction")
+            if actual[label] != corrected:
+                raise MetadataError(f"{label!r}: guarded metadata correction differs")
+            expected[label] = {
+                "CT": corrected["CT"], "Explanation": corrected["Explanation"],
+            }
+    differences = [
+        label for label, item in expected.items()
+        if item != {"CT": actual[label]["CT"],
+                    "Explanation": actual[label]["Explanation"]}
+    ]
     if differences:
         raise MetadataError(f"CT/Explanation mismatch: {differences[:20]}")
     if extra:
