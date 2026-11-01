@@ -8,7 +8,9 @@ change has been approved or that source evidence has been independently checked.
 from __future__ import annotations
 
 import argparse
+import csv
 from datetime import date
+from itertools import chain
 import json
 from pathlib import Path
 
@@ -94,6 +96,80 @@ def audit_proposals(
     }
 
 
+
+def _read_edge_rows(path: str | Path) -> list[tuple[str, str, str]]:
+    """Read edge identities (parent, child, relation); date/notes are not identity.
+
+    This is a bounded structural preflight, not semantic validation. Relation
+    types other than literal 'contains' may intentionally be non-hierarchical.
+    """
+    path = Path(path)
+    try:
+        with path.open("r", encoding="utf-8-sig", newline="") as handle:
+            reader = csv.reader(handle, strict=True)
+            first = next(reader, None)
+            if first is None:
+                raise MetadataError(f"{path}: empty TopicTree")
+            names = [cell.strip().lstrip("#").casefold() for cell in first[:2]]
+            has_header = (
+                len(names) >= 2
+                and (
+                    ("母類別" in names[0] and "子類別" in names[1])
+                    or names in (["parent", "child"], ["source", "target"])
+                )
+            )
+            rows = reader if has_header else chain((first,), reader)
+            result: list[tuple[str, str, str]] = []
+            for row_number, row in enumerate(rows, 2 if has_header else 1):
+                if len(row) < 2 or not row[0] or not row[1]:
+                    raise MetadataError(
+                        f"{path}: missing edge endpoint near row {row_number}"
+                    )
+                result.append((row[0], row[1], row[3] if len(row) > 3 else ""))
+            return result
+    except (csv.Error, UnicodeError) as exc:
+        raise MetadataError(f"{path}: invalid graph CSV: {exc}") from exc
+
+
+def _audit_new_edge_structure(
+    base_tree: str | Path, proposed_edges: str | Path
+) -> int:
+    """Reject repeated/self relations and newly formed literal contains cycles.
+
+    Existing graph anomalies are not retroactively rejected. This does NOT
+    approve relationship semantics or assume non-'contains' relations are DAGs.
+    """
+    original = _read_edge_rows(base_tree)
+    proposed = _read_edge_rows(proposed_edges)
+    known = set(original)
+    for edge in proposed:
+        if edge[0] == edge[1]:
+            raise MetadataError(f"proposed self-edge: {edge!r}")
+        if edge in known:
+            raise MetadataError(f"duplicate proposed graph relation: {edge!r}")
+        known.add(edge)
+
+    adjacency: dict[str, set[str]] = {}
+    for parent, child, relation in [*original, *proposed]:
+        if relation.strip().casefold() == "contains":
+            adjacency.setdefault(parent, set()).add(child)
+    for parent, child, relation in proposed:
+        if relation.strip().casefold() != "contains":
+            continue
+        stack = [child]
+        visited: set[str] = set()
+        while stack:
+            node = stack.pop()
+            if node == parent:
+                raise MetadataError(
+                    f"proposed 'contains' cycle via {parent!r} -> {child!r}"
+                )
+            if node not in visited:
+                visited.add(node)
+                stack.extend(adjacency.get(node, ()))
+    return len(proposed)
+
+
 def audit_proposed_graph_nodes(
     additions: list[str],
     *,
@@ -102,8 +178,9 @@ def audit_proposed_graph_nodes(
 ) -> dict[str, object]:
     """Match proposed new graph node identities to AI新增 labels only.
 
-    Graph relationship semantics, article evidence, cyclicity and actual
-    authorization are NOT checked here. This never reads/writes official
+    Graph relationship semantics, article evidence and authorization remain
+    unchecked. Exact duplicate/self edges and cycles of literal 'contains'
+    relations introduced by proposed edges are rejected. This never reads/writes official
     metadata output files; only the two supplied graph CSVs are read.
     """
     original = topic_nodes(base_tree)
@@ -117,9 +194,11 @@ def audit_proposed_graph_nodes(
             f"missing_in_edges={missing_in_edges}, "
             f"missing_in_candidates={missing_in_candidates}"
         )
+    checked_edges = _audit_new_edge_structure(base_tree, proposed_edges)
     return {
         "GraphNodeAlignment": "matched",
         "NewGraphNodes": sorted(added),
+        "ProposedEdgesStructurallyChecked": checked_edges,
         "GraphRelationshipsApproved": False,
     }
 
