@@ -9,7 +9,7 @@ MAX_LABEL_LINE_CHARS = 17
 MAX_LABEL_LINES = 3
 # Bump when changing browser-visible label formatting so users can distinguish
 # an already-running Python server from the checked-out Git revision.
-LABEL_RENDERER_REVISION = "multiline-labels-v2"
+LABEL_RENDERER_REVISION = "hierarchical-box-labels-v3"
 
 
 def wrapped_classlabel(name: str) -> str:
@@ -57,3 +57,21 @@ def prepare_embedded_jaal_nodes(node_df):
     nodes["label"] = nodes["id"].map(wrapped_classlabel)
     nodes["title"] = nodes["id"]
     return nodes
+
+
+def enable_embedded_jaal_global_node_shapes(jaal_instance):
+    """Remove only Jaal's embedded per-node dot override for mode-specific boxes.
+
+    vis-network gives per-node 'shape' precedence over options.nodes.shape.
+    Upstream parse_dataframe hardcodes 'shape': 'dot'; hierarchy could
+    therefore never draw a space-reserving box without this adapter.
+    """
+    for collection in (jaal_instance.data, jaal_instance.filtered_data):
+        if not isinstance(collection, dict) or not isinstance(collection.get("nodes"), list):
+            raise RuntimeError("Original Jaal node payload contract changed")
+        for node in collection["nodes"]:
+            if "shape" in node:
+                if node["shape"] != "dot":
+                    raise RuntimeError("Original Jaal unexpected per-node shape")
+                del node["shape"]
+    return jaal_instance

@@ -274,3 +274,22 @@ Windows 真實瀏覽器的視覺截圖驗收；若更新後畫面仍被放大，
 新的 `prepare_embedded_jaal_nodes` 是正式 `createMode` 的標籤轉換
 共用入口，同時由真實 Jaal/Dash WSGI HTTP 測試的節點資料建立流程
 呼叫。避免測試自行加工 `label` 卻遺漏正式入口的回歸風險。
+
+
+### v3：階層圖改用容納多行文字的框狀節點
+
+2026-11-02 使用者已證明 Windows 8059 執行 `multiline-labels-v2`
+且 77 節點／81 邊仍有同層標籤嚴重覆蓋；**不是程式未更新**。
+Jaal `parse_dataframe` 會為每個節點設定 `shape: dot`；這個
+節點屬性優先於 vis-network 全域 `nodes.shape`。圓點下方的
+標籤不計入節點自身排版尺寸，單純插入換行不足以防止互疊。
+
+內嵌版 Jaal 現在**僅移除 shape: dot 這個顯示用覆寫**，讓
+vis-network 可隨模式切換：原始網狀模式使用 dot，階層模式使用
+box、最大標籤寬度 178、內距 12、加大同層與層距；因此階層
+引擎會把文字放在保留空間的節點框內，減少框外標籤重疊。
+搜尋仍依完整 id，完整 title 與所有 filter/color/size/edge
+資料不更動；獨立 Jaal CLI 不受影響。修正版版號為
+`hierarchical-box-labels-v3`，Windows 使用者需重啟 8059
+並驗證是否能辨讀，不能把 Hosted options／HTTP 資料測試
+宣稱為實際瀏覽器像素驗收。

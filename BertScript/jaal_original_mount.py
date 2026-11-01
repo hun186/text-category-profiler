@@ -15,6 +15,7 @@ from threading import RLock
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
 from ClassesTree.Visualization.embedded_tree import load_graph
+from ClassesTree.Visualization.jaal.label_format import enable_embedded_jaal_global_node_shapes
 
 
 MOUNT_PATH = "/jaal-original"
@@ -119,17 +120,22 @@ def _jaal_layout_options(base_options, mode):
             "enabled": True,
             "direction": "UD",
             "sortMethod": "directed",
-            # Full ClassLabels drawn outside nodes overlap at the old
-            # 175px spacing. Bound the label text width for vis-network's
-            # word wrapping; keep graph.data and all node identities intact.
-            "levelSeparation": 205,
-            "nodeSpacing": 245,
-            "treeSpacing": 310,
+            # Circle labels sit outside node dimensions, so hierarchy's
+            # spacing engine cannot avoid collisions. Boxes reserve the
+            # rendered label width and height as actual node geometry.
+            "levelSeparation": 260,
+            "nodeSpacing": 285,
+            "treeSpacing": 370,
             "blockShifting": True,
             "edgeMinimization": True,
             "parentCentralization": True,
         }
-        options.setdefault("nodes", {})["widthConstraint"] = {"maximum": 145}
+        options.setdefault("nodes", {}).update({
+            "shape": "box",
+            "widthConstraint": {"maximum": 178},
+            "margin": 12,
+            "borderWidth": 1,
+        })
         options["physics"] = {"enabled": False}
         options.setdefault("edges", {})["smooth"] = {
             "enabled": True,
@@ -144,9 +150,14 @@ def _jaal_layout_options(base_options, mode):
         options.setdefault("layout", {})["hierarchical"] = {"enabled": False}
         # visdcc calls setOptions() which MERGES previous options; reset
         # wrapping explicitly so original Jaal network labels stay unaltered.
-        options.setdefault("nodes", {})["widthConstraint"] = deepcopy(
-            base_options.get("nodes", {}).get("widthConstraint", False)
-        )
+        options.setdefault("nodes", {}).update({
+            "shape": deepcopy(base_options.get("nodes", {}).get("shape", "dot")),
+            "widthConstraint": deepcopy(
+                base_options.get("nodes", {}).get("widthConstraint", False)
+            ),
+            "margin": deepcopy(base_options.get("nodes", {}).get("margin", 0)),
+            "borderWidth": deepcopy(base_options.get("nodes", {}).get("borderWidth", 1)),
+        })
         baseline_physics = base_options.get("physics", {})
         if isinstance(baseline_physics, dict):
             options.setdefault("physics", {})["enabled"] = baseline_physics.get(
@@ -198,7 +209,10 @@ def _register_embedded_jaal_layout_mode(app, base_options):
             return {
                 "physics": {"enabled": enabled},
                 "edges": {"smooth": reset["edges"]["smooth"]},
-                "nodes": {"widthConstraint": reset["nodes"]["widthConstraint"]},
+                "nodes": {
+                    key: reset["nodes"][key]
+                    for key in ("shape", "widthConstraint", "margin", "borderWidth")
+                },
             }, True
         if mode == "hierarchical":
             return _jaal_layout_options(base_options, mode), True
@@ -268,6 +282,10 @@ def _add_embedded_jaal_sidebar_toggle(layout):
             or not isinstance(getattr(network, "options", None), dict)):
         raise RuntimeError("Original Jaal network/options contract changed")
     base_options = deepcopy(network.options)
+    # Jaal instance graph.data has been adapted to omit explicit node
+    # shapes. Keep the original network in dot mode until hierarchy selected.
+    base_options.setdefault("nodes", {}).setdefault("shape", "dot")
+    network.options = deepcopy(base_options)
     toggle = html.Button(
         "◀ 收合左側設定", id="jaal-original-sidebar-toggle", n_clicks=0,
         className="btn btn-outline-secondary btn-sm",
@@ -296,7 +314,7 @@ def _add_embedded_jaal_sidebar_toggle(layout):
                    title="這是當前 Python 服務實際載入的標籤版本；"
                          "若更新 Git 後仍看不到此版本，請完全停止 8059 服務再重新啟動",
                    style={"fontSize": "12px", "color": "#475569"}),
-         html.Span("階層模式：長標籤自動換行；過密時可放大／拖曳查看",
+         html.Span("階層模式：框狀節點為多行文字保留空間；可縮放／拖曳",
                    id="jaal-original-hierarchy-hint",
                    style={"fontSize": "12px", "color": "#475569"}),
          dcc.Interval(id="jaal-original-physics-restore",

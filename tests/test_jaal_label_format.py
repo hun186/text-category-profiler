@@ -23,9 +23,35 @@ class EmbeddedJaalLabelFormatTests(unittest.TestCase):
         self.assertIn(chr(10), formatted.loc[0, "label"])
         self.assertEqual(formatted.loc[1, "label"], "TW Affairs")
         self.assertEqual(formatted["depth"].tolist(), [2, 0])
-        self.assertEqual(LABEL_RENDERER_REVISION, "multiline-labels-v2")
+        self.assertEqual(LABEL_RENDERER_REVISION, "hierarchical-box-labels-v3")
         with self.assertRaisesRegex(ValueError, "id column"):
             prepare_embedded_jaal_nodes(pd.DataFrame({"label": ["hi"]}))
+
+    def test_box_shape_override_removed_without_changing_data(self):
+        from types import SimpleNamespace
+        from ClassesTree.Visualization.jaal.label_format import (
+            enable_embedded_jaal_global_node_shapes,
+        )
+        one = {"id": "Long Label", "label": "Long\\nLabel",
+               "title": "Long Label", "shape": "dot", "size": 7}
+        two = {"id": "Other", "label": "Other", "shape": "dot"}
+        edges = [{"from": "Long Label", "to": "Other"}]
+        instance = SimpleNamespace(
+            data={"nodes": [one, two], "edges": edges},
+            filtered_data={"nodes": [one, two], "edges": edges},
+        )
+        self.assertIs(enable_embedded_jaal_global_node_shapes(instance), instance)
+        self.assertNotIn("shape", one)
+        self.assertNotIn("shape", two)
+        self.assertEqual(one["label"], "Long\\nLabel")
+        self.assertEqual(one["id"], one["title"])
+        self.assertEqual(one["size"], 7)
+        self.assertEqual(instance.data["edges"], edges)
+        with self.assertRaisesRegex(RuntimeError, "unexpected per-node shape"):
+            enable_embedded_jaal_global_node_shapes(SimpleNamespace(
+                data={"nodes": [{"shape": "box"}]},
+                filtered_data={"nodes": []},
+            ))
 
     def test_short_label_stays_unchanged(self):
         self.assertEqual(wrapped_classlabel("TW Affairs"), "TW Affairs")
