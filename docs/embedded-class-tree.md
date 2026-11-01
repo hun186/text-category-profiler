@@ -244,3 +244,11 @@ Windows 真實瀏覽器的視覺截圖驗收；若更新後畫面仍被放大，
 跨欄顯示與瀏覽器效能）；CI 使用小型原版 Jaal app 驗證同 port
 資源及 callback 路徑，不等同 2,648 節點實際順暢繪圖。
 \n\n### 階層圖標籤不換行的實機修正\n\n先前 PR #187 的 `nodes.widthConstraint.maximum=145` 是 vis-network\n希望在標籤實際寬度超過 145px 且遇到詞間空白時換行的設定，\n**不是 145 個字、也不是 Jaal 的必然換行規則**。Windows 實測的\nvisdcc／dot 節點未產生任何可見換行，因此僅靠 options 並未修好。\n\n同埠內嵌版 Jaal `createMode=True` 現在明確以\n`ClassesTree/Visualization/jaal/label_format.py` 格式化**顯示用**\n`node_df.label`：最長每行約 17 個字元、最多三行，\n儘量在英文詞／連字號處斷行；超長者在第三行末尾顯示省略符號。\n完整的 `ClassLabel` 仍保留於 `node_df.id` 及滑鼠提示\n`node_df.title`，既有 TopicTree、邊、欄位與原始搜尋／篩選\ncallbacks 不更動。新方法直接透過 Jaal 官方支援的 label/title 欄位\n輸出換行文字，並由 Hosted 真實 Jaal Dash layout HTTP 測試驗證\n資料包含換行，而非只測 options JSON。\n\n**範圍限制：**由於原版 Jaal 在同一個 graph.data 中共用\n網狀與階層模式的節點標籤，同埠檢視器的**兩種模式**都會顯示此\n多行／縮短文字（畫面文字改變，但節點 ID、tooltip 與原版控制保留）；\n獨立 8053 CLI 不受影響。這是為了避免攔截或複寫原版\nSearch／Filter／Color／Size callbacks。若要依模式獨立切換原名／短名，\n需要後續額外確認回呼相容性，不能宣稱此版本已做到。\n真實 Windows 瀏覽器依然需要用戶確認畫面，Hosted Jaal 測試不等於\n任何螢幕寬度下「所有 77 個節點都不重疊」的保證。\n
+
+**搜尋相容性補充：**上游 Jaal 的 `_callback_search_graph` 預設對
+`node.label` 搜尋，不能單靠保留 `id/title` 宣稱全文仍可搜尋。
+內嵌版在 `Jaal.create()` 註冊 callbacks 之前，將此一 instance
+的搜尋方法改為比對原始完整 `node.id`（沿用原本 substring、不分
+大小寫與 `hidden` 更新契約），因此橫跨換行的完整名稱及第三行後
+被省略的文字仍可搜尋；不改 Filter／Color／Size 回呼。
+已加入真正使用 WSGI 發送 Search callback 的回歸測試。

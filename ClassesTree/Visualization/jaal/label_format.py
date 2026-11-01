@@ -27,3 +27,16 @@ def wrapped_classlabel(name: str) -> str:
         replace_whitespace=True, drop_whitespace=True,
     )
     return "\n".join(lines) if lines else name
+
+
+def search_full_classlabel(graph_data, search_text):
+    """Jaal search callback with original ClassLabel semantics.
+
+    Jaal upstream searches displayed node['label']. Embedded labels now have
+    newlines and optional ellipses, so search the unchanged node['id'] instead.
+    Keep Jaal's existing per-node hidden flag behaviour; no other data changes.
+    """
+    needle = (search_text or "").lower()
+    for node in graph_data["nodes"]:
+        node["hidden"] = needle not in str(node["id"]).lower()
+    return graph_data

@@ -3,6 +3,7 @@ import unittest
 
 from ClassesTree.Visualization.jaal.label_format import (
     MAX_LABEL_LINES, MAX_LABEL_LINE_CHARS, wrapped_classlabel,
+    search_full_classlabel,
 )
 
 
@@ -32,6 +33,23 @@ class EmbeddedJaalLabelFormatTests(unittest.TestCase):
                                     for line in lines))
                 self.assertIn("\n", rendered)
                 self.assertNotEqual(rendered, name)
+
+    def test_search_matches_full_identifier_across_newlines_and_ellipses(self):
+        full = "TW-" + "LongClassificationLabel" * 8
+        display = wrapped_classlabel(full)
+        nodes = [
+            {"id": full, "label": display},
+            {"id": "TW Affairs", "label": "TW Affairs"},
+        ]
+        data = {"nodes": nodes, "edges": []}
+        for query in (full, "LongClassificationLabel" * 3, full[-16:]):
+            result = search_full_classlabel(data, query)
+            self.assertIs(result, data)
+            self.assertFalse(nodes[0]["hidden"])
+            self.assertTrue(nodes[1]["hidden"])
+            self.assertEqual(nodes[0]["label"], display)
+        search_full_classlabel(data, "")
+        self.assertFalse(any(n["hidden"] for n in nodes))
 
     def test_ellipsized_name_does_not_modify_source_or_identity(self):
         name = "TW-" + "LongClassificationLabel" * 8
