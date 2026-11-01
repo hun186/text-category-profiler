@@ -6,9 +6,11 @@ on:
     paths:
       - "BertScript/jaal_original_mount.py"
       - "BertScript/jaal_original_panel.py"
+      - "BertScript/assets/15.jaal_embedded_autoheight.js"
       - "BertScript/Test_result_Vis.py"
       - "ClassesTree/Visualization/jaal/jaalViewer.py"
       - "tests/test_jaal_original_mount.py"
+      - "tests/jaal_autoheight.test.cjs"
       - "requirements.txt"
       - ".github/workflows/stage4-original-jaal.yml"
   push:
@@ -16,9 +18,11 @@ on:
     paths:
       - "BertScript/jaal_original_mount.py"
       - "BertScript/jaal_original_panel.py"
+      - "BertScript/assets/15.jaal_embedded_autoheight.js"
       - "BertScript/Test_result_Vis.py"
       - "ClassesTree/Visualization/jaal/jaalViewer.py"
       - "tests/test_jaal_original_mount.py"
+      - "tests/jaal_autoheight.test.cjs"
       - "requirements.txt"
       - ".github/workflows/stage4-original-jaal.yml"
   workflow_dispatch:
@@ -45,5 +49,12 @@ jobs:
         run: python -m unittest -v tests.test_jaal_original_mount
       - name: Check Jaal direct-script path compatibility
         run: python -m unittest -v tests.test_jaal_viewer_path_contract
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify Jaal iframe auto-height sizing and sidebar reflow
+        run: |
+          node --check BertScript/assets/15.jaal_embedded_autoheight.js
+          node --test tests/jaal_autoheight.test.cjs
       - name: Check whitespace
         run: git diff --check HEAD^ HEAD
