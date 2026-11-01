@@ -4,7 +4,7 @@ from pathlib import Path
 import subprocess
 import unittest
 
-from BertScript.class_table_metadata import DEFAULT_CSV, load_class_table
+from BertScript.class_table_metadata import DEFAULT_CSV, load_class_table, read_rows
 
 ROOT = Path(__file__).resolve().parents[1]
 ACTIVE = ("BertScript/", "DatasetConverter/", "ClassesTree/",
@@ -88,7 +88,10 @@ class CSVOnlyClassTableTests(unittest.TestCase):
 
     def test_loader_retains_existing_dict_contract(self):
         table = load_class_table()
-        self.assertEqual(len(table), 1994)
+        # ClassTable evolves independently of the original 1,994-row
+        # baseline; require every authoritative CSV record to be retained.
+        self.assertGreaterEqual(len(table), 1994)
+        self.assertEqual(len(table), len(read_rows(DEFAULT_CSV)))
         self.assertEqual(table["Academia"]["CT"], "學術")
         self.assertEqual(set(table["Academia"]), {"CT", "Explanation", "Notes"})
 
