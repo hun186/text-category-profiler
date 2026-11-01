@@ -164,6 +164,9 @@ class OriginalJaalMountTests(unittest.TestCase):
         toggle = components_by_id["jaal-original-sidebar-toggle"]
         mode = components_by_id["jaal-original-layout-mode"]["props"]
         self.assertEqual(mode["value"], "network")
+        restore_timer = components_by_id["jaal-original-physics-restore"]["props"]
+        self.assertTrue(restore_timer["disabled"])
+        self.assertEqual(restore_timer["interval"], 300)
         self.assertEqual(mode["options"], [
             {"label": "網狀", "value": "network"},
             {"label": "階層樹狀", "value": "hierarchical"},
@@ -196,7 +199,9 @@ class OriginalJaalMountTests(unittest.TestCase):
         # The new options callback must not compete with Jaal's existing
         # Search/Filter/Color/Size callback for graph.data.
         graph_option_callbacks = [
-            dep for dep in dependencies if dep["output"] == "graph.options"
+            dep for dep in dependencies
+            if "graph.options" in dep["output"]
+            and "jaal-original-physics-restore.disabled" in dep["output"]
         ]
         self.assertEqual(len(graph_option_callbacks), 1)
         self.assertTrue(any(
@@ -257,17 +262,30 @@ class OriginalJaalMountTests(unittest.TestCase):
             result = client.post(
                 url + "_dash-update-component",
                 json={
-                    "output": "graph.options",
-                    "outputs": {"id": "graph", "property": "options"},
-                    "inputs": [{"id": "jaal-original-layout-mode",
-                                "property": "value", "value": choice}],
+                    "output": graph_option_callbacks[0]["output"],
+                    "outputs": [
+                        {"id": "graph", "property": "options"},
+                        {"id": "jaal-original-physics-restore",
+                         "property": "disabled"},
+                    ],
+                    "inputs": [
+                        {"id": "jaal-original-layout-mode",
+                         "property": "value", "value": choice},
+                        {"id": "jaal-original-physics-restore",
+                         "property": "n_intervals", "value": 0},
+                    ],
                     "state": [],
                     "changedPropIds": ["jaal-original-layout-mode.value"],
                 },
             )
             self.assertEqual(result.status_code, 200,
                              result.get_data(as_text=True)[:450])
-            options = result.get_json()["response"]["graph"]["options"]
+            changed_mode = result.get_json()["response"]
+            self.assertEqual(
+                changed_mode["jaal-original-physics-restore"]["disabled"],
+                choice == "hierarchical",
+            )
+            options = changed_mode["graph"]["options"]
             if choice == "hierarchical":
                 self.assertEqual(options["layout"]["hierarchical"]["direction"], "UD")
                 self.assertEqual(options["layout"]["hierarchical"]["sortMethod"],
@@ -286,6 +304,56 @@ class OriginalJaalMountTests(unittest.TestCase):
                                  baseline_options["edges"]["arrows"])
                 self.assertEqual(options["height"], baseline_options["height"])
                 self.assertEqual(options["interaction"], baseline_options["interaction"])
+        # The vis.js layout engine may restore physics=false from its own
+        # hierarchy backup AFTER the first setOptions() call. The timer sends
+        # a separate second update to restore physics after that transition.
+        tick = client.post(
+            url + "_dash-update-component",
+            json={
+                "output": graph_option_callbacks[0]["output"],
+                "outputs": [
+                    {"id": "graph", "property": "options"},
+                    {"id": "jaal-original-physics-restore", "property": "disabled"},
+                ],
+                "inputs": [
+                    {"id": "jaal-original-layout-mode",
+                     "property": "value", "value": "network"},
+                    {"id": "jaal-original-physics-restore",
+                     "property": "n_intervals", "value": 1},
+                ],
+                "state": [],
+                "changedPropIds": ["jaal-original-physics-restore.n_intervals"],
+            },
+        )
+        self.assertEqual(tick.status_code, 200,
+                         tick.get_data(as_text=True)[:450])
+        ticks = tick.get_json()["response"]
+        self.assertTrue(ticks["graph"]["options"]["physics"]["enabled"])
+        self.assertTrue(ticks["jaal-original-physics-restore"]["disabled"])
+        # Racing mode changes cannot re-enable physics in hierarchy mode.
+        raced = client.post(
+            url + "_dash-update-component",
+            json={
+                "output": graph_option_callbacks[0]["output"],
+                "outputs": [
+                    {"id": "graph", "property": "options"},
+                    {"id": "jaal-original-physics-restore", "property": "disabled"},
+                ],
+                "inputs": [
+                    {"id": "jaal-original-layout-mode",
+                     "property": "value", "value": "hierarchical"},
+                    {"id": "jaal-original-physics-restore",
+                     "property": "n_intervals", "value": 2},
+                ],
+                "state": [],
+                "changedPropIds": ["jaal-original-physics-restore.n_intervals"],
+            },
+        )
+        self.assertEqual(raced.status_code, 200)
+        self.assertNotIn("graph", raced.get_json()["response"])
+        self.assertTrue(
+            raced.get_json()["response"]["jaal-original-physics-restore"]["disabled"]
+        )
         self.assertEqual(len(created), 1, "mode toggle must reuse mounted Jaal")
         self.assertEqual(len(created), 1, "toggle must reuse mounted Jaal")
         # Graph data and all original user settings remain in the same tree.
