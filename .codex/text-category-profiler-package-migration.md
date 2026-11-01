@@ -61,7 +61,7 @@ text_category_profiler/
 - [ ] 產生 `PythonModule/utils/` 模組 → active callers 對照表，排除 archive、vendor、copy 與部署 snapshot。
 - [ ] 逐組比較重複模組，例如 `df_utils.py`、`MP_utils.py`、`utilities.py`，確認權威版本與差異。此批已建立三組九個來源的 source SHA256、top-level public AST 定義交集／差異、可見明確第一方 import 語法的唯讀報告（`scripts/bl001_duplicate_provider_audit.py`，Hosted JSON artifact）；`package_domain_owner` 僅指結構歸屬，不能代表 stage-local 版本可安全被取代。動態／外部 caller 與真實 API 語意差異尚未驗證，**不得將此項標記完成或自動刪掉任何版本**。
 - [ ] 將檔案標記為 `shared`、`stage-specific`、`script`、`test/experiment`、`vendor`、`legacy/unknown` 六類。
-- [ ] 為第一批候選模組確認或補齊無外部服務副作用的 characterization tests。
+- [ ] 為第一批候選模組確認或補齊無外部服務副作用的 characterization tests。新增 isolated `dfToTSV` AST functional test 對三版本做無外部依賴契約比對：`DatasetConverter`／`BertScript` 同為兩參數 TSV 不含 header/index，canonical `data/df_utils` 預設 CSV options 相同，但即使未啟用 adapter 仍執行 `multicoreJob.ComputeNProcess`，可造成異常且具有擴充版 tsvIndex/header/adapter 參數；不代表可互換、更不能刪除 stage-local implementation。模型／外部 caller／完整資料輸出尚待驗證。
 - [ ] 記錄 repository 外部是否仍有程式依賴 `from utils...`；未確認前保留相容策略。
 
 ### Phase 1：建立最小 `text_category_profiler`
