@@ -7,6 +7,9 @@ from textwrap import wrap
 
 MAX_LABEL_LINE_CHARS = 17
 MAX_LABEL_LINES = 3
+# Bump when changing browser-visible label formatting so users can distinguish
+# an already-running Python server from the checked-out Git revision.
+LABEL_RENDERER_REVISION = "multiline-labels-v2"
 
 
 def wrapped_classlabel(name: str) -> str:
@@ -40,3 +43,17 @@ def search_full_classlabel(graph_data, search_text):
     for node in graph_data["nodes"]:
         node["hidden"] = needle not in str(node["id"]).lower()
     return graph_data
+
+
+def prepare_embedded_jaal_nodes(node_df):
+    """Production and tests share one node-label conversion boundary.
+
+    Never mutate the caller DataFrame. Jaal.parse_dataframe preserves these
+    explicit label/title columns and uses the stable ID for topology.
+    """
+    if "id" not in node_df.columns:
+        raise ValueError("Embedded Jaal nodes require an id column")
+    nodes = node_df.copy()
+    nodes["label"] = nodes["id"].map(wrapped_classlabel)
+    nodes["title"] = nodes["id"]
+    return nodes

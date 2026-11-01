@@ -252,3 +252,25 @@ Windows 真實瀏覽器的視覺截圖驗收；若更新後畫面仍被放大，
 大小寫與 `hidden` 更新契約），因此橫跨換行的完整名稱及第三行後
 被省略的文字仍可搜尋；不改 Filter／Color／Size 回呼。
 已加入真正使用 WSGI 發送 Search callback 的回歸測試。
+
+
+### 8059 顯示舊標籤的診斷：執行中 Python 與 Git checkout 版本不同
+
+`git pull` / GitHub Desktop 更新的是磁碟檔案，已執行的
+`python BertScript/Test_result_Vis.py --viewer-only -p 8059` 服務不會
+自動重新 import。`OriginalJaalRouter._apps` 也在 Python 記憶體中
+以根類別快取已建立的原版 Jaal Dash App。瀏覽器 Ctrl+F5、重新按
+「載入 Jaal」都不能讓舊 Python 程序換成新版本。
+
+內嵌 Jaal 圖形列新增**「標籤版本：multiline-labels-v2」**標記，
+此字串由**當前正在執行的 Python 模組**產生，而不是直接讀 Git HEAD。
+如果 Git Desktop 已顯示含有此功能的提交，但畫面沒有標記，
+請先在終端機以 Ctrl+C 結束舊服務，再於專案根目錄執行
+`python BertScript/Test_result_Vis.py --viewer-only -p 8059`，
+確認沒有其他程序佔用 8059，然後瀏覽器 Ctrl+F5 並按「載入 Jaal」。
+標記出現僅證明 GUI 已載入新版 Python 程序，**不是**所有標籤
+均不重疊的 Windows 視覺驗收。
+
+新的 `prepare_embedded_jaal_nodes` 是正式 `createMode` 的標籤轉換
+共用入口，同時由真實 Jaal/Dash WSGI HTTP 測試的節點資料建立流程
+呼叫。避免測試自行加工 `label` 卻遺漏正式入口的回歸風險。

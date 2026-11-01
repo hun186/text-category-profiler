@@ -64,10 +64,9 @@ class OriginalJaalMountTests(unittest.TestCase):
                 ("TW Affairs", 3),
             ], columns=["id", "depth"])
             from ClassesTree.Visualization.jaal.label_format import (
-                search_full_classlabel, wrapped_classlabel,
+                prepare_embedded_jaal_nodes, search_full_classlabel,
             )
-            nodes["label"] = nodes["id"].map(wrapped_classlabel)
-            nodes["title"] = nodes["id"]
+            nodes = prepare_embedded_jaal_nodes(nodes)
             from BertScript.jaal_original_mount import prefix_original_jaal
             original_jaal = Jaal(edges, nodes)
             original_jaal._callback_search_graph = search_full_classlabel
@@ -230,6 +229,10 @@ class OriginalJaalMountTests(unittest.TestCase):
         self.assertIn("jaal-original-layout-mode",
                       json.dumps(graph_column, ensure_ascii=False))
         self.assertIn("jaal-original-hierarchy-hint",
+                      json.dumps(graph_column, ensure_ascii=False))
+        self.assertIn("jaal-original-label-revision",
+                      json.dumps(graph_column, ensure_ascii=False))
+        self.assertIn("multiline-labels-v2",
                       json.dumps(graph_column, ensure_ascii=False))
         self.assertNotIn("jaal-original-layout-mode",
                          json.dumps(sidebar, ensure_ascii=False))
@@ -628,8 +631,7 @@ class OriginalJaalSourceContractTests(unittest.TestCase):
         self.assertIn("Jaal(edge_df, node_df).plot(", jaal)
         self.assertIn("embedded_jaal = Jaal(edge_df, node_df)", jaal)
         self.assertIn("return embedded_jaal.create(", jaal)
-        self.assertIn('node_df["label"] = node_df["id"].map(wrapped_classlabel)', jaal)
-        self.assertIn('node_df["title"] = node_df["id"]', jaal)
+        self.assertIn("node_df = prepare_embedded_jaal_nodes(node_df)", jaal)
         self.assertIn('embedded_jaal._callback_search_graph = search_full_classlabel', jaal)
         # Jaal.create() cannot take host=; original .plot() can.
         create = jaal.split("if createMode == True:", 1)[1].split("else:", 1)[0]
