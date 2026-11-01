@@ -9,7 +9,7 @@ MAX_LABEL_LINE_CHARS = 17
 MAX_LABEL_LINES = 3
 # Bump when changing browser-visible label formatting so users can distinguish
 # an already-running Python server from the checked-out Git revision.
-LABEL_RENDERER_REVISION = "hierarchical-box-labels-v3"
+LABEL_RENDERER_REVISION = "canvas-multiline-v4"
 
 
 def wrapped_classlabel(name: str) -> str:

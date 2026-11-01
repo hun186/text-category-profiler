@@ -293,3 +293,28 @@ box、最大標籤寬度 178、內距 12、加大同層與層距；因此階層
 `hierarchical-box-labels-v3`，Windows 使用者需重啟 8059
 並驗證是否能辨讀，不能把 Hosted options／HTTP 資料測試
 宣稱為實際瀏覽器像素驗收。
+
+
+### v4：修正 visdcc 瀏覽器最終畫面仍是單行標籤
+
+Windows 8059 實機已確認載入 `hierarchical-box-labels-v3`，框狀
+節點有效，但文字仍是一行。上一版回歸測試只驗證 Dash
+`_dash-layout` 的 node.label 換行字串；它**沒有**驗證
+`visdcc.Network` 於瀏覽器端維護的 vis.DataSet 最終標籤。
+
+v4 保留原 Jaal 七項進階 callbacks、節點 ID、完整 tooltip／來源 CSV
+與框狀節點版面，但在子 Dash 掛載時額外註冊一個互不干擾的
+`graph.run` clientside callback：在模式或 `graph.data` 改變時，
+以靜態 JavaScript 使用 visdcc React component 的
+`this.nn.get()/update()`，直接將**實際畫在 canvas 上的 label**
+投影為階層模式最多 3 行／每行最多 17 字元；切回網狀模式恢復
+完整單行名稱。節點 `id/title/size/color` 與連線不變，不會把
+使用者提供的名稱插進 eval 程式碼。
+
+`tests/jaal_visible_labels.test.cjs` 以模擬 vis.DataSet 執行
+同一段 JS，斷言真正經過 DataSet.update 後含有換行，並回歸驗證
+網狀恢復與無程式碼注入；真實 Jaal WSGI 測試檢查
+`graph.run` 的 Dash callback 及 JS 資源確實同源供應。
+這比只檢查 Python JSON 更接近渲染端，但 Hosted 沒有進行
+Windows Chrome 像素驗收，不應誤稱實機已解決。
+顯示版本：`canvas-multiline-v4`。
