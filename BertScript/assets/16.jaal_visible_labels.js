@@ -47,11 +47,31 @@
     if (changes.length) ds.update(changes);
   }).call(this);`;
 
+  const NETWORK_COLLAPSED_RUN = String.raw`(function () {
+    globalThis.dash_clientside.jaal_structural_collapse.activate.call(
+      this, "network-collapsed"
+    );
+  }).call(this);`;
+
+  const HIERARCHICAL_COLLAPSED_RUN = String.raw`(function () {
+    globalThis.dash_clientside.jaal_structural_collapse.activate.call(
+      this, "hierarchical-collapsed"
+    );
+  }).call(this);`;
+
   function apply(mode, graphData) {
     // No initial graph-data prop, no unsafe dynamically constructed JS.
     if (!graphData || !Array.isArray(graphData.nodes)) return "";
-    if (mode === "hierarchical") return HIERARCHICAL_RUN;
-    if (mode === "network") return NETWORK_RUN;
+    if (mode === "hierarchical-collapsed") return HIERARCHICAL_COLLAPSED_RUN;
+    if (mode === "network-collapsed") return NETWORK_COLLAPSED_RUN;
+    if (mode === "hierarchical") return HIERARCHICAL_RUN.replace(
+      "var ds = this.nn;",
+      "globalThis.dash_clientside.jaal_structural_collapse.restore.call(this); var ds = this.nn;"
+    );
+    if (mode === "network") return NETWORK_RUN.replace(
+      "var ds = this.nn;",
+      "globalThis.dash_clientside.jaal_structural_collapse.restore.call(this); var ds = this.nn;"
+    );
     return "";
   }
 
