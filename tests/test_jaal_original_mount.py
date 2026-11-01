@@ -123,12 +123,95 @@ class OriginalJaalMountTests(unittest.TestCase):
         ]
         self.assertEqual(len(network), 1)
         self.assertEqual(network[0]["options"]["height"], "600px")
+        components_by_id = {
+            item["props"]["id"]: item for item in elements
+            if isinstance(item["props"].get("id"), str)
+        }
+        sidebar = components_by_id["jaal-original-settings-column"]
+        graph_column = components_by_id["jaal-original-graph-column"]
+        toggle = components_by_id["jaal-original-sidebar-toggle"]
+        self.assertEqual(sidebar["props"]["width"], 3)
+        self.assertEqual(graph_column["props"]["width"], 9)
+        self.assertIn("收合左側設定", toggle["props"]["children"])
+        self.assertEqual(toggle["props"]["n_clicks"], 0)
+        self.assertIn("aria-label", toggle["props"])
+        # The toggle stays in the graph column even when sidebar is hidden.
+        self.assertIn("jaal-original-sidebar-toggle", json.dumps(graph_column,
+                          ensure_ascii=False))
+        self.assertNotIn("jaal-original-sidebar-toggle", json.dumps(sidebar,
+                          ensure_ascii=False))
         serialized = callbacks.get_data(as_text=True)
+        dependencies = json.loads(serialized)
+        sidebar_callback = [
+            dep for dep in dependencies
+            if "jaal-original-settings-column.style" in dep["output"]
+            and "jaal-original-graph-column.width" in dep["output"]
+        ]
+        self.assertEqual(len(sidebar_callback), 1)
+        self.assertTrue(any("jaal-original-sidebar-toggle" in str(dep)
+                            for dep in dependencies))
+        self.assertTrue(any(
+            dep["output"] == "jaal-original-sidebar-toggle.title"
+            for dep in dependencies
+        ))
+        self.assertFalse(any(
+            "graph.data" in dep["output"] and
+            "jaal-original-sidebar-toggle" in str(dep)
+            for dep in dependencies
+        ))
+        # Exercise the *real* mounted Dash multi-output HTTP callback; a
+        # collapsed panel should give the graph all 12 Bootstrap columns.
+        for clicks, expected_width, expected_display, expected_text in (
+            (1, 12, "none", "展開左側設定"),
+            (2, 9, "flex", "收合左側設定"),
+        ):
+            result = client.post(
+                url + "_dash-update-component",
+                json={
+                    "output": sidebar_callback[0]["output"],
+                    "outputs": [
+                        {"id": "jaal-original-settings-column", "property": "style"},
+                        {"id": "jaal-original-graph-column", "property": "width"},
+                        {"id": "jaal-original-sidebar-toggle", "property": "children"},
+                    ],
+                    "inputs": [{"id": "jaal-original-sidebar-toggle",
+                                "property": "n_clicks", "value": clicks}],
+                    "state": [],
+                    "changedPropIds": ["jaal-original-sidebar-toggle.n_clicks"],
+                },
+            )
+            self.assertEqual(result.status_code, 200,
+                             result.get_data(as_text=True)[:400])
+            changed = result.get_json()["response"]
+            self.assertEqual(changed["jaal-original-settings-column"]["style"]["display"],
+                             expected_display)
+            self.assertEqual(changed["jaal-original-graph-column"]["width"],
+                             expected_width)
+            self.assertIn(expected_text,
+                          changed["jaal-original-sidebar-toggle"]["children"])
+        self.assertEqual(len(created), 1, "toggle must reuse mounted Jaal")
+        # Graph data and all original user settings remain in the same tree.
+        self.assertEqual(
+            json.loads(client.get(url + "_dash-layout").get_data(as_text=True)),
+            tree,
+        )
         for original_control in ("search_graph", "filter_nodes", "filter_edges",
                                  "color_nodes", "color_edges",
                                  "size_nodes", "size_edges"):
             self.assertIn(original_control, serialized)
         self.assertEqual(len(created), 1, "reuse one mounted app within same root")
+
+    def test_sidebar_geometry_only_changes_visibility_and_bootstrap_width(self):
+        from BertScript.jaal_original_mount import _sidebar_toggle_geometry
+        expanded = _sidebar_toggle_geometry(0)
+        collapsed = _sidebar_toggle_geometry(1)
+        reopened = _sidebar_toggle_geometry(2)
+        self.assertEqual(expanded[1], 9)
+        self.assertEqual(collapsed[0]["display"], "none")
+        self.assertEqual(collapsed[1], 12)
+        self.assertEqual(reopened[0]["display"], "flex")
+        self.assertEqual(reopened[1], 9)
+        self.assertEqual(reopened, expanded)
 
     def test_logo_normalization_does_not_rewrite_other_images(self):
         from dash import html

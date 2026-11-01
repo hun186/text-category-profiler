@@ -79,6 +79,119 @@ def _normalize_original_jaal_logo(layout):
     return False
 
 
+def _add_embedded_jaal_sidebar_toggle(layout):
+    """Add a toggle without rebuilding the original Jaal graph or controls.
+
+    Only the Jaal-owned 3/9 Bootstrap columns are decorated. The button lives
+    in the graph column so it remains reachable when the sidebar is hidden.
+    """
+    import dash_bootstrap_components as dbc
+    from dash import html
+
+    def descendants(component):
+        pending = [component]
+        while pending:
+            item = pending.pop()
+            yield item
+            children = getattr(item, "children", None)
+            if isinstance(children, (list, tuple)):
+                pending.extend(reversed(children))
+            elif children is not None and not isinstance(children, (str, int, float)):
+                pending.append(children)
+
+    def contains_id(component, component_id):
+        return any(getattr(item, "id", None) == component_id
+                   for item in descendants(component))
+
+    matches = []
+    for item in descendants(layout):
+        if not isinstance(item, dbc.Row):
+            continue
+        columns = getattr(item, "children", None)
+        if not isinstance(columns, (tuple, list)) or len(columns) != 2:
+            continue
+        left, right = columns
+        if (isinstance(left, dbc.Col) and isinstance(right, dbc.Col)
+                and contains_id(left, "search_graph")
+                and contains_id(right, "graph")):
+            matches.append((left, right))
+    if len(matches) != 1:
+        raise RuntimeError("Expected exactly one original Jaal settings/graph row")
+    sidebar, graph = matches[0]
+    if sidebar.width != 3 or graph.width != 9:
+        raise RuntimeError("Original Jaal sidebar column sizes changed")
+    sidebar.id = "jaal-original-settings-column"
+    graph.id = "jaal-original-graph-column"
+    toggle = html.Button(
+        "◀ 收合左側設定", id="jaal-original-sidebar-toggle", n_clicks=0,
+        className="btn btn-outline-secondary btn-sm",
+        title="隱藏左側設定，讓分類圖展開",
+        **{"aria-label": "收合或展開 Jaal 左側設定面板"},
+    )
+    toolbar = html.Div(
+        toggle,
+        style={
+            "display": "flex",
+            "justifyContent": "flex-start",
+            "padding": "6px 4px",
+            "position": "sticky",
+            "top": "0",
+            "zIndex": 20,
+            "backgroundColor": "rgba(255,255,255,0.93)",
+        },
+    )
+    graph.children = [toolbar, graph.children]
+
+
+def _sidebar_toggle_geometry(clicks):
+    """Pure view geometry: no graph data, settings or server instances reset."""
+    collapsed = bool(clicks and clicks % 2)
+    sidebar_style = {"display": "none"} if collapsed else {
+        "display": "flex",
+        "justifyContent": "center",
+        "alignItems": "center",
+    }
+    return (
+        sidebar_style,
+        12 if collapsed else 9,
+        "▶ 展開左側設定" if collapsed else "◀ 收合左側設定",
+    )
+
+
+def _register_embedded_jaal_sidebar_toggle(app):
+    from dash import Input, Output
+
+    @app.callback(
+        Output("jaal-original-settings-column", "style"),
+        Output("jaal-original-graph-column", "width"),
+        Output("jaal-original-sidebar-toggle", "children"),
+        Input("jaal-original-sidebar-toggle", "n_clicks"),
+        prevent_initial_call=True,
+    )
+    def toggle_sidebar(clicks):
+        return _sidebar_toggle_geometry(clicks)
+
+    # vis.js may listen for a window resize rather than a parent width change.
+    # Send only a resize notification after React applies the new Bootstrap
+    # column width. Never reconstruct the graph or call vis-network.fit().
+    app.clientside_callback(
+        """
+        function(width) {
+            window.requestAnimationFrame(function() {
+                window.requestAnimationFrame(function() {
+                    window.dispatchEvent(new Event("resize"));
+                });
+            });
+            return width === 12
+                ? "展開左側 Search / Filter / Color / Size 設定"
+                : "收合左側 Search / Filter / Color / Size 設定";
+        }
+        """,
+        Output("jaal-original-sidebar-toggle", "title"),
+        Input("jaal-original-graph-column", "width"),
+    )
+
+
 def prefix_original_jaal(original_app, prefix):
     """Preserve Jaal's actual layout/callbacks in a correctly prefixed Dash.
 
@@ -107,11 +220,13 @@ def prefix_original_jaal(original_app, prefix):
         ],
     )
     _normalize_original_jaal_logo(original_app.layout)
+    _add_embedded_jaal_sidebar_toggle(original_app.layout)
     child_app.layout = original_app.layout
     child_app.callback_map.update(original_app.callback_map)
     child_app._callback_list.extend(original_app._callback_list)
     if not child_app.callback_map or len(child_app.callback_map) != len(original_app.callback_map):
         raise RuntimeError("Original Jaal callbacks could not be preserved")
+    _register_embedded_jaal_sidebar_toggle(child_app)
     return child_app
 
 
