@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from collections import OrderedDict, deque
 import hashlib
+from copy import deepcopy
 from pathlib import Path
 from threading import RLock
 
@@ -104,6 +105,98 @@ def _remove_embedded_jaal_outer_row_gutters(layout):
             row.className = " ".join([*classes, "g-0"])
 
 
+def _jaal_layout_options(base_options, mode):
+    """Return independent vis.js options; never mutate the original settings.
+
+    The network may contain cross-links and more than one parent. Hierarchical
+    layout is a directed *view* of those same edges, not a rewritten tree.
+    """
+    if mode not in ("network", "hierarchical"):
+        raise ValueError("Unsupported Jaal layout mode")
+    options = deepcopy(base_options)
+    if mode == "hierarchical":
+        options.setdefault("layout", {})["hierarchical"] = {
+            "enabled": True,
+            "direction": "UD",
+            "sortMethod": "directed",
+            "levelSeparation": 145,
+            "nodeSpacing": 175,
+            "treeSpacing": 220,
+        }
+        options["physics"] = {"enabled": False}
+        options.setdefault("edges", {})["smooth"] = {
+            "enabled": True,
+            "type": "cubicBezier",
+            "forceDirection": "vertical",
+            "roundness": 0.28,
+        }
+    else:
+        # visdcc forwards updates via net.setOptions(), which MERGES with
+        # previous vis-network options. Omitting hierarchy/physics/smooth
+        # would leave the tree layout enabled after switching back.
+        options.setdefault("layout", {})["hierarchical"] = {"enabled": False}
+        baseline_physics = base_options.get("physics", {})
+        if isinstance(baseline_physics, dict):
+            options.setdefault("physics", {})["enabled"] = baseline_physics.get(
+                "enabled", True
+            )
+        else:
+            options["physics"] = {"enabled": bool(baseline_physics)}
+        baseline_smooth = base_options.get("edges", {}).get("smooth")
+        options.setdefault("edges", {})["smooth"] = (
+            deepcopy(baseline_smooth) if baseline_smooth is not None else
+            # Explicit vis-network defaults needed to reverse cubicBezier.
+            {"enabled": True, "type": "dynamic",
+             "forceDirection": "none", "roundness": 0.5}
+        )
+    return options
+
+
+def _register_embedded_jaal_layout_mode(app, base_options):
+    """Switch layout, then restore network physics after vis.js unwinds hierarchy.
+
+    vis-network LayoutEngine.setOptions() restores an internal physics backup
+    *after* applying options when hierarchical mode is disabled. A one-shot
+    delayed second net.setOptions() is required to re-enable physics reliably.
+    No new graph/data instance is created; the timer is idle otherwise.
+    """
+    from dash import Input, Output, callback_context, no_update
+
+    @app.callback(
+        Output("graph", "options"),
+        Output("jaal-original-physics-restore", "disabled"),
+        Input("jaal-original-layout-mode", "value"),
+        Input("jaal-original-physics-restore", "n_intervals"),
+        prevent_initial_call=True,
+    )
+    def choose_layout(mode, _ticks):
+        triggered = callback_context.triggered[0]["prop_id"].split(".", 1)[0]
+        if triggered == "jaal-original-physics-restore":
+            # A quick switch back to hierarchy must never reactivate physics.
+            if mode != "network":
+                return no_update, True
+            baseline = base_options.get("physics", {})
+            enabled = baseline.get("enabled", True) if isinstance(
+                baseline, dict
+            ) else bool(baseline)
+            # Exiting hierarchy also restores vis.js' saved edge.smooth
+            # boolean, masking our first-phase smooth.type reset. Restore
+            # both affected effective settings *after* that internal merge.
+            reset = _jaal_layout_options(base_options, "network")
+            return {
+                "physics": {"enabled": enabled},
+                "edges": {"smooth": reset["edges"]["smooth"]},
+            }, True
+        if mode == "hierarchical":
+            return _jaal_layout_options(base_options, mode), True
+        if mode == "network":
+            # Step 1: exit hierarchical layout, restoring original vis.js
+            # settings. LayoutEngine can still override physics.enabled.
+            # Step 2: timer tick restores enabled after the React update.
+            return _jaal_layout_options(base_options, mode), False
+        raise ValueError("Unsupported Jaal layout mode")
+
+
 def _add_embedded_jaal_sidebar_toggle(layout):
     """Add a toggle without rebuilding the original Jaal graph or controls.
 
@@ -111,7 +204,7 @@ def _add_embedded_jaal_sidebar_toggle(layout):
     in the graph column so it remains reachable when the sidebar is hidden.
     """
     import dash_bootstrap_components as dbc
-    from dash import html
+    from dash import dcc, html
 
     def descendants(component):
         pending = [component]
@@ -155,17 +248,40 @@ def _add_embedded_jaal_sidebar_toggle(layout):
         "align-items": "flex-start",
     }
     graph.id = "jaal-original-graph-column"
+    # Make a defensive snapshot before any user-driven options callback.
+    # graph.children is Jaal's existing visdcc.Network, not a replacement.
+    network = graph.children
+    if (getattr(network, "id", None) != "graph"
+            or not isinstance(getattr(network, "options", None), dict)):
+        raise RuntimeError("Original Jaal network/options contract changed")
+    base_options = deepcopy(network.options)
     toggle = html.Button(
         "◀ 收合左側設定", id="jaal-original-sidebar-toggle", n_clicks=0,
         className="btn btn-outline-secondary btn-sm",
         title="隱藏左側設定，讓分類圖展開",
         **{"aria-label": "收合或展開 Jaal 左側設定面板"},
     )
+    mode_choice = dcc.RadioItems(
+        id="jaal-original-layout-mode",
+        options=[
+            {"label": "網狀", "value": "network"},
+            {"label": "階層樹狀", "value": "hierarchical"},
+        ],
+        value="network",
+        inline=True,
+        labelStyle={"marginRight": "12px", "cursor": "pointer"},
+        inputStyle={"marginRight": "4px"},
+    )
     toolbar = html.Div(
-        toggle,
+        [toggle, html.Span("顯示模式："), mode_choice,
+         dcc.Interval(id="jaal-original-physics-restore",
+                      interval=300, disabled=True, n_intervals=0)],
         style={
             "display": "flex",
+            "alignItems": "center",
             "justifyContent": "flex-start",
+            "gap": "12px",
+            "flexWrap": "wrap",
             "padding": "6px 4px",
             "position": "sticky",
             "top": "0",
@@ -174,6 +290,7 @@ def _add_embedded_jaal_sidebar_toggle(layout):
         },
     )
     graph.children = [toolbar, graph.children]
+    return base_options
 
 
 def _sidebar_toggle_geometry(clicks):
@@ -254,7 +371,7 @@ def prefix_original_jaal(original_app, prefix):
     )
     _normalize_original_jaal_logo(original_app.layout)
     _remove_embedded_jaal_outer_row_gutters(original_app.layout)
-    _add_embedded_jaal_sidebar_toggle(original_app.layout)
+    base_options = _add_embedded_jaal_sidebar_toggle(original_app.layout)
     # A stable content boundary lets the *child* iframe measure actual
     # rendered height (logo + controls + graph), independent of the original
     # visdcc graph's 600px canvas and the parent's initial fallback height.
@@ -268,6 +385,7 @@ def prefix_original_jaal(original_app, prefix):
     if not child_app.callback_map or len(child_app.callback_map) != len(original_app.callback_map):
         raise RuntimeError("Original Jaal callbacks could not be preserved")
     _register_embedded_jaal_sidebar_toggle(child_app)
+    _register_embedded_jaal_layout_mode(child_app, base_options)
     return child_app
 
 

@@ -28,7 +28,9 @@ class OriginalJaalMountTests(unittest.TestCase):
             result = panel.build_original_jaal_panel()
             app.layout = result
         rendered = str(result)
-        self.assertIn("原版 Jaal 進階檢視器", rendered)
+        self.assertIn("Jaal 進階檢視器", rendered)
+        self.assertIn("載入 Jaal", rendered)
+        self.assertNotIn("原版 Jaal", rendered)
         self.assertIn("JaalOriginalRoot", rendered)
         self.assertIn("JaalOriginalLargeConsent", rendered)
         self.assertIn("JaalOriginalFrame", rendered)
@@ -135,6 +137,7 @@ class OriginalJaalMountTests(unittest.TestCase):
         ]
         self.assertEqual(len(network), 1)
         self.assertEqual(network[0]["options"]["height"], "600px")
+        self.assertNotIn("hierarchical", network[0]["options"].get("layout", {}))
         components_by_id = {
             item["props"]["id"]: item for item in elements
             if isinstance(item["props"].get("id"), str)
@@ -159,6 +162,19 @@ class OriginalJaalMountTests(unittest.TestCase):
         sidebar = components_by_id["jaal-original-settings-column"]
         graph_column = components_by_id["jaal-original-graph-column"]
         toggle = components_by_id["jaal-original-sidebar-toggle"]
+        mode = components_by_id["jaal-original-layout-mode"]["props"]
+        self.assertEqual(mode["value"], "network")
+        restore_timer = components_by_id["jaal-original-physics-restore"]["props"]
+        self.assertTrue(restore_timer["disabled"])
+        self.assertEqual(restore_timer["interval"], 300)
+        self.assertEqual(mode["options"], [
+            {"label": "網狀", "value": "network"},
+            {"label": "階層樹狀", "value": "hierarchical"},
+        ])
+        self.assertIn("jaal-original-layout-mode",
+                      json.dumps(graph_column, ensure_ascii=False))
+        self.assertNotIn("jaal-original-layout-mode",
+                         json.dumps(sidebar, ensure_ascii=False))
         self.assertEqual(sidebar["props"]["width"], 3)
         # Upstream Jaal vertically centers the shorter settings card; the
         # embedded view must start at row top even when sections are hidden.
@@ -180,6 +196,21 @@ class OriginalJaalMountTests(unittest.TestCase):
             and "jaal-original-graph-column.width" in dep["output"]
         ]
         self.assertEqual(len(sidebar_callback), 1)
+        # The new options callback must not compete with Jaal's existing
+        # Search/Filter/Color/Size callback for graph.data.
+        graph_option_callbacks = [
+            dep for dep in dependencies
+            if "graph.options" in dep["output"]
+            and "jaal-original-physics-restore.disabled" in dep["output"]
+        ]
+        self.assertEqual(len(graph_option_callbacks), 1)
+        self.assertTrue(any(
+            item["id"] == "jaal-original-layout-mode"
+            and item["property"] == "value"
+            for item in graph_option_callbacks[0]["inputs"]
+        ))
+        self.assertTrue(any("graph.data" in dep["output"]
+                            for dep in dependencies))
         self.assertTrue(any("jaal-original-sidebar-toggle" in str(dep)
                             for dep in dependencies))
         self.assertTrue(any(
@@ -226,6 +257,108 @@ class OriginalJaalMountTests(unittest.TestCase):
                              expected_width)
             self.assertIn(expected_text,
                           changed["jaal-original-sidebar-toggle"]["children"])
+        baseline_options = network[0]["options"]
+        for choice in ("hierarchical", "network"):
+            result = client.post(
+                url + "_dash-update-component",
+                json={
+                    "output": graph_option_callbacks[0]["output"],
+                    "outputs": [
+                        {"id": "graph", "property": "options"},
+                        {"id": "jaal-original-physics-restore",
+                         "property": "disabled"},
+                    ],
+                    "inputs": [
+                        {"id": "jaal-original-layout-mode",
+                         "property": "value", "value": choice},
+                        {"id": "jaal-original-physics-restore",
+                         "property": "n_intervals", "value": 0},
+                    ],
+                    "state": [],
+                    "changedPropIds": ["jaal-original-layout-mode.value"],
+                },
+            )
+            self.assertEqual(result.status_code, 200,
+                             result.get_data(as_text=True)[:450])
+            changed_mode = result.get_json()["response"]
+            self.assertEqual(
+                changed_mode["jaal-original-physics-restore"]["disabled"],
+                choice == "hierarchical",
+            )
+            options = changed_mode["graph"]["options"]
+            if choice == "hierarchical":
+                self.assertEqual(options["layout"]["hierarchical"]["direction"], "UD")
+                self.assertEqual(options["layout"]["hierarchical"]["sortMethod"],
+                                 "directed")
+                self.assertFalse(options["physics"]["enabled"])
+                self.assertTrue(options["edges"]["arrows"]["to"])
+                self.assertEqual(options["height"], "600px")
+            else:
+                self.assertFalse(options["layout"]["hierarchical"]["enabled"])
+                self.assertTrue(options["physics"]["enabled"])
+                self.assertEqual(options["physics"]["stabilization"],
+                                 baseline_options["physics"]["stabilization"])
+                self.assertEqual(options["edges"]["smooth"]["type"], "dynamic")
+                self.assertEqual(options["edges"]["smooth"]["forceDirection"], "none")
+                self.assertEqual(options["edges"]["arrows"],
+                                 baseline_options["edges"]["arrows"])
+                self.assertEqual(options["height"], baseline_options["height"])
+                self.assertEqual(options["interaction"], baseline_options["interaction"])
+        # The vis.js layout engine may restore physics=false from its own
+        # hierarchy backup AFTER the first setOptions() call. The timer sends
+        # a separate second update to restore physics after that transition.
+        tick = client.post(
+            url + "_dash-update-component",
+            json={
+                "output": graph_option_callbacks[0]["output"],
+                "outputs": [
+                    {"id": "graph", "property": "options"},
+                    {"id": "jaal-original-physics-restore", "property": "disabled"},
+                ],
+                "inputs": [
+                    {"id": "jaal-original-layout-mode",
+                     "property": "value", "value": "network"},
+                    {"id": "jaal-original-physics-restore",
+                     "property": "n_intervals", "value": 1},
+                ],
+                "state": [],
+                "changedPropIds": ["jaal-original-physics-restore.n_intervals"],
+            },
+        )
+        self.assertEqual(tick.status_code, 200,
+                         tick.get_data(as_text=True)[:450])
+        ticks = tick.get_json()["response"]
+        restored_options = ticks["graph"]["options"]
+        self.assertTrue(restored_options["physics"]["enabled"])
+        self.assertEqual(restored_options["edges"]["smooth"]["type"], "dynamic")
+        self.assertEqual(restored_options["edges"]["smooth"]["forceDirection"], "none")
+        self.assertEqual(restored_options["edges"]["smooth"]["roundness"], 0.5)
+        self.assertTrue(ticks["jaal-original-physics-restore"]["disabled"])
+        # Racing mode changes cannot re-enable physics in hierarchy mode.
+        raced = client.post(
+            url + "_dash-update-component",
+            json={
+                "output": graph_option_callbacks[0]["output"],
+                "outputs": [
+                    {"id": "graph", "property": "options"},
+                    {"id": "jaal-original-physics-restore", "property": "disabled"},
+                ],
+                "inputs": [
+                    {"id": "jaal-original-layout-mode",
+                     "property": "value", "value": "hierarchical"},
+                    {"id": "jaal-original-physics-restore",
+                     "property": "n_intervals", "value": 2},
+                ],
+                "state": [],
+                "changedPropIds": ["jaal-original-physics-restore.n_intervals"],
+            },
+        )
+        self.assertEqual(raced.status_code, 200)
+        self.assertNotIn("graph", raced.get_json()["response"])
+        self.assertTrue(
+            raced.get_json()["response"]["jaal-original-physics-restore"]["disabled"]
+        )
+        self.assertEqual(len(created), 1, "mode toggle must reuse mounted Jaal")
         self.assertEqual(len(created), 1, "toggle must reuse mounted Jaal")
         # Graph data and all original user settings remain in the same tree.
         self.assertEqual(
@@ -237,6 +370,81 @@ class OriginalJaalMountTests(unittest.TestCase):
                                  "size_nodes", "size_edges"):
             self.assertIn(original_control, serialized)
         self.assertEqual(len(created), 1, "reuse one mounted app within same root")
+
+    def test_hierarchical_mode_is_reversible_and_preserves_original_options(self):
+        from BertScript.jaal_original_mount import _jaal_layout_options
+        original = {
+            "height": "600px", "width": "100%",
+            "interaction": {"hover": True},
+            "physics": {"stabilization": {"iterations": 100}},
+            "edges": {"arrows": {"to": True}, "width": 2},
+            "nodes": {"font": {"size": 15}},
+        }
+        import copy
+        snapshot = copy.deepcopy(original)
+        tree = _jaal_layout_options(original, "hierarchical")
+        self.assertTrue(tree["layout"]["hierarchical"]["enabled"])
+        self.assertEqual(tree["layout"]["hierarchical"]["direction"], "UD")
+        self.assertEqual(tree["layout"]["hierarchical"]["sortMethod"], "directed")
+        self.assertFalse(tree["physics"]["enabled"])
+        self.assertEqual(tree["edges"]["smooth"]["type"], "cubicBezier")
+        self.assertEqual(tree["nodes"], original["nodes"])
+        self.assertEqual(tree["edges"]["arrows"], original["edges"]["arrows"])
+        reset = _jaal_layout_options(original, "network")
+        self.assertFalse(reset["layout"]["hierarchical"]["enabled"])
+        self.assertTrue(reset["physics"]["enabled"])
+        self.assertEqual(reset["physics"]["stabilization"],
+                         snapshot["physics"]["stabilization"])
+        self.assertEqual(reset["edges"]["smooth"]["type"], "dynamic")
+        for field in ("height", "width", "interaction", "nodes"):
+            self.assertEqual(reset[field], snapshot[field])
+        self.assertEqual(reset["edges"]["arrows"], snapshot["edges"]["arrows"])
+        self.assertEqual(original, snapshot, "source settings must not be mutated")
+
+        def merge_options(current, update):
+            # Model vis-network setOptions()' recursive merge semantics.
+            # An absent key is NOT cleared from the live network instance.
+            result = copy.deepcopy(current)
+            for key, value in update.items():
+                if isinstance(value, dict) and isinstance(result.get(key), dict):
+                    result[key] = merge_options(result[key], value)
+                else:
+                    result[key] = copy.deepcopy(value)
+            return result
+
+        effective_tree = merge_options(snapshot, tree)
+        self.assertTrue(effective_tree["layout"]["hierarchical"]["enabled"])
+        self.assertFalse(effective_tree["physics"]["enabled"])
+        effective_network = merge_options(effective_tree, reset)
+        self.assertFalse(effective_network["layout"]["hierarchical"]["enabled"])
+        self.assertTrue(effective_network["physics"]["enabled"])
+        self.assertEqual(effective_network["edges"]["smooth"]["type"], "dynamic")
+        self.assertEqual(effective_network["edges"]["smooth"]["forceDirection"], "none")
+        self.assertEqual(effective_network["edges"]["arrows"], snapshot["edges"]["arrows"])
+
+        # LayoutEngine's exit-hierarchy backup can overwrite the stage-1
+        # settings (physics to false and smooth to a bare boolean True).
+        # That boolean changes only smooth.enabled in the vis.js parser,
+        # leaving the tree's cubicBezier curve settings in place. Stage 2
+        # must explicitly restore all affected options after the backup.
+        after_engine_exit = copy.deepcopy(effective_network)
+        after_engine_exit["physics"]["enabled"] = False
+        after_engine_exit["edges"]["smooth"].update({
+            "enabled": True, "type": "cubicBezier",
+            "forceDirection": "vertical", "roundness": 0.28,
+        })
+        stage2 = {
+            "physics": {"enabled": snapshot["physics"].get("enabled", True)},
+            "edges": {"smooth": reset["edges"]["smooth"]},
+        }
+        final_state = merge_options(after_engine_exit, stage2)
+        self.assertTrue(final_state["physics"]["enabled"])
+        self.assertEqual(final_state["edges"]["smooth"]["type"], "dynamic")
+        self.assertEqual(final_state["edges"]["smooth"]["forceDirection"], "none")
+        self.assertEqual(final_state["edges"]["smooth"]["roundness"], 0.5)
+        self.assertEqual(final_state["edges"]["arrows"], snapshot["edges"]["arrows"])
+        with self.assertRaisesRegex(ValueError, "Unsupported"):
+            _jaal_layout_options(original, "invalid")
 
     def test_only_jaal_outer_rows_get_zero_gutters(self):
         from dash import html
