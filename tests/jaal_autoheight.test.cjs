@@ -52,6 +52,8 @@ function createFixture({route = "/jaal-original/abc/", visible = true,
     observe(observed) { assert.equal(observed, document.documentElement); }
     disconnect() { watcherDisconnected = true; }
   }
+  window.ResizeObserver = ResizeObserver;
+  window.MutationObserver = MutationObserver;
   vm.runInNewContext(source, {window, document, ResizeObserver, MutationObserver});
   return {
     frame,
