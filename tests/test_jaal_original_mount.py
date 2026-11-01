@@ -82,6 +82,18 @@ class OriginalJaalMountTests(unittest.TestCase):
         self.assertEqual(created[0], ("A", url))
         self.assertIn(url, response.get_data(as_text=True),
                       "Dash resource prefixes must remain same-origin and mounted")
+        # The child app serves its own bounded, same-origin auto-height script;
+        # no external CDN, graph rebuild, or second port is involved.
+        size_js = url + "assets/15.jaal_embedded_autoheight.js"
+        self.assertIn(size_js, response.get_data(as_text=True))
+        size_response = client.get(size_js)
+        self.assertEqual(size_response.status_code, 200)
+        script = size_response.get_data(as_text=True)
+        self.assertIn('getElementById("jaal-original-content")', script)
+        self.assertIn('classList.contains("jaal-original-iframe")', script)
+        self.assertIn("ResizeObserver", script)
+        self.assertIn("1600", script)
+        self.assertNotIn("network.fit(", script)
         # The iframe must not rely exclusively on a remotely hosted Bootstrap
         # stylesheet. Without its 25/75% grid, Jaal's UI and graph spill out.
         local_css = url + "assets/bootstrap@5.3.1/bootstrap.min.css"
@@ -127,6 +139,8 @@ class OriginalJaalMountTests(unittest.TestCase):
             item["props"]["id"]: item for item in elements
             if isinstance(item["props"].get("id"), str)
         }
+        self.assertIn("jaal-original-content", components_by_id)
+        self.assertEqual(components_by_id["jaal-original-content"]["type"], "Div")
         sidebar = components_by_id["jaal-original-settings-column"]
         graph_column = components_by_id["jaal-original-graph-column"]
         toggle = components_by_id["jaal-original-sidebar-toggle"]
@@ -200,6 +214,17 @@ class OriginalJaalMountTests(unittest.TestCase):
                                  "size_nodes", "size_edges"):
             self.assertIn(original_control, serialized)
         self.assertEqual(len(created), 1, "reuse one mounted app within same root")
+
+    def test_iframe_fallback_is_bounded_when_javascript_is_disabled(self):
+        from BertScript.jaal_original_panel import build_original_jaal_iframe
+        frame = build_original_jaal_iframe("/jaal-original/test/")
+        self.assertEqual(frame.src, "/jaal-original/test/")
+        self.assertEqual(frame.className, "jaal-original-iframe")
+        self.assertEqual(frame.style["height"], "800px")
+        self.assertNotEqual(frame.style["height"], "1100px")
+        self.assertEqual(frame.style["width"], "100%")
+        self.assertEqual(frame.style["display"], "block")
+        self.assertNotIn("overflow", frame.style)
 
     def test_sidebar_geometry_only_changes_visibility_and_bootstrap_width(self):
         from BertScript.jaal_original_mount import _sidebar_toggle_geometry
