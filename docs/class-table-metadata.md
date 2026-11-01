@@ -51,7 +51,13 @@ explicitly permit only additional rows retaining pending AI provenance:
     python -m BertScript.migrate_class_table --source legacy-ClassTable.py --verify ClassesTree/data/ClassTable.csv --allow-pending-additions
 
 This opt-in mode still requires **all historical labels and CT/Explanation
-values to match exactly**, never allows missing legacy rows or edits, and
+values to match**, except five exact, explicitly frozen later edits: Agriculture,
+Fishery and Forestry split former semicolon-delimited CT synonyms into CT /
+Explanation / Notes, while BD-Acknowledgements and BD-Bibliography moved their
+historical tab-prefixed descriptions into Notes. The five expected final
+records are frozen in `migrate_class_table.CURATED_METADATA_OVERRIDES` and
+validated against the real CSV by tests; any other change fails. It
+never allows missing legacy rows, and
 rejects additions without nonempty AI新增 date/source/reason plus the final
 `狀態=待人工審核` marker. It also accepts an optional `目標類別` field
 present in the existing 19 rows; this is not an approval, independent source
