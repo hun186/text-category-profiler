@@ -16,12 +16,12 @@ def build_original_jaal_panel():
         dbc.CardBody([
             html.P("保留 Jaal / vis.js 的互動外觀與進階控制。"
                    "此區塊與上方的輕量分類樹互相獨立；"
-                   "只有按下「載入Jaal」才建立圖形與其回呼。"),
+                   "只有按下「載入 Jaal」才建立圖形與其回呼。"),
             html.Div([
                 html.Label("根類別（英文 ClassLabel）"),
                 dcc.Input(id="JaalOriginalRoot", type="text", value=DEFAULT_ROOT,
                           debounce=True, style={"minWidth": "300px"}),
-                html.Button("載入Jaal", id="btn_JaalOriginalLoad",
+                html.Button("載入 Jaal", id="btn_JaalOriginalLoad",
                             n_clicks=0),
             ], style={"display": "flex", "gap": "12px", "flexWrap": "wrap",
                       "alignItems": "center"}),
@@ -33,7 +33,7 @@ def build_original_jaal_panel():
             html.P("預設最多 250 個節點；大型子樹須先勾選確認，"
                    "絕不在進入主頁時自動全畫。"),
             html.Div(id="JaalOriginalStatus", role="status",
-                     children="尚未載入Jaal；主站不需啟動 8053 port。"),
+                     children="尚未載入 Jaal；主站不需啟動 8053 port。"),
             html.Div(id="JaalOriginalFrame"),
         ]),
     ], style={"width": "100%", "margin": "16px 0"})
