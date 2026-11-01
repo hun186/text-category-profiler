@@ -128,8 +128,10 @@ test("collapsed mode respects original Search/Filter hidden flags and restores",
   const f=fixture({nodes:["A","B","C"],edges:[["A","B"],["B","C"]]});
   f.nodes[1].hidden=true;
   f.run("network-collapsed");
-  assert.equal(f.component.nn.get().find(n=>n.id==="B").hidden,true);
-  f.click("A"); // Collapse the root.
+  // C remains a visible Search match, so B must be temporarily revealed
+  // as its otherwise-hidden ancestor while the search overlay is active.
+  assert.equal(f.component.nn.get().find(n=>n.id==="B").hidden,false);
+  f.click("A"); // Search overlay is authoritative; click does not toggle.
   f.run("hierarchical");
   assert.equal(f.component.nn.get().find(n=>n.id==="B").hidden,true);
   assert.equal(f.component.nn.get().find(n=>n.id==="C").hidden,false);
