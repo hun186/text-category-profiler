@@ -173,6 +173,8 @@ class OriginalJaalMountTests(unittest.TestCase):
         ])
         self.assertIn("jaal-original-layout-mode",
                       json.dumps(graph_column, ensure_ascii=False))
+        self.assertIn("jaal-original-hierarchy-hint",
+                      json.dumps(graph_column, ensure_ascii=False))
         self.assertNotIn("jaal-original-layout-mode",
                          json.dumps(sidebar, ensure_ascii=False))
         self.assertEqual(sidebar["props"]["width"], 3)
@@ -290,11 +292,16 @@ class OriginalJaalMountTests(unittest.TestCase):
                 self.assertEqual(options["layout"]["hierarchical"]["direction"], "UD")
                 self.assertEqual(options["layout"]["hierarchical"]["sortMethod"],
                                  "directed")
+                self.assertEqual(options["layout"]["hierarchical"]["nodeSpacing"], 245)
+                self.assertEqual(options["layout"]["hierarchical"]["treeSpacing"], 310)
+                self.assertEqual(options["layout"]["hierarchical"]["levelSeparation"], 205)
+                self.assertEqual(options["nodes"]["widthConstraint"], {"maximum": 145})
                 self.assertFalse(options["physics"]["enabled"])
                 self.assertTrue(options["edges"]["arrows"]["to"])
                 self.assertEqual(options["height"], "600px")
             else:
                 self.assertFalse(options["layout"]["hierarchical"]["enabled"])
+                self.assertFalse(options["nodes"]["widthConstraint"])
                 self.assertTrue(options["physics"]["enabled"])
                 self.assertEqual(options["physics"]["stabilization"],
                                  baseline_options["physics"]["stabilization"])
@@ -334,6 +341,7 @@ class OriginalJaalMountTests(unittest.TestCase):
         self.assertEqual(restored_options["edges"]["smooth"]["forceDirection"], "none")
         self.assertEqual(restored_options["edges"]["smooth"]["roundness"], 0.5)
         self.assertTrue(ticks["jaal-original-physics-restore"]["disabled"])
+        self.assertFalse(restored_options["nodes"]["widthConstraint"])
         # Racing mode changes cannot re-enable physics in hierarchy mode.
         raced = client.post(
             url + "_dash-update-component",
@@ -388,7 +396,10 @@ class OriginalJaalMountTests(unittest.TestCase):
         self.assertEqual(tree["layout"]["hierarchical"]["sortMethod"], "directed")
         self.assertFalse(tree["physics"]["enabled"])
         self.assertEqual(tree["edges"]["smooth"]["type"], "cubicBezier")
-        self.assertEqual(tree["nodes"], original["nodes"])
+        self.assertEqual(tree["nodes"]["font"], original["nodes"]["font"])
+        self.assertEqual(tree["nodes"]["widthConstraint"], {"maximum": 145})
+        self.assertEqual(tree["layout"]["hierarchical"]["nodeSpacing"], 245)
+        self.assertEqual(tree["layout"]["hierarchical"]["treeSpacing"], 310)
         self.assertEqual(tree["edges"]["arrows"], original["edges"]["arrows"])
         reset = _jaal_layout_options(original, "network")
         self.assertFalse(reset["layout"]["hierarchical"]["enabled"])
@@ -396,8 +407,10 @@ class OriginalJaalMountTests(unittest.TestCase):
         self.assertEqual(reset["physics"]["stabilization"],
                          snapshot["physics"]["stabilization"])
         self.assertEqual(reset["edges"]["smooth"]["type"], "dynamic")
-        for field in ("height", "width", "interaction", "nodes"):
+        for field in ("height", "width", "interaction"):
             self.assertEqual(reset[field], snapshot[field])
+        self.assertEqual(reset["nodes"]["font"], snapshot["nodes"]["font"])
+        self.assertFalse(reset["nodes"]["widthConstraint"])
         self.assertEqual(reset["edges"]["arrows"], snapshot["edges"]["arrows"])
         self.assertEqual(original, snapshot, "source settings must not be mutated")
 
@@ -414,9 +427,11 @@ class OriginalJaalMountTests(unittest.TestCase):
 
         effective_tree = merge_options(snapshot, tree)
         self.assertTrue(effective_tree["layout"]["hierarchical"]["enabled"])
+        self.assertEqual(effective_tree["nodes"]["widthConstraint"], {"maximum": 145})
         self.assertFalse(effective_tree["physics"]["enabled"])
         effective_network = merge_options(effective_tree, reset)
         self.assertFalse(effective_network["layout"]["hierarchical"]["enabled"])
+        self.assertFalse(effective_network["nodes"]["widthConstraint"])
         self.assertTrue(effective_network["physics"]["enabled"])
         self.assertEqual(effective_network["edges"]["smooth"]["type"], "dynamic")
         self.assertEqual(effective_network["edges"]["smooth"]["forceDirection"], "none")
@@ -436,6 +451,7 @@ class OriginalJaalMountTests(unittest.TestCase):
         stage2 = {
             "physics": {"enabled": snapshot["physics"].get("enabled", True)},
             "edges": {"smooth": reset["edges"]["smooth"]},
+            "nodes": {"widthConstraint": reset["nodes"]["widthConstraint"]},
         }
         final_state = merge_options(after_engine_exit, stage2)
         self.assertTrue(final_state["physics"]["enabled"])
@@ -443,6 +459,15 @@ class OriginalJaalMountTests(unittest.TestCase):
         self.assertEqual(final_state["edges"]["smooth"]["forceDirection"], "none")
         self.assertEqual(final_state["edges"]["smooth"]["roundness"], 0.5)
         self.assertEqual(final_state["edges"]["arrows"], snapshot["edges"]["arrows"])
+        self.assertFalse(final_state["nodes"]["widthConstraint"])
+        # Respect an explicitly configured original width limit in network mode.
+        custom = copy.deepcopy(original)
+        custom["nodes"]["widthConstraint"] = {"maximum": 265}
+        self.assertEqual(
+            _jaal_layout_options(custom, "network")["nodes"]["widthConstraint"],
+            {"maximum": 265},
+        )
+        self.assertEqual(custom["nodes"]["widthConstraint"], {"maximum": 265})
         with self.assertRaisesRegex(ValueError, "Unsupported"):
             _jaal_layout_options(original, "invalid")
 
