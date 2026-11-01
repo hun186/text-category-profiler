@@ -121,6 +121,14 @@ def _add_embedded_jaal_sidebar_toggle(layout):
     if sidebar.width != 3 or graph.width != 9:
         raise RuntimeError("Original Jaal sidebar column sizes changed")
     sidebar.id = "jaal-original-settings-column"
+    # Upstream Jaal centers the settings card vertically within the graph row
+    # ("align-items": "center"). When Filter/Color are collapsed the card is
+    # shorter than the 600px network, leaving a large blank strip above it.
+    # Adjust only the embedded original Jaal column, preserving all controls.
+    sidebar.style = {
+        **(sidebar.style or {}),
+        "align-items": "flex-start",
+    }
     graph.id = "jaal-original-graph-column"
     toggle = html.Button(
         "◀ 收合左側設定", id="jaal-original-sidebar-toggle", n_clicks=0,
@@ -149,7 +157,7 @@ def _sidebar_toggle_geometry(clicks):
     sidebar_style = {"display": "none"} if collapsed else {
         "display": "flex",
         "justifyContent": "center",
-        "alignItems": "center",
+        "alignItems": "flex-start",
     }
     return (
         sidebar_style,
