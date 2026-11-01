@@ -1,4 +1,4 @@
-﻿ClassLabel,CT,Explanation,Notes
+ClassLabel,CT,Explanation,Notes
 2016 Nice Truck Attack,2016尼斯卡車襲擊事件,2016年尼斯襲擊，是2016年7月14日在法國尼斯的一場恐怖襲擊事件。突尼西亞裔法國人穆罕默德·拉豪傑·布哈勒蓄意駕駛一輛貨車撞向在法國尼斯盎格魯街慶祝國慶日的人群，隨後又向民眾開槍，造成至少86人喪生。襲擊者一邊以Z字形駕駛貨車向人群衝撞，一邊高喊「真主至大」。最終他被警方擊斃。這是自2015年1月7日的查理周刊總部槍擊案和2015年11月13日的2015年11月巴黎襲擊事件之後法國發生的第三起較大型的恐怖襲擊。,
 2024 Trump Administration Cabinet Personnel,2024川普政府內閣人事,,
 3C Product News,3C產品新聞,3C是對電腦（computer）及其週邊、通訊（communications，多半是手機）和消費電子（consumer electronics）三種家用電器產品的代稱。,
@@ -81,7 +81,7 @@ African Swine Fever,非洲豬瘟,,
 Aging Affairs,人口老齡化事務,,
 Aging Affairs In Boao Forum,博鰲亞洲論壇之人口老齡化事務,,
 Agricultural Biotechnology,農業生物技術,農業生物技術是一系列工具，包括傳統的育種技術，可以改變生物體或生物體的一部分，以製造或修改產品；改良植物或動物；或開發用於特定農業用途的微生物。,
-Agriculture,農業;農藝;農學,,
+Agriculture,農業,農藝,農學
 Agriculture And Forestry And Fishery And Animal Husbandry,農林漁牧,如：農林漁牧、農業發展、糧食生產指數,
 Agriculture Industry,農業產業,,
 Air Freight Industry,航空業,,
@@ -147,8 +147,8 @@ BCIM Economic Corridor,孟中印緬區域合作論壇,,
 BD Affairs,孟加拉事務,,
 BD Diplomacy,孟加拉外交,,
 BD Politics,孟加拉政治,,
-BD-Acknowledgements,致謝詞,	有時作為序言的一部分而不是單獨的部分。這部分有時被放在書後附屬資料中。它記錄了那些為本書的創作做出貢獻的人。,
-BD-Bibliography,參考書目,	撰寫正文時參考的其他作品清單，在非小說類書籍或研究論文中最常見。,
+BD-Acknowledgements,致謝詞,,有時作為序言的一部分而不是單獨的部分。這部分有時被放在書後附屬資料中。它記錄了那些為本書的創作做出貢獻的人。
+BD-Bibliography,參考書目,,撰寫正文時參考的其他作品清單，在非小說類書籍或研究論文中最常見。
 BD-Colophon,版權頁,版本日期、版權、使用的翻譯以及出版商或印刷商的名稱和地址。它通常出現在現代書籍的扉頁的背面（即：和扉頁共用同一張紙的兩面）。有時版權頁也會被放到書後附屬資料中。,
 BD-Keywords,關鍵字,,
 BD-Preface,序言,,
@@ -843,7 +843,7 @@ Financial Industry,金融業,如：銀行業、保險業、信托業、證券業
 Financial Statements,財報,如：基金、債券財報,
 Fire News,火災新聞,,
 Fire Safety Guidelines,防火指導,,
-Fishery,漁業;水產業,,
+Fishery,漁業,水產業,
 Fit Out Works Cost,室內裝修花費,,
 Food Crisis,糧食危機,,
 Food Security,糧食安全,,
@@ -851,7 +851,7 @@ Football Racing,足球競賽,,
 Football Racing-Personal Story,足球競賽-個人故事,,
 Foreign AdminReport,外國行政報告,,
 Foreign Think,外國智庫,,
-Forestry,林業;林學,,
+Forestry,林業,林學,
 Forestry Industry,林業,,
 Formal Education,正規教育,如：小學、中學、高中、大學等,
 Formal Science,形式科學,形式科學是指主要研究對象為抽象形態的科學，如邏輯、數學、計算理論、資訊理論、統計學、經濟學等。,
@@ -1993,3 +1993,22 @@ Zero Trust Architecture,零信任架構,所謂的「零信任」(Zero Trust，�
 Zombie Network,殭屍網路,殭屍網路是現今網路上一大嚴重威脅，感染到殭屍病毒的電腦會不自覺地成為被控制的傀儡，不僅造成資料外洩、系統損壞、甚至成為重大網路攻擊的跳板。,
 chemSHERPA,產品所含化學物質信息傳遞體系,,
 chemSHERPA Data,產品所含化學物質信息傳遞體系填註資料,,
+Critical Mineral Economic And Industrial Impacts,關鍵礦產經濟與產業影響,依下游產業影響與市場影響劃分，不等同於所有一般國際經濟新聞。,AI新增｜日期=2026-10-31｜來源=本次類別結構分析（待核驗）｜理由=提供正式分類節點之繁體中文顯示與必要邊界說明｜目標類別=關鍵礦產供應鏈與出口管制｜狀態=待人工審核
+Critical Mineral Economic And Industrial Impacts-Automotive And Energy,關鍵礦產經濟與產業影響－汽車與能源,聚焦汽車馬達、電池、儲能、再生能源及電網等終端應用的供應與成本衝擊；不以一般金屬金融價格變化為主。,AI新增｜日期=2026-10-31｜來源=本次類別結構分析（待核驗）｜理由=提供正式分類節點之繁體中文顯示與必要邊界說明｜目標類別=關鍵礦產供應鏈與出口管制｜狀態=待人工審核
+Critical Mineral Economic And Industrial Impacts-High Tech And Defence,關鍵礦產經濟與產業影響－高科技與國防,聚焦半導體、光學、資通訊、航太與國防供應鏈受關鍵材料限制的具體影響；不以電動車成本為主。,AI新增｜日期=2026-10-31｜來源=本次類別結構分析（待核驗）｜理由=提供正式分類節點之繁體中文顯示與必要邊界說明｜目標類別=關鍵礦產供應鏈與出口管制｜狀態=待人工審核
+Critical Mineral Economic And Industrial Impacts-Prices And Trade Flows,關鍵礦產經濟與產業影響－價格與貿易流向,聚焦金屬價格、跨境價差、貿易流量、出口量及價格波動的經濟效應，不將僅報導出口法令的文章歸入此類。,AI新增｜日期=2026-10-31｜來源=本次類別結構分析（待核驗）｜理由=提供正式分類節點之繁體中文顯示與必要邊界說明｜目標類別=關鍵礦產供應鏈與出口管制｜狀態=待人工審核
+Critical Mineral Export Controls,關鍵礦產出口管制,,AI新增｜日期=2026-10-31｜來源=本次類別結構分析（待核驗）｜理由=提供正式分類節點之繁體中文顯示與必要邊界說明｜目標類別=關鍵礦產供應鏈與出口管制｜狀態=待人工審核
+Critical Mineral Export Controls-China Licensing And Restrictions,關鍵礦產出口管制－中國出口許可與限制,聚焦中國關鍵礦產、稀土、磁材及加工技術的出口許可、管制措施、審查及調整；不將其他產礦國配額混入。,AI新增｜日期=2026-10-31｜來源=本次類別結構分析（待核驗）｜理由=提供正式分類節點之繁體中文顯示與必要邊界說明｜目標類別=關鍵礦產供應鏈與出口管制｜狀態=待人工審核
+Critical Mineral Export Controls-Other Producer Restrictions,關鍵礦產出口管制－其他產礦國限制,除中國以外的產礦國所採出口禁止、配額、許可、稅費或在地加工出口政策，如剛果民主共和國的鈷出口配額。,AI新增｜日期=2026-10-31｜來源=本次類別結構分析（待核驗）｜理由=提供正式分類節點之繁體中文顯示與必要邊界說明｜目標類別=關鍵礦產供應鏈與出口管制｜狀態=待人工審核
+Critical Mineral Security,關鍵礦產安全,關鍵礦產取得、供應集中、精煉與政策限制所涉及的經濟及戰略安全議題。,AI新增｜日期=2026-10-31｜來源=本次類別結構分析（待核驗）｜理由=提供正式分類節點之繁體中文顯示與必要邊界說明｜目標類別=關鍵礦產供應鏈與出口管制｜狀態=待人工審核
+Critical Mineral Supply Chains,關鍵礦產供應鏈,,AI新增｜日期=2026-10-31｜來源=本次類別結構分析（待核驗）｜理由=提供正式分類節點之繁體中文顯示與必要邊界說明｜目標類別=關鍵礦產供應鏈與出口管制｜狀態=待人工審核
+Critical Mineral Supply Chains And Export Controls,關鍵礦產供應鏈與出口管制,跨採礦、加工、出口政策、供應鏈韌性及下游影響的主題性檢索聚合；此節點不表示出口管制是採礦產業的子類型。,AI新增｜日期=2026-10-31｜來源=本次類別結構分析（待核驗）｜理由=提供正式分類節點之繁體中文顯示與必要邊界說明｜目標類別=關鍵礦產供應鏈與出口管制｜狀態=待人工審核
+Critical Mineral Supply Chains-Mining Concentration,關鍵礦產供應鏈－採礦產地集中,探討關鍵礦產開採國家、礦山或產地的集中度及其供應風險；不以精煉能力或單一探勘計畫為主。,AI新增｜日期=2026-10-31｜來源=本次類別結構分析（待核驗）｜理由=提供正式分類節點之繁體中文顯示與必要邊界說明｜目標類別=關鍵礦產供應鏈與出口管制｜狀態=待人工審核
+Critical Mineral Supply Chains-Refining And Processing Bottlenecks,關鍵礦產供應鏈－精煉與加工瓶頸,聚焦礦石分離、冶煉、精煉、加工設備及技術產能瓶頸，不以新礦山勘查或產量為主。,AI新增｜日期=2026-10-31｜來源=本次類別結構分析（待核驗）｜理由=提供正式分類節點之繁體中文顯示與必要邊界說明｜目標類別=關鍵礦產供應鏈與出口管制｜狀態=待人工審核
+Critical Mineral Supply Resilience,關鍵礦產供應韌性,,AI新增｜日期=2026-10-31｜來源=本次類別結構分析（待核驗）｜理由=提供正式分類節點之繁體中文顯示與必要邊界說明｜目標類別=關鍵礦產供應鏈與出口管制｜狀態=待人工審核
+Critical Mineral Supply Resilience-Alternative Mining And Refining,關鍵礦產供應韌性－替代礦源與精煉布局,投資新礦山、跨國採購、在地精煉、跨國合作及擴產，以降低特定來源依賴；不以庫存管理或回收技術為主。,AI新增｜日期=2026-10-31｜來源=本次類別結構分析（待核驗）｜理由=提供正式分類節點之繁體中文顯示與必要邊界說明｜目標類別=關鍵礦產供應鏈與出口管制｜狀態=待人工審核
+Critical Mineral Supply Resilience-Recycling And Material Substitution,關鍵礦產供應韌性－回收與替代材料,從廢電池、廢磁鐵等回收關鍵金屬，或以不同材料與技術降低受限關鍵礦產使用量；不把一般新礦投資歸入此類。,AI新增｜日期=2026-10-31｜來源=本次類別結構分析（待核驗）｜理由=提供正式分類節點之繁體中文顯示與必要邊界說明｜目標類別=關鍵礦產供應鏈與出口管制｜狀態=待人工審核
+Critical Mineral Supply Resilience-Strategic Stockpiling,關鍵礦產供應韌性－戰略儲備,政府或產業為因應短期供應中斷所建立的戰略礦產採購、儲存與緊急釋出機制，不涵蓋單純新建採礦設施。,AI新增｜日期=2026-10-31｜來源=本次類別結構分析（待核驗）｜理由=提供正式分類節點之繁體中文顯示與必要邊界說明｜目標類別=關鍵礦產供應鏈與出口管制｜狀態=待人工審核
+Export Controls,出口管制,,AI新增｜日期=2026-10-31｜來源=本次類別結構分析（待核驗）｜理由=為本次使用之既有圖節點提供中文顯示｜目標類別=關鍵礦產供應鏈與出口管制｜狀態=待人工審核
+Ore Supply and Demand,礦石供需,,AI新增｜日期=2026-10-31｜來源=本次類別結構分析（待核驗）｜理由=為本次使用之既有圖節點提供中文顯示｜目標類別=關鍵礦產供應鏈與出口管制｜狀態=待人工審核
+Rare-Earth Ore Supply and Demand,稀土礦石供需,,AI新增｜日期=2026-10-31｜來源=本次類別結構分析（待核驗）｜理由=為本次使用之既有圖節點提供中文顯示｜目標類別=關鍵礦產供應鏈與出口管制｜狀態=待人工審核
