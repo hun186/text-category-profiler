@@ -56,13 +56,23 @@ class OriginalJaalMountTests(unittest.TestCase):
 
         def make_small_original_app(root, prefix):
             created.append((root, prefix))
-            edges = pd.DataFrame([("A", "B"), ("B", "C")],
+            edges = pd.DataFrame([("A", "CN Intelligence And Espionage Against TW"),
+                                  ("CN Intelligence And Espionage Against TW", "TW Affairs")],
                                  columns=["from", "to"])
-            nodes = pd.DataFrame([("A", 1), ("B", 2), ("C", 3)],
-                                 columns=["id", "depth"])
+            nodes = pd.DataFrame([
+                ("A", 1), ("CN Intelligence And Espionage Against TW", 2),
+                ("TW Affairs", 3),
+            ], columns=["id", "depth"])
+            from ClassesTree.Visualization.jaal.label_format import (
+                search_full_classlabel, wrapped_classlabel,
+            )
+            nodes["label"] = nodes["id"].map(wrapped_classlabel)
+            nodes["title"] = nodes["id"]
             from BertScript.jaal_original_mount import prefix_original_jaal
-            app = Jaal(edges, nodes).create(directed=True,
-                                            vis_opts={"height": "600px"})
+            original_jaal = Jaal(edges, nodes)
+            original_jaal._callback_search_graph = search_full_classlabel
+            app = original_jaal.create(directed=True,
+                                       vis_opts={"height": "600px"})
             return prefix_original_jaal(app, prefix)
 
         router = OriginalJaalRouter(build_app=make_small_original_app)
@@ -138,6 +148,52 @@ class OriginalJaalMountTests(unittest.TestCase):
         self.assertEqual(len(network), 1)
         self.assertEqual(network[0]["options"]["height"], "600px")
         self.assertNotIn("hierarchical", network[0]["options"].get("layout", {}))
+        # Real Jaal/visdcc must preserve explicit newline-bearing display
+        # labels in the HTTP Dash layout, not merely advertise options.
+        node_payload = network[0]["data"]["nodes"]
+        long_node = next(item for item in node_payload if item["id"] ==
+                         "CN Intelligence And Espionage Against TW")
+        self.assertIn(chr(10), long_node["label"])
+        self.assertEqual(long_node["title"], long_node["id"])
+        self.assertEqual(long_node["id"], "CN Intelligence And Espionage Against TW")
+        self.assertTrue(any(item["id"] == "TW Affairs" and
+                            item["label"] == "TW Affairs" for item in node_payload))
+        # Exercise actual upstream Jaal Search callback through mounted
+        # Dash HTTP, with a full phrase that spans explicit line breaks.
+        deps = json.loads(client.get(url + "_dash-dependencies").get_data(as_text=True))
+        search_dep = next(d for d in deps if "graph.data" in d["output"])
+        self.assertTrue(any(inp["id"] == "search_graph" for inp in search_dep["inputs"]))
+        for search_term in ("CN Intelligence And Espionage Against TW",
+                            "Intelligence And Espionage", "Against TW"):
+            response = client.post(
+                url + "_dash-update-component",
+                json={
+                    "output": search_dep["output"],
+                    "outputs": [
+                        {"id": "graph", "property": "data"},
+                        {"id": "color-legend-popup", "property": "children"},
+                    ],
+                    "inputs": [
+                        {"id": inp["id"], "property": inp["property"],
+                         "value": search_term if inp["id"] == "search_graph"
+                         else None}
+                        for inp in search_dep["inputs"]
+                    ],
+                    "state": [
+                        {"id": "graph", "property": "data", "value": network[0]["data"]}
+                    ],
+                    "changedPropIds": ["search_graph.value"],
+                },
+            )
+            self.assertEqual(response.status_code, 200,
+                             response.get_data(as_text=True)[:500])
+            result_nodes = response.get_json()["response"]["graph"]["data"]["nodes"]
+            matched = next(n for n in result_nodes if n["id"] ==
+                           "CN Intelligence And Espionage Against TW")
+            self.assertFalse(matched["hidden"], search_term)
+            self.assertTrue(all(n["hidden"] for n in result_nodes
+                                if n["id"] != matched["id"]))
+            self.assertIn(chr(10), matched["label"])
         components_by_id = {
             item["props"]["id"]: item for item in elements
             if isinstance(item["props"].get("id"), str)
@@ -570,7 +626,11 @@ class OriginalJaalSourceContractTests(unittest.TestCase):
             encoding="utf-8")
         self.assertIn("JaalViewMain(", jaal)
         self.assertIn("Jaal(edge_df, node_df).plot(", jaal)
-        self.assertIn("Jaal(edge_df, node_df).create(", jaal)
+        self.assertIn("embedded_jaal = Jaal(edge_df, node_df)", jaal)
+        self.assertIn("return embedded_jaal.create(", jaal)
+        self.assertIn('node_df["label"] = node_df["id"].map(wrapped_classlabel)', jaal)
+        self.assertIn('node_df["title"] = node_df["id"]', jaal)
+        self.assertIn('embedded_jaal._callback_search_graph = search_full_classlabel', jaal)
         # Jaal.create() cannot take host=; original .plot() can.
         create = jaal.split("if createMode == True:", 1)[1].split("else:", 1)[0]
         self.assertNotIn("host = hostIP", create)

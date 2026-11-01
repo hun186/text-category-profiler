@@ -222,9 +222,26 @@ def JaalViewMain(
                   }
               }
     if createMode == True:
+        # The embedded Jaal dot shape has not rendered automatic line wraps
+        # from vis-network widthConstraint reliably on Windows. Use Jaal's
+        # documented per-node label/title columns and explicit newlines.
+        # Only presentation text changes; IDs, edges and original filtering
+        # columns remain untouched. Standalone Jaal.plot stays unchanged.
+        from ClassesTree.Visualization.jaal.label_format import (
+            search_full_classlabel, wrapped_classlabel,
+        )
+        node_df = node_df.copy()
+        node_df["label"] = node_df["id"].map(wrapped_classlabel)
+        node_df["title"] = node_df["id"]
         # Jaal.create() creates the original Dash UI and callbacks, but
         # unlike .plot(), does not accept a host or port parameter.
-        return Jaal(edge_df, node_df).create(
+        embedded_jaal = Jaal(edge_df, node_df)
+        # Jaal searches node['label'] by default. Wrapped/ellipsized labels
+        # must not break the Search control's original full-ClassLabel matches.
+        # Patch only this embedded Jaal instance before its callbacks are
+        # registered; independent Jaal.plot() remains upstream unchanged.
+        embedded_jaal._callback_search_graph = search_full_classlabel
+        return embedded_jaal.create(
             directed=directed,
             vis_opts=vis_opts,
             )
