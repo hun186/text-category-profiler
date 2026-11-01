@@ -145,6 +145,9 @@ class OriginalJaalMountTests(unittest.TestCase):
         graph_column = components_by_id["jaal-original-graph-column"]
         toggle = components_by_id["jaal-original-sidebar-toggle"]
         self.assertEqual(sidebar["props"]["width"], 3)
+        # Upstream Jaal vertically centers the shorter settings card; the
+        # embedded view must start at row top even when sections are hidden.
+        self.assertEqual(sidebar["props"]["style"]["align-items"], "flex-start")
         self.assertEqual(graph_column["props"]["width"], 9)
         self.assertIn("收合左側設定", toggle["props"]["children"])
         self.assertEqual(toggle["props"]["n_clicks"], 0)
@@ -199,6 +202,11 @@ class OriginalJaalMountTests(unittest.TestCase):
             changed = result.get_json()["response"]
             self.assertEqual(changed["jaal-original-settings-column"]["style"]["display"],
                              expected_display)
+            if expected_display == "flex":
+                self.assertEqual(
+                    changed["jaal-original-settings-column"]["style"]["alignItems"],
+                    "flex-start",
+                )
             self.assertEqual(changed["jaal-original-graph-column"]["width"],
                              expected_width)
             self.assertIn(expected_text,
@@ -235,6 +243,8 @@ class OriginalJaalMountTests(unittest.TestCase):
         self.assertEqual(collapsed[0]["display"], "none")
         self.assertEqual(collapsed[1], 12)
         self.assertEqual(reopened[0]["display"], "flex")
+        self.assertEqual(expanded[0]["alignItems"], "flex-start")
+        self.assertEqual(reopened[0]["alignItems"], "flex-start")
         self.assertEqual(reopened[1], 9)
         self.assertEqual(reopened, expanded)
 

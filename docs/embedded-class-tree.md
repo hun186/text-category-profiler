@@ -69,6 +69,18 @@ QueryRoot 的原版 Jaal 實例，避免無上限耗用記憶體；改變根類�
 這個 Jaal 區塊包含原本 UI 的篩選、顏色與大小設定，輕量區塊維持
 獨立，兩者不會互相覆蓋。
 
+### 原版 Jaal 左側面板固定靠上對齊
+
+原版 Jaal 的左側 Search／Filter／Color／Size 面板原本使用
+`align-items: center` 在圖形欄旁**垂直置中**；當 Filter 或 Color
+收合、左側內容變矮時，卡片上方就出現隨內容高度改變的大塊空白。
+同埠內嵌版現在將**初始**左側欄位改為
+`align-items: flex-start`，並在「收合／展開左側設定」回呼中
+同樣維持靠上。設定面板高度仍隨 Filter／Color 開合自然增減，
+不更改 Search／Filter／Color／Size 的 callback 或控件狀態。
+右側 vis.js 圖形內容、圖形縮放與原版獨立 8053 Jaal 不變。
+這是純排版修正；真正 Windows 瀏覽器的視覺驗收仍需確認。
+
 ### 原版 Jaal 左側設定面板收合／展開
 
 在已載入的原版 Jaal 子視窗中，圖形區上方有常駐可見的
