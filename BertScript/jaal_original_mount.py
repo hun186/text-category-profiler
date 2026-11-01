@@ -153,16 +153,41 @@ def _jaal_layout_options(base_options, mode):
 
 
 def _register_embedded_jaal_layout_mode(app, base_options):
-    """Only graph.options changes; the original graph.data callbacks remain."""
-    from dash import Input, Output
+    """Switch layout, then restore network physics after vis.js unwinds hierarchy.
+
+    vis-network LayoutEngine.setOptions() restores an internal physics backup
+    *after* applying options when hierarchical mode is disabled. A one-shot
+    delayed second net.setOptions() is required to re-enable physics reliably.
+    No new graph/data instance is created; the timer is idle otherwise.
+    """
+    from dash import Input, Output, callback_context, no_update
 
     @app.callback(
         Output("graph", "options"),
+        Output("jaal-original-physics-restore", "disabled"),
         Input("jaal-original-layout-mode", "value"),
+        Input("jaal-original-physics-restore", "n_intervals"),
         prevent_initial_call=True,
     )
-    def choose_layout(mode):
-        return _jaal_layout_options(base_options, mode)
+    def choose_layout(mode, _ticks):
+        triggered = callback_context.triggered[0]["prop_id"].split(".", 1)[0]
+        if triggered == "jaal-original-physics-restore":
+            # A quick switch back to hierarchy must never reactivate physics.
+            if mode != "network":
+                return no_update, True
+            baseline = base_options.get("physics", {})
+            enabled = baseline.get("enabled", True) if isinstance(
+                baseline, dict
+            ) else bool(baseline)
+            return {"physics": {"enabled": enabled}}, True
+        if mode == "hierarchical":
+            return _jaal_layout_options(base_options, mode), True
+        if mode == "network":
+            # Step 1: exit hierarchical layout, restoring original vis.js
+            # settings. LayoutEngine can still override physics.enabled.
+            # Step 2: timer tick restores enabled after the React update.
+            return _jaal_layout_options(base_options, mode), False
+        raise ValueError("Unsupported Jaal layout mode")
 
 
 def _add_embedded_jaal_sidebar_toggle(layout):
@@ -241,7 +266,9 @@ def _add_embedded_jaal_sidebar_toggle(layout):
         inputStyle={"marginRight": "4px"},
     )
     toolbar = html.Div(
-        [toggle, html.Span("顯示模式："), mode_choice],
+        [toggle, html.Span("顯示模式："), mode_choice,
+         dcc.Interval(id="jaal-original-physics-restore",
+                      interval=300, disabled=True, n_intervals=0)],
         style={
             "display": "flex",
             "alignItems": "center",
