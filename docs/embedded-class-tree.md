@@ -39,7 +39,7 @@ Hosted \`Stage 4 Embedded Lazy Taxonomy Graph\` 工作流程在 Python 3.11 安�
 與明確確認全圖時的瀏覽器回應。
 
 
-## 原版 Jaal 進階區塊（保留完整視覺效果）
+## Jaal 進階檢視器（保留完整視覺效果）
 
 此區塊與前述 Dash Cytoscape 輕量分類樹**同時存在**，保留原本使用
 `ClassesTree/Visualization/jaal/jaalViewer.py` + `Jaal.create()`
@@ -47,7 +47,7 @@ Hosted \`Stage 4 Embedded Lazy Taxonomy Graph\` 工作流程在 Python 3.11 安�
 節點大小與邊權重等整套 UI；**不是**以 Cytoscape 重做 Jaal 功能。
 
 操作：展開 Stage 4 主頁（無須獨立開 8053），在下方常駐可見的
-「原版 Jaal 進階檢視器」輸入英文 `QueryRoot`，點「載入原版 Jaal」。
+「Jaal 進階檢視器」輸入英文 `QueryRoot`，點「載入 Jaal」。
 預設 `TW Affairs`，目前完整子樹約 77 節點。若子樹超過 250 節點，
 先勾「大型子樹」確認後才能繪製。硬限制 3,000 節點或 5,000 邊，
 超過拒絕並請使用更小的根節點。
@@ -68,6 +68,29 @@ QueryRoot 的原版 Jaal 實例，避免無上限耗用記憶體；改變根類�
 `Ctrl+F5`。直接開啟未由主頁啟用的子路徑會回傳 404。
 這個 Jaal 區塊包含原本 UI 的篩選、顏色與大小設定，輕量區塊維持
 獨立，兩者不會互相覆蓋。
+
+### 網狀／階層樹狀顯示模式
+
+已載入的 Jaal 檢視器，在分類圖上方（左側設定收合按鈕旁）
+新增 **顯示模式：網狀／階層樹狀**。預設 **網狀**，完全使用 Jaal
+原本的 vis.js options（含 hover、箭頭、physics 設定）。切到
+**階層樹狀**時，用相同節點與關係啟用 vis.js
+`layout.hierarchical.enabled`（`direction=UD`、`sortMethod=directed`）、
+停用物理力，並以垂直 cubicBezier 曲線顯示關係；
+切回網狀會還原**整份原始 options**，而不是重新套用不完整的固定模板。
+
+切換僅更新既有 `visdcc.Network(id="graph").options`，不更動
+`graph.data`、Search／Filter／Color／Size 已選設定、左側面板收合，
+也不重新建立 Jaal Dash app 或開新 port。載入另一個根類別時會
+恢復網狀預設。TopicTree 是有向圖，可能有多父節點、跨層關係或
+環狀關係；階層模式是**視覺布局選擇**，不保證變成嚴格單根樹，
+也不修改分類結構或隱藏交叉連線。
+
+這個切換僅加在 Stage 4 **同 port 內嵌版**，不改動獨立
+`jaalViewer.py` 的 CLI 版型。Hosted 原版 Jaal WSGI 測試會驗證
+實際 Dash layout 的模式選項、graph.options HTTP callback、
+階層模式參數及切回網狀後 options 完整一致；Windows 瀏覽器
+實際渲染、切換時的視角與大型圖形效能仍需實機確認。
 
 ### 原版 Jaal 不必要的水平／垂直雙捲軸
 
