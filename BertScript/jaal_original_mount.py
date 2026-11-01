@@ -79,6 +79,31 @@ def _normalize_original_jaal_logo(layout):
     return False
 
 
+def _remove_embedded_jaal_outer_row_gutters(layout):
+    """Keep Jaal's two outer Bootstrap rows inside the iframe viewport.
+
+    Bootstrap .row has negative left/right margins to counter child column
+    padding. Those margins are valid inside a .container, but upstream Jaal
+    renders its root rows directly in a Div. The narrow overflow can create
+    both horizontal and vertical iframe scrollbars. Apply Bootstrap's g-0
+    *only* to the two root rows; never hide overflow or clip labels/controls.
+    """
+    import dash_bootstrap_components as dbc
+    from dash import html
+
+    if not isinstance(layout, html.Div):
+        raise RuntimeError("Original Jaal outer layout is no longer a Div")
+    outer_rows = getattr(layout, "children", None)
+    if (not isinstance(outer_rows, (tuple, list))
+            or len(outer_rows) != 2
+            or not all(isinstance(row, dbc.Row) for row in outer_rows)):
+        raise RuntimeError("Original Jaal outer row structure changed")
+    for row in outer_rows:
+        classes = (row.className or "").split()
+        if "g-0" not in classes:
+            row.className = " ".join([*classes, "g-0"])
+
+
 def _add_embedded_jaal_sidebar_toggle(layout):
     """Add a toggle without rebuilding the original Jaal graph or controls.
 
@@ -228,6 +253,7 @@ def prefix_original_jaal(original_app, prefix):
         ],
     )
     _normalize_original_jaal_logo(original_app.layout)
+    _remove_embedded_jaal_outer_row_gutters(original_app.layout)
     _add_embedded_jaal_sidebar_toggle(original_app.layout)
     # A stable content boundary lets the *child* iframe measure actual
     # rendered height (logo + controls + graph), independent of the original

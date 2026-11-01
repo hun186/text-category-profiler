@@ -69,6 +69,24 @@ QueryRoot 的原版 Jaal 實例，避免無上限耗用記憶體；改變根類�
 這個 Jaal 區塊包含原本 UI 的篩選、顏色與大小設定，輕量區塊維持
 獨立，兩者不會互相覆蓋。
 
+### 原版 Jaal 不必要的水平／垂直雙捲軸
+
+原版 Jaal 直接將 Logo 與 Search／Filter／Color／Size＋網路圖兩個
+Bootstrap `Row` 放在 `html.Div` 下，並非放在具有 gutter
+補償的 `container` 裡。Bootstrap `.row` 的左右負邊距可能使
+iframe 內容比可用寬度多出約數個至十數像素，出現水平捲軸；
+捲軸再占掉部分高度，也可能誘發垂直捲軸。
+
+同 port **內嵌版**只對原版 Jaal 這兩個最外層 `Row` 增加
+Bootstrap `g-0`：將 gutter 歸零並抵消負邊距造成的溢出。
+內層 Filter／Color／Size 排版、已有的側欄收合、實際內容高度
+自動計算、600px vis.js 畫布與獨立 8053 Jaal 均不變。
+**沒有**把 iframe 或頁面設成 `overflow:hidden`，因此若縮窄
+瀏覽器或展開很長的內容，真正必要的捲動仍保留。
+Hosted 原版 Jaal 的 WSGI layout 測試確認兩個外層 `Row` 使用
+`g-0`、內層控制不被改寫、Bootstrap CSS 有對應樣式；
+Chrome／Windows 實機的捲軸消失情況仍需使用者確認。
+
 ### 原版 Jaal 左側面板固定靠上對齊
 
 原版 Jaal 的左側 Search／Filter／Color／Size 面板原本使用
