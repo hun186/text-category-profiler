@@ -32,11 +32,13 @@
     const ids = new Set(data.nodes.map(n => String(n.id)));
     const child = new Map(Array.from(ids, id => [id, new Set()]));
     const incoming = new Map(Array.from(ids, id => [id, 0]));
+    const parents = new Map(Array.from(ids, id => [id, new Set()]));
     for (const edge of data.edges) {
       const a = String(edge.from), b = String(edge.to);
       if (!ids.has(a) || !ids.has(b) || child.get(a).has(b)) continue;
       child.get(a).add(b);
       incoming.set(b, incoming.get(b) + 1);
+      parents.get(b).add(a);
     }
     const ordered = Array.from(ids).sort();
     const roots = ordered.filter(id => incoming.get(id) === 0);
@@ -71,7 +73,7 @@
       counts.set(start, count);
       return count;
     }
-    return {ids, child, roots, counts, uniqueDescendants};
+    return {ids, child, parents, roots, counts, uniqueDescendants};
   }
 
   function signature(data) {
@@ -102,15 +104,37 @@
     if (!source || !instance.nn || !instance.ee) return;
     const baseNodes = new Map(source.nodes.map(n => [String(n.id), n]));
     const baseEdges = new Map(source.edges.map(e => [String(e.id), e]));
-    const shown = visibleIds(state.model, state.expanded);
+    let shown = visibleIds(state.model, state.expanded);
+    // Upstream Jaal Search hides every non-matching node. A deep match
+    // must remain reachable in collapsed mode: show the unique matching
+    // IDs and their ancestor paths (including parents normally hidden
+    // by Search), while never duplicating nodes on multiple-parent paths.
+    const searchActive = source.nodes.some(n => Boolean(n.hidden));
+    state.searchActive = searchActive;
+    let searchAncestors = new Set();
+    if (searchActive) {
+      const matches = source.nodes.filter(n => !n.hidden).map(n => String(n.id));
+      const stack = [...matches];
+      shown = new Set();
+      while (stack.length) {
+        const id = stack.pop();
+        if (shown.has(id)) continue;
+        shown.add(id);
+        for (const parent of state.model.parents.get(id) || []) {
+          searchAncestors.add(parent);
+          stack.push(parent);
+        }
+      }
+    }
     instance.nn.update(instance.nn.get().map(node => {
       const id = String(node.id);
       const base = baseNodes.get(id) || {};
       const count = state.model.uniqueDescendants(id);
-      const bubble = count > 0 && !state.expanded.has(id);
+      const bubble = count > 0 && !state.expanded.has(id) &&
+        !searchAncestors.has(id);
       return {
         id: node.id,
-        hidden: !shown.has(id) || Boolean(base.hidden),
+        hidden: !shown.has(id) || (!searchActive && Boolean(base.hidden)),
         label: displayName(id) + (bubble ? "\n" + count : ""),
       };
     }));
@@ -119,7 +143,10 @@
       return {
         id: edge.id,
         hidden: !shown.has(String(edge.from)) ||
-          !shown.has(String(edge.to)) || Boolean(base.hidden),
+          !shown.has(String(edge.to)) ||
+          !(state.expanded.has(String(edge.from)) ||
+            (searchActive && searchAncestors.has(String(edge.from)))) ||
+          Boolean(base.hidden),
       };
     }));
   }
@@ -159,7 +186,7 @@
       const component = this;
       this.net.on("click", function (event) {
         const current = component.__jaalStructural;
-        if (!current || !COLLAPSED.has(current.mode)) return;
+        if (!current || !COLLAPSED.has(current.mode) || current.searchActive) return;
         const id = event && event.nodes && event.nodes.length ?
           String(event.nodes[0]) : null;
         if (!id || !current.model.ids.has(id) ||

@@ -66,11 +66,11 @@
     if (mode === "network-collapsed") return NETWORK_COLLAPSED_RUN;
     if (mode === "hierarchical") return HIERARCHICAL_RUN.replace(
       "var ds = this.nn;",
-      "globalThis.dash_clientside.jaal_structural_collapse.restore.call(this); var ds = this.nn;"
+      "if (globalThis.dash_clientside && globalThis.dash_clientside.jaal_structural_collapse) globalThis.dash_clientside.jaal_structural_collapse.restore.call(this); var ds = this.nn;"
     );
     if (mode === "network") return NETWORK_RUN.replace(
       "var ds = this.nn;",
-      "globalThis.dash_clientside.jaal_structural_collapse.restore.call(this); var ds = this.nn;"
+      "if (globalThis.dash_clientside && globalThis.dash_clientside.jaal_structural_collapse) globalThis.dash_clientside.jaal_structural_collapse.restore.call(this); var ds = this.nn;"
     );
     return "";
   }

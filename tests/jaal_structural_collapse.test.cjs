@@ -74,7 +74,7 @@ test("both collapsed layouts preserve one original node each, label plus count o
     n=f.component.nn.get();
     assert.equal(n.find(x=>x.id==="D").hidden,false);
     assert.equal(n.find(x=>x.id==="B").label,"B");
-    assert.equal(f.component.ee.get().filter(e=>!e.hidden).length,4); // cross-parent edge retained
+    assert.equal(f.component.ee.get().filter(e=>!e.hidden).length,3); // C still collapsed
     f.click("B");
     assert.equal(f.component.nn.get().find(x=>x.id==="D").hidden,true);
     // Click root once: hide both branches; one bubble with 3 unique descendants.
@@ -133,4 +133,34 @@ test("collapsed mode respects original Search/Filter hidden flags and restores",
   f.run("hierarchical");
   assert.equal(f.component.nn.get().find(n=>n.id==="B").hidden,true);
   assert.equal(f.component.nn.get().find(n=>n.id==="C").hidden,false);
+});
+
+test("Search reveals a deep match and its ancestors, not sibling branches",()=>{
+  const f=fixture({nodes:["A","B","C","S"], edges:[["A","B"],["B","C"],["A","S"]]});
+  // The original Jaal search has already hidden all nonmatches.
+  f.nodes.forEach(n=>{n.hidden=(n.id!=="C");});
+  f.run("hierarchical-collapsed");
+  const nodes=f.component.nn.get();
+  assert.deepEqual(nodes.filter(n=>!n.hidden).map(n=>n.id),["A","B","C"]);
+  assert.equal(nodes.find(n=>n.id==="A").label,"A");
+  assert.equal(nodes.find(n=>n.id==="B").label,"B");
+  assert.equal(nodes.find(n=>n.id==="S").hidden,true);
+  assert.equal(f.component.ee.get().filter(e=>!e.hidden).length,2);
+  f.click("A"); // Search remains authoritative until cleared.
+  assert.equal(f.component.nn.get().find(n=>n.id==="C").hidden,false);
+  f.nodes.forEach(n=>{n.hidden=false;});
+  f.run("hierarchical-collapsed");
+  assert.equal(f.component.nn.get().find(n=>n.id==="C").hidden,true);
+  f.click("B");
+  assert.equal(f.component.nn.get().find(n=>n.id==="C").hidden,false);
+});
+
+test("Search through two parents reveals one shared match without double count",()=>{
+  const f=fixture({nodes:["A","B","C","D"],edges:[
+    ["A","B"],["A","C"],["B","D"],["C","D"]]});
+  f.nodes.forEach(n=>{n.hidden=n.id!=="D";});
+  f.run("network-collapsed");
+  assert.deepEqual(f.component.nn.get().filter(n=>!n.hidden).map(n=>n.id),
+    ["A","B","C","D"]);
+  assert.equal(f.component.ee.get().filter(e=>!e.hidden).length,4);
 });
