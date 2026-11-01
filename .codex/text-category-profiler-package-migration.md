@@ -59,7 +59,7 @@ text_category_profiler/
 
 - [x] 建立五個 canonical active entry point 的**可重現靜態清單**：`TCFMain.py`、DataConverter、classifier runner、result combiner、visualization；`scripts/bl001_canonical_import_audit.py` 對每個路徑做存在性與 AST parse fail-closed 檢查、輸出 `canonical_entrypoint_inventory`，`tests/test_bl001_canonical_import_audit.py` 保護五個角色與缺檔／無效語法。此為 source inventory，**未驗證實際 runtime dispatch、外部 caller、GPU、WorkPool 或 GUI**。
 - [ ] 產生 `PythonModule/utils/` 模組 → active callers 對照表，排除 archive、vendor、copy 與部署 snapshot。
-- [ ] 逐組比較重複模組，例如 `df_utils.py`、`MP_utils.py`、`utilities.py`，確認權威版本與差異。
+- [ ] 逐組比較重複模組，例如 `df_utils.py`、`MP_utils.py`、`utilities.py`，確認權威版本與差異。此批已建立三組九個來源的 source SHA256、top-level public AST 定義交集／差異、可見明確第一方 import 語法的唯讀報告（`scripts/bl001_duplicate_provider_audit.py`，Hosted JSON artifact）；`package_domain_owner` 僅指結構歸屬，不能代表 stage-local 版本可安全被取代。動態／外部 caller 與真實 API 語意差異尚未驗證，**不得將此項標記完成或自動刪掉任何版本**。
 - [ ] 將檔案標記為 `shared`、`stage-specific`、`script`、`test/experiment`、`vendor`、`legacy/unknown` 六類。
 - [ ] 為第一批候選模組確認或補齊無外部服務副作用的 characterization tests。
 - [ ] 記錄 repository 外部是否仍有程式依賴 `from utils...`；未確認前保留相容策略。
