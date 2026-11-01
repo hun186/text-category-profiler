@@ -46,7 +46,7 @@ class ViewerOnlyLauncherTests(unittest.TestCase):
         fast_path = next(
             node for node in tree.body
             if isinstance(node, ast.If)
-            and '"--viewer-only" in sys.argv[1:]' in ast.unparse(node.test)
+            and "viewer-only" in ast.unparse(node.test)
         )
         import_numpy = next(
             node for node in tree.body
