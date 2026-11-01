@@ -11,6 +11,27 @@ else:
     from class_table_metadata import MetadataError, atomic_write, check_round_trip, load_class_table, table_to_csv
 
 
+# Explicitly audited later edits to the authoritative 2,013-row CSV.
+# In --allow-pending-additions mode ONLY, accept these exact five records:
+# three agricultural semicolon synonyms split into CT / Explanation / Notes,
+# and two historical book-section descriptions moved to Notes (minus a tab).
+# No broad legacy CT/Explanation differences are allowed. New edits require
+# updating this reviewable evidence rather than disabling the migration gate.
+CURATED_METADATA_OVERRIDES = {
+    "Agriculture": {"CT": "農業", "Explanation": "農藝", "Notes": "農學"},
+    "Fishery": {"CT": "漁業", "Explanation": "水產業", "Notes": ""},
+    "Forestry": {"CT": "林業", "Explanation": "林學", "Notes": ""},
+    "BD-Acknowledgements": {
+        "CT": "致謝詞", "Explanation": "",
+        "Notes": "有時作為序言的一部分而不是單獨的部分。這部分有時被放在書後附屬資料中。它記錄了那些為本書的創作做出貢獻的人。",
+    },
+    "BD-Bibliography": {
+        "CT": "參考書目", "Explanation": "",
+        "Notes": "撰寫正文時參考的其他作品清單，在非小說類書籍或研究論文中最常見。",
+    },
+}
+
+
 def read_legacy(path):
     tree = ast.parse(Path(path).read_text(encoding="utf-8-sig"))
     found = [n.value for n in tree.body if isinstance(n, ast.Assign)
@@ -110,11 +131,19 @@ def verify(original, actual, *, allow_pending_additions=False):
         )
     # Preserve all historical CT/Explanation values even when opt-in AI
     # additions extend the official CSV. New rows remain unapproved.
-    differences = [
-        label for label, item in expected.items()
-        if item != {"CT": actual[label]["CT"],
-                    "Explanation": actual[label]["Explanation"]}
-    ]
+    differences = []
+    for label, item in expected.items():
+        legacy_fields = {
+            "CT": actual[label]["CT"],
+            "Explanation": actual[label]["Explanation"],
+        }
+        if item == legacy_fields:
+            continue
+        if (allow_pending_additions
+                and label in CURATED_METADATA_OVERRIDES
+                and actual[label] == CURATED_METADATA_OVERRIDES[label]):
+            continue
+        differences.append(label)
     if differences:
         raise MetadataError(f"CT/Explanation mismatch: {differences[:20]}")
     if extra:
