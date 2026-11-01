@@ -69,6 +69,13 @@ class ProjectDocumentationTests(unittest.TestCase):
         self.assertIn("BL-001", memory)
         self.assertIn("BL-002", memory)
 
+
+    def test_codex_contract_tables_keep_each_row_on_its_own_line(self):
+        for path in (".codex/workflows.md", ".codex/contracts.md"):
+            with self.subTest(path=path):
+                text = (ROOT / path).read_text(encoding="utf-8")
+                self.assertNotIn("|\\n|", text, "Literal \\n escaped table separator")
+
     def test_known_issues_agrees_with_lightweight_smoke_command(self):
         known_issues = (ROOT / ".codex" / "known_issues.md").read_text(encoding="utf-8")
 

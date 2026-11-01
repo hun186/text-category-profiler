@@ -15,7 +15,8 @@
 | `CONTRACT-FILE-004` | CSV / Python API | ClassTable display metadata | `ClassesTree/data/ClassTable.csv`, `BertScript/class_table_metadata.py` | Dash / SMS / DataConverter tools | `class_table_metadata.py` | CSV authoritative; compatibility dict retained |
 | `CONTRACT-FILE-003` | File input | Topic tree taxonomy CSV files | `ClassesTree/` / project data owner | `DatasetConverter/DataConverter.py`, tree viewers | `--TopicTreeDir`, `--TopicTreeFiles`, `ClassesTree/ClassesTree_utils.py` | Draft / currently used |
 | `CONTRACT-FILE-002` | File handoff | Prediction/result analysis artifacts | `BertScript/RunClassfier.py`, `CombineTestResult.py` | `Test_result_Vis.py`, work pool output | Stage scripts and backup filename patterns | Draft / currently used |
-| `CONTRACT-CLI-003` | Read-only CLI | AI ClassTable candidate provenance preflight | `BertScript/class_table_ai_proposals.py` | AI taxonomy proposal reviewers | `audit_proposals()`, `parse_provenance()`, CLI | Candidate-only; no approval/write |\n| `CONTRACT-CLI-002` | CLI / external service | Elasticsearch text ingestion tool | `scripts/ES_ingest_txt_to_es.py` with legacy wrapper | Operators / data import jobs | argparse in script | Optional / unverified in root flow |
+| `CONTRACT-CLI-003` | Read-only CLI | AI ClassTable candidate provenance preflight | `BertScript/class_table_ai_proposals.py` | AI taxonomy proposal reviewers | `audit_proposals()`, `parse_provenance()`, CLI | Candidate-only; no approval/write |
+| `CONTRACT-CLI-002` | CLI / external service | Elasticsearch text ingestion tool | `scripts/ES_ingest_txt_to_es.py` with legacy wrapper | Operators / data import jobs | argparse in script | Optional / unverified in root flow |
 
 ## 通用相容性規則
 
