@@ -276,8 +276,16 @@ class OriginalJaalMountTests(unittest.TestCase):
                 self.assertTrue(options["edges"]["arrows"]["to"])
                 self.assertEqual(options["height"], "600px")
             else:
-                self.assertEqual(options, baseline_options,
-                                 "Switch back must restore ALL original Jaal options")
+                self.assertFalse(options["layout"]["hierarchical"]["enabled"])
+                self.assertTrue(options["physics"]["enabled"])
+                self.assertEqual(options["physics"]["stabilization"],
+                                 baseline_options["physics"]["stabilization"])
+                self.assertEqual(options["edges"]["smooth"]["type"], "dynamic")
+                self.assertEqual(options["edges"]["smooth"]["forceDirection"], "none")
+                self.assertEqual(options["edges"]["arrows"],
+                                 baseline_options["edges"]["arrows"])
+                self.assertEqual(options["height"], baseline_options["height"])
+                self.assertEqual(options["interaction"], baseline_options["interaction"])
         self.assertEqual(len(created), 1, "mode toggle must reuse mounted Jaal")
         self.assertEqual(len(created), 1, "toggle must reuse mounted Jaal")
         # Graph data and all original user settings remain in the same tree.
@@ -310,8 +318,37 @@ class OriginalJaalMountTests(unittest.TestCase):
         self.assertEqual(tree["edges"]["smooth"]["type"], "cubicBezier")
         self.assertEqual(tree["nodes"], original["nodes"])
         self.assertEqual(tree["edges"]["arrows"], original["edges"]["arrows"])
-        self.assertEqual(_jaal_layout_options(original, "network"), snapshot)
+        reset = _jaal_layout_options(original, "network")
+        self.assertFalse(reset["layout"]["hierarchical"]["enabled"])
+        self.assertTrue(reset["physics"]["enabled"])
+        self.assertEqual(reset["physics"]["stabilization"],
+                         snapshot["physics"]["stabilization"])
+        self.assertEqual(reset["edges"]["smooth"]["type"], "dynamic")
+        for field in ("height", "width", "interaction", "nodes"):
+            self.assertEqual(reset[field], snapshot[field])
+        self.assertEqual(reset["edges"]["arrows"], snapshot["edges"]["arrows"])
         self.assertEqual(original, snapshot, "source settings must not be mutated")
+
+        def merge_options(current, update):
+            # Model vis-network setOptions()' recursive merge semantics.
+            # An absent key is NOT cleared from the live network instance.
+            result = copy.deepcopy(current)
+            for key, value in update.items():
+                if isinstance(value, dict) and isinstance(result.get(key), dict):
+                    result[key] = merge_options(result[key], value)
+                else:
+                    result[key] = copy.deepcopy(value)
+            return result
+
+        effective_tree = merge_options(snapshot, tree)
+        self.assertTrue(effective_tree["layout"]["hierarchical"]["enabled"])
+        self.assertFalse(effective_tree["physics"]["enabled"])
+        effective_network = merge_options(effective_tree, reset)
+        self.assertFalse(effective_network["layout"]["hierarchical"]["enabled"])
+        self.assertTrue(effective_network["physics"]["enabled"])
+        self.assertEqual(effective_network["edges"]["smooth"]["type"], "dynamic")
+        self.assertEqual(effective_network["edges"]["smooth"]["forceDirection"], "none")
+        self.assertEqual(effective_network["edges"]["arrows"], snapshot["edges"]["arrows"])
         with self.assertRaisesRegex(ValueError, "Unsupported"):
             _jaal_layout_options(original, "invalid")
 
