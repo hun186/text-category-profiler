@@ -82,5 +82,3 @@ def layout_options(base_options, mode):
              "forceDirection": "none", "roundness": 0.5}
         )
     return options
-
-
