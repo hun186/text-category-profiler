@@ -103,6 +103,10 @@ def run(port: int, evidence: Path) -> None:
                             nodes: c.nn.get(), edges: c.ee.get(),
                             original: c.props?.data?.nodes ?? [],
                             scale: c.net?.getScale?.() ?? null,
+                            // This is the vis-network LayoutEngine itself,
+                            // not just a Dash radio value or pending React prop.
+                            hierarchical: c.net?.body?.modules?.layoutEngine
+                                ?.options?.hierarchical?.enabled ?? null,
                         };
                     }""")
 
@@ -162,13 +166,19 @@ def run(port: int, evidence: Path) -> None:
                 frame.locator("#jaal-original-settings-column").wait_for(state="visible")
                 checkbox.uncheck()
                 choose("階層（收攏）")
+                until(
+                    "actual vis-network hierarchy layout active",
+                    lambda s: s["hierarchical"] is True
+                    and len(s["nodes"]) > 0,
+                )
                 assert canvas.is_visible()
                 page.screenshot(path=str(evidence / "05-stage4-hierarchy.png"),
                                 full_page=True)
                 choose("網狀（全展開）")
                 restored = until(
-                    "all original IDs/English labels rehydrated",
-                    lambda s: len(s["nodes"]) == len(s["original"])
+                    "hierarchy disabled and original IDs/English labels restored",
+                    lambda s: s["hierarchical"] is False
+                    and len(s["nodes"]) == len(s["original"])
                     and all(n["label"] == n["id"] and not n.get("hidden")
                             for n in s["nodes"]),
                 )
@@ -177,7 +187,7 @@ def run(port: int, evidence: Path) -> None:
                 (evidence / "verified-scope.txt").write_text(
                     "PASS: hosted Windows Chromium opened actual --viewer-only Stage 4 "
                     "Dash, explicitly loaded original Jaal same-port iframe, exercised "
-                    "four modes, checked live visdcc Search hidden flags and Chinese "
+                    "four modes including real hierarchical LayoutEngine, checked live visdcc Search hidden flags and Chinese "
                     "labels, sidebar toggle and original ID restoration.\n"
                     "NOT VERIFIED: human Windows GPU/model/WorkPool, precise drag/camera "
                     "perception, manual Color/Size/Filter interactions, user screen layout "
