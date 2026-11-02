@@ -1,7 +1,15 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const {apply} = require("../packages/jaal-topology/jaal_topology/assets/16.jaal_visible_labels.js");
+const path = require("node:path");
+const {execFileSync} = require("node:child_process");
+// Never load the retired in-repository copy: get the installed pinned package
+// asset directory from the same Python interpreter used by Hosted CI/runtime.
+const assetsDir = process.env.JAAL_TOPOLOGY_ASSETS ||
+  execFileSync(process.env.PYTHON || "python", [
+    "-c", "from jaal_topology import ASSETS_DIR; print(ASSETS_DIR)"
+  ], {encoding: "utf8"}).trim();
+const {apply} = require(path.join(assetsDir, "16.jaal_visible_labels.js"));
 
 function renderLabels(mode, ids, languages = [], translations = {}) {
   const items = ids.map(id => ({id, label: id, title: id, depth: 1, size: 7}));
