@@ -1,0 +1,46 @@
+name: Portable Jaal Topology Package
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "packages/jaal-topology/**"
+      - "tests/test_jaal_topology_portable.py"
+      - ".github/workflows/jaal-topology-portable.yml"
+  push:
+    branches: [main]
+    paths:
+      - "packages/jaal-topology/**"
+      - "tests/test_jaal_topology_portable.py"
+      - ".github/workflows/jaal-topology-portable.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  independent-package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install only portable Jaal package, not root ML requirements
+        run: python -m pip install -e ./packages/jaal-topology
+      - name: Run CSV, CLI, real Jaal WSGI integration
+        run: python -m unittest -v tests.test_jaal_topology_portable
+      - name: Confirm installed CLI is usable outside repository working directory
+        run: |
+          cd /tmp
+          python -m jaal_topology --help
+          jaal-topology --help
+      - name: Confirm isolated package has no first-party Stage 4 imports
+        run: |
+          if grep -R -nE '^((from|import) (BertScript|ClassesTree|TCF_Params|text_category_profiler))' packages/jaal-topology/jaal_topology; then
+            echo 'Portable package accidentally depends on the original repository'
+            exit 1
+          fi
+      - name: Whitespace
+        run: git diff --check HEAD^ HEAD
