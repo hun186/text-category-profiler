@@ -34,8 +34,8 @@ function fixture(spec) {
       fit(options){fitCalls.push(options);}
     }
   };
-  function run(mode){
-    const command=apply(mode,component.props.data);
+  function run(mode, languages = [], translations = {}){
+    const command=apply(mode,component.props.data,languages,translations);
     assert.ok(command);
     new Function(command).call(component);
   }
@@ -403,4 +403,39 @@ test("large hierarchical reflow requests only one canvas redraw per frame",()=>{
     if (oldCancel===undefined) delete globalThis.cancelAnimationFrame;
     else globalThis.cancelAnimationFrame=oldCancel;
   }
+});
+
+test("Chinese toggle preserves expanded branches and descendant counts in both collapsed modes",()=>{
+  for(const mode of ["network-collapsed", "hierarchical-collapsed"]){
+    const f=fixture({nodes:["Root","Child","Leaf"],edges:[["Root","Child"],["Child","Leaf"]]});
+    f.run(mode, ["zh"], {Root:"根類別",Child:"子類別"});
+    const selected=()=>f.component.nn.get().filter(n=>!n.hidden);
+    assert.equal(selected().find(n=>n.id==="Root").label,"根類別");
+    assert.equal(selected().find(n=>n.id==="Child").label,"子類別\\n1");
+    f.click("Child");
+    assert.equal(selected().find(n=>n.id==="Leaf").label,"Leaf",
+      "missing CT must fall back to original English ClassLabel");
+    assert.equal(selected().find(n=>n.id==="Child").label,"子類別");
+    f.run(mode, [], {Root:"根類別",Child:"子類別"});
+    assert.equal(selected().find(n=>n.id==="Child").label,"Child",
+      "switching back to English must not lose the expanded state");
+    assert.ok(selected().some(n=>n.id==="Leaf"));
+    f.click("Child");
+    assert.equal(selected().find(n=>n.id==="Child").label,"Child\\n1");
+    assert.equal(f.fitCalls.length,mode==="hierarchical-collapsed"?1:0);
+    f.run(mode,["zh"],{Root:"根類別",Child:"子類別"});
+    assert.equal(selected().find(n=>n.id==="Child").label,"子類別\\n1");
+  }
+});
+
+test("Chinese label toggle does not change source Jaal Search metadata or category edges",()=>{
+  const f=fixture({nodes:["A","B","C"],edges:[["A","B"],["B","C"]]});
+  const original=JSON.stringify(f.component.props.data);
+  f.run("hierarchical-collapsed",["zh"],{B:"測試中文"});
+  assert.equal(f.component.nn.get().find(n=>n.id==="B").title,"B");
+  assert.deepEqual(f.component.ee.get().map(e=>[e.from,e.to]),[["A","B"]]);
+  f.run("network",["zh"],{B:"測試中文"});
+  assert.equal(f.component.nn.get().find(n=>n.id==="B").label,"測試中文");
+  assert.equal(f.component.nn.get().find(n=>n.id==="B").title,"B");
+  assert.equal(JSON.stringify(f.component.props.data),original);
 });
