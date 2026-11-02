@@ -7,8 +7,10 @@ import io
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest import mock
 
 from BertScript import class_table_metadata as metadata
+from BertScript import migrate_class_table as legacy
 
 ROOT = Path(__file__).resolve().parents[1]
 REVIEW = ROOT / "ClassesTree" / "review" / "class-table-duplicate-ai-proposals-20261102.csv"
@@ -101,6 +103,54 @@ class DuplicateClassTableCleanupTests(unittest.TestCase):
             self.assertIn("cannot append existing ClassLabel", stderr.getvalue())
             self.assertEqual(path.read_bytes(), before)
             self.assertEqual(len(metadata.load_class_table()), 2707)
+
+    def test_historical_allow_mode_is_exact_and_never_approves_old_ai_notes(self):
+        original = {
+            old: dict(fields)
+            for old, (_new, fields)
+            in legacy.HISTORICAL_LABEL_NORMALIZATIONS.items()
+        }
+        actual = {
+            new: {**dict(fields), "Notes": ""}
+            for _old, (new, fields)
+            in legacy.HISTORICAL_LABEL_NORMALIZATIONS.items()
+        }
+        actual["Additional Undated AI"] = {
+            "CT": "未核准翻譯", "Explanation": "",
+            "Notes": legacy.HISTORICAL_AI_NOTES_PREFIX,
+        }
+        actual["Additional With Reminder"] = {
+            "CT": "提醒審核", "Explanation": "",
+            "Notes": legacy.HISTORICAL_AI_NOTES_PREFIX + "｜提醒=請人工複核",
+        }
+        with mock.patch.object(legacy, "correct_known"):
+            legacy.verify(original, actual, allow_pending_additions=True)
+            with self.assertRaisesRegex(metadata.MetadataError, "row count"):
+                legacy.verify(original, actual, allow_pending_additions=False)
+            bad_original = {k: dict(v) for k, v in original.items()}
+            bad_original["TimeStamp"]["CT"] = "不可偷偷改動來源"
+            with self.assertRaisesRegex(
+                metadata.MetadataError, "unexpected historical rename source"
+            ):
+                legacy.verify(
+                    bad_original, actual, allow_pending_additions=True
+                )
+            for bad_note in (
+                legacy.HISTORICAL_AI_NOTES_PREFIX.replace(
+                    "待人工審核", "已核准"
+                ),
+                legacy.HISTORICAL_AI_NOTES_PREFIX + "｜額外=不可加入",
+                "AI新增｜來源=其他｜理由=ClassTable缺少對應類別｜狀態=待人工審核",
+            ):
+                with self.subTest(note=bad_note):
+                    tampered = {
+                        k: dict(v) for k, v in actual.items()
+                    }
+                    tampered["Additional Undated AI"]["Notes"] = bad_note
+                    with self.assertRaises(metadata.MetadataError):
+                        legacy.verify(
+                            original, tampered, allow_pending_additions=True
+                        )
 
     def test_preflight_only_checks_unique_ids_not_human_approval(self):
         base = {"Existing": {"CT": "舊翻譯", "Explanation": "", "Notes": ""}}
