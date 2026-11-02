@@ -118,7 +118,10 @@ def run(port: int, evidence: Path) -> None:
                             scale: c.net?.getScale?.() ?? null,
                             // This is the vis-network LayoutEngine itself,
                             // not just a Dash radio value or pending React prop.
-                            hierarchical: c.net?.body?.modules?.layoutEngine
+                            // The actual vis-network LayoutEngine is stored
+                            // at net.layoutEngine (not body.modules.layoutEngine
+                            // in the installed visdcc runtime).
+                            hierarchical: c.net?.layoutEngine
                                 ?.options?.hierarchical?.enabled ?? null,
                             layoutOptions: {
                                 fromLayoutEngine: c.net?.body?.modules?.layoutEngine?.options?.hierarchical ?? null,
