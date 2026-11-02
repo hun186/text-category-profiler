@@ -79,9 +79,9 @@ test("Chinese rendering in hierarchy wraps visible CT but does not change ID or 
   assert.equal(translated[0].id, id);
   assert.equal(translated[0].title, id);
   assert.ok(translated[0].label.startsWith("中國"));
-  assert.ok(translated[0].label.includes("\\n"));
+  assert.ok(translated[0].label.includes("\n"));
   assert.notEqual(translated[0].label, id);
-  assert.ok(translated[0].label.split("\\n").length <= 3);
+  assert.ok(translated[0].label.split("\n").length <= 3);
 });
 
 test("language toggle changes static run source without embedding untrusted CT", () => {
