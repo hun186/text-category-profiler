@@ -6,6 +6,7 @@ fails closed because ignoring live uncheckpointed writes would be misleading.
 """
 from __future__ import annotations
 
+from contextlib import closing
 from dataclasses import dataclass
 from pathlib import Path
 import re
@@ -124,7 +125,7 @@ def list_tables(workpool, workspace, database, *, confirm_running=False):
         workpool, workspace, database, confirm_running=confirm_running
     )
     try:
-        with _connect(path) as db:
+        with closing(_connect(path)) as db:
             return tuple(row[0] for row in db.execute(
                 "SELECT name FROM sqlite_master WHERE type='table' "
                 "AND name NOT LIKE 'sqlite_%' ORDER BY name"
@@ -153,7 +154,7 @@ def read_page(workpool, workspace, database, table, page=1, *,
             workpool, workspace, database, confirm_running=confirm_running):
         raise HistoryPreviewError("Unknown SQLite result table")
     try:
-        with _connect(path) as db:
+        with closing(_connect(path)) as db:
             names = [x[1] for x in db.execute(
                 "PRAGMA table_info(" + _quoted(table) + ")"
             ).fetchall()]
