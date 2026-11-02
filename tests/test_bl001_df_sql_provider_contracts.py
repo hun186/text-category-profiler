@@ -4,6 +4,7 @@ Only dfToSQL ASTs execute against fake DataFrames and SQLite connections.
 No pandas, SQL database, model, Elasticsearch, filesystem or WorkPool I/O.
 """
 import ast
+import json
 from pathlib import Path
 import unittest
 
@@ -159,6 +160,67 @@ class SQLProviderContractTests(unittest.TestCase):
         # Characterization only. Follow-up must evaluate exception cleanup
         # separately before touching actual SQL write paths.
 
+
+    def test_canonical_structured_cells_are_json_encoded_but_legacy_cells_are_not(self):
+        class Names:
+            values = ["payload"]
+
+            def __iter__(self):
+                return iter(self.values)
+
+        class Series:
+            def __init__(self, values):
+                self.values = values
+
+            def apply(self, fn):
+                return [fn(x) for x in self.values]
+
+        class PayloadFrame:
+            def __init__(self, rows):
+                self.values = {"payload": list(rows)}
+                self.columns = Names()
+                self.loc = self
+                self.saved = None
+
+            def __getitem__(self, key):
+                if isinstance(key, tuple):
+                    if key[0] != slice(None) or key[1] != ["payload"]:
+                        raise AssertionError("Unexpected selection")
+                    return self
+                return Series(self.values[key])
+
+            def __setitem__(self, key, values):
+                self.values[key] = list(values)
+
+            def __len__(self):
+                return len(self.values["payload"])
+
+            def to_sql(self, **kwargs):
+                self.saved = list(self.values["payload"])
+
+        rows = [{"name": "中文"}, ["甲", "乙"], ("組", 2), "untouched"]
+        expected = [
+            json.dumps(rows[0], ensure_ascii=False),
+            json.dumps(rows[1], ensure_ascii=False),
+            json.dumps(rows[2], ensure_ascii=False),
+            "untouched",
+        ]
+        canonical = PayloadFrame(rows)
+        fn = isolate_sql_writer(
+            CANONICAL, lite=FakeLite([]), json=json, MPlogger=lambda: object()
+        )
+        self.assertIsNone(fn("isolated.sql3", canonical))
+        self.assertEqual(canonical.saved, expected)
+        self.assertEqual(canonical.values["payload"], expected)
+
+        for path in LEGACY:
+            with self.subTest(provider=path):
+                legacy = PayloadFrame(rows)
+                fn = isolate_sql_writer(path, lite=FakeLite([]))
+                self.assertIsNone(fn("isolated.sql3", legacy))
+                self.assertEqual(legacy.saved, rows)
+                self.assertEqual(legacy.values["payload"], rows)
+        # No real pandas behavior or SQLite persistence is inferred here.
 
 if __name__ == "__main__":
     unittest.main()
