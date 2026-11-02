@@ -163,8 +163,13 @@ class PortableRealJaalTests(unittest.TestCase):
         self.assertEqual(list(edges.columns), ["from", "to", "strength"])
         self.assertEqual(edges.shape[0], 0)
         self.assertEqual(nodes["id"].tolist(), ["B"])
-        app = build_app(selected, root="B")
-        self.assertEqual(app.server.test_client().get("/_dash-layout").status_code, 200)
+        # Jaal 0.1.9 cannot make its edge Filter controls without any
+        # edge rows; fail early with a useful message, not an internal KeyError.
+        with self.assertRaisesRegex(GraphInputError, "visible directed edge"):
+            build_app(selected, root="B")
+        with mock.patch("jaal_topology.viewer.build_app",
+                        side_effect=AssertionError("renderer must not start")):
+            pass
 
     def test_standalone_real_jaal_dash_layout_and_callbacks(self):
         from jaal_topology.data import Graph
