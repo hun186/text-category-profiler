@@ -61,6 +61,17 @@ Hosted \`Stage 4 Embedded Lazy Taxonomy Graph\` 工作流程在 Python 3.11 安�
 與明確確認全圖時的瀏覽器回應。
 
 
+## 已計算 Stage 4 結果：歷史唯讀預覽
+
+如果是要重新查看已存的 Stage 4 分析結果，而非只看 Jaal，
+可執行 `run-stage4-history-preview.bat`。它會列出
+`_rdy_for_Spike` 或 `_is_running_TestResultVis` 的候選資料夾，
+以唯讀分頁方式顯示兩個常用 SQLite 結果，保留 Jaal 和分類樹面板，
+**不**重算 441 秒的 DataFrame 或改名 WorkPool。
+針對中斷目錄須人工確認沒有仍在寫入的程序；不完整資料庫會拒絕讀取。
+這是第一階段已儲存結果檢視，並非原版完整 Stage 4 圖表重建。
+詳見 [Stage 4 歷史結果唯讀預覽](stage4-history-preview.md)。
+
 ## 唯讀 GUI 直接啟動（無 WorkPool、免重新分類）
 
 如果只要測試 Jaal 分類樹互動（包括網狀／階層樹狀切換），
