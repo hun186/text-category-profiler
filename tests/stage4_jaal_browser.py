@@ -180,12 +180,22 @@ def run(port: int, evidence: Path) -> None:
                 checkbox.uncheck()
                 choose("階層（收攏）")
                 until(
-                    "actual vis-network hierarchy layout active",
+                    "actual collapsed hierarchy renders in vis-network",
                     lambda s: s["hierarchical"] is True
-                    and len(s["nodes"]) > 0,
+                    and 0 < len(s["nodes"]) < len(s["original"]),
                 )
                 assert canvas.is_visible()
-                page.screenshot(path=str(evidence / "05-stage4-hierarchy.png"),
+                page.screenshot(path=str(evidence / "05-stage4-hierarchy-collapsed.png"),
+                                full_page=True)
+                choose("階層（全展開）")
+                until(
+                    "real expanded hierarchy restores all original IDs",
+                    lambda s: s["hierarchical"] is True
+                    and len(s["nodes"]) == len(s["original"])
+                    and {n["id"] for n in s["nodes"]}
+                    == {n["id"] for n in s["original"]},
+                )
+                page.screenshot(path=str(evidence / "06-stage4-hierarchy-expanded.png"),
                                 full_page=True)
                 choose("網狀（全展開）")
                 restored = until(
@@ -200,7 +210,7 @@ def run(port: int, evidence: Path) -> None:
                 (evidence / "verified-scope.txt").write_text(
                     "PASS: hosted Windows Chromium opened actual --viewer-only Stage 4 "
                     "Dash, explicitly loaded original Jaal same-port iframe, exercised "
-                    "four modes including real hierarchical LayoutEngine, checked live visdcc Search hidden flags and Chinese "
+                    "all four modes including real collapsed/expanded hierarchy, checked live visdcc Search hidden flags and Chinese "
                     "labels, sidebar toggle and original ID restoration.\n"
                     "NOT VERIFIED: human Windows GPU/model/WorkPool, precise drag/camera "
                     "perception, manual Color/Size/Filter interactions, user screen layout "

@@ -66,6 +66,7 @@ jobs:
           python -m pip install
           psutil GPUtil numpy opencc-python-reimplemented scipy
           setproctitle version-parser colorama tqdm
+          pymongo elasticsearch pytz
       - name: Verify real Stage 4 graph provider imports before browser launch
         if: matrix.os == 'windows-latest'
         env:
