@@ -637,6 +637,38 @@ class OriginalJaalMountTests(unittest.TestCase):
         self.assertEqual(newer_logo.width, 80)
         self.assertFalse(_normalize_original_jaal_logo(tree))
 
+    def test_lazy_build_error_keeps_browser_generic_but_logs_full_traceback(self):
+        from flask import Flask
+        from werkzeug.test import Client
+        from werkzeug.wrappers import Response
+        from BertScript.jaal_original_mount import OriginalJaalRouter
+
+        def fails(_root, _prefix):
+            raise AttributeError("missing_local_dependency_property")
+
+        server = Flask(__name__)
+        router = OriginalJaalRouter(build_app=fails)
+        router.mount(server)
+        with mock.patch(
+            "BertScript.jaal_original_mount.subtree_stats",
+            return_value={"root": "TW Affairs", "nodes": 77, "edges": 81},
+        ):
+            url, _ = router.prepare("TW Affairs")
+        client = Client(server.wsgi_app, Response)
+        with self.assertLogs(
+            "BertScript.jaal_original_mount", level="ERROR"
+        ) as logged:
+            response = client.get(url)
+        self.assertEqual(response.status_code, 503)
+        body = response.get_data(as_text=True)
+        self.assertIn("AttributeError", body)
+        self.assertNotIn("missing_local_dependency_property", body)
+        self.assertNotIn("Traceback", body)
+        self.assertIn("missing_local_dependency_property",
+                      "\n".join(logged.output))
+        self.assertIn("Traceback", "\n".join(logged.output))
+        self.assertEqual(router._apps, {})
+
     def test_ordinary_large_and_absolute_resource_limits(self):
         from BertScript.jaal_original_mount import OriginalJaalRouter
         router = OriginalJaalRouter(build_app=mock.Mock())
