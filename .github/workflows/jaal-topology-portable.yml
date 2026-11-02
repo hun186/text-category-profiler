@@ -37,10 +37,12 @@ jobs:
         run: python -m unittest -v tests.test_jaal_topology_portable
       - name: Run original Jaal interaction regression against portable browser engine
         run: node --test tests/jaal_visible_labels.test.cjs tests/jaal_structural_collapse.test.cjs
-      - name: Verify Stage 4 and portable browser assets stay in byte parity during migration
+      - name: Verify Stage 4 has no duplicate browser engine sources
         run: |
-          cmp BertScript/assets/16.jaal_visible_labels.js packages/jaal-topology/jaal_topology/assets/16.jaal_visible_labels.js
-          cmp BertScript/assets/17.jaal_structural_collapse.js packages/jaal-topology/jaal_topology/assets/17.jaal_structural_collapse.js
+          test ! -e BertScript/assets/16.jaal_visible_labels.js
+          test ! -e BertScript/assets/17.jaal_structural_collapse.js
+          test -s packages/jaal-topology/jaal_topology/assets/16.jaal_visible_labels.js
+          test -s packages/jaal-topology/jaal_topology/assets/17.jaal_structural_collapse.js
       - name: Run real installed Jaal app with external working directory
         run: |
           cd /tmp
