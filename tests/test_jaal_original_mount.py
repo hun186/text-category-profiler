@@ -8,6 +8,32 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class OriginalJaalMountTests(unittest.TestCase):
+    def test_class_table_ct_uses_exact_ids_blank_and_absent_fallback(self):
+        from tempfile import TemporaryDirectory
+        from BertScript.jaal_original_mount import _class_table_labels_for_nodes
+
+        # Actual canonical ClassTable path; never a hard-coded sample map.
+        actual = _class_table_labels_for_nodes(["AI Action Plan", "not-existing"])
+        self.assertEqual(actual, {"AI Action Plan": "AI行動計劃"})
+
+        with TemporaryDirectory() as directory:
+            table = Path(directory) / "ClassTable.csv"
+            table.write_text(
+                "ClassLabel,CT,Explanation,Notes\n"
+                "A,中文甲,,\n"
+                "B,, ,\n"
+                "C,  , ,\n"
+                "D,未選入,,\n",
+                encoding="utf-8-sig",
+            )
+            result = _class_table_labels_for_nodes(
+                ["A", "B", "C", "missing"], path=table
+            )
+            self.assertEqual(result, {"A": "中文甲"})
+            table.write_text("ClassLabel,WrongHeader\nA,Z\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "ClassTable CSV"):
+                _class_table_labels_for_nodes(["A"], path=table)
+
     def setUp(self):
         try:
             import dash
@@ -281,7 +307,8 @@ class OriginalJaalMountTests(unittest.TestCase):
                          "apply")
         self.assertEqual(
             {v["id"] for v in canvas[0]["inputs"]},
-            {"graph", "jaal-original-layout-mode"},
+            {"graph", "jaal-original-layout-mode",
+             "jaal-original-chinese-labels", "jaal-original-ct-translations"},
         )
         runtime_js = client.get(url + "assets/16.jaal_visible_labels.js")
         self.assertEqual(runtime_js.status_code, 200)
@@ -326,6 +353,17 @@ class OriginalJaalMountTests(unittest.TestCase):
             item["props"]["id"]: item for item in elements
             if isinstance(item["props"].get("id"), str)
         }
+        self.assertIn("jaal-original-chinese-labels", components_by_id)
+        language = components_by_id["jaal-original-chinese-labels"]["props"]
+        self.assertEqual(language["value"], [], "English is the default")
+        self.assertEqual(language["options"][0]["value"], "zh")
+        self.assertIn("jaal-original-ct-translations", components_by_id)
+        translation = components_by_id["jaal-original-ct-translations"]["props"]
+        self.assertEqual(translation["storage_type"], "memory")
+        self.assertTrue(set(translation["data"]).issubset(
+            {node["id"] for node in node_payload}
+        ), "The browser gets translations only for the loaded subtree")
+        self.assertTrue(all(v.strip() for v in translation["data"].values()))
         self.assertIn("jaal-original-content", components_by_id)
         self.assertEqual(components_by_id["jaal-original-content"]["type"], "Div")
         # Upstream Jaal's two top-level dbc.Rows are not inside a Bootstrap

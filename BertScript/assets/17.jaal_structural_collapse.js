@@ -208,6 +208,12 @@
     state.reflowFrame = root.requestAnimationFrame(frame);
   }
 
+  function displayClassLabel(id, preferChinese) {
+    const labels = root.dash_clientside && root.dash_clientside.jaal_visible_labels;
+    return labels && typeof labels.resolve === "function"
+      ? labels.resolve(id, preferChinese) : id;
+  }
+
   function project(instance) {
     const state = instance.__jaalStructural;
     if (!state || !COLLAPSED.has(state.mode)) return;
@@ -243,7 +249,7 @@
       return {
         ...base,
         hidden: !shown.has(id) || (!searchActive && Boolean(base.hidden)),
-        label: displayName(id) + (bubble ? "\n" + count : ""),
+        label: displayName(displayClassLabel(id, state.preferChinese)) + (bubble ? "\n" + count : ""),
       };
     });
     const projectedEdges = source.edges.map(base => ({
@@ -308,7 +314,7 @@
     state.compactActive = false;
   }
 
-  function activate(mode) {
+  function activate(mode, preferChinese) {
     if (!COLLAPSED.has(mode) || !this.nn || !this.ee || !this.net) return;
     const source = this.props && this.props.data;
     if (!source || !Array.isArray(source.nodes) || !Array.isArray(source.edges)) return;
@@ -317,10 +323,11 @@
     if (!state || state.key !== key) {
       cancelReflow(state);
       const model = graphModel(source);
-      state = {key, mode, model, expanded: new Set(model.roots)};
+      state = {key, mode, model, expanded: new Set(model.roots), preferChinese: Boolean(preferChinese)};
       this.__jaalStructural = state;
     } else {
       state.mode = mode;
+      state.preferChinese = Boolean(preferChinese);
     }
     if (!this.__jaalStructuralClickHook) {
       const component = this;

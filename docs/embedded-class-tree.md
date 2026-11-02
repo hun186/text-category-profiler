@@ -502,3 +502,22 @@ Hosted tests 檢查 Dropdown 的 Dash layout/callback、真實分類節點選項
 網狀（收攏）仍保持原本物理佈局。Node mock 測試確認舊節點在
 展開當下的座標不變、新子節點從父節點出發、77 節點時每影格單次重繪、模式切換可取消，
 但不代表 Windows 真實 Chrome 與 77／81 子圖的視覺流暢度已驗收。
+
+
+### Jaal 中文標籤開關（ClassTable CT；英文 fallback）
+
+同 port Jaal 檢視器的圖形工具列增加「優先顯示中文名稱（無翻譯時顯示英文）」
+開關，**預設關閉**，維持完整英文 ClassLabel。開啟時只從
+`ClassesTree/data/ClassTable.csv` 取與本次已載入子圖節點 ID **完全相符**
+的 `CT` 顯示名稱；ClassTable 不存在該列、`CT` 空白或只有空格時，
+該節點仍顯示原本英文名稱。四種網狀／階層、全展開／收攏模式皆適用；
+收攏子孫計數繼續顯示在標籤最後一行。
+
+為保護既有 Jaal 行為，翻譯只放在 iframe 局部的 `dcc.Store`，
+透過固定、不可插入 CSV 程式碼的 `graph.run` JS 在畫布內投影；
+`graph.data` 的 `id`、原始 `title`、邊、Search／Filter／Color／Size
+callback 皆不變。搜尋仍比對**完整英文 ClassLabel**，切換語言
+不會重建 Jaal 子圖或修改任何 taxonomy CSV、WorkPool。
+只有使用者按「載入 Jaal」並建立子視窗時才讀取 ClassTable，
+同一子圖只傳輸已載入節點的翻譯。手動編輯 ClassTable 後需重新啟動
+8059 Python 服務才能更新已快取的翻譯；Windows 真實視覺驗收待確認。

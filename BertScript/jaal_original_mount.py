@@ -7,6 +7,7 @@ user explicitly clicks Load, and only for a bounded taxonomy subtree.
 from __future__ import annotations
 
 from collections import OrderedDict, deque
+import csv
 import hashlib
 import logging
 from copy import deepcopy
@@ -237,6 +238,35 @@ def _register_embedded_jaal_layout_mode(app, base_options):
         raise ValueError("Unsupported Jaal layout mode")
 
 
+def _class_table_labels_for_nodes(node_ids, path=None):
+    """Read only CT translations for the *loaded* graph; empty/missing -> English.
+
+    Do not alter the authoritative graph, Jaal Search, or ClassTable.csv.
+    A blank CT is a display fallback, not an identity or validation error.
+    """
+    from BertScript.class_table_metadata import DEFAULT_CSV, HEADERS
+    selected = {str(node_id) for node_id in node_ids}
+    translations = {}
+    seen = set()
+    with open(path or DEFAULT_CSV, "r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle, strict=True)
+        if tuple(reader.fieldnames or ()) != HEADERS:
+            raise ValueError("ClassTable CSV must have ClassLabel,CT,Explanation,Notes columns")
+        for row in reader:
+            if None in row or any(value is None for value in row.values()):
+                raise ValueError("Malformed ClassTable CSV row")
+            key = row["ClassLabel"]
+            if key not in selected:
+                continue
+            if key in seen:
+                raise ValueError(f"Duplicate ClassTable ClassLabel: {key!r}")
+            seen.add(key)
+            translated = row["CT"].strip()
+            if translated:
+                translations[key] = translated
+    return translations
+
+
 def _register_embedded_jaal_visible_labels(app):
     """Project label text onto visdcc's live vis.DataSet when Dash data changes.
 
@@ -254,6 +284,8 @@ def _register_embedded_jaal_visible_labels(app):
         Output("graph", "run"),
         Input("jaal-original-layout-mode", "value"),
         Input("graph", "data"),
+        Input("jaal-original-chinese-labels", "value"),
+        Input("jaal-original-ct-translations", "data"),
         prevent_initial_call=False,
     )
 
@@ -330,6 +362,24 @@ def _add_embedded_jaal_sidebar_toggle(layout):
     # checked-out HEAD: an old server process must keep showing its OLD badge.
     from ClassesTree.Visualization.jaal.label_format import LABEL_RENDERER_REVISION
 
+    # Only the already-loaded subgraph's IDs are sent to the browser.
+    # Empty ClassTable CT values or absent rows fall back to English at render.
+    translations = _class_table_labels_for_nodes(
+        (node["id"] for node in network.data["nodes"])
+    )
+    chinese_choice = dcc.Checklist(
+        id="jaal-original-chinese-labels",
+        options=[{"label": "優先顯示中文名稱（無翻譯時顯示英文）", "value": "zh"}],
+        value=[],
+        inline=True,
+        inputStyle={"marginRight": "5px"},
+        labelStyle={"cursor": "pointer"},
+    )
+    translation_store = dcc.Store(
+        id="jaal-original-ct-translations",
+        data=translations,
+        storage_type="memory",
+    )
     mode_choice = dcc.RadioItems(
         id="jaal-original-layout-mode",
         options=[
@@ -344,7 +394,8 @@ def _add_embedded_jaal_sidebar_toggle(layout):
         inputStyle={"marginRight": "4px"},
     )
     toolbar = html.Div(
-        [toggle, html.Span("顯示模式："), mode_choice,
+        [toggle, html.Span("顯示模式："), mode_choice, chinese_choice,
+         translation_store,
          html.Span("標籤版本：" + LABEL_RENDERER_REVISION,
                    id="jaal-original-label-revision",
                    title="這是當前 Python 服務實際載入的標籤版本；"
