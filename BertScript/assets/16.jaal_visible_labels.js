@@ -59,18 +59,55 @@
     );
   }).call(this);`;
 
-  function apply(mode, graphData) {
-    // No initial graph-data prop, no unsafe dynamically constructed JS.
+  function resolve(id, preferChinese) {
+    const label = String(id);
+    const state = root.dash_clientside.jaal_visible_labels;
+    const translated = state.translations && Object.prototype.hasOwnProperty.call(
+      state.translations, label
+    ) ? state.translations[label] : null;
+    return preferChinese && typeof translated === "string" && translated.trim()
+      ? translated.trim() : label;
+  }
+
+  function apply(mode, graphData, selectedLanguages, translations) {
+    // Only pre-authored static commands are ever evaluated by visdcc.
+    // CSV contents are data in a bounded Dash Store, never executable code.
     if (!graphData || !Array.isArray(graphData.nodes)) return "";
-    if (mode === "hierarchical-collapsed") return HIERARCHICAL_COLLAPSED_RUN;
-    if (mode === "network-collapsed") return NETWORK_COLLAPSED_RUN;
-    if (mode === "hierarchical") return HIERARCHICAL_RUN.replace(
-      "var ds = this.nn;",
-      "if (globalThis.dash_clientside && globalThis.dash_clientside.jaal_structural_collapse) globalThis.dash_clientside.jaal_structural_collapse.restore.call(this); var ds = this.nn;"
+    const preferChinese = Array.isArray(selectedLanguages) &&
+      selectedLanguages.includes("zh");
+    const state = root.dash_clientside.jaal_visible_labels;
+    state.translations = translations && typeof translations === "object" &&
+      !Array.isArray(translations) ? translations : {};
+    const hierarchy = HIERARCHICAL_RUN.replace(
+      "displayLabel(node.id)",
+      preferChinese
+        ? "displayLabel(globalThis.dash_clientside.jaal_visible_labels.resolve(node.id, true))"
+        : "displayLabel(node.id)"
     );
-    if (mode === "network") return NETWORK_RUN.replace(
-      "var ds = this.nn;",
-      "if (globalThis.dash_clientside && globalThis.dash_clientside.jaal_structural_collapse) globalThis.dash_clientside.jaal_structural_collapse.restore.call(this); var ds = this.nn;"
+    const network = NETWORK_RUN.replace(
+      "String(node.id)",
+      preferChinese
+        ? "globalThis.dash_clientside.jaal_visible_labels.resolve(node.id, true)"
+        : "String(node.id)"
+    );
+    const restorePrefix = "if (globalThis.dash_clientside && globalThis.dash_clientside.jaal_structural_collapse) globalThis.dash_clientside.jaal_structural_collapse.restore.call(this); var ds = this.nn;";
+    if (mode === "hierarchical-collapsed") {
+      return preferChinese ? HIERARCHICAL_COLLAPSED_RUN.replace(
+        '"hierarchical-collapsed"',
+        '"hierarchical-collapsed", true'
+      ) : HIERARCHICAL_COLLAPSED_RUN;
+    }
+    if (mode === "network-collapsed") {
+      return preferChinese ? NETWORK_COLLAPSED_RUN.replace(
+        '"network-collapsed"',
+        '"network-collapsed", true'
+      ) : NETWORK_COLLAPSED_RUN;
+    }
+    if (mode === "hierarchical") return hierarchy.replace(
+      "var ds = this.nn;", restorePrefix
+    );
+    if (mode === "network") return network.replace(
+      "var ds = this.nn;", restorePrefix
     );
     return "";
   }
@@ -78,6 +115,7 @@
   root.dash_clientside = root.dash_clientside || {};
   root.dash_clientside.jaal_visible_labels = {
     apply: apply,
+    resolve: resolve,
   };
 
   if (typeof module !== "undefined" && module.exports) {
