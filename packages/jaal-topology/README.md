@@ -60,7 +60,9 @@ jaal-topology --edges links.csv --metadata names.csv \
 The web UI provides a live, **off-by-default** Chinese label checkbox;
 English IDs remain authoritative in Search and node tooltips. It also retains
 the original Jaal Search/Filter/Color/Size controls and adds network vs.
-hierarchical layout modes. Changing display labels never rewrites graph data.
+four layout modes (network/hierarchy, fully shown/structurally collapsed),
+click-to-expand/collapse and the existing smooth hierarchy expansion animation.
+Changing display labels never rewrites graph data.
 
 ### Size / safety
 
@@ -76,13 +78,14 @@ on `build_app()`, not `import jaal_topology`.
 
 ## Known difference from the Stage 4 customized Jaal viewer
 
-This is the **first independently installable module**, not yet a byte-for-byte
-port of the full Stage 4 GUI. The original Search/Filter/Color/Size, Chinese
-display toggle and two full-layout modes are available. **The two structural
-collapse modes, per-click smooth hierarchy animation, same-port iframe mount,
-root-search dropdown, Jaal auto-height and advanced panel styling remain
-in Stage 4** until the browser assets and host-application adapters are
-extracted into a shared source of truth with compatibility testing.
+This standalone package now bundles the complete four-mode visdcc browser
+engine used by Stage 4, including structural collapse, smooth 460 ms hierarchy
+reflow, and reduced-motion behavior. Its own runtime and CLI require no
+TextClassification project files. The project-specific same-port iframe mount,
+root-search dropdown, Jaal auto-height and advanced panel/sidebar styling still
+belong to Stage 4; they are **not yet shared host adapters**, and the original
+Stage 4 assets have not yet been switched to the package as their runtime
+source. Cross-project parity and Windows visual acceptance remain open.
 
 Do not delete or redirect the existing Stage 4 Jaal integration based on this
 first package. Windows browser visual acceptance, packaging on a clean
