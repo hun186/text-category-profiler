@@ -73,7 +73,7 @@ class PortableDataTests(unittest.TestCase):
     def test_bounded_graph_and_root_validation(self):
         graph = load_graph(self.write("edges.csv",
             "source,target\nA,B\nB,C\nC,A\nB,D\n"))
-        with self.assertRaisesRegex(GraphInputError, "exceeds"):
+        with self.assertRaisesRegex(GraphInputError, "Full graph has 4 nodes"):
             select_subgraph(graph, max_nodes=2)
         with self.assertRaisesRegex(GraphInputError, "exceeds"):
             select_subgraph(graph, "A", max_nodes=3)
