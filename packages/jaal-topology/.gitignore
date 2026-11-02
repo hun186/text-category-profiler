@@ -1,0 +1,13 @@
+# Source repository and local Python development artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+.DS_Store
+Thumbs.db
