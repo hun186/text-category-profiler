@@ -115,6 +115,9 @@ class DuplicateClassTableCleanupTests(unittest.TestCase):
             for _old, (new, fields)
             in legacy.HISTORICAL_LABEL_NORMALIZATIONS.items()
         }
+        old_debt = legacy.HISTORICAL_CT_CORRECTIONS["Africa Debt"]
+        original["Africa Debt"] = dict(old_debt["source"])
+        actual["Africa Debt"] = {**old_debt["target"], "Notes": ""}
         actual["Additional Undated AI"] = {
             "CT": "未核准翻譯", "Explanation": "",
             "Notes": legacy.HISTORICAL_AI_NOTES_PREFIX,
@@ -134,6 +137,16 @@ class DuplicateClassTableCleanupTests(unittest.TestCase):
             ):
                 legacy.verify(
                     bad_original, actual, allow_pending_additions=True
+                )
+            tampered_translation = {
+                k: dict(v) for k, v in actual.items()
+            }
+            tampered_translation["Africa Debt"]["CT"] = "未核對翻譯"
+            with self.assertRaisesRegex(
+                metadata.MetadataError, "guarded historical CT correction differs"
+            ):
+                legacy.verify(
+                    original, tampered_translation, allow_pending_additions=True
                 )
             for bad_note in (
                 legacy.HISTORICAL_AI_NOTES_PREFIX.replace(
