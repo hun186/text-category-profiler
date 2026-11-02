@@ -64,7 +64,7 @@ text_category_profiler/
 - [ ] 為第一批候選模組確認或補齊無外部服務副作用的 characterization tests。新增 isolated `dfToTSV` AST functional test 對三版本做無外部依賴契約比對：`DatasetConverter`／`BertScript` 同為兩參數 TSV 不含 header/index，canonical `data/df_utils` 預設 CSV options 相同，但即使未啟用 adapter 仍執行 `multicoreJob.ComputeNProcess`，可造成異常且具有擴充版 tsvIndex/header/adapter 參數；不代表可互換、更不能刪除 stage-local implementation。模型／外部 caller／完整資料輸出尚待驗證。 另新增 `dfToXLS` 的 stdlib AST isolated tests：兩份 stage-local provider 固定傳 `encoding='utf-8'` 並接受但不使用傳入 encoding；canonical provider 使用 `pd.ExcelWriter` 指定 `strings_to_urls=False`、sheet/mode，超過 1,048,576 列跳過，writer 例外會嘗試 fallback `df.to_excel`。這些差異只由 recording stubs 確認呼叫邊界，尚未驗證真實 Excel 寫出、fallback 資料保全或外部 callers；PR #199 已 21/21 Hosted CI PASS、正式 Review 0 Findings 後合併；不做 provider 合併。
 - [ ] 記錄 repository 外部是否仍有程式依賴 `from utils...`；未確認前保留相容策略。
 
-另新增 `dfToSQL` 的隔離 AST/fake-SQLite 比較：stage-local 固定 `sampleSrc` replace 和 `text_Index`、成功路徑未 close；canonical 支援 `table`、`if_exists`、`IndexCols`、`UniqueIndexCols`、`dtype`，成功路徑 close 但 `to_sql` exception 尚無 `finally` cleanup。這些只是無資料庫功能契約記錄，不能拿來證明 SQLite 真正成功或安全遷移；本批 CI／Review 待確認，仍不得統一三份 provider。
+另新增 `dfToSQL` 的隔離 AST/fake-SQLite 比較：stage-local 固定 `sampleSrc` replace 和 `text_Index`、成功路徑未 close；canonical 支援 `table`、`if_exists`、`IndexCols`、`UniqueIndexCols`、`dtype`，成功路徑 close 但 `to_sql` exception 尚無 `finally` cleanup。這些只是無資料庫功能契約記錄，不能拿來證明 SQLite 真正成功或安全遷移；PR #200 於最新 HEAD 修正 Current Focus P1 後取得 21/21 Hosted CI PASS、正式 Codex Review 0 Findings 並合併；仍不得統一三份 provider。追加一批 JSON 結構欄位 isolated test：canonical 對 dict/list/tuple 轉成 `json.dumps(ensure_ascii=False)`，stage-local 保留原物件；只使用 fake DataFrame 的 apply/to_sql 紀錄，沒有真實 SQLite、pandas 寫入或持久化驗證，本批 CI／Review 待確認。
 
 ### Phase 1：建立最小 `text_category_profiler`
 
