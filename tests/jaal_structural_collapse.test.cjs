@@ -262,7 +262,8 @@ test("hierarchical expansion morphs old nodes from their on-screen coordinates",
     positionsRead++;
     return JSON.parse(JSON.stringify(positionsRead===1?current:target));
   };
-  f.component.net.moveNode=(id,x,y)=>{current[id]={x,y};};
+  f.component.net.body={nodes:current};
+  f.component.net.moveNode=()=>{throw Error("moveNode triggers redundant redraws");};
   f.component.net.redraw=()=>{redraws.push(true);};
   const oldRaf=globalThis.requestAnimationFrame;
   const oldCancel=globalThis.cancelAnimationFrame;
@@ -310,8 +311,12 @@ test("leaving hierarchy cancels in-flight morph and restores original data",()=>
   const positions={A:{x:0,y:0},B:{x:0,y:260},C:{x:0,y:520}};
   f.component.net.getPositions=()=>JSON.parse(JSON.stringify(
     ++reads===1?{A:positions.A,B:positions.B}:positions));
-  const moveCalls=[];
-  f.component.net.moveNode=(...args)=>moveCalls.push(args);
+  const redraws=[];
+  f.component.net.body={nodes:{
+    A:{x:0,y:0},B:{x:0,y:260},C:{x:0,y:520}
+  }};
+  f.component.net.moveNode=()=>{throw Error("per-node canvas redraw prohibited");};
+  f.component.net.redraw=()=>redraws.push(true);
   const oldRaf=globalThis.requestAnimationFrame;
   const oldCancel=globalThis.cancelAnimationFrame;
   const frames=new Map();let next=0;
@@ -323,9 +328,9 @@ test("leaving hierarchy cancels in-flight morph and restores original data",()=>
     const inFlight=[...frames.values()][0];
     f.run("network");
     assert.equal(frames.size,0,"old animation callback is canceled");
-    const count=moveCalls.length;
+    const count=redraws.length;
     inFlight(500);
-    assert.equal(moveCalls.length,count,"stale frame cannot move normal network nodes");
+    assert.equal(redraws.length,count,"stale frame cannot move normal network nodes");
     assert.deepEqual(f.component.nn.getIds(),["A","B","C"]);
     assert.equal(f.fitCalls.length,1);
   } finally {
@@ -355,5 +360,46 @@ test("reduced-motion users keep native hierarchy without animation",()=>{
     else globalThis.requestAnimationFrame=oldRaf;
     if (oldMedia===undefined) delete globalThis.matchMedia;
     else globalThis.matchMedia=oldMedia;
+  }
+});
+
+test("large hierarchical reflow requests only one canvas redraw per frame",()=>{
+  const siblings=Array.from({length:76},(_,i)=>"child-"+i);
+  const ids=["root",...siblings,"grandchild"];
+  const f=fixture({nodes:ids,edges:[
+    ...siblings.map(id=>["root",id]),["child-0","grandchild"]
+  ]});
+  f.run("hierarchical-collapsed");
+  assert.equal(f.component.nn.getIds().length,77);
+  const initial=Object.fromEntries(["root",...siblings].map((id,i)=>
+    [id,{x:i*30,y:i===0?0:260}]));
+  const ideal=Object.fromEntries(ids.map((id,i)=>
+    [id,{x:i*30+25,y:id==="grandchild"?520:i===0?0:260}]));
+  f.component.net.body={nodes:Object.fromEntries(ids.map(id=>
+    [id,{...(initial[id]||ideal[id])}]))};
+  let reads=0, redraws=0, queued=[];
+  f.component.net.getPositions=()=>JSON.parse(JSON.stringify(
+    ++reads===1?initial:ideal));
+  f.component.net.moveNode=()=>{throw Error("per-node redraw must not run");};
+  f.component.net.redraw=()=>{redraws++;};
+  const oldRaf=globalThis.requestAnimationFrame;
+  const oldCancel=globalThis.cancelAnimationFrame;
+  globalThis.requestAnimationFrame=fn=>{queued.push(fn);return queued.length;};
+  globalThis.cancelAnimationFrame=()=>{};
+  try {
+    f.click("child-0");
+    assert.equal(redraws,1,"77 existing nodes still require only one redraw");
+    assert.equal(f.fitCalls.length,1);
+    for (const stamp of [0,230,460]) {
+      const cb=queued.shift();
+      assert.ok(cb,"frame was scheduled");
+      cb(stamp);
+    }
+    assert.equal(redraws,4,"one init frame plus three animation frames");
+  } finally {
+    if (oldRaf===undefined) delete globalThis.requestAnimationFrame;
+    else globalThis.requestAnimationFrame=oldRaf;
+    if (oldCancel===undefined) delete globalThis.cancelAnimationFrame;
+    else globalThis.cancelAnimationFrame=oldCancel;
   }
 });
