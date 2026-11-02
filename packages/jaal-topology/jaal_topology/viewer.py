@@ -68,7 +68,7 @@ def to_jaal_dataframes(graph: Graph, *, root=None):
     edges = pd.DataFrame([
         {"from": parent, "to": child, "strength": "medium"}
         for parent, child in graph.edges
-    ])
+    ], columns=["from", "to", "strength"])
     return edges, nodes
 
 
