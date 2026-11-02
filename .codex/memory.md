@@ -4,6 +4,8 @@
 
 ## Current Focus
 
+- **2026-11-03 Stage 4 history and BL-001 handoff:** PR #212 已由 Hosted GitHub 確認合併於 `main@7a28426b49201227e22ed8bb1d369246724afca9`，原 HEAD `b8468a4` 的 9/9 CI PASS、正式 Codex Review completed 0 Findings、兩個舊 P2 threads resolved。該 Stage 4 history preview 為唯讀 SQLite 有界檢視，不是完整舊版 GUI，Windows 實機操作仍待驗。此批 BL-001 僅修正 canonical `dfToSQL` 連線 exception cleanup，隔離測試不寫真實 SQLite；仍須 latest-head CI/正式 Review 後方可合併，且不代表三個版本可統一。
+
 - **Latest Hosted status (2026-11-01):** `main@237f1d6b487631993dba3942fd86f9a4ebe26cff` merged BL-002 PR #181 after **22/22 exact-head Hosted CI PASS**, formal Codex Review completed with **0 Findings** and no unresolved threads; separate post-merge main CI also **22/22 PASS**. Stage 4 standalone Jaal viewer PR #180 was merged at `a9e4e9102ab7815ebabe01e6ff8383e962703095` with **24/24** latest-head CI and 0-Finding formal review. ClassTable canonical sorting/test reconciliation PR #178 and optional hierarchy Jaal PR #179 are also merged; never revive old pending handoffs from these PRs.
 
 - **2026-11-02 BL-001 dfToXLS follow-up (PR #199 merged, 21/21 Hosted CI PASS, formal Review 0 Findings):** `main@bb1ce2a6` already contains Jaal PR #198; no open PR at reconciliation time. This batch adds stdlib-only isolated AST characterization of the two stage-local Excel exporters versus canonical `data/df_utils.py`: the legacy `encoding` option is ignored in favor of hard-coded UTF-8, while the canonical variant has a row-count precheck, named worksheet/mode, `strings_to_urls=False` writer, and broad fallback on writer failure. No provider is consolidated, no workbook/WorkPool/model is written, and real pandas/Excel behavior is not certified. Keep BL-001 In Progress.
