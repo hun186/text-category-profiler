@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/jaal-candidate-compat.yml"
       - "tests/test_jaal_candidate_compat.py"
+      - "tests/stage4_jaal_browser.py"
   workflow_dispatch:
 
 permissions:
@@ -57,3 +58,21 @@ jobs:
           tests/jaal_visible_labels.test.cjs
           tests/jaal_structural_collapse.test.cjs
           tests/jaal_autoheight.test.cjs
+      - name: Install Windows Playwright harness
+        if: matrix.os == 'windows-latest'
+        run: python -m pip install playwright
+      - name: Install Chromium on Windows
+        if: matrix.os == 'windows-latest'
+        run: python -m playwright install chromium
+      - name: Exercise real lazy Stage 4 Jaal browser in same-port iframe
+        if: matrix.os == 'windows-latest'
+        env:
+          PYTHONUTF8: "1"
+        run: python tests/stage4_jaal_browser.py --evidence stage4-browser-evidence
+      - name: Upload Stage 4 browser evidence (and server log on failure)
+        if: always() && matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage4-jaal-windows-chromium
+          path: stage4-browser-evidence/
+          if-no-files-found: warn
