@@ -102,7 +102,7 @@ def _normalize_upstream_layout(layout):
         ) and item.src.startswith("data:image/png;base64,"):
             if item.width == "80px":
                 item.width = 80
-                item.style = {**(item.style or {}),
+                item.style = {**(getattr(item, "style", None) or {}),
                               "width": "80px", "maxWidth": "100%",
                               "height": "auto"}
                 break
@@ -111,7 +111,7 @@ def _normalize_upstream_layout(layout):
         if isinstance(children, (list, tuple)):
             for row in children:
                 if isinstance(row, dbc.Row):
-                    classes = (row.className or "").split()
+                    classes = (getattr(row, "className", None) or "").split()
                     if "g-0" not in classes:
                         row.className = " ".join([*classes, "g-0"])
 
