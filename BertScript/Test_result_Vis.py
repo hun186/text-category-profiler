@@ -9,12 +9,18 @@ if str(REPOSITORY_ROOT) not in sys.path:
 
 from BertScript import visualization_stage
 
-# Special-case a local Jaal-only viewer BEFORE importing Dash analysis,
+# Special-case local read-only viewers BEFORE importing Dash analysis,
 # model/data dependencies or scanning/mutating the WorkPool. In particular,
 # completed *_rdy_for_Spike datasets must never be renamed just to see Jaal.
 if __name__ == "__main__" and "--viewer-only" in sys.argv[1:]:
     from BertScript.jaal_viewer_only import main as viewer_only_main
     raise SystemExit(viewer_only_main(sys.argv[1:]))
+
+# The history viewer is a distinct, read-only process; it does not call the
+# Stage 4 lifecycle nor attempt to rename interrupted/completed workspaces.
+if __name__ == "__main__" and "--history-preview" in sys.argv[1:]:
+    from BertScript.stage4_history_preview import main as history_preview_main
+    raise SystemExit(history_preview_main(sys.argv[1:]))
 
 #import utilities_DB
 import numpy as np
