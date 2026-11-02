@@ -35,6 +35,30 @@ class CSVInterfaceTests(unittest.TestCase):
                 select_subgraph(graph, max_nodes=1)
 
 
+    def test_html_escapes_hover_only_not_literal_identifier(self):
+        from jaal_topology.viewer import build_app
+        unsafe = '<svg onload="alert(1)">'
+        app = build_app(Graph((("Parent", unsafe),), ("Parent", unsafe), {}))
+        def find(item):
+            if isinstance(item, dict):
+                if item.get("props", {}).get("id") == "graph":
+                    return item["props"]["data"]["nodes"]
+                for v in item.values():
+                    found = find(v)
+                    if found is not None:
+                        return found
+            elif isinstance(item, list):
+                for v in item:
+                    found = find(v)
+                    if found is not None:
+                        return found
+            return None
+        nodes = find(app.server.test_client().get("/_dash-layout").get_json())
+        node = next(n for n in nodes if n["id"] == unsafe)
+        self.assertEqual(node["label"], unsafe)
+        self.assertIn("&lt;svg", node["title"])
+        self.assertNotIn("<svg", node["title"])
+
     def test_wsgi_mount_keeps_host_and_assets_on_same_port(self):
         from flask import Flask
         from jaal_topology.integration import mount_flask
