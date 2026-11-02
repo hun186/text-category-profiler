@@ -1,0 +1,129 @@
+name: Jaal Standalone GitHub Repository Export
+
+on:
+  pull_request:
+    paths:
+      - "packages/jaal-topology/**"
+      - ".github/workflows/jaal-topology-export.yml"
+  push:
+    branches: [main]
+    paths:
+      - "packages/jaal-topology/**"
+      - ".github/workflows/jaal-topology-export.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Export only the portable package tree into a GitHub-ready ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          export_dir="$RUNNER_TEMP/jaal-standalone"
+          mkdir -p "$export_dir/clean"
+          # HEAD:subtree is a tree object; default git archive timestamps
+          # would use wall-clock time and change ZIP hashes between reruns.
+          # Fix timestamps to the actual source commit's Unix committer time.
+          source_mtime="@$(git show -s --format=%ct HEAD)"
+          git archive --format=zip --mtime="$source_mtime" \
+            --prefix=jaal-topology-viewer/ \
+            --output="$export_dir/jaal-topology-viewer.zip" \
+            HEAD:packages/jaal-topology
+          # Guard deterministic ZIP bytes even if the workflow is rerun.
+          sleep 2
+          git archive --format=zip --mtime="$source_mtime" \
+            --prefix=jaal-topology-viewer/ \
+            --output="$export_dir/jaal-topology-viewer-repeat.zip" \
+            HEAD:packages/jaal-topology
+          cmp "$export_dir/jaal-topology-viewer.zip" \
+            "$export_dir/jaal-topology-viewer-repeat.zip"
+          rm "$export_dir/jaal-topology-viewer-repeat.zip"
+          git ls-tree -r --name-only HEAD -- packages/jaal-topology \
+            | sed 's|^packages/jaal-topology/|jaal-topology-viewer/|' \
+            | LC_ALL=C sort > "$export_dir/expected.txt"
+          unzip -Z1 "$export_dir/jaal-topology-viewer.zip" \
+            | grep -v '/$' | LC_ALL=C sort > "$export_dir/actual.txt"
+          diff -u "$export_dir/expected.txt" "$export_dir/actual.txt"
+          unzip -q "$export_dir/jaal-topology-viewer.zip" -d "$export_dir/clean"
+          test -e "$export_dir/clean/jaal-topology-viewer/.github/workflows/ci.yml"
+          test -e "$export_dir/clean/jaal-topology-viewer/LICENSE"
+          test -e "$export_dir/clean/jaal-topology-viewer/pyproject.toml"
+          test -e "$export_dir/clean/jaal-topology-viewer/jaal_topology/assets/bootstrap.min.css"
+          test ! -e "$export_dir/clean/jaal-topology-viewer/BertScript"
+          test ! -e "$export_dir/clean/jaal-topology-viewer/ClassesTree"
+          git rev-parse HEAD > "$export_dir/source-commit.txt"
+          (cd "$export_dir" && sha256sum jaal-topology-viewer.zip \
+            > jaal-topology-viewer.zip.sha256)
+
+      - name: Install and test ONLY the ZIP extraction (no original repo imports)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/jaal-standalone/clean/jaal-topology-viewer"
+          python -m pip install -e .
+          python -m unittest discover -s tests -p 'test_*.py' -v
+          node --test tests/*.test.cjs
+          jaal-topology --help
+          python - <<'PY'
+          from pathlib import Path
+          from jaal_topology import load_graph, select_subgraph
+          from jaal_topology.viewer import build_app
+          from jaal_topology.integration import mount_flask
+          from flask import Flask
+          graph = select_subgraph(
+              load_graph(Path("examples/relationships.csv"),
+                         Path("examples/metadata.csv")), "Root")
+          app = build_app(graph, root="Root")
+          client = app.server.test_client()
+          assert client.get("/_dash-layout").status_code == 200
+          for name in ("16.jaal_visible_labels.js",
+                       "17.jaal_structural_collapse.js", "bootstrap.min.css"):
+              assert client.get("/assets/" + name).status_code == 200
+          flask = Flask(__name__)
+          mount_flask(flask, graph, mount_path="/topology", root="Root")
+          mounted = flask.test_client()
+          assert mounted.get("/topology/_dash-layout").status_code == 200
+          assert mounted.get("/topology/assets/bootstrap.min.css").status_code == 200
+          PY
+
+      - name: Build wheel and verify packaged JS/CSS survives distribution
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/jaal-standalone/clean/jaal-topology-viewer"
+          python -m pip wheel --no-deps -w "$RUNNER_TEMP/jaal-standalone/wheels" .
+          python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          wheel_dir = Path(__import__("os").environ["RUNNER_TEMP"]) / "jaal-standalone/wheels"
+          wheels = list(wheel_dir.glob("*.whl"))
+          assert len(wheels) == 1, wheels
+          with ZipFile(wheels[0]) as archive:
+              names = set(archive.namelist())
+              for file in (
+                  "jaal_topology/assets/16.jaal_visible_labels.js",
+                  "jaal_topology/assets/17.jaal_structural_collapse.js",
+                  "jaal_topology/assets/bootstrap.min.css",
+              ):
+                  assert file in names, f"Package wheel lost {file}"
+          PY
+
+      - name: Publish downloadable GitHub repository ZIP and SHA-256
+        uses: actions/upload-artifact@v4
+        with:
+          name: jaal-topology-viewer-repository-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/jaal-standalone/jaal-topology-viewer.zip
+            ${{ runner.temp }}/jaal-standalone/jaal-topology-viewer.zip.sha256
+            ${{ runner.temp }}/jaal-standalone/source-commit.txt
+          if-no-files-found: error
+          retention-days: 30

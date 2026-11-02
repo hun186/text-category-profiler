@@ -1,4 +1,4 @@
-# Portable Jaal Topology Viewer (first standalone package)
+# Jaal Topology Viewer
 
 A self-contained Python package for visualizing **directed node relationships**:
 one or more relationship CSV files, plus optional node display metadata CSV.
@@ -61,8 +61,8 @@ jaal-topology --edges links.csv --metadata names.csv \
 
 The web UI provides a live, **off-by-default** Chinese label checkbox;
 English IDs remain authoritative in Search and node tooltips. It also retains
-the original Jaal Search/Filter/Color/Size controls and adds network vs.
-four layout modes (network/hierarchy, fully shown/structurally collapsed),
+the original Jaal Search/Filter/Color/Size controls plus **four**
+layout modes (network/hierarchy, fully shown/structurally collapsed),
 click-to-expand/collapse and the existing smooth hierarchy expansion animation.
 Changing display labels never rewrites graph data.
 
@@ -125,7 +125,9 @@ embedding or a public Internet deployment service.
 `THIRD_PARTY_NOTICES.md`, `examples/`, `tests/`, and
 `.github/workflows/ci.yml`. When moving this directory to a new
 repository root, install and check it without importing the original
-text-category-profiler project:
+text-category-profiler project. For the verified GitHub Actions ZIP export,
+integrity check, GitHub Desktop publish process, and ownership caveats,
+see [REPOSITORY_SETUP.md](REPOSITORY_SETUP.md):
 
 ```sh
 python -m pip install -e .
@@ -134,7 +136,9 @@ node --test tests/*.test.cjs
 jaal-topology --edges examples/relationships.csv --metadata examples/metadata.csv --root Root
 ```
 
-The contained workflow verifies this clean-root configuration. Do not
+The contained workflow verifies this clean-root configuration. The parent
+project's `Jaal Standalone GitHub Repository Export` workflow also verifies
+and attaches a GitHub-ready ZIP with SHA-256 checksums. Do not
 publish a release until PR review, root-project CI and external browser
 acceptance all pass; publishing to PyPI, Docker or a public web server are
 separate security/release decisions.
