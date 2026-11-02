@@ -111,10 +111,23 @@ def database_path(workpool, workspace, filename, *, confirm_running=False):
     return path
 
 
+def _immutable_sqlite_uri(path):
+    """Produce a no-authority SQLite URI even for Windows UNC share paths.
+
+    file://server/share has a URI authority rejected by standard SQLite.
+    file:////server/share has an empty authority and a //server/share
+    pathname, preserving Windows UNC semantics without extra URI privileges.
+    """
+    uri_path = quote(path.resolve().as_posix(), safe="/:")
+    if uri_path.startswith("//"):
+        uri_path = "//" + uri_path
+    return "file:" + uri_path + "?mode=ro&immutable=1"
+
+
 def _connect(path):
     # URI immutable=1 tells SQLite never to write -journal/-shm, even on
     # Windows; only use after checking for WAL/journal sidecars.
-    uri = "file:" + quote(path.resolve().as_posix(), safe="/:") + "?mode=ro&immutable=1"
+    uri = _immutable_sqlite_uri(path)
     connection = sqlite3.connect(uri, uri=True, timeout=1)
     connection.execute("PRAGMA query_only=ON")
     return connection
