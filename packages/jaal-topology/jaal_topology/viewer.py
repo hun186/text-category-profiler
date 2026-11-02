@@ -116,7 +116,7 @@ def _normalize_upstream_layout(layout):
                         row.className = " ".join([*classes, "g-0"])
 
 
-def build_app(graph: Graph, *, root=None):
+def build_app(graph: Graph, *, root=None, requests_pathname_prefix="/"):
     """Build an independent localhost-ready Dash Jaal app, with all four modes.
 
     The original Jaal Search/Filter/Color/Size callbacks are preserved.
@@ -126,6 +126,13 @@ def build_app(graph: Graph, *, root=None):
     from .modes import layout_options
     from . import ASSETS_DIR
 
+    prefix = requests_pathname_prefix
+    if (not isinstance(prefix, str) or
+            not prefix.startswith("/") or not prefix.endswith("/") or
+            "//" in prefix):
+        raise GraphInputError(
+            "requests_pathname_prefix must be an absolute slash-terminated path"
+        )
     if not graph.edges:
         raise GraphInputError(
             "Jaal requires at least one visible directed edge; "
@@ -204,10 +211,12 @@ def build_app(graph: Graph, *, root=None):
     # the old application at runtime. The shell serves bundled assets offline.
     app = Dash(
         __name__, assets_folder=str(ASSETS_DIR),
+        requests_pathname_prefix=prefix,
+        routes_pathname_prefix="/",
         # Original Jaal uses CDN-only Bootstrap; include a locally served
         # MIT-licensed copy so controls retain layout even on an air-gapped PC.
         external_stylesheets=[
-            "/assets/bootstrap.min.css",
+            prefix + "assets/bootstrap.min.css",
             *list(original_app.config.external_stylesheets),
         ],
     )
