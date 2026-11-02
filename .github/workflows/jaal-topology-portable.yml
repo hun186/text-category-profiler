@@ -6,6 +6,8 @@ on:
     paths:
       - "packages/jaal-topology/**"
       - "tests/test_jaal_topology_portable.py"
+      - "tests/jaal_visible_labels.test.cjs"
+      - "tests/jaal_structural_collapse.test.cjs"
       - ".github/workflows/jaal-topology-portable.yml"
   push:
     branches: [main]
@@ -33,6 +35,26 @@ jobs:
         run: python -m pip install -e ./packages/jaal-topology
       - name: Run CSV, CLI, real Jaal WSGI integration
         run: python -m unittest -v tests.test_jaal_topology_portable
+      - name: Run original Jaal interaction regression against portable browser engine
+        run: node --test tests/jaal_visible_labels.test.cjs tests/jaal_structural_collapse.test.cjs
+      - name: Verify Stage 4 and portable browser assets stay in byte parity during migration
+        run: |
+          cmp BertScript/assets/16.jaal_visible_labels.js packages/jaal-topology/jaal_topology/assets/16.jaal_visible_labels.js
+          cmp BertScript/assets/17.jaal_structural_collapse.js packages/jaal-topology/jaal_topology/assets/17.jaal_structural_collapse.js
+      - name: Run real installed Jaal app with external working directory
+        run: |
+          cd /tmp
+          python - <<'PY'
+          from pathlib import Path
+          from jaal_topology.data import load_graph, select_subgraph
+          from jaal_topology.viewer import build_app
+          source = Path('/tmp/portable-jaal-external-edges.csv')
+          source.write_text('parent,child\\nRoot,Child\\n', encoding='utf-8')
+          graph = select_subgraph(load_graph(source), 'Root')
+          app = build_app(graph, root='Root')
+          assert app.server.test_client().get('/_dash-layout').status_code == 200
+          assert app.server.test_client().get('/assets/17.jaal_structural_collapse.js').status_code == 200
+          PY
       - name: Confirm installed CLI is usable outside repository working directory
         run: |
           cd /tmp
