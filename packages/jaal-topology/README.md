@@ -93,3 +93,47 @@ Do not delete or redirect the existing Stage 4 Jaal integration based on this
 first package. Windows browser visual acceptance, packaging on a clean
 external project, version compatibility across Dash 2/3/4, publishing
 permissions/licensing, and public deployment security are separate gates.
+
+## Embed on the same port as an existing Flask / Dash app
+
+The pure-Python WSGI adapter does not create a second listening socket:
+
+```python
+from flask import Flask
+from jaal_topology import load_graph, select_subgraph
+from jaal_topology.integration import mount_flask
+
+app = Flask(__name__)
+graph = select_subgraph(load_graph("relationships.csv", "metadata.csv"),
+                        "Root")
+viewer = mount_flask(app, graph, mount_path="/topology", root="Root")
+# Embed <iframe src="/topology/"></iframe> inside the host page if desired.
+app.run(host="127.0.0.1", port=8059)
+```
+
+Call `mount_flask` before the host starts serving requests. All Dash
+callback, stylesheet and browser-runtime URLs are prefixed `/topology/`.
+The host root, other routes and controls remain intact. No automatic graph
+reload: rebuild the selected view by restarting or constructing another
+bounded app. This is a same-origin embedded app, not a live cross-origin
+embedding or a public Internet deployment service.
+
+## Standalone repository export
+
+`packages/jaal-topology/` includes its own `pyproject.toml`, `LICENSE`,
+`THIRD_PARTY_NOTICES.md`, `examples/`, `tests/`, and
+`.github/workflows/ci.yml`. When moving this directory to a new
+repository root, install and check it without importing the original
+text-category-profiler project:
+
+```sh
+python -m pip install -e .
+python -m unittest discover -s tests -p "test_*.py" -v
+node --test tests/*.test.cjs
+jaal-topology --edges examples/relationships.csv --metadata examples/metadata.csv --root Root
+```
+
+The contained workflow verifies this clean-root configuration. Do not
+publish a release until PR review, root-project CI and external browser
+acceptance all pass; publishing to PyPI, Docker or a public web server are
+separate security/release decisions.
