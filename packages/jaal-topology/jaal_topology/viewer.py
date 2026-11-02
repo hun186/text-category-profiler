@@ -79,171 +79,177 @@ def _search_english_id(graph_data, search_text):
     return graph_data
 
 
-def _mode_options(base, mode):
-    options = deepcopy(base)
-    if mode == "hierarchical":
-        options.setdefault("layout", {})["hierarchical"] = {
-            "enabled": True, "direction": "UD", "sortMethod": "directed",
-            "levelSeparation": 260, "nodeSpacing": 285, "treeSpacing": 370,
-            "blockShifting": True, "edgeMinimization": True,
-            "parentCentralization": True,
-        }
-        options.setdefault("nodes", {}).update({
-            "shape": "box", "widthConstraint": {"maximum": 178},
-            "margin": 12, "borderWidth": 1,
-        })
-        options["physics"] = {"enabled": False}
-        options.setdefault("edges", {})["smooth"] = {
-            "enabled": True, "type": "cubicBezier",
-            "forceDirection": "vertical", "roundness": 0.28,
-        }
-    elif mode == "network":
-        options.setdefault("layout", {})["hierarchical"] = {"enabled": False}
-        options.setdefault("nodes", {}).update({
-            "shape": "dot", "widthConstraint": False,
-            "margin": 0, "borderWidth": 1,
-        })
-        options["physics"] = deepcopy(base.get("physics", {"enabled": True}))
-        options["physics"]["enabled"] = True
-        options.setdefault("edges", {})["smooth"] = {
-            "enabled": True, "type": "dynamic",
-            "forceDirection": "none", "roundness": 0.5,
-        }
-    else:
-        raise ValueError("mode must be network or hierarchical")
-    return options
+def _descendants(component):
+    pending = [component]
+    while pending:
+        item = pending.pop()
+        yield item
+        children = getattr(item, "children", None)
+        if isinstance(children, (list, tuple)):
+            pending.extend(children)
+        elif children is not None and not isinstance(children, (str, int, float)):
+            pending.append(children)
+
+
+def _normalize_upstream_layout(layout):
+    """Restrict Jaal's huge logo and Bootstrap negative outer row margins."""
+    from dash import html
+    import dash_bootstrap_components as dbc
+
+    for item in _descendants(layout):
+        if isinstance(item, html.Img) and isinstance(
+            getattr(item, "src", None), str
+        ) and item.src.startswith("data:image/png;base64,"):
+            if item.width == "80px":
+                item.width = 80
+                item.style = {**(item.style or {}),
+                              "width": "80px", "maxWidth": "100%",
+                              "height": "auto"}
+                break
+    if isinstance(layout, html.Div):
+        children = layout.children
+        if isinstance(children, (list, tuple)):
+            for row in children:
+                if isinstance(row, dbc.Row):
+                    classes = (row.className or "").split()
+                    if "g-0" not in classes:
+                        row.className = " ".join([*classes, "g-0"])
 
 
 def build_app(graph: Graph, *, root=None):
-    """Construct a real Jaal Dash server without starting a socket.
+    """Build an independent localhost-ready Dash Jaal app, with all four modes.
 
-    Caller can use app.server as WSGI or app.run on localhost. The graphs
-    must already have passed the bounded select_subgraph() safety gate.
+    The original Jaal Search/Filter/Color/Size callbacks are preserved.
+    JavaScript is installed from THIS package, not from the calling project.
     """
     from .data import GraphInputError
+    from .modes import layout_options
+    from . import ASSETS_DIR
 
     if not graph.edges:
-        # Upstream Jaal 0.1.9 builds filter widgets from a nonempty edge
-        # payload; with an empty list it raises KeyError('color'). Never
-        # invent self-links or phantom edges to make the visualization pass.
         raise GraphInputError(
             "Jaal requires at least one visible directed edge; "
             "select a parent/ancestor rather than an isolated leaf"
         )
-    from dash import dcc, html, Input, Output, State, callback_context, no_update
+    if len(graph.nodes) > 3000 or len(graph.edges) > 5000:
+        raise GraphInputError(
+            "Graph must be bounded before Jaal app construction"
+        )
+
+    from dash import (
+        Dash, Input, Output, ClientsideFunction, callback_context,
+        dcc, html, no_update,
+    )
     from jaal import Jaal
 
     edges, nodes = to_jaal_dataframes(graph, root=root)
     network = Jaal(edges, nodes)
     network._callback_search_graph = _search_english_id
-    # Jaal.parse_dataframe forces dot per node. Remove that *only* so
-    # the network global node.shape can switch to boxes in hierarchy mode.
     for collection in (network.data, network.filtered_data):
         for node in collection["nodes"]:
             if node.get("shape") == "dot":
                 del node["shape"]
-        # Jaal's upstream edge id is from + "__" + to. This is not
-        # injective when literal node IDs themselves contain "__":
-        # ("A__B", "C") and ("A", "B__C") collide. visdcc DataSet.add()
-        # rejects duplicate edge IDs at render time. Keep the actual
-        # endpoints and all other attributes unchanged, and use stable
-        # unique IDs per edge in both original and filtered payloads.
+        # Jaal's from+"__"+to edge ID collides for arbitrary string IDs.
         for index, edge in enumerate(collection["edges"]):
             edge["id"] = f"jaal-edge-{index}"
-    app = network.create(directed=True, vis_opts={
+
+    original_app = network.create(directed=True, vis_opts={
         "height": "600px",
         "interaction": {"hover": True},
         "physics": {"enabled": True, "stabilization": {"iterations": 100}},
     })
-    # Inspect the real component rather than reconstructing Jaal controls.
-    def all_children(component):
-        stack = [component]
-        while stack:
-            item = stack.pop()
-            yield item
-            children = getattr(item, "children", None)
-            if isinstance(children, (list, tuple)):
-                stack.extend(children)
-            elif children is not None and not isinstance(
-                children, (str, int, float)
-            ):
-                stack.append(children)
-
     graph_network = next(
-        (item for item in all_children(app.layout)
+        (item for item in _descendants(original_app.layout)
          if getattr(item, "id", None) == "graph"), None
     )
     if graph_network is None or not isinstance(graph_network.options, dict):
-        raise RuntimeError("Jaal graph/options layout contract changed")
+        raise RuntimeError("Original Jaal graph/options layout contract changed")
     base = deepcopy(graph_network.options)
     base.setdefault("nodes", {}).setdefault("shape", "dot")
     graph_network.options = deepcopy(base)
+    _normalize_upstream_layout(original_app.layout)
 
     controls = html.Div([
-        html.Label("顯示模式：", htmlFor="topology-mode"),
+        html.Span("顯示模式："),
         dcc.RadioItems(
-            id="topology-mode",
-            options=[{"label": "網狀", "value": "network"},
-                     {"label": "階層", "value": "hierarchical"}],
+            id="jaal-original-layout-mode",
+            options=[
+                {"label": "網狀（全展開）", "value": "network"},
+                {"label": "網狀（收攏）", "value": "network-collapsed"},
+                {"label": "階層（全展開）", "value": "hierarchical"},
+                {"label": "階層（收攏）", "value": "hierarchical-collapsed"},
+            ],
             value="network", inline=True,
         ),
         dcc.Checklist(
-            id="topology-chinese",
-            options=[{"label": "優先顯示中文名稱（缺少翻譯顯示英文）",
+            id="jaal-original-chinese-labels",
+            options=[{"label": "優先顯示中文名稱（無翻譯時顯示英文）",
                       "value": "zh"}],
             value=[], inline=True,
         ),
-        dcc.Store(id="topology-translations", data=graph.translations),
-        dcc.Interval(id="topology-physics-restore", interval=300,
-                     disabled=True, n_intervals=0),
-    ], style={"display": "flex", "alignItems": "center", "gap": "14px",
-              "flexWrap": "wrap", "padding": "8px"})
-    app.layout = html.Div([controls, app.layout])
+        dcc.Store(id="jaal-original-ct-translations",
+                  data=graph.translations, storage_type="memory"),
+        dcc.Interval(id="jaal-original-physics-restore",
+                     interval=300, disabled=True, n_intervals=0),
+        html.Span("收攏模式：點擊節點展開／收合一層；數字為不同子孫數。",
+                  style={"fontSize": "12px", "color": "#475569"}),
+    ], style={"display": "flex", "alignItems": "center", "gap": "12px",
+              "flexWrap": "wrap", "padding": "8px 4px",
+              "position": "sticky", "top": "0",
+              "backgroundColor": "rgba(255,255,255,0.93)", "zIndex": 20})
 
-    @app.callback(Output("graph", "options"),
-                  Output("topology-physics-restore", "disabled"),
-                  Input("topology-mode", "value"),
-                  Input("topology-physics-restore", "n_intervals"),
-                  prevent_initial_call=True)
+    # Jaal creates a Dash instance without a configurable asset directory.
+    # Construct a correctly configured shell and reuse its actual callbacks,
+    # rather than using a separate graph implementation or copying JS from
+    # the old application at runtime. The shell serves bundled assets offline.
+    app = Dash(
+        __name__, assets_folder=str(ASSETS_DIR),
+        external_stylesheets=list(original_app.config.external_stylesheets),
+    )
+    app.layout = html.Div([controls, original_app.layout])
+    app.callback_map.update(original_app.callback_map)
+    app._callback_list.extend(original_app._callback_list)
+    if not app.callback_map or len(app.callback_map) != len(original_app.callback_map):
+        raise RuntimeError("Original Jaal callbacks were not preserved")
+
+    @app.callback(
+        Output("graph", "options"),
+        Output("jaal-original-physics-restore", "disabled"),
+        Input("jaal-original-layout-mode", "value"),
+        Input("jaal-original-physics-restore", "n_intervals"),
+        prevent_initial_call=True,
+    )
     def switch_mode(mode, _ticks):
         triggered = callback_context.triggered[0]["prop_id"].split(".", 1)[0]
-        if triggered == "topology-physics-restore":
-            if mode != "network":
+        if triggered == "jaal-original-physics-restore":
+            if mode not in ("network", "network-collapsed"):
                 return no_update, True
+            reset = layout_options(base, mode)
+            physics = base.get("physics", {})
+            enabled = physics.get("enabled", True) if isinstance(
+                physics, dict
+            ) else bool(physics)
             return {
-                "physics": {"enabled": True},
-                "edges": {"smooth": _mode_options(base, "network")["edges"]["smooth"]},
-                "nodes": _mode_options(base, "network")["nodes"],
+                "physics": {"enabled": enabled},
+                "edges": {"smooth": reset["edges"]["smooth"]},
+                "nodes": {key: reset["nodes"][key] for key in (
+                    "shape", "widthConstraint", "margin", "borderWidth"
+                )},
             }, True
-        return _mode_options(base, mode), mode == "hierarchical"
+        if mode in (
+            "network", "network-collapsed",
+            "hierarchical", "hierarchical-collapsed",
+        ):
+            return layout_options(base, mode), mode.startswith("hierarchical")
+        raise ValueError("Unsupported Jaal layout mode")
 
-    # No interpolation of arbitrary CSV text into JS code. The labels only
-    # enter the browser through the dcc.Store and are read as inert data.
     app.clientside_callback(
-        """
-        function(chinese, translations, graphData) {
-            if (!graphData || !Array.isArray(graphData.nodes)) return "";
-            var runtime = window.dash_clientside.topology_runtime =
-                window.dash_clientside.topology_runtime || {};
-            runtime.chinese = Array.isArray(chinese) && chinese.includes("zh");
-            runtime.translations = translations || {};
-            return "(function(){"
-              + "var rt=window.dash_clientside.topology_runtime;"
-              + "var ds=this.nn;if(!ds||!ds.get||!ds.update)return;"
-              + "ds.update(ds.get().map(function(n){"
-              + "var id=String(n.id);"
-              + "var tr=Object.prototype.hasOwnProperty.call(rt.translations,id)"
-              + "?rt.translations[id]:null;"
-              + "var label=rt.chinese&&typeof tr==='string'&&tr.trim()"
-              + "?tr.trim():id;"
-              + "return {id:n.id,label:label,title:id};"
-              + "}));"
-              + "}).call(this);";
-        }
-        """,
+        ClientsideFunction(namespace="jaal_visible_labels",
+                           function_name="apply"),
         Output("graph", "run"),
-        Input("topology-chinese", "value"),
-        Input("topology-translations", "data"),
+        Input("jaal-original-layout-mode", "value"),
         Input("graph", "data"),
+        Input("jaal-original-chinese-labels", "value"),
+        Input("jaal-original-ct-translations", "data"),
     )
     return app
