@@ -51,7 +51,7 @@ jobs:
           from jaal_topology.data import load_graph, select_subgraph
           from jaal_topology.viewer import build_app
           source = Path('/tmp/portable-jaal-external-edges.csv')
-          source.write_text('parent,child\\nRoot,Child\\n', encoding='utf-8')
+          source.write_text('parent,child\nRoot,Child\n', encoding='utf-8')
           graph = select_subgraph(load_graph(source), 'Root')
           app = build_app(graph, root='Root')
           assert app.server.test_client().get('/_dash-layout').status_code == 200
