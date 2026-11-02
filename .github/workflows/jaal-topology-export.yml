@@ -30,9 +30,23 @@ jobs:
           set -euo pipefail
           export_dir="$RUNNER_TEMP/jaal-standalone"
           mkdir -p "$export_dir/clean"
-          git archive --format=zip --prefix=jaal-topology-viewer/ \
+          # HEAD:subtree is a tree object; default git archive timestamps
+          # would use wall-clock time and change ZIP hashes between reruns.
+          # Fix timestamps to the actual source commit's Unix committer time.
+          source_mtime="@$(git show -s --format=%ct HEAD)"
+          git archive --format=zip --mtime="$source_mtime" \
+            --prefix=jaal-topology-viewer/ \
             --output="$export_dir/jaal-topology-viewer.zip" \
             HEAD:packages/jaal-topology
+          # Guard deterministic ZIP bytes even if the workflow is rerun.
+          sleep 2
+          git archive --format=zip --mtime="$source_mtime" \
+            --prefix=jaal-topology-viewer/ \
+            --output="$export_dir/jaal-topology-viewer-repeat.zip" \
+            HEAD:packages/jaal-topology
+          cmp "$export_dir/jaal-topology-viewer.zip" \
+            "$export_dir/jaal-topology-viewer-repeat.zip"
+          rm "$export_dir/jaal-topology-viewer-repeat.zip"
           git ls-tree -r --name-only HEAD -- packages/jaal-topology \
             | sed 's|^packages/jaal-topology/|jaal-topology-viewer/|' \
             | LC_ALL=C sort > "$export_dir/expected.txt"
