@@ -246,3 +246,114 @@ test("hierarchy Search only lays out matching ancestors then restores filters",(
   assert.equal(f.component.nn.get().find(n=>n.id==="D").hidden,true);
   assert.equal(f.component.nn.get().find(n=>n.id==="C").hidden,false);
 });
+
+test("hierarchical expansion morphs old nodes from their on-screen coordinates",()=>{
+  const f=fixture({nodes:["A","B","C","D"],edges:[["A","B"],["A","C"],["B","D"]]});
+  f.run("hierarchical-collapsed");
+  const current={
+    A:{x:0,y:0},B:{x:-80,y:260},C:{x:100,y:260}
+  };
+  const target={
+    A:{x:40,y:0},B:{x:-100,y:260},C:{x:170,y:260},D:{x:-90,y:520}
+  };
+  let positionsRead=0;
+  const redraws=[];
+  f.component.net.getPositions=()=>{
+    positionsRead++;
+    return JSON.parse(JSON.stringify(positionsRead===1?current:target));
+  };
+  f.component.net.moveNode=(id,x,y)=>{current[id]={x,y};};
+  f.component.net.redraw=()=>{redraws.push(true);};
+  const oldRaf=globalThis.requestAnimationFrame;
+  const oldCancel=globalThis.cancelAnimationFrame;
+  const clock=new Map();
+  let seq=0;
+  globalThis.requestAnimationFrame=fn=>{clock.set(++seq,fn);return seq;};
+  globalThis.cancelAnimationFrame=id=>clock.delete(id);
+  const tick=timestamp=>{
+    const [id,fn]=clock.entries().next().value;
+    clock.delete(id);
+    fn(timestamp);
+  };
+  try {
+    f.click("B");
+    assert.equal(positionsRead,2);
+    assert.deepEqual(current.A,{x:0,y:0},"visible root must not jump before paint");
+    assert.deepEqual(current.C,{x:100,y:260},"existing sibling stays put");
+    assert.deepEqual(current.D,{x:-80,y:260},"new child starts at visible parent");
+    assert.equal(f.fitCalls.length,1,"no camera pan or zoom on expansion");
+    assert.equal(clock.size,1);
+    tick(100);
+    assert.deepEqual(current.A,{x:0,y:0});
+    tick(330);
+    assert.ok(current.A.x>0&&current.A.x<40,"existing root eases to new location");
+    assert.ok(current.D.y>260&&current.D.y<520,"new child separates continuously");
+    tick(600);
+    for (const id of Object.keys(target)) {
+      assert.ok(Math.abs(current[id].x-target[id].x)<0.0001);
+      assert.ok(Math.abs(current[id].y-target[id].y)<0.0001);
+    }
+    assert.equal(clock.size,0);
+    assert.ok(redraws.length>=2);
+  } finally {
+    if (oldRaf===undefined) delete globalThis.requestAnimationFrame;
+    else globalThis.requestAnimationFrame=oldRaf;
+    if (oldCancel===undefined) delete globalThis.cancelAnimationFrame;
+    else globalThis.cancelAnimationFrame=oldCancel;
+  }
+});
+
+test("leaving hierarchy cancels in-flight morph and restores original data",()=>{
+  const f=fixture({nodes:["A","B","C"],edges:[["A","B"],["B","C"]]});
+  f.run("hierarchical-collapsed");
+  let reads=0;
+  const positions={A:{x:0,y:0},B:{x:0,y:260},C:{x:0,y:520}};
+  f.component.net.getPositions=()=>JSON.parse(JSON.stringify(
+    ++reads===1?{A:positions.A,B:positions.B}:positions));
+  const moveCalls=[];
+  f.component.net.moveNode=(...args)=>moveCalls.push(args);
+  const oldRaf=globalThis.requestAnimationFrame;
+  const oldCancel=globalThis.cancelAnimationFrame;
+  const frames=new Map();let next=0;
+  globalThis.requestAnimationFrame=fn=>{frames.set(++next,fn);return next;};
+  globalThis.cancelAnimationFrame=id=>frames.delete(id);
+  try {
+    f.click("B");
+    assert.equal(frames.size,1);
+    const inFlight=[...frames.values()][0];
+    f.run("network");
+    assert.equal(frames.size,0,"old animation callback is canceled");
+    const count=moveCalls.length;
+    inFlight(500);
+    assert.equal(moveCalls.length,count,"stale frame cannot move normal network nodes");
+    assert.deepEqual(f.component.nn.getIds(),["A","B","C"]);
+    assert.equal(f.fitCalls.length,1);
+  } finally {
+    if (oldRaf===undefined) delete globalThis.requestAnimationFrame;
+    else globalThis.requestAnimationFrame=oldRaf;
+    if (oldCancel===undefined) delete globalThis.cancelAnimationFrame;
+    else globalThis.cancelAnimationFrame=oldCancel;
+  }
+});
+
+test("reduced-motion users keep native hierarchy without animation",()=>{
+  const f=fixture({nodes:["A","B","C"],edges:[["A","B"],["B","C"]]});
+  f.run("hierarchical-collapsed");
+  f.component.net.getPositions=()=>({A:{x:0,y:0},B:{x:20,y:260},C:{x:20,y:520}});
+  let moves=0;
+  f.component.net.moveNode=()=>moves++;
+  const oldRaf=globalThis.requestAnimationFrame;
+  const oldMedia=globalThis.matchMedia;
+  globalThis.requestAnimationFrame=()=>{throw Error("must not animate");};
+  globalThis.matchMedia=()=>({matches:true});
+  try {
+    f.click("B");
+    assert.equal(moves,0);
+    assert.equal(f.component.nn.getIds().length,3);
+  } finally {
+    if (oldRaf===undefined) delete globalThis.requestAnimationFrame;
+    else globalThis.requestAnimationFrame=oldRaf;
+    if (oldMedia===undefined) delete globalThis.matchMedia;
+    else globalThis.matchMedia=oldMedia;
+  }
+});
