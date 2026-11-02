@@ -260,6 +260,7 @@ test("hierarchical expansion morphs old nodes from their on-screen coordinates",
   const redraws=[];
   f.component.net.getPositions=()=>{
     positionsRead++;
+    if (positionsRead===2) current.D={...target.D}; // The new vis node exists after DataSet update.
     return JSON.parse(JSON.stringify(positionsRead===1?current:target));
   };
   f.component.net.body={nodes:current};
