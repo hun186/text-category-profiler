@@ -149,16 +149,50 @@ class SQLProviderContractTests(unittest.TestCase):
              "MPLOGGER": logger},
         )])
 
-    def test_existing_canonical_export_exception_does_not_close_connection(self):
+    def test_canonical_export_exception_closes_connection(self):
         events = []
         lite = FakeLite(events)
         frame = RecorderFrame(events, fail=True)
         fn = isolate_sql_writer(CANONICAL, lite=lite, MPlogger=lambda: object())
         with self.assertRaisesRegex(RuntimeError, "injected SQL export failure"):
             fn("failed.sql3", frame)
-        self.assertEqual([e[0] for e in events], ["connect", "select", "to_sql"])
-        # Characterization only. Follow-up must evaluate exception cleanup
-        # separately before touching actual SQL write paths.
+        self.assertEqual(
+            [e[0] for e in events], ["connect", "select", "to_sql", "close"]
+        )
+
+    def test_canonical_index_exception_closes_connection(self):
+        events = []
+        lite = FakeLite(events)
+        frame = RecorderFrame(events)
+
+        def broken_index(*args, **kwargs):
+            events.append(("create_index",))
+            raise LookupError("injected index failure")
+
+        fn = isolate_sql_writer(
+            CANONICAL, lite=lite, MPlogger=lambda: object(),
+            createIndex=broken_index,
+        )
+        with self.assertRaisesRegex(LookupError, "injected index failure"):
+            fn("failed-index.sql3", frame, IndexCols=["text"])
+        self.assertEqual(
+            [e[0] for e in events],
+            ["connect", "select", "to_sql", "create_index", "close"],
+        )
+
+    def test_canonical_dataframe_selection_exception_closes_connection(self):
+        events = []
+        lite = FakeLite(events)
+
+        class BrokenSelection(RecorderFrame):
+            def __getitem__(self, selection):
+                self.events.append(("select", selection[1]))
+                raise LookupError("injected selection failure")
+
+        fn = isolate_sql_writer(CANONICAL, lite=lite, MPlogger=lambda: object())
+        with self.assertRaisesRegex(LookupError, "injected selection failure"):
+            fn("failed-selection.sql3", BrokenSelection(events))
+        self.assertEqual([e[0] for e in events], ["connect", "select", "close"])
 
 
     def test_canonical_structured_cells_are_json_encoded_but_legacy_cells_are_not(self):
