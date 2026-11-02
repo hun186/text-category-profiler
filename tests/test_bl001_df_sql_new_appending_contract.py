@@ -31,6 +31,16 @@ def isolated_writer(ensure_schema):
     return scope["dfToSQL_new_appending"]
 
 
+class FakeCursor:
+    """Minimum sqlite3 cursor result contract needed by the writer."""
+
+    def __init__(self, rows=()):
+        self.rows = list(rows)
+
+    def fetchall(self):
+        return list(self.rows)
+
+
 class FakeConnection:
     def __init__(self, events, fail_index=None):
         self.events = events
@@ -42,8 +52,8 @@ class FakeConnection:
         if self.fail_index and sql.startswith(self.fail_index):
             raise LookupError("injected index failure")
         if sql.startswith("PRAGMA table_info"):
-            return [(0, "payload")]
-        return []
+            return FakeCursor([(0, "payload")])
+        return FakeCursor()
 
     def close(self):
         if self.closed:
