@@ -2012,3 +2012,700 @@ Critical Mineral Supply Resilience-Strategic Stockpiling,關鍵礦產供應韌�
 Export Controls,出口管制,,AI新增｜日期=2026-10-31｜來源=本次類別結構分析（待核驗）｜理由=為本次使用之既有圖節點提供中文顯示｜目標類別=關鍵礦產供應鏈與出口管制｜狀態=待人工審核
 Ore Supply and Demand,礦石供需,,AI新增｜日期=2026-10-31｜來源=本次類別結構分析（待核驗）｜理由=為本次使用之既有圖節點提供中文顯示｜目標類別=關鍵礦產供應鏈與出口管制｜狀態=待人工審核
 Rare-Earth Ore Supply and Demand,稀土礦石供需,,AI新增｜日期=2026-10-31｜來源=本次類別結構分析（待核驗）｜理由=為本次使用之既有圖節點提供中文顯示｜目標類別=關鍵礦產供應鏈與出口管制｜狀態=待人工審核
+1992 Consensus,九二共識,兩岸政治論述中的「九二共識」；對其涵義與是否存在共同解釋，各方立場不一。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+2026 US-Iran War,2026年美伊戰爭,依原始TopicTree的專題名稱翻譯；本條僅是分類標籤，不代表獨立查證事件或特定戰事狀態。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=僅翻譯分類名，未核實事實
+2026 US-Iran War-Diplomacy And Legal Response,2026年美伊戰爭－外交與法律回應,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+2026 US-Iran War-Diplomacy And Legal Response-Ceasefire And Renewed Hostilities,2026年美伊戰爭－外交與法律回應－停火與再度交戰,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+2026 US-Iran War-Diplomacy And Legal Response-Mediation And Peace Negotiations,2026年美伊戰爭－外交與法律回應－調停與和平談判,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+2026 US-Iran War-Diplomacy And Legal Response-UN Security Council Action,2026年美伊戰爭－外交與法律回應－聯合國安理會行動,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+2026 US-Iran War-Diplomacy And Legal Response-US War Powers And International Law,2026年美伊戰爭－外交與法律回應－美國戰爭權限與國際法,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+2026 US-Iran War-Humanitarian And Economic Impact,2026年美伊戰爭－人道與經濟影響,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+2026 US-Iran War-Humanitarian And Economic Impact-Civilian Casualties And Humanitarian Conditions,2026年美伊戰爭－人道與經濟影響－平民傷亡與人道情勢,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+2026 US-Iran War-Humanitarian And Economic Impact-Energy And Global Economic Impact,2026年美伊戰爭－人道與經濟影響－能源與全球經濟衝擊,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+2026 US-Iran War-Military And Regional Operations,2026年美伊戰爭－軍事與區域行動,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+2026 US-Iran War-Military And Regional Operations-Military Operations And Regional Escalation,2026年美伊戰爭－軍事與區域行動－軍事行動與區域升級,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+2026 US-Iran War-Military And Regional Operations-Strait Of Hormuz And Maritime Security,2026年美伊戰爭－軍事與區域行動－荷莫茲海峽與海事安全,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Academic Workshop-Education Workshop Agenda,學術工作坊－教育工作坊議程,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Academic Workshop-Physics Workshop Agenda,學術工作坊－物理工作坊議程,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Accounting Research Paper,會計學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Advertising Research Paper,廣告學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Aerography Research Paper,大氣觀測學研究論文,Aerography的學科用法可能因來源不同而有差異；中文暫按大氣觀測相關研究理解。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+Aerospace Engineering Research Paper,航太工程研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Aging Science Research Paper,老化科學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Agricultural Engineering Research Paper,農業工程研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Agricultural Science Research Paper,農業科學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Agronomy Research Paper,農藝學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Air Quality Forecast,空氣品質預報,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Algebra Research Paper,代數學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Algebraic Geometry Research Paper,代數幾何研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Allergy And Clinical Immunology Research Paper,過敏與臨床免疫學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Anaesthesiology And Pain Management Research Paper,麻醉學與疼痛管理研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Analytical Chemistry Research Paper,分析化學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Anatomy And Physiology Research Paper,解剖學與生理學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Andrology Research Paper,男性醫學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Animal Behavior Research Paper,動物行為學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Anthropology Research Paper,人類學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Applications Of Communication Systems Research Paper,通訊系統應用研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Applied Physics Research Paper,應用物理學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Applied Statistical Mathematics Research Paper,應用統計數學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Aquaculture And Fisheries And Fish Science Research Paper,水產養殖、漁業與魚類科學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Archaeology Research Paper,考古學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Architecture Research Paper,建築學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Art Research Paper,藝術學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Artificial Intelligence-Industry And Market,人工智慧－產業與市場,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Artificial Intelligence-Industry And Market-Public Equity,人工智慧－產業與市場－上市櫃股票,聚焦AI產業在公開股票市場的企業、股票及投資議題。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Astrochemistry Research Paper,天體化學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Astrophysics Research Paper,天體物理學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Atmospheric Chemistry Research Paper,大氣化學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Atmospheric Sciences Research Paper,大氣科學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Atomic Physics Research Paper,原子物理學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Authorization Document,授權文件,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Automata Research Paper,自動機理論研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Autonomous Car Industry,自動駕駛汽車產業,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Backdoor Software From CN GOV,中國政府相關後門軟體,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+BD-Paper Project Information,書籍設計－論文專案資訊,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+BDB-Acoustics,聲學類參考書目,依現有BDB分類命名慣例，BDB系列為參考書目分類。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+BDB-Business Management,企業管理類參考書目,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+BDB-Climate Change,氣候變遷類參考書目,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+BDB-Computer Science And Communications,電腦科學與通訊類參考書目,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+BDB-Graph Theory,圖論類參考書目,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+BDB-Politics,政治學類參考書目,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+BDB-Security,安全研究類參考書目,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+Behavioral Economics Research Paper,行為經濟學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Benign Web Link-VirusTotal Benign Web Link,良性網址－VirusTotal判定為良性的網址,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Big Data Search And Mining Research Paper,大數據搜尋與探勘研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Biochemistry Research Paper,生物化學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Biodiversity Research Paper,生物多樣性研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Bioengineering Research Paper,生物工程研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Biogeography Research Paper,生物地理學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Bioinformatics Research Paper,生物資訊學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Biological Chemistry Research Paper,生物化學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Biological Engineering Research Paper,生物工程研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Biological Materials Research Paper,生物材料研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Biology Research Paper,生物學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Biomedical And Life Science Research Paper,生物醫學與生命科學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Biophysics Research Paper,生物物理學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Biotechnology Research Paper,生物技術研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Business Analysis Research Paper,商業分析研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Business And Economics Education Research Paper,商業與經濟教育研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Business And Economics Research Paper,商業與經濟學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Business Communication Research Paper,商務溝通研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Business Ethics And Corporate Social Responsibility Research Paper,商業倫理與企業社會責任研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Business Finance And Investment Research Paper,企業財務與投資研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Business Information Technologies Research Paper,企業資訊技術研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Business Law Research Paper,商事法研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Business Management Research Paper,企業管理研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Business Research Methods Research Paper,商業研究方法研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Business Research Paper,商業研究研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Business Statistics And Analytics Research Paper,商業統計與分析研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Business Theories Research Paper,商業理論研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+BY Politics,白俄羅斯政治,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Call For Journal Papers,期刊論文徵稿,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Carbon Neutrality Research Paper,碳中和研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Cardiology Research Paper,心臟病學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Case Studies And Management Information Systems Research Paper,個案研究與管理資訊系統研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Cell Biology Research Paper,細胞生物學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CFI-SM-Mangrove Protection Propaganda SM,漁業簡訊－紅樹林保護宣導,依現有CFI-SM分類慣例，屬漁業相關簡訊，主題為紅樹林保護宣導。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+CFI-Weather News SM,漁業簡訊－天氣新聞,依現有CFI-SM分類慣例，屬漁業相關的天氣新聞簡訊。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+Chemical Engineering And Technology Research Paper,化學工程與技術研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Chemistry And Materials Science Research Paper,化學與材料科學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Cholera,霍亂,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Civil Engineering Research Paper,土木工程研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Classical Mechanics Research Paper,古典力學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Classical Physics Research Paper,古典物理學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Climate and Resource Security,氣候與資源安全,與「Climate And Resource Security」僅英文大小寫不同；請確認是否應在TopicTree整併。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=存在相近或重複名稱，請確認是否保留獨立節點
+Climate And Resource Security,氣候與資源安全,與「Climate and Resource Security」僅英文大小寫不同；請確認是否應在TopicTree整併。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=存在相近或重複名稱，請確認是否保留獨立節點
+Climate Refugee,氣候難民,受氣候變遷及環境衝擊而遷移者的相關議題；「氣候難民」未必具有正式國際難民法身分。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=存在相近或重複名稱，請確認是否保留獨立節點
+Climate Refugees,氣候難民,受氣候變遷及環境衝擊而遷移者的相關議題；「氣候難民」未必具有正式國際難民法身分。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=存在相近或重複名稱，請確認是否保留獨立節點
+Climate Security,氣候安全,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Cloud Computing Research Paper,雲端運算研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Coast Guard Pressure On TW Offshore Islands,中國海警對臺灣離島施壓,聚焦中國海警在臺灣離島周邊的巡航、登檢、管轄主張與執法活動。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Coast Guard Pressure On TW Offshore Islands-Inspection Boarding And Vessel Interdiction,中國海警對臺灣離島施壓－登檢與船舶攔截,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Coast Guard Pressure On TW Offshore Islands-Jurisdiction Claims And Law Enforcement Normalization,中國海警對臺灣離島施壓－管轄權主張與執法常態化,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Coast Guard Pressure On TW Offshore Islands-Patrol And Restricted Waters Operations,中國海警對臺灣離島施壓－巡邏與限制水域活動,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN FTZ-Liaoning,中國自由貿易試驗區－遼寧,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Intelligence And Espionage Against TW,中國對臺情報與間諜活動,聚焦涉及臺灣的情報蒐集、招募、間諜網絡及相關目標；分類不代表對個別案件的法律認定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Intelligence And Espionage Against TW-Espionage Network Operations,中國對臺情報與間諜活動－間諜網絡運作,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Intelligence And Espionage Against TW-Government Political And Security Targets,中國對臺情報與間諜活動－政府政治與國安目標,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Intelligence And Espionage Against TW-Military And Defense Targets,中國對臺情報與間諜活動－軍事與國防目標,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Intelligence And Espionage Against TW-Network Infrastructure Financing And Communication Channels,中國對臺情報與間諜活動－網絡基礎設施、資金與通訊管道,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Intelligence And Espionage Against TW-Recruitment Cultivation And Agent Handling,中國對臺情報與間諜活動－招募、培養與特工管理,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Intelligence And Espionage Against TW-Targeted Intelligence Collection,中國對臺情報與間諜活動－定向情報蒐集,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Intelligence And Espionage Against TW-Technology And Economic Targets,中國對臺情報與間諜活動－科技與經濟目標,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Intelligence System,中國情報體系,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Military Defense Operation,中國軍事防禦行動,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Military Unmanned Aerial Vehicle Technology,中國軍用無人航空載具技術,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Military Unmanned Surface Vehicle Technology,中國軍用無人水面載具技術,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Military Unmanned Vehicle,中國軍用無人載具,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Military Unmanned Vehicle Technology,中國軍用無人載具技術,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Politics Research Paper,中國政治研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Real Estate Crisis,中國房地產危機,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Real Estate Crisis And Weak Domestic Demand,中國房地產危機與內需疲弱,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Real Estate Crisis-Developer Debt And Restructuring,中國房地產危機－建商債務與重整,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Real Estate Crisis-Housing Sales Prices Inventory And Delivery,中國房地產危機－房屋銷售、價格、庫存與交屋,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Threats To TW Critical Infrastructure,中國對臺灣關鍵基礎設施之威脅,涉及海纜、通訊、能源、運輸等關鍵服務受到干擾或脅迫的相關議題。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Threats To TW Critical Infrastructure-Blockade Isolation And Essential Service Disruption,中國對臺灣關鍵基礎設施之威脅－封鎖隔離與基本服務中斷,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Threats To TW Critical Infrastructure-Cyber Intrusion And Network Disruption,中國對臺灣關鍵基礎設施之威脅－網路入侵與網路中斷,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Threats To TW Critical Infrastructure-Submarine Cable Damage And Maritime Interference,中國對臺灣關鍵基礎設施之威脅－海底電纜受損與海上干擾,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Tourism Promotion,中國觀光推廣,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Weak Domestic Demand,中國內需疲弱,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Weak Domestic Demand-Aggregate Demand And Investment Weakness,中國內需疲弱－總需求與投資走弱,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN Weak Domestic Demand-Household Consumption Confidence And Savings,中國內需疲弱－家戶消費、信心與儲蓄,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN-BR Cooperation,中國與巴西合作,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN-IND Trade,中國與印度貿易,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CN-KH Cooperation,中國與柬埔寨合作,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Cognitive Disorders Research Paper,認知功能障礙研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Combinatorial Mathematics Research Paper,組合數學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Commercial Fishing Industry,商業漁業,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Common Sense,常識,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Communication Protocols Research Paper,通訊協定研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Company Audit,公司稽核,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Complex Network Models Research Paper,複雜網路模型研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Composite Material Research Paper,複合材料研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Computational Biology Research Paper,計算生物學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Computational Chemistry Research Paper,計算化學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Computational Physics Research Paper,計算物理學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Computational Robotics Research Paper,計算機器人學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Computer And Network Security Research Paper,電腦與網路安全研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Computer Engineering Research Paper,電腦工程研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Computer Graphics And Visualization Research Paper,電腦圖學與視覺化研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Computer Science And Communications Research Paper,電腦科學與通訊研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Computer Vision Research Paper,電腦視覺研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Condensed State Physics Research Paper,凝態物理學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Conservation Biology Research Paper,保育生物學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Consumer Behavior Research Paper,消費者行為研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Continuum Mechanics Research Paper,連續體力學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Contract,契約,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Cooperative Communications Research Paper,協作通訊研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Corporate Governance Research Paper,公司治理研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Cosmochemistry Research Paper,宇宙化學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Cosmology Research Paper,宇宙學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+COVID-19 Research Paper,新冠肺炎（COVID-19）研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CPC Personnel Change,中國共產黨人事異動,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+CPC Politician Affairs,中國共產黨政治人物相關事務,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Criminology Research Paper,犯罪學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Critical Infrastructure Security,關鍵基礎設施安全,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Cross-Strait Security,臺海安全,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Cultural Heritage,文化資產,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Cultural Heritage Research Paper,文化資產研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Culture,文化,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Culture And History,文化與歷史,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Culture Research Paper,文化研究研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Currency Exchange Rate Form,匯率表單,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Customer Services-Refund,客戶服務－退款,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Delivery Charges,運送費用,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Demography Research Paper,人口學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Dentistry Research Paper,牙醫學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Depression Research Paper,憂鬱症研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Dermatology Research Paper,皮膚科學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Development Economics Research Paper,發展經濟學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Developmental Biology Research Paper,發育生物學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-bamital,DGA網域－bamital家族,DGA意為網域產生演算法；尾碼是樣本家族／資料集名稱，非個別網址的安全鑑定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-banjori,DGA網域－banjori家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-bigviktor,DGA網域－bigviktor家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-blackhole,DGA網域－blackhole家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-ccleaner,DGA網域－ccleaner家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-chinad,DGA網域－chinad家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-conficker,DGA網域－conficker家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-cryptolocker,DGA網域－cryptolocker家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-dircrypt,DGA網域－dircrypt家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-dyre,DGA網域－dyre家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-emotet,DGA網域－emotet家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-enviserv,DGA網域－enviserv家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-feodo,DGA網域－feodo家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-fobber_v1,DGA網域－fobber_v1家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-fobber_v2,DGA網域－fobber_v2家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-gameover,DGA網域－gameover家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-gspy,DGA網域－gspy家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-locky,DGA網域－locky家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-madmax,DGA網域－madmax家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-matsnu,DGA網域－matsnu家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-mirai,DGA網域－mirai家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-murofet,DGA網域－murofet家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-mydoom,DGA網域－mydoom家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-necurs,DGA網域－necurs家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-nymaim,DGA網域－nymaim家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-omexo,DGA網域－omexo家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-padcrypt,DGA網域－padcrypt家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-proslikefan,DGA網域－proslikefan家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-pykspa_v1,DGA網域－pykspa_v1家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-pykspa_v2_fake,DGA網域－pykspa_v2_fake家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-pykspa_v2_real,DGA網域－pykspa_v2_real家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-qadars,DGA網域－qadars家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-ramnit,DGA網域－ramnit家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-ranbyus,DGA網域－ranbyus家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-rovnix,DGA網域－rovnix家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-shifu,DGA網域－shifu家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-shiotob,DGA網域－shiotob家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-simda,DGA網域－simda家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-suppobox,DGA網域－suppobox家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-symmi,DGA網域－symmi家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-tempedreve,DGA網域－tempedreve家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-tinba,DGA網域－tinba家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-tinynuke,DGA網域－tinynuke家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-tofsee,DGA網域－tofsee家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-vawtrak,DGA網域－vawtrak家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-vidro,DGA網域－vidro家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-virut,DGA網域－virut家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+DGA Web Link-xshellghost,DGA網域－xshellghost家族,依DGA（網域產生演算法）家族／資料集名稱分群；不等於對所有個別網址的獨立惡意判定。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Diabetes And Endocrinology Research Paper,糖尿病與內分泌學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Diagnostics Research Paper,診斷學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Discrete Mathematics Research Paper,離散數學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Distributed Computing Research Paper,分散式運算研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Drugs And Devices Research Paper,藥品與醫療器材研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Dynamical System Research Paper,動力系統研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Earth And Environmental Science Research Paper,地球與環境科學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Ecology Research Paper,生態學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Economic History,經濟史,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Economic System Research Paper,經濟制度研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Economics Of Law Research Paper,法律經濟學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Edaphology Research Paper,土壤學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Education Research Paper,教育學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Educational Economy And Management Research Paper,教育經濟與管理研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Election Administration,選務行政,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Electric Engineering Research Paper,電機工程研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Electrochemistry Research Paper,電化學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Electromagnetics Research Paper,電磁學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Electronic Commerce Research Paper,電子商務研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Email Address-Embassy,電子郵件地址－使館,使領館等外交機構電子郵件地址的識別與彙整類別。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Emergency And Critical Care Research Paper,急診與重症醫學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Energy Research Paper,能源科學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Energy Security-Geopolitical Conflict Impact,能源安全－地緣政治衝突影響,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Engineering Management Research Paper,工程管理研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Engineering Research Paper,工程學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Entrepreneurship Research Paper,創業管理研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Environmental Chemistry Research Paper,環境化學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Environmental Economics Research Paper,環境經濟學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Environmental Sciences Research Paper,環境科學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Enzymology Research Paper,酵素學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Epidemiology Research Paper,流行病學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Evidence Based Medicine Research Paper,實證醫學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Evolutionary Studies Research Paper,演化研究研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Experimental Physics Research Paper,實驗物理學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Fenqing-Alien Delusion,憤青－外星人妄想,沿用原始Fenqing父類別；「妄想」為標籤字面翻譯，並非對任何人的醫學診斷。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+Fenqing-Formosan Statehood Movement,憤青－臺灣建國運動,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+Fenqing-Taiwan Independence Movement,憤青－臺灣獨立運動,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+Financial Contract,金融契約,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Financial Mathematics Research Paper,金融數學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Financial Reporting Research Paper,財務報導研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Fire Protection Engineering Research Paper,消防工程研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Fluid Dynamics Research Paper,流體動力學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Fluid Mechanics Research Paper,流體力學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Food Safety,食品安全,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Food Science And Technology Research Paper,食品科學與技術研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Fraudulent Call for Papers Email Content,虛假論文徵稿郵件內容,疑似或已識別為不實論文徵稿之電子郵件文本；判讀時需檢查來源與證據。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Function Theory Research Paper,函數論研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Functional Analysis Research Paper,泛函分析研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Functional Materials Research Paper,功能性材料研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Fund Management Report,基金管理報告,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Fundamental Physics Research Paper,基礎物理學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Fundamentals Of Material Science Research Paper,材料科學基礎研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Fuzzy Mathematics Research Paper,模糊數學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Game Theory Research Paper,賽局理論研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Game-MMOG,遊戲－大型多人線上遊戲,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Gastroenterology And Hepatology Research Paper,胃腸病學與肝臟病學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+General Business Research Research Paper,一般商業研究研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+General Management Research Paper,一般管理學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Genetic Engineering Research Paper,基因工程研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Genetics Research Paper,遺傳學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Genomics Research Paper,基因體學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Geochemistry Research Paper,地球化學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Geodesy Research Paper,大地測量學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Geography Research Paper,地理學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Geology Research Paper,地質學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Geometry Research Paper,幾何學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Geomorphology Research Paper,地形學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Geophysics Research Paper,地球物理學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Geoscience Research Paper,地球科學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Geriatrics Research Paper,老年醫學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Global Health Research Paper,全球衛生研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+GMP,藥品優良製造規範（GMP）,藥品製造品質管理規範之通稱；可能視分類脈絡延伸至其他產業的GMP制度。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Government Document Manual,政府公文手冊,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Graph Theory Research Paper,圖論研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Green Chemistry Research Paper,綠色化學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Green Energy Supply And Demand,綠色能源供需,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Green Energy Technology,綠色能源技術,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Green Networking Research Paper,綠色網路技術研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Grid Computing Research Paper,網格運算研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Gynecology And Obstetrics Research Paper,婦產科學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Health Policy Research Paper,衛生政策研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Health Technology,健康照護技術,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Healthcare Research Paper,健康照護研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Hematology Research Paper,血液學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Hepatology,肝臟病學,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+High Performance Computing Research Paper,高效能運算研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+High Polymer Chemistry Research Paper,高分子化學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Histology Research Paper,組織學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+History,歷史,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+History Of Mathematics Research Paper,數學史研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+History Research Paper,歷史學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+HIV Research Paper,人類免疫缺乏病毒（HIV）研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Huawei 5G Affairs,華為5G相關事務,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Huawei Email Address,華為電子郵件地址,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Human Geography Research Paper,人文地理學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Human Resource Management Research Paper,人力資源管理研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Humanities Research Paper,人文學科研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Hydrology Research Paper,水文學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Image Processing Research Paper,影像處理研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Immunology Research Paper,免疫學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+IND Economics,印度經濟,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+IND Finance,印度金融,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Indian Rupee,印度盧比,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Industrial Development,產業發展,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Industrial Engineering Research Paper,工業工程研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Infectious Diseases Research Paper,傳染病學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Information And Communication Security And Privacy And Trust Research Paper,資訊通訊安全、隱私與信任研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Information And Communication Theory And Algorithms Research Paper,資訊通訊理論與演算法研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Information Economics Research Paper,資訊經濟學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Information Journal Introduction,資訊類期刊介紹,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Information Management Research Paper,資訊管理研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Information Retrieval Research Paper,資訊檢索研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Innovation Management Research Paper,創新管理研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Inorganic Chemistry Research Paper,無機化學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Inorganic Nonmetallic Materials Research Paper,無機非金屬材料研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Integral Equation Research Paper,積分方程研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Internal Medicine Research Paper,內科學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+International Economics Research Paper,國際經濟學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+International Economics-Geopolitical Conflict Impact,國際經濟－地緣政治衝突影響,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+International Relations Research Paper,國際關係研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+International Trade,國際貿易,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+IR Diplomacy,伊朗外交,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+IR Military,伊朗軍事,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+ISM-Subscription Notifications,資訊系統自動發送訊息－訂閱通知,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+Journal Introduction,期刊介紹,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Journalism And Communication Research Paper,新聞與傳播學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+JP Amphibious Rapid Deployment Brigade,日本水陸機動團,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+JP Diplomacy For Indo-Pacific Framework,日本印太架構外交,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+JP Ground Self-Defense Force,日本陸上自衛隊,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+JP Maritime Self-Defense Force,日本海上自衛隊,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+JP Military Power,日本軍事實力,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Keyword Filter,關鍵字篩選,控制用的關鍵字過濾節點，通常不代表內容主題。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Keyword Neg Filter,排除關鍵字篩選,以排除詞降低不相關文本的過濾節點。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Keyword Neg Filter-Valueless Report,排除關鍵字篩選－低價值報告,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Kinesiology Research Paper,人體運動學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+KOR Economics,韓國經濟,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+KOR Finance,韓國金融,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+LA-International Law,國際法解析,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Labor Economics Research Paper,勞動經濟學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Laser Physics Research Paper,雷射物理學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Law Research Paper,法學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Library And Intelligence And Philology Research Paper,圖書情報與文獻學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Linguistics Research Paper,語言學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Literature Research Paper,文學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Logistics Engineering Research Paper,物流工程研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Lung Cancer Research Paper,肺癌研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+M Theory Research Paper,M理論研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Machine Learning Research Paper,機器學習研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Malicious Web Link-VirusTotal Malicious Web Link,惡意網址－VirusTotal判定為惡意的網址,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Management Information Systems Research Paper,管理資訊系統研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Management Organization Research Paper,管理組織研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Managerial Economics Research Paper,管理經濟學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Marine Biology Research Paper,海洋生物學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Maritime Coercion,海上脅迫行動,使用軍事、海警或海上執法等手段施加壓力的相關活動。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Maritime Safety,海事安全,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Marketing Research Paper,行銷學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Marketing Theory And Applications Research Paper,行銷理論與應用研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Martitime Information,海事資訊,原始英文疑似將Maritime誤拼為Martitime；此處保留既有ClassLabel以維持對應。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=原始英文疑似拼字錯誤
+Marxism Research Paper,馬克思主義研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Marxist Concept Of News Research Paper,馬克思主義新聞觀研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Material Experiment Research Paper,材料實驗研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Materials Engineering Research Paper,材料工程研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Mathematical Analysis Research Paper,數學分析研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Mathematical Biology Research Paper,數學生物學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Mathematical Economics Research Paper,數理經濟學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Mathematical Logic And Foundation Of Mathematics Research Paper,數理邏輯與數學基礎研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Mathematical Statistics Research Paper,數理統計學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Mathematics Research Paper,數學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Mechanical Engineering Research Paper,機械工程研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Mechanics Research Paper,力學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Medical Common Sense,醫學常識,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Medical Genetics Research Paper,醫學遺傳學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Medicinal Chemistry Research Paper,藥物化學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Medicine And Healthcare Research Paper,醫學與健康照護研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Meeting Affairs-VTC Information,會議事務－視訊會議資訊,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Memorandum Of Cooperation,合作備忘錄,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Metabolic Sciences Research Paper,代謝科學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Metal Material Research Paper,金屬材料研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Microbiology Research Paper,微生物學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Military Engineering Research Paper,軍事工程研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Military Science Research Paper,軍事科學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Military Unmanned Ground Vehicle,軍用無人地面載具,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Military Unmanned Ground Vehicle Technology,軍用無人地面載具技術,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Military Unmanned Surface Vehicle Technology,軍用無人水面載具技術,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Military Unmanned Underwater Vehicle Technology,軍用無人水下載具技術,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Military Unmanned Vehicle,軍用無人載具,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Military Unmanned Vehicle Technology,軍用無人載具技術,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Mineral Engineering Research Paper,礦業工程研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Mineralogy Research Paper,礦物學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+MM Politics,緬甸政治,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Mobile And Portable Communications Systems Research Paper,行動與攜帶式通訊系統研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Mobile And Ubiquitous Networks Research Paper,行動與普及運算網路研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Mobile Computing Systems Research Paper,行動運算系統研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Modern Physics Research Paper,近代物理學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Molecular Biology Research Paper,分子生物學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Monetary Economics Research Paper,貨幣經濟學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+MRP-Hepatology,醫學研究論文－肝臟病學,肝臟病相關醫學研究論文子類別。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+MRP-Hepatology-Liver Cancer,醫學研究論文－肝癌,肝臟病相關醫學研究論文子類別。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+MRP-Hepatology-Liver Damage,醫學研究論文－肝損傷,肝臟病相關醫學研究論文子類別。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+MRP-Hepatology-Liver Failure,醫學研究論文－肝衰竭,肝臟病相關醫學研究論文子類別。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+MRP-Hepatology-Liver Fibrosis And Cirrhosis,醫學研究論文－肝纖維化與肝硬化,肝臟病相關醫學研究論文子類別。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+MRP-Hepatology-Viral Hepatitis,醫學研究論文－病毒性肝炎,肝臟病相關醫學研究論文子類別。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Multimedia Or Signal Processing Research Paper,多媒體與訊號處理研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Music Research Paper,音樂學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Mycology Research Paper,真菌學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Nanometer Materials Research Paper,奈米材料研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Natural Geography Research Paper,自然地理學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Natural Science Research Paper,自然科學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Navigational Warning-Fishing in Unauthorized Zone,航行警告－未經許可區域漁撈作業,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Navigational Warning-Rocket Wreckage Falling Zone,航行警告－火箭殘骸落區,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Neoinstitutional Economics Research Paper,新制度經濟學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Nephrology Research Paper,腎臟病學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Network Modeling And Simulation Research Paper,網路建模與模擬研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Neurology Research Paper,神經內科學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Neuroscience Research Paper,神經科學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+NG Emigration Wave,奈及利亞移民潮,NG沿用原始國別縮寫，暫按奈及利亞解讀。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+Non-Standard Analysis Research Paper,非標準分析研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Nuclear Chemistry Research Paper,核化學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Nuclear Engineering Research Paper,核子工程研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Nuclear Physics Research Paper,核子物理學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Nuclear Technology Research Paper,核子技術研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Number Theory Research Paper,數論研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Numerical Mathematics Research Paper,數值數學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Numerical Methods Research Paper,數值方法研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Nursing Research Paper,護理學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Oceanology Research Paper,海洋學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Oil And Gas Pipelines,石油與天然氣管線,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+One China Principle,一個中國原則,中華人民共和國所主張的一個中國原則；應與各國個別的「一中政策」區分。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Online Social Network Computing Research Paper,線上社群網路運算研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Operational Research Research Paper,作業研究研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Operations Management Research Paper,營運管理研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Ophthalmology Research Paper,眼科學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Opsearch Research Paper,作業研究（Opsearch）研究論文,Opsearch可能是Operations Research的簡稱；需確認原始標籤確切範圍。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+Optical Communications Research Paper,光通訊研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Ordinary Differential Equation Research Paper,常微分方程研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Organic Chemistry Research Paper,有機化學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Organic Polymer Materials Research Paper,有機高分子材料研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Organizational Behavior And Theory Research Paper,組織行為與理論研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Orthopedics Research Paper,骨科學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Otorhinolaryngology Research Paper,耳鼻喉科學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Paleontology Research Paper,古生物學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Palliative Care Research Paper,緩和醫療研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Parasitology Research Paper,寄生蟲學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Partial Differential Equation Research Paper,偏微分方程研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Particle Physics Research Paper,粒子物理學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Pathology Research Paper,病理學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Pediatrics Research Paper,小兒科學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Personnel And Industrial Relations Research Paper,人事與勞資關係研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Petrochemistry Research Paper,石油化學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Petroleum Geology Research Paper,石油地質學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Petroleum Technology Research Paper,石油技術研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+PH Politics,菲律賓政治,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Pharmacology Research Paper,藥理學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Philosophy Research Paper,哲學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Photochemistry Research Paper,光化學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Physical Chemistry Research Paper,物理化學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Physics And Mathematics Research Paper,物理學與數學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Physiology Research Paper,生理學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+PLA Capability To Blockade And Quarantine TW,解放軍對臺封鎖與隔離管制能力,區分軍事封鎖（blockade）與海上隔離／檢疫式管制（quarantine）等情境；本類別關注能力、行動與支援條件。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+PLA Capability To Blockade And Quarantine TW-Air Interdiction And Airspace Control,解放軍對臺封鎖與隔離管制能力－空中攔截與空域控制,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+PLA Capability To Blockade And Quarantine TW-Cyber Electronic And Space Support,解放軍對臺封鎖與隔離管制能力－網路、電子與太空支援,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+PLA Capability To Blockade And Quarantine TW-Enabling And Sustainment,解放軍對臺封鎖與隔離管制能力－支援條件與持續維持,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+PLA Capability To Blockade And Quarantine TW-ISR Targeting And Command Control,解放軍對臺封鎖與隔離管制能力－情監偵、目標指示與指揮管制,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+PLA Capability To Blockade And Quarantine TW-Joint Firepower And Port And Airfield Denial,解放軍對臺封鎖與隔離管制能力－聯合火力與港口機場阻絕,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+PLA Capability To Blockade And Quarantine TW-Logistics Sustainment And Force Endurance,解放軍對臺封鎖與隔離管制能力－後勤補給與部隊持續作戰力,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+PLA Capability To Blockade And Quarantine TW-Maritime Interdiction And Sea Control,解放軍對臺封鎖與隔離管制能力－海上攔截與制海,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+PLA Capability To Blockade And Quarantine TW-Operational Enforcement,解放軍對臺封鎖與隔離管制能力－行動執行,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+PLA Capability To Blockade And Quarantine TW-Quarantine Support And Escalation Control,解放軍對臺封鎖與隔離管制能力－隔離管制支援與升級控制,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+PLA Navy,中國人民解放軍海軍,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+PLA Navy Marine Corps,中國人民解放軍海軍陸戰隊,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Plant Biology Research Paper,植物生物學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Plasma Physics Research Paper,電漿物理學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Political Economy Research Paper,政治經濟學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Politics Research Paper,政治學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+PRC Document,中華人民共和國文件,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Probability Theory Research Paper,機率論研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Production Or Operations Management Research Paper,生產與營運管理研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Project Management And Strategy Research Paper,專案管理與策略研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+PS Affairs,巴勒斯坦相關事務,PS依Middle East Affairs父類別暫按巴勒斯坦解讀；請確認原始縮寫定義。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+PS Diplomacy,巴勒斯坦外交,PS依Middle East Affairs父類別暫按巴勒斯坦解讀；請確認原始縮寫定義。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+Psychiatry And Psychology Research Paper,精神醫學與心理學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Psychiatry Research Paper,精神醫學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Psychology Research Paper,心理學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Public Administration Research Paper,公共行政研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Public Economics Research Paper,公共經濟學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Public Health Research Paper,公共衛生研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Public Policy Research Paper,公共政策研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Purchase Order,採購訂單,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Quantum Chemistry Research Paper,量子化學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Quantum Mechanics Research Paper,量子力學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Radiochemistry Research Paper,放射化學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Radiology And Medical Imaging Research Paper,放射學與醫學影像研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Radiology Research Paper,放射學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Real Estate Research Paper,不動產研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Rehabilitation Medicine Research Paper,復健醫學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Research Approach And Methodology,研究方法與途徑,研究方法、研究設計及研究途徑等概念性分類。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Respiratory Medicine Research Paper,胸腔暨呼吸醫學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Rheology Research Paper,流變學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Rheumatology Research Paper,風濕病學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Risk Management Research Paper,風險管理研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Routine Regulations Propaganda,例行法規宣導,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+RU Economics,俄羅斯經濟,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+RU Industrial Development,俄羅斯產業發展,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+RU Industrial Investment,俄羅斯產業投資,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+RU-UA MC-Military Unmanned Surface Vehicle Attack,俄烏軍事衝突－軍用無人水面載具攻擊,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Rural Planning Research Paper,鄉村規劃研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+SAC-Hotel,公司廣告－旅館廣告,依現有SAC分類慣例，此系列為公司廣告；Hotel為旅館業者廣告。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+Safety Of Oil And Gas Pipelines,石油與天然氣管線安全,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Sales Management Research Paper,銷售管理研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+SASF-Accessory-Glasses,時尚產品廣告－眼鏡,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+SASF-Accessory-Tie,時尚產品廣告－領帶,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+Sedimentology Research Paper,沉積學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Self Stabilization And Autonomic Computing Research Paper,自我穩定與自主運算研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Semiochemistry Research Paper,化學生態訊號學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Shipbuilding Industry,造船業,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Simulation Or Analytical Evaluation Of Communication Systems Research Paper,通訊系統模擬與分析評估研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Social Issues And Public Policy Research Paper,社會議題與公共政策研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Social Science Research Paper,社會科學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Social Statistics Research Paper,社會統計學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Socioeconomics Research Paper,社會經濟學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Sociology Research Paper,社會學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Software Engineering Research Paper,軟體工程研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Soil Science Research Paper,土壤科學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Solid Mechanics Research Paper,固體力學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+South-South Cooperation,南南合作,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Spacetime Singularity Of Tree,類別樹根節點（Spacetime Singularity Of Tree）,TopicTree的頂層根節點，用於連接主要分類分支；不是一般新聞主題。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Spam-Abnormally Repeated Email Header,垃圾郵件－異常重複的郵件標頭,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Spam-Advertisement-FB,垃圾郵件－Facebook廣告,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Spam-Advertisement-Member Recruitment,垃圾郵件－會員招募廣告,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Special Theory Of Relativity Research Paper,狹義相對論研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Spectroscopy Research Paper,光譜學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Sports Science Research Paper,運動科學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Statistics And Econometrics Research Paper,統計學與計量經濟學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Stomatology Research Paper,口腔醫學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Strategic Management Research Paper,策略管理研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+String Theory Research Paper,弦理論研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Structural Material Research Paper,結構材料研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Student Exchange Program Application,學生交換計畫申請,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Supervisory Meeting,督導會議,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Supervisory Meeting Notice,督導會議通知,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Supervisory Meeting Resolution,督導會議決議,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Supply Chain Management Research Paper,供應鏈管理研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Supramolecular Chemistry Research Paper,超分子化學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Surface And Intersurface Of Materials Research Paper,材料表面與界面研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Surgery And Surgical Specialties Research Paper,外科學與外科專科研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Synthetic Biology Research Paper,合成生物學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Taiwan In APR,臺灣與亞太圓桌會議,依現有ClassTable，APR為亞太圓桌會議（Asia-Pacific Roundtable）。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+Tanker Truck Freight Rate,油罐車運費率,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Tax,稅務,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Taxonomy Research Paper,分類學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Technology And Innovation Research Paper,科技與創新研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Technology Research Paper,技術研究研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+TH Politics,泰國政治,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+Theoretical Chemistry Research Paper,理論化學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Theoretical Physics Research Paper,理論物理學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Thermochemistry Research Paper,熱化學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Thermodynamics Research Paper,熱力學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Timestamp,時間戳記,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Topology Research Paper,拓樸學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Total Quality Management Research Paper,全面品質管理研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Tourism Economy Research Paper,觀光經濟研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Toxicology Research Paper,毒理學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Translational Medicine Research Paper,轉譯醫學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Transportation Technology,運輸技術,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Trip Plan,旅遊行程規劃,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+TW AI Technology Stocks,臺灣人工智慧科技股,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+TW AI Technology Stocks-AI Networking And High-Speed Connectivity,臺灣人工智慧科技股－AI網路與高速連接,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+TW AI Technology Stocks-AI Power Thermal And Electronic Components,臺灣人工智慧科技股－AI電力、散熱與電子元件,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+TW AI Technology Stocks-AI Semiconductor And Advanced Packaging,臺灣人工智慧科技股－AI半導體與先進封裝,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+TW AI Technology Stocks-AI Server And System Manufacturing,臺灣人工智慧科技股－AI伺服器與系統製造,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+TW Election-CPC Election Interference,臺灣選舉－中共選舉干預,蒐集與中共可能介入臺灣選舉之資訊、影響活動及相關安全分析；具體指控仍須核對證據。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+TW Election-CPC Election Interference-Information And Digital Operations,臺灣選舉－中共選舉干預－資訊與數位操作,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+TW Election-CPC Election Interference-Military Coercion And Threat Signaling,臺灣選舉－中共選舉干預－軍事脅迫與威嚇訊號,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+TW Election-CPC Election Interference-United Front Networks And Political Influence,臺灣選舉－中共選舉干預－統戰網絡與政治影響,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+TW Government Real Estate Policy,臺灣政府房地產政策,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+TW History,臺灣歷史,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+TW In APR,臺灣與亞太圓桌會議,依現有ClassTable，APR為亞太圓桌會議（Asia-Pacific Roundtable）。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+TW Military Unmanned Vehicle,臺灣軍用無人載具,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+TW Military Unmanned Vehicle Technology,臺灣軍用無人載具技術,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+TW Real Estate Industry,臺灣房地產產業,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+TW Technology Company Development-Capital Market,臺灣科技公司發展－資本市場,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+TW Technology Stocks,臺灣科技股,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+TW To Join International Organization,臺灣參與國際組織,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+TW To Join WHA,臺灣參與世界衛生大會（WHA）,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+UA Affairs,烏克蘭相關事務,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+UA Diplomacy,烏克蘭外交,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+UA Economics,烏克蘭經濟,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+UA Politics,烏克蘭政治,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+UA Women Rights,烏克蘭婦女權益,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+UI-Author Introduction,作者介紹,用於作者背景介紹，並沿用既有UIII系列的命名方式。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+UI-Institution Introduction,機構介紹,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+UK Industrial Investment,英國產業投資,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+ULM-Pharmacology,藥理學教材,參照現有ULM-Biology等類別，ULM在此系列表示學科教材。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+UN Financial Crisis And UN80 Reform,聯合國財政危機與UN80改革,聯合國財務困境與UN80組織改革倡議的交叉議題。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+UN Financial Crisis And UN80 Reform-Financial Sustainability,聯合國財政危機與UN80改革－財政永續,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+UN Financial Crisis-Budget Cuts Cash Conservation And Financial Rule Reform,聯合國財政危機－預算刪減、現金保全與財務規則改革,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+UN Financial Crisis-Contributions Arrears And Liquidity,聯合國財政危機－會費欠繳與流動性,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+UN Governance And Reform,聯合國治理與改革,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+UN Projects-UN80 Initiative,聯合國專案－UN80倡議,聯合國UN80倡議與相關改革專案。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+UN80 Initiative-Mandate Creation Implementation And Review,UN80倡議－任務授權制定、執行與檢視,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+UN80 Initiative-Secretariat Efficiency And Administrative Consolidation,UN80倡議－秘書處效率與行政整併,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+UN80 Initiative-Structural Changes And Programme Realignment,UN80倡議－組織架構調整與計畫重新配置,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Uncertainty-Flight Operation Document,飛航作業文件,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Uncertainty-HCB-Management Analysis,接待服務業公司管理分析,保留HCB原始代碼，中文依Hospitality Company Business脈絡暫譯。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+Uncertainty-HCB-Management Analysis Report,接待服務業公司管理分析報告,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+Uncertainty-Hospitality Company Business,接待服務業公司營運,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Uncertainty-Introduction,介紹資料,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Uncertainty-LDDAP-ADA-PAG,LDDAP／ADA／PAG相關資料（待確認）,原始縮寫缺乏明確定義，暫時保留，不推測其全名。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+Uncertainty-Region List,地區清單,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Uncertainty-TCB-Semiconductor,科技公司營運－半導體,保留TCB原始代碼，中文依科技企業脈絡暫譯。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+Uncertainty-Technology Company Business,科技公司營運,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Uncertainty-Technology Company Business Report,科技公司營運報告,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Uncrewed Spacecraft,無人太空飛行器,無人操作或無太空人乘載的太空載具。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Unmanned Ground Vehicle,無人地面載具,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Unmanned Surface Vehicle,無人水面載具,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Unmanned Surface Vehicle Technology,無人水面載具技術,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Unmanned Underwater Vehicles,無人水下載具,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Unmanned Vehicle,無人載具,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Unmanned Vehicle Technology,無人載具技術,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+UPL-Technician Checklist,技術人員檢查清單,技術人員工作／檢核清單；沿用既有UPL人員清單系列命名方式。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核｜提醒=縮寫或術語請依專案定義複核
+Urban Planning Research Paper,都市計畫研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Urology Research Paper,泌尿科學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+US Campaign Finance,美國競選資金,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+US Congressional Election,美國國會選舉,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+US Economic History,美國經濟史,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+US Election Polling And Forecasts,美國選舉民調與預測,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+US Framework Against CN,美國對中國政策框架,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+US Gubernatorial Election,美國州長選舉,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+US House Election,美國眾議院選舉,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+US Industrial Development,美國產業發展,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+US Marine Corps,美國海軍陸戰隊,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+US Midterm Election,美國期中選舉,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+US Midterm Election 2026,2026年美國期中選舉,2026年美國期中選舉；包含國會及部分州級選舉議題。,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+US Midterm Election 2026-Campaign And Election Process,2026年美國期中選舉－競選與選務過程,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+US Midterm Election 2026-Campaign And Election Process-Campaign Finance And Political Advertising,2026年美國期中選舉－競選與選務過程－競選資金與政治廣告,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+US Midterm Election 2026-Campaign And Election Process-Primaries And Candidate Selection,2026年美國期中選舉－競選與選務過程－初選與候選人提名,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+US Midterm Election 2026-Campaign And Election Process-Voting Access Election Administration And Integrity,2026年美國期中選舉－競選與選務過程－投票權利、選務管理與選舉公正性,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+US Midterm Election 2026-Electoral Outlook And Governance Impact,2026年美國期中選舉－選情展望與治理影響,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+US Midterm Election 2026-Electoral Outlook And Governance Impact-Polling Forecasts And Congressional Control,2026年美國期中選舉－選情展望與治理影響－民調預測與國會控制權,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+US Midterm Election 2026-Races By Office,2026年美國期中選舉－依公職區分選戰,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+US Midterm Election 2026-Races By Office-Gubernatorial Elections,2026年美國期中選舉－依公職區分選戰－州長選舉,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+US Midterm Election 2026-Races By Office-House Elections,2026年美國期中選舉－依公職區分選戰－眾議院選舉,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+US Midterm Election 2026-Races By Office-Senate Elections,2026年美國期中選舉－依公職區分選戰－參議院選舉,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+US Military Power,美國軍事實力,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+US Navy,美國海軍,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+US Primary Election,美國初選,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+US Public Diplomacy,美國公共外交,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+US Senate Election,美國參議院選舉,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+US-IND Relations,美印關係,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+US-IR Confrontation,美伊對抗,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+US-IR Military Confrontation,美伊軍事對抗,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+User Manual-Antivirus Software,使用手冊－防毒軟體,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+User Manual-Computer,使用手冊－電腦,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Veterinary Medicine Research Paper,獸醫學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Virology Research Paper,病毒學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Web Link-URL Encoding,網址－URL編碼,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Welfare Economics Research Paper,福利經濟學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+West Asia Affairs,西亞相關事務,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Women Health Research Paper,婦女健康研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+Zoology Research Paper,動物學研究論文,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
+ZW Politics,辛巴威政治,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核
