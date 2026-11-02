@@ -113,20 +113,19 @@ def _remove_embedded_jaal_outer_row_gutters(layout):
             row.className = " ".join([*classes, "g-0"])
 
 
-def _jaal_layout_options(base_options, mode):
-    """Use the reusable package's canonical four-mode layout implementation.
+from functools import lru_cache
 
-    Direct stdlib load keeps existing Stage 4 users working without first
-    installing the sibling editable package, and imports no WorkPool/model.
-    """
-    from functools import lru_cache
+
+@lru_cache(maxsize=1)
+def _portable_jaal_layout_provider():
+    """Import the canonical options once, without ML or root pip installation."""
     from runpy import run_path
+    return run_path(str(PORTABLE_JAAL_DIR / "modes.py"))["layout_options"]
 
-    @lru_cache(maxsize=1)
-    def mode_provider():
-        return run_path(str(PORTABLE_JAAL_DIR / "modes.py"))["layout_options"]
 
-    return mode_provider()(base_options, mode)
+def _jaal_layout_options(base_options, mode):
+    """Use the reusable package's authoritative four-mode layout options."""
+    return _portable_jaal_layout_provider()(base_options, mode)
 
 
 def _register_embedded_jaal_layout_mode(app, base_options):
