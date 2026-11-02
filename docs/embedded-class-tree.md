@@ -475,3 +475,27 @@ Dash callback 不建立 Jaal 子程式、不執行分類模型或 WorkPool；
 Hosted tests 檢查 Dropdown 的 Dash layout/callback、真實分類節點選項、
 前端 vis.DataSet 及 fit 次數；Windows Chrome 的實際視覺手感
 仍需由使用者實機確認。
+
+
+### 階層（收攏）增量展開：連續移動、不要跳閃（Windows 驗收待確認）
+
+先前取消每次節點展開時的 `vis.Network.fit()` 只能固定鏡頭，
+**無法**阻止階層 LayoutEngine 因可見節點集合改變而將原有節點直接移位。
+同埠 Jaal 現在在每次階層收攏的展開／收合操作，先取得瀏覽器實際
+`net.getPositions()` 目前顯示的座標；更新可見 DataSet 後取得
+階層引擎算出的**目標**座標，再透過 `net.moveNode()` 立即把舊節點
+放回原來位置，新增子節點由最近的已可見父／祖先座標出發，透過
+`requestAnimationFrame` 與 460ms ease-out 漸進移到新目標。
+允許新節點最初重疊，隨動畫逐漸分開。原階層的上下層、框狀標籤、
+跨父邊仍由既有布局演算法決定，沒有啟用可能造成連續漂移的
+`hierarchicalRepulsion` physics，也不會在每次展開改變 camera pan/zoom。
+首次進入階層收攏仍維持原本的一次 `fit`。
+
+當使用者快速連點、切換網狀／全展開、切換來源時，舊動畫會取消
+並由目前畫面位置開始新動作，避免舊幀移動已切走的節點；瀏覽器
+偏好 `prefers-reduced-motion: reduce` 時不啟動插值動畫。
+無 `requestAnimationFrame`／`moveNode` 支援時安全退回原階層排列。
+只處理**同埠 Jaal 階層（收攏）**，原始資料、分類樹與 WorkPool 不變，
+網狀（收攏）仍保持原本物理佈局。Node mock 測試確認舊節點在
+展開當下的座標不變、新子節點從父節點出發、影格連續、模式切換可取消，
+但不代表 Windows 真實 Chrome 與 77／81 子圖的視覺流暢度已驗收。
