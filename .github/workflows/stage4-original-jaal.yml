@@ -77,8 +77,8 @@ jobs:
       - name: Verify Jaal iframe auto-height sizing and sidebar reflow
         run: |
           node --check BertScript/assets/15.jaal_embedded_autoheight.js
-          node --check BertScript/assets/16.jaal_visible_labels.js
-          node --check BertScript/assets/17.jaal_structural_collapse.js
+          node --check packages/jaal-topology/jaal_topology/assets/16.jaal_visible_labels.js
+          node --check packages/jaal-topology/jaal_topology/assets/17.jaal_structural_collapse.js
           node --test tests/jaal_autoheight.test.cjs tests/jaal_visible_labels.test.cjs tests/jaal_structural_collapse.test.cjs
       - name: Check whitespace
         run: git diff --check HEAD^ HEAD
