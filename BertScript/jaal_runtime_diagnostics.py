@@ -43,7 +43,7 @@ def check_dash_visdcc_compatibility(versions=None):
     versions = version_summary() if versions is None else versions
 
     def version_key(package):
-        match = re.match(r"^(\\d+)\\.(\\d+)\\.(\\d+)", str(versions.get(package, "")))
+        match = re.match(r"^(\d+)\.(\d+)\.(\d+)", str(versions.get(package, "")))
         return tuple(map(int, match.groups())) if match else None
 
     dash = version_key("dash")
