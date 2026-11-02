@@ -50,6 +50,11 @@ def run(port: int, evidence: Path) -> None:
                 browser_errors = []
                 page.on("pageerror", lambda error: browser_errors.append(str(error)))
                 page.goto(host + "/", wait_until="domcontentloaded", timeout=60000)
+                # Dash mounts React controls asynchronously after index HTML
+                # loads. Wait for the real parent app, not just DOMContentLoaded.
+                page.locator("#btn_JaalOriginalLoad").wait_for(
+                    state="visible", timeout=90000
+                )
                 assert page.locator("#JaalOriginalRoot").count() == 1
                 assert page.locator("#btn_JaalOriginalLoad").count() == 1
                 assert page.locator(".jaal-original-iframe").count() == 0, (
