@@ -286,45 +286,44 @@ def dfToSQL_new_appending(SQLname, df, SavingDfColumns=None,
 
     # 連 DB
     cnx = lite.connect(SQLname)
+    try:
+        # 先確保表結構（第一次空表時不會爆）
+        ensure_schema(cnx, table, sql_df, must_cols, debug=debug)
 
-    # 先確保表結構（第一次空表時不會爆）
-    ensure_schema(cnx, table, sql_df, must_cols, debug=debug)
+        # ★ 關鍵：恢復舊行為——沿用呼叫端 if_exists、傳回 dtype、寫入 index 欄
+        say("[WRITE] rows=", len(sql_df), "cols=", list(sql_df.columns),
+            "if_exists=", if_exists, "write_index=", write_index, "index_label=", effective_index_label)
 
-    # ★ 關鍵：恢復舊行為——沿用呼叫端 if_exists、傳回 dtype、寫入 index 欄
-    say("[WRITE] rows=", len(sql_df), "cols=", list(sql_df.columns),
-        "if_exists=", if_exists, "write_index=", write_index, "index_label=", effective_index_label)
+        sql_df.to_sql(
+            name=table,
+            con=cnx,
+            if_exists=if_exists,           # ← 不再強制 append，回到舊邏輯
+            dtype=dtype,                   # ← 傳遞 dtype（與舊版一致）
+            index=write_index,             # ← 寫入 DataFrame.index
+            index_label=effective_index_label if write_index else None
+        )
 
-    sql_df.to_sql(
-        name=table,
-        con=cnx,
-        if_exists=if_exists,           # ← 不再強制 append，回到舊邏輯
-        dtype=dtype,                   # ← 傳遞 dtype（與舊版一致）
-        index=write_index,             # ← 寫入 DataFrame.index
-        index_label=effective_index_label if write_index else None
-    )
+        # 建索引（僅對存在欄位）
+        cols_in_sql = {row[1] for row in cnx.execute(f"PRAGMA table_info('{table}')").fetchall()}
+        for col in IndexCols:
+            if col not in cols_in_sql:
+                print(f"[SKIP] 欄位 {col} 不在資料表，略過一般索引")
+                continue
+            idx_name = f"{table}_{col}_idx"
+            cnx.execute(f'CREATE INDEX IF NOT EXISTS "{idx_name}" ON "{table}"("{col}")')
+            say("[INDEX] ensure:", idx_name)
 
-    # 建索引（僅對存在欄位）
-    cols_in_sql = {row[1] for row in cnx.execute(f"PRAGMA table_info('{table}')").fetchall()}
-    for col in IndexCols:
-        if col not in cols_in_sql:
-            print(f"[SKIP] 欄位 {col} 不在資料表，略過一般索引")
-            continue
-        idx_name = f"{table}_{col}_idx"
-        cnx.execute(f'CREATE INDEX IF NOT EXISTS "{idx_name}" ON "{table}"("{col}")')
-        say("[INDEX] ensure:", idx_name)
-
-    if UniqueIndexCols:
-        if all(c in cols_in_sql for c in UniqueIndexCols):
-            idx_name = f"{table}_{'_'.join(UniqueIndexCols)}_uniq"
-            cols_sql = ",".join([f'"{c}"' for c in UniqueIndexCols])
-            cnx.execute(f'CREATE UNIQUE INDEX IF NOT EXISTS "{idx_name}" ON "{table}"({cols_sql})')
-            say("[UNIQUE] ensure:", idx_name)
-        else:
-            miss = [c for c in UniqueIndexCols if c not in cols_in_sql]
-            print("[SKIP] 無法建立 UNIQUE 索引，缺少欄位：", miss)
-
-    cnx.close()
-    
+        if UniqueIndexCols:
+            if all(c in cols_in_sql for c in UniqueIndexCols):
+                idx_name = f"{table}_{'_'.join(UniqueIndexCols)}_uniq"
+                cols_sql = ",".join([f'"{c}"' for c in UniqueIndexCols])
+                cnx.execute(f'CREATE UNIQUE INDEX IF NOT EXISTS "{idx_name}" ON "{table}"({cols_sql})')
+                say("[UNIQUE] ensure:", idx_name)
+            else:
+                miss = [c for c in UniqueIndexCols if c not in cols_in_sql]
+                print("[SKIP] 無法建立 UNIQUE 索引，缺少欄位：", miss)
+    finally:
+        cnx.close()
 def dfToSQL(SQLname,df,SavingDfColumns=[],
             IndexCols=[],UniqueIndexCols=[],dtype=None,
             table='sampleSrc',MPLOGGER=None,if_exists='replace',
