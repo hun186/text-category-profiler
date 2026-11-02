@@ -456,3 +456,22 @@ visdcc 本身需要 Dash >=3。已正常工作的舊電腦無須升級。
 任何建圖／callback／子樹大小限制。Hosted `_dash-layout` 測試
 驗證控件相鄰、寬度、響應式換行及預設 ClassLabel；實際不同
 Windows 瀏覽器寬度仍需視覺驗證。
+
+
+### 根類別可搜尋選單及階層收攏的非跳躍式展開
+
+Jaal 根類別使用可搜尋單選 `dcc.Dropdown`，預選 `TW Affairs`，
+支援英文 ClassLabel 關鍵字（不分大小寫）的局部文字查找。
+選項從原本 authoritative `TopicTree.csv` / `TopicTree_AK4.csv`
+組成的 `load_graph()[1]` 取得，排序後每次最多傳 80 項；
+已選根類別始終保留在候選中以免篩選造成清空。候選清單的
+Dash callback 不建立 Jaal 子程式、不執行分類模型或 WorkPool；
+仍需按「載入 Jaal」才會真正建圖，250 節點的確認機制不變。
+
+階層（收攏）仍只用可見節點佈局；但 `vis.Network.fit()`
+**只在首次進入收攏階層**時調整視野，之後點擊展開或收回
+一層時不再全圖自動縮放／重新置中，保持使用者的瀏覽焦點。
+網狀（收攏）原本的佈局和視角行為維持不變。
+Hosted tests 檢查 Dropdown 的 Dash layout/callback、真實分類節點選項、
+前端 vis.DataSet 及 fit 次數；Windows Chrome 的實際視覺手感
+仍需由使用者實機確認。

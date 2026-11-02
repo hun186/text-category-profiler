@@ -7,6 +7,26 @@ import dash_bootstrap_components as dbc
 from BertScript.jaal_original_mount import OriginalJaalRouter, DEFAULT_ROOT
 
 router = OriginalJaalRouter()
+ROOT_SUGGESTION_LIMIT = 80
+
+
+def root_search_options(search_value, current_root, nodes, limit=ROOT_SUGGESTION_LIMIT):
+    """Bounded, case-insensitive searchable options from real TopicTree IDs.
+
+    Preserve the selected root even when the active query is changed. No
+    graph construction, model loading or WorkPool touches are needed.
+    """
+    needle = (search_value or "").strip().casefold()
+    values = sorted(
+        (name for name in nodes if isinstance(name, str) and
+         (not needle or needle in name.casefold())),
+        key=str.casefold,
+    )
+    selected = current_root if isinstance(current_root, str) else None
+    result = values[:limit]
+    if selected and selected not in result:
+        result = [selected, *result[:max(0, limit - 1)]]
+    return [{"label": name, "value": name} for name in result]
 
 
 def build_original_jaal_panel():
@@ -23,12 +43,15 @@ def build_original_jaal_panel():
                     htmlFor="JaalOriginalRoot",
                     style={"whiteSpace": "nowrap", "marginBottom": "0"},
                 ),
-                dcc.Input(
-                    id="JaalOriginalRoot", type="text", value=DEFAULT_ROOT,
-                    debounce=True,
+                dcc.Dropdown(
+                    id="JaalOriginalRoot",
+                    value=DEFAULT_ROOT,
+                    options=[{"label": DEFAULT_ROOT, "value": DEFAULT_ROOT}],
+                    searchable=True, clearable=False,
+                    placeholder="搜尋英文 ClassLabel…",
                     style={
-                        # Do not let a global form-control width:100% turn
-                        # this into an otherwise empty full-width row.
+                        # Searchable selector remains bounded on desktop;
+                        # it may shrink/wrap when viewed on a narrow device.
                         "width": "320px", "maxWidth": "100%", "minWidth": "0",
                         "flex": "0 1 320px",
                     },
@@ -71,6 +94,18 @@ def build_original_jaal_iframe(src):
 
 def register_original_jaal(app):
     router.mount(app.server)
+
+    @app.callback(
+        Output("JaalOriginalRoot", "options"),
+        Input("JaalOriginalRoot", "search_value"),
+        State("JaalOriginalRoot", "value"),
+    )
+    def search_jaal_roots(query, selected):
+        # Read the authoritative taxonomy only for the options callback;
+        # this does NOT construct the expensive embedded Jaal graph.
+        from ClassesTree.Visualization.embedded_tree import load_graph
+        _edges, all_nodes, _adjacency = load_graph()
+        return root_search_options(query, selected, all_nodes)
 
     @app.callback(
         Output("JaalOriginalFrame", "children"),
