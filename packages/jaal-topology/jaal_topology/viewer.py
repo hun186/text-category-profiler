@@ -142,6 +142,14 @@ def build_app(graph: Graph, *, root=None):
         for node in collection["nodes"]:
             if node.get("shape") == "dot":
                 del node["shape"]
+        # Jaal's upstream edge id is from + "__" + to. This is not
+        # injective when literal node IDs themselves contain "__":
+        # ("A__B", "C") and ("A", "B__C") collide. visdcc DataSet.add()
+        # rejects duplicate edge IDs at render time. Keep the actual
+        # endpoints and all other attributes unchanged, and use stable
+        # unique IDs per edge in both original and filtered payloads.
+        for index, edge in enumerate(collection["edges"]):
+            edge["id"] = f"jaal-edge-{index}"
     app = network.create(directed=True, vis_opts={
         "height": "600px",
         "interaction": {"hover": True},
