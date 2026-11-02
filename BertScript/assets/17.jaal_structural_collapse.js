@@ -140,13 +140,30 @@
     return null;
   }
 
+  function batchMove(net, positions) {
+    // visdcc's vis-network redraws *synchronously* for every moveNode()
+    // when physics is disabled. Mutate its already-existing in-memory
+    // canvas node coordinates together, then redraw exactly once per frame.
+    // If this expected internal bridge is unavailable, retain native layout
+    // rather than causing hundreds of redraws or guessing an unsafe API.
+    const bodies = net && net.body && net.body.nodes;
+    if (!bodies || typeof net.redraw !== "function" ||
+        positions.some(node => !bodies[node.id])) return false;
+    for (const node of positions) {
+      bodies[node.id].x = node.x;
+      bodies[node.id].y = node.y;
+    }
+    net.redraw();
+    return true;
+  }
+
   function animateReflow(instance, before) {
     const state = instance.__jaalStructural;
     const net = instance.net;
     // Old browsers and reduced-motion users keep the native final layout.
     if (!before || typeof root.requestAnimationFrame !== "function" ||
         prefersReducedMotion() || typeof net.getPositions !== "function" ||
-        typeof net.moveNode !== "function") return;
+        !net.body || !net.body.nodes || typeof net.redraw !== "function") return;
     const targets = net.getPositions();
     const motion = [];
     for (const id of instance.nn.getIds().map(String)) {
@@ -160,10 +177,12 @@
     }
     if (!motion.length) return;
 
-    // Synchronous restoration happens before the browser paints the changed
-    // DataSet. New children first appear at their existing parent's location;
-    // older nodes remain exactly where the reader last saw them.
-    for (const node of motion) net.moveNode(node.id, node.from.x, node.from.y);
+    // Restore every node in a single canvas redraw before browser paint.
+    // New children appear at a parent's old position; surviving nodes do
+    // not teleport. If the internal node map changed, retain native layout.
+    if (!batchMove(net, motion.map(node => ({
+      id: node.id, x: node.from.x, y: node.from.y,
+    })))) return;
     const token = state.reflowToken;
     let firstTimestamp = null;
     function frame(timestamp) {
@@ -174,12 +193,15 @@
       // Cubic ease-out maintains one continuous spatial trajectory rather
       // than handing each frame back to LayoutEngine's instant relayout.
       const t = 1 - Math.pow(1 - fraction, 3);
-      for (const node of motion) {
-        net.moveNode(node.id,
-          node.from.x + (node.to.x - node.from.x) * t,
-          node.from.y + (node.to.y - node.from.y) * t);
+      const positions = motion.map(node => ({
+        id: node.id,
+        x: node.from.x + (node.to.x - node.from.x) * t,
+        y: node.from.y + (node.to.y - node.from.y) * t,
+      }));
+      if (!batchMove(net, positions)) {
+        cancelReflow(state);
+        return;
       }
-      if (typeof net.redraw === "function") net.redraw();
       if (fraction < 1) state.reflowFrame = root.requestAnimationFrame(frame);
       else state.reflowFrame = null;
     }
