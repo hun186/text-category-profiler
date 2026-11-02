@@ -39,6 +39,11 @@ jobs:
           JAAL_CANDIDATE_COMPAT: "1"
         run: python -m unittest -v tests.test_jaal_candidate_compat
       - name: Real Jaal Stage 4 mount, controls, callbacks and path smoke
+        # Windows GitHub runner's default English cp1252 cannot encode the
+        # existing Chinese CLI --help text; this tests a declared UTF-8 runtime,
+        # not default-codepage Windows CLI acceptance.
+        env:
+          PYTHONUTF8: "1"
         run: >
           python -m unittest -v
           tests.test_jaal_label_format
