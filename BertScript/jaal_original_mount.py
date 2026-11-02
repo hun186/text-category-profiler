@@ -472,6 +472,8 @@ def prefix_original_jaal(original_app, prefix):
 
 def _make_original_jaal(root, prefix):
     """Re-use exact historic Jaal data pipeline, layout, and UI callbacks."""
+    from BertScript.jaal_runtime_diagnostics import check_dash_visdcc_compatibility
+    check_dash_visdcc_compatibility()
     from ClassesTree.Visualization.jaal.jaalViewer import JaalViewMain
 
     original_app = JaalViewMain(QueryRoot=root, createMode=True)
