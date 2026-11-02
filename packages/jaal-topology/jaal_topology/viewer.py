@@ -7,6 +7,7 @@ Stage-4-only collapse animation remains a separate migration milestone.
 from __future__ import annotations
 
 from copy import deepcopy
+from html import escape as escape_html
 from collections import defaultdict, deque
 
 from .data import Graph
@@ -58,7 +59,7 @@ def to_jaal_dataframes(graph: Graph, *, root=None):
         {
             "id": name,
             "label": name,
-            "title": name,
+            "title": escape_html(name, quote=True),
             "depth": depths[name],
             "InDegree": incoming[name],
             "OutDegree": outgoing[name],
@@ -156,9 +157,15 @@ def build_app(graph: Graph, *, root=None, requests_pathname_prefix="/"):
         for node in collection["nodes"]:
             if node.get("shape") == "dot":
                 del node["shape"]
+            # visdcc's Popup.setText uses innerHTML for string title values.
+            # Escape title, never IDs/labels (canvas labels are plain text).
+            # Jaal.parse_dataframe may recompute title after the CSV adapter.
+            node["title"] = escape_html(str(node["id"]), quote=True)
         # Jaal's from+"__"+to edge ID collides for arbitrary string IDs.
         for index, edge in enumerate(collection["edges"]):
             edge["id"] = f"jaal-edge-{index}"
+            if isinstance(edge.get("title"), str):
+                edge["title"] = escape_html(edge["title"], quote=True)
 
     original_app = network.create(directed=True, vis_opts={
         "height": "600px",
