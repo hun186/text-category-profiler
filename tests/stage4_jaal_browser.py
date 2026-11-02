@@ -67,8 +67,21 @@ def run(port: int, evidence: Path) -> None:
                 assert src and src.startswith("/jaal-original/") and src.endswith("/")
                 assert "://" not in src and ":8053" not in src
                 frame = page.frame_locator(".jaal-original-iframe")
+                # A failed lazy Jaal build returns 503 with a generic message
+                # inside the same-origin iframe. Fail with that reason promptly,
+                # rather than a misleading two-minute missing-canvas timeout.
+                page.wait_for_function("""() => {
+                    const iframe = document.querySelector('.jaal-original-iframe');
+                    const body = iframe?.contentDocument?.body;
+                    if (!body) return false;
+                    if (body.innerText?.includes('原版 Jaal 載入失敗')) return true;
+                    return !!body.querySelector('.vis-network canvas');
+                }""", timeout=120000)
+                failure = frame.locator("body").inner_text(timeout=10000)
+                if "原版 Jaal 載入失敗" in failure:
+                    raise AssertionError("Real Stage 4 iframe returned lazy-build 503: " + failure[:500])
                 canvas = frame.locator(".vis-network canvas").first
-                canvas.wait_for(state="visible", timeout=120000)
+                canvas.wait_for(state="visible", timeout=20000)
                 dims = canvas.bounding_box()
                 assert dims and dims["width"] > 100 and dims["height"] > 100
                 assert frame.locator("#jaal-original-layout-mode input[type=radio]").count() == 4
