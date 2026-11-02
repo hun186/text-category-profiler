@@ -125,8 +125,11 @@ def build_tree_panel():
                     layout=SUBGRAPH_LAYOUT,
                     stylesheet=BASE_STYLESHEET,
                     style=GRAPH_STYLE,
+                    # dash-cytoscape 0.2.0 (used in some Windows
+                    # installations) rejects wheelSensitivity at component
+                    # construction. Keep supported zoom bounds and default
+                    # mouse-wheel behavior across Dash Cytoscape versions.
                     minZoom=0.05, maxZoom=4,
-                    wheelSensitivity=0.2,
                 ),
             ], id="JaalViewerCardDetails", open=False),
         ]),

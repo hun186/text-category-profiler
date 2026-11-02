@@ -42,6 +42,15 @@ class EmbeddedTreePanelTests(unittest.TestCase):
         graph = find(app.layout, "JaalGraph")
         self.assertIsNotNone(graph)
         self.assertEqual(graph.elements, [])
+        # A real Cytoscape 0.2.0 rejects the previously supplied
+        # wheelSensitivity property during Stage 4 app.layout assignment.
+        # These supported zoom limits preserve the user interaction.
+        self.assertEqual(graph.minZoom, 0.05)
+        self.assertEqual(graph.maxZoom, 4)
+        self.assertNotIn("wheelSensitivity", graph.to_plotly_json()["props"])
+        # Exercise Dash layout serialization too, not just source-level AST:
+        # this is the request the real Stage 4 web client needs to bootstrap.
+        self.assertEqual(app.server.test_client().get("/_dash-layout").status_code, 200)
         self.assertFalse(find(app.layout, "JaalViewerCardDetails").open)
         self.assertEqual(find(app.layout, "JaalAllowFull").value, [])
         # The original Jaal Viewer entry must be visible without clicking a
