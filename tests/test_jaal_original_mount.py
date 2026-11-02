@@ -310,6 +310,12 @@ class OriginalJaalMountTests(unittest.TestCase):
             {"graph", "jaal-original-layout-mode",
              "jaal-original-chinese-labels", "jaal-original-ct-translations"},
         )
+        # Runtime is sourced only from packages/jaal-topology; both scripts
+        # must be explicitly referenced in the returned child HTML, not
+        # merely reachable as standalone Flask routes.
+        html_body = response.get_data(as_text=True)
+        self.assertIn(url + "assets/16.jaal_visible_labels.js", html_body)
+        self.assertIn(url + "assets/17.jaal_structural_collapse.js", html_body)
         runtime_js = client.get(url + "assets/16.jaal_visible_labels.js")
         self.assertEqual(runtime_js.status_code, 200)
         self.assertIn("this.nn", runtime_js.get_data(as_text=True))
