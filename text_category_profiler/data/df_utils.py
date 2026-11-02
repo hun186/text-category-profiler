@@ -358,7 +358,7 @@ def dfToSQL(SQLname,df,SavingDfColumns=[],
     #連結sqlite資料庫
     cnx = lite.connect(SQLname)
     try:
-        
+
         #選取dataframe 要寫入的欄位名稱
         #欄位名稱需與資料庫的欄位名稱一樣 才有辦法對照寫入
         sql_df=df.loc[:,SavingDfColumns]
@@ -366,7 +366,7 @@ def dfToSQL(SQLname,df,SavingDfColumns=[],
         if len(sql_df) > 0:
             for col in sql_df.columns:
                 sql_df[col]=sql_df[col].apply(
-                    lambda x:json.dumps(x,ensure_ascii=False) if 
+                    lambda x:json.dumps(x,ensure_ascii=False) if
                     any([isinstance(x,dict),isinstance(x,list),isinstance(x,tuple)])
                     else x)
         #if_exists 若是選擇 replace，如果sampleSrc 這個 table 已存在資料庫，則會將其取代。
@@ -376,12 +376,12 @@ def dfToSQL(SQLname,df,SavingDfColumns=[],
             index_label = UniqueIndexCols
         else:
             index_label = None
-        sql_df.to_sql(name=table, con=cnx, 
+        sql_df.to_sql(name=table, con=cnx,
                       if_exists=if_exists,
                       dtype=dtype,
                       index_label=index_label
                       )
-        
+
         #創造index，以提升讀取速度。
         #getIndex = f'SELECT name FROM sqlite_master WHERE type = "index";'
         #sqlIndexCols = [term[0] for term in list(cnx.execute(getIndex))]
