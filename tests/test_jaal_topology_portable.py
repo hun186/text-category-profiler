@@ -11,11 +11,18 @@ import tempfile
 import unittest
 from unittest import mock
 
-PACKAGE_ROOT = Path(__file__).resolve().parents[1] / "packages" / "jaal-topology"
-sys.path.insert(0, str(PACKAGE_ROOT))
-
-from jaal_topology import GraphInputError, load_graph, select_subgraph  # noqa: E402
-from jaal_topology.cli import parse_args, main  # noqa: E402
+# Always test the installed external distribution, never shadow it with the
+# old in-repository source tree. Dedicated Hosted CI installs the exact pin.
+try:
+    from jaal_topology import GraphInputError, load_graph, select_subgraph
+    from jaal_topology.cli import parse_args, main
+except ModuleNotFoundError as exc:
+    if exc.name != "jaal_topology":
+        raise
+    raise unittest.SkipTest(
+        "External jaal-topology-viewer is optional for dependency-light discovery; "
+        "the dedicated portable workflow installs and tests the exact GitHub SHA"
+    ) from exc
 
 
 class PortableDataTests(unittest.TestCase):
@@ -103,7 +110,7 @@ class PortableDataTests(unittest.TestCase):
         other = self.base / "external-project"
         other.mkdir()
         env = os.environ.copy()
-        env["PYTHONPATH"] = str(PACKAGE_ROOT)
+        env.pop("PYTHONPATH", None)  # prove installation works outside checkout
         proc = subprocess.run([sys.executable, "-m", "jaal_topology", "--help"],
                               cwd=other, env=env, capture_output=True,
                               text=True, check=False)

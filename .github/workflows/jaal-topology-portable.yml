@@ -31,8 +31,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Install only portable Jaal package, not root ML requirements
-        run: python -m pip install -e ./packages/jaal-topology
+      - name: Install pinned external Jaal package, not root ML requirements
+        run: python -m pip install "jaal-topology-viewer @ git+https://github.com/hun186/jaal-topology-viewer.git@7a7d8ba1f847b2f95a620c61a0c5a94f0523e255"
+      - name: Assert package imported from installed GitHub checkout, not vendored path
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import jaal_topology
+          assert not Path(jaal_topology.__file__).resolve().is_relative_to(
+              Path.cwd().resolve() / "packages"
+          )
+          PY
       - name: Run CSV, CLI, real Jaal WSGI integration
         run: python -m unittest -v tests.test_jaal_topology_portable
       - name: Test package exactly as if it were a standalone GitHub checkout

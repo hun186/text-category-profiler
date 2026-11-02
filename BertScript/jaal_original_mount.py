@@ -32,8 +32,12 @@ LOGGER = logging.getLogger(__name__)
 # Bundled with Stage 4; the original Jaal stylesheet is CDN-hosted, which
 # cannot be the only styling source for an iframe in an offline deployment.
 STAGE4_ASSETS = Path(__file__).resolve().parent / "assets"
-PORTABLE_JAAL_DIR = Path(__file__).resolve().parents[1] / "packages" / "jaal-topology" / "jaal_topology"
-PORTABLE_JAAL_ASSETS = PORTABLE_JAAL_DIR / "assets"
+# Import standalone assets lazily: dependency-light ClassTable commands and
+# Stage 4's unloaded panel must not import Jaal until the user loads it.
+# The installed package is pinned to an audited GitHub commit in requirements.txt.
+def _portable_jaal_assets_dir():
+    from jaal_topology import ASSETS_DIR
+    return ASSETS_DIR
 PORTABLE_JS_FILES = ("16.jaal_visible_labels.js", "17.jaal_structural_collapse.js")
 LOCAL_BOOTSTRAP = "bootstrap@5.3.1/bootstrap.min.css"
 
@@ -118,9 +122,9 @@ from functools import lru_cache
 
 @lru_cache(maxsize=1)
 def _portable_jaal_layout_provider():
-    """Import the canonical options once, without ML or root pip installation."""
-    from runpy import run_path
-    return run_path(str(PORTABLE_JAAL_DIR / "modes.py"))["layout_options"]
+    """Import four-mode options from the pinned standalone distribution."""
+    from jaal_topology.modes import layout_options
+    return layout_options
 
 
 def _jaal_layout_options(base_options, mode):
@@ -448,13 +452,14 @@ def prefix_original_jaal(original_app, prefix):
     # Flask app. Dash also owns the generic /assets/<path> route; explicit
     # paths take precedence and let the old browser URL contract survive.
     from flask import send_from_directory
+    portable_assets = _portable_jaal_assets_dir()
     for asset_name in PORTABLE_JS_FILES:
-        if not (PORTABLE_JAAL_ASSETS / asset_name).is_file():
+        if not (portable_assets / asset_name).is_file():
             raise RuntimeError(f"Bundled portable Jaal asset missing: {asset_name}")
 
         def serve_portable_asset(asset=asset_name):
             return send_from_directory(
-                str(PORTABLE_JAAL_ASSETS), asset,
+                str(portable_assets), asset,
                 mimetype="application/javascript",
             )
         child_app.server.add_url_rule(
