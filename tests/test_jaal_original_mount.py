@@ -19,18 +19,18 @@ class OriginalJaalMountTests(unittest.TestCase):
         with TemporaryDirectory() as directory:
             table = Path(directory) / "ClassTable.csv"
             table.write_text(
-                "ClassLabel,CT,Explanation,Notes\\n"
-                "A,中文甲,,\\n"
-                "B,, ,\\n"
-                "C,  , ,\\n"
-                "D,未選入,,\\n",
+                "ClassLabel,CT,Explanation,Notes\n"
+                "A,中文甲,,\n"
+                "B,, ,\n"
+                "C,  , ,\n"
+                "D,未選入,,\n",
                 encoding="utf-8-sig",
             )
             result = _class_table_labels_for_nodes(
                 ["A", "B", "C", "missing"], path=table
             )
             self.assertEqual(result, {"A": "中文甲"})
-            table.write_text("ClassLabel,WrongHeader\\nA,Z\\n", encoding="utf-8")
+            table.write_text("ClassLabel,WrongHeader\nA,Z\n", encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "ClassTable CSV"):
                 _class_table_labels_for_nodes(["A"], path=table)
 
