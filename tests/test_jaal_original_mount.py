@@ -310,7 +310,7 @@ class OriginalJaalMountTests(unittest.TestCase):
             {"graph", "jaal-original-layout-mode",
              "jaal-original-chinese-labels", "jaal-original-ct-translations"},
         )
-        # Runtime is sourced only from packages/jaal-topology; both scripts
+        # Runtime is sourced only from the installed external Jaal package; both scripts
         # must be explicitly referenced in the returned child HTML, not
         # merely reachable as standalone Flask routes.
         html_body = response.get_data(as_text=True)

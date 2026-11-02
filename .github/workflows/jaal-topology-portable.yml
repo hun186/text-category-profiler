@@ -4,7 +4,9 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - "packages/jaal-topology/**"
+      - "BertScript/jaal_original_mount.py"
+      - "requirements.txt"
+      - "tests/test_jaal_external_source_contract.py"
       - "tests/test_jaal_topology_portable.py"
       - "tests/jaal_visible_labels.test.cjs"
       - "tests/jaal_structural_collapse.test.cjs"
@@ -12,7 +14,8 @@ on:
   push:
     branches: [main]
     paths:
-      - "packages/jaal-topology/**"
+      - "BertScript/jaal_original_mount.py"
+      - "requirements.txt"
       - "tests/test_jaal_topology_portable.py"
       - ".github/workflows/jaal-topology-portable.yml"
   workflow_dispatch:
@@ -43,20 +46,24 @@ jobs:
           )
           PY
       - name: Run CSV, CLI, real Jaal WSGI integration
-        run: python -m unittest -v tests.test_jaal_topology_portable
-      - name: Test package exactly as if it were a standalone GitHub checkout
-        run: |
-          cd packages/jaal-topology
-          python -m unittest discover -s tests -p 'test_*.py' -v
-          node --test tests/*.test.cjs
+        run: python -m unittest -v tests.test_jaal_topology_portable tests.test_jaal_external_source_contract
+      # Standalone-package unit tests run in the independent repository CI.
+      # This consumer repository runs its own cross-project integration below.
       - name: Run original Jaal interaction regression against portable browser engine
         run: node --test tests/jaal_visible_labels.test.cjs tests/jaal_structural_collapse.test.cjs
-      - name: Verify Stage 4 has no duplicate browser engine sources
+      - name: Verify Jaal code lives only in independent distribution
         run: |
+          test ! -d packages/jaal-topology
           test ! -e BertScript/assets/16.jaal_visible_labels.js
           test ! -e BertScript/assets/17.jaal_structural_collapse.js
-          test -s packages/jaal-topology/jaal_topology/assets/16.jaal_visible_labels.js
-          test -s packages/jaal-topology/jaal_topology/assets/17.jaal_structural_collapse.js
+          python - <<'PY'
+          from pathlib import Path
+          from jaal_topology import ASSETS_DIR
+          assert ASSETS_DIR.is_dir()
+          for name in ("16.jaal_visible_labels.js",
+                       "17.jaal_structural_collapse.js", "bootstrap.min.css"):
+              assert (ASSETS_DIR / name).is_file()
+          PY
       - name: Run real installed Jaal app with external working directory
         run: |
           cd /tmp
@@ -76,11 +83,22 @@ jobs:
           cd /tmp
           python -m jaal_topology --help
           jaal-topology --help
-      - name: Confirm isolated package has no first-party Stage 4 imports
+      - name: Confirm installed package has no first-party Stage 4 imports
         run: |
-          if grep -R -nE '^((from|import) (BertScript|ClassesTree|TCF_Params|text_category_profiler))' packages/jaal-topology/jaal_topology; then
-            echo 'Portable package accidentally depends on the original repository'
-            exit 1
-          fi
+          python - <<'PY'
+          from pathlib import Path
+          import jaal_topology
+          package = Path(jaal_topology.__file__).resolve().parent
+          for f in package.glob("*.py"):
+              source = f.read_text(encoding="utf-8")
+              for line in source.splitlines():
+                  if line.startswith((
+                      "from BertScript", "import BertScript",
+                      "from ClassesTree", "import ClassesTree",
+                      "from TCF_Params", "import TCF_Params",
+                      "from text_category_profiler", "import text_category_profiler",
+                  )):
+                      raise AssertionError(f"Stage 4 dependency {f}:{line}")
+          PY
       - name: Whitespace
         run: git diff --check HEAD^ HEAD

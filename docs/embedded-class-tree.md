@@ -1,5 +1,27 @@
 # Stage 4：內嵌分類樹檢視器
 
+## Jaal 獨立套件來源（2026-11-02）
+
+原本的圖形核心、四種網狀／階層佈局與瀏覽器 JS，現由
+[jaal-topology-viewer](https://github.com/hun186/jaal-topology-viewer)
+獨立 Repository 維護。 `text-category-profiler` 在 `requirements.txt`
+使用 **固定 Git Commit** 的 `jaal-topology-viewer` 相依套件，
+不再從 `packages/jaal-topology/` 載入或附帶核心程式碼。
+
+主站內嵌的 `BertScript.jaal_original_mount` 仍保留特殊 UI：
+根節點搜尋、需求時才載入的同埠 WSGI router、原 Jaal
+Search/Filter/Color/Size、ClassTable 的 CT 中文回退、左側面板
+收合及 iframe 自動高度。原有 `--viewer-only` 和 port 8059
+操作方式**沒有改變**。JS 由已安裝套件的 `ASSETS_DIR`
+提供，版型 `layout_options` 改用標準 Python `import`。
+
+更新程式碼與套件後若仍在 Windows 執行舊 Python 行程，請停止
+現有 8059 服務、安裝新的 `requirements.txt`（需具備 Git
+及可用的套件來源；離線則需預先提供對應 Wheel），再重新啟動。
+Hosted 的確保範圍為獨立套件 CI、原版 Jaal WSGI、Node JS 與
+Python 回歸；**Windows 實際瀏覽器像素與操作驗收仍待確認**。
+
+
 主頁 \`BertScript/Test_result_Vis.py\` 的「分類樹互動檢視器」現在直接使用 Dash Cytoscape。
 **不需要**先啟動 Jaal 的獨立 8053 port，也沒有跨 port iframe。獨立
 \`ClassesTree/Visualization/jaal/jaalViewer.py\` 仍可供原來的 Jaal CLI 場景使用，
