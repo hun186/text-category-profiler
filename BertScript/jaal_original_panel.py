@@ -18,13 +18,25 @@ def build_original_jaal_panel():
                    "此區塊與上方的輕量分類樹互相獨立；"
                    "只有按下「載入 Jaal」才建立圖形與其回呼。"),
             html.Div([
-                html.Label("根類別（英文 ClassLabel）"),
-                dcc.Input(id="JaalOriginalRoot", type="text", value=DEFAULT_ROOT,
-                          debounce=True, style={"minWidth": "300px"}),
+                html.Label(
+                    "根類別（英文 ClassLabel）：",
+                    htmlFor="JaalOriginalRoot",
+                    style={"whiteSpace": "nowrap", "marginBottom": "0"},
+                ),
+                dcc.Input(
+                    id="JaalOriginalRoot", type="text", value=DEFAULT_ROOT,
+                    debounce=True,
+                    style={
+                        # Do not let a global form-control width:100% turn
+                        # this into an otherwise empty full-width row.
+                        "width": "320px", "maxWidth": "100%", "minWidth": "0",
+                        "flex": "0 1 320px",
+                    },
+                ),
                 html.Button("載入 Jaal", id="btn_JaalOriginalLoad",
                             n_clicks=0),
-            ], style={"display": "flex", "gap": "12px", "flexWrap": "wrap",
-                      "alignItems": "center"}),
+            ], style={"display": "flex", "gap": "10px", "flexWrap": "wrap",
+                      "alignItems": "center", "marginBottom": "8px"}),
             dcc.Checklist(
                 id="JaalOriginalLargeConsent", value=[],
                 options=[{"label": "大型子樹：我知道可能耗用較多瀏覽器／伺服器資源",
