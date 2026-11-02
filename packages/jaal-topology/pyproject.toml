@@ -6,6 +6,8 @@ build-backend = "setuptools.build_meta"
 name = "jaal-topology-viewer"
 version = "0.1.0"
 description = "Read-only directed CSV graph viewer powered by Jaal"
+readme = "README.md"
+license = "MIT"
 requires-python = ">=3.10"
 dependencies = ["jaal>=0.1.9", "pandas>=1.5"]
 
