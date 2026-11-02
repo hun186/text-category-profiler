@@ -85,9 +85,10 @@ engine used by Stage 4, including structural collapse, smooth 460 ms hierarchy
 reflow, and reduced-motion behavior. Its own runtime and CLI require no
 TextClassification project files. The project-specific same-port iframe mount,
 root-search dropdown, Jaal auto-height and advanced panel/sidebar styling still
-belong to Stage 4; they are **not yet shared host adapters**, and the original
-Stage 4 assets have not yet been switched to the package as their runtime
-source. Cross-project parity and Windows visual acceptance remain open.
+belong to Stage 4; they are **not yet shared host adapters**. The original
+Stage 4 now serves the two browser-runtime scripts from this portable package
+as its single source, while preserving the original same-port Jaal UI. Windows
+browser visual acceptance and cross-project version compatibility remain open.
 
 Do not delete or redirect the existing Stage 4 Jaal integration based on this
 first package. Windows browser visual acceptance, packaging on a clean
