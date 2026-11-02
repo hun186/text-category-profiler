@@ -120,6 +120,19 @@ def run(port: int, evidence: Path) -> None:
                             // not just a Dash radio value or pending React prop.
                             hierarchical: c.net?.body?.modules?.layoutEngine
                                 ?.options?.hierarchical?.enabled ?? null,
+                            layoutOptions: {
+                                fromLayoutEngine: c.net?.body?.modules?.layoutEngine?.options?.hierarchical ?? null,
+                                fromNetLayoutEngine: c.net?.layoutEngine?.options?.hierarchical ?? null,
+                                fromBodyOptions: c.net?.body?.options?.layout?.hierarchical ?? null,
+                                fromNetworkOptions: c.net?.options?.layout?.hierarchical ?? null,
+                                fromComponentProps: c.props?.options?.layout?.hierarchical ?? null,
+                            },
+                            structural: {
+                                mode: c.__jaalStructural?.mode ?? null,
+                                compactActive: c.__jaalStructural?.compactActive ?? null,
+                                expandedCount: c.__jaalStructural?.expanded?.size ?? null,
+                            },
+                            hiddenCount: c.nn.get().filter(n => n.hidden).length,
                         };
                     }""")
 
@@ -131,7 +144,17 @@ def run(port: int, evidence: Path) -> None:
                         if latest is not None and predicate(latest):
                             return latest
                         page.wait_for_timeout(250)
-                    raise AssertionError(f"{description} not observed: {str(latest)[:1300]}")
+                    diagnostic = None if latest is None else {
+                        "node_count": len(latest["nodes"]),
+                        "original_count": len(latest["original"]),
+                        "edge_count": len(latest["edges"]),
+                        "hidden_count": latest["hiddenCount"],
+                        "sample_labels": [n.get("label") for n in latest["nodes"][:6]],
+                        "hierarchical": latest["hierarchical"],
+                        "layoutOptions": latest["layoutOptions"],
+                        "structural": latest["structural"],
+                    }
+                    raise AssertionError(f"{description} not observed: {diagnostic!r}")
 
                 choose("網狀（收攏）")
                 collapsed = until(
