@@ -175,6 +175,38 @@ class PortableRealJaalTests(unittest.TestCase):
                 main(["--edges", str(csv_path), "--root", "B"]), 2
             )
 
+    def test_literal_double_underscore_node_ids_cannot_collide_edge_ids(self):
+        from jaal_topology.data import Graph
+        from jaal_topology.viewer import build_app
+        graph = Graph(
+            (("A__B", "C"), ("A", "B__C")),
+            ("A", "A__B", "B__C", "C"),
+            {}
+        )
+        app = build_app(graph)
+        response = app.server.test_client().get("/_dash-layout")
+        self.assertEqual(response.status_code, 200)
+        layout = response.get_json()
+        graph_props = {}
+        def find(item):
+            if isinstance(item, dict):
+                if item.get("props", {}).get("id") == "graph":
+                    graph_props.update(item["props"])
+                for value in item.values():
+                    find(value)
+            elif isinstance(item, list):
+                for child in item:
+                    find(child)
+        find(layout)
+        edges = graph_props["data"]["edges"]
+        self.assertEqual(len(edges), 2)
+        self.assertEqual(len({edge["id"] for edge in edges}), 2,
+                         "visdcc DataSet.add needs unique edge IDs")
+        self.assertEqual(
+            {(edge["from"], edge["to"]) for edge in edges},
+            {("A__B", "C"), ("A", "B__C")}
+        )
+
     def test_standalone_real_jaal_dash_layout_and_callbacks(self):
         from jaal_topology.data import Graph
         from jaal_topology.viewer import build_app
