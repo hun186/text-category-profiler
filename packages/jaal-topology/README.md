@@ -65,7 +65,10 @@ hierarchical layout modes. Changing display labels never rewrites graph data.
 ### Size / safety
 
 A selected view defaults to **250 nodes and 5,000 edges**, bounded to
-3,000 / 5,000 respectively. A full graph larger than the node cap is rejected
+3,000 / 5,000 respectively.
+A root that is a leaf with **zero visible edges** is rejected with a helpful
+message instead of creating dummy relations: upstream Jaal's Filter UI needs
+at least one actual edge to initialize. Select a parent/ancestor as the root. A full graph larger than the node cap is rejected
 with instructions to choose `--root`; there is no automatic full-graph
 render on import. Source parsing itself rejects more than 100,000 distinct
 edges. CSVs remain read-only. The renderer imports heavy dependencies only
