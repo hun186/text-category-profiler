@@ -53,6 +53,24 @@ class EmbeddedJaalLabelFormatTests(unittest.TestCase):
                 filtered_data={"nodes": []},
             ))
 
+    def test_html_bearing_ids_are_safe_for_visdcc_hover(self):
+        from types import SimpleNamespace
+        from ClassesTree.Visualization.jaal.label_format import (
+            enable_embedded_jaal_global_node_shapes,
+        )
+        unsafe = '<img src=x onerror="alert(1)">'
+        nodes = [{"id": unsafe, "label": unsafe, "title": unsafe,
+                  "shape": "dot"}]
+        jaal = SimpleNamespace(
+            data={"nodes": nodes, "edges": []},
+            filtered_data={"nodes": nodes, "edges": []},
+        )
+        enable_embedded_jaal_global_node_shapes(jaal)
+        self.assertEqual(nodes[0]["id"], unsafe)
+        self.assertEqual(nodes[0]["label"], unsafe)
+        self.assertNotIn("<img", nodes[0]["title"])
+        self.assertIn("&lt;img", nodes[0]["title"])
+
     def test_short_label_stays_unchanged(self):
         self.assertEqual(wrapped_classlabel("TW Affairs"), "TW Affairs")
 
