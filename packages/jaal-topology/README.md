@@ -21,6 +21,8 @@ Alternatively, without modifying global PATH:
 python -m jaal_topology --edges ./relationships.csv --root Root -p 8059
 ```
 
+The package bundles MIT-licensed Bootstrap 5.3.1 stylesheet and Jaal
+browser assets for offline styling; no second backend is needed.
 The server listens **only** on `127.0.0.1` (no public bind); visit
 `http://127.0.0.1:8059/`. Run `jaal-topology --help` for options.
 
