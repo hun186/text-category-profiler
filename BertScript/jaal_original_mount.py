@@ -32,6 +32,9 @@ LOGGER = logging.getLogger(__name__)
 # Bundled with Stage 4; the original Jaal stylesheet is CDN-hosted, which
 # cannot be the only styling source for an iframe in an offline deployment.
 STAGE4_ASSETS = Path(__file__).resolve().parent / "assets"
+PORTABLE_JAAL_DIR = Path(__file__).resolve().parents[1] / "packages" / "jaal-topology" / "jaal_topology"
+PORTABLE_JAAL_ASSETS = PORTABLE_JAAL_DIR / "assets"
+PORTABLE_JS_FILES = ("16.jaal_visible_labels.js", "17.jaal_structural_collapse.js")
 LOCAL_BOOTSTRAP = "bootstrap@5.3.1/bootstrap.min.css"
 
 
@@ -111,82 +114,19 @@ def _remove_embedded_jaal_outer_row_gutters(layout):
 
 
 def _jaal_layout_options(base_options, mode):
-    """Return independent vis.js options; never mutate the original settings.
+    """Use the reusable package's canonical four-mode layout implementation.
 
-    The network may contain cross-links and more than one parent. Hierarchical
-    layout is a directed *view* of those same edges, not a rewritten tree.
+    Direct stdlib load keeps existing Stage 4 users working without first
+    installing the sibling editable package, and imports no WorkPool/model.
     """
-    if mode not in ("network", "hierarchical", "network-collapsed",
-                    "hierarchical-collapsed"):
-        raise ValueError("Unsupported Jaal layout mode")
-    collapsed = mode.endswith("-collapsed")
-    hierarchical = mode.startswith("hierarchical")
-    options = deepcopy(base_options)
-    if hierarchical:
-        options.setdefault("layout", {})["hierarchical"] = {
-            "enabled": True,
-            "direction": "UD",
-            "sortMethod": "directed",
-            # Circle labels sit outside node dimensions, so hierarchy's
-            # spacing engine cannot avoid collisions. Boxes reserve the
-            # rendered label width and height as actual node geometry.
-            "levelSeparation": 260,
-            "nodeSpacing": 285,
-            "treeSpacing": 370,
-            "blockShifting": True,
-            "edgeMinimization": True,
-            "parentCentralization": True,
-        }
-        options.setdefault("nodes", {}).update({
-            "shape": "box",
-            "widthConstraint": {"maximum": 178},
-            "margin": 12,
-            "borderWidth": 1,
-        })
-        options["physics"] = {"enabled": False}
-        options.setdefault("edges", {})["smooth"] = {
-            "enabled": True,
-            "type": "cubicBezier",
-            "forceDirection": "vertical",
-            "roundness": 0.28,
-        }
-    else:
-        # visdcc forwards updates via net.setOptions(), which MERGES with
-        # previous vis-network options. Omitting hierarchy/physics/smooth
-        # would leave the tree layout enabled after switching back.
-        options.setdefault("layout", {})["hierarchical"] = {"enabled": False}
-        # visdcc calls setOptions() which MERGES previous options; reset
-        # wrapping explicitly so original Jaal network labels stay unaltered.
-        options.setdefault("nodes", {}).update({
-            "shape": deepcopy(base_options.get("nodes", {}).get("shape", "dot")),
-            "widthConstraint": deepcopy(
-                base_options.get("nodes", {}).get("widthConstraint", False)
-            ),
-            "margin": deepcopy(base_options.get("nodes", {}).get("margin", 0)),
-            "borderWidth": deepcopy(base_options.get("nodes", {}).get("borderWidth", 1)),
-        })
-        if collapsed:
-            # Structural bubbles are real original nodes, with no duplicate
-            # virtual IDs and no automatic physics-based spatial clustering.
-            options.setdefault("nodes", {}).update({
-                "shape": "box", "widthConstraint": {"maximum": 178},
-                "margin": 10,
-            })
-        baseline_physics = base_options.get("physics", {})
-        if isinstance(baseline_physics, dict):
-            options.setdefault("physics", {})["enabled"] = baseline_physics.get(
-                "enabled", True
-            )
-        else:
-            options["physics"] = {"enabled": bool(baseline_physics)}
-        baseline_smooth = base_options.get("edges", {}).get("smooth")
-        options.setdefault("edges", {})["smooth"] = (
-            deepcopy(baseline_smooth) if baseline_smooth is not None else
-            # Explicit vis-network defaults needed to reverse cubicBezier.
-            {"enabled": True, "type": "dynamic",
-             "forceDirection": "none", "roundness": 0.5}
-        )
-    return options
+    from functools import lru_cache
+    from runpy import run_path
+
+    @lru_cache(maxsize=1)
+    def mode_provider():
+        return run_path(str(PORTABLE_JAAL_DIR / "modes.py"))["layout_options"]
+
+    return mode_provider()(base_options, mode)
 
 
 def _register_embedded_jaal_layout_mode(app, base_options):
@@ -493,6 +433,11 @@ def prefix_original_jaal(original_app, prefix):
         requests_pathname_prefix=prefix,
         routes_pathname_prefix="/",
         assets_folder=str(STAGE4_ASSETS),
+        # Browser runtimes are served from the reusable standalone package,
+        # not duplicate copies under BertScript/assets.
+        external_scripts=[
+            prefix + "assets/" + name for name in PORTABLE_JS_FILES
+        ],
         # Keep upstream styles, but serve the required Bootstrap grid from
         # this same-origin submount. The original CDN can be unavailable.
         external_stylesheets=[
@@ -500,6 +445,24 @@ def prefix_original_jaal(original_app, prefix):
             *list(original_app.config.external_stylesheets),
         ],
     )
+    # Serve exact static runtime filenames through the same-origin child
+    # Flask app. Dash also owns the generic /assets/<path> route; explicit
+    # paths take precedence and let the old browser URL contract survive.
+    from flask import send_from_directory
+    for asset_name in PORTABLE_JS_FILES:
+        if not (PORTABLE_JAAL_ASSETS / asset_name).is_file():
+            raise RuntimeError(f"Bundled portable Jaal asset missing: {asset_name}")
+
+        def serve_portable_asset(asset=asset_name):
+            return send_from_directory(
+                str(PORTABLE_JAAL_ASSETS), asset,
+                mimetype="application/javascript",
+            )
+        child_app.server.add_url_rule(
+            "/assets/" + asset_name,
+            endpoint="portable_jaal_" + asset_name.replace(".", "_"),
+            view_func=serve_portable_asset,
+        )
     _normalize_original_jaal_logo(original_app.layout)
     _remove_embedded_jaal_outer_row_gutters(original_app.layout)
     base_options = _add_embedded_jaal_sidebar_toggle(original_app.layout)
