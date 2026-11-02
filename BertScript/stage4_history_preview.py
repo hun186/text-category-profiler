@@ -28,8 +28,20 @@ def parse_args(argv=None):
     return args
 
 
+def _consent_transition(workspace, checked, previous, triggered):
+    """Do not reuse acknowledgement across interrupted workspace selections."""
+    previous = previous if isinstance(previous, dict) else {}
+    if (triggered != "HistoryConfirmRunning"
+            or previous.get("workspace") != workspace):
+        return {"workspace": workspace, "confirmed": False}, []
+    approved = bool(workspace and workspace in (checked or []))
+    return {"workspace": workspace, "confirmed": approved}, (
+        [workspace] if approved else []
+    )
+
+
 def build_app(workpool):
-    from dash import Dash, Input, Output, dcc, html, dash_table
+    from dash import Dash, Input, Output, State, ctx, dcc, html, dash_table
     from BertScript.jaal_original_panel import (
         build_original_jaal_panel, register_original_jaal,
     )
@@ -68,7 +80,9 @@ def build_app(workpool):
             id="HistoryConfirmRunning", value=[],
             options=[{"label": "我已確認所選的 _is_running_TestResultVis 資料集"
                        "沒有其他程序正在寫入，了解結果可能不完整",
-                      "value": "yes"}]),
+                      "value": selected or ""}]),
+        dcc.Store(id="HistoryAuthorization",
+                  data={"workspace": None, "confirmed": False}),
         html.Div(id="HistoryStatus", role="status"),
         html.Div([
             html.Div([
@@ -108,14 +122,33 @@ def build_app(workpool):
               "padding": "18px", "fontFamily": "sans-serif"})
 
     @app.callback(
+        Output("HistoryAuthorization", "data"),
+        Output("HistoryConfirmRunning", "value"),
+        Output("HistoryConfirmRunning", "options"),
+        Input("HistoryWorkspace", "value"),
+        Input("HistoryConfirmRunning", "value"),
+        State("HistoryAuthorization", "data"),
+    )
+    def reconcile_consent(workspace, checked, previous):
+        authorization, checked_next = _consent_transition(
+            workspace, checked, previous, ctx.triggered_id,
+        )
+        return authorization, checked_next, [{
+            "label": "我已確認所選的 _is_running_TestResultVis 資料集"
+                     "沒有其他程序正在寫入，了解結果可能不完整",
+            "value": workspace or "",
+        }]
+
+    @app.callback(
         Output("HistoryTable", "options"),
         Output("HistoryTable", "value"),
         Output("HistoryStatus", "children"),
-        Input("HistoryWorkspace", "value"),
+        Input("HistoryAuthorization", "data"),
         Input("HistoryDatabase", "value"),
-        Input("HistoryConfirmRunning", "value"),
     )
-    def choose_table(workspace, database, consent):
+    def choose_table(authorization, database):
+        authorization = authorization or {}
+        workspace = authorization.get("workspace")
         if not workspace:
             return [], None, "WorkPool 沒有可選的歷史結果資料夾。"
         try:
@@ -125,7 +158,7 @@ def build_app(workpool):
                 "狀態：可能執行中或中斷；未宣告完成；"
             )
             tables = list_tables(root, workspace, database,
-                                 confirm_running="yes" in (consent or []))
+                                 confirm_running=authorization.get("confirmed") is True)
             options = [{"label": x, "value": x} for x in tables]
             return options, (tables[0] if tables else None), prefix + (
                 f"找到 {len(tables)} 張已儲存的資料表（唯讀）。"
@@ -138,19 +171,20 @@ def build_app(workpool):
         Output("HistoryDataTable", "columns"),
         Output("HistoryDataTable", "data"),
         Output("HistoryPageInfo", "children"),
-        Input("HistoryWorkspace", "value"),
+        Input("HistoryAuthorization", "data"),
         Input("HistoryDatabase", "value"),
         Input("HistoryTable", "value"),
         Input("HistoryPage", "value"),
-        Input("HistoryConfirmRunning", "value"),
     )
-    def show_page(workspace, database, table, page, consent):
+    def show_page(authorization, database, table, page):
+        authorization = authorization or {}
+        workspace = authorization.get("workspace")
         if not workspace or not table:
             return [], [], "請先選擇可讀取的資料表。"
         try:
             page_data = read_page(
                 root, workspace, database, table, page,
-                confirm_running="yes" in (consent or []),
+                confirm_running=authorization.get("confirmed") is True,
             )
         except (HistoryPreviewError, OSError) as exc:
             return [], [], "未讀取： " + str(exc)
