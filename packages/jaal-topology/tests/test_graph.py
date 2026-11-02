@@ -34,6 +34,42 @@ class CSVInterfaceTests(unittest.TestCase):
             with self.assertRaises(GraphInputError):
                 select_subgraph(graph, max_nodes=1)
 
+
+    def test_wsgi_mount_keeps_host_and_assets_on_same_port(self):
+        from flask import Flask
+        from jaal_topology.integration import mount_flask
+
+        examples = Path(__file__).resolve().parents[1] / "examples"
+        graph = select_subgraph(
+            load_graph(examples / "relationships.csv",
+                       examples / "metadata.csv"), "Technology"
+        )
+        host = Flask(__name__)
+        @host.route("/")
+        def root():
+            return "host-still-alive"
+        child = mount_flask(
+            host, graph, mount_path="/topology", root="Technology"
+        )
+        client = host.test_client()
+        self.assertEqual(client.get("/").get_data(as_text=True),
+                         "host-still-alive")
+        result = client.get("/topology/")
+        self.assertEqual(result.status_code, 200)
+        self.assertIn("/topology/assets/16.jaal_visible_labels.js",
+                      result.get_data(as_text=True))
+        self.assertEqual(client.get("/topology/_dash-layout").status_code, 200)
+        self.assertEqual(
+            client.get("/topology/assets/17.jaal_structural_collapse.js").status_code,
+            200,
+        )
+        self.assertEqual(
+            client.get("/topology/assets/bootstrap.min.css").status_code, 200
+        )
+        with self.assertRaisesRegex(GraphInputError, "already mounted"):
+            mount_flask(host, graph, mount_path="/topology")
+        self.assertIsNotNone(child)
+
     def test_all_four_options_have_bounded_reversible_styles(self):
         base = {"nodes": {"shape": "dot"},
                 "physics": {"enabled": True},
