@@ -82,6 +82,12 @@ class OriginalJaalMountTests(unittest.TestCase):
         self.assertEqual(text_input["props"]["style"]["maxWidth"], "100%")
         self.assertEqual(text_input["props"]["style"]["flex"], "0 1 320px")
         self.assertEqual(button["props"]["id"], "btn_JaalOriginalLoad")
+        status = next(
+            component for component in walk(layout)
+            if component.get("props", {}).get("id") == "JaalOriginalStatus"
+        )
+        self.assertEqual(status["props"]["children"], "尚未載入 Jaal")
+        self.assertEqual(status["props"]["role"], "status")
         self.assertEqual(row["props"]["style"]["display"], "flex")
         self.assertEqual(row["props"]["style"]["flexWrap"], "wrap")
 

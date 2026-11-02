@@ -45,7 +45,7 @@ def build_original_jaal_panel():
             html.P("預設最多 250 個節點；大型子樹須先勾選確認，"
                    "絕不在進入主頁時自動全畫。"),
             html.Div(id="JaalOriginalStatus", role="status",
-                     children="尚未載入 Jaal；主站不需啟動 8053 port。"),
+                     children="尚未載入 Jaal"),
             html.Div(id="JaalOriginalFrame"),
         ]),
     ], style={"width": "100%", "margin": "16px 0"})
