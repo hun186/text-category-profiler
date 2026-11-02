@@ -120,6 +120,16 @@ def build_app(graph: Graph, *, root=None):
     Caller can use app.server as WSGI or app.run on localhost. The graphs
     must already have passed the bounded select_subgraph() safety gate.
     """
+    from .data import GraphInputError
+
+    if not graph.edges:
+        # Upstream Jaal 0.1.9 builds filter widgets from a nonempty edge
+        # payload; with an empty list it raises KeyError('color'). Never
+        # invent self-links or phantom edges to make the visualization pass.
+        raise GraphInputError(
+            "Jaal requires at least one visible directed edge; "
+            "select a parent/ancestor rather than an isolated leaf"
+        )
     from dash import dcc, html, Input, Output, State, callback_context, no_update
     from jaal import Jaal
 
