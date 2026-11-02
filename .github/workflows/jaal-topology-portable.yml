@@ -6,6 +6,7 @@ on:
     paths:
       - "BertScript/jaal_original_mount.py"
       - "requirements.txt"
+      - "tests/test_jaal_external_source_contract.py"
       - "tests/test_jaal_topology_portable.py"
       - "tests/jaal_visible_labels.test.cjs"
       - "tests/jaal_structural_collapse.test.cjs"
@@ -45,7 +46,7 @@ jobs:
           )
           PY
       - name: Run CSV, CLI, real Jaal WSGI integration
-        run: python -m unittest -v tests.test_jaal_topology_portable
+        run: python -m unittest -v tests.test_jaal_topology_portable tests.test_jaal_external_source_contract
       # Standalone-package unit tests run in the independent repository CI.
       # This consumer repository runs its own cross-project integration below.
       - name: Run original Jaal interaction regression against portable browser engine
