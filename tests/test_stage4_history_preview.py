@@ -90,6 +90,23 @@ class Stage4HistoryDataTests(unittest.TestCase):
                 (folder / (name + "-shm")).exists() for name in history.DATABASES
             ))
 
+    def test_sqlite_uri_encodes_unc_as_path_with_empty_authority(self):
+        from urllib.parse import urlsplit
+        fake = mock.Mock()
+        fake.resolve.return_value.as_posix.return_value = (
+            "//file-server/share name/資料/results.sql3"
+        )
+        uri = history._immutable_sqlite_uri(fake)
+        parsed = urlsplit(uri)
+        self.assertEqual(parsed.scheme, "file")
+        self.assertEqual(parsed.netloc, "")
+        self.assertTrue(parsed.path.startswith("//file-server/share%20name/"))
+        self.assertIn("%E8%B3%87%E6%96%99", parsed.path)
+        self.assertEqual(parsed.query, "mode=ro&immutable=1")
+        # Local paths retain their correct, authority-less SQLite URI format.
+        local = history._immutable_sqlite_uri(self.finished / history.DATABASES[0])
+        self.assertEqual(urlsplit(local).netloc, "")
+
     def test_running_requires_explicit_acknowledgment(self):
         with self.assertRaisesRegex(history.HistoryPreviewError, "confirm"):
             history.list_tables(self.root, self.interrupted.name, history.DATABASES[1])
@@ -181,6 +198,35 @@ class Stage4HistoryLauncherTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("--workpool", result.stdout)
         self.assertIn("--history-preview", result.stdout)
+
+    def test_interrupt_consent_requires_new_acknowledgment_per_selection(self):
+        from BertScript.stage4_history_preview import _consent_transition
+        a, b = "dataset_A", "dataset_B"
+        fresh, values = _consent_transition(a, [], None, None)
+        self.assertFalse(fresh["confirmed"])
+        granted, values = _consent_transition(
+            a, [a], fresh, "HistoryConfirmRunning",
+        )
+        self.assertTrue(granted["confirmed"])
+        self.assertEqual(values, [a])
+        switched, values = _consent_transition(
+            b, [a], granted, "HistoryWorkspace",
+        )
+        self.assertEqual(switched, {"workspace": b, "confirmed": False})
+        self.assertEqual(values, [])
+        # Stale confirmation for A cannot grant permission to B even if
+        # the browser emits the checklist input before the selection reset.
+        stale, values = _consent_transition(
+            b, [a], switched, "HistoryConfirmRunning",
+        )
+        self.assertFalse(stale["confirmed"])
+        accepted, values = _consent_transition(
+            b, [b], stale, "HistoryConfirmRunning",
+        )
+        self.assertTrue(accepted["confirmed"])
+        back, values = _consent_transition(a, [b], accepted, "HistoryWorkspace")
+        self.assertFalse(back["confirmed"])
+        self.assertEqual(values, [])
 
     def test_launcher_rejects_invalid_port_and_never_advances_workpool(self):
         from BertScript import stage4_history_preview as viewer
