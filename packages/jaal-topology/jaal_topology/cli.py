@@ -45,6 +45,11 @@ def main(argv=None):
         selected = select_subgraph(
             graph, args.root, max_nodes=args.max_nodes, max_edges=args.max_edges
         )
+        if not selected.edges:
+            raise GraphInputError(
+                "Selected node has no directed relationship to draw; "
+                "choose a parent/ancestor with at least one visible edge"
+            )
     except (GraphInputError, OSError) as exc:
         print(f"Jaal topology input error: {exc}", file=__import__("sys").stderr)
         return 2
