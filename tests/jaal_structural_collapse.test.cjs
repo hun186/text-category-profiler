@@ -411,7 +411,7 @@ test("Chinese toggle preserves expanded branches and descendant counts in both c
     f.run(mode, ["zh"], {Root:"根類別",Child:"子類別"});
     const selected=()=>f.component.nn.get().filter(n=>!n.hidden);
     assert.equal(selected().find(n=>n.id==="Root").label,"根類別");
-    assert.equal(selected().find(n=>n.id==="Child").label,"子類別\\n1");
+    assert.equal(selected().find(n=>n.id==="Child").label,"子類別\n1");
     f.click("Child");
     assert.equal(selected().find(n=>n.id==="Leaf").label,"Leaf",
       "missing CT must fall back to original English ClassLabel");
@@ -421,10 +421,10 @@ test("Chinese toggle preserves expanded branches and descendant counts in both c
       "switching back to English must not lose the expanded state");
     assert.ok(selected().some(n=>n.id==="Leaf"));
     f.click("Child");
-    assert.equal(selected().find(n=>n.id==="Child").label,"Child\\n1");
+    assert.equal(selected().find(n=>n.id==="Child").label,"Child\n1");
     assert.equal(f.fitCalls.length,mode==="hierarchical-collapsed"?1:0);
     f.run(mode,["zh"],{Root:"根類別",Child:"子類別"});
-    assert.equal(selected().find(n=>n.id==="Child").label,"子類別\\n1");
+    assert.equal(selected().find(n=>n.id==="Child").label,"子類別\n1");
   }
 });
 
