@@ -167,9 +167,13 @@ class PortableRealJaalTests(unittest.TestCase):
         # edge rows; fail early with a useful message, not an internal KeyError.
         with self.assertRaisesRegex(GraphInputError, "visible directed edge"):
             build_app(selected, root="B")
-        with mock.patch("jaal_topology.viewer.build_app",
-                        side_effect=AssertionError("renderer must not start")):
-            pass
+        with tempfile.TemporaryDirectory() as directory:
+            csv_path = Path(directory) / "edges.csv"
+            csv_path.write_text("A,B\n", encoding="utf-8")
+            # The CLI rejects this selection before importing Jaal or opening port.
+            self.assertEqual(
+                main(["--edges", str(csv_path), "--root", "B"]), 2
+            )
 
     def test_standalone_real_jaal_dash_layout_and_callbacks(self):
         from jaal_topology.data import Graph
