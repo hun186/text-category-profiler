@@ -26,7 +26,7 @@ class CSVInterfaceTests(unittest.TestCase):
     def test_empty_translations_are_optional_and_ids_are_literal(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "edges.csv"
-            path.write_text('parent,child\\nA__B,C\\nA,B__C\\n',
+            path.write_text('parent,child\nA__B,C\nA,B__C\n',
                             encoding='utf-8')
             graph = load_graph(path)
             self.assertEqual(len(graph.edges), 2)
