@@ -11,8 +11,6 @@ on:
       - "BertScript/jaal_viewer_only.py"
       - "run-jaal-viewer-only.bat"
       - "BertScript/assets/15.jaal_embedded_autoheight.js"
-      - "BertScript/assets/16.jaal_visible_labels.js"
-      - "BertScript/assets/17.jaal_structural_collapse.js"
       - "BertScript/Test_result_Vis.py"
       - "ClassesTree/Visualization/jaal/jaalViewer.py"
       - "ClassesTree/Visualization/jaal/label_format.py"
@@ -25,6 +23,8 @@ on:
       - "tests/jaal_visible_labels.test.cjs"
       - "tests/jaal_structural_collapse.test.cjs"
       - "requirements.txt"
+      - "tests/jaal_visible_labels.test.cjs"
+      - "tests/jaal_structural_collapse.test.cjs"
       - ".github/workflows/jaal-topology-portable.yml"
       - ".github/workflows/stage4-original-jaal.yml"
   push:
@@ -88,8 +88,11 @@ jobs:
       - name: Verify Jaal iframe auto-height sizing and sidebar reflow
         run: |
           node --check BertScript/assets/15.jaal_embedded_autoheight.js
-          node --check packages/jaal-topology/jaal_topology/assets/16.jaal_visible_labels.js
-          node --check packages/jaal-topology/jaal_topology/assets/17.jaal_structural_collapse.js
+          assets_dir="$(python -c 'from jaal_topology import ASSETS_DIR; print(ASSETS_DIR)')"
+          test -s "$assets_dir/16.jaal_visible_labels.js"
+          test -s "$assets_dir/17.jaal_structural_collapse.js"
+          node --check "$assets_dir/16.jaal_visible_labels.js"
+          node --check "$assets_dir/17.jaal_structural_collapse.js"
           node --test tests/jaal_autoheight.test.cjs tests/jaal_visible_labels.test.cjs tests/jaal_structural_collapse.test.cjs
       - name: Check whitespace
         run: git diff --check HEAD^ HEAD
