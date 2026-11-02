@@ -204,7 +204,12 @@ def build_app(graph: Graph, *, root=None):
     # the old application at runtime. The shell serves bundled assets offline.
     app = Dash(
         __name__, assets_folder=str(ASSETS_DIR),
-        external_stylesheets=list(original_app.config.external_stylesheets),
+        # Original Jaal uses CDN-only Bootstrap; include a locally served
+        # MIT-licensed copy so controls retain layout even on an air-gapped PC.
+        external_stylesheets=[
+            "/assets/bootstrap.min.css",
+            *list(original_app.config.external_stylesheets),
+        ],
     )
     app.layout = html.Div([controls, original_app.layout])
     app.callback_map.update(original_app.callback_map)
