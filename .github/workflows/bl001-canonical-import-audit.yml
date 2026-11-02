@@ -17,6 +17,7 @@ on:
       - "tests/test_bl001_canonical_import_audit.py"
       - "tests/test_bl001_duplicate_provider_audit.py"
       - "tests/test_bl001_df_tsv_provider_contracts.py"
+      - "tests/test_bl001_df_xls_provider_contracts.py"
       - "experiments/fixtures/bl001_package_ownership.json"
       - ".github/workflows/bl001-canonical-import-audit.yml"
       - ".codex/**"
@@ -36,6 +37,7 @@ on:
       - "tests/test_bl001_canonical_import_audit.py"
       - "tests/test_bl001_duplicate_provider_audit.py"
       - "tests/test_bl001_df_tsv_provider_contracts.py"
+      - "tests/test_bl001_df_xls_provider_contracts.py"
       - "experiments/fixtures/bl001_package_ownership.json"
       - ".github/workflows/bl001-canonical-import-audit.yml"
       - ".codex/**"
@@ -56,9 +58,9 @@ jobs:
         with:
           python-version: "3.11"
       - name: Compile dependency-light audit
-        run: python -m py_compile scripts/bl001_canonical_import_audit.py scripts/bl001_duplicate_provider_audit.py tests/test_bl001_canonical_import_audit.py tests/test_bl001_duplicate_provider_audit.py tests/test_bl001_df_tsv_provider_contracts.py
+        run: python -m py_compile scripts/bl001_canonical_import_audit.py scripts/bl001_duplicate_provider_audit.py tests/test_bl001_canonical_import_audit.py tests/test_bl001_duplicate_provider_audit.py tests/test_bl001_df_tsv_provider_contracts.py tests/test_bl001_df_xls_provider_contracts.py
       - name: Test canonical import evidence and package boundaries
-        run: python -m unittest -v tests.test_bl001_df_tsv_provider_contracts tests.test_bl001_duplicate_provider_audit tests.test_bl001_canonical_import_audit tests.test_bl001_labelviewer_provider tests.test_bl001_package_census tests.test_bl001_legacy_root_audit tests.test_package_layout tests.test_project_docs tests.test_repository_compile_gate
+        run: python -m unittest -v tests.test_bl001_df_tsv_provider_contracts tests.test_bl001_df_xls_provider_contracts tests.test_bl001_duplicate_provider_audit tests.test_bl001_canonical_import_audit tests.test_bl001_labelviewer_provider tests.test_bl001_package_census tests.test_bl001_legacy_root_audit tests.test_package_layout tests.test_project_docs tests.test_repository_compile_gate
       - name: Generate duplicate-provider evidence JSON
         run: python scripts/bl001_duplicate_provider_audit.py --output artifacts/bl001-duplicate-provider-evidence.json
       - uses: actions/upload-artifact@v4
