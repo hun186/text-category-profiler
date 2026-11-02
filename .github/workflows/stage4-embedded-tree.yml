@@ -49,5 +49,13 @@ jobs:
         run: python -m py_compile ClassesTree/Visualization/embedded_tree.py BertScript/embedded_tree_panel.py BertScript/Test_result_Vis.py tests/test_embedded_tree_data.py tests/test_embedded_tree_panel.py
       - name: Run real taxonomy, resource guard, and Dash callback contract tests
         run: python -m unittest -v tests.test_embedded_tree_data tests.test_embedded_tree_panel
+      - name: Reproduce Windows dash-cytoscape 0.2.0 component API
+        run: |
+          python -m pip install "dash-cytoscape==0.2.0"
+          python - <<'PY'
+          import importlib.metadata
+          assert importlib.metadata.version("dash-cytoscape") == "0.2.0"
+          PY
+          python -m unittest -v tests.test_embedded_tree_panel
       - name: Check whitespace
         run: git diff --check HEAD^ HEAD
