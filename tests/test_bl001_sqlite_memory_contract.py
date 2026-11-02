@@ -38,6 +38,25 @@ def isolated_writer(name, **dependencies):
     return scope[name]
 
 
+def isolated_schema():
+    """Execute the *actual* DB_utils schema and type-inference functions only."""
+    path = ROOT / "text_category_profiler" / "data" / "DB_utils.py"
+    tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+    targets = {"infer_sqlite_type", "ensure_schema"}
+    functions = [
+        node for node in tree.body
+        if isinstance(node, ast.FunctionDef) and node.name in targets
+    ]
+    if {node.name for node in functions} != targets:
+        raise AssertionError("Both schema provider functions must exist")
+    scope = {"pd": pd}
+    exec(
+        compile(ast.Module(body=functions, type_ignores=[]), str(path), "exec"),
+        scope,
+    )
+    return scope["ensure_schema"]
+
+
 class TrackedSqliteConnection(sqlite3.Connection):
     def close(self):
         self.was_closed = True
@@ -137,6 +156,88 @@ class RealMemorySqliteContracts(unittest.TestCase):
             self.anchor.execute('SELECT payload FROM "sampleSrc"').fetchall(),
             [("old",)],
         )
+
+
+    def test_real_schema_creates_declared_column_types(self):
+        schema = isolated_schema()
+        frame = pd.DataFrame({
+            "count": [7], "ratio": [0.5],
+            "enabled": [True], "description": ["臺北"],
+        })
+        schema(self.anchor, "sampleSrc", frame, list(frame.columns))
+        columns = {
+            row[1]: row[2] for row in self.anchor.execute(
+                'PRAGMA table_info("sampleSrc")'
+            )
+        }
+        self.assertEqual(columns, {
+            "count": "INTEGER",
+            "ratio": "REAL",
+            "enabled": "INTEGER",
+            "description": "TEXT",
+        })
+
+    def test_real_schema_creates_empty_table_with_text_fallback(self):
+        schema = isolated_schema()
+        frame = pd.DataFrame({
+            "count": pd.Series(dtype="int64"),
+            "description": pd.Series(dtype="object"),
+        })
+        schema(self.anchor, "sampleSrc", frame, list(frame.columns))
+        columns = {
+            row[1]: row[2] for row in self.anchor.execute(
+                'PRAGMA table_info("sampleSrc")'
+            )
+        }
+        self.assertEqual(columns, {
+            "count": "TEXT", "description": "TEXT",
+        })
+        self.assertEqual(
+            self.anchor.execute('SELECT COUNT(*) FROM "sampleSrc"').fetchone(),
+            (0,),
+        )
+
+    def test_alternate_writer_real_schema_append_adds_column_and_preserves_rows(self):
+        writer = isolated_writer(
+            "dfToSQL_new_appending", ensure_schema=isolated_schema(),
+        )
+        with patch.object(sqlite3, "connect", side_effect=self.writer_connect):
+            writer(
+                "not-an-on-disk-file",
+                pd.DataFrame({"payload": ["舊資料"]}),
+                preserve_index=False, if_exists="append",
+                IndexCols=["payload"],
+            )
+            writer(
+                "not-an-on-disk-file",
+                pd.DataFrame({"payload": ["新資料"], "tag": ["新增類別"]}),
+                preserve_index=False, if_exists="append",
+                IndexCols=["tag"],
+            )
+        self.assertEqual(len(self.connections), 2)
+        for connection in self.connections:
+            self.assertTrue(connection.was_closed)
+            with self.assertRaises(sqlite3.ProgrammingError):
+                connection.execute("SELECT 1")
+        self.assertEqual(
+            self.anchor.execute(
+                'SELECT payload, tag FROM "sampleSrc" ORDER BY rowid'
+            ).fetchall(),
+            [("舊資料", None), ("新資料", "新增類別")],
+        )
+        declared = {
+            row[1]: row[2] for row in self.anchor.execute(
+                'PRAGMA table_info("sampleSrc")'
+            )
+        }
+        self.assertEqual(declared, {"payload": "TEXT", "tag": "TEXT"})
+        indexes = {
+            row[0] for row in self.anchor.execute(
+                "SELECT name FROM sqlite_master WHERE type='index'"
+            )
+        }
+        self.assertIn("sampleSrc_payload_idx", indexes)
+        self.assertIn("sampleSrc_tag_idx", indexes)
 
 
 if __name__ == "__main__":
