@@ -35,6 +35,11 @@ jobs:
         run: python -m pip install -e ./packages/jaal-topology
       - name: Run CSV, CLI, real Jaal WSGI integration
         run: python -m unittest -v tests.test_jaal_topology_portable
+      - name: Test package exactly as if it were a standalone GitHub checkout
+        run: |
+          cd packages/jaal-topology
+          python -m unittest discover -s tests -p 'test_*.py' -v
+          node --test tests/*.test.cjs
       - name: Run original Jaal interaction regression against portable browser engine
         run: node --test tests/jaal_visible_labels.test.cjs tests/jaal_structural_collapse.test.cjs
       - name: Verify Stage 4 has no duplicate browser engine sources
