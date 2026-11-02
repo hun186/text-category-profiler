@@ -43,7 +43,7 @@ class OriginalJaalMountTests(unittest.TestCase):
         from dash import Dash
         from BertScript.jaal_original_panel import build_original_jaal_panel
 
-        app = Dash(__name__ + "_compact_root")
+        app = Dash(__name__)
         app.layout = build_original_jaal_panel()
         response = app.server.test_client().get("/_dash-layout")
         self.assertEqual(response.status_code, 200)
