@@ -175,6 +175,33 @@ class PortableRealJaalTests(unittest.TestCase):
                 main(["--edges", str(csv_path), "--root", "B"]), 2
             )
 
+    def test_unsafe_html_node_id_is_only_escaped_in_hover_title(self):
+        from jaal_topology.data import Graph
+        from jaal_topology.viewer import build_app
+        unsafe = '<img src=x onerror="alert(1)">'
+        app = build_app(Graph((("Root", unsafe),), ("Root", unsafe), {}))
+        def find(item):
+            if isinstance(item, dict):
+                if item.get("props", {}).get("id") == "graph":
+                    return item["props"]["data"]["nodes"]
+                for v in item.values():
+                    found = find(v)
+                    if found is not None:
+                        return found
+            elif isinstance(item, list):
+                for v in item:
+                    found = find(v)
+                    if found is not None:
+                        return found
+            return None
+        nodes = find(app.server.test_client().get("/_dash-layout").get_json())
+        node = next(n for n in nodes if n["id"] == unsafe)
+        self.assertEqual(node["id"], unsafe)
+        self.assertEqual(node["label"], unsafe)
+        self.assertIn("&lt;img", node["title"])
+        self.assertNotIn("<img", node["title"])
+        self.assertIn("&quot;alert(1)&quot;", node["title"])
+
     def test_literal_double_underscore_node_ids_cannot_collide_edge_ids(self):
         from jaal_topology.data import Graph
         from jaal_topology.viewer import build_app
