@@ -73,6 +73,32 @@ def table_to_csv(table: dict[str, dict[str, str]]) -> str:
     return stream.getvalue()
 
 
+def check_append_candidates(
+    base_table: dict[str, dict[str, str]],
+    candidates: dict[str, dict[str, str]],
+) -> dict[str, object]:
+    """Read-only preflight for new metadata rows before any manual append.
+
+    This checks literal ClassLabel uniqueness, NOT whether an AI proposal
+    has received human approval. The caller must still review CT and Notes.
+    """
+    conflicts = sorted(base_table.keys() & candidates.keys())
+    if conflicts:
+        raise MetadataError(
+            f"cannot append existing ClassLabel(s): {conflicts}; "
+            "submit a separate human-reviewed translation revision"
+        )
+    check_round_trip({**base_table, **candidates})
+    return {
+        "ExistingRows": len(base_table),
+        "NewRows": len(candidates),
+        "DuplicateClassLabels": [],
+        "AppendHasNoIdConflict": True,
+        "HumanApprovalGranted": False,
+        "FilesModified": False,
+    }
+
+
 def check_round_trip(table: dict[str, dict[str, str]]) -> None:
     content = table_to_csv(table)
     stream = io.StringIO(content, newline="")
@@ -214,10 +240,23 @@ def main(argv: list[str] | None = None) -> int:
     merge.add_argument("--edges", required=True, type=Path)
     merge.add_argument("--candidates", required=True, type=Path)
     merge.add_argument("--output", required=True, type=Path)
+    append = sub.add_parser("check-append", help="Read-only duplicate ClassLabel preflight")
+    append.add_argument("--csv", type=Path, default=DEFAULT_CSV)
+    append.add_argument("--candidates", required=True, type=Path)
+    append.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
     try:
         table = load_class_table(args.csv)
         check_round_trip(table)
+        if args.command == "check-append":
+            candidates = load_class_table(args.candidates)
+            report = check_append_candidates(table, candidates)
+            if args.json:
+                print(json.dumps(report, ensure_ascii=False, indent=2))
+            else:
+                print(f"CHECK-APPEND PASS: {report['NewRows']} new ClassLabels; "
+                      "no CSV was written; still requires human review")
+            return 0
         if args.command == "validate":
             check_active_consumers()
             report = audit(table, args.topic_tree)

@@ -1,6 +1,6 @@
 # ClassTable metadata: CSV-first contract
 
-The authoritative metadata file is ClassesTree/data/ClassTable.csv (UTF-8 with BOM). Its fixed schema is ClassLabel,CT,Explanation,Notes. Rows are sorted deterministically by exact English ClassLabel, with required unique ClassLabel and nonempty CT; Explanation and Notes may be empty. The 1,994 historical entries were preserved, and the active CSV now has 2,013 unique labels, including 19 later-added metadata rows with AI proposal Notes still marked 待人工審核. Their presence is not proof of human approval or independently verified news evidence. Duplicate CT values are warnings rather than errors.
+The authoritative metadata file is ClassesTree/data/ClassTable.csv (UTF-8 with BOM). Its fixed schema is ClassLabel,CT,Explanation,Notes. Rows are sorted deterministically by exact English ClassLabel, with required unique ClassLabel and nonempty CT; Explanation and Notes may be empty. The 1,994 historical entries are preserved under guarded migration equivalence; the active CSV contains **2,707 unique ClassLabels** after reviewing four duplicate AI additions on 2026-11-02. Of these, **713** records have AI新增 Notes still marked 待人工審核 (the original 19 dated proposals plus 694 earlier undated additions). Their presence is not proof of human approval or independently verified news evidence. Duplicate CT values are warnings rather than errors.
 
 BertScript/ClassTable.py has been removed to avoid confusion with the authoritative CSV. All maintained callers now use the stdlib-only loader `BertScript.class_table_metadata.load_class_table()`, returning the same ClassLabel → {CT, Explanation, Notes} dictionary. Both direct-run scripts and package imports resolve the repository-owned `ClassesTree/data/ClassTable.csv` by using the loader's `__file__` to find the repository root, without machine-specific paths or cwd mutation. The CSV and `ClassesTree/data/TopicTree.csv` are colocated but have separate metadata and graph ownership. The historical misspelling Explaination is permitted only inside the one-time migration reader, not in active metadata or Dash UI.
 
@@ -27,6 +27,30 @@ Graph authority remains ClassesTree/data/TopicTree.csv, next to the new ClassTab
 
 The October 2026 metadata alignment renames `Government Real Estate Policy` → `CN Government Real Estate Policy` (CT: 中國政府房地產政策) and `Real Estate Industry` → `CN Real Estate Industry` (CT: 中國房地產業). The full existing explanation of the industry label is preserved. Both CN-scoped names already appear in the active TopicTree; the two generic old keys are removed, not kept as duplicate aliases. Legacy migration verification includes these two explicit, guarded corrections, while strictly preserving every other label and metadata value.
 
+## 2026-11-02 duplicate AI entries and safe append preflight
+
+Four later AI rows duplicated existing ClassLabel IDs (`Autonomous Car Industry`,
+`Navigational Warning-Fishing in Unauthorized Zone`, `Timestamp`,
+`Hepatology`). The first-seen records and all other unique metadata values
+remain authoritative; the four exact AI rows, old line numbers, original
+Notes and retained values are preserved for review in
+`ClassesTree/review/class-table-duplicate-ai-proposals-20261102.csv`.
+**Hepatology's first-seen record itself has pending AI Notes**, and was
+not assumed to be human-approved. Formal CSV was re-sorted to canonical
+ClassLabel order. TopicTree relationships did not change.
+
+Before copying new metadata rows into the official CSV:
+
+```sh
+python -m BertScript.class_table_metadata check-append --candidates new_ClassTable.csv --json
+```
+
+This read-only operation rejects every candidate whose literal `ClassLabel`
+already exists, without touching either file; it does **not** approve new
+translations, bypass `class_table_ai_proposals` source/approval preflight,
+or perform an append. An existing label's CT change must use a separately
+reviewed revision, not a second CSV row.
+
 Validation (stdlib-only):
 
     python -m BertScript.class_table_metadata validate --json
@@ -50,20 +74,23 @@ explicitly permit only additional rows retaining pending AI provenance:
 
     python -m BertScript.migrate_class_table --source legacy-ClassTable.py --verify ClassesTree/data/ClassTable.csv --allow-pending-additions
 
-This opt-in mode still requires **all historical labels and CT/Explanation
-values to match**, except five exact, explicitly frozen later edits: Agriculture,
-Fishery and Forestry split former semicolon-delimited CT synonyms into CT /
-Explanation / Notes, while BD-Acknowledgements and BD-Bibliography moved their
-historical tab-prefixed descriptions into Notes. The five expected final
-records are frozen in `migrate_class_table.CURATED_METADATA_OVERRIDES` and
-validated against the real CSV by tests; any other change fails. It
-never allows missing legacy rows, and
-rejects additions without nonempty AI新增 date/source/reason plus the final
-`狀態=待人工審核` marker. It also accepts an optional `目標類別` field
-present in the existing 19 rows; this is not an approval, independent source
-check, or permission for the AI candidate preflight to accept a different
-schema. The canonical ClassLabel sort and duplicate/schema checks remain
-required. Neither mode writes to CSV when called with `--verify`.
+This opt-in mode requires **all historical CT/Explanation values to
+match**, with narrowly attested legacy-only corrections: five older reviewed
+field splits in `CURATED_METADATA_OVERRIDES`; exact spellings
+`Autonomous Car Industry,` → `Autonomous Car Industry`,
+`Navigational Warning-Fishing In Unauthorized Zone` →
+`Navigational Warning-Fishing in Unauthorized Zone`, and `TimeStamp` →
+`Timestamp`; and the source-verified `Africa Debt` CT typo correction
+`非洲債物` → `非洲債務`. Every correction checks its literal old value,
+and unknown changes still fail. The older 694 AI additions preserve the
+original undated, `TopicTree.csv`-attributed `AI新增｜…｜狀態=待人工審核`
+Notes (including a bounded optional `提醒`); the previously documented 19
+dated additions retain mandatory date/source/reason and optional `目標類別`.
+These historical exemptions apply **only** to `--allow-pending-additions`
+migration verification, not to newly generated candidates, whose separate
+AI proposal gate still requires valid dates. Neither validation mode marks
+an AI record approved or writes to the CSV; canonical sorting and unique IDs
+remain strict.
 
 
 Snapshot: 1,994 unique legacy labels, 434 nonempty legacy explanations, 3,128 TopicTree edges, and 2,670 graph nodes. Python's last-key-wins behavior preserves the effective historical definition of the duplicated SASF-Accessory-Glasses-Sunglasses label and duplicated Maritime Industry-Ports And Logistics explanation. Except for the explicitly documented label renames, all other unique keys and CT/Explanation text are preserved. The four confirmed copy/paste corruptions are corrected: Commerce's unrelated Nice attack explanation is transferred to 2016 Nice Truck Attack, that event's CT is fixed, and ASUS/Samsung CTs no longer say Apple. Other possible semantic issues are not rewritten.

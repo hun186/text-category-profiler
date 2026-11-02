@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths:
       - "ClassesTree/data/ClassTable.csv"
+      - "ClassesTree/review/**"
+      - "tests/test_class_table_duplicate_cleanup.py"
       - "BertScript/class_table_metadata.py"
       - "BertScript/class_table_ai_proposals.py"
       - "DatasetConverter/SMS/SMSMerger.py"
@@ -23,6 +25,8 @@ on:
     branches: [main]
     paths:
       - "ClassesTree/data/ClassTable.csv"
+      - "ClassesTree/review/**"
+      - "tests/test_class_table_duplicate_cleanup.py"
       - "BertScript/class_table_metadata.py"
       - "BertScript/class_table_ai_proposals.py"
       - "DatasetConverter/SMS/SMSMerger.py"
@@ -50,9 +54,9 @@ jobs:
         with:
           python-version: "3.11"
       - name: Compile active metadata and visualization
-        run: python -m py_compile BertScript/class_table_metadata.py BertScript/class_table_ai_proposals.py BertScript/migrate_class_table.py BertScript/Test_result_Vis.py DatasetConverter/SMS/SMSMerger.py text_category_profiler/pipeline/DataConverter_utils.py tests/test_class_table_metadata.py tests/test_class_table_ai_proposals.py tests/test_class_table_csv_only.py tests/test_sms_merger_path_contract.py
+        run: python -m py_compile BertScript/class_table_metadata.py BertScript/class_table_ai_proposals.py BertScript/migrate_class_table.py BertScript/Test_result_Vis.py DatasetConverter/SMS/SMSMerger.py text_category_profiler/pipeline/DataConverter_utils.py tests/test_class_table_metadata.py tests/test_class_table_ai_proposals.py tests/test_class_table_csv_only.py tests/test_class_table_duplicate_cleanup.py tests/test_sms_merger_path_contract.py
       - name: Run dependency-light metadata tests
-        run: python -m unittest -v tests.test_class_table_metadata tests.test_class_table_ai_proposals tests.test_class_table_csv_only
+        run: python -m unittest -v tests.test_class_table_metadata tests.test_class_table_ai_proposals tests.test_class_table_csv_only tests.test_class_table_duplicate_cleanup
       - name: Validate ClassTable against TopicTree (warn-only graph differences)
         run: python -m BertScript.class_table_metadata validate
       - name: Verify full historical migration

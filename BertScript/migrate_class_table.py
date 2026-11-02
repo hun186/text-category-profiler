@@ -112,9 +112,51 @@ def correct_known(table):
         table[new_label] = replacement
 
 
+# Old Python-dict spelling/typographical forms that have already been
+# normalized in the authoritative CSV. Apply ONLY to opt-in historical
+# verification; never silently rename a current graph node or proposal.
+HISTORICAL_LABEL_NORMALIZATIONS = {
+    "Autonomous Car Industry,": (
+        "Autonomous Car Industry", {"CT": "自駕車產業", "Explanation": ""}
+    ),
+    "Navigational Warning-Fishing In Unauthorized Zone": (
+        "Navigational Warning-Fishing in Unauthorized Zone",
+        {"CT": "未授權區域捕漁相關航行警告", "Explanation": ""},
+    ),
+    "TimeStamp": (
+        "Timestamp", {"CT": "時間戳", "Explanation": ""}
+    ),
+}
+
+# One separate, exact historical typo repair in a pre-existing
+# canonical row. This is not blanket permission to change CT text.
+HISTORICAL_CT_CORRECTIONS = {
+    "Africa Debt": {
+        "source": {"CT": "非洲債物", "Explanation": ""},
+        "target": {"CT": "非洲債務", "Explanation": ""},
+    },
+}
+
+# Existing 2026-11-02 AI notes were authored before dates became required.
+# This exact historical provenance family is REVIEW-ONLY; new proposals
+# must still pass the stricter class_table_ai_proposals gate.
+HISTORICAL_AI_NOTES_PREFIX = (
+    "AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜"
+    "狀態=待人工審核"
+)
+
+
 def _require_pending_ai_addition(label, entry):
     """Verify additions are marked as unapproved; never approve Notes here."""
     note = entry.get("Notes", "")
+    if note == HISTORICAL_AI_NOTES_PREFIX or (
+        note.startswith(HISTORICAL_AI_NOTES_PREFIX + "｜提醒=")
+        and len(note.split("｜")) == 5
+        and note.split("｜提醒=", 1)[1].strip()
+    ):
+        # The legacy, undated TopicTree-origin record has explicit
+        # 待人工審核 status and must never be upgraded to approved.
+        return
     parts = note.split("｜")
     if len(parts) not in (5, 6) or parts[0] != "AI新增":
         raise MetadataError(f"{label!r}: extra ClassTable row requires AI新增 Notes")
@@ -140,6 +182,33 @@ def _require_pending_ai_addition(label, entry):
 def verify(original, actual, *, allow_pending_additions=False):
     expected = {k: dict(v) for k, v in original.items()}
     correct_known(expected)
+    if allow_pending_additions:
+        for legacy_label, (canonical, source_fields) in (
+            HISTORICAL_LABEL_NORMALIZATIONS.items()
+        ):
+            if legacy_label not in expected:
+                continue  # synthetic/partial historical tests
+            if expected[legacy_label] != source_fields:
+                raise MetadataError(
+                    f"{legacy_label!r}: unexpected historical rename source"
+                )
+            if canonical in expected:
+                raise MetadataError(
+                    f"{canonical!r}: already exists before historical rename"
+                )
+            expected[canonical] = expected.pop(legacy_label)
+    if allow_pending_additions:
+        for key, pair in HISTORICAL_CT_CORRECTIONS.items():
+            if key not in expected:
+                continue
+            if expected[key] != pair["source"]:
+                raise MetadataError(f"{key!r}: unexpected historical CT source")
+            if key not in actual or (
+                {field: actual[key][field] for field in ("CT", "Explanation")}
+                != pair["target"]
+            ):
+                raise MetadataError(f"{key!r}: guarded historical CT correction differs")
+            expected[key] = dict(pair["target"])
     missing = set(expected) - set(actual)
     extra = set(actual) - set(expected)
     if missing or (extra and not allow_pending_additions):

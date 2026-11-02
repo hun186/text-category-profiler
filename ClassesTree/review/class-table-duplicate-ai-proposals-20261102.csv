@@ -1,0 +1,5 @@
+OriginalLine,ClassLabel,CT,Explanation,Notes,RetainedLine,RetainedCT,ReviewStatus
+2064,Autonomous Car Industry,自動駕駛汽車產業,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核,140,自駕車產業,待人工審核
+2459,Navigational Warning-Fishing in Unauthorized Zone,航行警告－未經許可區域漁撈作業,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核,1224,未授權區域捕漁相關航行警告,待人工審核
+2608,Timestamp,時間戳記,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核,1739,時間戳,待人工審核
+2712,Hepatology,肝臟病學,,AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核,2335,肝臟病學,待人工審核
