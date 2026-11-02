@@ -1,0 +1,6 @@
+parent,child,relation
+Root,Technology,contains
+Root,Economy,contains
+Technology,AI,contains
+Technology,Semiconductors,contains
+Economy,Semiconductors,cross-link

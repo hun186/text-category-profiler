@@ -1,0 +1,36 @@
+name: Portable Jaal Viewer CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -e .
+      - run: python -m unittest discover -s tests -p 'test_*.py' -v
+      - run: node --test tests/*.test.cjs
+      - run: python -m jaal_topology --help
+      - name: Standalone Dash smoke
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from jaal_topology import load_graph, select_subgraph
+          from jaal_topology.viewer import build_app
+          e = Path("examples/relationships.csv")
+          m = Path("examples/metadata.csv")
+          a = build_app(select_subgraph(load_graph(e, m), "Root"), root="Root")
+          assert a.server.test_client().get("/_dash-layout").status_code == 200
+          for name in ("16.jaal_visible_labels.js", "17.jaal_structural_collapse.js", "bootstrap.min.css"):
+              assert a.server.test_client().get("/assets/" + name).status_code == 200
+          PY

@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const {apply} = require("../BertScript/assets/16.jaal_visible_labels.js");
+const {apply} = require("../packages/jaal-topology/jaal_topology/assets/16.jaal_visible_labels.js");
 
 function renderLabels(mode, ids, languages = [], translations = {}) {
   const items = ids.map(id => ({id, label: id, title: id, depth: 1, size: 7}));

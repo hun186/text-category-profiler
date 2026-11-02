@@ -1,8 +1,8 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const collapse = require("../BertScript/assets/17.jaal_structural_collapse.js");
-const {apply} = require("../BertScript/assets/16.jaal_visible_labels.js");
+const collapse = require("../packages/jaal-topology/jaal_topology/assets/17.jaal_structural_collapse.js");
+const {apply} = require("../packages/jaal-topology/jaal_topology/assets/16.jaal_visible_labels.js");
 
 function fixture(spec) {
   const nodes = spec.nodes.map(id => ({id, label:id, title:id,
