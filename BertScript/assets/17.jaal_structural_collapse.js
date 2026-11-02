@@ -105,6 +105,109 @@
     if (rows.length) dataset.update(rows); // Adds missing IDs and refreshes styles.
   }
 
+  const REFLOW_MS = 460;
+
+  function validPosition(point) {
+    return point && Number.isFinite(point.x) && Number.isFinite(point.y);
+  }
+
+  function cancelReflow(state) {
+    if (!state) return;
+    state.reflowToken = (state.reflowToken || 0) + 1;
+    if (state.reflowFrame != null && typeof root.cancelAnimationFrame === "function") {
+      root.cancelAnimationFrame(state.reflowFrame);
+    }
+    state.reflowFrame = null;
+  }
+
+  function prefersReducedMotion() {
+    return typeof root.matchMedia === "function" &&
+      root.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+
+  function ancestorOrigin(model, id, previous) {
+    // A newly exposed node starts near the closest *previously visible*
+    // ancestor, so even a deep Search overlay does not pop in from (0, 0).
+    const todo = [...(model.parents.get(id) || [])];
+    const seen = new Set([id]);
+    while (todo.length) {
+      const parent = todo.shift();
+      if (seen.has(parent)) continue;
+      seen.add(parent);
+      if (validPosition(previous[parent])) return previous[parent];
+      for (const ancestor of model.parents.get(parent) || []) todo.push(ancestor);
+    }
+    return null;
+  }
+
+  function batchMove(net, positions) {
+    // visdcc's vis-network redraws *synchronously* for every moveNode()
+    // when physics is disabled. Mutate its already-existing in-memory
+    // canvas node coordinates together, then redraw exactly once per frame.
+    // If this expected internal bridge is unavailable, retain native layout
+    // rather than causing hundreds of redraws or guessing an unsafe API.
+    const bodies = net && net.body && net.body.nodes;
+    if (!bodies || typeof net.redraw !== "function" ||
+        positions.some(node => !bodies[node.id])) return false;
+    for (const node of positions) {
+      bodies[node.id].x = node.x;
+      bodies[node.id].y = node.y;
+    }
+    net.redraw();
+    return true;
+  }
+
+  function animateReflow(instance, before) {
+    const state = instance.__jaalStructural;
+    const net = instance.net;
+    // Old browsers and reduced-motion users keep the native final layout.
+    if (!before || typeof root.requestAnimationFrame !== "function" ||
+        prefersReducedMotion() || typeof net.getPositions !== "function" ||
+        !net.body || !net.body.nodes || typeof net.redraw !== "function") return;
+    const targets = net.getPositions();
+    const motion = [];
+    for (const id of instance.nn.getIds().map(String)) {
+      const to = targets[id];
+      const from = validPosition(before[id]) ? before[id] :
+        ancestorOrigin(state.model, id, before);
+      if (!validPosition(to) || !validPosition(from)) continue;
+      if (Math.abs(to.x - from.x) < 0.5 &&
+          Math.abs(to.y - from.y) < 0.5) continue;
+      motion.push({id, from, to});
+    }
+    if (!motion.length) return;
+
+    // Restore every node in a single canvas redraw before browser paint.
+    // New children appear at a parent's old position; surviving nodes do
+    // not teleport. If the internal node map changed, retain native layout.
+    if (!batchMove(net, motion.map(node => ({
+      id: node.id, x: node.from.x, y: node.from.y,
+    })))) return;
+    const token = state.reflowToken;
+    let firstTimestamp = null;
+    function frame(timestamp) {
+      if (state.reflowToken !== token ||
+          state.mode !== "hierarchical-collapsed") return;
+      if (firstTimestamp == null) firstTimestamp = timestamp;
+      const fraction = Math.max(0, Math.min(1, (timestamp - firstTimestamp) / REFLOW_MS));
+      // Cubic ease-out maintains one continuous spatial trajectory rather
+      // than handing each frame back to LayoutEngine's instant relayout.
+      const t = 1 - Math.pow(1 - fraction, 3);
+      const positions = motion.map(node => ({
+        id: node.id,
+        x: node.from.x + (node.to.x - node.from.x) * t,
+        y: node.from.y + (node.to.y - node.from.y) * t,
+      }));
+      if (!batchMove(net, positions)) {
+        cancelReflow(state);
+        return;
+      }
+      if (fraction < 1) state.reflowFrame = root.requestAnimationFrame(frame);
+      else state.reflowFrame = null;
+    }
+    state.reflowFrame = root.requestAnimationFrame(frame);
+  }
+
   function project(instance) {
     const state = instance.__jaalStructural;
     if (!state || !COLLAPSED.has(state.mode)) return;
@@ -158,17 +261,25 @@
       const edges = projectedEdges.filter(edge => !edge.hidden);
       const current = new Set(instance.nn.getIds().map(String));
       const desired = new Set(nodes.map(node => String(node.id)));
-      // Fit only when entering compact hierarchy. Per-click fit changes
-      // both pan and zoom and makes local expansion feel like a camera jump.
-      // Subsequent clicks reflow the data while keeping the viewport alone.
+      // Capturing the displayed positions BEFORE changing DataSets prevents
+      // the hierarchy engine from teleporting existing nodes on each click.
+      // The final layout remains the existing directed, box-node hierarchy.
       const enteringCompact = !state.compactActive;
-      reconcileDataset(instance.ee, []); // Reattach only visible valid edges.
+      const net = instance.net;
+      const before = !enteringCompact && net &&
+        typeof net.getPositions === "function" ? net.getPositions() : null;
+      cancelReflow(state);
+      const wantedEdges = new Set(edges.map(edge => String(edge.id)));
+      const removedEdges = instance.ee.getIds().filter(id => !wantedEdges.has(String(id)));
+      if (removedEdges.length) instance.ee.remove(removedEdges);
       reconcileDataset(instance.nn, nodes);
       reconcileDataset(instance.ee, edges);
       state.compactActive = true;
-      if (enteringCompact && instance.net &&
-          typeof instance.net.fit === "function" && nodes.length) {
-        instance.net.fit({nodes: nodes.map(node => node.id), animation: false});
+      if (enteringCompact && net &&
+          typeof net.fit === "function" && nodes.length) {
+        net.fit({nodes: nodes.map(node => node.id), animation: false});
+      } else if (!enteringCompact) {
+        animateReflow(instance, before);
       }
     } else {
       // Preserve the existing natural network-cluster layout.
@@ -176,12 +287,14 @@
       reconcileDataset(instance.nn, projectedNodes);
       reconcileDataset(instance.ee, projectedEdges);
       state.compactActive = false;
+      cancelReflow(state);
     }
   }
 
   function restore() {
     const state = this.__jaalStructural;
     if (!state || !COLLAPSED.has(state.mode)) return;
+    cancelReflow(state);
     state.mode = null;
     const source = this.props && this.props.data;
     if (!source || !this.nn || !this.ee) return;
@@ -202,6 +315,7 @@
     const key = signature(source);
     let state = this.__jaalStructural;
     if (!state || state.key !== key) {
+      cancelReflow(state);
       const model = graphModel(source);
       state = {key, mode, model, expanded: new Set(model.roots)};
       this.__jaalStructural = state;
