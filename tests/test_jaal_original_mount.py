@@ -70,14 +70,17 @@ class OriginalJaalMountTests(unittest.TestCase):
         )
         children = row["props"]["children"]
         self.assertEqual([child["type"] for child in children],
-                         ["Label", "Input", "Button"])
+                         ["Label", "Dropdown", "Button"])
         label, text_input, button = children
         self.assertEqual(label["props"]["children"],
                          "根類別（英文 ClassLabel）：")
         self.assertEqual(label["props"]["htmlFor"], "JaalOriginalRoot")
         self.assertEqual(text_input["props"]["id"], "JaalOriginalRoot")
         self.assertEqual(text_input["props"]["value"], "TW Affairs")
-        self.assertTrue(text_input["props"]["debounce"])
+        self.assertTrue(text_input["props"]["searchable"])
+        self.assertFalse(text_input["props"]["clearable"])
+        self.assertEqual(text_input["props"]["options"],
+                         [{"label": "TW Affairs", "value": "TW Affairs"}])
         self.assertEqual(text_input["props"]["style"]["width"], "320px")
         self.assertEqual(text_input["props"]["style"]["maxWidth"], "100%")
         self.assertEqual(text_input["props"]["style"]["flex"], "0 1 320px")
@@ -90,6 +93,55 @@ class OriginalJaalMountTests(unittest.TestCase):
         self.assertEqual(status["props"]["role"], "status")
         self.assertEqual(row["props"]["style"]["display"], "flex")
         self.assertEqual(row["props"]["style"]["flexWrap"], "wrap")
+
+    def test_root_dropdown_suggests_real_taxonomy_nodes_with_keyword_filter(self):
+        from dash import Dash
+        from BertScript import jaal_original_panel as panel
+        from ClassesTree.Visualization.embedded_tree import load_graph
+
+        edges, nodes, _ = load_graph()
+        self.assertIn("TW Affairs", nodes)
+        self.assertTrue(edges)
+        all_options = panel.root_search_options(
+            "tw", "TW Affairs", nodes
+        )
+        self.assertTrue(any(item["value"] == "TW Affairs"
+                            for item in all_options))
+        self.assertLessEqual(len(all_options), panel.ROOT_SUGGESTION_LIMIT)
+        self.assertTrue(all(
+            "tw" in item["label"].casefold() for item in all_options
+        ))
+        rare = panel.root_search_options(
+            "not-present-in-taxonomy", "TW Affairs", nodes
+        )
+        self.assertEqual(rare, [{"label": "TW Affairs", "value": "TW Affairs"}])
+        self.assertEqual(panel.root_search_options(
+            "politics", "TW Affairs", nodes, limit=2
+        )[0]["value"], "TW Affairs")
+        self.assertEqual(panel.root_search_options(
+            "", "TW Affairs", nodes, limit=5
+        )[0]["value"], "TW Affairs")
+        self.assertTrue(panel.root_search_options(
+            "a", None, nodes, limit=5
+        ))
+
+        app = Dash(__name__)
+        app.layout = panel.build_original_jaal_panel()
+        panel.register_original_jaal(app)
+        dependencies = app.server.test_client().get(
+            "/_dash-dependencies"
+        ).get_json()
+        dropdown = [
+            d for d in dependencies
+            if d["output"] == "JaalOriginalRoot.options"
+        ]
+        self.assertEqual(len(dropdown), 1)
+        self.assertEqual(dropdown[0]["inputs"],
+                         [{"id": "JaalOriginalRoot", "property": "search_value"}])
+        self.assertEqual(dropdown[0]["state"],
+                         [{"id": "JaalOriginalRoot", "property": "value"}])
+        # No Jaal child graph is instantiated simply by registering options.
+        self.assertEqual(panel.router._apps, {})
 
     def test_lazy_same_port_wsgimount_with_dynamic_callback_paths(self):
         from flask import Flask

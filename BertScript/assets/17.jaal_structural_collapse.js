@@ -158,14 +158,16 @@
       const edges = projectedEdges.filter(edge => !edge.hidden);
       const current = new Set(instance.nn.getIds().map(String));
       const desired = new Set(nodes.map(node => String(node.id)));
-      const changed = current.size !== desired.size ||
-        [...current].some(id => !desired.has(id)) || !state.compactActive;
+      // Fit only when entering compact hierarchy. Per-click fit changes
+      // both pan and zoom and makes local expansion feel like a camera jump.
+      // Subsequent clicks reflow the data while keeping the viewport alone.
+      const enteringCompact = !state.compactActive;
       reconcileDataset(instance.ee, []); // Reattach only visible valid edges.
       reconcileDataset(instance.nn, nodes);
       reconcileDataset(instance.ee, edges);
       state.compactActive = true;
-      if (changed && instance.net && typeof instance.net.fit === "function" &&
-          nodes.length) {
+      if (enteringCompact && instance.net &&
+          typeof instance.net.fit === "function" && nodes.length) {
         instance.net.fit({nodes: nodes.map(node => node.id), animation: false});
       }
     } else {

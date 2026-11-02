@@ -77,6 +77,7 @@ test("both collapsed layouts preserve one original node each, label plus count o
       assert.deepEqual(f.component.nn.getIds(),["A","B","C"]);
       assert.equal(f.component.ee.getIds().length,2);
       assert.deepEqual(f.fitCalls.at(-1).nodes,["A","B","C"]);
+      assert.equal(f.fitCalls.length,1,"only initial collapsed entry fits");
     }
     assert.equal(n.find(x=>x.id==="A").hidden,false);
     assert.equal(n.find(x=>x.id==="A").label,"A");
@@ -102,7 +103,9 @@ test("both collapsed layouts preserve one original node each, label plus count o
     if(mode==="hierarchical-collapsed") {
       assert.deepEqual(f.component.nn.getIds(),["A"]);
       assert.equal(f.component.ee.getIds().length,0);
-      assert.deepEqual(f.fitCalls.at(-1).nodes,["A"]);
+      assert.deepEqual(f.fitCalls.at(-1).nodes,["A","B","C"]);
+      assert.equal(f.fitCalls.length,1,
+        "collapsing a branch must not recenter the viewport");
     } else {
       assert.equal(n.find(x=>x.id==="B").color,"#abcdef");
       assert.equal(n.find(x=>x.id==="D").title,"D");
@@ -200,10 +203,14 @@ test("hierarchical collapse really removes hidden IDs and reflows after toggles"
   assert.deepEqual(f.fitCalls.at(-1).nodes,["A","B","C"]);
   f.click("B");
   assert.deepEqual(new Set(f.component.nn.getIds()),new Set(["A","B","C","D"]));
-  assert.deepEqual(new Set(f.fitCalls.at(-1).nodes),new Set(["A","B","C","D"]));
+  assert.deepEqual(f.fitCalls.at(-1).nodes,["A","B","C"]);
+  assert.equal(f.fitCalls.length,1,
+    "expanding must not automatically zoom/pan");
   assert.equal(f.component.ee.getIds().length,3);
   f.click("B");
   assert.deepEqual(new Set(f.component.nn.getIds()),new Set(["A","B","C"]));
+  assert.equal(f.fitCalls.length,1,
+    "collapsing must preserve user camera");
   f.run("network");
   assert.equal(f.component.nn.getIds().length,5);
   assert.equal(f.component.ee.getIds().length,4);
