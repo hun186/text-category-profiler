@@ -444,3 +444,15 @@ visdcc 本身需要 Dash >=3。已正常工作的舊電腦無須升級。
 需分離環境，不會嘗試 monkeypatch 已移除的 Dash API。
 它是**特定已驗證相容性邊界**的預檢，不代表所有未測套件版本
 自動通過 Windows GUI 驗收，也不會安裝／修改任何套件。
+
+
+### Jaal 根類別輸入框：同行緊湊排版
+
+根類別控制列以 `根類別（英文 ClassLabel）：` 與輸入框、
+`載入 Jaal` 按鈕排列在同一 flex row，輸入框桌面寬 320px
+（避免瀏覽器全寬延伸造成空白），窄視窗時容許換行與縮小，
+並用 `htmlFor` 連結可存取標籤。不修改 `JaalOriginalRoot`、
+`btn_JaalOriginalLoad` 或 `JaalOriginalLargeConsent` ID 與
+任何建圖／callback／子樹大小限制。Hosted `_dash-layout` 測試
+驗證控件相鄰、寬度、響應式換行及預設 ClassLabel；實際不同
+Windows 瀏覽器寬度仍需視覺驗證。

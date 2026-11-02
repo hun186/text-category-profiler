@@ -38,6 +38,53 @@ class OriginalJaalMountTests(unittest.TestCase):
         self.assertNotIn("src='http://", rendered)
         self.assertNotIn("src=\"http://", rendered)
 
+    def test_root_label_and_input_share_compact_responsive_toolbar_row(self):
+        """The root selector must not monopolize an entire desktop row."""
+        from dash import Dash
+        from BertScript.jaal_original_panel import build_original_jaal_panel
+
+        app = Dash(__name__ + "_compact_root")
+        app.layout = build_original_jaal_panel()
+        response = app.server.test_client().get("/_dash-layout")
+        self.assertEqual(response.status_code, 200)
+        layout = response.get_json()
+
+        def walk(node):
+            if isinstance(node, dict):
+                yield node
+                for value in node.values():
+                    yield from walk(value)
+            elif isinstance(node, list):
+                for child in node:
+                    yield from walk(child)
+
+        row = next(
+            component for component in walk(layout)
+            if component.get("type") == "Div"
+            and isinstance(component.get("props", {}).get("children"), list)
+            and any(
+                isinstance(child, dict)
+                and child.get("props", {}).get("id") == "JaalOriginalRoot"
+                for child in component["props"]["children"]
+            )
+        )
+        children = row["props"]["children"]
+        self.assertEqual([child["type"] for child in children],
+                         ["Label", "Input", "Button"])
+        label, text_input, button = children
+        self.assertEqual(label["props"]["children"],
+                         "根類別（英文 ClassLabel）：")
+        self.assertEqual(label["props"]["htmlFor"], "JaalOriginalRoot")
+        self.assertEqual(text_input["props"]["id"], "JaalOriginalRoot")
+        self.assertEqual(text_input["props"]["value"], "TW Affairs")
+        self.assertTrue(text_input["props"]["debounce"])
+        self.assertEqual(text_input["props"]["style"]["width"], "320px")
+        self.assertEqual(text_input["props"]["style"]["maxWidth"], "100%")
+        self.assertEqual(text_input["props"]["style"]["flex"], "0 1 320px")
+        self.assertEqual(button["props"]["id"], "btn_JaalOriginalLoad")
+        self.assertEqual(row["props"]["style"]["display"], "flex")
+        self.assertEqual(row["props"]["style"]["flexWrap"], "wrap")
+
     def test_lazy_same_port_wsgimount_with_dynamic_callback_paths(self):
         from flask import Flask
         from werkzeug.test import Client
