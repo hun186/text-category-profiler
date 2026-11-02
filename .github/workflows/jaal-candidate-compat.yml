@@ -35,6 +35,8 @@ jobs:
           dash-cytoscape jaal pandas
           "jaal-topology-viewer @ git+https://github.com/hun186/jaal-topology-viewer.git@613effaca891f761b59f099c4f4cf38d495297cd"
       - name: Verify candidate SHA, upstream fifth mode, consumer four-mode boundary
+        env:
+          JAAL_CANDIDATE_COMPAT: "1"
         run: python -m unittest -v tests.test_jaal_candidate_compat
       - name: Real Jaal Stage 4 mount, controls, callbacks and path smoke
         run: >

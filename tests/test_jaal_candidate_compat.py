@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import importlib.metadata as metadata
 import json
+import os
 from pathlib import Path
 import unittest
 
@@ -20,6 +21,10 @@ LEGACY_MODES = (
 COMMUNITY_MODE = "network-community-collapsed"
 
 
+@unittest.skipUnless(
+    os.environ.get("JAAL_CANDIDATE_COMPAT") == "1",
+    "Candidate-only check: keep normal lightweight discovery and production pin intact",
+)
 class CandidateJaalIntegrationTests(unittest.TestCase):
     def test_provenance_and_no_production_pin_change(self):
         requirements = (ROOT / "requirements.txt").read_text(encoding="utf-8")
@@ -66,7 +71,6 @@ class CandidateJaalIntegrationTests(unittest.TestCase):
     def test_standalone_five_modes_and_original_stage4_four_modes(self):
         from jaal_topology.data import Graph
         from jaal_topology.viewer import build_app
-        from BertScript.jaal_original_mount import _add_embedded_jaal_sidebar_toggle
         graph = Graph(
             (("Root", "Child"), ("Child", "Another")),
             ("Another", "Child", "Root"),
