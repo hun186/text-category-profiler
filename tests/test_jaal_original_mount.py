@@ -646,7 +646,7 @@ class OriginalJaalMountTests(unittest.TestCase):
         def fails(_root, _prefix):
             raise AttributeError("missing_local_dependency_property")
 
-        server = Flask(__name__ + ".diagnostics")
+        server = Flask(__name__)
         router = OriginalJaalRouter(build_app=fails)
         router.mount(server)
         with mock.patch(
