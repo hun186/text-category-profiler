@@ -55,7 +55,10 @@ def prepare_embedded_jaal_nodes(node_df):
         raise ValueError("Embedded Jaal nodes require an id column")
     nodes = node_df.copy()
     nodes["label"] = nodes["id"].map(wrapped_classlabel)
-    nodes["title"] = nodes["id"]
+    from html import escape as _escape_html
+    nodes["title"] = nodes["id"].map(
+        lambda name: _escape_html(str(name), quote=True)
+    )
     return nodes
 
 
@@ -70,6 +73,10 @@ def enable_embedded_jaal_global_node_shapes(jaal_instance):
         if not isinstance(collection, dict) or not isinstance(collection.get("nodes"), list):
             raise RuntimeError("Original Jaal node payload contract changed")
         for node in collection["nodes"]:
+            # Upstream visdcc injects string tooltip titles into innerHTML;
+            # always derive escaped hover content from the literal stable ID.
+            from html import escape as _escape_html
+            node["title"] = _escape_html(str(node["id"]), quote=True)
             if "shape" in node:
                 if node["shape"] != "dot":
                     raise RuntimeError("Original Jaal unexpected per-node shape")
