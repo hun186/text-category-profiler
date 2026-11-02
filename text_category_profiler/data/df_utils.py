@@ -324,6 +324,8 @@ def dfToSQL_new_appending(SQLname, df, SavingDfColumns=None,
                 print("[SKIP] 無法建立 UNIQUE 索引，缺少欄位：", miss)
     finally:
         cnx.close()
+
+
 def dfToSQL(SQLname,df,SavingDfColumns=[],
             IndexCols=[],UniqueIndexCols=[],dtype=None,
             table='sampleSrc',MPLOGGER=None,if_exists='replace',
