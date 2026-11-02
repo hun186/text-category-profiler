@@ -151,6 +151,21 @@ class PortableRealJaalTests(unittest.TestCase):
         self.assertTrue(items["nodes"][1]["hidden"])
         self.assertEqual(items["nodes"][0]["label"], "節點乙")
 
+    def test_leaf_only_root_keeps_empty_edge_dataframe_schema(self):
+        from jaal_topology.data import Graph
+        from jaal_topology.viewer import to_jaal_dataframes, build_app
+        selected = select_subgraph(
+            Graph((("A", "B"),), ("A", "B"), {}), "B"
+        )
+        self.assertEqual(selected.nodes, ("B",))
+        self.assertEqual(selected.edges, ())
+        edges, nodes = to_jaal_dataframes(selected, root="B")
+        self.assertEqual(list(edges.columns), ["from", "to", "strength"])
+        self.assertEqual(edges.shape[0], 0)
+        self.assertEqual(nodes["id"].tolist(), ["B"])
+        app = build_app(selected, root="B")
+        self.assertEqual(app.server.test_client().get("/_dash-layout").status_code, 200)
+
     def test_standalone_real_jaal_dash_layout_and_callbacks(self):
         from jaal_topology.data import Graph
         from jaal_topology.viewer import build_app
