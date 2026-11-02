@@ -128,6 +128,15 @@ HISTORICAL_LABEL_NORMALIZATIONS = {
     ),
 }
 
+# One separate, exact historical typo repair in a pre-existing
+# canonical row. This is not blanket permission to change CT text.
+HISTORICAL_CT_CORRECTIONS = {
+    "Africa Debt": {
+        "source": {"CT": "非洲債物", "Explanation": ""},
+        "target": {"CT": "非洲債務", "Explanation": ""},
+    },
+}
+
 # Existing 2026-11-02 AI notes were authored before dates became required.
 # This exact historical provenance family is REVIEW-ONLY; new proposals
 # must still pass the stricter class_table_ai_proposals gate.
@@ -188,6 +197,18 @@ def verify(original, actual, *, allow_pending_additions=False):
                     f"{canonical!r}: already exists before historical rename"
                 )
             expected[canonical] = expected.pop(legacy_label)
+    if allow_pending_additions:
+        for key, pair in HISTORICAL_CT_CORRECTIONS.items():
+            if key not in expected:
+                continue
+            if expected[key] != pair["source"]:
+                raise MetadataError(f"{key!r}: unexpected historical CT source")
+            if key not in actual or (
+                {field: actual[key][field] for field in ("CT", "Explanation")}
+                != pair["target"]
+            ):
+                raise MetadataError(f"{key!r}: guarded historical CT correction differs")
+            expected[key] = dict(pair["target"])
     missing = set(expected) - set(actual)
     extra = set(actual) - set(expected)
     if missing or (extra and not allow_pending_additions):
