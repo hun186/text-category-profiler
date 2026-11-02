@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from collections import OrderedDict, deque
 import hashlib
+import logging
 from copy import deepcopy
 from pathlib import Path
 from threading import RLock
@@ -24,6 +25,8 @@ ORDINARY_NODE_LIMIT = 250
 HEAVY_NODE_LIMIT = 3000
 HEAVY_EDGE_LIMIT = 5000
 MAX_LIVE_GRAPHS = 3
+
+LOGGER = logging.getLogger(__name__)
 
 # Bundled with Stage 4; the original Jaal stylesheet is CDN-hosted, which
 # cannot be the only styling source for an iframe in an offline deployment.
@@ -542,8 +545,19 @@ class OriginalJaalRouter:
                     prefix = f"{MOUNT_PATH}/{key}/"
                     self._apps[key] = self._build_app(root, prefix)
                 except Exception as exc:
-                    # Keep the main Dash server alive if optional Jaal is
-                    # missing or a subtree cannot be built.
+                    # Keep the main Dash server alive. The public iframe
+                    # remains deliberately generic, but the local server
+                    # console must include the actual missing attribute,
+                    # traceback and failure stage for cross-machine diagnosis.
+                    # Do not expose paths, environment values or tracebacks
+                    # to the browser; do not automatically retry writes.
+                    LOGGER.exception(
+                        "Jaal lazy initialization failed for root %r "
+                        "(subapp %s); inspect traceback above and run "
+                        "python -m BertScript.jaal_runtime_diagnostics "
+                        "--root %r in the SAME Python environment",
+                        root, key, root,
+                    )
                     return _response(
                         start_response, "503 Service Unavailable",
                         "原版 Jaal 載入失敗："

@@ -377,3 +377,35 @@ Hosted Node 回歸驗證 DataSet 真的只含可見節點、逐層展開重佈�
 從階層收攏切往網狀／全展開能重建所有 node/edge IDs，
 以及深層搜尋顯示路徑和回到原始篩選狀態。
 實際 Windows Chrome 的視覺佈局仍需重新啟動 8059 後驗證。
+
+
+### 跨電腦部署：Jaal 載入失敗只顯示 AttributeError 的診斷
+
+如果主頁先顯示「已要求載入：TW Affairs；77 個節點／81 條關係」，
+但下方 iframe 卻顯示「原版 Jaal 載入失敗：AttributeError」，表示
+已完成計算子樹大小，**建構 Jaal Dash 子程式**的階段失敗；
+`AttributeError` 不足以證明是哪一個屬性缺失。
+
+這個修正讓 `OriginalJaalRouter.__call__` 把完整 Python
+exception traceback 記到**正在執行 8059 的終端機**，HTTP
+網頁仍只顯示簡潔、安全的錯誤類型，不回傳本機路徑、環境設定或堆疊。
+另新增唯讀本機診斷入口（同一台電腦、同一個 Python 環境）：
+
+```bat
+python -m BertScript.jaal_runtime_diagnostics --root "TW Affairs"
+```
+
+或雙擊專案根目錄 `run-jaal-diagnose.bat`（請確認其使用的是跟
+啟動 viewer 相同的 Python 解譯器）。診斷列出 Python 執行檔、
+`jaal/visdcc/dash/dash-bootstrap-components/pandas/werkzeug/flask`
+安裝版本，再以相同 `JaalViewMain(createMode=True)` 與
+`prefix_original_jaal` 路徑建構圖形（**不開監聽埠、
+不執行 ML 模型、不更動 WorkPool 或 taxonomy CSV**）。
+成功顯示 `JAAL_DIAGNOSE_PASS`，失敗以 exit code 2 及完整
+traceback 顯示 `JAAL_DIAGNOSE_FAILED`。診斷輸出只顯示於
+本機終端機，分享前請檢查／遮蔽個人檔案路徑等資訊。
+
+切勿僅憑 `AttributeError` 就重裝或任意升降版所有套件；
+先比較可運作電腦與失敗電腦的實際 traceback、Python executable
+及套件版本，再進行**有依據的**最小修正。Hosted 真 Jaal
+WSGI CI 不能取代異機 Python 安裝版本相容驗收。
