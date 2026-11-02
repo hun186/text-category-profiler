@@ -229,15 +229,27 @@ class PortableRealJaalTests(unittest.TestCase):
                 for child in node:
                     walk(child)
         walk(payload)
-        for key in ("graph", "topology-chinese", "topology-mode",
-                    "topology-translations", "topology-physics-restore",
+        for key in ("graph", "jaal-original-chinese-labels", "jaal-original-layout-mode",
+                    "jaal-original-ct-translations", "jaal-original-physics-restore",
                     "search_graph", "filter_node"):
             if key == "filter_node":
                 continue  # upstream uses dynamic field names
             self.assertIn(key, found)
-        self.assertEqual(found["topology-chinese"]["value"], [])
-        self.assertEqual(found["topology-mode"]["value"], "network")
-        self.assertEqual(found["topology-translations"]["data"],
+        self.assertEqual(found["jaal-original-chinese-labels"]["value"], [])
+        self.assertEqual(found["jaal-original-layout-mode"]["value"], "network")
+        self.assertEqual(
+            [option["value"] for option in
+             found["jaal-original-layout-mode"]["options"]],
+            ["network", "network-collapsed",
+             "hierarchical", "hierarchical-collapsed"],
+        )
+        self.assertEqual(
+            c.get("/assets/16.jaal_visible_labels.js").status_code, 200
+        )
+        self.assertEqual(
+            c.get("/assets/17.jaal_structural_collapse.js").status_code, 200
+        )
+        self.assertEqual(found["jaal-original-ct-translations"]["data"],
                          {"Branch": "分支"})
         nodes = found["graph"]["data"]["nodes"]
         self.assertEqual({node["id"] for node in nodes},
@@ -249,7 +261,8 @@ class PortableRealJaalTests(unittest.TestCase):
         self.assertEqual(len(label), 1)
         self.assertTrue(label[0]["clientside_function"])
         self.assertEqual({i["id"] for i in label[0]["inputs"]},
-                         {"topology-chinese", "topology-translations", "graph"})
+                         {"jaal-original-layout-mode", "jaal-original-chinese-labels",
+                          "jaal-original-ct-translations", "graph"})
         self.assertTrue(any("graph.options" in d["output"] for d in deps))
         self.assertTrue(any("graph.data" in d["output"] and
                             any(x["id"] == "search_graph" for x in d["inputs"])
