@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 from importlib import metadata
 import platform
+import re
 import sys
 import traceback
 
@@ -31,6 +32,47 @@ def version_summary():
     return out
 
 
+def check_dash_visdcc_compatibility(versions=None):
+    """Fail early on the cross-machine visdcc/Dash import incompatibility.
+
+    This is a narrow check for the two verified package boundaries, not a
+    blanket promise that any two untested versions are fully compatible.
+    Reading distribution metadata does not import visdcc or start Dash.
+    Older Dash 2 environments are allowed if paired with an older visdcc.
+    """
+    versions = version_summary() if versions is None else versions
+
+    def version_key(package):
+        match = re.match(r"^(\d+)\.(\d+)\.(\d+)", str(versions.get(package, "")))
+        return tuple(map(int, match.groups())) if match else None
+
+    dash = version_key("dash")
+    visdcc = version_key("visdcc")
+    if dash is None or visdcc is None:
+        # Import will report a missing package, or a nonstandard package
+        # version, with a more accurate traceback during actual build.
+        return
+    if dash[0] >= 3 and visdcc < (0, 0, 63):
+        raise RuntimeError(
+            "JAAL_VISDCC_DASH_INCOMPATIBLE: Dash "
+            + str(versions["dash"]) + " and visdcc "
+            + str(versions["visdcc"]) + " are incompatible. "
+            "Dash 3+ removed dash.development.component_loader, "
+            "which this older visdcc imports. On this Python environment, "
+            "run: python -m pip install --upgrade \"visdcc==0.0.63\"; "
+            "then: python -m pip check. Do NOT downgrade Dash in Anaconda "
+            "base without checking other applications."
+        )
+    if dash[0] < 3 and visdcc >= (0, 0, 63):
+        raise RuntimeError(
+            "JAAL_VISDCC_DASH_INCOMPATIBLE: visdcc "
+            + str(versions["visdcc"]) + " requires Dash >=3, "
+            "but Dash is " + str(versions["dash"]) + ". "
+            "Preserve this legacy Dash 2 environment with a compatible "
+            "older visdcc, or use a separate Dash >=3 environment."
+        )
+
+
 def diagnose(root="TW Affairs", *, build_app=None, output=None, error=None):
     """Return 0 on successful Jaal create + mount; 2 on full traceback.
 
@@ -46,6 +88,7 @@ def diagnose(root="TW Affairs", *, build_app=None, output=None, error=None):
     print("Selected root:", root, file=output)
     try:
         if build_app is None:
+            check_dash_visdcc_compatibility()
             from BertScript.jaal_original_mount import _make_original_jaal
             build_app = _make_original_jaal
         app = build_app(root, "/jaal-original/diagnose/")

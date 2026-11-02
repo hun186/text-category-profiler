@@ -409,3 +409,38 @@ traceback 顯示 `JAAL_DIAGNOSE_FAILED`。診斷輸出只顯示於
 先比較可運作電腦與失敗電腦的實際 traceback、Python executable
 及套件版本，再進行**有依據的**最小修正。Hosted 真 Jaal
 WSGI CI 不能取代異機 Python 安裝版本相容驗收。
+
+
+### 已確認：Dash 3／4 與過舊 visdcc 在跨電腦部署時不相容
+
+2026-11-02 另一臺 Windows 的 traceback 顯示：
+`visdcc/__init__.py` 呼叫 `dash.development.component_loader.load_components`，
+最後拋 `AttributeError: module 'dash.development' has no attribute 'component_loader'`。
+**Dash 3 起移除了 component_loader**，但這台電腦仍安裝呼叫舊 API
+的 visdcc。這不是 `TW Affairs` 77 節點／81 關係資料損壞。
+
+Hosted 新環境中真實 Jaal WSGI 於 2026-11-02 使用
+`dash==4.5.0`、`visdcc==0.0.63`、`jaal==0.1.9`
+通過（該環境的 `dash-bootstrap-components==0.13.1` 由 pip 解析器
+選出），因此**現代 Dash 不必為此降回 Dash 2**。
+先在有問題的 Windows **與啟動 8059 同一個 Python** 執行：
+
+```bat
+python -m pip show dash visdcc jaal dash-bootstrap-components
+python -m pip install --upgrade "visdcc==0.0.63"
+python -m pip check
+python -m BertScript.jaal_runtime_diagnostics --root "TW Affairs"
+```
+
+這個 pip 指令會變更目前 Python 環境（若在 Anaconda `base`
+也會影響同環境其他應用），**先關閉服務、確認套件版本及
+環境用途**；若其他應用不能共用更新，改用獨立環境。
+**不要把 `visdcc==0.0.63` 安裝到 Dash 2 的舊環境**：新版
+visdcc 本身需要 Dash >=3。已正常工作的舊電腦無須升級。
+
+新的輕量 `check_dash_visdcc_compatibility` 在真正匯入 Jaal
+以前只讀取套件 metadata，對 Dash >=3 + visdcc <0.0.63
+提供明確修復指令；Dash <3 + visdcc >=0.0.63 也提前告知
+需分離環境，不會嘗試 monkeypatch 已移除的 Dash API。
+它是**特定已驗證相容性邊界**的預檢，不代表所有未測套件版本
+自動通過 Windows GUI 驗收，也不會安裝／修改任何套件。
