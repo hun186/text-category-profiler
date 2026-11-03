@@ -275,6 +275,7 @@ class PortableRealJaalTests(unittest.TestCase):
             [option["value"] for option in
              found["jaal-original-layout-mode"]["options"]],
             ["network", "network-collapsed",
+             "network-community-collapsed",
              "hierarchical", "hierarchical-collapsed"],
         )
         self.assertEqual(
@@ -283,6 +284,12 @@ class PortableRealJaalTests(unittest.TestCase):
         self.assertEqual(
             c.get("/assets/17.jaal_structural_collapse.js").status_code, 200
         )
+        self.assertEqual(
+            c.get("/assets/18.jaal_community_collapse.js").status_code, 200
+        )
+        self.assertIn("jaal-community-membership", found)
+        self.assertIn("jaal-structural-eligible", found)
+        self.assertIn("Root", found["jaal-community-membership"]["data"])
         self.assertEqual(found["jaal-original-ct-translations"]["data"],
                          {"Branch": "分支"})
         nodes = found["graph"]["data"]["nodes"]
@@ -296,7 +303,8 @@ class PortableRealJaalTests(unittest.TestCase):
         self.assertTrue(label[0]["clientside_function"])
         self.assertEqual({i["id"] for i in label[0]["inputs"]},
                          {"jaal-original-layout-mode", "jaal-original-chinese-labels",
-                          "jaal-original-ct-translations", "graph"})
+                          "jaal-original-ct-translations", "graph",
+                          "jaal-community-membership", "jaal-structural-eligible"})
         self.assertTrue(any("graph.options" in d["output"] for d in deps))
         self.assertTrue(any("graph.data" in d["output"] and
                             any(x["id"] == "search_graph" for x in d["inputs"])
