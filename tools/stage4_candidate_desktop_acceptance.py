@@ -1,4 +1,4 @@
-"""Local Windows Stage 4 candidate manual acceptance, isolated and read-only.
+"""Local Windows Stage 4 released Jaal manual acceptance, isolated and read-only.
 
 Invoked by the root BAT using an explicit venv and exact upstream SHA.
 This does not assert human visual acceptance; it records the user's verdict.
@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # is sys.path[0] on Windows. Import project modules from the explicit root.
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-SHA = "8f4df31c62bc48802bcb01613bfcb1682ed0e88f"
+SHA = "47942ac3bd08d8cbcc615fa215c5e5eef286f486"
 
 CHECKS = (
     "01 Stage 4 viewer-only loads on one port, without the model/WorkPool",
