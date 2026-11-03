@@ -26,7 +26,7 @@ echo.
 echo Installing isolated graph-only dependencies and exact reviewed candidate...
 "%PYTHON%" -m pip install --disable-pip-version-check dash dash-bootstrap-components dash-cytoscape jaal pandas psutil GPUtil numpy opencc-python-reimplemented scipy setproctitle version-parser colorama tqdm pymongo elasticsearch pytz
 if errorlevel 1 goto :failed
-"%PYTHON%" -m pip install --disable-pip-version-check "jaal-topology-viewer @ git+https://github.com/hun186/jaal-topology-viewer.git@3e9355851357326ac0e47848b8cef64b50bf1b83"
+"%PYTHON%" -m pip install --disable-pip-version-check "jaal-topology-viewer @ git+https://github.com/hun186/jaal-topology-viewer.git@d8ece317dee554d3e286f4a92c6f8ff52a39266b"
 if errorlevel 1 goto :failed
 echo.
 echo Candidate provenance check...

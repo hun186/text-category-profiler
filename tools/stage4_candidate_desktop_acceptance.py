@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # is sys.path[0] on Windows. Import project modules from the explicit root.
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-SHA = "3e9355851357326ac0e47848b8cef64b50bf1b83"
+SHA = "d8ece317dee554d3e286f4a92c6f8ff52a39266b"
 
 CHECKS = (
     "01 Stage 4 viewer-only loads on one port, without the model/WorkPool",
@@ -35,6 +35,8 @@ CHECKS = (
     "05 Search and Filter/Color/Size work and do not corrupt the graph",
     "06 Switching to full network restores original node IDs and directed arrows",
     "07 No disruptive camera jumps, excessive scrollbars or unreadable labels",
+    "08 Click a community arrow to inspect its original directed category relations",
+    "09 Distinguish an acyclic original DAG from any cyclic Louvain quotient",
 )
 
 
@@ -64,7 +66,7 @@ def main() -> int:
     directory = Path(tempfile.mkdtemp(prefix="stage4-jaal-candidate-"))
     log_path = directory / "stage4-server.log"
     report = {
-        "schema": "stage4_jaal_candidate_manual_acceptance_v1",
+        "schema": "stage4_jaal_candidate_manual_acceptance_v2",
         "candidate_sha": SHA,
         "python": sys.version.split()[0],
         "mode": "viewer_only_no_models",
@@ -125,7 +127,13 @@ def main() -> int:
         report["error"] = str(exc)
         print("Acceptance could not finish:", exc, file=sys.stderr)
     finally:
-        if process is not None and process.poll() is None:
+        # Windows Popen.terminate() uses TerminateProcess and commonly
+        # reports exit code 1 even after a fully successful manual PASS.
+        # Preserve the numeric code but record the expected shutdown cause.
+        report["tool_requested_shutdown"] = bool(
+            process is not None and process.poll() is None
+        )
+        if report["tool_requested_shutdown"]:
             process.terminate()
             try:
                 process.wait(timeout=10)
@@ -133,6 +141,10 @@ def main() -> int:
                 process.kill()
                 process.wait(timeout=10)
         report["server_exit_code"] = process.returncode if process else None
+        report["server_exit_after_tool_shutdown"] = bool(
+            report["tool_requested_shutdown"] and process is not None
+            and process.returncode is not None
+        )
         report_file = directory / "acceptance-summary.json"
         report_file.write_text(
             json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
