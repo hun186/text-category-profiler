@@ -39,7 +39,17 @@ STAGE4_ASSETS = Path(__file__).resolve().parent / "assets"
 # Stage 4's unloaded panel must not import Jaal until the user loads it.
 # The installed package is pinned to an audited GitHub commit in requirements.txt.
 def _portable_jaal_assets_dir():
-    from jaal_topology import ASSETS_DIR
+    try:
+        from jaal_topology import ASSETS_DIR
+    except ModuleNotFoundError as exc:
+        if exc.name != "jaal_topology":
+            raise  # Do not mask broken transitive dependencies.
+        raise ModuleNotFoundError(
+            "JAAL_TOPOLOGY_MISSING: install the repository-pinned "
+            "'jaal-topology-viewer' requirement from requirements.txt "
+            "in the same Python interpreter that runs Test_result_Vis.py. "
+            "The separate 'jaal' distribution does not provide this module."
+        ) from exc
     return ASSETS_DIR
 PORTABLE_JS_FILES = ("16.jaal_visible_labels.js", "17.jaal_structural_collapse.js")
 CANDIDATE_SHA = "47942ac3bd08d8cbcc615fa215c5e5eef286f486"
