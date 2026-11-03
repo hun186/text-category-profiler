@@ -20,6 +20,10 @@ import webbrowser
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
+# The BAT invokes this file by path, so /tools rather than the checkout root
+# is sys.path[0] on Windows. Import project modules from the explicit root.
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 SHA = "3e9355851357326ac0e47848b8cef64b50bf1b83"
 
 CHECKS = (
