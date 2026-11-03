@@ -71,6 +71,51 @@ class EmbeddedJaalLabelFormatTests(unittest.TestCase):
         self.assertNotIn("<img", nodes[0]["title"])
         self.assertIn("&lt;img", nodes[0]["title"])
 
+    def test_embedded_jaal_color_options_survive_pandas3_string_dtype(self):
+        from types import SimpleNamespace
+        from copy import deepcopy
+        from ClassesTree.Visualization.jaal.label_format import (
+            expose_embedded_jaal_text_color_choices,
+        )
+        original = {
+            "nodes": [
+                {"id": "TW Affairs", "label": "TW Affairs", "shape": "dot",
+                 "Positivity": "Pos", "category": ["Geographic Areas"]},
+                {"id": "TW Politics", "label": "TW Politics", "shape": "dot",
+                 "Positivity": "Neu", "category": ["Geographic Areas"]},
+            ],
+            "edges": [
+                {"id": "one", "from": "TW Affairs", "to": "TW Politics",
+                 "strength": "medium", "color": {"color": "#97C2FC"}},
+            ],
+        }
+        unchanged = deepcopy(original)
+        nodes_select = SimpleNamespace(
+            id="color_nodes", options=[{"label": "None", "value": "None"}],
+            children=None,
+        )
+        edges_select = SimpleNamespace(
+            id="color_edges", options=[{"label": "None", "value": "None"}],
+            children=None,
+        )
+        app = SimpleNamespace(layout=SimpleNamespace(
+            children=[nodes_select, SimpleNamespace(children=[edges_select])],
+        ))
+        self.assertIs(expose_embedded_jaal_text_color_choices(app, original), app)
+        self.assertEqual(
+            [opt["value"] for opt in nodes_select.options], ["None", "Positivity"],
+        )
+        self.assertEqual(
+            [opt["value"] for opt in edges_select.options], ["None", "strength"],
+        )
+        expose_embedded_jaal_text_color_choices(app, original)
+        self.assertEqual(len(nodes_select.options), 2, "must be idempotent")
+        self.assertEqual(original, unchanged, "menu repair cannot change graph")
+        with self.assertRaisesRegex(RuntimeError, "Color selectors changed"):
+            expose_embedded_jaal_text_color_choices(
+                SimpleNamespace(layout=SimpleNamespace(children=[])), original,
+            )
+
     def test_short_label_stays_unchanged(self):
         self.assertEqual(wrapped_classlabel("TW Affairs"), "TW Affairs")
 

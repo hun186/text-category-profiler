@@ -82,3 +82,67 @@ def enable_embedded_jaal_global_node_shapes(jaal_instance):
             from html import escape as _escape_html
             node["title"] = _escape_html(str(node["id"]), quote=True)
     return jaal_instance
+
+
+def expose_embedded_jaal_text_color_choices(jaal_app, graph_data, limit=20):
+    """Restore bounded original Jaal Color options with modern pandas strings.
+
+    Jaal 0.1.9 selects only columns whose dtype is exactly object. Pandas 3
+    may infer its new str dtype from the parsed node/edge records and silently
+    remove those fields from both Color selectors. Work only on the embedded
+    Dash layout (not a global Jaal monkeypatch, or the underlying graph).
+    """
+    if not isinstance(graph_data, dict):
+        raise ValueError("Embedded Jaal graph must be a dictionary")
+
+    def choices(rows, forbidden):
+        if not isinstance(rows, list) or not rows:
+            return []
+        first = rows[0]
+        if not isinstance(first, dict):
+            raise ValueError("Embedded Jaal rows must be dictionaries")
+        result = []
+        for field in first:
+            if field in forbidden:
+                continue
+            values = [row.get(field) for row in rows]
+            if not all(isinstance(value, str) for value in values):
+                continue
+            if 0 < len(set(values)) <= limit:
+                result.append(field)
+        return result
+
+    fields = {
+        "color_nodes": choices(
+            graph_data.get("nodes"),
+            {"id", "label", "title", "shape", "image", "color"},
+        ),
+        "color_edges": choices(
+            graph_data.get("edges"),
+            {"id", "label", "title", "from", "to", "color"},
+        ),
+    }
+    found = set()
+
+    def visit(component):
+        if isinstance(component, (tuple, list)):
+            for child in component:
+                visit(child)
+            return
+        if component is None or isinstance(component, (str, int, float)):
+            return
+        key = getattr(component, "id", None)
+        if key in fields:
+            found.add(key)
+            current = list(getattr(component, "options", ()) or ())
+            existing = {option.get("value") for option in current}
+            for field in fields[key]:
+                if field not in existing:
+                    current.append({"label": field, "value": field})
+            component.options = current
+        visit(getattr(component, "children", None))
+
+    visit(jaal_app.layout)
+    if found != set(fields):
+        raise RuntimeError("Embedded original Jaal Color selectors changed")
+    return jaal_app
