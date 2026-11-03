@@ -42,7 +42,7 @@ def _portable_jaal_assets_dir():
     from jaal_topology import ASSETS_DIR
     return ASSETS_DIR
 PORTABLE_JS_FILES = ("16.jaal_visible_labels.js", "17.jaal_structural_collapse.js")
-CANDIDATE_SHA = "8f4df31c62bc48802bcb01613bfcb1682ed0e88f"
+CANDIDATE_SHA = "47942ac3bd08d8cbcc615fa215c5e5eef286f486"
 CANDIDATE_ENV = "JAAL_STAGE4_COMMUNITY_CANDIDATE"
 CANDIDATE_JS_FILES = PORTABLE_JS_FILES + ("18.jaal_community_collapse.js",)
 LOCAL_BOOTSTRAP = "bootstrap@5.3.1/bootstrap.min.css"
@@ -68,19 +68,34 @@ def subtree_stats(root):
 
 
 def _community_candidate_enabled():
-    """Fail closed unless the opt-in exact upstream candidate is installed."""
-    value = os.environ.get(CANDIDATE_ENV, "0")
-    if value in ("", "0"):
+    """Enable the reviewed release by default; flag 0 forces four modes.
+
+    The older opt-in environment name remains compatible. Unset enables
+    Louvain ONLY for the exact upstream merged SHA, retaining four modes for
+    older external installations rather than loading unreviewed code.
+    """
+    value = os.environ.get(CANDIDATE_ENV)
+    if value == "0":
         return False
-    if value != "1":
+    if value not in (None, "", "1"):
         raise ValueError(f"{CANDIDATE_ENV} only accepts 0 or 1")
-    dist = importlib.metadata.distribution("jaal-topology-viewer")
+    try:
+        dist = importlib.metadata.distribution("jaal-topology-viewer")
+    except importlib.metadata.PackageNotFoundError:
+        if value == "1":
+            raise RuntimeError("Required reviewed Jaal release is missing")
+        return False
     info = json.loads(dist.read_text("direct_url.json") or "{}")
-    if info.get("vcs_info", {}).get("commit_id") != CANDIDATE_SHA:
-        raise RuntimeError(
-            "Stage 4 experimental Louvain requires isolated Jaal candidate "
-            f"exact SHA {CANDIDATE_SHA}; production pin stays unchanged"
-        )
+    actual = info.get("vcs_info", {}).get("commit_id")
+    if actual != CANDIDATE_SHA:
+        if value == "1":
+            raise RuntimeError(
+                "Stage 4 Louvain requires reviewed release commit "
+                f"{CANDIDATE_SHA}; installed: {actual!r}"
+            )
+        # An older external installation retains the original four modes.
+        # requirements.txt itself now pins the approved release.
+        return False
     return True
 
 
