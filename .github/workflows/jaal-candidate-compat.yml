@@ -8,6 +8,8 @@ on:
       - ".github/workflows/jaal-candidate-compat.yml"
       - "tests/test_jaal_candidate_compat.py"
       - "tests/stage4_jaal_browser.py"
+      - "tests/stage4_jaal_community_browser.py"
+      - "BertScript/jaal_original_mount.py"
   workflow_dispatch:
 
 permissions:
@@ -83,6 +85,20 @@ jobs:
         env:
           PYTHONUTF8: "1"
         run: python tests/stage4_jaal_browser.py --evidence stage4-browser-evidence
+      - name: Exercise real Stage 4 fifth-mode Louvain candidate in Chromium
+        if: matrix.os == 'windows-latest'
+        env:
+          PYTHONUTF8: "1"
+        run: >-
+          python tests/stage4_jaal_community_browser.py
+          --evidence stage4-community-browser-evidence
+      - name: Upload Stage 4 fifth-mode evidence (also on failure)
+        if: always() && matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage4-community-windows-chromium
+          path: stage4-community-browser-evidence/
+          if-no-files-found: warn
       - name: Upload Stage 4 browser evidence (and server log on failure)
         if: always() && matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v4

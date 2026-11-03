@@ -170,13 +170,13 @@ class CandidateJaalIntegrationTests(unittest.TestCase):
         with mock.patch.dict(os.environ, {CANDIDATE_ENV: "1"}):
             child = prefix_original_jaal(original, "/candidate-stage4/")
         client = child.server.test_client()
-        body = client.get("/candidate-stage4/").get_data(as_text=True)
+        body = client.get("/").get_data(as_text=True)
         self.assertIn("18.jaal_community_collapse.js", body)
         self.assertEqual(
-            client.get("/candidate-stage4/assets/18.jaal_community_collapse.js").status_code,
+            client.get("/assets/18.jaal_community_collapse.js").status_code,
             200,
         )
-        layout = client.get("/candidate-stage4/_dash-layout")
+        layout = client.get("/_dash-layout")
         self.assertEqual(layout.status_code, 200)
         props = {}
 
@@ -203,7 +203,7 @@ class CandidateJaalIntegrationTests(unittest.TestCase):
         self.assertFalse(props["jaal-structural-eligible"]["data"])
         self.assertEqual(set(props["jaal-community-membership"]["data"]),
                          {"A", "B", "C"})
-        deps = client.get("/candidate-stage4/_dash-dependencies").get_json()
+        deps = client.get("/_dash-dependencies").get_json()
         run = next(row for row in deps if row["output"] == "graph.run")
         self.assertEqual(
             {item["id"] for item in run["inputs"]},
