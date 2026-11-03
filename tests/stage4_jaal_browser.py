@@ -248,6 +248,140 @@ def run(port: int, evidence: Path) -> None:
                 search.fill("")
                 until("Search reset restores nodes",
                       lambda s: all(not n.get("hidden") for n in s["nodes"]))
+
+                # Exercise real original Jaal Dash callbacks through native
+                # browser controls, observe live visdcc DataSets and restoration.
+                clean = until(
+                    "full graph restored before Filter/Color/Size",
+                    lambda s: len(s["nodes"]) == 77
+                    and len(s["edges"]) > 10
+                    and all(not n.get("hidden") for n in s["nodes"]),
+                )
+                original_nodes = {n["id"] for n in clean["nodes"]}
+                original_edges = {str(e["id"]) for e in clean["edges"]}
+                original_edge_count = len(clean["edges"])
+
+                frame.locator("#filter-show-toggle-button").click()
+                node_query = frame.locator("#filter_nodes")
+                node_query.wait_for(state="visible", timeout=10000)
+                node_query.fill("id == 'TW Affairs'")
+                node_filtered = until(
+                    "pandas node Filter restricts real DataSet",
+                    lambda s: {n["id"] for n in s["nodes"]} == {"TW Affairs"},
+                )
+                assert len(node_filtered["nodes"]) == 1
+                page.screenshot(path=str(evidence / "07-stage4-filter-nodes.png"),
+                                full_page=True)
+                node_query.fill("")
+                until(
+                    "node Filter reset restores exact original IDs",
+                    lambda s: {n["id"] for n in s["nodes"]} == original_nodes,
+                )
+
+                edge_query = frame.locator("#filter_edges")
+                edge_query.fill(f"{chr(96)}from{chr(96)} == 'TW Affairs'")
+                edge_filtered = until(
+                    "pandas edge Filter restricts real DataSet",
+                    lambda s: 0 < len(s["edges"]) < original_edge_count
+                    and all(e["from"] == "TW Affairs" for e in s["edges"]),
+                )
+                assert {n["id"] for n in edge_filtered["nodes"]} == original_nodes
+                edge_query.fill("")
+                until(
+                    "edge Filter reset restores exact original edge IDs",
+                    lambda s: {str(e["id"]) for e in s["edges"]} == original_edges,
+                )
+                frame.locator("#filter-show-toggle-button").click()
+                node_query.wait_for(state="hidden", timeout=10000)
+
+                def node_color(row):
+                    color = row.get("color")
+                    return color if isinstance(color, str) else str(color)
+
+                def edge_color(row):
+                    color = row.get("color")
+                    if isinstance(color, dict):
+                        return color.get("color")
+                    return color
+
+                color_baseline = state()
+                baseline_node_colors = {
+                    n["id"]: node_color(n) for n in color_baseline["nodes"]
+                }
+                baseline_edge_colors = {
+                    str(e["id"]): edge_color(e) for e in color_baseline["edges"]
+                }
+                frame.locator("#color_nodes").select_option("Positivity")
+                colored_nodes = until(
+                    "Color nodes by real Positivity metadata",
+                    lambda s: {n["id"] for n in s["nodes"]} == original_nodes
+                    and any(node_color(n) != baseline_node_colors[n["id"]]
+                            for n in s["nodes"]),
+                )
+                assert all(n.get("color") for n in colored_nodes["nodes"])
+                frame.locator("#color-legend-toggle").click()
+                frame.locator("#color-legend-popup").wait_for(
+                    state="visible", timeout=12000
+                )
+                page.screenshot(path=str(evidence / "08-stage4-color-legend.png"),
+                                full_page=True)
+                frame.locator("#color-legend-toggle").click()
+                frame.locator("#color_nodes").select_option("None")
+                until(
+                    "node Color reset restores default blue",
+                    lambda s: all(node_color(n) == "#97C2FC"
+                                  for n in s["nodes"]),
+                )
+
+                frame.locator("#color_edges").select_option("strength")
+                until(
+                    "Color edges by original categorical strength",
+                    lambda s: {str(e["id"]) for e in s["edges"]} == original_edges
+                    and any(edge_color(e) != baseline_edge_colors[str(e["id"])]
+                            for e in s["edges"]),
+                )
+                frame.locator("#color_edges").select_option("None")
+                until(
+                    "edge Color reset restores default blue",
+                    lambda s: all(edge_color(e) == "#97C2FC"
+                                  for e in s["edges"]),
+                )
+
+                frame.locator("#size_nodes").select_option("Degree")
+                sized_nodes = until(
+                    "Size nodes by actual numeric Degree",
+                    lambda s: {n["id"] for n in s["nodes"]} == original_nodes
+                    and any(float(n.get("size", 7)) > 7
+                            for n in s["nodes"]),
+                )
+                assert all(float(n["size"]) >= 7 for n in sized_nodes["nodes"])
+                frame.locator("#size_nodes").select_option("None")
+                until(
+                    "node Size reset restores default 7",
+                    lambda s: all(float(n.get("size", 0)) == 7
+                                  for n in s["nodes"]),
+                )
+                frame.locator("#size_edges").select_option(
+                    "endpoint_LGPdepth_weight"
+                )
+                until(
+                    "Size edges by original numeric endpoint depth weight",
+                    lambda s: {str(e["id"]) for e in s["edges"]} == original_edges
+                    and any(float(e.get("width", 1)) > 1
+                            for e in s["edges"]),
+                )
+                page.screenshot(path=str(evidence / "09-stage4-size-edges.png"),
+                                full_page=True)
+                frame.locator("#size_edges").select_option("None")
+                until(
+                    "edge Size reset restores default 1",
+                    lambda s: all(float(e.get("width", 0)) == 1
+                                  for e in s["edges"]),
+                )
+                fully_reset = state()
+                assert {n["id"] for n in fully_reset["nodes"]} == original_nodes
+                assert {str(e["id"]) for e in fully_reset["edges"]} == original_edges
+                assert not any(n.get("hidden") for n in fully_reset["nodes"])
                 toggle = frame.locator("#jaal-original-sidebar-toggle")
                 toggle.click()
                 frame.locator("#jaal-original-settings-column").wait_for(state="hidden")
@@ -290,9 +424,9 @@ def run(port: int, evidence: Path) -> None:
                     "PASS: hosted Windows Chromium opened actual --viewer-only Stage 4 "
                     "Dash, explicitly loaded original Jaal same-port iframe, exercised "
                     "all four modes including real collapsed/expanded hierarchy, checked live visdcc Search hidden flags and Chinese "
-                    "labels, real canvas node drag without camera pan, sidebar toggle and original ID restoration.\n"
+                    "labels, real canvas drag without camera pan, real Filter/Color/Size node/edge callbacks and resets, sidebar toggle and original ID restoration.\n"
                     "NOT VERIFIED: human Windows GPU/model/WorkPool, manual motion/focus perception, "
-                    "perception, manual Color/Size/Filter interactions, user screen layout "
+                    "uncovered Color/Size/Filter combinations, user screen layout "
                     "and complete Dash version matrix.\n",
                     encoding="utf-8",
                 )
