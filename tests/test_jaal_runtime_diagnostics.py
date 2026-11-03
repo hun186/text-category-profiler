@@ -112,6 +112,33 @@ class JaalRuntimeDiagnosticsTests(unittest.TestCase):
         self.assertIn("JAAL_TOPOLOGY_MISSING", error.getvalue())
         self.assertNotIn("JAAL_TOPOLOGY_MISSING", output.getvalue())
 
+    def test_lazy_mount_missing_portable_module_has_actionable_error(self):
+        import ast
+        from pathlib import Path
+        import sys
+
+        path = Path(__file__).resolve().parents[1] / (
+            "BertScript/jaal_original_mount.py"
+        )
+        tree = ast.parse(path.read_text(encoding="utf-8-sig"))
+        matches = [
+            node for node in tree.body
+            if isinstance(node, ast.FunctionDef)
+            and node.name == "_portable_jaal_assets_dir"
+        ]
+        self.assertEqual(len(matches), 1)
+        scope = {}
+        exec(compile(
+            ast.Module(body=matches, type_ignores=[]), str(path), "exec",
+        ), scope)
+        with mock.patch.dict(sys.modules, {"jaal_topology": None}):
+            with self.assertRaisesRegex(
+                ModuleNotFoundError, "JAAL_TOPOLOGY_MISSING"
+            ) as caught:
+                scope["_portable_jaal_assets_dir"]()
+        self.assertIn("requirements.txt", str(caught.exception))
+        self.assertIn("Test_result_Vis.py", str(caught.exception))
+
     def test_missing_app_contract_fails_without_port(self):
         output, error = io.StringIO(), io.StringIO()
         result = probe.diagnose(build_app=lambda *_: object(),
