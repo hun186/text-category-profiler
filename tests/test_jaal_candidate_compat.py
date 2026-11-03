@@ -11,7 +11,7 @@ import os
 from pathlib import Path
 import unittest
 
-CANDIDATE_SHA = "613effaca891f761b59f099c4f4cf38d495297cd"
+CANDIDATE_SHA = "3e9355851357326ac0e47848b8cef64b50bf1b83"
 BASELINE_SHA = "7a7d8ba1f847b2f95a620c61a0c5a94f0523e255"
 ROOT = Path(__file__).resolve().parents[1]
 LEGACY_MODES = (
@@ -67,6 +67,51 @@ class CandidateJaalIntegrationTests(unittest.TestCase):
         self.assertFalse(new["layout"]["hierarchical"]["enabled"])
         self.assertTrue(new["physics"]["enabled"])
         self.assertNotIn("layout", base, "Upstream must not mutate caller config")
+
+    def test_graph_type_detection_and_cyclic_safety_on_current_candidate(self):
+        from jaal_topology.data import Graph, assess_structural_collapse
+        from jaal_topology.viewer import build_app
+
+        tree = Graph((("A", "B"),), ("A", "B"))
+        forest = Graph((("A", "B"), ("C", "D")), ("A", "B", "C", "D"))
+        dag = Graph(
+            (("A", "B"), ("A", "C"), ("B", "D"), ("C", "D")),
+            ("A", "B", "C", "D"),
+        )
+        cyclic = Graph((("A", "B"), ("B", "A")), ("A", "B"))
+        self.assertEqual(
+            [assess_structural_collapse(x).graph_kind
+             for x in (tree, forest, dag, cyclic)],
+            ["tree", "forest", "dag", "cyclic"],
+        )
+        app = build_app(cyclic)
+        response = app.server.test_client().get("/_dash-layout")
+        self.assertEqual(response.status_code, 200)
+        found = {}
+
+        def collect(item):
+            if isinstance(item, dict):
+                props = item.get("props", {})
+                if isinstance(props.get("id"), str):
+                    found[props["id"]] = props
+                for child in item.values():
+                    collect(child)
+            elif isinstance(item, list):
+                for child in item:
+                    collect(child)
+
+        collect(response.get_json())
+        options = {
+            option["value"]: option
+            for option in found["jaal-original-layout-mode"]["options"]
+        }
+        self.assertTrue(options["network-collapsed"]["disabled"])
+        self.assertTrue(options["hierarchical-collapsed"]["disabled"])
+        self.assertFalse(options[COMMUNITY_MODE].get("disabled", False))
+        self.assertEqual(found["jaal-structural-eligible"]["data"], False)
+        self.assertIn(
+            "一般有環網路", found["jaal-original-graph-profile"]["children"],
+        )
 
     def test_standalone_five_modes_and_original_stage4_four_modes(self):
         from jaal_topology.data import Graph
