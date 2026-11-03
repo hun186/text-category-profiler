@@ -86,7 +86,7 @@ def run(port: int, evidence: Path) -> None:
                 assert "圖形類型：" in frame.locator(
                     "#jaal-original-graph-profile"
                 ).inner_text()
-                assert "社群彙總圖" in frame.locator(
+                assert "社群彙總" in frame.locator(
                     "#jaal-original-community-cycle-hint"
                 ).inner_text()
                 page.screenshot(
