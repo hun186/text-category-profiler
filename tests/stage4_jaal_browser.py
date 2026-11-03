@@ -186,18 +186,40 @@ def run(port: int, evidence: Path) -> None:
                             view: net.getViewPosition(), scale: net.getScale(),
                         };
                     }""")
-                # Headless Windows can miss a small moving dot on the first
-                # mouse-down while the canvas settles. Repeat the ACTUAL
-                # mouse gesture a bounded three times, keeping all movement
-                # and camera/zoom thresholds unchanged.
+                # Verify a real node hit, dragStart AND dragEnd (not only
+                # physics drift). Camera/zoom and >15 world-unit thresholds
+                # remain unchanged. Use bounded attempts for headless layout.
+                frame.locator("body").evaluate("""() => {
+                    const net = window.__stage4JaalNetwork.net;
+                    window.__stage4RealDragEvents = [];
+                    for (const type of ['dragStart', 'dragEnd']) {
+                        net.on(type, event => window.__stage4RealDragEvents.push({
+                            type, nodes: Array.isArray(event.nodes) ? [...event.nodes] : []
+                        }));
+                    }
+                }""")
                 drag_diagnostics = []
-                for attempt, (dx, dy) in enumerate(((65, 28), (90, 35), (115, 45)), 1):
+                for attempt, (dx, dy) in enumerate(
+                    ((75, 35), (95, 45), (115, 50), (130, 60), (145, 65)), 1
+                ):
                     frame.locator("body").evaluate("""() => {
                         const net = window.__stage4JaalNetwork.net;
                         net.stopSimulation();
-                        net.focus('TW Affairs', {scale: 1, animation: false});
+                        net.selectNodes(['TW Affairs']);
+                        net.focus('TW Affairs', {scale: 1.5, animation: false});
+                        net.stopSimulation();
+                        window.__stage4RealDragEvents = [];
                     }""")
+                    page.wait_for_timeout(180)
                     before_drag = root_geometry()
+                    hit = frame.locator("body").evaluate("""() => {
+                        const net = window.__stage4JaalNetwork.net;
+                        const root = net.getPositions(['TW Affairs'])['TW Affairs'];
+                        return net.getNodeAt(net.canvasToDOM(root));
+                    }""")
+                    if hit != "TW Affairs":
+                        drag_diagnostics.append((attempt, "wrong hit", str(hit)))
+                        continue
                     canvas_rect = canvas.bounding_box()
                     assert canvas_rect, "Missing live Jaal canvas for drag"
                     mouse_x = canvas_rect["x"] + before_drag["point"]["x"]
@@ -207,11 +229,26 @@ def run(port: int, evidence: Path) -> None:
                     assert (canvas_rect["y"] + 10 < mouse_y <
                             canvas_rect["y"] + canvas_rect["height"] - 10)
                     page.mouse.move(mouse_x, mouse_y)
+                    page.wait_for_timeout(130)
                     page.mouse.down()
-                    page.mouse.move(mouse_x + dx, mouse_y + dy, steps=18)
+                    page.wait_for_timeout(90)
+                    page.mouse.move(mouse_x + dx, mouse_y + dy, steps=28)
                     page.mouse.up()
-                    page.wait_for_timeout(350)
+                    page.wait_for_timeout(260)
                     after_drag = root_geometry()
+                    drag_events = frame.locator("body").evaluate(
+                        "() => window.__stage4RealDragEvents || []"
+                    )
+                    real_start = any(
+                        e.get("type") == "dragStart"
+                        and "TW Affairs" in e.get("nodes", [])
+                        for e in drag_events
+                    )
+                    real_end = any(
+                        e.get("type") == "dragEnd"
+                        and "TW Affairs" in e.get("nodes", [])
+                        for e in drag_events
+                    )
                     distance = (
                         (after_drag["node"]["x"] - before_drag["node"]["x"]) ** 2
                         + (after_drag["node"]["y"] - before_drag["node"]["y"]) ** 2
@@ -221,16 +258,18 @@ def run(port: int, evidence: Path) -> None:
                         + (after_drag["view"]["y"] - before_drag["view"]["y"]) ** 2
                     ) ** 0.5
                     scale_delta = abs(after_drag["scale"] - before_drag["scale"])
-                    drag_diagnostics.append(
-                        (attempt, round(distance, 2), round(view_delta, 2),
-                         round(scale_delta, 3))
-                    )
-                    if distance > 15 and view_delta < 5 and scale_delta < 0.01:
+                    drag_diagnostics.append((
+                        attempt, round(distance, 2), round(view_delta, 2),
+                        round(scale_delta, 3), real_start, real_end
+                    ))
+                    if (real_start and real_end and distance > 15
+                            and view_delta < 5 and scale_delta < 0.01):
                         break
                 else:
                     raise AssertionError(
-                        "Real Jaal canvas node drag/camera acceptance failed "
-                        f"after 3 mouse gestures; (attempt, move, camera, zoom): "
+                        "Real Jaal node drag/camera acceptance failed "
+                        f"after 5 hit-tested mouse gestures; "
+                        f"(attempt, move, camera, zoom, dragStart, dragEnd): "
                         f"{drag_diagnostics!r}"
                     )
                 page.screenshot(path=str(evidence / "02-stage4-node-drag.png"),
