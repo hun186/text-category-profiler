@@ -7,6 +7,7 @@ It does not activate the model, Stage 4 WorkPool, or modify taxonomy CSVs.
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -24,10 +25,13 @@ def run(port: int, evidence: Path) -> None:
     evidence.mkdir(parents=True, exist_ok=True)
     log_file = evidence / "stage4-jaal-only-server.log"
     with log_file.open("w", encoding="utf-8") as output:
+        old_mode = dict(os.environ)
+        old_mode["JAAL_STAGE4_COMMUNITY_CANDIDATE"] = "0"
         child = subprocess.Popen(
             [sys.executable, str(ROOT / "BertScript" / "Test_result_Vis.py"),
              "--viewer-only", "-p", str(port)],
             cwd=str(ROOT), stdout=output, stderr=subprocess.STDOUT,
+            env=old_mode,
         )
         try:
             host = f"http://127.0.0.1:{port}"
