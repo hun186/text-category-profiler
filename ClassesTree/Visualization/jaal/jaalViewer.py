@@ -229,6 +229,7 @@ def JaalViewMain(
         # columns remain untouched. Standalone Jaal.plot stays unchanged.
         from ClassesTree.Visualization.jaal.label_format import (
             prepare_embedded_jaal_nodes, search_full_classlabel,
+            expose_embedded_jaal_text_color_choices,
         )
         node_df = prepare_embedded_jaal_nodes(node_df)
         # Jaal.create() creates the original Dash UI and callbacks, but
@@ -243,10 +244,13 @@ def JaalViewMain(
             enable_embedded_jaal_global_node_shapes,
         )
         enable_embedded_jaal_global_node_shapes(embedded_jaal)
-        return embedded_jaal.create(
+        app = embedded_jaal.create(
             directed=directed,
             vis_opts=vis_opts,
             )
+        # Jaal 0.1.9 relies on dtype==object for its Color menu, while
+        # pandas 3 infers str extension dtype; correct this local menu only.
+        return expose_embedded_jaal_text_color_choices(app, embedded_jaal.data)
     else:
         Jaal(edge_df, node_df).plot(
             port = 8053,

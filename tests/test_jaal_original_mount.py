@@ -857,7 +857,11 @@ class OriginalJaalSourceContractTests(unittest.TestCase):
         self.assertIn("JaalViewMain(", jaal)
         self.assertIn("Jaal(edge_df, node_df).plot(", jaal)
         self.assertIn("embedded_jaal = Jaal(edge_df, node_df)", jaal)
-        self.assertIn("return embedded_jaal.create(", jaal)
+        self.assertIn("app = embedded_jaal.create(", jaal)
+        self.assertIn(
+            "return expose_embedded_jaal_text_color_choices(app, embedded_jaal.data)",
+            jaal,
+        )
         self.assertIn("node_df = prepare_embedded_jaal_nodes(node_df)", jaal)
         self.assertIn('embedded_jaal._callback_search_graph = search_full_classlabel', jaal)
         self.assertIn("enable_embedded_jaal_global_node_shapes(embedded_jaal)", jaal)
