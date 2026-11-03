@@ -69,6 +69,49 @@ class JaalRuntimeDiagnosticsTests(unittest.TestCase):
             "dash": "(not installed)", "visdcc": "0.0.63",
         }))
 
+    def test_portable_jaal_distribution_is_listed_by_preflight(self):
+        self.assertIn("jaal-topology-viewer", probe.DEPENDENCIES)
+
+    def test_portable_dependency_failure_names_pinned_distribution(self):
+        with self.assertRaisesRegex(
+            ModuleNotFoundError, "JAAL_TOPOLOGY_MISSING"
+        ) as caught:
+            probe.check_portable_jaal_dependency(
+                module_available=False, python_version=(3, 11),
+            )
+        self.assertIn("requirements.txt", str(caught.exception))
+        self.assertIn("SAME interpreter", str(caught.exception))
+        self.assertIn("jaal-topology-viewer", str(caught.exception))
+
+    def test_portable_dependency_requires_python_310(self):
+        with self.assertRaisesRegex(
+            RuntimeError, "JAAL_TOPOLOGY_PYTHON_UNSUPPORTED"
+        ):
+            probe.check_portable_jaal_dependency(
+                module_available=True, python_version=(3, 9),
+            )
+        self.assertIsNone(probe.check_portable_jaal_dependency(
+            module_available=True, python_version=(3, 10),
+        ))
+
+    def test_missing_portable_package_fails_before_dash_build(self):
+        output, error = io.StringIO(), io.StringIO()
+        with mock.patch.object(
+            probe, "check_portable_jaal_dependency",
+            side_effect=ModuleNotFoundError("JAAL_TOPOLOGY_MISSING"),
+        ) as dependency_check, mock.patch.object(
+            probe, "check_dash_visdcc_compatibility",
+        ) as dash_check:
+            result = probe.diagnose(
+                "TW Affairs", output=output, error=error,
+            )
+        self.assertEqual(result, 2)
+        dependency_check.assert_called_once_with()
+        dash_check.assert_not_called()
+        self.assertIn("JAAL_DIAGNOSE_FAILED", error.getvalue())
+        self.assertIn("JAAL_TOPOLOGY_MISSING", error.getvalue())
+        self.assertNotIn("JAAL_TOPOLOGY_MISSING", output.getvalue())
+
     def test_missing_app_contract_fails_without_port(self):
         output, error = io.StringIO(), io.StringIO()
         result = probe.diagnose(build_app=lambda *_: object(),
