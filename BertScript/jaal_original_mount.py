@@ -528,6 +528,11 @@ def prefix_original_jaal(original_app, prefix):
         raise ValueError("Jaal mount prefix must be an absolute slash path")
     if not (STAGE4_ASSETS / LOCAL_BOOTSTRAP).is_file():
         raise RuntimeError("Stage 4 bundled Bootstrap stylesheet is missing")
+    candidate_enabled = _community_candidate_enabled()
+    candidate = (_community_candidate_context(original_app.layout)
+                 if candidate_enabled else None)
+    javascript_files = (CANDIDATE_JS_FILES if candidate_enabled
+                        else PORTABLE_JS_FILES)
     child_app = Dash(
         __name__,
         requests_pathname_prefix=prefix,
@@ -536,7 +541,7 @@ def prefix_original_jaal(original_app, prefix):
         # Browser runtimes are served from the reusable standalone package,
         # not duplicate copies under BertScript/assets.
         external_scripts=[
-            prefix + "assets/" + name for name in PORTABLE_JS_FILES
+            prefix + "assets/" + name for name in javascript_files
         ],
         # Keep upstream styles, but serve the required Bootstrap grid from
         # this same-origin submount. The original CDN can be unavailable.
@@ -550,7 +555,7 @@ def prefix_original_jaal(original_app, prefix):
     # paths take precedence and let the old browser URL contract survive.
     from flask import send_from_directory
     portable_assets = _portable_jaal_assets_dir()
-    for asset_name in PORTABLE_JS_FILES:
+    for asset_name in javascript_files:
         if not (portable_assets / asset_name).is_file():
             raise RuntimeError(f"Bundled portable Jaal asset missing: {asset_name}")
 
@@ -566,7 +571,7 @@ def prefix_original_jaal(original_app, prefix):
         )
     _normalize_original_jaal_logo(original_app.layout)
     _remove_embedded_jaal_outer_row_gutters(original_app.layout)
-    base_options = _add_embedded_jaal_sidebar_toggle(original_app.layout)
+    base_options = _add_embedded_jaal_sidebar_toggle(original_app.layout, candidate)
     # A stable content boundary lets the *child* iframe measure actual
     # rendered height (logo + controls + graph), independent of the original
     # visdcc graph's 600px canvas and the parent's initial fallback height.
@@ -580,8 +585,8 @@ def prefix_original_jaal(original_app, prefix):
     if not child_app.callback_map or len(child_app.callback_map) != len(original_app.callback_map):
         raise RuntimeError("Original Jaal callbacks could not be preserved")
     _register_embedded_jaal_sidebar_toggle(child_app)
-    _register_embedded_jaal_layout_mode(child_app, base_options)
-    _register_embedded_jaal_visible_labels(child_app)
+    _register_embedded_jaal_layout_mode(child_app, base_options, candidate)
+    _register_embedded_jaal_visible_labels(child_app, candidate)
     return child_app
 
 
