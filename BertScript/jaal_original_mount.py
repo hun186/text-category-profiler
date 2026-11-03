@@ -194,7 +194,7 @@ def _jaal_layout_options(base_options, mode):
     return _portable_jaal_layout_provider()(base_options, mode)
 
 
-def _register_embedded_jaal_layout_mode(app, base_options):
+def _register_embedded_jaal_layout_mode(app, base_options, candidate=None):
     """Switch layout, then restore network physics after vis.js unwinds hierarchy.
 
     vis-network LayoutEngine.setOptions() restores an internal physics backup
@@ -212,10 +212,14 @@ def _register_embedded_jaal_layout_mode(app, base_options):
         prevent_initial_call=True,
     )
     def choose_layout(mode, _ticks):
+        if (candidate is not None and not candidate["eligible"]
+                and mode in ("network-collapsed", "hierarchical-collapsed")):
+            raise ValueError("Descendant collapse unavailable on directed cycles")
         triggered = callback_context.triggered[0]["prop_id"].split(".", 1)[0]
         if triggered == "jaal-original-physics-restore":
             # A quick switch back to hierarchy must never reactivate physics.
-            if mode not in ("network", "network-collapsed"):
+            if mode not in (("network", "network-collapsed", "network-community-collapsed")
+                            if candidate is not None else ("network", "network-collapsed")):
                 return no_update, True
             baseline = base_options.get("physics", {})
             enabled = baseline.get("enabled", True) if isinstance(
@@ -235,7 +239,8 @@ def _register_embedded_jaal_layout_mode(app, base_options):
             }, True
         if mode in ("hierarchical", "hierarchical-collapsed"):
             return _jaal_layout_options(base_options, mode), True
-        if mode in ("network", "network-collapsed"):
+        if mode in (("network", "network-collapsed", "network-community-collapsed")
+                    if candidate is not None else ("network", "network-collapsed")):
             # Step 1: exit hierarchical layout, restoring original vis.js
             # settings. LayoutEngine can still override physics.enabled.
             # Step 2: timer tick restores enabled after the React update.
@@ -272,7 +277,7 @@ def _class_table_labels_for_nodes(node_ids, path=None):
     return translations
 
 
-def _register_embedded_jaal_visible_labels(app):
+def _register_embedded_jaal_visible_labels(app, candidate=None):
     """Project label text onto visdcc's live vis.DataSet when Dash data changes.
 
     Dash's initial graph.data may contain explicit newlines yet the user's
@@ -291,11 +296,13 @@ def _register_embedded_jaal_visible_labels(app):
         Input("graph", "data"),
         Input("jaal-original-chinese-labels", "value"),
         Input("jaal-original-ct-translations", "data"),
+        *([Input("jaal-community-membership", "data"),
+           Input("jaal-structural-eligible", "data")] if candidate is not None else []),
         prevent_initial_call=False,
     )
 
 
-def _add_embedded_jaal_sidebar_toggle(layout):
+def _add_embedded_jaal_sidebar_toggle(layout, candidate=None):
     """Add a toggle without rebuilding the original Jaal graph or controls.
 
     Only the Jaal-owned 3/9 Bootstrap columns are decorated. The button lives
@@ -385,14 +392,21 @@ def _add_embedded_jaal_sidebar_toggle(layout):
         data=translations,
         storage_type="memory",
     )
+    mode_options = [
+        {"label": "網狀（全展開）", "value": "network"},
+        {"label": "網狀（收攏）", "value": "network-collapsed"},
+        {"label": "階層（全展開）", "value": "hierarchical"},
+        {"label": "階層（收攏）", "value": "hierarchical-collapsed"},
+    ]
+    if candidate is not None:
+        mode_options.insert(2, {"label": "網狀（社群收攏・Louvain）",
+                                "value": "network-community-collapsed"})
+        for choice in mode_options:
+            if choice["value"] in ("network-collapsed", "hierarchical-collapsed"):
+                choice["disabled"] = not candidate["eligible"]
     mode_choice = dcc.RadioItems(
         id="jaal-original-layout-mode",
-        options=[
-            {"label": "網狀（全展開）", "value": "network"},
-            {"label": "網狀（收攏）", "value": "network-collapsed"},
-            {"label": "階層（全展開）", "value": "hierarchical"},
-            {"label": "階層（收攏）", "value": "hierarchical-collapsed"},
-        ],
+        options=mode_options,
         value="network",
         inline=True,
         labelStyle={"marginRight": "12px", "cursor": "pointer"},
@@ -401,13 +415,34 @@ def _add_embedded_jaal_sidebar_toggle(layout):
     toolbar = html.Div(
         [toggle, html.Span("顯示模式："), mode_choice, chinese_choice,
          translation_store,
+         *([
+             dcc.Store(id="jaal-community-membership",
+                       data=candidate["membership"], storage_type="memory"),
+             dcc.Store(id="jaal-structural-eligible",
+                       data=candidate["eligible"], storage_type="memory"),
+             html.Span(
+                 "圖形類型：" + {
+                     "tree": "樹狀階層（單一起點）",
+                     "forest": "樹狀森林（多個起點）",
+                     "dag": "無環 DAG（多父節點）",
+                     "cyclic": "一般有環網路（不適合子樹收攏）",
+                 }[candidate["kind"]],
+                 id="jaal-original-graph-profile",
+                 style={"fontSize": "12px", "fontWeight": 600}),
+         ] if candidate is not None else []),
          html.Span("標籤版本：" + LABEL_RENDERER_REVISION,
                    id="jaal-original-label-revision",
                    title="這是當前 Python 服務實際載入的標籤版本；"
                          "若更新 Git 後仍看不到此版本，請完全停止 8059 服務再重新啟動",
                    style={"fontSize": "12px", "color": "#475569"}),
-         html.Span("收攏模式：節點下方數字＝不同子孫節點數；點擊展開／收合一層。"
-                   " 原本全展開模式保留。",
+         html.Span(
+                   ("偵測到有向迴路：停用兩種子樹收攏；可使用網狀（社群收攏・Louvain）。"
+                    if candidate is not None and not candidate["eligible"] else
+                    "無環 DAG 可能包含共享後代；數字代表可達節點，不一定是獨占下屬。"
+                    if candidate is not None and candidate["multi_parent"] else
+                    "收攏模式：節點下方數字＝不同子孫節點數；點擊展開／收合一層。"
+                    " 原本全展開模式保留。")
+                   + (" 社群分群不代表職級。" if candidate is not None else ""),
                    id="jaal-original-hierarchy-hint",
                    style={"fontSize": "12px", "color": "#475569"}),
          dcc.Interval(id="jaal-original-physics-restore",
