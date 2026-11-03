@@ -66,7 +66,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install real Jaal + Dash for WSGI compatibility check
-        run: python -m pip install dash dash-bootstrap-components dash-cytoscape jaal pandas "jaal-topology-viewer @ git+https://github.com/hun186/jaal-topology-viewer.git@7a7d8ba1f847b2f95a620c61a0c5a94f0523e255"
+        run: python -m pip install dash dash-bootstrap-components dash-cytoscape jaal pandas "jaal-topology-viewer @ git+https://github.com/hun186/jaal-topology-viewer.git@47942ac3bd08d8cbcc615fa215c5e5eef286f486"
       - name: Prove runtime uses external GitHub distribution
         run: |
           python - <<'PY'
@@ -80,6 +80,8 @@ jobs:
       - name: Compile changed modules
         run: python -m py_compile BertScript/jaal_original_mount.py BertScript/jaal_original_panel.py BertScript/Test_result_Vis.py ClassesTree/Visualization/jaal/jaalViewer.py ClassesTree/Visualization/jaal/label_format.py tests/test_jaal_original_mount.py tests/test_jaal_label_format.py BertScript/jaal_viewer_only.py BertScript/jaal_runtime_diagnostics.py tests/test_jaal_viewer_only.py tests/test_jaal_runtime_diagnostics.py
       - name: Check original Jaal UI, lazy mount, callback and same-port assets
+        env:
+          JAAL_STAGE4_COMMUNITY_CANDIDATE: "0"
         run: python -m unittest -v tests.test_jaal_external_source_contract tests.test_jaal_label_format tests.test_jaal_original_mount tests.test_jaal_viewer_only tests.test_jaal_runtime_diagnostics
       - name: Check Jaal direct-script path compatibility
         run: python -m unittest -v tests.test_jaal_viewer_path_contract
@@ -92,8 +94,10 @@ jobs:
           assets_dir="$(python -c 'from jaal_topology import ASSETS_DIR; print(ASSETS_DIR)')"
           test -s "$assets_dir/16.jaal_visible_labels.js"
           test -s "$assets_dir/17.jaal_structural_collapse.js"
+          test -s "$assets_dir/18.jaal_community_collapse.js"
           node --check "$assets_dir/16.jaal_visible_labels.js"
           node --check "$assets_dir/17.jaal_structural_collapse.js"
+          node --check "$assets_dir/18.jaal_community_collapse.js"
           node --test tests/jaal_autoheight.test.cjs tests/jaal_visible_labels.test.cjs tests/jaal_structural_collapse.test.cjs
       - name: Check whitespace
         run: git diff --check HEAD^ HEAD
