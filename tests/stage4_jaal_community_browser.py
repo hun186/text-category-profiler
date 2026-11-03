@@ -181,6 +181,9 @@ def run(port: int, evidence: Path) -> None:
                 }""")
                 panel = frame.locator("#jaal-community-edge-inspector")
                 panel.wait_for(state="visible", timeout=12000)
+                assert panel.evaluate(
+                    "el => !!el.closest('.vis-network')"
+                ), "Source inspector must be inside visible Jaal canvas"
                 assert panel.locator("li").count() == min(100, details["count"])
                 assert details["first"]["from"] in panel.locator("li").first.get_attribute("title")
                 assert details["first"]["to"] in panel.locator("li").first.get_attribute("title")

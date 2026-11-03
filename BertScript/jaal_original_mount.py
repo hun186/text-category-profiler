@@ -42,7 +42,7 @@ def _portable_jaal_assets_dir():
     from jaal_topology import ASSETS_DIR
     return ASSETS_DIR
 PORTABLE_JS_FILES = ("16.jaal_visible_labels.js", "17.jaal_structural_collapse.js")
-CANDIDATE_SHA = "d8ece317dee554d3e286f4a92c6f8ff52a39266b"
+CANDIDATE_SHA = "8f4df31c62bc48802bcb01613bfcb1682ed0e88f"
 CANDIDATE_ENV = "JAAL_STAGE4_COMMUNITY_CANDIDATE"
 CANDIDATE_JS_FILES = PORTABLE_JS_FILES + ("18.jaal_community_collapse.js",)
 LOCAL_BOOTSTRAP = "bootstrap@5.3.1/bootstrap.min.css"

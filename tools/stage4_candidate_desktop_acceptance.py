@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # is sys.path[0] on Windows. Import project modules from the explicit root.
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-SHA = "d8ece317dee554d3e286f4a92c6f8ff52a39266b"
+SHA = "8f4df31c62bc48802bcb01613bfcb1682ed0e88f"
 
 CHECKS = (
     "01 Stage 4 viewer-only loads on one port, without the model/WorkPool",

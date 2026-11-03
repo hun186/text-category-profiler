@@ -11,7 +11,7 @@ import os
 from pathlib import Path
 import unittest
 
-CANDIDATE_SHA = "d8ece317dee554d3e286f4a92c6f8ff52a39266b"
+CANDIDATE_SHA = "8f4df31c62bc48802bcb01613bfcb1682ed0e88f"
 CANDIDATE_SHA_EXPECTED = CANDIDATE_SHA
 BASELINE_SHA = "7a7d8ba1f847b2f95a620c61a0c5a94f0523e255"
 ROOT = Path(__file__).resolve().parents[1]
