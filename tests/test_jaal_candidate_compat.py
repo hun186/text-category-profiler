@@ -12,6 +12,7 @@ from pathlib import Path
 import unittest
 
 CANDIDATE_SHA = "3e9355851357326ac0e47848b8cef64b50bf1b83"
+CANDIDATE_SHA_EXPECTED = CANDIDATE_SHA
 BASELINE_SHA = "7a7d8ba1f847b2f95a620c61a0c5a94f0523e255"
 ROOT = Path(__file__).resolve().parents[1]
 LEGACY_MODES = (
@@ -111,6 +112,104 @@ class CandidateJaalIntegrationTests(unittest.TestCase):
         self.assertEqual(found["jaal-structural-eligible"]["data"], False)
         self.assertIn(
             "一般有環網路", found["jaal-original-graph-profile"]["children"],
+        )
+
+
+    def test_stage4_opt_in_community_context_cycles_dag_and_duplicate_pairs(self):
+        from types import SimpleNamespace
+        from unittest import mock
+        from BertScript.jaal_original_mount import (
+            _community_candidate_enabled, _community_candidate_context,
+            CANDIDATE_ENV, CANDIDATE_SHA,
+        )
+        self.assertEqual(CANDIDATE_SHA, CANDIDATE_SHA_EXPECTED)
+        with mock.patch.dict(os.environ, {CANDIDATE_ENV: "0"}):
+            self.assertFalse(_community_candidate_enabled())
+        with mock.patch.dict(os.environ, {CANDIDATE_ENV: "1"}):
+            self.assertTrue(_community_candidate_enabled())
+
+        def context(edges):
+            ids = sorted({value for a, b in edges for value in (a, b)})
+            network = SimpleNamespace(
+                id="graph",
+                data={"nodes": [{"id": x} for x in ids],
+                      "edges": [{"from": a, "to": b} for a, b in edges]},
+                children=None,
+            )
+            return _community_candidate_context(
+                SimpleNamespace(children=[network])
+            )
+
+        cyclic = context([("A", "B"), ("B", "C"), ("C", "A"), ("A", "B")])
+        self.assertFalse(cyclic["eligible"])
+        self.assertEqual(cyclic["kind"], "cyclic")
+        self.assertEqual(set(cyclic["membership"]), {"A", "B", "C"})
+
+        dag = context([("A", "B"), ("A", "C"), ("B", "D"), ("C", "D")])
+        self.assertTrue(dag["eligible"])
+        self.assertEqual(dag["kind"], "dag")
+        self.assertEqual(dag["multi_parent"], 1)
+
+    def test_real_original_jaal_can_mount_fifth_mode_with_exact_candidate(self):
+        from unittest import mock
+        import pandas as pd
+        from jaal import Jaal
+        from BertScript.jaal_original_mount import (
+            prefix_original_jaal, CANDIDATE_ENV,
+        )
+        edges = pd.DataFrame({
+            "from": ["A", "B", "C", "A"],
+            "to": ["B", "C", "A", "B"],
+            "strength": ["medium"] * 4,
+        })
+        nodes = pd.DataFrame({
+            "id": ["A", "B", "C"],
+            "Positivity": ["Pos", "Neu", "Neg"],
+        })
+        original = Jaal(edges, nodes).create(directed=True)
+        with mock.patch.dict(os.environ, {CANDIDATE_ENV: "1"}):
+            child = prefix_original_jaal(original, "/candidate-stage4/")
+        client = child.server.test_client()
+        body = client.get("/candidate-stage4/").get_data(as_text=True)
+        self.assertIn("18.jaal_community_collapse.js", body)
+        self.assertEqual(
+            client.get("/candidate-stage4/assets/18.jaal_community_collapse.js").status_code,
+            200,
+        )
+        layout = client.get("/candidate-stage4/_dash-layout")
+        self.assertEqual(layout.status_code, 200)
+        props = {}
+
+        def walk(node):
+            if isinstance(node, dict):
+                p = node.get("props", {})
+                if isinstance(p.get("id"), str):
+                    props[p["id"]] = p
+                for value in node.values():
+                    walk(value)
+            elif isinstance(node, list):
+                for child in node:
+                    walk(child)
+
+        walk(layout.get_json())
+        modes = {
+            opt["value"]: opt
+            for opt in props["jaal-original-layout-mode"]["options"]
+        }
+        self.assertEqual(len(modes), 5)
+        self.assertFalse(modes["network-community-collapsed"].get("disabled", False))
+        self.assertTrue(modes["network-collapsed"]["disabled"])
+        self.assertTrue(modes["hierarchical-collapsed"]["disabled"])
+        self.assertFalse(props["jaal-structural-eligible"]["data"])
+        self.assertEqual(set(props["jaal-community-membership"]["data"]),
+                         {"A", "B", "C"})
+        deps = client.get("/candidate-stage4/_dash-dependencies").get_json()
+        run = next(row for row in deps if row["output"] == "graph.run")
+        self.assertEqual(
+            {item["id"] for item in run["inputs"]},
+            {"graph", "jaal-original-layout-mode", "jaal-original-chinese-labels",
+             "jaal-original-ct-translations", "jaal-community-membership",
+             "jaal-structural-eligible"},
         )
 
     def test_standalone_five_modes_and_original_stage4_four_modes(self):
