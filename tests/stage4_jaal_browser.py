@@ -204,6 +204,11 @@ def run(port: int, evidence: Path) -> None:
                 ):
                     frame.locator("body").evaluate("""() => {
                         const net = window.__stage4JaalNetwork.net;
+                        // Freeze physics explicitly; stopSimulation alone
+                        // does not prevent Jaal from restarting movement
+                        // during or immediately after the mouse gesture.
+                        // This changes only this browser test instance.
+                        net.setOptions({physics: {enabled: false}});
                         net.stopSimulation();
                         net.selectNodes(['TW Affairs']);
                         net.focus('TW Affairs', {scale: 1.5, animation: false});
