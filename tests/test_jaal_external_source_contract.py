@@ -12,7 +12,7 @@ from pathlib import Path
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-JAAL_SHA = "7a7d8ba1f847b2f95a620c61a0c5a94f0523e255"
+JAAL_SHA = "47942ac3bd08d8cbcc615fa215c5e5eef286f486"
 JAAL_URL = "git+https://github.com/hun186/jaal-topology-viewer.git@" + JAAL_SHA
 
 
@@ -51,7 +51,8 @@ class ExternalJaalSourceTests(unittest.TestCase):
         self.assertTrue(jaal_topology.ASSETS_DIR.is_dir())
         self.assertTrue(callable(jaal_topology.modes.layout_options))
         for name in ("16.jaal_visible_labels.js",
-                     "17.jaal_structural_collapse.js", "bootstrap.min.css"):
+                     "17.jaal_structural_collapse.js",
+                     "18.jaal_community_collapse.js", "bootstrap.min.css"):
             self.assertTrue((jaal_topology.ASSETS_DIR / name).is_file())
         dist = metadata.distribution("jaal-topology-viewer")
         self.assertEqual(dist.version, "0.1.0")

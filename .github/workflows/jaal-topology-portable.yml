@@ -35,7 +35,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install pinned external Jaal package, not root ML requirements
-        run: python -m pip install "jaal-topology-viewer @ git+https://github.com/hun186/jaal-topology-viewer.git@7a7d8ba1f847b2f95a620c61a0c5a94f0523e255"
+        run: python -m pip install "jaal-topology-viewer @ git+https://github.com/hun186/jaal-topology-viewer.git@47942ac3bd08d8cbcc615fa215c5e5eef286f486"
       - name: Assert package imported from installed GitHub checkout, not vendored path
         run: |
           python - <<'PY'

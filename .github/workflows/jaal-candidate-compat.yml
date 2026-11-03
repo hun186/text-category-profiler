@@ -1,7 +1,7 @@
 name: Stage 4 Jaal Candidate Compatibility
 
-# Test an unmerged, immutable upstream candidate without replacing the
-# production pin in requirements.txt or copying any portable JS/Python.
+# Test the exact reviewed upstream merged commit used as production pin.
+# Exercise default five-mode runtime and forced four-mode fallback separately.
 on:
   pull_request:
     paths:
@@ -10,6 +10,7 @@ on:
       - "tests/stage4_jaal_browser.py"
       - "tests/stage4_jaal_community_browser.py"
       - "BertScript/jaal_original_mount.py"
+      - "requirements.txt"
       - "tools/stage4_candidate_desktop_acceptance.py"
       - "tests/test_stage4_candidate_desktop_acceptance.py"
       - "run-stage4-jaal-candidate-acceptance.bat"
@@ -35,12 +36,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Install isolated dependencies + exact upstream candidate
+      - name: Install reviewed released Jaal at the exact production SHA
         run: >
           python -m pip install dash dash-bootstrap-components
           dash-cytoscape jaal pandas
-          "jaal-topology-viewer @ git+https://github.com/hun186/jaal-topology-viewer.git@8f4df31c62bc48802bcb01613bfcb1682ed0e88f"
-      - name: Verify candidate SHA, upstream fifth mode, consumer four-mode boundary
+          "jaal-topology-viewer @ git+https://github.com/hun186/jaal-topology-viewer.git@47942ac3bd08d8cbcc615fa215c5e5eef286f486"
+      - name: Verify release provenance, default fifth mode and fallback
         env:
           JAAL_CANDIDATE_COMPAT: "1"
         run: python -m unittest -v tests.test_jaal_candidate_compat
@@ -52,6 +53,7 @@ jobs:
         # not default-codepage Windows CLI acceptance.
         env:
           PYTHONUTF8: "1"
+          JAAL_STAGE4_COMMUNITY_CANDIDATE: "0"
         run: >
           python -m unittest -v
           tests.test_jaal_label_format
@@ -90,7 +92,7 @@ jobs:
         env:
           PYTHONUTF8: "1"
         run: python tests/stage4_jaal_browser.py --evidence stage4-browser-evidence
-      - name: Exercise real Stage 4 fifth-mode Louvain candidate in Chromium
+      - name: Exercise real default fifth-mode Louvain release in Chromium
         if: matrix.os == 'windows-latest'
         env:
           PYTHONUTF8: "1"

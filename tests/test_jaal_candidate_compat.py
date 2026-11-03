@@ -1,7 +1,7 @@
-"""Isolated Stage 4 compatibility characterization of exact PR #5 candidate.
+"""Reviewed upstream production pin with real Stage 4 release-mode coverage.
 
-Production requirements retain their separately reviewed older pin. This is
-not a downstream upgrade or proof of human Windows browser acceptance.
+The default is five modes only on the exact upstream merged commit;
+flag 0 explicitly preserves the original four-mode rollback.
 """
 from __future__ import annotations
 
@@ -11,9 +11,10 @@ import os
 from pathlib import Path
 import unittest
 
-CANDIDATE_SHA = "8f4df31c62bc48802bcb01613bfcb1682ed0e88f"
+CANDIDATE_SHA = "47942ac3bd08d8cbcc615fa215c5e5eef286f486"
 CANDIDATE_SHA_EXPECTED = CANDIDATE_SHA
 BASELINE_SHA = "7a7d8ba1f847b2f95a620c61a0c5a94f0523e255"
+RELEASE_SHA = "47942ac3bd08d8cbcc615fa215c5e5eef286f486"
 ROOT = Path(__file__).resolve().parents[1]
 LEGACY_MODES = (
     "network", "network-collapsed",
@@ -24,19 +25,19 @@ COMMUNITY_MODE = "network-community-collapsed"
 
 @unittest.skipUnless(
     os.environ.get("JAAL_CANDIDATE_COMPAT") == "1",
-    "Candidate-only check: keep normal lightweight discovery and production pin intact",
+    "Release integration tests require isolated official Jaal install in CI",
 )
 class CandidateJaalIntegrationTests(unittest.TestCase):
-    def test_provenance_and_no_production_pin_change(self):
+    def test_provenance_and_approved_production_pin(self):
         requirements = (ROOT / "requirements.txt").read_text(encoding="utf-8")
         self.assertIn(
             "jaal-topology-viewer @ git+https://github.com/"
-            "hun186/jaal-topology-viewer.git@" + BASELINE_SHA,
+            "hun186/jaal-topology-viewer.git@" + RELEASE_SHA,
             requirements,
         )
         self.assertNotIn(
             "jaal-topology-viewer @ git+https://github.com/"
-            "hun186/jaal-topology-viewer.git@" + CANDIDATE_SHA,
+            "hun186/jaal-topology-viewer.git@" + BASELINE_SHA,
             requirements,
         )
         dist = metadata.distribution("jaal-topology-viewer")
@@ -46,7 +47,7 @@ class CandidateJaalIntegrationTests(unittest.TestCase):
             json.loads(source)["vcs_info"]["commit_id"], CANDIDATE_SHA,
         )
 
-    def test_upstream_fifth_mode_and_existing_stage4_remain_separate(self):
+    def test_upstream_fifth_mode_and_original_four_mode_contract(self):
         from jaal_topology import ASSETS_DIR
         from jaal_topology.modes import layout_options
         from BertScript.jaal_original_mount import (
@@ -56,7 +57,7 @@ class CandidateJaalIntegrationTests(unittest.TestCase):
         self.assertEqual(
             PORTABLE_JS_FILES,
             ("16.jaal_visible_labels.js", "17.jaal_structural_collapse.js"),
-            "The existing Stage 4 still intentionally exposes its four modes",
+            "The original structural assets remain available for rollback",
         )
         for filename in (*PORTABLE_JS_FILES, "18.jaal_community_collapse.js"):
             self.assertTrue((ASSETS_DIR / filename).is_file(), filename)
@@ -127,6 +128,12 @@ class CandidateJaalIntegrationTests(unittest.TestCase):
             self.assertFalse(_community_candidate_enabled())
         with mock.patch.dict(os.environ, {CANDIDATE_ENV: "1"}):
             self.assertTrue(_community_candidate_enabled())
+        with mock.patch.dict(os.environ):
+            os.environ.pop(CANDIDATE_ENV, None)
+            self.assertTrue(
+                _community_candidate_enabled(),
+                "Official upstream merge must enable Louvain by default",
+            )
 
         def context(edges):
             ids = sorted({value for a, b in edges for value in (a, b)})
@@ -218,7 +225,7 @@ class CandidateJaalIntegrationTests(unittest.TestCase):
              "jaal-structural-eligible"},
         )
 
-    def test_standalone_five_modes_and_original_stage4_four_modes(self):
+    def test_standalone_five_modes_and_release_mode(self):
         from jaal_topology.data import Graph
         from jaal_topology.viewer import build_app
         graph = Graph(

@@ -1,7 +1,7 @@
-"""Real Windows Chromium Stage 4 Louvain *opt-in candidate* acceptance.
+"""Real Windows Chromium Stage 4 official default Louvain acceptance.
 
 Starts viewer-only, not the model/WorkPool. Uses the real same-port Jaal iframe
-and live visdcc DataSets. Never modifies TopicTree/ClassTable or production pin.
+and live visdcc DataSets. Never modifies TopicTree/ClassTable or model data.
 """
 from __future__ import annotations
 
@@ -24,7 +24,8 @@ def run(port: int, evidence: Path) -> None:
     log_file = evidence / "stage4-community-server.log"
     with log_file.open("w", encoding="utf-8") as log:
         environment = dict(os.environ)
-        environment["JAAL_STAGE4_COMMUNITY_CANDIDATE"] = "1"
+        # Unset the old opt-in flag to test the TRUE production default.
+        environment.pop("JAAL_STAGE4_COMMUNITY_CANDIDATE", None)
         child = subprocess.Popen(
             [sys.executable, str(ROOT / "BertScript" / "Test_result_Vis.py"),
              "--viewer-only", "-p", str(port)],
@@ -35,7 +36,7 @@ def run(port: int, evidence: Path) -> None:
             deadline = time.monotonic() + 90
             while time.monotonic() < deadline:
                 if child.poll() is not None:
-                    raise AssertionError(f"Candidate Jaal process exited: {child.returncode}")
+                    raise AssertionError(f"Released Jaal process exited: {child.returncode}")
                 try:
                     with urlopen(host + "/_dash-layout", timeout=3) as response:
                         if response.status == 200:

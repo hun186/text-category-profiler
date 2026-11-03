@@ -14,7 +14,7 @@ if not defined PYCOMMAND (
     pause
     exit /b 1
 )
-set "VENV=%TEMP%\jaal_stage4_candidate_8f4df31c_311"
+set "VENV=%TEMP%\jaal_stage4_release_47942ac3_311"
 if not exist "%VENV%\Scripts\python.exe" (
     %PYCOMMAND% -m venv "%VENV%"
     if errorlevel 1 goto :failed
@@ -23,13 +23,13 @@ set "PYTHON=%VENV%\Scripts\python.exe"
 set "PYTHONUTF8=1"
 set "JAAL_STAGE4_COMMUNITY_CANDIDATE=1"
 echo.
-echo Installing isolated graph-only dependencies and exact reviewed candidate...
+echo Installing isolated graph-only dependencies and reviewed official Jaal...
 "%PYTHON%" -m pip install --disable-pip-version-check dash dash-bootstrap-components dash-cytoscape jaal pandas psutil GPUtil numpy opencc-python-reimplemented scipy setproctitle version-parser colorama tqdm pymongo elasticsearch pytz
 if errorlevel 1 goto :failed
-"%PYTHON%" -m pip install --disable-pip-version-check "jaal-topology-viewer @ git+https://github.com/hun186/jaal-topology-viewer.git@8f4df31c62bc48802bcb01613bfcb1682ed0e88f"
+"%PYTHON%" -m pip install --disable-pip-version-check "jaal-topology-viewer @ git+https://github.com/hun186/jaal-topology-viewer.git@47942ac3bd08d8cbcc615fa215c5e5eef286f486"
 if errorlevel 1 goto :failed
 echo.
-echo Candidate provenance check...
+echo Release provenance check...
 "%PYTHON%" -c "from BertScript.jaal_original_mount import _community_candidate_enabled; assert _community_candidate_enabled()"
 if errorlevel 1 goto :failed
 echo.
