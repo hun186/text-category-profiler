@@ -10,6 +10,9 @@ from collections import OrderedDict, deque
 import csv
 import hashlib
 import logging
+import os
+import json
+import importlib.metadata
 from copy import deepcopy
 from pathlib import Path
 from threading import RLock
@@ -39,6 +42,9 @@ def _portable_jaal_assets_dir():
     from jaal_topology import ASSETS_DIR
     return ASSETS_DIR
 PORTABLE_JS_FILES = ("16.jaal_visible_labels.js", "17.jaal_structural_collapse.js")
+CANDIDATE_SHA = "3e9355851357326ac0e47848b8cef64b50bf1b83"
+CANDIDATE_ENV = "JAAL_STAGE4_COMMUNITY_CANDIDATE"
+CANDIDATE_JS_FILES = PORTABLE_JS_FILES + ("18.jaal_community_collapse.js",)
 LOCAL_BOOTSTRAP = "bootstrap@5.3.1/bootstrap.min.css"
 
 
@@ -58,6 +64,62 @@ def subtree_stats(root):
     edge_count = sum(1 for src, dst in edges
                      if src in selected and dst in selected)
     return {"nodes": len(selected), "edges": edge_count, "root": root}
+
+
+
+def _community_candidate_enabled():
+    """Fail closed unless the opt-in exact upstream candidate is installed."""
+    value = os.environ.get(CANDIDATE_ENV, "0")
+    if value in ("", "0"):
+        return False
+    if value != "1":
+        raise ValueError(f"{CANDIDATE_ENV} only accepts 0 or 1")
+    dist = importlib.metadata.distribution("jaal-topology-viewer")
+    info = json.loads(dist.read_text("direct_url.json") or "{}")
+    if info.get("vcs_info", {}).get("commit_id") != CANDIDATE_SHA:
+        raise RuntimeError(
+            "Stage 4 experimental Louvain requires isolated Jaal candidate "
+            f"exact SHA {CANDIDATE_SHA}; production pin stays unchanged"
+        )
+    return True
+
+
+def _community_candidate_context(layout):
+    """Partition only loaded Jaal source IDs; never change underlying graph."""
+    from jaal_topology.data import Graph, assess_structural_collapse
+    from jaal_topology.community import detect_louvain
+
+    pending = [layout]
+    found = []
+    while pending:
+        item = pending.pop()
+        if getattr(item, "id", None) == "graph":
+            found.append(item)
+        children = getattr(item, "children", None)
+        if isinstance(children, (list, tuple)):
+            pending.extend(children)
+        elif children is not None and not isinstance(children, (str, int, float)):
+            pending.append(children)
+    if len(found) != 1:
+        raise RuntimeError("Expected one original Jaal visdcc graph")
+    source = found[0].data
+    if not isinstance(source, dict):
+        raise RuntimeError("Original Jaal graph data contract changed")
+    ids = tuple(str(node["id"]) for node in source["nodes"])
+    if len(ids) != len(set(ids)):
+        raise RuntimeError("Original Jaal IDs must be unique")
+    # Duplicate topic pairs may exist; Louvain requires unique directed pairs.
+    # Do not alter the visdcc network's original nodes or edge records.
+    edges = tuple(dict.fromkeys(
+        (str(row["from"]), str(row["to"])) for row in source["edges"]
+    ))
+    graph = Graph(edges, ids)
+    profile = assess_structural_collapse(graph)
+    groups = detect_louvain(graph).member_to_group
+    return {"eligible": not profile.has_cycle,
+            "kind": profile.graph_kind,
+            "multi_parent": profile.multi_parent_nodes,
+            "membership": groups}
 
 
 def _normalize_original_jaal_logo(layout):
