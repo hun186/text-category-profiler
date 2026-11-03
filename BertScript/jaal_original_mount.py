@@ -10,6 +10,9 @@ from collections import OrderedDict, deque
 import csv
 import hashlib
 import logging
+import os
+import json
+import importlib.metadata
 from copy import deepcopy
 from pathlib import Path
 from threading import RLock
@@ -39,6 +42,9 @@ def _portable_jaal_assets_dir():
     from jaal_topology import ASSETS_DIR
     return ASSETS_DIR
 PORTABLE_JS_FILES = ("16.jaal_visible_labels.js", "17.jaal_structural_collapse.js")
+CANDIDATE_SHA = "3e9355851357326ac0e47848b8cef64b50bf1b83"
+CANDIDATE_ENV = "JAAL_STAGE4_COMMUNITY_CANDIDATE"
+CANDIDATE_JS_FILES = PORTABLE_JS_FILES + ("18.jaal_community_collapse.js",)
 LOCAL_BOOTSTRAP = "bootstrap@5.3.1/bootstrap.min.css"
 
 
@@ -58,6 +64,62 @@ def subtree_stats(root):
     edge_count = sum(1 for src, dst in edges
                      if src in selected and dst in selected)
     return {"nodes": len(selected), "edges": edge_count, "root": root}
+
+
+
+def _community_candidate_enabled():
+    """Fail closed unless the opt-in exact upstream candidate is installed."""
+    value = os.environ.get(CANDIDATE_ENV, "0")
+    if value in ("", "0"):
+        return False
+    if value != "1":
+        raise ValueError(f"{CANDIDATE_ENV} only accepts 0 or 1")
+    dist = importlib.metadata.distribution("jaal-topology-viewer")
+    info = json.loads(dist.read_text("direct_url.json") or "{}")
+    if info.get("vcs_info", {}).get("commit_id") != CANDIDATE_SHA:
+        raise RuntimeError(
+            "Stage 4 experimental Louvain requires isolated Jaal candidate "
+            f"exact SHA {CANDIDATE_SHA}; production pin stays unchanged"
+        )
+    return True
+
+
+def _community_candidate_context(layout):
+    """Partition only loaded Jaal source IDs; never change underlying graph."""
+    from jaal_topology.data import Graph, assess_structural_collapse
+    from jaal_topology.community import detect_louvain
+
+    pending = [layout]
+    found = []
+    while pending:
+        item = pending.pop()
+        if getattr(item, "id", None) == "graph":
+            found.append(item)
+        children = getattr(item, "children", None)
+        if isinstance(children, (list, tuple)):
+            pending.extend(children)
+        elif children is not None and not isinstance(children, (str, int, float)):
+            pending.append(children)
+    if len(found) != 1:
+        raise RuntimeError("Expected one original Jaal visdcc graph")
+    source = found[0].data
+    if not isinstance(source, dict):
+        raise RuntimeError("Original Jaal graph data contract changed")
+    ids = tuple(str(node["id"]) for node in source["nodes"])
+    if len(ids) != len(set(ids)):
+        raise RuntimeError("Original Jaal IDs must be unique")
+    # Duplicate topic pairs may exist; Louvain requires unique directed pairs.
+    # Do not alter the visdcc network's original nodes or edge records.
+    edges = tuple(dict.fromkeys(
+        (str(row["from"]), str(row["to"])) for row in source["edges"]
+    ))
+    graph = Graph(edges, ids)
+    profile = assess_structural_collapse(graph)
+    groups = detect_louvain(graph).member_to_group
+    return {"eligible": not profile.has_cycle,
+            "kind": profile.graph_kind,
+            "multi_parent": profile.multi_parent_nodes,
+            "membership": groups}
 
 
 def _normalize_original_jaal_logo(layout):
@@ -132,7 +194,7 @@ def _jaal_layout_options(base_options, mode):
     return _portable_jaal_layout_provider()(base_options, mode)
 
 
-def _register_embedded_jaal_layout_mode(app, base_options):
+def _register_embedded_jaal_layout_mode(app, base_options, candidate=None):
     """Switch layout, then restore network physics after vis.js unwinds hierarchy.
 
     vis-network LayoutEngine.setOptions() restores an internal physics backup
@@ -150,10 +212,14 @@ def _register_embedded_jaal_layout_mode(app, base_options):
         prevent_initial_call=True,
     )
     def choose_layout(mode, _ticks):
+        if (candidate is not None and not candidate["eligible"]
+                and mode in ("network-collapsed", "hierarchical-collapsed")):
+            raise ValueError("Descendant collapse unavailable on directed cycles")
         triggered = callback_context.triggered[0]["prop_id"].split(".", 1)[0]
         if triggered == "jaal-original-physics-restore":
             # A quick switch back to hierarchy must never reactivate physics.
-            if mode not in ("network", "network-collapsed"):
+            if mode not in (("network", "network-collapsed", "network-community-collapsed")
+                            if candidate is not None else ("network", "network-collapsed")):
                 return no_update, True
             baseline = base_options.get("physics", {})
             enabled = baseline.get("enabled", True) if isinstance(
@@ -173,7 +239,8 @@ def _register_embedded_jaal_layout_mode(app, base_options):
             }, True
         if mode in ("hierarchical", "hierarchical-collapsed"):
             return _jaal_layout_options(base_options, mode), True
-        if mode in ("network", "network-collapsed"):
+        if mode in (("network", "network-collapsed", "network-community-collapsed")
+                    if candidate is not None else ("network", "network-collapsed")):
             # Step 1: exit hierarchical layout, restoring original vis.js
             # settings. LayoutEngine can still override physics.enabled.
             # Step 2: timer tick restores enabled after the React update.
@@ -210,7 +277,7 @@ def _class_table_labels_for_nodes(node_ids, path=None):
     return translations
 
 
-def _register_embedded_jaal_visible_labels(app):
+def _register_embedded_jaal_visible_labels(app, candidate=None):
     """Project label text onto visdcc's live vis.DataSet when Dash data changes.
 
     Dash's initial graph.data may contain explicit newlines yet the user's
@@ -229,11 +296,13 @@ def _register_embedded_jaal_visible_labels(app):
         Input("graph", "data"),
         Input("jaal-original-chinese-labels", "value"),
         Input("jaal-original-ct-translations", "data"),
+        *([Input("jaal-community-membership", "data"),
+           Input("jaal-structural-eligible", "data")] if candidate is not None else []),
         prevent_initial_call=False,
     )
 
 
-def _add_embedded_jaal_sidebar_toggle(layout):
+def _add_embedded_jaal_sidebar_toggle(layout, candidate=None):
     """Add a toggle without rebuilding the original Jaal graph or controls.
 
     Only the Jaal-owned 3/9 Bootstrap columns are decorated. The button lives
@@ -323,14 +392,21 @@ def _add_embedded_jaal_sidebar_toggle(layout):
         data=translations,
         storage_type="memory",
     )
+    mode_options = [
+        {"label": "網狀（全展開）", "value": "network"},
+        {"label": "網狀（收攏）", "value": "network-collapsed"},
+        {"label": "階層（全展開）", "value": "hierarchical"},
+        {"label": "階層（收攏）", "value": "hierarchical-collapsed"},
+    ]
+    if candidate is not None:
+        mode_options.insert(2, {"label": "網狀（社群收攏・Louvain）",
+                                "value": "network-community-collapsed"})
+        for choice in mode_options:
+            if choice["value"] in ("network-collapsed", "hierarchical-collapsed"):
+                choice["disabled"] = not candidate["eligible"]
     mode_choice = dcc.RadioItems(
         id="jaal-original-layout-mode",
-        options=[
-            {"label": "網狀（全展開）", "value": "network"},
-            {"label": "網狀（收攏）", "value": "network-collapsed"},
-            {"label": "階層（全展開）", "value": "hierarchical"},
-            {"label": "階層（收攏）", "value": "hierarchical-collapsed"},
-        ],
+        options=mode_options,
         value="network",
         inline=True,
         labelStyle={"marginRight": "12px", "cursor": "pointer"},
@@ -339,13 +415,34 @@ def _add_embedded_jaal_sidebar_toggle(layout):
     toolbar = html.Div(
         [toggle, html.Span("顯示模式："), mode_choice, chinese_choice,
          translation_store,
+         *([
+             dcc.Store(id="jaal-community-membership",
+                       data=candidate["membership"], storage_type="memory"),
+             dcc.Store(id="jaal-structural-eligible",
+                       data=candidate["eligible"], storage_type="memory"),
+             html.Span(
+                 "圖形類型：" + {
+                     "tree": "樹狀階層（單一起點）",
+                     "forest": "樹狀森林（多個起點）",
+                     "dag": "無環 DAG（多父節點）",
+                     "cyclic": "一般有環網路（不適合子樹收攏）",
+                 }[candidate["kind"]],
+                 id="jaal-original-graph-profile",
+                 style={"fontSize": "12px", "fontWeight": 600}),
+         ] if candidate is not None else []),
          html.Span("標籤版本：" + LABEL_RENDERER_REVISION,
                    id="jaal-original-label-revision",
                    title="這是當前 Python 服務實際載入的標籤版本；"
                          "若更新 Git 後仍看不到此版本，請完全停止 8059 服務再重新啟動",
                    style={"fontSize": "12px", "color": "#475569"}),
-         html.Span("收攏模式：節點下方數字＝不同子孫節點數；點擊展開／收合一層。"
-                   " 原本全展開模式保留。",
+         html.Span(
+                   ("偵測到有向迴路：停用兩種子樹收攏；可使用網狀（社群收攏・Louvain）。"
+                    if candidate is not None and not candidate["eligible"] else
+                    "無環 DAG 可能包含共享後代；數字代表可達節點，不一定是獨占下屬。"
+                    if candidate is not None and candidate["multi_parent"] else
+                    "收攏模式：節點下方數字＝不同子孫節點數；點擊展開／收合一層。"
+                    " 原本全展開模式保留。")
+                   + (" 社群分群不代表職級。" if candidate is not None else ""),
                    id="jaal-original-hierarchy-hint",
                    style={"fontSize": "12px", "color": "#475569"}),
          dcc.Interval(id="jaal-original-physics-restore",
@@ -431,6 +528,11 @@ def prefix_original_jaal(original_app, prefix):
         raise ValueError("Jaal mount prefix must be an absolute slash path")
     if not (STAGE4_ASSETS / LOCAL_BOOTSTRAP).is_file():
         raise RuntimeError("Stage 4 bundled Bootstrap stylesheet is missing")
+    candidate_enabled = _community_candidate_enabled()
+    candidate = (_community_candidate_context(original_app.layout)
+                 if candidate_enabled else None)
+    javascript_files = (CANDIDATE_JS_FILES if candidate_enabled
+                        else PORTABLE_JS_FILES)
     child_app = Dash(
         __name__,
         requests_pathname_prefix=prefix,
@@ -439,7 +541,7 @@ def prefix_original_jaal(original_app, prefix):
         # Browser runtimes are served from the reusable standalone package,
         # not duplicate copies under BertScript/assets.
         external_scripts=[
-            prefix + "assets/" + name for name in PORTABLE_JS_FILES
+            prefix + "assets/" + name for name in javascript_files
         ],
         # Keep upstream styles, but serve the required Bootstrap grid from
         # this same-origin submount. The original CDN can be unavailable.
@@ -453,7 +555,7 @@ def prefix_original_jaal(original_app, prefix):
     # paths take precedence and let the old browser URL contract survive.
     from flask import send_from_directory
     portable_assets = _portable_jaal_assets_dir()
-    for asset_name in PORTABLE_JS_FILES:
+    for asset_name in javascript_files:
         if not (portable_assets / asset_name).is_file():
             raise RuntimeError(f"Bundled portable Jaal asset missing: {asset_name}")
 
@@ -469,7 +571,7 @@ def prefix_original_jaal(original_app, prefix):
         )
     _normalize_original_jaal_logo(original_app.layout)
     _remove_embedded_jaal_outer_row_gutters(original_app.layout)
-    base_options = _add_embedded_jaal_sidebar_toggle(original_app.layout)
+    base_options = _add_embedded_jaal_sidebar_toggle(original_app.layout, candidate)
     # A stable content boundary lets the *child* iframe measure actual
     # rendered height (logo + controls + graph), independent of the original
     # visdcc graph's 600px canvas and the parent's initial fallback height.
@@ -483,8 +585,8 @@ def prefix_original_jaal(original_app, prefix):
     if not child_app.callback_map or len(child_app.callback_map) != len(original_app.callback_map):
         raise RuntimeError("Original Jaal callbacks could not be preserved")
     _register_embedded_jaal_sidebar_toggle(child_app)
-    _register_embedded_jaal_layout_mode(child_app, base_options)
-    _register_embedded_jaal_visible_labels(child_app)
+    _register_embedded_jaal_layout_mode(child_app, base_options, candidate)
+    _register_embedded_jaal_visible_labels(child_app, candidate)
     return child_app
 
 
