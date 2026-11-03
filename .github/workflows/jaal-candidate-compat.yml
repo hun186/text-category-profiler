@@ -10,6 +10,9 @@ on:
       - "tests/stage4_jaal_browser.py"
       - "tests/stage4_jaal_community_browser.py"
       - "BertScript/jaal_original_mount.py"
+      - "tools/stage4_candidate_desktop_acceptance.py"
+      - "tests/test_stage4_candidate_desktop_acceptance.py"
+      - "run-stage4-jaal-candidate-acceptance.bat"
   workflow_dispatch:
 
 permissions:
@@ -41,6 +44,8 @@ jobs:
         env:
           JAAL_CANDIDATE_COMPAT: "1"
         run: python -m unittest -v tests.test_jaal_candidate_compat
+      - name: Fail-closed Windows desktop acceptance port guard
+        run: python -m unittest -v tests.test_stage4_candidate_desktop_acceptance
       - name: Real Jaal Stage 4 mount, controls, callbacks and path smoke
         # Windows GitHub runner's default English cp1252 cannot encode the
         # existing Chinese CLI --help text; this tests a declared UTF-8 runtime,

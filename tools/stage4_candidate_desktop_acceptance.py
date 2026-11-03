@@ -9,6 +9,7 @@ import argparse
 from datetime import datetime
 import json
 import os
+import socket
 from pathlib import Path
 import subprocess
 import sys
@@ -37,6 +38,16 @@ CHECKS = (
 )
 
 
+def _port_is_available(port: int) -> bool:
+    """Bind loopback without SO_REUSEADDR to reject an existing listener."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+        try:
+            probe.bind(("127.0.0.1", port))
+        except OSError:
+            return False
+    return True
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=8098)
@@ -63,6 +74,11 @@ def main() -> int:
     }
     process = None
     try:
+        if not _port_is_available(args.port):
+            raise RuntimeError(
+                f"Port {args.port} is already occupied. Stop the existing "
+                "Stage 4 server first; refusing to validate another instance."
+            )
         with log_path.open("w", encoding="utf-8") as output:
             process = subprocess.Popen(
                 [sys.executable, str(ROOT / "BertScript" / "Test_result_Vis.py"),
@@ -84,6 +100,14 @@ def main() -> int:
                     time.sleep(0.5)
             else:
                 raise RuntimeError("Stage 4 localhost did not become ready")
+            # A competing listener could take the port between the pre-bind
+            # check and startup. Do not trust its _dash-layout response.
+            time.sleep(0.4)
+            if process.poll() is not None:
+                raise RuntimeError(
+                    "New acceptance server exited; refusing stale-port readiness"
+                )
+            report["server_pid"] = process.pid
             print("\nOpen Stage 4 at", url)
             webbrowser.open(url)
             print("Select TW Affairs and click Load Jaal; verify the five modes.")
@@ -94,6 +118,9 @@ def main() -> int:
             report["verdict"] = value if value in {
                 "PASS", "FAIL", "INCOMPLETE"
             } else "INCOMPLETE"
+            if process.poll() is not None:
+                report["verdict"] = "INCOMPLETE"
+                report["error"] = "Acceptance server exited before user finished inspection"
     except (OSError, RuntimeError) as exc:
         report["error"] = str(exc)
         print("Acceptance could not finish:", exc, file=sys.stderr)
