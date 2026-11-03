@@ -1,5 +1,6 @@
 """Original Jaal preserved under same-port WSGI, with explicit lazy activation."""
 import json
+import os
 from pathlib import Path
 import unittest
 from unittest import mock
@@ -35,6 +36,13 @@ class OriginalJaalMountTests(unittest.TestCase):
                 _class_table_labels_for_nodes(["A"], path=table)
 
     def setUp(self):
+        # Exercise explicit four-mode rollback under the new released Jaal
+        # pin, including real original Jaal callbacks and same-port mount.
+        old_mode = mock.patch.dict(
+            os.environ, {"JAAL_STAGE4_COMMUNITY_CANDIDATE": "0"}
+        )
+        old_mode.start()
+        self.addCleanup(old_mode.stop)
         try:
             import dash
             import jaal
