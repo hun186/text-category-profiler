@@ -181,9 +181,14 @@ def run(port: int, evidence: Path) -> None:
                 }""")
                 panel = frame.locator("#jaal-community-edge-inspector")
                 panel.wait_for(state="visible", timeout=12000)
-                assert panel.evaluate(
-                    "el => !!el.closest('.vis-network')"
-                ), "Source inspector must be inside visible Jaal canvas"
+                assert frame.locator("body").evaluate("""() => {
+                    const component = window.__stage4CommunityNetwork;
+                    const inspector = document.getElementById(
+                        "jaal-community-edge-inspector"
+                    );
+                    return !!component?.net?.body?.container
+                        && inspector?.parentNode === component.net.body.container;
+                }"""), "Source inspector must be inside live Network container"
                 assert panel.locator("li").count() == min(100, details["count"])
                 assert details["first"]["from"] in panel.locator("li").first.get_attribute("title")
                 assert details["first"]["to"] in panel.locator("li").first.get_attribute("title")
