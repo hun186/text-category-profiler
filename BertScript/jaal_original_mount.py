@@ -42,7 +42,7 @@ def _portable_jaal_assets_dir():
     from jaal_topology import ASSETS_DIR
     return ASSETS_DIR
 PORTABLE_JS_FILES = ("16.jaal_visible_labels.js", "17.jaal_structural_collapse.js")
-CANDIDATE_SHA = "3e9355851357326ac0e47848b8cef64b50bf1b83"
+CANDIDATE_SHA = "8f4df31c62bc48802bcb01613bfcb1682ed0e88f"
 CANDIDATE_ENV = "JAAL_STAGE4_COMMUNITY_CANDIDATE"
 CANDIDATE_JS_FILES = PORTABLE_JS_FILES + ("18.jaal_community_collapse.js",)
 LOCAL_BOOTSTRAP = "bootstrap@5.3.1/bootstrap.min.css"
@@ -115,11 +115,12 @@ def _community_candidate_context(layout):
     ))
     graph = Graph(edges, ids)
     profile = assess_structural_collapse(graph)
-    groups = detect_louvain(graph).member_to_group
+    community = detect_louvain(graph)
     return {"eligible": not profile.has_cycle,
             "kind": profile.graph_kind,
             "multi_parent": profile.multi_parent_nodes,
-            "membership": groups}
+            "quotient_cycle": community.quotient_has_cycle,
+            "membership": community.member_to_group}
 
 
 def _normalize_original_jaal_logo(layout):
@@ -420,6 +421,16 @@ def _add_embedded_jaal_sidebar_toggle(layout, candidate=None):
                        data=candidate["membership"], storage_type="memory"),
              dcc.Store(id="jaal-structural-eligible",
                        data=candidate["eligible"], storage_type="memory"),
+             html.Span(
+                 ("原始圖無環，但 Louvain 社群彙總後產生循環；不代表分類父子關係有環。"
+                  if candidate["eligible"] and candidate["quotient_cycle"] else
+                  "原始圖含有向迴路，社群彙總圖也有循環。"
+                  if not candidate["eligible"] and candidate["quotient_cycle"] else
+                  "社群彙總圖無有向循環；原圖與彙總圖是不同分析層級。"),
+                 id="jaal-original-community-cycle-hint",
+                 style={"fontSize": "12px",
+                        "color": "#9A3412" if candidate["quotient_cycle"]
+                        else "#475569"}),
              html.Span(
                  "圖形類型：" + {
                      "tree": "樹狀階層（單一起點）",

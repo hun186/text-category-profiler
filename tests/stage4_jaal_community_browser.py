@@ -86,6 +86,9 @@ def run(port: int, evidence: Path) -> None:
                 assert "圖形類型：" in frame.locator(
                     "#jaal-original-graph-profile"
                 ).inner_text()
+                assert "社群彙總" in frame.locator(
+                    "#jaal-original-community-cycle-hint"
+                ).inner_text()
                 page.screenshot(
                     path=str(evidence / "01-stage4-fifth-mode.png"), full_page=True
                 )
@@ -144,6 +147,61 @@ def run(port: int, evidence: Path) -> None:
                     and len(s["nodes"]) < len(s["originalNodes"])
                     and len(s["clusters"]) > 0,
                 )
+                # Inspect actual source provenance from the installed upstream
+                # runtime rather than inventing a pair of community arrows.
+                from json import dumps
+                details = frame.locator("body").evaluate("""() => {
+                    const c = window.__stage4CommunityNetwork;
+                    const api = window.dash_clientside.jaal_community_collapse;
+                    const edges = c.ee.get().filter(e =>
+                        String(e.id).startsWith('__jaal_internal_link__'));
+                    if (!edges.length) throw Error("No aggregate edge to inspect");
+                    const edge = edges[0];
+                    const sources = api.explainEdge(c.__jaalCommunity.view, edge.id);
+                    if (!sources.length) throw Error("No originals for aggregate edge");
+                    c.net.body.emitter.emit('click', {nodes:[], edges:[edge.id]});
+                    const map = c.__jaalCommunity.view.edgeSources;
+                    const reciprocal = [];
+                    const index = new Map(edges.map(e => [
+                        JSON.stringify([e.from, e.to]), e
+                    ]));
+                    for (const link of edges) {
+                        const back = index.get(JSON.stringify([link.to, link.from]));
+                        if (back && String(link.id) < String(back.id)) {
+                            reciprocal.push({
+                                forward: {from: link.from, to: link.to,
+                                    origins: api.explainEdge(c.__jaalCommunity.view, link.id)},
+                                reverse: {from: back.from, to: back.to,
+                                    origins: api.explainEdge(c.__jaalCommunity.view, back.id)}
+                            });
+                        }
+                    }
+                    return {id:edge.id, count:sources.length,
+                            first:sources[0], reciprocal};
+                }""")
+                panel = frame.locator("#jaal-community-edge-inspector")
+                panel.wait_for(state="visible", timeout=12000)
+                assert frame.locator("body").evaluate("""() => {
+                    const component = window.__stage4CommunityNetwork;
+                    const inspector = document.getElementById(
+                        "jaal-community-edge-inspector"
+                    );
+                    return !!component?.net?.body?.container
+                        && inspector?.parentNode === component.net.body.container;
+                }"""), "Source inspector must be inside live Network container"
+                assert panel.locator("li").count() == min(100, details["count"])
+                assert details["first"]["from"] in panel.locator("li").first.get_attribute("title")
+                assert details["first"]["to"] in panel.locator("li").first.get_attribute("title")
+                page.screenshot(
+                    path=str(evidence / "02a-stage4-community-edge-sources.png"),
+                    full_page=True,
+                )
+                (evidence / "community-reciprocal-edge-evidence.json").write_text(
+                    dumps(details["reciprocal"], ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+                panel.get_by_role("button", name="關閉").click()
+                panel.wait_for(state="detached", timeout=10000)
                 original_ids = {n["id"] for n in collapsed["originalNodes"]}
                 original_edges = {str(e["id"]) for e in collapsed["originalEdges"]}
                 assert len(original_ids) > 20, "Expected real TW Affairs taxonomy subtree"
@@ -194,7 +252,7 @@ def run(port: int, evidence: Path) -> None:
                 (evidence / "verified-scope.txt").write_text(
                     "PASS: Hosted Windows Chromium launched actual Stage 4 --viewer-only "
                     "same-port original Jaal with exact upstream opt-in fifth mode, "
-                    "observed real visdcc Louvain quotient, live Search restore, "
+                    "observed real visdcc Louvain quotient, quotient-cycle hint, " "real original-edge inspector, live Search restore, "
                     "original IDs and directed edge IDs restored.\n"
                     "NOT VERIFIED: user desktop perception, full ML WorkPool, "
                     "Louvain canvas click expansion, production requirements pin.\n",

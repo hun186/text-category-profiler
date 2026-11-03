@@ -14,7 +14,7 @@ if not defined PYCOMMAND (
     pause
     exit /b 1
 )
-set "VENV=%TEMP%\jaal_stage4_candidate_3e935585_311"
+set "VENV=%TEMP%\jaal_stage4_candidate_8f4df31c_311"
 if not exist "%VENV%\Scripts\python.exe" (
     %PYCOMMAND% -m venv "%VENV%"
     if errorlevel 1 goto :failed
@@ -26,7 +26,7 @@ echo.
 echo Installing isolated graph-only dependencies and exact reviewed candidate...
 "%PYTHON%" -m pip install --disable-pip-version-check dash dash-bootstrap-components dash-cytoscape jaal pandas psutil GPUtil numpy opencc-python-reimplemented scipy setproctitle version-parser colorama tqdm pymongo elasticsearch pytz
 if errorlevel 1 goto :failed
-"%PYTHON%" -m pip install --disable-pip-version-check "jaal-topology-viewer @ git+https://github.com/hun186/jaal-topology-viewer.git@3e9355851357326ac0e47848b8cef64b50bf1b83"
+"%PYTHON%" -m pip install --disable-pip-version-check "jaal-topology-viewer @ git+https://github.com/hun186/jaal-topology-viewer.git@8f4df31c62bc48802bcb01613bfcb1682ed0e88f"
 if errorlevel 1 goto :failed
 echo.
 echo Candidate provenance check...

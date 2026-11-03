@@ -11,7 +11,7 @@ import os
 from pathlib import Path
 import unittest
 
-CANDIDATE_SHA = "3e9355851357326ac0e47848b8cef64b50bf1b83"
+CANDIDATE_SHA = "8f4df31c62bc48802bcb01613bfcb1682ed0e88f"
 CANDIDATE_SHA_EXPECTED = CANDIDATE_SHA
 BASELINE_SHA = "7a7d8ba1f847b2f95a620c61a0c5a94f0523e255"
 ROOT = Path(__file__).resolve().parents[1]
@@ -149,6 +149,8 @@ class CandidateJaalIntegrationTests(unittest.TestCase):
         self.assertTrue(dag["eligible"])
         self.assertEqual(dag["kind"], "dag")
         self.assertEqual(dag["multi_parent"], 1)
+        self.assertIsInstance(cyclic["quotient_cycle"], bool)
+        self.assertIsInstance(dag["quotient_cycle"], bool)
 
     def test_real_original_jaal_can_mount_fifth_mode_with_exact_candidate(self):
         from unittest import mock
@@ -201,6 +203,10 @@ class CandidateJaalIntegrationTests(unittest.TestCase):
         self.assertTrue(modes["network-collapsed"]["disabled"])
         self.assertTrue(modes["hierarchical-collapsed"]["disabled"])
         self.assertFalse(props["jaal-structural-eligible"]["data"])
+        self.assertIn(
+            "社群彙總圖",
+            props["jaal-original-community-cycle-hint"]["children"],
+        )
         self.assertEqual(set(props["jaal-community-membership"]["data"]),
                          {"A", "B", "C"})
         deps = client.get("/_dash-dependencies").get_json()
