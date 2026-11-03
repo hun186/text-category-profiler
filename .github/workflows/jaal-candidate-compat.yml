@@ -34,7 +34,7 @@ jobs:
         run: >
           python -m pip install dash dash-bootstrap-components
           dash-cytoscape jaal pandas
-          "jaal-topology-viewer @ git+https://github.com/hun186/jaal-topology-viewer.git@613effaca891f761b59f099c4f4cf38d495297cd"
+          "jaal-topology-viewer @ git+https://github.com/hun186/jaal-topology-viewer.git@3e9355851357326ac0e47848b8cef64b50bf1b83"
       - name: Verify candidate SHA, upstream fifth mode, consumer four-mode boundary
         env:
           JAAL_CANDIDATE_COMPAT: "1"
