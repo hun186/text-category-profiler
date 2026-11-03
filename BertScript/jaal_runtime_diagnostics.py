@@ -8,7 +8,7 @@ to browser clients or save it to repository files.
 from __future__ import annotations
 
 import argparse
-from importlib import metadata
+from importlib import metadata, util
 import platform
 import re
 import sys
@@ -16,7 +16,7 @@ import traceback
 
 
 DEPENDENCIES = (
-    "jaal", "visdcc", "dash", "dash-bootstrap-components", "pandas",
+    "jaal-topology-viewer", "jaal", "visdcc", "dash", "dash-bootstrap-components", "pandas",
     "werkzeug", "flask",
 )
 
@@ -30,6 +30,29 @@ def version_summary():
         except metadata.PackageNotFoundError:
             out[package] = "(not installed)"
     return out
+
+
+def check_portable_jaal_dependency(*, module_available=None, python_version=None):
+    """Fail clearly before building Stage 4 when its pinned viewer is missing."""
+    current_version = sys.version_info if python_version is None else python_version
+    if tuple(current_version[:2]) < (3, 10):
+        raise RuntimeError(
+            "JAAL_TOPOLOGY_PYTHON_UNSUPPORTED: jaal-topology-viewer requires "
+            "Python >=3.10. Use a compatible environment; do not forcibly "
+            "install it into an older Anaconda interpreter."
+        )
+    if module_available is None:
+        module_available = util.find_spec("jaal_topology") is not None
+    if not module_available:
+        raise ModuleNotFoundError(
+            "JAAL_TOPOLOGY_MISSING: the 'jaal_topology' import belongs to "
+            "the 'jaal-topology-viewer' distribution, which is absent from "
+            "this Python environment. Install the exact pinned Git requirement "
+            "from this repository's requirements.txt in the SAME interpreter "
+            "that starts Test_result_Vis.py; confirm with 'python -m pip show "
+            "jaal-topology-viewer' and 'python -m pip check'. Installing "
+            "only 'jaal' is not sufficient."
+        )
 
 
 def check_dash_visdcc_compatibility(versions=None):
@@ -88,6 +111,7 @@ def diagnose(root="TW Affairs", *, build_app=None, output=None, error=None):
     print("Selected root:", root, file=output)
     try:
         if build_app is None:
+            check_portable_jaal_dependency()
             check_dash_visdcc_compatibility()
             from BertScript.jaal_original_mount import _make_original_jaal
             build_app = _make_original_jaal
