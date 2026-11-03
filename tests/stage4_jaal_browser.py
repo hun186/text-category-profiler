@@ -167,6 +167,59 @@ def run(port: int, evidence: Path) -> None:
                     and len(s["nodes"]) == len(s["original"]),
                 )
                 assert all(isinstance(n["id"], str) for n in collapsed["nodes"])
+
+                # A real mouse drag against the actual vis-network canvas,
+                # not a synthetic DataSet update or imperative moveNode().
+                # Freeze physics first to make moved positions deterministic.
+                frame.locator("body").evaluate("""() => {
+                    const net = window.__stage4JaalNetwork.net;
+                    net.stopSimulation();
+                    net.focus('TW Affairs', {scale: 1, animation: false});
+                }""")
+                def root_geometry():
+                    return frame.locator("body").evaluate("""() => {
+                        const net = window.__stage4JaalNetwork.net;
+                        const node = net.getPositions(['TW Affairs'])['TW Affairs'];
+                        if (!node) throw new Error('Root missing from actual vis-network');
+                        return {
+                            node, point: net.canvasToDOM(node),
+                            view: net.getViewPosition(), scale: net.getScale(),
+                        };
+                    }""")
+                before_drag = root_geometry()
+                canvas_rect = canvas.bounding_box()
+                assert canvas_rect, "Missing live Jaal canvas for drag"
+                mouse_x = canvas_rect["x"] + before_drag["point"]["x"]
+                mouse_y = canvas_rect["y"] + before_drag["point"]["y"]
+                assert (canvas_rect["x"] + 10 < mouse_x <
+                        canvas_rect["x"] + canvas_rect["width"] - 10)
+                assert (canvas_rect["y"] + 10 < mouse_y <
+                        canvas_rect["y"] + canvas_rect["height"] - 10)
+                page.mouse.move(mouse_x, mouse_y)
+                page.mouse.down()
+                page.mouse.move(mouse_x + 65, mouse_y + 28, steps=14)
+                page.mouse.up()
+                page.wait_for_timeout(350)
+                after_drag = root_geometry()
+                distance = (
+                    (after_drag["node"]["x"] - before_drag["node"]["x"]) ** 2
+                    + (after_drag["node"]["y"] - before_drag["node"]["y"]) ** 2
+                ) ** 0.5
+                assert distance > 15, (
+                    "Real canvas mouse drag did not move TW Affairs node: "
+                    f"{before_drag!r} -> {after_drag!r}"
+                )
+                assert abs(after_drag["scale"] - before_drag["scale"]) < 0.01
+                view_delta = (
+                    (after_drag["view"]["x"] - before_drag["view"]["x"]) ** 2
+                    + (after_drag["view"]["y"] - before_drag["view"]["y"]) ** 2
+                ) ** 0.5
+                assert view_delta < 5, (
+                    "Dragging a node unexpectedly panned the camera: "
+                    f"{before_drag!r} -> {after_drag!r}"
+                )
+                page.screenshot(path=str(evidence / "02-stage4-node-drag.png"),
+                                full_page=True)
                 checkbox = frame.locator("#jaal-original-chinese-labels input[type=checkbox]")
                 checkbox.check()
                 choose("網狀（全展開）")
@@ -237,8 +290,8 @@ def run(port: int, evidence: Path) -> None:
                     "PASS: hosted Windows Chromium opened actual --viewer-only Stage 4 "
                     "Dash, explicitly loaded original Jaal same-port iframe, exercised "
                     "all four modes including real collapsed/expanded hierarchy, checked live visdcc Search hidden flags and Chinese "
-                    "labels, sidebar toggle and original ID restoration.\n"
-                    "NOT VERIFIED: human Windows GPU/model/WorkPool, precise drag/camera "
+                    "labels, real canvas node drag without camera pan, sidebar toggle and original ID restoration.\n"
+                    "NOT VERIFIED: human Windows GPU/model/WorkPool, manual motion/focus perception, "
                     "perception, manual Color/Size/Filter interactions, user screen layout "
                     "and complete Dash version matrix.\n",
                     encoding="utf-8",
