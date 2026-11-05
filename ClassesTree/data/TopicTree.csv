@@ -3157,3 +3157,31 @@ Critical Mineral Economic And Industrial Impacts,Critical Mineral Economic And I
 Critical Mineral Economic And Industrial Impacts,Critical Mineral Economic And Industrial Impacts-Prices And Trade Flows,20261031,contains,新增底層細緻類別；分辨同層主題界線與標註重心；目標類別：關鍵礦產供應鏈與出口管制；＠ChatGPT
 Export Controls,Critical Mineral Export Controls,20261031,contains,新增結構型交叉父類別；關鍵礦產出口管制是出口管制政策的一種；目標類別：關鍵礦產供應鏈與出口管制；＠ChatGPT
 Ore Supply and Demand,Critical Mineral Supply Chains-Mining Concentration,20261031,contains,新增檢索型主題包含；原礦供需查詢可穩定召回關鍵礦產開採集中度分析；目標類別：關鍵礦產供應鏈與出口管制；＠ChatGPT
+Digital Currency,Stablecoin,20261104,contains,新增必要中間節點；在既有數位貨幣分支加入穩定幣主題；目標類別：穩定幣監管與金融穩定；＠ChatGPT
+Stablecoin,Stablecoin-Regulation And Financial Stability,20261104,contains,新增主要層級；聚焦穩定幣監理及金融穩定；目標類別：穩定幣監管與金融穩定；＠ChatGPT
+Stablecoin-Regulation And Financial Stability,Stablecoin-Regulatory Framework,20261104,contains,新增主要層級；按監理制度與金融風險劃分主軸；目標類別：穩定幣監管與金融穩定；＠ChatGPT
+Stablecoin-Regulation And Financial Stability,Stablecoin-Financial Stability Risks,20261104,contains,新增主要層級；按監理制度與金融風險劃分主軸；目標類別：穩定幣監管與金融穩定；＠ChatGPT
+Stablecoin-Regulatory Framework,Stablecoin-Issuer Licensing And Supervision,20261104,contains,新增底層細緻類別；依監理義務與規範議題區分；目標類別：穩定幣監管與金融穩定；＠ChatGPT
+Stablecoin-Regulatory Framework,Stablecoin-Reserve Backing And Transparency,20261104,contains,新增底層細緻類別；依監理義務與規範議題區分；目標類別：穩定幣監管與金融穩定；＠ChatGPT
+Stablecoin-Regulatory Framework,Stablecoin-Redemption Rights And Consumer Protection,20261104,contains,新增底層細緻類別；依監理義務與規範議題區分；目標類別：穩定幣監管與金融穩定；＠ChatGPT
+Stablecoin-Regulatory Framework,Stablecoin-Cross Border Regulatory Coordination,20261104,contains,新增底層細緻類別；依監理義務與規範議題區分；目標類別：穩定幣監管與金融穩定；＠ChatGPT
+Stablecoin-Financial Stability Risks,Stablecoin-Run Risk And Liquidity Stress,20261104,contains,新增底層細緻類別；依金融風險傳遞機制區分；目標類別：穩定幣監管與金融穩定；＠ChatGPT
+Stablecoin-Financial Stability Risks,Stablecoin-Depegging And Market Contagion,20261104,contains,新增底層細緻類別；依金融風險傳遞機制區分；目標類別：穩定幣監管與金融穩定；＠ChatGPT
+Stablecoin-Financial Stability Risks,Stablecoin-Banking Sector Exposure,20261104,contains,新增底層細緻類別；依金融風險傳遞機制區分；目標類別：穩定幣監管與金融穩定；＠ChatGPT
+Stablecoin-Financial Stability Risks,Stablecoin-Monetary Sovereignty And Capital Flows,20261104,contains,新增底層細緻類別；依金融風險傳遞機制區分；目標類別：穩定幣監管與金融穩定；＠ChatGPT
+Olympic Games,Youth Olympic Games,20261104,contains,新增必要中間節點；沿用既有奧林匹克賽會主幹；目標類別：2026年達卡青年奧運會；＠ChatGPT
+Youth Olympic Games,2026 Dakar Youth Olympic Games,20261104,contains,新增主要層級；定位第四屆夏季青年奧運專題；目標類別：2026年達卡青年奧運會；＠ChatGPT
+Africa Affairs,SN Affairs,20261104,contains,新增國別中間節點；延續非洲國家事務編碼方式；目標類別：2026年達卡青年奧運會；＠ChatGPT
+SN Affairs,SN Sports And Major Events,20261104,contains,新增檢索橋接中間節點；提供塞內加爾大型體育賽會檢索範圍；目標類別：2026年達卡青年奧運會；＠ChatGPT
+SN Sports And Major Events,2026 Dakar Youth Olympic Games,20261104,contains,新增檢索型主題包含；由主辦國體育賽會分支檢索本屆青奧；目標類別：2026年達卡青年奧運會；＠ChatGPT
+2026 Dakar Youth Olympic Games,2026 Dakar Youth Olympic Games-Sports And Competition,20261104,contains,新增底層上位分支；依競技面向歸納參賽制度及結果；目標類別：2026年達卡青年奧運會；＠ChatGPT
+2026 Dakar Youth Olympic Games,2026 Dakar Youth Olympic Games-Games Organization,20261104,contains,新增底層上位分支；依賽會籌辦面向歸納設施後勤與治理；目標類別：2026年達卡青年奧運會；＠ChatGPT
+2026 Dakar Youth Olympic Games,2026 Dakar Youth Olympic Games-Youth Engagement And Legacy,20261104,contains,新增底層上位分支；依教育文化及社會影響面向歸納；目標類別：2026年達卡青年奧運會；＠ChatGPT
+2026 Dakar Youth Olympic Games-Sports And Competition,2026 Dakar Youth Olympic Games-Competition Results And Medals,20261104,contains,新增底層細緻類別；以已舉行賽事的排名、成績、晉級、奪牌及獲獎者為主要敘事；不含僅介紹賽制的文章。；目標類別：2026年達卡青年奧運會；＠ChatGPT
+2026 Dakar Youth Olympic Games-Sports And Competition,2026 Dakar Youth Olympic Games-Athlete Participation And Qualification,20261104,contains,新增底層細緻類別；代表團、參賽名單、名額、參賽資格、選拔與平等參與；非比賽成績報導。；目標類別：2026年達卡青年奧運會；＠ChatGPT
+2026 Dakar Youth Olympic Games-Sports And Competition,2026 Dakar Youth Olympic Games-Sports Programme And Formats,20261104,contains,新增底層細緻類別；正式競賽／推廣運動的項目配置、規則與形式；不含以單場獎牌成績為主的新聞。；目標類別：2026年達卡青年奧運會；＠ChatGPT
+2026 Dakar Youth Olympic Games-Games Organization,2026 Dakar Youth Olympic Games-Venues And Infrastructure,20261104,contains,新增底層細緻類別；競賽場館、選手村、場地整建及賽會相關實體設施；與日常交通安保運作區分。；目標類別：2026年達卡青年奧運會；＠ChatGPT
+2026 Dakar Youth Olympic Games-Games Organization,2026 Dakar Youth Olympic Games-Event Operations And Logistics,20261104,contains,新增底層細緻類別；志工、票務、交通、安保、轉播與賽會行政後勤；不以賽會資金政策為主要敘事。；目標類別：2026年達卡青年奧運會；＠ChatGPT
+2026 Dakar Youth Olympic Games-Games Organization,2026 Dakar Youth Olympic Games-Governance And Funding,20261104,contains,新增底層細緻類別；組織治理、預算、資金、採購、問責與制度性決策；與實際社區受益或民生衝擊區分。；目標類別：2026年達卡青年奧運會；＠ChatGPT
+2026 Dakar Youth Olympic Games-Youth Engagement And Legacy,2026 Dakar Youth Olympic Games-Culture And Olympic Education,20261104,contains,新增底層細緻類別；開幕式、文化展演、聖火與奧林匹克價值教育；與經濟效果報導區分。；目標類別：2026年達卡青年奧運會；＠ChatGPT
+2026 Dakar Youth Olympic Games-Youth Engagement And Legacy,2026 Dakar Youth Olympic Games-Community And Economic Impact,20261104,contains,新增底層細緻類別；地方企業、就業、民生成本、社區變遷與賽會長期影響；與單純財務治理報導區分。；目標類別：2026年達卡青年奧運會；＠ChatGPT
