@@ -3185,3 +3185,15 @@ SN Sports And Major Events,2026 Dakar Youth Olympic Games,20261104,contains,新�
 2026 Dakar Youth Olympic Games-Games Organization,2026 Dakar Youth Olympic Games-Governance And Funding,20261104,contains,新增底層細緻類別；組織治理、預算、資金、採購、問責與制度性決策；與實際社區受益或民生衝擊區分。；目標類別：2026年達卡青年奧運會；＠ChatGPT
 2026 Dakar Youth Olympic Games-Youth Engagement And Legacy,2026 Dakar Youth Olympic Games-Culture And Olympic Education,20261104,contains,新增底層細緻類別；開幕式、文化展演、聖火與奧林匹克價值教育；與經濟效果報導區分。；目標類別：2026年達卡青年奧運會；＠ChatGPT
 2026 Dakar Youth Olympic Games-Youth Engagement And Legacy,2026 Dakar Youth Olympic Games-Community And Economic Impact,20261104,contains,新增底層細緻類別；地方企業、就業、民生成本、社區變遷與賽會長期影響；與單純財務治理報導區分。；目標類別：2026年達卡青年奧運會；＠ChatGPT
+Energy Security,Electric Power Infrastructure And Resilience,20261105,contains,新增主要層級；建立電力設施及供電韌性共同檢索入口；目標類別：電網擴建、儲能與能源韌性；＠ChatGPT
+Electric Power Infrastructure And Resilience,Grid Expansion And Modernization,20261105,contains,新增必要中間層級；區分電網擴建與設備升級；目標類別：電網擴建、儲能與能源韌性；＠ChatGPT
+Electric Power Infrastructure And Resilience,Grid-Connected Energy Storage,20261105,contains,新增必要中間層級；區分電網級儲能建設與應用；目標類別：電網擴建、儲能與能源韌性；＠ChatGPT
+Electric Power Infrastructure And Resilience,Power System Resilience,20261105,contains,新增必要中間層級；區分事故承受與供電恢復能力；目標類別：電網擴建、儲能與能源韌性；＠ChatGPT
+Grid Expansion And Modernization,Grid Expansion And Modernization-Transmission Capacity And Interconnection,20261105,contains,新增底層細緻類別；以輸電容量與併網為分類界線；目標類別：電網擴建、儲能與能源韌性；＠ChatGPT
+Grid Expansion And Modernization,Grid Expansion And Modernization-Distribution Upgrades And Smart Grids,20261105,contains,新增底層細緻類別；以配電自動化與智慧化升級為分類界線；目標類別：電網擴建、儲能與能源韌性；＠ChatGPT
+Grid-Connected Energy Storage,Grid-Connected Energy Storage-Utility Scale Battery Projects,20261105,contains,新增底層細緻類別；收錄公用事業規模電池儲能專案；目標類別：電網擴建、儲能與能源韌性；＠ChatGPT
+Grid-Connected Energy Storage,Grid-Connected Energy Storage-Long Duration Energy Storage,20261105,contains,新增底層細緻類別；收錄長時儲能技術及專案；目標類別：電網擴建、儲能與能源韌性；＠ChatGPT
+Power System Resilience,Power System Resilience-Grid Hardening And Extreme Weather,20261105,contains,新增底層細緻類別；聚焦事前耐災強固與極端天氣；目標類別：電網擴建、儲能與能源韌性；＠ChatGPT
+Power System Resilience,Power System Resilience-Microgrids And Backup Power,20261105,contains,新增底層細緻類別；聚焦微電網與關鍵供電備援；目標類別：電網擴建、儲能與能源韌性；＠ChatGPT
+Power System Resilience,Power System Resilience-Outage Response And Restoration,20261105,contains,新增底層細緻類別；聚焦事故應變與停電後復電；目標類別：電網擴建、儲能與能源韌性；＠ChatGPT
+Infrastructure,Grid Expansion And Modernization,20261105,contains,新增結構型交叉父類別；電網擴建屬實體基礎設施發展；目標類別：電網擴建、儲能與能源韌性；＠ChatGPT
