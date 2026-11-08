@@ -112,16 +112,20 @@ class TulipManualGraphBoundaryTests(unittest.TestCase):
         source = ROOT / "BertScript/Test_result_Vis.py"
         parsed = ast.parse(source.read_text(encoding="utf-8"))
         imports = [
-            node for node in parsed.body
+            node for node in ast.walk(parsed)
             if isinstance(node, ast.ImportFrom)
             and node.module == "text_category_profiler.visualization.tulip_graph_builder"
         ]
         names = {alias.name for node in imports for alias in node.names}
         self.assertEqual(names, {"BuildGraph", "ClusterMetaNodeGraph"})
+        # The domain adapter belongs at the actual similarity-clustering use
+        # site, not at module scope where an optional native DLL can break all
+        # Stage 4 views during startup.
+        self.assertFalse(any(node in parsed.body for node in imports))
         self.assertFalse(any(
             isinstance(node, ast.ImportFrom)
             and node.module == "text_category_profiler.tulip_utils.Graph_Builder"
-            for node in parsed.body
+            for node in ast.walk(parsed)
         ))
 
     def test_documentation_preserves_optional_dependency_and_provenance(self):

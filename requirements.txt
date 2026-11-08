@@ -38,6 +38,7 @@ dash-pivottable
 dash-uploader
 dash-cytoscape  # On-demand same-port lightweight taxonomy graph
 jaal  # Original visdcc Jaal interactive filters mounted on the Stage 4 port
+visdcc==0.0.63  # Required with Dash 3+: 0.0.50 imports removed component_loader
 # Portable viewer: pinned audited GitHub commit (not floating main).
 jaal-topology-viewer @ git+https://github.com/hun186/jaal-topology-viewer.git@47942ac3bd08d8cbcc615fa215c5e5eef286f486
 flask

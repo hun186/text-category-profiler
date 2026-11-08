@@ -16,6 +16,74 @@ class VisualizationStageTests(unittest.TestCase):
     def setUp(self):
         self.stage = importlib.import_module("BertScript.visualization_stage")
 
+    def test_tulip_windows_dll_preflight_rejects_dot_without_mutating_path(self):
+        original = r"C:\Windows\system32;.;D:\AIProjects\bin"
+        with mock.patch.dict(os.environ, {"PATH": original}):
+            with self.assertRaisesRegex(
+                RuntimeError, "TULIP_WINDOWS_PATH_RELATIVE"
+            ) as caught:
+                self.stage.preflight_tulip_windows_path(windows=True)
+            self.assertIn("'.'", str(caught.exception))
+            self.assertIn('[WinError 87]', str(caught.exception))
+            self.assertIn('set "PATH=%PATH:;.=%"', str(caught.exception))
+            self.assertEqual(os.environ["PATH"], original)
+
+    def test_tulip_windows_preflight_handles_other_relative_and_absolute_paths(self):
+        with self.assertRaisesRegex(
+            RuntimeError, r"TULIP_WINDOWS_PATH_RELATIVE.*relative",
+        ) as caught:
+            self.stage.preflight_tulip_windows_path(
+                path=r"C:\Windows\System32;.\\plugins;..\\bin", windows=True,
+            )
+        self.assertIn("plugins", str(caught.exception))
+        self.assertIn("bin", str(caught.exception))
+        self.assertIsNone(self.stage.preflight_tulip_windows_path(
+            path=r"C:\Windows\system32;D:\ProgramData\anaconda3\\Library\\bin",
+            windows=True,
+        ))
+
+    def test_tulip_windows_preflight_is_noop_on_other_platforms(self):
+        self.assertIsNone(self.stage.preflight_tulip_windows_path(
+            path=".;relative;more", windows=False,
+        ))
+
+    def test_full_stage4_preflights_before_workpool_and_lazily_imports_tulip(self):
+        source = Path("BertScript/Test_result_Vis.py").read_text(
+            encoding="utf-8",
+        )
+        tree = ast.parse(source)
+        self.assertFalse(any(
+            isinstance(node, ast.ImportFrom)
+            and node.module == "text_category_profiler.visualization.tulip_graph_builder"
+            for node in tree.body
+        ))
+        preflight_calls = [
+            node for node in ast.walk(tree)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "preflight_tulip_windows_path"
+        ]
+        self.assertGreaterEqual(len(preflight_calls), 2)
+        # Direct full Stage 4 starts preflight before it reaches main/workpool.
+        self.assertLess(
+            source.index("visualization_stage.preflight_tulip_windows_path()"),
+            source.index("def main(argv=None, stage_api=visualization_stage):"),
+        )
+        builder = next(
+            node for node in tree.body
+            if isinstance(node, ast.ClassDef)
+            and node.name == "VisDatatableDFBuilder"
+        )
+        run = next(
+            node for node in builder.body
+            if isinstance(node, ast.FunctionDef) and node.name == "run"
+        )
+        self.assertTrue(any(
+            isinstance(node, ast.ImportFrom)
+            and node.module == "text_category_profiler.visualization.tulip_graph_builder"
+            for node in ast.walk(run)
+        ))
+
     def test_dash_import_uses_dependency_light_importer(self):
         fake_dash = object()
         importer = mock.Mock(return_value=fake_dash)
