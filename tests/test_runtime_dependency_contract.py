@@ -27,6 +27,18 @@ class RuntimeDependencyContractTests(unittest.TestCase):
         }
         self.assertIn("pytz", declarations)
 
+    def test_stage4_pins_dash3_compatible_visdcc(self):
+        # visdcc 0.0.50 imports a Dash 3-removed component loader.
+        requirements = (ROOT / "requirements.txt").read_text(encoding="utf-8")
+        declarations = {
+            line.split("#", 1)[0].strip().replace(" ", "").lower()
+            for line in requirements.splitlines()
+            if line.split("#", 1)[0].strip()
+        }
+        self.assertIn("visdcc==0.0.63", declarations)
+        self.assertIn("comm>=0.2.3", declarations)
+        self.assertIn("jaal", declarations)
+
     def test_gpu_utility_dependency_declared_for_shared_utilities(self):
         # df_utils imports shared utilities, which unconditionally imports GPUtil.
         requirements = (ROOT / "requirements.txt").read_text(encoding="utf-8")
