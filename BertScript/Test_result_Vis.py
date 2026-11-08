@@ -9,6 +9,12 @@ if str(REPOSITORY_ROOT) not in sys.path:
 
 from BertScript import visualization_stage
 
+# Stage 4 environment diagnostics run before Dash/native modules and before
+# any dataset picker or WorkPool lifecycle. Never turn --doctor into a full run.
+if __name__ == "__main__" and "--doctor" in sys.argv[1:]:
+    from BertScript.stage4_doctor import main as stage4_doctor_main
+    raise SystemExit(stage4_doctor_main(sys.argv[1:]))
+
 # Special-case local read-only viewers BEFORE importing Dash analysis,
 # model/data dependencies or scanning/mutating the WorkPool. In particular,
 # completed *_rdy_for_Spike datasets must never be renamed just to see Jaal.
