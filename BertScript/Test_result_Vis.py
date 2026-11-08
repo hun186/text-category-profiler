@@ -22,6 +22,11 @@ if __name__ == "__main__" and "--history-preview" in sys.argv[1:]:
     from BertScript.stage4_history_preview import main as history_preview_main
     raise SystemExit(history_preview_main(sys.argv[1:]))
 
+# Fail before any WorkPool selection or mutation, not inside Tulip's native DLL
+# importer. Read-only viewer modes have already exited above.
+if __name__ == "__main__":
+    visualization_stage.preflight_tulip_windows_path()
+
 #import utilities_DB
 import numpy as np
 import pandas as pd
@@ -149,8 +154,6 @@ from ClassesTree.ClassesTree_utils import GetSubTopics
 from ClassesTree.ClassesTree_utils import BuildInfoScoreTable
 from ClassesTree.ClassesTree_utils import BuildSubTopicsDict
 #from ClassesTree.Visualization.jaal.jaalViewer import JaalViewMain
-from text_category_profiler.visualization.tulip_graph_builder import ClusterMetaNodeGraph
-from text_category_profiler.visualization.tulip_graph_builder import BuildGraph
 from text_category_profiler.text.TextProcessor_utils import textReader
 from text_category_profiler.core.conformer import freeGPUConformer
 
@@ -1913,7 +1916,14 @@ class VisDatatableDFBuilder:
         columns=["TargetFile","MatchedFile","Similarity"]
         #定義欄位名
         Similarity_df.columns = columns
-        CMP = ClusterMetaNodeGraph(BuildGraph(SimilarityList), "Louvain")    
+        # Tulip is needed only for similarity clustering, not for initial
+        # Stage 4 layout/Jaal. A missing/broken native DLL must not block
+        # read-only analysis pages before this feature is actually used.
+        visualization_stage.preflight_tulip_windows_path()
+        from text_category_profiler.visualization.tulip_graph_builder import (
+            BuildGraph, ClusterMetaNodeGraph,
+        )
+        CMP = ClusterMetaNodeGraph(BuildGraph(SimilarityList), "Louvain")
         nDigit = len(str(max(CMP))) if len(CMP)>0 else 0
         NIC = {}
         temp = {}
