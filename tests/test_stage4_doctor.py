@@ -62,10 +62,12 @@ class Stage4DoctorTests(unittest.TestCase):
         self.assertIn("--viewer-only", failures["WorkPool"])
 
     def test_viewer_mode_never_inspects_workpool_or_tulip(self):
-        with mock.patch.object(doctor, "_workspaces", side_effect=AssertionError(
-                "viewer mode must not access WorkPool")), \\
-                mock.patch.object(doctor, "_module_available",
-                                  side_effect=AssertionError("no package probing")):
+        with (
+            mock.patch.object(doctor, "_workspaces",
+                              side_effect=AssertionError("viewer must not read WorkPool")),
+            mock.patch.object(doctor, "_module_available",
+                              side_effect=AssertionError("no package probing")),
+        ):
             result = checks(mode="viewer", path=".;relative", windows=True)
         self.assertFalse([x for x in result if x.status == "FAIL"], result)
         self.assertNotIn("WorkPool", {x.name for x in result})
@@ -83,8 +85,10 @@ class Stage4DoctorTests(unittest.TestCase):
     def test_missing_workpool_does_not_create_or_rename_paths(self):
         with tempfile.TemporaryDirectory() as root:
             workpool = Path(root) / "does_not_exist"
-            with mock.patch("os.rename", side_effect=AssertionError("rename")), \\
-                    mock.patch("os.replace", side_effect=AssertionError("replace")):
+            with (
+                mock.patch("os.rename", side_effect=AssertionError("rename")),
+                mock.patch("os.replace", side_effect=AssertionError("replace")),
+            ):
                 result = checks(workspace_names=None, workpool=str(workpool))
             self.assertFalse(workpool.exists())
         self.assertEqual(next(x.status for x in result
