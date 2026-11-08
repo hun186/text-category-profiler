@@ -24,14 +24,26 @@ EXPECTED = {
     "Hepatology": (2712, "肝臟病學", 2335, "肝臟病學"),
 }
 AI_NOTES = "AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核"
+# 2026-11-08 reviewed floor: historical 2707 rows plus 38 additive labels.
+# New human-reviewed categories may raise the count; do not regress below it.
+MIN_RETAINED_CLASS_LABELS = 2745
+LATEST_ADDITION_ANCHORS = (
+    "Stablecoin",
+    "2026 Dakar Youth Olympic Games",
+    "Electric Power Infrastructure And Resilience",
+)
+
 
 
 class DuplicateClassTableCleanupTests(unittest.TestCase):
     def test_authoritative_file_is_unique_canonical_and_has_no_lost_rows(self):
         rows = metadata.read_rows(metadata.DEFAULT_CSV)
-        self.assertEqual(len(rows), 2707)
+        self.assertGreaterEqual(len(rows), MIN_RETAINED_CLASS_LABELS)
         table = metadata.load_class_table()
-        self.assertEqual(len(table), 2707)
+        self.assertEqual(len(table), len(rows))
+        for label in LATEST_ADDITION_ANCHORS:
+            with self.subTest(addition=label):
+                self.assertIn(label, table)
         self.assertEqual(
             metadata.DEFAULT_CSV.read_text(encoding="utf-8-sig"),
             metadata.table_to_csv(table),
@@ -102,7 +114,8 @@ class DuplicateClassTableCleanupTests(unittest.TestCase):
             self.assertEqual(caught.exception.code, 2)
             self.assertIn("cannot append existing ClassLabel", stderr.getvalue())
             self.assertEqual(path.read_bytes(), before)
-            self.assertEqual(len(metadata.load_class_table()), 2707)
+            self.assertEqual(len(metadata.load_class_table()), len(table))
+            self.assertGreaterEqual(len(table), MIN_RETAINED_CLASS_LABELS)
 
     def test_historical_allow_mode_is_exact_and_never_approves_old_ai_notes(self):
         original = {
