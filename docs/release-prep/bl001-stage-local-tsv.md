@@ -13,8 +13,9 @@
 
 ## 驗證與發行條件
 
-- 新增針對共用格式、兩個 legacy wrapper、單次寫入、例外透傳及選用真實 pandas TSV 位元組等值的測試。
+- 新增針對共用格式、兩個 legacy wrapper、單次寫入、例外透傳及選用真實 pandas 的行為等值測試：當 pandas 支援歷史格式時，比對 TSV 位元組；當 pandas 3.x 不接受空 `quotechar` 時，驗證新舊呼叫皆回報相同例外，不把既有相容性問題誤判為新功能成功。
 - 保留舊的 `tests.test_bl001_df_tsv_provider_contracts`；正式版本必須再通過最新 HEAD 的 Hosted CI 與零未解決問題的 Codex Review。
+- **已知限制：** 某些 pandas 3.x 版本（Review 已確認 3.1.1）對既有 `quotechar=""` 會擲出 `TypeError`；本次重構刻意不改變此歷史格式與失敗行為。更新內網前必須先核對當地 pandas 版本並在非正式資料上驗證 TSV 匯出，不可將 Hosted PASS 當作 pandas 3 相容性認證。未來如需支援 pandas 3，須另做有金標 TSV 比對的兼容修正。
 - 本地部署前，依既有實務流程備份重要資料、確認維護窗口與回復點；先在隔離資料集比較 TSV 檔案 checksum 與關鍵欄位，再重啟完整分類流程。
 - 內網仍需驗收 Windows／Linux 實機所需依賴與現有 CLI；Hosted 單元測試 **不等於** 已更新內網。
 - 回復策略：若 stage TSV 實測不相容，回退到這次重構前的應用 commit；不得透過改名 WorkPool 目錄強迫重新分類。
