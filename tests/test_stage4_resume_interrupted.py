@@ -39,6 +39,9 @@ class InterruptedStage4Tests(unittest.TestCase):
             TRVWebHost=True,
             public=False,
             modelDir=str(self.model),
+            test=True,
+            train=False,
+            VisSelfService=False,
             WeiTechFormatSepWorkPool=False,
             WeiTechFormatInputPATH="",
             WeiTechFormatOutputPATH="",
@@ -137,11 +140,6 @@ class InterruptedStage4Tests(unittest.TestCase):
             calls.append(("application", path))
 
         expected = plan.completed_workspace
-        result = stage.run_visualization_stage(
-            plan, rename=rename, application=application,
-            start_server=lambda _: self.fail("TRVWebHost false for test"),
-            validate=lambda path: Path(path).is_dir(),
-        ) if False else None
         # Hosted startup is injected; it does not start any real server.
         actual = stage.run_visualization_stage(
             plan, rename=rename, application=application,
