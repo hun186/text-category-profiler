@@ -141,6 +141,28 @@ class VisualizationStageTests(unittest.TestCase):
             and node.module == "text_category_profiler.visualization.tulip_graph_builder"
             for node in ast.walk(run)
         ))
+        # A dependency may add dot to PATH after initial import; re-sanitize
+        # immediately before the deferred Tulip graph load as well.
+        nested = list(ast.walk(run))
+        sanitize_line = next(
+            n.lineno for n in nested
+            if isinstance(n, ast.Call)
+            and isinstance(n.func, ast.Attribute)
+            and n.func.attr == "sanitize_tulip_windows_dot_path"
+        )
+        preflight_line = next(
+            n.lineno for n in nested
+            if isinstance(n, ast.Call)
+            and isinstance(n.func, ast.Attribute)
+            and n.func.attr == "preflight_tulip_windows_path"
+        )
+        import_line = next(
+            n.lineno for n in nested
+            if isinstance(n, ast.ImportFrom)
+            and n.module == "text_category_profiler.visualization.tulip_graph_builder"
+        )
+        self.assertLess(sanitize_line, preflight_line)
+        self.assertLess(preflight_line, import_line)
 
     def test_dash_import_uses_dependency_light_importer(self):
         fake_dash = object()

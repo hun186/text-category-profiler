@@ -9,6 +9,8 @@ from text_category_profiler.execution.process import (
     LegacyShellProcessRunner,
     ProcessRunner,
     RootFailFastPolicy,
+    sanitize_windows_dot_path,
+    preflight_windows_dll_path,
 )
 
 
@@ -77,6 +79,59 @@ def load_main(subprocess_run):
 
 
 class ProcessRunnerTests(unittest.TestCase):
+    def test_windows_dot_repair_matches_historical_old_and_new_spellings(self):
+        original = (
+            r'C:\\Windows\\System32;.;.\\;./;.\\.;". ";D:\\Anaconda;'
+            r'.\\plugins;..\\bin;\\.;.'
+        )
+        env = {"PATH": original}
+        self.assertEqual(
+            sanitize_windows_dot_path(environ=env, windows=True), 6
+        )
+        self.assertEqual(
+            env["PATH"],
+            r'C:\\Windows\\System32;D:\\Anaconda;.\\plugins;..\\bin;\\.',
+        )
+        self.assertEqual(sanitize_windows_dot_path(
+            environ=env, windows=True,
+        ), 0)
+        with self.assertRaisesRegex(
+            RuntimeError, "TULIP_WINDOWS_PATH_RELATIVE"
+        ):
+            preflight_windows_dll_path(path=env["PATH"], windows=True)
+
+    def test_window_path_repair_is_not_used_on_nonwindows_and_does_not_change_os_environ(self):
+        import os
+        env = {"PATH": r'C:\\Windows;.;D:\\Anaconda'}
+        with patch.dict(os.environ, {"PATH": "PARENT_SENTINEL"}):
+            self.assertEqual(
+                sanitize_windows_dot_path(environ=env, windows=False), 0
+            )
+            self.assertEqual(
+                env["PATH"], r'C:\\Windows;.;D:\\Anaconda'
+            )
+            self.assertEqual(
+                sanitize_windows_dot_path(environ=env, windows=True), 1
+            )
+            self.assertEqual(os.environ["PATH"], "PARENT_SENTINEL")
+            self.assertIsNone(preflight_windows_dll_path(
+                path=env["PATH"], windows=True,
+            ))
+
+    def test_windows_path_rooted_and_custom_relative_segments_are_not_rewritten(self):
+        env = {"PATH": r'C:\\Windows;\\.;.\\myplugins;%LIBRARY_BIN%'}
+        self.assertEqual(
+            sanitize_windows_dot_path(environ=env, windows=True), 0
+        )
+        self.assertEqual(
+            env["PATH"], r'C:\\Windows;\\.;.\\myplugins;%LIBRARY_BIN%'
+        )
+        with self.assertRaisesRegex(
+            RuntimeError, "TULIP_WINDOWS_PATH_RELATIVE"
+        ) as caught:
+            preflight_windows_dll_path(path=env["PATH"], windows=True)
+        self.assertIn("myplugins", str(caught.exception))
+
     def test_protocol_accepts_string_command(self):
         runner: ProcessRunner = RecordingRunner(types.SimpleNamespace(returncode=0))
         result = runner.execute("python stage.py --path directory with spaces")

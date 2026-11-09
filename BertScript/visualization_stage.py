@@ -1,10 +1,14 @@
 """Dependency-light planning and lifecycle boundary for Stage 4."""
 
 from dataclasses import dataclass
-import ntpath
 import os
 import platform
 from typing import Callable, Optional
+
+from text_category_profiler.execution.process import (
+    sanitize_windows_dot_path as sanitize_tulip_windows_dot_path,
+    preflight_windows_dll_path as preflight_tulip_windows_path,
+)
 
 
 READY_SUFFIX = "_rdy_for_TestResultVis"
@@ -104,65 +108,6 @@ def is_spurious_datatable_filter_notification(
         and not (filter_query or "")
         and not (sort_by or [])
     )
-
-
-def sanitize_tulip_windows_dot_path(environ=None, *, windows=None):
-    """Drop only independent '.' PATH segments in this process on Windows.
-
-    Tulip's native DLL loader cannot use relative os.add_dll_directory('.').
-    This intentionally DOES NOT resolve or remove other relative paths,
-    expand environment variables, or change the parent shell/system PATH.
-    Other unsafe segments remain subject to preflight_tulip_windows_path.
-    Returns the number of discarded dot-only entries.
-    """
-    if windows is None:
-        windows = platform.system().lower() == "windows"
-    if not windows:
-        return 0
-    if environ is None:
-        environ = os.environ
-    original = environ.get("PATH", "")
-    segments = original.split(";")
-    kept = [
-        segment for segment in segments
-        if segment.strip().strip('"').strip() != "."
-    ]
-    removed = len(segments) - len(kept)
-    if removed:
-        environ["PATH"] = ";".join(kept)
-    return removed
-
-
-def preflight_tulip_windows_path(path=None, *, windows=None):
-    """Reject relative Windows PATH entries before Tulip's DLL loader sees them.
-
-    Tulip may pass PATH entries to os.add_dll_directory(). Windows rejects
-    relative entries such as "." with WinError 87. Do not silently rewrite
-    the process PATH: users may rely on its original search order.
-    """
-    if windows is None:
-        windows = platform.system().lower() == "windows"
-    if not windows:
-        return
-    if path is None:
-        path = os.environ.get("PATH", "")
-
-    relative = [
-        item.strip() for item in path.split(";")
-        if item.strip() and not ntpath.isabs(item.strip().strip('"'))
-    ]
-    if relative:
-        displayed = ", ".join(repr(item) for item in relative[:3])
-        if len(relative) > 3:
-            displayed += ", ..."
-        raise RuntimeError(
-            "TULIP_WINDOWS_PATH_RELATIVE: Windows PATH has relative entries "
-            f"({displayed}); Tulip's os.add_dll_directory may raise "
-            "[WinError 87]. In the SAME Anaconda Prompt, remove these "
-            "relative PATH entries before starting full Stage 4. "
-            'For a trailing ";." entry, run: set "PATH=%PATH:;.=%" '
-            "and retry. No PATH or WorkPool changes were made."
-        )
 
 
 def import_dash_runtime(import_module=None):
