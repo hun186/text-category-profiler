@@ -85,6 +85,8 @@ text_category_profiler/
 
 - 接續 TSV 小批次，將 `DatasetConverter.df_utils.dfToXLS` 與 `BertScript.df_utils.dfToXLS` 兩個同源的固定 xlsxwriter 呼叫收斂至 `text_category_profiler.data.stage_xlsx.write_stage_xlsx`；保留 `dfToXLS(df, OutputFN, excelindex=True, encoding='utf-8')` API（舊 `encoding` 參數**原本即被忽略**）、固定 `engine='xlsxwriter'`／`encoding='utf-8'`、無隱式重試、既有例外傳遞。現有 canonical `data.df_utils.dfToXLS` 含 ExcelWriter、欄位名、overflow、fallback 等不同策略，**不可互換、未整併**；對應 isolated stub 與 optional pandas 對照測試。注意 pandas 新版可能因移除 `to_excel(encoding=...)` 而維持原有失敗，本批**不聲稱修復版本相容**。詳細更新候選及實機條件見 `docs/release-prep/bl001-stage-local-xlsx.md`；BL-001 繼續 In Progress。
 
+- **2026-11-09 Stage-local SQLite consolidation（本批候選）：** 已確認 `DatasetConverter.df_utils.dfToSQL` 和 `BertScript.df_utils.dfToSQL` 皆固定 `sampleSrc` replace + `text_Index`，但兩份 stage-local 原實作皆未明確關閉連線。以 `text_category_profiler.data.stage_sql.write_stage_sql` 形成一份 stage-local 固定政策實作，保留兩個 `dfToSQL(SQLname, df, SavingDfColumns=[])` 入口與 stage-local 的 `lite.connect`，新增 `try/finally` 例外與成功路徑關閉 SQLite 連線；**這是明確的行為修正，不是單純搬移**。隔離 fake DataFrame/SQLite 測試包括固定表／索引、選欄／寫入／建索引失敗與單次 close；另在私有記憶體 SQLite 驗證 rows/index 寫入後依舊可見。與 canonical `text_category_profiler.data.df_utils.dfToSQL` 的結構化欄位 JSON 轉換、自訂表名、dtype、各種索引等政策不同，不得合併；資料庫檔案持久性、Windows／Linux 真實 WorkPool、鎖定／rollback 及模型端到端仍待內網驗收。詳細 deployment gate 見 `docs/release-prep/bl001-stage-local-sql.md`；BL-001 仍為 In Progress。
+
 ### Phase 2：拆分路徑、序列化與基礎 helper
 
 - [ ] 從 `utilities_path.py` 盤點純路徑 helper，搬到 `text_category_profiler/paths.py`；檔案搬移／刪除函式需另行風險審查。
