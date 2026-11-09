@@ -16,7 +16,9 @@ import re
 import sys
 
 from BertScript import jaal_runtime_diagnostics as jaal_probe
-from BertScript.visualization_stage import preflight_tulip_windows_path
+from BertScript.visualization_stage import (
+    preflight_tulip_windows_path, sanitize_tulip_windows_dot_path,
+)
 
 
 @dataclass(frozen=True)
@@ -116,12 +118,27 @@ def collect_checks(*, mode="full", model_type="PytorchMMBERT",
 
     if mode == "full":
         if windows:
+            # Doctor is read-only. Mirror the Stage 4 startup sanitation
+            # against an in-memory mapping, never os.environ.
+            simulated = {"PATH": path}
+            removed = sanitize_tulip_windows_dot_path(
+                environ=simulated, windows=True,
+            )
             try:
-                preflight_tulip_windows_path(path=path, windows=True)
+                preflight_tulip_windows_path(
+                    path=simulated["PATH"], windows=True,
+                )
             except RuntimeError as exc:
                 add("FAIL", "Tulip DLL PATH", str(exc))
             else:
-                add("PASS", "Tulip DLL PATH", "No relative Windows PATH entries detected")
+                status = "WARN" if removed else "PASS"
+                detail = (
+                    f"Stage 4 startup will remove {removed} independent '.' "
+                    "PATH entry/entries in its process only; this read-only "
+                    "Doctor has NOT changed your PATH."
+                    if removed else "No relative Windows PATH entries detected"
+                )
+                add(status, "Tulip DLL PATH", detail)
         if has_tulip is None:
             has_tulip = _module_available("tulip")
         if has_tulip:

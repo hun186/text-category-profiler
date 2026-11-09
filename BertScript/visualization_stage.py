@@ -106,6 +106,33 @@ def is_spurious_datatable_filter_notification(
     )
 
 
+def sanitize_tulip_windows_dot_path(environ=None, *, windows=None):
+    """Drop only independent '.' PATH segments in this process on Windows.
+
+    Tulip's native DLL loader cannot use relative os.add_dll_directory('.').
+    This intentionally DOES NOT resolve or remove other relative paths,
+    expand environment variables, or change the parent shell/system PATH.
+    Other unsafe segments remain subject to preflight_tulip_windows_path.
+    Returns the number of discarded dot-only entries.
+    """
+    if windows is None:
+        windows = platform.system().lower() == "windows"
+    if not windows:
+        return 0
+    if environ is None:
+        environ = os.environ
+    original = environ.get("PATH", "")
+    segments = original.split(";")
+    kept = [
+        segment for segment in segments
+        if segment.strip().strip('"').strip() != "."
+    ]
+    removed = len(segments) - len(kept)
+    if removed:
+        environ["PATH"] = ";".join(kept)
+    return removed
+
+
 def preflight_tulip_windows_path(path=None, *, windows=None):
     """Reject relative Windows PATH entries before Tulip's DLL loader sees them.
 

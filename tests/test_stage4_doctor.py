@@ -47,7 +47,7 @@ class Stage4DoctorTests(unittest.TestCase):
 
     def test_independent_failing_import_and_path_checks_report_all_at_once(self):
         versions = dict(GOOD, dash="3.4.0", visdcc="0.0.50", comm="0.1.0")
-        result = checks(versions=versions, path=r"C:\Windows;.",
+        result = checks(versions=versions, path=r"C:\Windows;.;.\plugins",
                         has_topology=False, has_tulip=False,
                         workspace_names=[])
         failures = {x.name: x.detail for x in result if x.status == "FAIL"}
@@ -60,6 +60,23 @@ class Stage4DoctorTests(unittest.TestCase):
         self.assertIn("visdcc==0.0.63", failures["Dash/visdcc"])
         self.assertIn('set "PATH=%PATH:;.=%"', failures["Tulip DLL PATH"])
         self.assertIn("--viewer-only", failures["WorkPool"])
+
+    def test_full_mode_dot_only_path_is_readonly_warning_not_failure(self):
+        original = r"C:\\Windows\\System32;.;D:\\Anaconda\\Library\\bin"
+        with mock.patch.dict(os.environ, {"PATH": "ORIGINAL_PROCESS_PATH"}):
+            result = checks(path=original)
+            self.assertEqual(os.environ["PATH"], "ORIGINAL_PROCESS_PATH")
+        status = next(x for x in result if x.name == "Tulip DLL PATH")
+        self.assertEqual(status.status, "WARN")
+        self.assertIn("remove 1 independent '.'", status.detail)
+        self.assertIn("has NOT changed your PATH", status.detail)
+        self.assertFalse(any(x.status == "FAIL" for x in result))
+
+    def test_full_mode_does_not_hide_other_relative_paths(self):
+        result = checks(path=r"C:\\Windows;.;.\\custom")
+        status = next(x for x in result if x.name == "Tulip DLL PATH")
+        self.assertEqual(status.status, "FAIL")
+        self.assertIn("custom", status.detail)
 
     def test_viewer_mode_never_inspects_workpool_or_tulip(self):
         with (
