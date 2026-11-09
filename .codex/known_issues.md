@@ -6,6 +6,7 @@
 
 | ID | 嚴重度 | 問題 | 影響範圍 | Workaround | 證據 | 狀態 |
 | --- | --- | --- | --- | --- | --- | --- |
+| `KI-010` | Medium | Windows Anaconda PATH 包含獨立 `.` 項目時，CombineTestResult 成功後完整 Stage 4 於 Tulip 預檢立即中斷（`TULIP_WINDOWS_PATH_RELATIVE`） | 已完成分類的 `_rdy_for_TestResultVis` 待視覺化工作池、完整 GUI 啟動 | 舊版同一 CMD 暫時清除獨立 PATH `.` 再**只執行 Stage 4**；修正版 Stage 4 子程序會在重型 import 前只移除獨立 `.`，其他相對路徑仍 fail closed，Doctor 模擬預檢只顯示 WARN、不寫入環境 | 2026-11-09 Windows/Anaconda：dataset_20261109140948_PytorchMMBERT_pt8059 已完成 CombineTestResult，Stage 4 `Test_result_Vis.py:34` 因 PATH `.` 中斷；`tests/test_visualization_stage.py`、`tests/test_stage4_doctor.py` | Open（程式修正候選；Windows 重新執行 Stage 4 與完整 GUI 尚未驗收） |
 | `KI-003` | Medium | 已有隔離 root smoke，但尚缺 post-merge real-model/GPU acceptance evidence | 完整 runtime 驗證 | Layer A 啟用時必須 PASS；Layer B 留待明確 real-runtime inputs 與 H100/CUDA acceptance | `tests/test_full_pipeline_smoke.py`、`tests/test_full_pipeline_real_runtime.py`、`.codex/workflows.md` | Open |
 | `KI-005` | Low | 過去根 `requirements.txt` 未宣告 `GPUtil`，repository-wide discovery 因而產生 2 個 dependency errors；根 GPUtil 已宣告；PR #145 fresh targeted lightweight discovery 912 OK（2 SKIP），但仍待完整 root requirements 環境驗證 | lightweight repository-wide validation | CI 已針對所需套件安裝 GPUtil/pymongo/elasticsearch/pytz 並獲 PASS；完整 root requirements 安裝仍未驗證，不能等同完整 runtime acceptance | `tests/test_df_utils.py` → `text_category_profiler.data.df_utils` → `text_category_profiler.core.utilities`；Codex review of PR #119 | Open |
 | `KI-009` | Medium | Windows/Anaconda 安裝 TensorFlow 但其原生 DLL 無法初始化時，PyTorch 的 `from transformers import BertModel` 仍可能間接匯入 TensorFlow 而中止 | Stage 2 `PytorchMMBERT`、`PytorchXLM` 等 transformers 分類入口 | Windows CMD 以 `set "USE_TF=0"`、`set "USE_TORCH=1"` 在同個終端機啟動；本 PR 在 PyTorch 專用入口先設兩旗標 | 使用者 2026-10-28 Windows 實機：未設 env 發生 `_pywrap_tensorflow_internal` DLL 錯誤；設 env 後 BertModel import 及完整流程 PASS | Open（自動設定待 Windows 實機驗收） |
@@ -13,6 +14,14 @@
 | `KI-006` | High | Elasticsearch credential 曾硬編碼於 repository source/sample config/setup notes；current source 已移除 tracked credential literals，runtime config 改由 `TCP_ELASTIC_PASSWORD` 注入，但既有 Git 歷史仍可能包含舊值，外部輪替狀態尚未確認 | 仍接受舊 credential 的 Elasticsearch 環境 | 立即在 Elasticsearch 端輪替該 credential，部署時以 `TCP_ELASTIC_PASSWORD` 注入；不要把新 secret commit 到 Git | `tests/test_es_secret_config.py` 掃描 current tracked ES surfaces；Git history 未重寫 | Open |
 
 ## Issue Details
+
+### `KI-010` — Windows PATH 獨立 '.' 造成 Stage 4 預檢中斷
+
+- **實機證據（2026-11-09）**：Windows `D:\shared\AIProjects\text-category-profiler`，`TCFMain.py` 完成 `CombineTestResult` 後，`WorkPool\dataset_20261109140948_PytorchMMBERT_pt8059_rdy_for_TestResultVis` 已交接成功；`Test_result_Vis.py` 在工作池選取與重命名前的 `preflight_tulip_windows_path` 發現獨立 `.` 並以 `TULIP_WINDOWS_PATH_RELATIVE` 中斷。沒有證據顯示 Stage 4 已寫入或變更資料集，也不能宣稱真正 Tulip DLL 載入已成功。
+- **修正範圍**：正式 Stage 4 子程序在重型套件匯入及 WorkPool handoff **之前**，只刪除 Windows `PATH` 裡的獨立 `.`（包含單獨以雙引號包圍的 `"."`），並輸出一行修正記錄；不展開其他變數、不將其他相對路徑轉絕對、不修改父 shell 或系統 PATH。對 `.\\plugins`／`..\\bin` 等剩餘相對路徑依舊 fail closed。
+- **Doctor**：以臨時 mapping 模擬清理，不改 `os.environ`；當僅 `.` 可被修復，回報 `WARN` 而非阻斷；其他相對路徑仍 `FAIL`。唯讀 Jaal viewer / History Preview 特殊路由不受此邏輯影響。
+- **安全恢復**：更新程式後，先確認實際目錄仍是 `_rdy_for_TestResultVis`，再直接重新執行原日誌裡的 `python BertScript/Test_result_Vis.py ...` 命令，**不要重跑 TCFMain**，也不要將 `_rdy_for_Spike` 或 `_is_running_TestResultVis` 目錄人工改名。
+- **驗收條件**：Windows 使用原始 PATH（含獨立 `.`）在新版本啟動 Stage 4，確認只出現自動調整訊息、可進入完整 Dashboard 與 Jaal、實際 Tulip DLL 操作不報 `WinError 87`，並觀察 WorkPool 交接/關閉行為；Hosted 測試不能替代此實機驗收。7 筆預測皆不符真值的統計是另外一項模型品質議題，不是本次啟動例外原因。
 
 ### `KI-009` — PyTorch 分類入口間接載入無法初始化的 TensorFlow DLL
 
