@@ -224,7 +224,7 @@ def list_columns(workpool, workspace, database, table, *, confirm_running=False)
 
 def read_distribution(workpool, workspace, database, table, column, *,
                       confirm_running=False):
-    """Count values from at most 5000 stored rows; no model or SQL writes.
+    """Count 120-character prefixes from <=5000 rows; never write SQL.
 
     The selected table/column must be from live SQLite schema metadata, not
     arbitrary browser strings. All dynamic SQL identifiers are quoted, and
@@ -241,23 +241,30 @@ def read_distribution(workpool, workspace, database, table, column, *,
         with closing(_connect(path)) as db:
             statement = (
                 "SELECT substr(CAST(" + _quoted(column)
-                + " AS TEXT), 1, ?) FROM " + _quoted(table) + " LIMIT ?"
+                + " AS TEXT), 1, ?), "
+                "length(CAST(" + _quoted(column)
+                + " AS TEXT)) > ? FROM " + _quoted(table) + " LIMIT ?"
             )
             values = db.execute(
                 statement,
-                (DISTRIBUTION_LABEL_CHARS, DISTRIBUTION_SAMPLE_ROWS + 1),
+                (DISTRIBUTION_LABEL_CHARS, DISTRIBUTION_LABEL_CHARS,
+                 DISTRIBUTION_SAMPLE_ROWS + 1),
             ).fetchall()
     except sqlite3.DatabaseError as exc:
         raise HistoryPreviewError("Could not read SQLite distribution") from exc
 
     sampled = values[:DISTRIBUTION_SAMPLE_ROWS]
-    labels = Counter(
+    # These counts are for 120-character prefixes. Distinct long strings
+    # can share a prefix; report that explicitly instead of inflating an exact
+    # ClassLabel/value frequency claim. Typical short class labels remain exact.
+    prefixes = Counter(
         (str(value).replace("\\r", " ").replace("\\n", " ").strip()
          or "(空值)")
         if value is not None else "(空值)"
-        for (value,) in sampled
+        for value, _was_clipped in sampled
     )
-    ranking = sorted(labels.items(), key=lambda item: (-item[1], item[0]))
+    clipped = sum(bool(flag) for _value, flag in sampled)
+    ranking = sorted(prefixes.items(), key=lambda item: (-item[1], item[0]))
     return {
         "categories": [
             {"label": label, "count": count}
@@ -265,6 +272,7 @@ def read_distribution(workpool, workspace, database, table, column, *,
         ],
         "sampled_rows": len(sampled),
         "has_more_rows": len(values) > DISTRIBUTION_SAMPLE_ROWS,
-        "distinct_values": len(labels),
-        "displayed_groups": min(len(labels), DISTRIBUTION_TOP_GROUPS),
+        "distinct_prefixes": len(prefixes),
+        "truncated_values": clipped,
+        "displayed_groups": min(len(prefixes), DISTRIBUTION_TOP_GROUPS),
     }
