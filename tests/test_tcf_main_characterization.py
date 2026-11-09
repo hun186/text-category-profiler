@@ -113,6 +113,52 @@ class RootPipelineCharacterizationTests(unittest.TestCase):
     def setUp(self):
         RecordingPicker.calls = []
 
+    def test_root_dll_path_check_happens_before_runtime_activation(self):
+        actions = []
+        module = load_main(args=default_args(test=True))
+        module.sanitize_windows_dot_path = lambda: actions.append("sanitize") or 2
+        def reject():
+            actions.append("preflight")
+            raise RuntimeError("TULIP_WINDOWS_PATH_RELATIVE")
+        module.preflight_windows_dll_path = reject
+        module.activateArguments = lambda plan: actions.append("ACTIVATE")
+        with self.assertRaisesRegex(
+            RuntimeError, "TULIP_WINDOWS_PATH_RELATIVE"
+        ):
+            module.main([])
+        self.assertEqual(actions, ["sanitize", "preflight"])
+
+    def test_root_training_only_mode_skips_tulip_dll_check(self):
+        module = load_main(args=default_args(test=False))
+        module.sanitize_windows_dot_path = lambda: self.fail(
+            "training-only mode must not change PATH"
+        )
+        module.preflight_windows_dll_path = lambda: self.fail(
+            "training-only mode must not preflight optional Tulip"
+        )
+        module.activateArguments = lambda plan: (_ for _ in ()).throw(
+            RuntimeError("runtime activated")
+        )
+        with self.assertRaisesRegex(RuntimeError, "runtime activated"):
+            module.main([])
+
+    def test_root_no_longer_rewrites_dot_as_relative_backslash_dot(self):
+        source = (ROOT / "TCFMain.py").read_text(encoding="utf-8")
+        tree = __import__("ast").parse(source)
+        self.assertNotIn("os.environ['PATH'].replace", source)
+        root = next(node for node in tree.body
+                    if isinstance(node, __import__("ast").FunctionDef)
+                    and node.name == "main")
+        checks = [
+            node for node in __import__("ast").walk(root)
+            if isinstance(node, __import__("ast").Call)
+            and isinstance(node.func, __import__("ast").Name)
+        ]
+        names = [node.func.id for node in checks]
+        self.assertIn("sanitize_windows_dot_path", names)
+        self.assertIn("preflight_windows_dll_path", names)
+        self.assertIn("activateArguments", names)
+
     def test_run_stage_command_uses_legacy_shell_flags(self):
         trace = []
         module = load_main(trace=trace)
