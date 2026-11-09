@@ -29,12 +29,9 @@ def dfToXLS(df, OutputFN, excelindex=True, encoding = 'utf-8'):
     df.to_excel(OutputFN, engine = 'xlsxwriter', index = excelindex, encoding = 'utf-8')
     
 def dfToTSV(df, OutputFN):
-    #df.dropna(how="all", inplace=True, axis=1)
-    #df.dropna(how="any", inplace=True, axis=1)
-    df.to_csv(
-        OutputFN, sep = '\t', index = False,
-        quoting=csv.QUOTE_NONE, quotechar="", escapechar="\\",
-        header = False, encoding="utf-8")
+    """Stage-local compatibility API; one authoritative TSV format policy."""
+    from text_category_profiler.data.stage_tsv import write_stage_tsv
+    write_stage_tsv(df, OutputFN)
 
 def dfToSQL(SQLname, df, SavingDfColumns = []):
     #SavingDfColumns = ['Column Name A','Column Name B','Column Name C']

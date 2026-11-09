@@ -78,6 +78,11 @@ text_category_profiler/
 - [ ] 確認以上模組可直接由 repository root import，不需要 `PackageImporter.proc()`。
 - [ ] 若需要 compatibility shim，加入針對舊 import path 的測試並記錄移除條件。
 
+### BL-001 可供內網維護窗口採納的小型重構（2026-11-09）
+
+- 已將 `DatasetConverter.df_utils.dfToTSV(df, OutputFN)` 與 `BertScript.df_utils.dfToTSV(df, OutputFN)` 的**相同** stage-local TSV 格式規則收斂到 `text_category_profiler.data.stage_tsv.write_stage_tsv`，保留兩個呼叫端既有 API、錯誤傳遞與 UTF-8／TAB／無 header/index 的格式語意；對應 characterization + optional pandas bytes regression。**不**將含 `multicoreJob.ComputeNProcess` 的 canonical `text_category_profiler.data.df_utils.dfToTSV` 合併，亦未變更 WorkPool、模型或 GUI。
+- 這是 `df_utils` 去重的**有限批次**；仍有其他版本與外部 callers 未驗證，以上 Phase 0 的全家族項目維持 `[ ]`。實機部署、資料流程及 GPU acceptance 不在 Hosted 測試範圍；部署候選摘要見 `docs/release-prep/bl001-stage-local-tsv.md`。
+
 ### Phase 2：拆分路徑、序列化與基礎 helper
 
 - [ ] 從 `utilities_path.py` 盤點純路徑 helper，搬到 `text_category_profiler/paths.py`；檔案搬移／刪除函式需另行風險審查。
