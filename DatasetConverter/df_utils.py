@@ -25,8 +25,9 @@ def parallelize_dataframe(df, func, n_cores=4):
 '''
 
 def dfToXLS(df, OutputFN, excelindex=True, encoding = 'utf-8'):
-    #df.to_excel(OutputFN, engine = 'openpyxl', index = excelindex, encoding = 'utf-8')
-    df.to_excel(OutputFN, engine = 'xlsxwriter', index = excelindex, encoding = 'utf-8')
+    """Legacy stage API: encoding argument remains accepted but ignored."""
+    from text_category_profiler.data.stage_xlsx import write_stage_xlsx
+    write_stage_xlsx(df, OutputFN, excelindex=excelindex)
     
 def dfToTSV(df, OutputFN):
     """Stage-local compatibility API; one authoritative TSV format policy."""

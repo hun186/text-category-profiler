@@ -30,9 +30,9 @@ class BL001PackageCensusTests(unittest.TestCase):
         self.assertEqual(report["catalogue_paths_missing"], [])
         self.assertEqual(report["invalid_catalog_entries"], [])
         self.assertEqual(report["identity_failures"], [])
-        self.assertEqual(report["summary"]["total_tracked_package_files"], 72)
+        self.assertEqual(report["summary"]["total_tracked_package_files"], 73)
         self.assertEqual(report["summary"]["legacy_preserved"], 13)
-        self.assertEqual(report["summary"]["canonical_domain_owned"], 59)
+        self.assertEqual(report["summary"]["canonical_domain_owned"], 60)
         self.assertEqual(
             report["summary"]["total_tracked_package_files"],
             report["summary"]["legacy_preserved"]
@@ -48,6 +48,16 @@ class BL001PackageCensusTests(unittest.TestCase):
         self.assertEqual(owner["ownership"], "canonical")
         self.assertEqual(owner["domain"], "data")
         self.assertEqual(owner["classification"], "domain_module")
+
+    def test_xlsx_writer_is_explicitly_data_domain_owned(self):
+        report = audit_package(ROOT)
+        candidate = next(
+            row for row in report["files"]
+            if row["path"] == "text_category_profiler/data/stage_xlsx.py"
+        )
+        self.assertEqual(candidate["classification"], "domain_module")
+        self.assertEqual(candidate["domain"], "data")
+        self.assertEqual(candidate["ownership"], "canonical")
 
     def test_known_legacy_entrypoints_are_retained_not_mistaken_for_domain_code(self):
         report = audit_package(ROOT)

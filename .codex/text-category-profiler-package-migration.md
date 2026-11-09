@@ -83,6 +83,8 @@ text_category_profiler/
 - 已將 `DatasetConverter.df_utils.dfToTSV(df, OutputFN)` 與 `BertScript.df_utils.dfToTSV(df, OutputFN)` 的**相同** stage-local TSV 格式規則收斂到 `text_category_profiler.data.stage_tsv.write_stage_tsv`，保留兩個呼叫端既有 API、錯誤傳遞與 UTF-8／TAB／無 header/index 的格式語意；對應 characterization + optional pandas bytes regression。**不**將含 `multicoreJob.ComputeNProcess` 的 canonical `text_category_profiler.data.df_utils.dfToTSV` 合併，亦未變更 WorkPool、模型或 GUI。
 - 這是 `df_utils` 去重的**有限批次**；仍有其他版本與外部 callers 未驗證，以上 Phase 0 的全家族項目維持 `[ ]`。實機部署、資料流程及 GPU acceptance 不在 Hosted 測試範圍；部署候選摘要見 `docs/release-prep/bl001-stage-local-tsv.md`。
 
+- 接續 TSV 小批次，將 `DatasetConverter.df_utils.dfToXLS` 與 `BertScript.df_utils.dfToXLS` 兩個同源的固定 xlsxwriter 呼叫收斂至 `text_category_profiler.data.stage_xlsx.write_stage_xlsx`；保留 `dfToXLS(df, OutputFN, excelindex=True, encoding='utf-8')` API（舊 `encoding` 參數**原本即被忽略**）、固定 `engine='xlsxwriter'`／`encoding='utf-8'`、無隱式重試、既有例外傳遞。現有 canonical `data.df_utils.dfToXLS` 含 ExcelWriter、欄位名、overflow、fallback 等不同策略，**不可互換、未整併**；對應 isolated stub 與 optional pandas 對照測試。注意 pandas 新版可能因移除 `to_excel(encoding=...)` 而維持原有失敗，本批**不聲稱修復版本相容**。詳細更新候選及實機條件見 `docs/release-prep/bl001-stage-local-xlsx.md`；BL-001 繼續 In Progress。
+
 ### Phase 2：拆分路徑、序列化與基礎 helper
 
 - [ ] 從 `utilities_path.py` 盤點純路徑 helper，搬到 `text_category_profiler/paths.py`；檔案搬移／刪除函式需另行風險審查。

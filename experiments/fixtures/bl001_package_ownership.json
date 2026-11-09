@@ -119,6 +119,11 @@
       "kind": "domain_module"
     },
     {
+      "path": "text_category_profiler/data/stage_xlsx.py",
+      "domain": "data",
+      "kind": "domain_module"
+    },
+    {
       "path": "text_category_profiler/diagnostics/__init__.py",
       "domain": "diagnostics",
       "kind": "package_initializer"
