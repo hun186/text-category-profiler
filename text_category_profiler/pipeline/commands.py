@@ -9,7 +9,9 @@ def _forwarded_args(args) -> str:
     return "".join(
         f" --{key} {value}"
         for key, value in vars(args).items()
-        if value != ""
+        if value != "" and key not in {
+            "resume_interrupted_stage4", "confirm_stage4_stopped"
+        }
     )
 
 
