@@ -13,9 +13,10 @@ from scripts.bl001_canonical_import_audit import (
 class CanonicalImportEvidenceTests(unittest.TestCase):
     def test_canonical_modules_are_inventory_derived_and_exclude_legacy(self):
         targets = canonical_modules(ROOT)
-        self.assertEqual(len(targets), 46)
+        self.assertEqual(len(targets), 47)
         self.assertIn("text_category_profiler.data.stage_tsv", targets)
         self.assertIn("text_category_profiler.data.stage_xlsx", targets)
+        self.assertIn("text_category_profiler.data.stage_sql", targets)
         self.assertIn("text_category_profiler.visualization.tulip_graph_builder", targets)
         self.assertNotIn("text_category_profiler.ArtCluESJobTemplate", targets)
         self.assertNotIn("text_category_profiler.core", targets)
@@ -162,11 +163,11 @@ class CanonicalImportEvidenceTests(unittest.TestCase):
 
     def test_full_audit_tracks_every_canonical_module_even_without_import(self):
         data = audit(ROOT, ["BertScript/Test_result_Vis.py"])
-        self.assertEqual(data["summary"]["canonical_modules"], 46)
-        self.assertEqual(len(data["module_evidence"]), 46)
+        self.assertEqual(data["summary"]["canonical_modules"], 47)
+        self.assertEqual(len(data["module_evidence"]), 47)
         self.assertEqual(
             sum(x["has_explicit_scoped_qualified_import"] for x in data["module_evidence"])
-            + data["summary"]["modules_without_scoped_import_syntax"], 46
+            + data["summary"]["modules_without_scoped_import_syntax"], 47
         )
         self.assertFalse(data["external_callers_verified"])
 
