@@ -235,6 +235,157 @@ class VisualizationStageTests(unittest.TestCase):
         self.assertFalse(ignore(notice, **dict(
             params, derived_query_structure={"operator": "="})))
 
+    def test_filter_request_revision_updates_even_with_sqlite_json_sentinel(self):
+        make = self.stage.datatable_filter_state
+        a = make("{InfoScoreMean} i< 10", [], {"op": "<"})
+        b = make("{InfoScoreMean} i< 10", [], {"op": "<"}, a)
+        self.assertEqual(a["revision"], 1)
+        self.assertEqual(b["revision"], 2)
+        self.assertEqual(a["filter_query"], "{InfoScoreMean} i< 10")
+        self.assertTrue(self.stage.is_redundant_table_filter_event(
+            [{"prop_id": "VisDatatable.derived_filter_query_structure", "value": None}],
+            filter_query=a["filter_query"], sort_by=[],
+            derived_query_structure=a["derived_filter_query_structure"],
+            previously_applied=a,
+        ))
+        self.assertFalse(self.stage.is_redundant_table_filter_event(
+            [{"prop_id": "VisDatatable.filter_query", "value": "{InfoScoreMean} i< 11"}],
+            filter_query="{InfoScoreMean} i< 11", sort_by=[],
+            derived_query_structure=a["derived_filter_query_structure"],
+            previously_applied=a,
+        ))
+        self.assertFalse(self.stage.is_redundant_table_filter_event(
+            [{"prop_id": "KeyWordTable.selected_rows", "value": [1]}],
+            filter_query=a["filter_query"], sort_by=[],
+            derived_query_structure=a["derived_filter_query_structure"],
+            previously_applied=a,
+        ))
+        self.assertFalse(self.stage.is_redundant_table_filter_event(
+            [{"prop_id": "VisDatatable.sort_by", "value": [{"column_id": "File",
+                                                               "direction": "desc"}]}],
+            filter_query=a["filter_query"],
+            sort_by=[{"column_id": "File", "direction": "desc"}],
+            derived_query_structure=a["derived_filter_query_structure"],
+            previously_applied=a,
+        ))
+
+    def test_table_page_remount_only_skips_unchanged_page_not_real_user_page(self):
+        guard = self.stage.is_redundant_table_page_event
+        event = [{"prop_id": "VisDatatable.page_current", "value": 0}]
+        self.assertTrue(guard(event, page_current=0,
+                              last_rendered={"page_current": 0}))
+        self.assertFalse(guard(event, page_current=1,
+                               last_rendered={"page_current": 0}))
+        self.assertFalse(guard(
+            [{"prop_id": "applied-table-filter.data", "value": {"revision": 3}}],
+            page_current=0, last_rendered={"page_current": 0},
+        ))
+        self.assertFalse(guard(event, page_current=0, last_rendered=None))
+
+    def test_real_nonempty_filter_remount_skips_logging_and_reexport(self):
+        source = Path("BertScript/Test_result_Vis.py").read_text(encoding="utf-8")
+        callback = next(
+            node for node in ast.parse(source).body
+            if isinstance(node, ast.FunctionDef)
+            and node.name == "FilteredDF_update"
+        )
+        callback.decorator_list = []
+
+        class PreventUpdate(Exception):
+            pass
+
+        unexpected = mock.Mock(side_effect=AssertionError(
+            "Remount of same nonempty filter must never hit IO"
+        ))
+        parsed = {"subType": "<", "type": "relational-operator"}
+        import json
+        ns = {
+            "dash": types.SimpleNamespace(callback_context=types.SimpleNamespace(
+                triggered=[{"prop_id": "VisDatatable.derived_filter_query_structure",
+                            "value": None}])),
+            "json": json, "visualization_stage": self.stage,
+            "PreventUpdate": PreventUpdate,
+            "section": unexpected,
+            "dfOutputer": unexpected,
+            "MPLOGGER": types.SimpleNamespace(logW=unexpected),
+        }
+        exec(compile(ast.Module(body=[callback], type_ignores=[]),
+                     "Test_result_Vis.py", "exec"), ns)
+        actual = ns["FilteredDF_update"]
+        kwargs = {
+            arg: None for arg in
+            actual.__code__.co_varnames[:actual.__code__.co_argcount]
+        }
+        kwargs.update(
+            filter_query="{InfoScoreMean} i< 10",
+            sort_by=[],
+            derived_query_structure=None,
+            Old_derived_filter_query_structure_json=json.dumps(parsed),
+            last_applied_table_filter=self.stage.datatable_filter_state(
+                "{InfoScoreMean} i< 10", [], parsed,
+            ),
+        )
+        with self.assertRaises(PreventUpdate):
+            actual(**kwargs)
+        unexpected.assert_not_called()
+
+    def test_table_page_self_remount_skips_rebuilding_before_any_io(self):
+        source = Path("BertScript/Test_result_Vis.py").read_text(encoding="utf-8")
+        node = next(x for x in ast.parse(source).body
+                    if isinstance(x, ast.FunctionDef) and x.name == "table_update")
+        node.decorator_list = []
+
+        class PreventUpdate(Exception):
+            pass
+
+        ns = {
+            "visualization_stage": self.stage,
+            "dash": types.SimpleNamespace(callback_context=types.SimpleNamespace(
+                triggered=[{"prop_id": "VisDatatable.page_current", "value": 0}])),
+            "PreventUpdate": PreventUpdate,
+            "ShowElapsedTime": mock.Mock(side_effect=AssertionError(
+                "Remount must not re-read database or build page"
+            )),
+        }
+        exec(compile(ast.Module(body=[node], type_ignores=[]),
+                     "Test_result_Vis.py", "exec"), ns)
+        fn = ns["table_update"]
+        kwargs = {arg: None for arg in
+                  fn.__code__.co_varnames[:fn.__code__.co_argcount]}
+        kwargs.update(page_current=0,
+                      last_rendered_table_state={"page_current": 0})
+        with self.assertRaises(PreventUpdate):
+            fn(**kwargs)
+        ns["ShowElapsedTime"].assert_not_called()
+
+    def test_callback_graph_has_revision_only_chart_and_page_guard(self):
+        source = Path("BertScript/Test_result_Vis.py").read_text(encoding="utf-8")
+        def registration(function):
+            start = source.index("def " + function + "(")
+            before = source[:start]
+            return before[before.rfind("\\nargs = []"):]
+        filtering = registration("FilteredDF_update")
+        charts = registration("ChunkDF_update")
+        table = registration("table_update")
+        self.assertIn('Output("applied-table-filter", "data")', filtering)
+        self.assertIn("State('applied-table-filter', 'data')", filtering)
+        self.assertIn("Input('applied-table-filter', 'data')", charts)
+        self.assertIn("Input('applied-table-filter', 'data')", table)
+        self.assertNotIn("Output('VisDatatable', \"page_current\")", charts)
+        self.assertIn("Input('VisDatatable', \"page_current\")", table)
+        self.assertIn("Output('last-rendered-table-state', 'data')", table)
+        self.assertIn("State('VisDatatable', \"sort_by\")", table)
+        self.assertIn("dcc.Store(id='applied-table-filter', data={})", source)
+        self.assertIn("dcc.Store(id='last-rendered-table-state', data=None)", source)
+        chunk_body = source[source.index("def ChunkDF_update("):
+                            source.index("def table_update(")]
+        self.assertIn("return [PredSum_children, TwinsCard_children]", chunk_body)
+        table_body = source[source.index("def table_update("):
+                            source.index("def func1(")]
+        self.assertIn("page_current = min(max(page_current or 0, 0), page_max)",
+                      table_body)
+        self.assertIn("sort_by=sort_by", table_body)
+
     def test_idle_remount_does_not_log_write_or_reprocess_filtered_df(self):
         source = Path("BertScript/Test_result_Vis.py").read_text(
             encoding="utf-8")
