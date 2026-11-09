@@ -4,9 +4,13 @@ No model/server/Tulip imports. The real filesystem test uses a private
 temporary WorkPool, never a user or hosted production workspace.
 """
 from argparse import Namespace
+import ast
+import os
 from pathlib import Path
 import tempfile
+import types
 import unittest
+from unittest import mock
 
 from BertScript import visualization_stage as stage
 
@@ -78,6 +82,77 @@ class InterruptedStage4Tests(unittest.TestCase):
             ):
                 self.validate(**change)
         self.assertTrue(self.running.is_dir())
+
+    def test_only_normal_inference_mode_is_eligible_for_resume(self):
+        for bad in (
+            {"test": False},
+            {"train": True},
+            {"VisSelfService": True},
+            {"WeiTechFormatSepWorkPool": True},
+        ):
+            with self.subTest(bad=bad), self.assertRaisesRegex(
+                RuntimeError, "STAGE4_RESUME_MODE_UNSAFE",
+            ):
+                self.validate(**bad)
+
+    def test_stage4_main_never_calls_fuzzy_dataset_picker_during_resume(self):
+        script = (
+            Path(__file__).resolve().parents[1] /
+            "BertScript/Test_result_Vis.py"
+        )
+        node = next(
+            x for x in ast.parse(script.read_text(encoding="utf-8")).body
+            if isinstance(x, ast.FunctionDef) and x.name == "main"
+        )
+        calls = []
+
+        class StageAPI:
+            @staticmethod
+            def validate_interrupted_stage4_resume(args):
+                calls.append("validate")
+                return stage.validate_interrupted_stage4_resume(
+                    args, port_free=lambda _port: True,
+                )
+
+            @staticmethod
+            def build_visualization_plan(args, workspace, model):
+                calls.append(("build", workspace, model))
+                return stage.build_visualization_plan(args, workspace, model)
+
+            @staticmethod
+            def run_visualization_stage(plan, **_adapters):
+                calls.append(("run", plan.running_workspace))
+                return plan.completed_workspace
+
+        dummy_logger = types.SimpleNamespace(logW=lambda *_a, **_k: None)
+        ns = {
+            "setproctitle": types.SimpleNamespace(setproctitle=lambda *_: None),
+            "os": os,
+            "ClassfierOptionParser": lambda _argv=None: self.args,
+            "datasetDirOutputDirPickers": lambda **_: self.fail(
+                "Legacy fuzzy directory picker must not run on explicit resume"
+            ),
+            "visualization_stage": StageAPI,
+            "MPlogger": lambda **_: dummy_logger,
+            "_run_visualization_application": mock.Mock(),
+            "_start_visualization_server": mock.Mock(),
+            "_validate_visualization": mock.Mock(),
+            "stage_done": mock.Mock(),
+            "MES": "test-only",
+        }
+        exec(compile(ast.Module(body=[node], type_ignores=[]),
+                     "Test_result_Vis.py", "exec"), ns)
+        result = ns["main"](argv=[], stage_api=StageAPI)
+        self.assertEqual(calls, [
+            "validate",
+            ("build", str(self.running), str(self.model)),
+            ("run", str(self.running)),
+        ])
+        self.assertEqual(result, str(self.running).replace(
+            stage.RUNNING_SUFFIX, stage.NEXT_SUFFIX,
+        ))
+        self.assertTrue(self.running.is_dir())
+        self.assertFalse(Path(result).exists())
 
     def test_rejects_parallel_ready_and_completed_siblings(self):
         base = str(self.running)[:-len(stage.RUNNING_SUFFIX)]
