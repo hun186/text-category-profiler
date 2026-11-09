@@ -374,6 +374,8 @@ class VisualizationStageTests(unittest.TestCase):
         self.assertNotIn("Output('VisDatatable', \"page_current\")", charts)
         self.assertIn("Input('VisDatatable', \"page_current\")", table)
         self.assertIn("Output('last-rendered-table-state', 'data')", table)
+        self.assertNotIn("Output('current page', 'children')", filtering)
+        self.assertIn("Output('current page', 'children')", table)
         self.assertIn("State('VisDatatable', \"sort_by\")", table)
         self.assertIn("dcc.Store(id='applied-table-filter', data={})", source)
         self.assertIn("dcc.Store(id='last-rendered-table-state', data=None)", source)
@@ -385,6 +387,11 @@ class VisualizationStageTests(unittest.TestCase):
         self.assertIn("page_current = min(max(page_current or 0, 0), page_max)",
                       table_body)
         self.assertIn("sort_by=sort_by", table_body)
+        self.assertIn("page_current + 1,", table_body)
+        self.assertNotIn("page_current+1", source[
+            source.index("def FilteredDF_update("):
+            source.index("def ChunkDF_update(")
+        ])
 
     def test_idle_remount_does_not_log_write_or_reprocess_filtered_df(self):
         source = Path("BertScript/Test_result_Vis.py").read_text(
