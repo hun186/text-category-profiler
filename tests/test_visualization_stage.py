@@ -28,6 +28,55 @@ class VisualizationStageTests(unittest.TestCase):
             self.assertIn('set "PATH=%PATH:;.=%"', str(caught.exception))
             self.assertEqual(os.environ["PATH"], original)
 
+    def test_windows_stage4_dot_sanitizer_is_narrow_and_idempotent(self):
+        # Only exact relative '.' segments are safe to drop automatically.
+        original = r'C:\\Windows\\system32;.;". ";.\\plugins;..\\bin;D:\\Anaconda\\Scripts;.'
+        env = {"PATH": original}
+        count = self.stage.sanitize_tulip_windows_dot_path(
+            environ=env, windows=True,
+        )
+        self.assertEqual(count, 3)
+        self.assertEqual(
+            env["PATH"],
+            r'C:\\Windows\\system32;.\\plugins;..\\bin;D:\\Anaconda\\Scripts',
+        )
+        self.assertEqual(
+            self.stage.sanitize_tulip_windows_dot_path(
+                environ=env, windows=True,
+            ), 0,
+        )
+        with self.assertRaisesRegex(RuntimeError, "TULIP_WINDOWS_PATH_RELATIVE"):
+            self.stage.preflight_tulip_windows_path(
+                path=env["PATH"], windows=True,
+            )
+
+    def test_windows_stage4_dot_sanitizer_has_no_linux_side_effect(self):
+        original = r'C:\\Windows;.;.\\tools'
+        env = {"PATH": original}
+        self.assertEqual(
+            self.stage.sanitize_tulip_windows_dot_path(
+                environ=env, windows=False,
+            ), 0,
+        )
+        self.assertEqual(env["PATH"], original)
+
+    def test_windows_stage4_dot_sanitizer_never_changes_parent_shell(self):
+        original = r'C:\\Windows;.;D:\\Anaconda'
+        env = {"PATH": original}
+        with mock.patch.dict(os.environ, {"PATH": "PARENT_SHELL_SENTINEL"}):
+            self.assertEqual(
+                self.stage.sanitize_tulip_windows_dot_path(
+                    environ=env, windows=True,
+                ), 1,
+            )
+            self.assertEqual(os.environ["PATH"], "PARENT_SHELL_SENTINEL")
+            self.assertEqual(env["PATH"], r'C:\\Windows;D:\\Anaconda')
+            self.assertIsNone(
+                self.stage.preflight_tulip_windows_path(
+                    path=env["PATH"], windows=True,
+                )
+            )
+
     def test_tulip_windows_preflight_handles_other_relative_and_absolute_paths(self):
         with self.assertRaisesRegex(
             RuntimeError, r"TULIP_WINDOWS_PATH_RELATIVE.*relative",
@@ -64,7 +113,16 @@ class VisualizationStageTests(unittest.TestCase):
             and node.func.attr == "preflight_tulip_windows_path"
         ]
         self.assertGreaterEqual(len(preflight_calls), 2)
-        # Direct full Stage 4 starts preflight before it reaches main/workpool.
+        # Direct full Stage 4 sanitizes ONLY dot entries, then preflights,
+        # both before heavy imports and any WorkPool lifecycle.
+        self.assertLess(
+            source.index("visualization_stage.sanitize_tulip_windows_dot_path()"),
+            source.index("visualization_stage.preflight_tulip_windows_path()"),
+        )
+        self.assertLess(
+            source.index("visualization_stage.preflight_tulip_windows_path()"),
+            source.index("import numpy as np"),
+        )
         self.assertLess(
             source.index("visualization_stage.preflight_tulip_windows_path()"),
             source.index("def main(argv=None, stage_api=visualization_stage):"),
