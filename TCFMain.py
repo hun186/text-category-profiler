@@ -22,6 +22,8 @@ import subprocess
 from text_category_profiler.execution.process import (
     LegacyShellProcessRunner,
     RootFailFastPolicy,
+    sanitize_windows_dot_path,
+    preflight_windows_dll_path,
 )
 
 #import plotly.io as pio; pio.renderers.default='notebook'
@@ -83,10 +85,9 @@ from text_category_profiler.core.log_display import warning
 
 #from text_category_profiler.Tika_pdf_to_txt import ExtractTxt
 
-#將環境變數執行python所需之"."替換成r".\"，
-#否則import tulip時，在__init__.py的Line 31之os.add_dll_directory(".")會報錯中斷。
-os.environ['PATH']=os.environ['PATH'].replace(";.;",r";\.;")
-
+# Legacy unconditional PATH rewriting was removed. Windows dot-equivalent
+# entries are now repaired/validated before costly test pipeline stages.
+# This avoids injecting another ambiguous PATH entry into Stage 4.
 
 def DataConvert(args,exeTimeDict=dict()):
     stage_start_time = time.time()
@@ -240,6 +241,17 @@ def main(argv=None):
         from text_category_profiler.diagnostics import run_self_test
         return run_self_test(plan.args)
     args = activateArguments(plan)
+    if args.test is True:
+        # Fail fast before dataset conversion, classifier or result merging.
+        # Only this process and its future subprocesses inherit the change.
+        removed = sanitize_windows_dot_path()
+        if removed:
+            print(
+                f"[Windows DLL PATH] Removed {removed} dot-equivalent PATH "
+                "entry/entries from the pipeline and its Stage 4 children; "
+                "the parent CMD/system PATH are unchanged."
+            )
+        preflight_windows_dll_path()
     setproctitle.setproctitle(f'TCFMain{args.ExecutionTime[4:]}')
     HybridConformer(cpuUsageThreshold=90).proc()
 
