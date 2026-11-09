@@ -73,6 +73,15 @@ def validate_interrupted_stage4_resume(args, *, port_free=None):
             "verify no other worker is using this workspace, then add "
             "--confirm-stage4-stopped."
         )
+    if (getattr(args, "test", False) is not True
+            or getattr(args, "train", False) is True
+            or getattr(args, "VisSelfService", False) is True
+            or getattr(args, "WeiTechFormatSepWorkPool", False) is True):
+        raise RuntimeError(
+            "STAGE4_RESUME_MODE_UNSAFE: Only inference Stage 4 with --test True, "
+            "--train False, --VisSelfService False and "
+            "--WeiTechFormatSepWorkPool False is supported by this recovery."
+        )
     if not getattr(args, "BertDatasetSubDir", ""):
         raise RuntimeError(
             "STAGE4_RESUME_EXPLICIT_WORKSPACE_REQUIRED: Supply the exact "
