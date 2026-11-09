@@ -240,10 +240,10 @@ def main(argv=None):
     if plan.args.self_test:
         from text_category_profiler.diagnostics import run_self_test
         return run_self_test(plan.args)
-    args = activateArguments(plan)
-    if args.test is True:
-        # Fail fast before dataset conversion, classifier or result merging.
-        # Only this process and its future subprocesses inherit the change.
+    if plan.args.test is True:
+        # Fail before activateArguments, dataset or model work, and before
+        # any WorkPool lifecycle transitions.
+        # Only this process and future subprocesses inherit the change.
         removed = sanitize_windows_dot_path()
         if removed:
             print(
@@ -252,6 +252,7 @@ def main(argv=None):
                 "the parent CMD/system PATH are unchanged."
             )
         preflight_windows_dll_path()
+    args = activateArguments(plan)
     setproctitle.setproctitle(f'TCFMain{args.ExecutionTime[4:]}')
     HybridConformer(cpuUsageThreshold=90).proc()
 
