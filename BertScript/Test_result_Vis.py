@@ -4047,22 +4047,25 @@ def main(argv=None, stage_api=visualization_stage):
         print(f"Change working directory to {os.getcwd()}")
     args = ClassfierOptionParser(argv) if argv is not None else ClassfierOptionParser()
     if getattr(args, "resume_interrupted_stage4", False) is True:
-        # Reject mismatched or active workspaces *before* legacy picker can
-        # substitute a similar directory, and before any disk mutation.
-        checked_workspace = stage_api.validate_interrupted_stage4_resume(args)
+        # Do not call the legacy directory picker: it may silently substitute
+        # a similarly named dataset if the explicitly supplied path vanishes.
+        # The guarded recovery must never switch datasets or models.
+        ready_workspace = stage_api.validate_interrupted_stage4_resume(args)
+        output_dir = args.modelDir
         print(
             "[Stage 4 RESUME] Explicit interrupted-workspace retry: "
-            f"{checked_workspace}. No initial WorkPool rename; Stage 4 may "
+            f"{ready_workspace}. No initial WorkPool rename; Stage 4 may "
             "regenerate analysis artifacts in this existing directory. "
             "No earlier classifier/Combine stages are executed."
         )
-    elif getattr(args, "confirm_stage4_stopped", False) is True:
-        raise RuntimeError(
-            "STAGE4_RESUME_FLAG_MISSING: --confirm-stage4-stopped requires "
-            "--resume-interrupted-stage4."
-        )
-    ready_workspace, output_dir = datasetDirOutputDirPickers(
-        args=args, rdy_for_stage="TestResultVis").proc()
+    else:
+        if getattr(args, "confirm_stage4_stopped", False) is True:
+            raise RuntimeError(
+                "STAGE4_RESUME_FLAG_MISSING: --confirm-stage4-stopped requires "
+                "--resume-interrupted-stage4."
+            )
+        ready_workspace, output_dir = datasetDirOutputDirPickers(
+            args=args, rdy_for_stage="TestResultVis").proc()
     if ready_workspace is None:
         message = "-" * 50 + "\n"
         message += (f"In {args.WorkPoolROOT}, There is no BertDatasetSubDir "
