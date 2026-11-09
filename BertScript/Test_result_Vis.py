@@ -4046,6 +4046,21 @@ def main(argv=None, stage_api=visualization_stage):
         os.chdir("../")
         print(f"Change working directory to {os.getcwd()}")
     args = ClassfierOptionParser(argv) if argv is not None else ClassfierOptionParser()
+    if getattr(args, "resume_interrupted_stage4", False) is True:
+        # Reject mismatched or active workspaces *before* legacy picker can
+        # substitute a similar directory, and before any disk mutation.
+        checked_workspace = stage_api.validate_interrupted_stage4_resume(args)
+        print(
+            "[Stage 4 RESUME] Explicit interrupted-workspace retry: "
+            f"{checked_workspace}. No initial WorkPool rename; Stage 4 may "
+            "regenerate analysis artifacts in this existing directory. "
+            "No earlier classifier/Combine stages are executed."
+        )
+    elif getattr(args, "confirm_stage4_stopped", False) is True:
+        raise RuntimeError(
+            "STAGE4_RESUME_FLAG_MISSING: --confirm-stage4-stopped requires "
+            "--resume-interrupted-stage4."
+        )
     ready_workspace, output_dir = datasetDirOutputDirPickers(
         args=args, rdy_for_stage="TestResultVis").proc()
     if ready_workspace is None:
