@@ -1006,6 +1006,7 @@ def Build_VisDatatable(
         CutRange=[0,30],
         derived_query_structure = None,
         filter_query = '',
+        sort_by=None,
         FilteredDF_OPTFN=""
         ):
     section("Build results table", icon="▦")
@@ -1143,7 +1144,7 @@ def Build_VisDatatable(
                 sort_action="custom",
                 #sort_mode="multi",
                 sort_mode="single",
-                sort_by=[],
+                sort_by=sort_by or [],
                 style_data_conditional = style_data_conditional,
                 style_cell_conditional = style_cell_conditional,
                 style_cell = style_cell,
