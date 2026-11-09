@@ -10,7 +10,8 @@ import argparse
 from pathlib import Path
 
 from BertScript.stage4_history_data import (
-    DATABASES, HistoryPreviewError, list_tables, list_workspaces,
+    DATABASES, DISTRIBUTION_SAMPLE_ROWS, HistoryPreviewError,
+    list_columns, list_tables, list_workspaces, read_distribution,
     read_page, select_workspace,
 )
 
@@ -38,6 +39,38 @@ def _consent_transition(workspace, checked, previous, triggered):
     return {"workspace": workspace, "confirmed": approved}, (
         [workspace] if approved else []
     )
+
+
+def _preferred_distribution_column(columns):
+    """Choose a useful persisted classification field before generic IDs/text."""
+    for candidate in ("ClassLabel", "Label", "classLabels", "Topic", "Category"):
+        for value in columns:
+            if value.lower() == candidate.lower():
+                return value
+    return next((value for value in columns if value.lower() not in
+                 ("index", "id", "rowid", "text", "content", "body", "url")),
+                columns[0] if columns else None)
+
+
+def _distribution_chart(payload):
+    """Small Plotly figure from the already bounded, read-only SQLite sample."""
+    groups = list(reversed(payload["categories"]))
+    count = len(groups)
+    return {
+        "data": [{
+            "type": "bar", "orientation": "h",
+            "x": [g["count"] for g in groups],
+            "y": [g["label"] for g in groups],
+            "hovertemplate": "%{y}: %{x} 筆<extra></extra>",
+        }] if groups else [],
+        "layout": {
+            "height": max(290, 75 + 34 * count),
+            "margin": {"l": 260, "r": 24, "t": 30, "b": 50},
+            "xaxis": {"title": "樣本筆數", "rangemode": "tozero"},
+            "yaxis": {"automargin": True, "type": "category"},
+            "showlegend": False,
+        },
+    }
 
 
 def build_app(workpool):
@@ -114,6 +147,22 @@ def build_app(workpool):
                         "overflow": "hidden", "textOverflow": "ellipsis",
                         "textAlign": "left", "whiteSpace": "normal"},
         ),
+        html.Hr(),
+        html.H3("已儲存結果｜欄位值前綴分布（唯讀）"),
+        html.P(
+            f"從已儲存 SQLite 最前面最多 {DISTRIBUTION_SAMPLE_ROWS:,} 筆計算欄位值"
+            "前 120 字元的出現次數，顯示最多 15 種前綴。"
+            "超長值可能因前綴相同被合併，並非完整原始值的精確去重。"
+            "資料超出抽樣上限時不代表全量統計；不重新分類、不寫入結果。"
+        ),
+        html.Label("分析欄位"),
+        dcc.Dropdown(id="HistoryDistributionColumn", options=[], value=None,
+                     searchable=True, clearable=False),
+        html.Div(id="HistoryDistributionInfo", role="status",
+                 style={"margin": "10px 0"}),
+        dcc.Graph(id="HistoryDistributionPlot",
+                  figure=_distribution_chart({"categories": []}),
+                  config={"displayModeBar": False}),
         html.Hr(),
         html.H3("分類樹與 Jaal（獨立於歷史結果）"),
         build_tree_panel(),
@@ -194,6 +243,66 @@ def build_app(workpool):
         return cols, page_data["rows"], (
             f"第 {page_data['page']} 頁，{len(page_data['rows'])} 列"
             + suffix + extra + "；文字欄位最多顯示 600 字元。"
+        )
+
+    @app.callback(
+        Output("HistoryDistributionColumn", "options"),
+        Output("HistoryDistributionColumn", "value"),
+        Input("HistoryAuthorization", "data"),
+        Input("HistoryDatabase", "value"),
+        Input("HistoryTable", "value"),
+    )
+    def choose_distribution_column(authorization, database, table):
+        authorization = authorization or {}
+        workspace = authorization.get("workspace")
+        if not workspace or not table:
+            return [], None
+        try:
+            columns = list_columns(
+                root, workspace, database, table,
+                confirm_running=authorization.get("confirmed") is True,
+            )
+            return ([{"label": name, "value": name} for name in columns],
+                    _preferred_distribution_column(columns))
+        except (HistoryPreviewError, OSError):
+            return [], None
+
+    @app.callback(
+        Output("HistoryDistributionPlot", "figure"),
+        Output("HistoryDistributionInfo", "children"),
+        Input("HistoryAuthorization", "data"),
+        Input("HistoryDatabase", "value"),
+        Input("HistoryTable", "value"),
+        Input("HistoryDistributionColumn", "value"),
+    )
+    def show_distribution(authorization, database, table, column):
+        empty = _distribution_chart({"categories": []})
+        authorization = authorization or {}
+        workspace = authorization.get("workspace")
+        if not workspace or not table or not column:
+            return empty, "請先選擇資料集、資料表及分析欄位。"
+        try:
+            payload = read_distribution(
+                root, workspace, database, table, column,
+                confirm_running=authorization.get("confirmed") is True,
+            )
+        except (HistoryPreviewError, OSError) as exc:
+            return empty, "未顯示分布：" + str(exc)
+        sample_note = (
+            "；達抽樣上限，後續資料未納入，非全量統計"
+            if payload["has_more_rows"] else "；已包含此資料表全部列"
+        )
+        shown = payload["displayed_groups"]
+        distinct = payload["distinct_prefixes"]
+        clipped = payload["truncated_values"]
+        prefix_warning = (
+            f"；有 {clipped:,} 筆超過 120 字，前綴相同的不同原始值可能被合併計數"
+            if clipped else "；樣本中沒有超長截斷值"
+        )
+        return _distribution_chart(payload), (
+            f"已讀取 {payload['sampled_rows']:,} 筆；"
+            f"樣本中 {distinct:,} 種不同顯示前綴，顯示前 {shown} 種"
+            + prefix_warning + sample_note + "。"
         )
 
     register_tree_callbacks(app)

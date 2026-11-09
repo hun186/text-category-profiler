@@ -90,6 +90,115 @@ class Stage4HistoryDataTests(unittest.TestCase):
                 (folder / (name + "-shm")).exists() for name in history.DATABASES
             ))
 
+    def test_histogram_reads_only_saved_sqlite_and_keeps_provenance(self):
+        database = history.DATABASES[0]
+        columns = history.list_columns(
+            self.root, self.finished.name, database, "sampleSrc"
+        )
+        self.assertEqual(columns, ("index", "text", "Label"))
+        sample = history.read_distribution(
+            self.root, self.finished.name, database, "sampleSrc", "Label"
+        )
+        self.assertEqual(sample["sampled_rows"], 60)
+        self.assertFalse(sample["has_more_rows"])
+        self.assertEqual(sample["distinct_prefixes"], 1)
+        self.assertEqual(sample["truncated_values"], 0)
+        self.assertEqual(sample["categories"],
+                         [{"label": "TW Affairs", "count": 60}])
+        odd = history.read_distribution(
+            self.root, self.finished.name, database, 'odd"name', "payload"
+        )
+        self.assertEqual(len(odd["categories"][0]["label"]),
+                         history.DISTRIBUTION_LABEL_CHARS)
+        self.assert_unchanged()
+
+    def test_long_value_prefix_collision_is_explicit_not_claimed_as_distinct(self):
+        # Distinct full values sharing their first 120 characters must never
+        # be presented as an exact ClassLabel/value distinct-count.
+        prefix = "a" * history.DISTRIBUTION_LABEL_CHARS
+        with sqlite3.connect(self.finished / history.DATABASES[0]) as db:
+            db.execute('CREATE TABLE "long labels" ("label" TEXT)')
+            db.executemany(
+                'INSERT INTO "long labels" VALUES (?)',
+                [(prefix + "X",), (prefix + "Y",)],
+            )
+            db.commit()
+        p = self.finished / history.DATABASES[0]
+        initial = (p.read_bytes(), p.stat().st_mtime_ns)
+        payload = history.read_distribution(
+            self.root, self.finished.name, history.DATABASES[0],
+            "long labels", "label",
+        )
+        self.assertEqual(payload["categories"], [
+            {"label": prefix, "count": 2},
+        ])
+        self.assertEqual(payload["distinct_prefixes"], 1)
+        self.assertEqual(payload["truncated_values"], 2)
+        self.assertEqual((p.read_bytes(), p.stat().st_mtime_ns), initial)
+        # This test intentionally modifies a new table, so not using the
+        # fixture's initial snapshot; only the read operation is immutable.
+
+    def test_distribution_bounds_large_database_and_reports_sampling_not_full_population(self):
+        workspace = self.workspace("20261101120000", "rdy_for_Spike")
+        self.write_database(workspace)
+        path = workspace / history.DATABASES[0]
+        with sqlite3.connect(path) as connection:
+            connection.executemany(
+                'INSERT INTO "sampleSrc" ("index", "text", "Label") '
+                'VALUES (?, ?, ?)',
+                ((i + 60, "body", "Topic" + str(i % 30))
+                 for i in range(history.DISTRIBUTION_SAMPLE_ROWS + 50)),
+            )
+            connection.commit()
+        before = (path.read_bytes(), path.stat().st_mtime_ns)
+        payload = history.read_distribution(
+            self.root, workspace.name, history.DATABASES[0],
+            "sampleSrc", "Label",
+        )
+        self.assertEqual(payload["sampled_rows"],
+                         history.DISTRIBUTION_SAMPLE_ROWS)
+        self.assertTrue(payload["has_more_rows"])
+        self.assertLessEqual(len(payload["categories"]),
+                             history.DISTRIBUTION_TOP_GROUPS)
+        self.assertGreater(payload["distinct_prefixes"],
+                           payload["displayed_groups"])
+        self.assertEqual(
+            sum(entry["count"] for entry in payload["categories"]),
+            sum(sorted([60] + [
+                sum(1 for i in range(history.DISTRIBUTION_SAMPLE_ROWS - 60)
+                    if i % 30 == x)
+                for x in range(30)
+            ], reverse=True)[:history.DISTRIBUTION_TOP_GROUPS]),
+        )
+        self.assertEqual((path.read_bytes(), path.stat().st_mtime_ns), before)
+        for suffix in ("-wal", "-shm", "-journal"):
+            self.assertFalse(Path(str(path) + suffix).exists())
+
+    def test_distribution_rejects_unknown_identifiers_and_unacknowledged_running(self):
+        database = history.DATABASES[1]
+        for column in ('Label";DROP TABLE sampleSrc;--', None, "", "fake"):
+            with self.subTest(column=column), self.assertRaises(
+                    history.HistoryPreviewError):
+                history.read_distribution(
+                    self.root, self.finished.name, database, "sampleSrc", column
+                )
+        with self.assertRaises(history.HistoryPreviewError):
+            history.read_distribution(
+                self.root, self.finished.name, database, "sampleSrc;DROP TABLE x",
+                "Label",
+            )
+        with self.assertRaisesRegex(history.HistoryPreviewError, "confirm"):
+            history.read_distribution(
+                self.root, self.interrupted.name, database, "sampleSrc", "Label"
+            )
+        self.assertEqual(
+            history.read_distribution(
+                self.root, self.interrupted.name, database, "sampleSrc", "Label",
+                confirm_running=True,
+            )["sampled_rows"], 60,
+        )
+        self.assert_unchanged()
+
     def test_sqlite_uri_encodes_unc_as_path_with_empty_authority(self):
         from urllib.parse import urlsplit
         fake = mock.Mock()
@@ -246,6 +355,26 @@ class Stage4HistoryLauncherTests(unittest.TestCase):
             host="127.0.0.1", port=8060, debug=False, use_reloader=False
         )
 
+    def test_analysis_column_preference_and_readonly_chart_contract(self):
+        from BertScript.stage4_history_preview import (
+            _preferred_distribution_column, _distribution_chart,
+        )
+        self.assertEqual(
+            _preferred_distribution_column(("index", "text", "ClassLabel")),
+            "ClassLabel",
+        )
+        self.assertEqual(_preferred_distribution_column(()), None)
+        self.assertEqual(_preferred_distribution_column(("index", "url", "Score")),
+                         "Score")
+        chart = _distribution_chart({"categories": [
+            {"label": "A", "count": 2},
+            {"label": "B", "count": 7},
+        ]})
+        self.assertEqual(chart["data"][0]["type"], "bar")
+        self.assertEqual(chart["data"][0]["x"], [7, 2])
+        self.assertEqual(chart["data"][0]["y"], ["B", "A"])
+        self.assertEqual(chart["layout"]["showlegend"], False)
+
     def test_real_dash_app_has_results_and_embedded_jaal(self):
         try:
             import dash
@@ -265,6 +394,9 @@ class Stage4HistoryLauncherTests(unittest.TestCase):
             import json
             serialized = json.dumps(data, ensure_ascii=False)
             self.assertIn("HistoryDataTable", serialized)
+            self.assertIn("HistoryDistributionColumn", serialized)
+            self.assertIn("HistoryDistributionPlot", serialized)
+            self.assertIn("HistoryDistributionInfo", serialized)
             self.assertIn("JaalOriginalRoot", serialized)
             self.assertIn("JaalGraph", serialized)
             self.assertEqual(app.server.test_client().get("/").status_code, 200)

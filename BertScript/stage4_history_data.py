@@ -7,6 +7,7 @@ fails closed because ignoring live uncheckpointed writes would be misleading.
 from __future__ import annotations
 
 from contextlib import closing
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 import re
@@ -193,3 +194,85 @@ def read_page(workpool, workspace, database, table, page=1, *,
                     "has_next": has_next, "truncated_columns": len(names) > MAX_COLUMNS}
     except sqlite3.DatabaseError as exc:
         raise HistoryPreviewError("Could not read SQLite table") from exc
+
+# A fixed, small sample protects interactive charts against million-row results
+# and high-cardinality columns. This is never an all-row statistical report.
+DISTRIBUTION_SAMPLE_ROWS = 5000
+DISTRIBUTION_TOP_GROUPS = 15
+DISTRIBUTION_LABEL_CHARS = 120
+
+
+def list_columns(workpool, workspace, database, table, *, confirm_running=False):
+    """Enumerate validated table columns without retrieving any result rows."""
+    path = database_path(
+        workpool, workspace, database, confirm_running=confirm_running
+    )
+    if not isinstance(table, str) or table not in list_tables(
+            workpool, workspace, database, confirm_running=confirm_running):
+        raise HistoryPreviewError("Unknown SQLite result table")
+    try:
+        with closing(_connect(path)) as db:
+            names = tuple(row[1] for row in db.execute(
+                "PRAGMA table_info(" + _quoted(table) + ")"
+            ))
+            if not names:
+                raise HistoryPreviewError("Table has no visible columns")
+            return names
+    except sqlite3.DatabaseError as exc:
+        raise HistoryPreviewError("Could not inspect SQLite table columns") from exc
+
+
+def read_distribution(workpool, workspace, database, table, column, *,
+                      confirm_running=False):
+    """Count 120-character prefixes from <=5000 rows; never write SQL.
+
+    The selected table/column must be from live SQLite schema metadata, not
+    arbitrary browser strings. All dynamic SQL identifiers are quoted, and
+    cell strings are truncated in SQLite before entering Python memory.
+    """
+    path = database_path(
+        workpool, workspace, database, confirm_running=confirm_running
+    )
+    if not isinstance(column, str) or column not in list_columns(
+            workpool, workspace, database, table,
+            confirm_running=confirm_running):
+        raise HistoryPreviewError("Unknown SQLite result column")
+    try:
+        with closing(_connect(path)) as db:
+            statement = (
+                "SELECT substr(CAST(" + _quoted(column)
+                + " AS TEXT), 1, ?), "
+                "length(CAST(" + _quoted(column)
+                + " AS TEXT)) > ? FROM " + _quoted(table) + " LIMIT ?"
+            )
+            values = db.execute(
+                statement,
+                (DISTRIBUTION_LABEL_CHARS, DISTRIBUTION_LABEL_CHARS,
+                 DISTRIBUTION_SAMPLE_ROWS + 1),
+            ).fetchall()
+    except sqlite3.DatabaseError as exc:
+        raise HistoryPreviewError("Could not read SQLite distribution") from exc
+
+    sampled = values[:DISTRIBUTION_SAMPLE_ROWS]
+    # These counts are for 120-character prefixes. Distinct long strings
+    # can share a prefix; report that explicitly instead of inflating an exact
+    # ClassLabel/value frequency claim. Typical short class labels remain exact.
+    prefixes = Counter(
+        (str(value).replace("\\r", " ").replace("\\n", " ").strip()
+         or "(空值)")
+        if value is not None else "(空值)"
+        for value, _was_clipped in sampled
+    )
+    clipped = sum(bool(flag) for _value, flag in sampled)
+    ranking = sorted(prefixes.items(), key=lambda item: (-item[1], item[0]))
+    return {
+        "categories": [
+            {"label": label, "count": count}
+            for label, count in ranking[:DISTRIBUTION_TOP_GROUPS]
+        ],
+        "sampled_rows": len(sampled),
+        "has_more_rows": len(values) > DISTRIBUTION_SAMPLE_ROWS,
+        "distinct_prefixes": len(prefixes),
+        "truncated_values": clipped,
+        "displayed_groups": min(len(prefixes), DISTRIBUTION_TOP_GROUPS),
+    }
