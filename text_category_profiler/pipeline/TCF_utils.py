@@ -162,6 +162,20 @@ def ClassfierOptionParser(argv=None):
     parser.add_argument(
         "-BertDataDir", "--BertDatasetSubDir", help="Use the directory as Bert datasetDir",
         type=str, default="")
+    # Stage 4 ONLY: explicit, non-default recovery from an interrupted GUI.
+    # Never infer this mode from a *_is_running* folder automatically.
+    parser.add_argument(
+        "--resume-interrupted-stage4", action="store_true",
+        help="Stage 4 ONLY: resume an explicitly named *_is_running_TestResultVis "
+             "workspace in place, without changing its directory name; "
+             "requires --confirm-stage4-stopped.",
+    )
+    parser.add_argument(
+        "--confirm-stage4-stopped", action="store_true",
+        help="Confirm the previous Stage 4 process has stopped and the workspace "
+             "is not in use. Required with --resume-interrupted-stage4.",
+    )
+
     parser.add_argument(
         "-datasetDBDir", "--datasetDataBaseSubDir", help="The subdir of BertDatasetSubDir for saving datasetDBs",
         type=str, default="datasetDB")
