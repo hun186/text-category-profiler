@@ -1933,6 +1933,14 @@ class VisDatatableDFBuilder:
         # Tulip is needed only for similarity clustering, not for initial
         # Stage 4 layout/Jaal. A missing/broken native DLL must not block
         # read-only analysis pages before this feature is actually used.
+        # Re-check immediately before the optional native Tulip import:
+        # other imported libraries may have amended PATH after startup.
+        removed_late_dots = visualization_stage.sanitize_tulip_windows_dot_path()
+        if removed_late_dots:
+            print(
+                f"[Stage 4 PATH] Removed {removed_late_dots} late dot PATH "
+                "entry/entries in this process before Tulip clustering."
+            )
         visualization_stage.preflight_tulip_windows_path()
         from text_category_profiler.visualization.tulip_graph_builder import (
             BuildGraph, ClusterMetaNodeGraph,
