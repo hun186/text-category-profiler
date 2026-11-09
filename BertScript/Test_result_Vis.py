@@ -2039,6 +2039,7 @@ args.extend([Output("derived_filter_query_structure", 'data')])
 #args.extend([Output('selectedLabels', 'children')])
 args.extend([Output("selectLabels Dict", "data")])
 args.extend([Output("selectLabels Dict", "style_data_conditional")])
+args.extend([Output("applied-table-filter", "data")])
 #args.extend([Output('InfoScoreRangeCard', "children")])
 
 args.extend([Input('intermediate-value-df', 'data')])
@@ -2064,6 +2065,7 @@ args.extend([State('current page', 'children')])
 args.extend([State('DF_OPT', 'children')])
 args.extend([State('FilteredDF_OPT', 'children')])
 args.extend([State('TRsql3FileDataset Dir', 'children')])
+args.extend([State('applied-table-filter', 'data')])
 @app.callback(*args,prevent_initial_call=True)
 def FilteredDF_update(
         df_json,
@@ -2085,20 +2087,31 @@ def FilteredDF_update(
         current_page,
         DF_OPTFN,
         FilteredDF_OPTFN,
-        TRsql3FileDatasetDir
+        TRsql3FileDatasetDir,
+        last_applied_table_filter,
         #*args
         ):
     
-    # Remounting this table resets its derived filter to None. Ignore that
-    # synthetic event before any logging or filtered-file writes.
     Old_derived_query_structure = json.loads(Old_derived_filter_query_structure_json)
+    # Dash may reset the parser to None while remounting a table whose
+    # filter_query is still nonempty. Recover the prior parsed expression.
+    if filter_query and derived_query_structure is None:
+        derived_query_structure = Old_derived_query_structure
+    triggered = dash.callback_context.triggered
     if visualization_stage.is_spurious_datatable_filter_notification(
-            dash.callback_context.triggered,
+            triggered,
             filter_query=filter_query,
             sort_by=sort_by,
             derived_query_structure=derived_query_structure,
             previous_derived_query_structure=Old_derived_query_structure):
         raise PreventUpdate
+    if visualization_stage.is_redundant_table_filter_event(
+            triggered,
+            filter_query=filter_query,
+            sort_by=sort_by,
+            derived_query_structure=derived_query_structure,
+            previously_applied=last_applied_table_filter):
+        raise PreventUpdate  # Before logging, SQL and Excel output
 
     callback_start_time = time.time()
     section("Update filtered results", icon="🔎")
@@ -2130,40 +2143,6 @@ def FilteredDF_update(
             raise PreventUpdate
     '''
 
-    #下方似乎為舊bug，最新情況不會出現。
-    #當page_action=custom, filter_action=custom時，
-    #點擊 > page down按紐時，會觸發('VisDatatable', "derived_filter_query_structure")
-    #且無法正常回傳當下('VisDatatable', "derived_filter_query_structure")的值，
-    #會回傳('VisDatatable', "derived_filter_query_structure")值為None
-    #造成篩選錯誤，故加入此檢驗機制，使用filter_query避免誤觸發。
-    if filter_query != "" and derived_query_structure == None:
-        derived_query_structure = Old_derived_query_structure
-        '''
-        if button_id == "VisDatatable": 
-            print(f"filter_query = {filter_query} which is not empty string.")
-            print("But derived_query_structure is None,")
-            print("this should be a false trigger, abort updating.")
-            raise PreventUpdate
-        if button_id in ["Colortable"]:
-            print("button_id is Colortable, and filter_query is not empty,")
-            print("but receving derived_query_structure is None.")
-            print("replace variable derived_query_structure as the old one.")
-            derived_query_structure = Old_derived_query_structure
-
-        '''
-        '''
-        if Old_derived_query_structure == derived_query_structure:
-            print("derived_query_structure is not changed, abort updating.")
-            raise PreventUpdate
-        if derived_query_structure == None:
-            derived_query_structure = Old_derived_query_structure
-            print("button_id is VisDatatable (derived_query_structure),")
-            print("but receving derived_query_structure is None.")
-            print("Abort updating.")
-            #print("replace variable derived_query_structure as the old one.")
-            raise PreventUpdate
-        '''
-    
     if derived_virtual_selected_rows == None:
         derived_virtual_selected_rows = []
     #df =  pd.read_json(df_json, orient='split')
@@ -2253,6 +2232,10 @@ def FilteredDF_update(
     dfOutputer(FilteredDF[PreambleCols],FilteredDF_OPTFN).run()
     #print("FilteredDF_json",FilteredDF_json)
     stage_done("Filtered results", elapsed=time.time() - callback_start_time)
+    applied_filter = visualization_stage.datatable_filter_state(
+        filter_query, sort_by, derived_query_structure,
+        previous=last_applied_table_filter,
+    )
     return [FilteredDF_json]+[
         FilteredDF.shape[0]]*2+[
         page_current+1
@@ -2261,7 +2244,7 @@ def FilteredDF_update(
         #]+[newPBMin,newPBMax,marks
         #]+[[newPBMin,newPBMax]
         ]+[derived_query_structure_json
-        ]+[selectedLabelsDictArray]+[style_data_conditional]
+        ]+[selectedLabelsDictArray]+[style_data_conditional]+[applied_filter]
 
 
 #=======================================================
