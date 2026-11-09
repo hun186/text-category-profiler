@@ -85,12 +85,13 @@ class SQLProviderContractTests(unittest.TestCase):
                     ("select", ["text", "label"]),
                     ("to_sql", {"name": "sampleSrc", "con": lite.connection, "if_exists": "replace"}),
                     ("execute", 'CREATE INDEX "text_Index" ON "sampleSrc"("text");'),
+                    ("close",),
                 ])
                 observed.append([item[0] for item in events])
                 with self.assertRaises(TypeError):
                     fn("legacy.sql3", frame, table="another")
         self.assertEqual(observed[0], observed[1])
-        # Existing legacy functions have no close() call on this path.
+        # Stage-local shared writer now closes connections deterministically.
 
     def test_canonical_defaults_use_logger_and_close_connection(self):
         events = []
