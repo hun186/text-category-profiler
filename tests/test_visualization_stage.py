@@ -363,7 +363,7 @@ class VisualizationStageTests(unittest.TestCase):
         def registration(function):
             start = source.index("def " + function + "(")
             before = source[:start]
-            return before[before.rfind("\\nargs = []"):]
+            return before[before.rfind("\nargs = []"):]
         filtering = registration("FilteredDF_update")
         charts = registration("ChunkDF_update")
         table = registration("table_update")
