@@ -87,7 +87,7 @@ def validate_interrupted_stage4_resume(args, *, port_free=None):
     stamp = str(getattr(args, "ExecutionTime", ""))
     model_type = str(getattr(args, "ModelType", ""))
     port = getattr(args, "TRVPort", None)
-    if not re.fullmatch(r"\\d{12,16}", stamp) or not model_type or not isinstance(port, int):
+    if not re.fullmatch(r"\d{12,16}", stamp) or not model_type or not isinstance(port, int):
         raise RuntimeError("STAGE4_RESUME_IDENTITY_INVALID: timestamp/model/port required")
     root = Path(args.WorkPoolROOT)
     target = Path(args.BertDatasetSubDir)
