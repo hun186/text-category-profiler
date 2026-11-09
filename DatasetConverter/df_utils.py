@@ -35,22 +35,9 @@ def dfToTSV(df, OutputFN):
     write_stage_tsv(df, OutputFN)
 
 def dfToSQL(SQLname, df, SavingDfColumns = []):
-    #SavingDfColumns = ['Column Name A','Column Name B','Column Name C']
-    if len(SavingDfColumns) == 0:
-        SavingDfColumns = df.columns.values
-    #連結sqlite資料庫
-    cnx = lite.connect(SQLname)
-    
-    #選取dataframe 要寫入的欄位名稱
-    #欄位名稱需與資料庫的欄位名稱一樣 才有辦法對照寫入
-    sql_df=df.loc[:,SavingDfColumns]
-    
-    #if_exists 選擇 replace，若是Daily_Record 這個 table 已存在資料庫
-    #將Daily_Record 表刪除並重新創建 寫入 sql_df 的資料
-    sql_df.to_sql(name='sampleSrc', con=cnx, if_exists='replace')
-    #創造index，以提升讀取速度。
-    createIndex = 'CREATE INDEX "text_Index" ON "sampleSrc"("text");'
-    cnx.execute(createIndex)
+    """Legacy Stage API: fixed sampleSrc replace and text_Index contract."""
+    from text_category_profiler.data.stage_sql import write_stage_sql
+    return write_stage_sql(SQLname, df, SavingDfColumns, lite.connect)
 
 class dfOutputer:
     def __init__(self, df, OMFN):
