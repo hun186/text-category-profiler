@@ -3,6 +3,9 @@
 from dataclasses import dataclass
 import os
 import platform
+import re
+import socket
+from pathlib import Path
 from typing import Callable, Optional
 
 from text_category_profiler.execution.process import (
@@ -29,6 +32,7 @@ class VisualizationPlan:
     ssl_context: Optional[str]
     debug: bool = True
     use_reloader: bool = False
+    resume_existing_running: bool = False
 
     @property
     def running_workspace(self):
@@ -43,8 +47,93 @@ class VisualizationPlan:
         return "TRV{}".format(self.port)
 
 
+def _is_stage4_port_free(port):
+    """Best-effort listener guard, not proof that no worker holds the files."""
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+            probe.bind(("127.0.0.1", int(port)))
+        return True
+    except (OSError, ValueError, TypeError):
+        return False
+
+
+def validate_interrupted_stage4_resume(args, *, port_free=None):
+    """Fail closed BEFORE normal workspace discovery or any WorkPool writes.
+
+    This is a narrowly scoped, explicitly acknowledged retry, not an
+    automatic recovery mode. Refuse name guesses, path traversal, symlinks,
+    conflicting stage siblings and an occupied GUI port. The caller must
+    confirm all previously running Stage 4 processes have stopped.
+    """
+    if getattr(args, "resume_interrupted_stage4", False) is not True:
+        raise ValueError("Not an interrupted Stage 4 resume request")
+    if getattr(args, "confirm_stage4_stopped", False) is not True:
+        raise RuntimeError(
+            "STAGE4_RESUME_CONFIRM_REQUIRED: Stop the prior Stage 4 process, "
+            "verify no other worker is using this workspace, then add "
+            "--confirm-stage4-stopped."
+        )
+    if not getattr(args, "BertDatasetSubDir", ""):
+        raise RuntimeError(
+            "STAGE4_RESUME_EXPLICIT_WORKSPACE_REQUIRED: Supply the exact "
+            "--BertDatasetSubDir ending _is_running_TestResultVis."
+        )
+    if not getattr(args, "modelDir", ""):
+        raise RuntimeError(
+            "STAGE4_RESUME_EXPLICIT_MODEL_REQUIRED: Supply the model used "
+            "originally with --modelDir; never auto-select another model."
+        )
+
+    stamp = str(getattr(args, "ExecutionTime", ""))
+    model_type = str(getattr(args, "ModelType", ""))
+    port = getattr(args, "TRVPort", None)
+    if not re.fullmatch(r"\\d{12,16}", stamp) or not model_type or not isinstance(port, int):
+        raise RuntimeError("STAGE4_RESUME_IDENTITY_INVALID: timestamp/model/port required")
+    root = Path(args.WorkPoolROOT)
+    target = Path(args.BertDatasetSubDir)
+    name = f"dataset_{stamp}_{model_type}_pt{port}{RUNNING_SUFFIX}"
+    expected = root / name
+    if target.name != name or os.path.normcase(os.path.abspath(target)) != os.path.normcase(os.path.abspath(expected)):
+        raise RuntimeError(
+            "STAGE4_RESUME_WORKSPACE_MISMATCH: Exact --BertDatasetSubDir "
+            "must be the matching interrupted workspace under --WorkPoolROOT."
+        )
+    if not root.is_dir() or root.is_symlink() or not target.is_dir() or target.is_symlink():
+        raise RuntimeError(
+            "STAGE4_RESUME_WORKSPACE_UNSAFE: WorkPool/target missing or symlinked; "
+            "no directory has been renamed."
+        )
+    if not (target / "test_results_verification.sql3").is_file():
+        raise RuntimeError(
+            "STAGE4_RESUME_SOURCE_MISSING: test_results_verification.sql3 "
+            "was not found; stop and inspect the interrupted workspace."
+        )
+    if not Path(args.modelDir).is_dir():
+        raise RuntimeError("STAGE4_RESUME_MODEL_MISSING: Explicit model directory not found")
+    if Path(str(expected)[:-len(RUNNING_SUFFIX)] + READY_SUFFIX).exists():
+        raise RuntimeError("STAGE4_RESUME_READY_CONFLICT: A ready sibling already exists")
+    if Path(str(expected)[:-len(RUNNING_SUFFIX)] + NEXT_SUFFIX).exists():
+        raise RuntimeError("STAGE4_RESUME_COMPLETE_CONFLICT: A completed sibling exists")
+
+    if getattr(args, "TRVWebHost", False) is True:
+        checker = _is_stage4_port_free if port_free is None else port_free
+        if not checker(port):
+            raise RuntimeError(
+                f"STAGE4_RESUME_PORT_OCCUPIED: Port {port} is already in use. "
+                "A prior Stage 4 process may still be running; do not resume."
+            )
+    return str(target)
+
+
 def build_visualization_plan(args, ready_workspace, output_dir):
     """Normalize execution intent without mutating the filesystem."""
+    resume = getattr(args, "resume_interrupted_stage4", False) is True
+    if resume:
+        if not ready_workspace.endswith(RUNNING_SUFFIX):
+            raise ValueError("Explicit Stage 4 resume requires an interrupted workspace")
+        ready_workspace = _replace_suffix(
+            ready_workspace, RUNNING_SUFFIX, READY_SUFFIX,
+        )
     return VisualizationPlan(
         ready_workspace=ready_workspace,
         output_dir=output_dir,
@@ -55,6 +144,7 @@ def build_visualization_plan(args, ready_workspace, output_dir):
         weitech_input_path=args.WeiTechFormatInputPATH,
         weitech_output_path=args.WeiTechFormatOutputPATH,
         ssl_context=None if "windows" in platform.system().lower() else "adhoc",
+        resume_existing_running=resume,
     )
 
 
@@ -70,8 +160,15 @@ def run_visualization_stage(
         application: Callable[[str], None],
         start_server: Callable[[VisualizationPlan], None],
         validate: Callable[[str], bool]):
-    """Activate, execute, validate, and complete the visualization stage."""
-    running_workspace = activate_visualization(plan, rename=rename)
+    """Activate, execute, validate, and complete the visualization stage.
+
+    A verified explicit resume reuses the existing RUNNING workspace instead
+    of renaming any directory to READY; on failure it remains RUNNING.
+    """
+    running_workspace = (
+        plan.running_workspace if plan.resume_existing_running
+        else activate_visualization(plan, rename=rename)
+    )
     application(running_workspace)
     if plan.hosted:
         start_server(plan)
