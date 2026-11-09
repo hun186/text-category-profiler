@@ -114,6 +114,11 @@
       "kind": "domain_module"
     },
     {
+      "path": "text_category_profiler/data/stage_sql.py",
+      "domain": "data",
+      "kind": "domain_module"
+    },
+    {
       "path": "text_category_profiler/data/stage_tsv.py",
       "domain": "data",
       "kind": "domain_module"
