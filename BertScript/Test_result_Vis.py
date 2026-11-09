@@ -1006,6 +1006,7 @@ def Build_VisDatatable(
         CutRange=[0,30],
         derived_query_structure = None,
         filter_query = '',
+        sort_by=None,
         FilteredDF_OPTFN=""
         ):
     section("Build results table", icon="▦")
@@ -1143,7 +1144,7 @@ def Build_VisDatatable(
                 sort_action="custom",
                 #sort_mode="multi",
                 sort_mode="single",
-                sort_by=[],
+                sort_by=sort_by or [],
                 style_data_conditional = style_data_conditional,
                 style_cell_conditional = style_cell_conditional,
                 style_cell = style_cell,
@@ -2028,7 +2029,6 @@ args = []
 args.extend([Output('intermediate-value-FilteredDF', 'data')])
 args.extend([Output('nSamples', 'children')])
 args.extend([Output('nSamples_bottom', 'children')])
-args.extend([Output('current page', 'children')])
 #args.extend([Output("CutRange", "max")])
 #args.extend([Output("PiecesBound", "min")])
 #args.extend([Output("PiecesBound", "max")])
@@ -2039,6 +2039,7 @@ args.extend([Output("derived_filter_query_structure", 'data')])
 #args.extend([Output('selectedLabels', 'children')])
 args.extend([Output("selectLabels Dict", "data")])
 args.extend([Output("selectLabels Dict", "style_data_conditional")])
+args.extend([Output("applied-table-filter", "data")])
 #args.extend([Output('InfoScoreRangeCard', "children")])
 
 args.extend([Input('intermediate-value-df', 'data')])
@@ -2064,6 +2065,7 @@ args.extend([State('current page', 'children')])
 args.extend([State('DF_OPT', 'children')])
 args.extend([State('FilteredDF_OPT', 'children')])
 args.extend([State('TRsql3FileDataset Dir', 'children')])
+args.extend([State('applied-table-filter', 'data')])
 @app.callback(*args,prevent_initial_call=True)
 def FilteredDF_update(
         df_json,
@@ -2085,20 +2087,31 @@ def FilteredDF_update(
         current_page,
         DF_OPTFN,
         FilteredDF_OPTFN,
-        TRsql3FileDatasetDir
+        TRsql3FileDatasetDir,
+        last_applied_table_filter,
         #*args
         ):
     
-    # Remounting this table resets its derived filter to None. Ignore that
-    # synthetic event before any logging or filtered-file writes.
     Old_derived_query_structure = json.loads(Old_derived_filter_query_structure_json)
+    # Dash may reset the parser to None while remounting a table whose
+    # filter_query is still nonempty. Recover the prior parsed expression.
+    if filter_query and derived_query_structure is None:
+        derived_query_structure = Old_derived_query_structure
+    triggered = dash.callback_context.triggered
     if visualization_stage.is_spurious_datatable_filter_notification(
-            dash.callback_context.triggered,
+            triggered,
             filter_query=filter_query,
             sort_by=sort_by,
             derived_query_structure=derived_query_structure,
             previous_derived_query_structure=Old_derived_query_structure):
         raise PreventUpdate
+    if visualization_stage.is_redundant_table_filter_event(
+            triggered,
+            filter_query=filter_query,
+            sort_by=sort_by,
+            derived_query_structure=derived_query_structure,
+            previously_applied=last_applied_table_filter):
+        raise PreventUpdate  # Before logging, SQL and Excel output
 
     callback_start_time = time.time()
     section("Update filtered results", icon="🔎")
@@ -2130,40 +2143,6 @@ def FilteredDF_update(
             raise PreventUpdate
     '''
 
-    #下方似乎為舊bug，最新情況不會出現。
-    #當page_action=custom, filter_action=custom時，
-    #點擊 > page down按紐時，會觸發('VisDatatable', "derived_filter_query_structure")
-    #且無法正常回傳當下('VisDatatable', "derived_filter_query_structure")的值，
-    #會回傳('VisDatatable', "derived_filter_query_structure")值為None
-    #造成篩選錯誤，故加入此檢驗機制，使用filter_query避免誤觸發。
-    if filter_query != "" and derived_query_structure == None:
-        derived_query_structure = Old_derived_query_structure
-        '''
-        if button_id == "VisDatatable": 
-            print(f"filter_query = {filter_query} which is not empty string.")
-            print("But derived_query_structure is None,")
-            print("this should be a false trigger, abort updating.")
-            raise PreventUpdate
-        if button_id in ["Colortable"]:
-            print("button_id is Colortable, and filter_query is not empty,")
-            print("but receving derived_query_structure is None.")
-            print("replace variable derived_query_structure as the old one.")
-            derived_query_structure = Old_derived_query_structure
-
-        '''
-        '''
-        if Old_derived_query_structure == derived_query_structure:
-            print("derived_query_structure is not changed, abort updating.")
-            raise PreventUpdate
-        if derived_query_structure == None:
-            derived_query_structure = Old_derived_query_structure
-            print("button_id is VisDatatable (derived_query_structure),")
-            print("but receving derived_query_structure is None.")
-            print("Abort updating.")
-            #print("replace variable derived_query_structure as the old one.")
-            raise PreventUpdate
-        '''
-    
     if derived_virtual_selected_rows == None:
         derived_virtual_selected_rows = []
     #df =  pd.read_json(df_json, orient='split')
@@ -2253,22 +2232,20 @@ def FilteredDF_update(
     dfOutputer(FilteredDF[PreambleCols],FilteredDF_OPTFN).run()
     #print("FilteredDF_json",FilteredDF_json)
     stage_done("Filtered results", elapsed=time.time() - callback_start_time)
+    applied_filter = visualization_stage.datatable_filter_state(
+        filter_query, sort_by, derived_query_structure,
+        previous=last_applied_table_filter,
+    )
     return [FilteredDF_json]+[
         FilteredDF.shape[0]]*2+[
-        page_current+1
-        #GetnDigitElementsOfaList(list(FilteredDF.columns))
-        #FilteredDF.shape[1]
-        #]+[newPBMin,newPBMax,marks
-        #]+[[newPBMin,newPBMax]
-        ]+[derived_query_structure_json
-        ]+[selectedLabelsDictArray]+[style_data_conditional]
+        derived_query_structure_json
+        ]+[selectedLabelsDictArray]+[style_data_conditional]+[applied_filter]
 
 
 #=======================================================
 
 args = []
 #args.extend([Output('intermediate-value-PartColDF', 'data')])
-args.extend([Output('VisDatatable', "page_current")])
 args.extend([Output('PredResSummaryCard', 'children')])
 args.extend([Output('TwinsCard', 'children')])
 #args.extend([Output('Chunk Params', 'data')])
@@ -2278,25 +2255,25 @@ args.extend([Output('TwinsCard', 'children')])
 #args.extend([Output('nUniqueVal Bar', 'marks')])
 #args.extend([Input("LastChunk", "value")])
 #args.extend([Input("CutRange", "value")])
-args.extend([Input('intermediate-value-FilteredDF', 'data')])
+args.extend([Input('applied-table-filter', 'data')])
 #args.extend([State('intermediate-value-ShowingFileScoreDF', 'data')])
 #args.extend([Input('VisDatatable', "derived_filter_query_structure")])
 args.extend([State('Colortable', "data")])
-args.extend([State('VisDatatable', "page_current")])
 args.extend([State('FilteredDF_OPT', 'children')])
 args.extend([State('TRsql3FileDataset Dir', 'children')])
+args.extend([State('intermediate-value-FilteredDF', 'data')])
 #args.extend([Input("Stride Bar", "value")])
 @app.callback(*args,prevent_initial_call=True)
 def ChunkDF_update(
         #LastChunk,
         #CutRange,
-        FilteredDF_json,
+        applied_filter,
         #derived_query_structure,
         #ShowingFileScoreDF_json,
         ColortableArray,
-        page_current,
         FilteredDF_OPTFN,
-        TRsql3FileDatasetDir):
+        TRsql3FileDatasetDir,
+        FilteredDF_json):
     callback_start_time = time.time()
     section("Refresh result charts", icon="📊")
         
@@ -2335,9 +2312,7 @@ def ChunkDF_update(
         FilteredDF, sql3File, ColorDict)
     TwinsCard_children = Build_Twins_Block(FilteredDF)
     stage_done("Result charts", elapsed=time.time() - callback_start_time)
-    return [
-        #PartColDF_json]+[
-            page_current]+[PredSum_children]+[TwinsCard_children]
+    return [PredSum_children, TwinsCard_children]
 
 
 
@@ -2345,6 +2320,9 @@ def ChunkDF_update(
 
 args = []
 args.extend([Output('VisDatatableCard', 'children')])
+args.extend([Output('last-rendered-table-state', 'data')])
+# Pagination display belongs to the renderer, not to filter calculation.
+args.extend([Output('current page', 'children')])
 args.extend([Output("CutRange", "max")])
 args.extend([Output("CutRange", "marks")])
 #args.extend([Output('PredResSummaryCard', 'children')])
@@ -2359,6 +2337,9 @@ args.extend([Input("CutRange", "value")])
 #args.extend([Input('VisDatatable', "derived_filter_query_structure")])
 #args.extend([State('VisDatatable', "page_current")])
 args.extend([Input('Colortable', 'data')])
+# Revision changes for each accepted filter request, including when the
+# filtered data store contains the same '{}' SQLite sentinel.
+args.extend([Input('applied-table-filter', 'data')])
 # table_update creates VisDatatable; observing its own data as an Input
 # re-triggers this callback whenever Dash mounts the replacement table.
 # No callback computation uses this argument, so keep it only as State.
@@ -2367,9 +2348,11 @@ args.extend([State('VisDatatable', 'data')])
 #args.extend([State('VisDatatable', "derived_filter_query_structure")])
 #args.extend([State('derived_filter_query_structure', "data")])
 args.extend([State('VisDatatable', "filter_query")])
+args.extend([State('VisDatatable', "sort_by")])
 args.extend([State('intermediate-value-FilteredDF', 'data')])
 args.extend([State('FilteredDF_OPT', 'children')])
 args.extend([State('TRsql3FileDataset Dir', 'children')])
+args.extend([State('last-rendered-table-state', 'data')])
 @app.callback(*args,prevent_initial_call=True,
               suppress_callback_exceptions=True)
 def table_update(
@@ -2382,16 +2365,24 @@ def table_update(
         #derived_virtual_selected_rows,
         #derived_query_structure,
         ColortableArray,
+        applied_filter,
         VisDatatableArray,
         #derived_query_structure,
         #derived_query_structure_json,
         filter_query,
+        sort_by,
         FilteredDF_json,
         FilteredDF_OPTFN,
-        TRsql3FileDatasetDir
+        TRsql3FileDatasetDir,
+        last_rendered_table_state,
         #*args
         ):
     
+    if visualization_stage.is_redundant_table_page_event(
+            dash.callback_context.triggered,
+            page_current=page_current,
+            last_rendered=last_rendered_table_state):
+        raise PreventUpdate  # Remount should not rebuild its own table.
     print("="*50)
     ShowElapsedTime(start_time)
     print("Running table_update")
@@ -2418,9 +2409,9 @@ def table_update(
     
     #page_max = len(FilteredDF)//page_size+(len(FilteredDF)%page_size!=0) -1
     page_max = max((len(FilteredDF)-1)//page_size,0)
-    if page_current > page_max:
-        print(f"page_current {page_current} > page_max {page_max}. Abort updating.")
-        raise PreventUpdate
+    # A filter can reduce the number of pages (including zero rows).
+    # Clamping avoids leaving an outdated table mounted on an invalid page.
+    page_current = min(max(page_current or 0, 0), page_max)
     '''
     if button_id in ["VisDatatable"]:
         (pd_query_string, PartColDF) = construct_filter(
@@ -2442,6 +2433,7 @@ def table_update(
         page_current=page_current, page_size=page_size,
         CutRange=CutRange,
         filter_query=filter_query,
+        sort_by=sort_by,
         FilteredDF_OPTFN=FilteredDF_OPTFN)
     marks={i: str(i) for i in [
         0,
@@ -2461,9 +2453,11 @@ def table_update(
     ShowingFilePVTCard_children = Build_ShowingFilePVT(sql3File, FileList=PartDFFL)
     PerformanceCardFiltered_children = Build_PerformancePVT(FilteredDF)
             
-    return [VisData_children]+[CutRangeMax]+[marks
-            ]+[ShowingFilePVTCard_children]+[
-            PerformanceCardFiltered_children]
+    return [
+        VisData_children, {"page_current": page_current}, page_current + 1,
+        CutRangeMax, marks, ShowingFilePVTCard_children,
+        PerformanceCardFiltered_children,
+    ]
 #============================================================   
 
 @app.callback(
@@ -3460,6 +3454,11 @@ def serve_layout():
         #dcc.Store(id='intermediate-value-ColorDF',  data = {}),
         #derived_filter_query_structure用來依據filter data設定值更新FilteredDF
         dcc.Store(id='derived_filter_query_structure', data = json.dumps(None, indent = 4)),
+        # State-only in the filtering callback; Input to chart/table callbacks.
+        # The revision changes when the SQLite-sentinel JSON string does not.
+        dcc.Store(id='applied-table-filter', data={}),
+        # Records the last rendered page to avoid self-mount page callbacks.
+        dcc.Store(id='last-rendered-table-state', data=None),
         #dcc.Store(id='intermediate-value-selectedLabels',  data = selectedLabels_json),
         #dcc.Store(id='intermediate-value-ShowingFileScoreDF',  data = ShowingFileScoreDF_json), #目前顯示中的檔案及其分數
         #dcc.Store(id='intermediate-value-FilteredDF_OPTFN',  data = FilteredDF_OPTFN_json),
