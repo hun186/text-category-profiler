@@ -30,14 +30,24 @@ class BL001PackageCensusTests(unittest.TestCase):
         self.assertEqual(report["catalogue_paths_missing"], [])
         self.assertEqual(report["invalid_catalog_entries"], [])
         self.assertEqual(report["identity_failures"], [])
-        self.assertEqual(report["summary"]["total_tracked_package_files"], 71)
+        self.assertEqual(report["summary"]["total_tracked_package_files"], 72)
         self.assertEqual(report["summary"]["legacy_preserved"], 13)
-        self.assertEqual(report["summary"]["canonical_domain_owned"], 58)
+        self.assertEqual(report["summary"]["canonical_domain_owned"], 59)
         self.assertEqual(
             report["summary"]["total_tracked_package_files"],
             report["summary"]["legacy_preserved"]
             + report["summary"]["canonical_domain_owned"],
         )
+
+    def test_new_shared_tsv_writer_is_explicitly_owned_by_data_domain(self):
+        report = audit_package(ROOT)
+        owner = next(
+            x for x in report["files"]
+            if x["path"] == "text_category_profiler/data/stage_tsv.py"
+        )
+        self.assertEqual(owner["ownership"], "canonical")
+        self.assertEqual(owner["domain"], "data")
+        self.assertEqual(owner["classification"], "domain_module")
 
     def test_known_legacy_entrypoints_are_retained_not_mistaken_for_domain_code(self):
         report = audit_package(ROOT)
