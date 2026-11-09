@@ -3457,6 +3457,11 @@ def serve_layout():
         #dcc.Store(id='intermediate-value-ColorDF',  data = {}),
         #derived_filter_query_structure用來依據filter data設定值更新FilteredDF
         dcc.Store(id='derived_filter_query_structure', data = json.dumps(None, indent = 4)),
+        # State-only in the filtering callback; Input to chart/table callbacks.
+        # The revision changes when the SQLite-sentinel JSON string does not.
+        dcc.Store(id='applied-table-filter', data={}),
+        # Records the last rendered page to avoid self-mount page callbacks.
+        dcc.Store(id='last-rendered-table-state', data=None),
         #dcc.Store(id='intermediate-value-selectedLabels',  data = selectedLabels_json),
         #dcc.Store(id='intermediate-value-ShowingFileScoreDF',  data = ShowingFileScoreDF_json), #目前顯示中的檔案及其分數
         #dcc.Store(id='intermediate-value-FilteredDF_OPTFN',  data = FilteredDF_OPTFN_json),
