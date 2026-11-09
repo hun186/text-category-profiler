@@ -148,11 +148,12 @@ def build_app(workpool):
                         "textAlign": "left", "whiteSpace": "normal"},
         ),
         html.Hr(),
-        html.H3("已儲存結果｜類別／欄位值分布（唯讀）"),
+        html.H3("已儲存結果｜欄位值前綴分布（唯讀）"),
         html.P(
-            f"從已儲存 SQLite 的最前面最多 {DISTRIBUTION_SAMPLE_ROWS:,} 筆計算欄位值次數，"
-            "顯示最多 15 個值。若資料超過上限，此圖僅供快速檢視、不能視為全量統計。"
-            "不重新執行分類、不寫入結果。"
+            f"從已儲存 SQLite 最前面最多 {DISTRIBUTION_SAMPLE_ROWS:,} 筆計算欄位值"
+            "前 120 字元的出現次數，顯示最多 15 種前綴。"
+            "超長值可能因前綴相同被合併，並非完整原始值的精確去重。"
+            "資料超出抽樣上限時不代表全量統計；不重新分類、不寫入結果。"
         ),
         html.Label("分析欄位"),
         dcc.Dropdown(id="HistoryDistributionColumn", options=[], value=None,
@@ -292,11 +293,16 @@ def build_app(workpool):
             if payload["has_more_rows"] else "；已包含此資料表全部列"
         )
         shown = payload["displayed_groups"]
-        distinct = payload["distinct_values"]
+        distinct = payload["distinct_prefixes"]
+        clipped = payload["truncated_values"]
+        prefix_warning = (
+            f"；有 {clipped:,} 筆超過 120 字，前綴相同的不同原始值可能被合併計數"
+            if clipped else "；樣本中沒有超長截斷值"
+        )
         return _distribution_chart(payload), (
             f"已讀取 {payload['sampled_rows']:,} 筆；"
-            f"樣本中 {distinct:,} 種不同值，顯示前 {shown} 種"
-            + sample_note + "。"
+            f"樣本中 {distinct:,} 種不同顯示前綴，顯示前 {shown} 種"
+            + prefix_warning + sample_note + "。"
         )
 
     register_tree_callbacks(app)
