@@ -2029,7 +2029,6 @@ args = []
 args.extend([Output('intermediate-value-FilteredDF', 'data')])
 args.extend([Output('nSamples', 'children')])
 args.extend([Output('nSamples_bottom', 'children')])
-args.extend([Output('current page', 'children')])
 #args.extend([Output("CutRange", "max")])
 #args.extend([Output("PiecesBound", "min")])
 #args.extend([Output("PiecesBound", "max")])
@@ -2239,12 +2238,7 @@ def FilteredDF_update(
     )
     return [FilteredDF_json]+[
         FilteredDF.shape[0]]*2+[
-        page_current+1
-        #GetnDigitElementsOfaList(list(FilteredDF.columns))
-        #FilteredDF.shape[1]
-        #]+[newPBMin,newPBMax,marks
-        #]+[[newPBMin,newPBMax]
-        ]+[derived_query_structure_json
+        derived_query_structure_json
         ]+[selectedLabelsDictArray]+[style_data_conditional]+[applied_filter]
 
 
@@ -2327,6 +2321,8 @@ def ChunkDF_update(
 args = []
 args.extend([Output('VisDatatableCard', 'children')])
 args.extend([Output('last-rendered-table-state', 'data')])
+# Pagination display belongs to the renderer, not to filter calculation.
+args.extend([Output('current page', 'children')])
 args.extend([Output("CutRange", "max")])
 args.extend([Output("CutRange", "marks")])
 #args.extend([Output('PredResSummaryCard', 'children')])
@@ -2458,8 +2454,9 @@ def table_update(
     PerformanceCardFiltered_children = Build_PerformancePVT(FilteredDF)
             
     return [
-        VisData_children, {"page_current": page_current}, CutRangeMax, marks,
-        ShowingFilePVTCard_children, PerformanceCardFiltered_children,
+        VisData_children, {"page_current": page_current}, page_current + 1,
+        CutRangeMax, marks, ShowingFilePVTCard_children,
+        PerformanceCardFiltered_children,
     ]
 #============================================================   
 
