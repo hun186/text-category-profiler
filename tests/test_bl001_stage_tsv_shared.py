@@ -115,17 +115,28 @@ class SharedStageTSVTests(unittest.TestCase):
         ], columns=["ClassLabel", "text", "Score"])
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "expected.tsv"
-            data.to_csv(
-                target, sep="\t", index=False, quoting=csv.QUOTE_NONE,
-                quotechar="", escapechar="\\", header=False, encoding="utf-8",
-            )
-            expected = target.read_bytes()
+            legacy_error = None
+            try:
+                data.to_csv(
+                    target, sep="\t", index=False, quoting=csv.QUOTE_NONE,
+                    quotechar="", escapechar="\\", header=False,
+                    encoding="utf-8",
+                )
+            except (TypeError, ValueError) as error:
+                # Pandas 3.x can reject the historical empty quotechar.
+                # This refactor must preserve that exception, not conceal it.
+                legacy_error = error
             for provider in STAGE_PROVIDERS:
                 with self.subTest(provider=provider):
                     function, _ = isolated_legacy_tsv(provider)
                     actual_path = Path(tmp) / provider.replace("/", "_")
-                    function(data, actual_path)
-                    self.assertEqual(actual_path.read_bytes(), expected)
+                    if legacy_error is not None:
+                        with self.assertRaises(type(legacy_error)) as caught:
+                            function(data, actual_path)
+                        self.assertEqual(str(caught.exception), str(legacy_error))
+                    else:
+                        function(data, actual_path)
+                        self.assertEqual(actual_path.read_bytes(), target.read_bytes())
 
 
 if __name__ == "__main__":
