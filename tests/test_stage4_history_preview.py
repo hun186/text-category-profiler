@@ -101,7 +101,8 @@ class Stage4HistoryDataTests(unittest.TestCase):
         )
         self.assertEqual(sample["sampled_rows"], 60)
         self.assertFalse(sample["has_more_rows"])
-        self.assertEqual(sample["distinct_values"], 1)
+        self.assertEqual(sample["distinct_prefixes"], 1)
+        self.assertEqual(sample["truncated_values"], 0)
         self.assertEqual(sample["categories"],
                          [{"label": "TW Affairs", "count": 60}])
         odd = history.read_distribution(
@@ -110,6 +111,32 @@ class Stage4HistoryDataTests(unittest.TestCase):
         self.assertEqual(len(odd["categories"][0]["label"]),
                          history.DISTRIBUTION_LABEL_CHARS)
         self.assert_unchanged()
+
+    def test_long_value_prefix_collision_is_explicit_not_claimed_as_distinct(self):
+        # Distinct full values sharing their first 120 characters must never
+        # be presented as an exact ClassLabel/value distinct-count.
+        prefix = "a" * history.DISTRIBUTION_LABEL_CHARS
+        with sqlite3.connect(self.finished / history.DATABASES[0]) as db:
+            db.execute('CREATE TABLE "long labels" ("label" TEXT)')
+            db.executemany(
+                'INSERT INTO "long labels" VALUES (?)',
+                [(prefix + "X",), (prefix + "Y",)],
+            )
+            db.commit()
+        p = self.finished / history.DATABASES[0]
+        initial = (p.read_bytes(), p.stat().st_mtime_ns)
+        payload = history.read_distribution(
+            self.root, self.finished.name, history.DATABASES[0],
+            "long labels", "label",
+        )
+        self.assertEqual(payload["categories"], [
+            {"label": prefix, "count": 2},
+        ])
+        self.assertEqual(payload["distinct_prefixes"], 1)
+        self.assertEqual(payload["truncated_values"], 2)
+        self.assertEqual((p.read_bytes(), p.stat().st_mtime_ns), initial)
+        # This test intentionally modifies a new table, so not using the
+        # fixture's initial snapshot; only the read operation is immutable.
 
     def test_distribution_bounds_large_database_and_reports_sampling_not_full_population(self):
         workspace = self.workspace("20261101120000", "rdy_for_Spike")
@@ -133,7 +160,7 @@ class Stage4HistoryDataTests(unittest.TestCase):
         self.assertTrue(payload["has_more_rows"])
         self.assertLessEqual(len(payload["categories"]),
                              history.DISTRIBUTION_TOP_GROUPS)
-        self.assertGreater(payload["distinct_values"],
+        self.assertGreater(payload["distinct_prefixes"],
                            payload["displayed_groups"])
         self.assertEqual(
             sum(entry["count"] for entry in payload["categories"]),
