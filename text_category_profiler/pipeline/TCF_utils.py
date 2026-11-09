@@ -406,7 +406,8 @@ def convert_to_args_str(args):
     args_str = ""
 
     for key in vars_args:
-        if key in {"doctor", "self_test", "require_cuda"}:
+        if key in {"doctor", "self_test", "require_cuda",
+                   "resume_interrupted_stage4", "confirm_stage4_stopped"}:
             continue
         val = vars_args[key]
         if val != '':
