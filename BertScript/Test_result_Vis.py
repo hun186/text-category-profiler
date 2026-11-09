@@ -31,6 +31,14 @@ if __name__ == "__main__" and "--history-preview" in sys.argv[1:]:
 # Fail before any WorkPool selection or mutation, not inside Tulip's native DLL
 # importer. Read-only viewer modes have already exited above.
 if __name__ == "__main__":
+    removed_dot_paths = visualization_stage.sanitize_tulip_windows_dot_path()
+    if removed_dot_paths:
+        print(
+            "[Stage 4 PATH] Removed "
+            f"{removed_dot_paths} independent '.' entry/entries from Windows "
+            "PATH for THIS Stage 4 process only. Parent shell/system PATH "
+            "and WorkPool are unchanged."
+        )
     visualization_stage.preflight_tulip_windows_path()
 
 #import utilities_DB
