@@ -4,6 +4,7 @@ Function-level AST injection avoids import-time GPUtil, ML runtimes or WorkPool.
 Optional pandas/xlsxwriter integration writes exclusively to a private tempfile.
 """
 import ast
+import math
 from pathlib import Path
 import tempfile
 import unittest
@@ -16,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PROVIDER = ROOT / "text_category_profiler/data/df_utils.py"
 
 
-def isolated_export(pd):
+def isolated_export(pd, **helpers):
     tree = ast.parse(PROVIDER.read_text(encoding="utf-8-sig"), filename=str(PROVIDER))
     selected = [
         node for node in tree.body
@@ -24,7 +25,7 @@ def isolated_export(pd):
     ]
     if len(selected) != 1:
         raise AssertionError("Canonical multi-sheet XLSX exporter must exist")
-    scope = {"pd": pd}
+    scope = {"pd": pd, **helpers}
     exec(compile(ast.Module(body=selected, type_ignores=[]), str(PROVIDER), "exec"), scope)
     return scope["dfListToXLS"]
 
@@ -214,6 +215,64 @@ class CanonicalMultiSheetExcelTests(unittest.TestCase):
                             any(row.attrib.get("customHeight") == "1" for row in rows),
                             "Row-height formatting should still be applied",
                         )
+
+    def test_empty_dataframe_column_width_is_finite_in_real_xlsx(self):
+        try:
+            import pandas as pd
+            import xlsxwriter  # noqa: F401
+        except ImportError:
+            self.skipTest("Optional pandas/xlsxwriter not installed")
+        export = isolated_export(
+            pd,
+            key_values=lambda *args, **kwargs: None,
+            getLineOfMaxLen=lambda value: (str(value), 0),
+        )
+        source = pd.DataFrame(columns=["LongHeader", "中文"])
+        before = source.copy(deep=True)
+        with tempfile.TemporaryDirectory(prefix="bl001-xlsx-empty-width-") as folder:
+            output = Path(folder) / "empty.xlsx"
+            export([source], output, AutoAdjustColWidth=True, MaxColWidth=12)
+            pd.testing.assert_frame_equal(source, before)
+            self.assertTrue(zipfile.is_zipfile(output))
+            with zipfile.ZipFile(output) as workbook:
+                xml = ET.fromstring(workbook.read("xl/worksheets/sheet1.xml"))
+                cols = xml.findall(
+                    ".//{http://schemas.openxmlformats.org/spreadsheetml/2006/main}col"
+                )
+                self.assertEqual(len(cols), 2)
+                for col in cols:
+                    width = float(col.attrib["width"])
+                    self.assertTrue(math.isfinite(width), col.attrib)
+                    self.assertGreater(width, 0)
+                    self.assertLess(width, 14)
+
+    def test_nonempty_column_width_retains_existing_clamp(self):
+        try:
+            import pandas as pd
+            import xlsxwriter  # noqa: F401
+        except ImportError:
+            self.skipTest("Optional pandas/xlsxwriter not installed")
+        export = isolated_export(
+            pd,
+            key_values=lambda *args, **kwargs: None,
+            getLineOfMaxLen=lambda value: (
+                max(str(value).splitlines() or [""], key=len), 0
+            ),
+        )
+        source = pd.DataFrame({"text": ["short", "A very long sentence"]})
+        with tempfile.TemporaryDirectory(prefix="bl001-xlsx-width-") as folder:
+            output = Path(folder) / "bounded.xlsx"
+            export([source], output, AutoAdjustColWidth=True, MaxColWidth=5)
+            with zipfile.ZipFile(output) as workbook:
+                xml = ET.fromstring(workbook.read("xl/worksheets/sheet1.xml"))
+                cols = xml.findall(
+                    ".//{http://schemas.openxmlformats.org/spreadsheetml/2006/main}col"
+                )
+                self.assertEqual(len(cols), 1)
+                width = float(cols[0].attrib["width"])
+                self.assertTrue(math.isfinite(width))
+                self.assertGreater(width, 0)
+                self.assertLess(width, 7)
 
     def test_private_real_xlsx_repeated_exports_have_same_sheet_names(self):
         try:
