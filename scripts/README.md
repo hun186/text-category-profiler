@@ -21,3 +21,13 @@ These commands are manually invoked tools, separate from the production
   faked Elasticsearch client, no actual service).
 - Existing Python helper API is exposed by the old module through lazy delegation.
   Do not remove the wrapper until external import/CLI callers have been surveyed.
+
+## BL-001 stage-local SQLite schema audit (read-only)
+
+For a **quiescent copy** of a DatasetConverter/BertScript stage SQLite database:
+
+```bash
+python scripts/bl001_stage_sqlite_audit.py --db "path/to/copied-stage.sqlite3"
+```
+
+Outputs one JSON report; exit 0 means `sampleSrc.text` exists and `text_Index` keys exactly that real column, and exit 1 means a missing/unsafe/unreadable schema. The command only reads SQLite metadata, uses `mode=ro&immutable=1` plus `query_only`, and refuses symlinks, journal/WAL sidecars and nonexistent files. It does **not** read records, repair databases or run any classifier. Do not run against a live database: immutable does not reflect uncheckpointed writes and this is not a concurrency/integrity guarantee. Tests: `python -m unittest -v tests.test_bl001_stage_sqlite_audit`. See `docs/release-prep/bl001-stage-local-sql.md`.
