@@ -4,6 +4,7 @@ Uses isolated AST for stage wrappers and in-memory stubs. The optional pandas
 integration test uses *private in-memory* SQLite, never real WorkPool files.
 """
 import ast
+from contextlib import closing
 from pathlib import Path
 import sqlite3
 import tempfile
@@ -206,7 +207,7 @@ class StageSQLiteTests(unittest.TestCase):
                     # A fresh connection proves persisted replace semantics,
                     # and a real index bound to "text" rather than an
                     # SQLite double-quoted string expression.
-                    with sqlite3.connect(path) as reopened:
+                    with closing(sqlite3.connect(path)) as reopened:
                         rows = reopened.execute(
                             'SELECT "text", "label" FROM "sampleSrc"'
                         ).fetchall()
