@@ -259,6 +259,42 @@ class CandidateGateTests(unittest.TestCase):
             self.assertFalse(result["Approved"])
             self.assertEqual(baseline, {p.name: p.read_bytes() for p in root.iterdir()})
 
+    def test_local_evidence_rejects_duplicate_json_keys_at_all_depths(self):
+        # JSON's default last-key-wins behavior previously let an apparent
+        # empty articles list or forged source be shadowed by a valid one.
+        # The manifest audit must reject ambiguity before trusting hashes.
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            article = root / "article.txt"
+            article.write_text("中文來源證據", encoding="utf-8")
+            digest = hashlib.sha256(article.read_bytes()).hexdigest()
+            entry = {
+                "source": "doc", "file": "article.txt", "sha256": digest,
+            }
+            manifest = root / "manifest.json"
+            candidate = {"New": row("新增", notes=note(source="doc"))}
+            ambiguous_root = (
+                '{"schema_version":1,"articles":[],"articles":['
+                + json.dumps(entry) + ']}'
+            )
+            ambiguous_article = (
+                '{"schema_version":1,"articles":[{"source":"forged",'
+                '"source":"doc","file":"article.txt","sha256":'
+                + json.dumps(digest) + '}]}'
+            )
+            for payload in (ambiguous_root, ambiguous_article):
+                with self.subTest(payload=payload[:45]):
+                    manifest.write_text(payload, encoding="utf-8")
+                    original = (manifest.read_bytes(), article.read_bytes())
+                    with self.assertRaisesRegex(
+                        metadata.MetadataError, "duplicate JSON key"
+                    ):
+                        gate.audit_local_article_evidence(candidate, manifest)
+                    self.assertEqual(
+                        (manifest.read_bytes(), article.read_bytes()),
+                        original,
+                    )
+
     def test_local_evidence_rejects_missing_source_and_duplicate_content(self):
         with TemporaryDirectory() as directory:
             root = Path(directory)

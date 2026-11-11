@@ -211,6 +211,20 @@ MAX_ARTICLE_BYTES = 10_000_000
 SHA256_PATTERN = re.compile("[0-9a-f]{64}")
 
 
+def _unique_evidence_json_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    """Reject duplicate JSON keys at every nesting level before auditing.
+
+    json.loads normally keeps only the final value for repeated keys, which
+    can hide a conflicting articles collection or article source binding.
+    """
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate JSON key {key!r}")
+        result[key] = value
+    return result
+
+
 def audit_local_article_evidence(
     candidates: dict[str, dict[str, str]], manifest_path: str | Path
 ) -> dict[str, object]:
@@ -222,9 +236,12 @@ def audit_local_article_evidence(
     """
     manifest_path = Path(manifest_path)
     try:
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
+        manifest = json.loads(
+            manifest_path.read_text(encoding="utf-8-sig"),
+            object_pairs_hook=_unique_evidence_json_object,
+        )
     except (UnicodeError, ValueError) as exc:
-        raise MetadataError("invalid JSON evidence manifest") from exc
+        raise MetadataError(f"invalid JSON evidence manifest: {exc}") from exc
     if not isinstance(manifest, dict) or set(manifest) != {"schema_version", "articles"}:
         raise MetadataError("evidence manifest requires schema_version and articles")
     records = manifest["articles"]
