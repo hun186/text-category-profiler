@@ -17,6 +17,13 @@ def write_stage_sql(sql_name, df, saving_columns, connect):
     if len(saving_columns) == 0:
         saving_columns = df.columns.values
 
+    # This index requires an actual "text" column.  Some SQLite builds treat
+    # a double-quoted missing identifier as a string expression, so the old
+    # CREATE INDEX statement can appear successful after to_sql has already
+    # replaced the table.  Reject unsafe output *before opening/writing* DB.
+    if "text" not in saving_columns:
+        raise ValueError("Stage-local sampleSrc output requires a 'text' column")
+
     cnx = connect(sql_name)
     try:
         selected = df.loc[:, saving_columns]
