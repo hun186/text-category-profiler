@@ -12,6 +12,7 @@ on:
       - "tests/test_bl001_stage_sql_shared.py"
       - "text_category_profiler/data/df_utils.py"
       - "tests/test_bl001_df_tsv_provider_contracts.py"
+      - "tests/test_bl001_df_list_xls_sheet_names.py"
       - "text_category_profiler/data/stage_tsv.py"
       - "text_category_profiler/data/stage_xlsx.py"
       - "text_category_profiler/data/stage_sql.py"
@@ -29,6 +30,7 @@ on:
       - "tests/test_bl001_stage_sql_shared.py"
       - "text_category_profiler/data/df_utils.py"
       - "tests/test_bl001_df_tsv_provider_contracts.py"
+      - "tests/test_bl001_df_list_xls_sheet_names.py"
       - "text_category_profiler/data/stage_tsv.py"
       - "text_category_profiler/data/stage_xlsx.py"
       - "text_category_profiler/data/stage_sql.py"
@@ -61,3 +63,5 @@ jobs:
         run: python -m unittest -v tests.test_bl001_stage_writer_check
       - name: Verify canonical TSV real pandas bytes and adapter contracts
         run: python -m unittest -v tests.test_bl001_df_tsv_provider_contracts
+      - name: Verify canonical multi-sheet Excel names and caller ownership
+        run: python -m unittest -v tests.test_bl001_df_list_xls_sheet_names
