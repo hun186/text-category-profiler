@@ -6,6 +6,8 @@ this command neither opens a production WorkPool nor invokes classifiers.
 """
 
 import argparse
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from importlib import import_module
 import sys
 import unittest
@@ -33,6 +35,24 @@ def run_focused_tests():
     )
 
 
+
+def verify_real_tsv_export():
+    """Require an actual private TSV export; exception matching is not enough.
+
+    The legacy characterization allows an old pandas failure to remain equal
+    to its baseline, so it cannot by itself certify successful TSV output.
+    """
+    import pandas as pd
+    from text_category_profiler.data.stage_tsv import write_stage_tsv
+
+    frame = pd.DataFrame({"ClassLabel": ["TW Affairs"], "text": ["中文分類"]})
+    with TemporaryDirectory(prefix="bl001-writer-check-") as folder:
+        output = Path(folder) / "stage.tsv"
+        write_stage_tsv(frame, output)
+        if output.read_text(encoding="utf-8").splitlines() != ["TW Affairs\t中文分類"]:
+            raise ValueError("Stage-local TSV bytes did not match expected rows")
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Run focused, non-production Stage-local TSV/XLSX/SQLite checks."
@@ -48,6 +68,11 @@ def main(argv=None):
         print(f"{name}={getattr(package, '__version__', 'unknown')}")
 
     passed = run_focused_tests()
+    try:
+        verify_real_tsv_export()
+    except Exception as exc:
+        print(f"Real private TSV export failed: {type(exc).__name__}: {exc}", file=sys.stderr)
+        passed = False
     print("STATUS=PASS_FOCUSED" if passed else "STATUS=FAIL_FOCUSED")
     print("Scope: private tempfile/in-memory export checks only; NOT Windows/WorkPool/model acceptance.")
     return 0 if passed else 1
