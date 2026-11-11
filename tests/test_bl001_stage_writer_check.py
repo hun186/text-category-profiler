@@ -9,11 +9,12 @@ from scripts import bl001_stage_writer_check as check
 
 
 class StageWriterCheckTests(unittest.TestCase):
-    def test_focused_selection_is_bounded_to_three_existing_writer_modules(self):
+    def test_focused_selection_includes_canonical_and_stage_local_writers(self):
         self.assertEqual(check.FOCUSED_TEST_MODULES, (
             "tests.test_bl001_stage_tsv_shared",
             "tests.test_bl001_stage_xlsx_shared",
             "tests.test_bl001_stage_sql_shared",
+            "tests.test_bl001_df_tsv_provider_contracts",
         ))
 
     def test_missing_dependency_blocks_without_running_suite(self):
