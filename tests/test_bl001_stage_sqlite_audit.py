@@ -38,6 +38,9 @@ class StageSQLiteAuditTests(unittest.TestCase):
         self.assertEqual(report["issues"], [])
         self.assertEqual(report["columns"], ["text", "label"])
         self.assertEqual(report["index_key_columns"], ["text"])
+        self.assertEqual(report["index_properties"], {
+            "unique": False, "origin": "c", "partial": False,
+        })
         self.assertEqual((path.read_bytes(), path.stat().st_mtime_ns), initial)
         for suffix in ("-wal", "-shm", "-journal"):
             self.assertFalse(Path(str(path) + suffix).exists())
@@ -72,6 +75,37 @@ class StageSQLiteAuditTests(unittest.TestCase):
         report = audit_stage_sqlite(self.db_path)
         self.assertEqual(report["index_key_columns"], ["text", "label"])
         self.assertIn("text_Index_not_bound_to_text_column", report["issues"])
+
+    def test_unique_partial_desc_and_nocase_indexes_fail_closed(self):
+        # All four variants have a single real text key and previously
+        # passed index_xinfo-only validation despite different semantics.
+        variants = (
+            ("unique", 'CREATE UNIQUE INDEX "text_Index" ON "sampleSrc" ("text")',
+             "text_Index_not_plain_nonunique_full"),
+            ("partial", 'CREATE INDEX "text_Index" ON "sampleSrc" ("text") WHERE "label" IS NOT NULL',
+             "text_Index_not_plain_nonunique_full"),
+            ("descending", 'CREATE INDEX "text_Index" ON "sampleSrc" ("text" DESC)',
+             "text_Index_wrong_order_or_collation"),
+            ("nocase", 'CREATE INDEX "text_Index" ON "sampleSrc" ("text" COLLATE NOCASE)',
+             "text_Index_wrong_order_or_collation"),
+        )
+        for label, ddl, reason in variants:
+            with self.subTest(index_variant=label):
+                if self.db_path.exists():
+                    self.db_path.unlink()
+                path = self.database(
+                    'CREATE TABLE "sampleSrc" ("text" TEXT, "label" TEXT)',
+                    ddl,
+                )
+                original = (path.read_bytes(), path.stat().st_mtime_ns)
+                result = audit_stage_sqlite(path)
+                self.assertEqual(result["status"], "FAIL")
+                self.assertIn(reason, result["issues"])
+                self.assertEqual(result["index_key_columns"], ["text"])
+                self.assertEqual(
+                    (path.read_bytes(), path.stat().st_mtime_ns), original,
+                    "Auditing an index must never mutate the SQLite copy",
+                )
 
     def test_missing_table_is_fail_closed(self):
         self.database('CREATE TABLE "unrelated" ("text" TEXT)')

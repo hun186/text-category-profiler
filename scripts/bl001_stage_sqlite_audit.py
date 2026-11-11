@@ -37,6 +37,7 @@ def audit_stage_sqlite(filename: str | Path) -> dict:
         "index": "text_Index",
         "columns": [],
         "index_key_columns": [],
+        "index_properties": None,
         "issues": [],
     }
     issues = result["issues"]
@@ -91,6 +92,31 @@ def audit_stage_sqlite(filename: str | Path) -> dict:
                 if (len(key_parts) != 1 or key_parts[0][1] < 0
                         or key_parts[0][2] != "text"):
                     issues.append("text_Index_not_bound_to_text_column")
+                elif key_parts[0][3] != 0 or key_parts[0][4] != "BINARY":
+                    # A DESC/NOCASE key is not the plain index created by
+                    # the Stage-local writer. The audit must not certify it.
+                    issues.append("text_Index_wrong_order_or_collation")
+
+                # index_xinfo alone cannot distinguish an ordinary index
+                # from UNIQUE or partial indexes with identical key columns.
+                # UNIQUE may reject valid duplicate texts; a partial index
+                # does not cover every row. Both differ from Stage-local DDL.
+                entries = [
+                    entry for entry in db.execute(
+                        'PRAGMA index_list("sampleSrc")'
+                    ).fetchall() if entry[1] == "text_Index"
+                ]
+                if len(entries) != 1:
+                    issues.append("text_Index_not_listed_on_sampleSrc")
+                else:
+                    entry = entries[0]
+                    result["index_properties"] = {
+                        "unique": bool(entry[2]),
+                        "origin": entry[3],
+                        "partial": bool(entry[4]),
+                    }
+                    if entry[2] != 0 or entry[3] != "c" or entry[4] != 0:
+                        issues.append("text_Index_not_plain_nonunique_full")
     except (OSError, sqlite3.Error, ValueError):
         issues.append("database_unreadable_or_invalid")
     if not issues:
