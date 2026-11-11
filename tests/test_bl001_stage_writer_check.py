@@ -41,10 +41,21 @@ class StageWriterCheckTests(unittest.TestCase):
                           return_value=suite), redirect_stderr(io.StringIO()):
             self.assertFalse(check.run_focused_tests())
 
+    def test_real_tsv_export_failure_cannot_report_pass(self):
+        output = io.StringIO()
+        with patch.object(check, "import_module") as load, \
+                patch.object(check, "run_focused_tests", return_value=True), \
+                patch.object(check, "verify_real_tsv_export", side_effect=TypeError("quotechar must be 1-char")), \
+                redirect_stdout(output):
+            load.return_value.__version__ = "3.1.1"
+            self.assertEqual(check.main([]), 1)
+        self.assertIn("STATUS=FAIL_FOCUSED", output.getvalue())
+
     def test_green_result_and_exit_code_are_narrowly_labeled(self):
         stream = io.StringIO()
         with patch.object(check, "import_module") as load, \
                 patch.object(check, "run_focused_tests", return_value=True), \
+                patch.object(check, "verify_real_tsv_export"), \
                 redirect_stdout(stream):
             load.return_value.__version__ = "test-version"
             self.assertEqual(check.main([]), 0)
