@@ -6,6 +6,7 @@ multiprocessing, filesystem I/O, classifier and WorkPool are never loaded.
 import ast
 import csv
 from pathlib import Path
+import tempfile
 import unittest
 
 
@@ -86,19 +87,11 @@ class StageLocalTSVContractTests(unittest.TestCase):
         self.assertEqual(calls, [("init", None), ("compute", False)])
         legacy_sink = Recorder()
         isolated_tsv_function(LEGACY[0])(legacy_sink, "output.tsv")
-        # The canonical provider retains its own historical empty-string
-        # quotechar contract and multiprocessing probe. Stage-local providers
-        # deliberately use None for modern pandas; their bytes stay unchanged
-        # under QUOTE_NONE. Do not silently consolidate these distinct APIs.
-        canonical_args, canonical_options = sink.calls[0]
-        stage_args, stage_options = legacy_sink.calls[0]
-        self.assertEqual(canonical_args, stage_args)
-        self.assertEqual(canonical_options["quotechar"], "")
-        self.assertIsNone(stage_options["quotechar"])
-        self.assertEqual(
-            {k: v for k, v in canonical_options.items() if k != "quotechar"},
-            {k: v for k, v in stage_options.items() if k != "quotechar"},
-        )
+        # The default nonquoting dialect now matches the two Stage-local
+        # writers again, but the canonical resource probe and extended
+        # adapter/index/header parameters remain separate public semantics.
+        self.assertEqual(sink.calls, legacy_sink.calls)
+        self.assertIsNone(sink.calls[0][1]["quotechar"])
 
         fn(sink, "changed.tsv", tsvIndex=True, header=True, TSVTextAdapter=True)
         self.assertEqual(calls[2:], [
@@ -107,6 +100,78 @@ class StageLocalTSVContractTests(unittest.TestCase):
         ])
         self.assertEqual(sink.calls[-1][1]["index"], True)
         self.assertEqual(sink.calls[-1][1]["header"], True)
+
+    def test_private_pandas_canonical_tsv_bytes_and_extended_options(self):
+        try:
+            import pandas as pd
+        except ImportError:
+            self.skipTest("pandas is optional for dependency-light discovery")
+
+        calls = []
+
+        class FakeMulticore:
+            def __init__(self, nProcess=None):
+                calls.append(("init", nProcess))
+
+            def ComputeNProcess(self, log=False):
+                calls.append(("probe", log))
+                return 2
+
+            def parallelize_dataframe(self, frame, adapter):
+                calls.append(("adapter", adapter))
+                return frame
+
+        canonical = isolated_tsv_function(
+            CANONICAL, multicoreJob=FakeMulticore, DFTSVTextAdapter="fixture",
+        )
+        stage = isolated_tsv_function(LEGACY[0])
+        df = pd.DataFrame({
+            "text": ["中文\\反斜線", "含Tab\t及換行\n"],
+            "label": ["TW Affairs", "TW Security"],
+        })
+        with tempfile.TemporaryDirectory(prefix="bl001-canonical-tsv-") as tmp:
+            canonical_file = Path(tmp) / "canonical.tsv"
+            stage_file = Path(tmp) / "stage.tsv"
+            canonical(df, canonical_file)
+            stage(df, stage_file)
+            data = canonical_file.read_bytes()
+            self.assertEqual(data, stage_file.read_bytes())
+            self.assertIn("中文".encode("utf-8"), data)
+            self.assertIn(b"\\\\", data, "Backslash must be escaped")
+            self.assertIn(b"\\\t", data, "Tabs must be escaped")
+            self.assertIn(b"\\\n", data, "Newlines must be escaped")
+            self.assertEqual(calls, [("init", None), ("probe", False)])
+
+            # Old pandas accepted quotechar=''; where it does, output bytes
+            # must be identical. Pandas 3.x does not accept the old option.
+            legacy = Path(tmp) / "historical-dialect.tsv"
+            try:
+                df.to_csv(
+                    legacy, sep="\t", index=False, quoting=csv.QUOTE_NONE,
+                    quotechar="", escapechar="\\", header=False,
+                    encoding="utf-8",
+                )
+            except (TypeError, ValueError):
+                pass
+            else:
+                self.assertEqual(data, legacy.read_bytes())
+
+            # Canonical's extended options and resource-probe ordering are
+            # deliberately retained; stage-local only supports two args.
+            configured = Path(tmp) / "configured.tsv"
+            canonical(df, configured, tsvIndex=True, header=True,
+                      TSVTextAdapter=True)
+            expected = Path(tmp) / "configured-reference.tsv"
+            df.to_csv(
+                expected, sep="\t", index=True, quoting=csv.QUOTE_NONE,
+                quotechar=None, escapechar="\\", header=True,
+                encoding="utf-8",
+            )
+            self.assertEqual(configured.read_bytes(), expected.read_bytes())
+            self.assertEqual(calls[-4:], [
+                ("init", None), ("probe", False),
+                ("init", 2), ("adapter", "fixture"),
+            ])
 
     def test_canonical_probe_failure_propagates_without_writing_tsv(self):
         class FailingMulticore:
