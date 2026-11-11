@@ -87,6 +87,8 @@ text_category_profiler/
 
 - **2026-11-09 Stage-local SQLite consolidation（本批候選）：** 已確認 `DatasetConverter.df_utils.dfToSQL` 和 `BertScript.df_utils.dfToSQL` 皆固定 `sampleSrc` replace + `text_Index`，但兩份 stage-local 原實作皆未明確關閉連線。以 `text_category_profiler.data.stage_sql.write_stage_sql` 形成一份 stage-local 固定政策實作，保留兩個 `dfToSQL(SQLname, df, SavingDfColumns=[])` 入口與 stage-local 的 `lite.connect`，新增 `try/finally` 例外與成功路徑關閉 SQLite 連線；**這是明確的行為修正，不是單純搬移**。隔離 fake DataFrame/SQLite 測試包括固定表／索引、選欄／寫入／建索引失敗與單次 close；另在私有記憶體 SQLite 驗證 rows/index 寫入後依舊可見。與 canonical `text_category_profiler.data.df_utils.dfToSQL` 的結構化欄位 JSON 轉換、自訂表名、dtype、各種索引等政策不同，不得合併；資料庫檔案持久性、Windows／Linux 真實 WorkPool、鎖定／rollback 及模型端到端仍待內網驗收。詳細 deployment gate 見 `docs/release-prep/bl001-stage-local-sql.md`；BL-001 仍為 In Progress。
 
+- **2026-11-11 Stage-local writer focused release check（本 PR，Hosted CI／正式 Review 待驗）**：Windows `run-bl001-stage-writer-check.bat` 呼叫 `python -m scripts.bl001_stage_writer_check`，強制檢查 pandas/xlsxwriter 可匯入，重用已有的 TSV／XLSX／SQLite 私有暫存 fixture；跳過測試、無測試或失敗都不回報 PASS。這是部署前的無正式 WorkPool 副作用快檢，不是 Windows GUI、模型、真實 DB rollback 或完整 BL-001 驗收；不改任何既有 stage writer API，BL-001 保持 In Progress。
+
 ### Phase 2：拆分路徑、序列化與基礎 helper
 
 - [ ] 從 `utilities_path.py` 盤點純路徑 helper，搬到 `text_category_profiler/paths.py`；檔案搬移／刪除函式需另行風險審查。
