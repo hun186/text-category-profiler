@@ -4,8 +4,10 @@ Uses isolated AST for stage wrappers and in-memory stubs. The optional pandas
 integration test uses *private in-memory* SQLite, never real WorkPool files.
 """
 import ast
+from contextlib import closing
 from pathlib import Path
 import sqlite3
+import tempfile
 import unittest
 from unittest.mock import patch
 import uuid
@@ -138,6 +140,93 @@ class StageSQLiteTests(unittest.TestCase):
                     fn("failure.sql3", frame)
                 self.assertEqual(events.count(("close",)), 1)
                 self.assertEqual(events[-1], ("close",))
+
+    def test_missing_text_preflight_rejects_before_connection_or_writes(self):
+        class LabelOnlyFrame(FakeDataFrame):
+            class Cols:
+                values = ["label"]
+
+        for stage in STAGES:
+            with self.subTest(stage=stage):
+                events = []
+                db = ConnectionFactory(events)
+                fn, _ = isolated_stage_writer(stage, lite=db)
+                with self.assertRaisesRegex(ValueError, "requires a 'text' column"):
+                    fn("existing.sql3", LabelOnlyFrame(events))
+                self.assertEqual(events, [], "Must not connect or replace a table")
+
+                # Even if the input has text, selecting only the label
+                # would create sampleSrc *without* text after replace.
+                with self.assertRaisesRegex(ValueError, "requires a 'text' column"):
+                    fn("existing.sql3", FakeDataFrame(events), ["label"])
+                self.assertEqual(events, [])
+
+    def test_private_disk_sqlite_reopen_replace_and_unsafe_input_preservation(self):
+        try:
+            import pandas as pd
+        except ImportError:
+            self.skipTest("Optional pandas integration not available")
+
+        class Tracked(sqlite3.Connection):
+            def close(self):
+                self.was_closed = True
+                super().close()
+
+        with tempfile.TemporaryDirectory(prefix="bl001-stage-sql-") as temp:
+            for stage in STAGES:
+                with self.subTest(stage=stage):
+                    path = Path(temp) / (stage.split("/")[0] + ".sqlite3")
+                    connections = []
+
+                    def connect(filename):
+                        result = sqlite3.connect(filename, factory=Tracked)
+                        connections.append(result)
+                        return result
+
+                    class DB:
+                        pass
+
+                    db = DB()
+                    db.connect = connect
+                    fn, _ = isolated_stage_writer(stage, lite=db)
+                    first = pd.DataFrame({
+                        "text": ["舊資料", "測試"],
+                        "label": ["TW Affairs", "TW Security"],
+                    })
+                    latest = pd.DataFrame({
+                        "text": ["新資料"], "label": ["TW Local"],
+                    })
+                    self.assertIsNone(fn(str(path), first))
+                    self.assertIsNone(fn(str(path), latest))
+                    self.assertEqual(len(connections), 2)
+                    for connection in connections:
+                        self.assertTrue(connection.was_closed)
+                        with self.assertRaises(sqlite3.ProgrammingError):
+                            connection.execute("SELECT 1")
+
+                    # A fresh connection proves persisted replace semantics,
+                    # and a real index bound to "text" rather than an
+                    # SQLite double-quoted string expression.
+                    with closing(sqlite3.connect(path)) as reopened:
+                        rows = reopened.execute(
+                            'SELECT "text", "label" FROM "sampleSrc"'
+                        ).fetchall()
+                        self.assertEqual(rows, [("新資料", "TW Local")])
+                        index_columns = [
+                            row[2] for row in reopened.execute(
+                                'PRAGMA index_info("text_Index")'
+                            ).fetchall()
+                        ]
+                        self.assertEqual(index_columns, ["text"])
+
+                    original_bytes = path.read_bytes()
+                    invalid = pd.DataFrame({"label": ["意外覆蓋"]})
+                    with self.assertRaisesRegex(ValueError, "requires a 'text' column"):
+                        fn(str(path), invalid)
+                    with self.assertRaisesRegex(ValueError, "requires a 'text' column"):
+                        fn(str(path), latest, ["label"])
+                    self.assertEqual(len(connections), 2, "Invalid calls must not connect")
+                    self.assertEqual(path.read_bytes(), original_bytes)
 
     def test_shared_sql_module_does_not_import_models_pandas_or_backends(self):
         source = (ROOT / "text_category_profiler/data/stage_sql.py").read_text(

@@ -233,6 +233,24 @@ class SQLProviderContractTests(unittest.TestCase):
             def to_sql(self, **kwargs):
                 self.saved = list(self.values["payload"])
 
+        class StagePayloadFrame(PayloadFrame):
+            # Stage-local SQL requires the actual "text" column for text_Index.
+            # Keep payload untouched to characterize the JSON policy difference.
+            class NamesWithText:
+                values = ["payload", "text"]
+
+            def __init__(self, rows):
+                super().__init__(rows)
+                self.columns = self.NamesWithText()
+                self.values["text"] = ["sample"] * len(rows)
+
+            def __getitem__(self, key):
+                if isinstance(key, tuple):
+                    if key[0] != slice(None) or key[1] != ["payload", "text"]:
+                        raise AssertionError("Unexpected stage selection")
+                    return self
+                return Series(self.values[key])
+
         rows = [{"name": "中文"}, ["甲", "乙"], ("組", 2), "untouched"]
         expected = [
             json.dumps(rows[0], ensure_ascii=False),
@@ -250,7 +268,7 @@ class SQLProviderContractTests(unittest.TestCase):
 
         for path in LEGACY:
             with self.subTest(provider=path):
-                legacy = PayloadFrame(rows)
+                legacy = StagePayloadFrame(rows)
                 fn = isolate_sql_writer(path, lite=FakeLite([]))
                 self.assertIsNone(fn("isolated.sql3", legacy))
                 self.assertEqual(legacy.saved, rows)

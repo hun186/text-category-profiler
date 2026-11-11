@@ -6,6 +6,7 @@
 
 | ID | 嚴重度 | 問題 | 影響範圍 | Workaround | 證據 | 狀態 |
 | --- | --- | --- | --- | --- | --- | --- |
+| `KI-011` | High | Stage-local `dfToSQL` 的 `sampleSrc` 若缺少 `text` 欄，現行 `replace` 可先覆寫原表，而 SQLite 雙引號回退語意可能將 `CREATE INDEX ... ("text")` 當成常值運算式索引並回報成功 | DatasetConverter／BertScript stage-local SQLite 輸出，若欄位選取缺漏會破壞原有輸出資料 | 部署前確認 DataFrame 與所選欄位包含 `text`，勿以正式 DB 重現；候選分支在 `connect` 前 fail-closed 驗證 | `text_category_profiler/data/stage_sql.py`；私有磁碟 SQLite 重現與 `tests/test_bl001_stage_sql_shared.py` | Open（已建立修正與隔離回歸測試候選，正式驗收及 Merge 待高風險授權） |
 | `KI-010` | Medium | Windows Anaconda PATH 包含獨立 `.` 項目時，CombineTestResult 成功後完整 Stage 4 於 Tulip 預檢立即中斷（`TULIP_WINDOWS_PATH_RELATIVE`） | 已完成分類的 `_rdy_for_TestResultVis` 待視覺化工作池、完整 GUI 啟動 | 舊版同一 CMD 暫時清除獨立 PATH `.` 再**只執行 Stage 4**；修正版共用 `execution.process` 路徑修復：TCFMain 在啟動分類前清理／驗證，Stage 4 直接啟動時清理，延遲 Tulip import 前重驗；僅刪除 `.`, `.\\`, `./` 等目錄等價項，其他相對路徑仍 fail closed，Doctor 不寫入環境 | 2026-11-09 Windows/Anaconda：dataset_20261109140948_PytorchMMBERT_pt8059 已完成 CombineTestResult，Stage 4 `Test_result_Vis.py:34` 因 PATH `.` 中斷；`tests/test_visualization_stage.py`、`tests/test_stage4_doctor.py` | Open（程式修正候選；Windows 重新執行 Stage 4 與完整 GUI 尚未驗收） |
 | `KI-003` | Medium | 已有隔離 root smoke，但尚缺 post-merge real-model/GPU acceptance evidence | 完整 runtime 驗證 | Layer A 啟用時必須 PASS；Layer B 留待明確 real-runtime inputs 與 H100/CUDA acceptance | `tests/test_full_pipeline_smoke.py`、`tests/test_full_pipeline_real_runtime.py`、`.codex/workflows.md` | Open |
 | `KI-005` | Low | 過去根 `requirements.txt` 未宣告 `GPUtil`，repository-wide discovery 因而產生 2 個 dependency errors；根 GPUtil 已宣告；PR #145 fresh targeted lightweight discovery 912 OK（2 SKIP），但仍待完整 root requirements 環境驗證 | lightweight repository-wide validation | CI 已針對所需套件安裝 GPUtil/pymongo/elasticsearch/pytz 並獲 PASS；完整 root requirements 安裝仍未驗證，不能等同完整 runtime acceptance | `tests/test_df_utils.py` → `text_category_profiler.data.df_utils` → `text_category_profiler.core.utilities`；Codex review of PR #119 | Open |
@@ -14,6 +15,13 @@
 | `KI-006` | High | Elasticsearch credential 曾硬編碼於 repository source/sample config/setup notes；current source 已移除 tracked credential literals，runtime config 改由 `TCP_ELASTIC_PASSWORD` 注入，但既有 Git 歷史仍可能包含舊值，外部輪替狀態尚未確認 | 仍接受舊 credential 的 Elasticsearch 環境 | 立即在 Elasticsearch 端輪替該 credential，部署時以 `TCP_ELASTIC_PASSWORD` 注入；不要把新 secret commit 到 Git | `tests/test_es_secret_config.py` 掃描 current tracked ES surfaces；Git history 未重寫 | Open |
 
 ## Issue Details
+
+### `KI-011` — Stage-local SQLite 無 `text` 欄位時仍可能成功寫入錯誤索引
+
+- **根因（2026-11-11 私有磁碟 SQLite 重現）**：既有 `write_stage_sql` 先以 `to_sql(..., if_exists="replace")` 替換 `sampleSrc`，再執行 `CREATE INDEX "text_Index" ON "sampleSrc"("text")`。若輸出 DataFrame 實際沒有 `text` 欄，部分 SQLite 設定會因雙引號未知名稱回退（DQS）而建立常值 expression index，`PRAGMA index_xinfo` 顯示 `cid=-2`、`PRAGMA table_info` 不含 `text`，函式卻不報錯；既有表已經被取代。**不代表已在任何正式資料庫發生**。
+- **候選修正**：在開啟連線之前，檢查最終 `saving_columns` 是否包含精確的 `text` 欄位；缺少時拋 `ValueError`，不觸及資料庫。沿用既有 `sampleSrc` replace、`text_Index`、兩個 stage-local API 與 `finally: close`，不修改 canonical writer 或增加資料遷移。
+- **驗證界線**：以私有 tempfile 實際磁碟 SQLite／pandas，分別執行兩個 stage writer，確認反覆 replace 可關閉／重開、實體 `text_Index` 確實綁定欄位（非 expression），無 `text` 的預設或明確選欄會在連線前拒絕且檔案 bytes 不變。Hosted CI／Codex Review 不能取代 Windows／內網真實 WorkPool／並行鎖競爭驗收。
+- **安全閘門**：因涉及已有的潛在資料完整性風險，這份實作／測試 PR 可以建立、驗證並取得正式 Review，但依使用者 Auto-Merge v2 高風險例外，**合併須取得明確授權**；不對正式 DB 運行破壞性測試。
 
 ### `KI-010` — Windows PATH 獨立 '.' 造成 Stage 4 預檢中斷
 
