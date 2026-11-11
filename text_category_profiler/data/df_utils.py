@@ -235,7 +235,7 @@ def dfToTSV(df, OutputFN, tsvIndex=False,header=False, TSVTextAdapter=False):
     #print("="*50)
     df.to_csv(
         OutputFN, sep = '\t', index = tsvIndex,
-        quoting=csv.QUOTE_NONE, quotechar="", escapechar="\\",
+        quoting=csv.QUOTE_NONE, quotechar=None, escapechar="\\",
         header = header, encoding="utf-8")
 
 def dfToSQL_new_appending(SQLname, df, SavingDfColumns=None,
