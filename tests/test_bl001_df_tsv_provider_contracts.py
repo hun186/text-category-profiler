@@ -58,7 +58,7 @@ class StageLocalTSVContractTests(unittest.TestCase):
         self.assertEqual(args, ("output.tsv",))
         self.assertEqual(kwargs, {
             "sep": "\t", "index": False, "quoting": csv.QUOTE_NONE,
-            "quotechar": "", "escapechar": "\\", "header": False,
+            "quotechar": None, "escapechar": "\\", "header": False,
             "encoding": "utf-8",
         })
 
@@ -86,7 +86,19 @@ class StageLocalTSVContractTests(unittest.TestCase):
         self.assertEqual(calls, [("init", None), ("compute", False)])
         legacy_sink = Recorder()
         isolated_tsv_function(LEGACY[0])(legacy_sink, "output.tsv")
-        self.assertEqual(sink.calls, legacy_sink.calls)
+        # The canonical provider retains its own historical empty-string
+        # quotechar contract and multiprocessing probe. Stage-local providers
+        # deliberately use None for modern pandas; their bytes stay unchanged
+        # under QUOTE_NONE. Do not silently consolidate these distinct APIs.
+        canonical_args, canonical_options = sink.calls[0]
+        stage_args, stage_options = legacy_sink.calls[0]
+        self.assertEqual(canonical_args, stage_args)
+        self.assertEqual(canonical_options["quotechar"], "")
+        self.assertIsNone(stage_options["quotechar"])
+        self.assertEqual(
+            {k: v for k, v in canonical_options.items() if k != "quotechar"},
+            {k: v for k, v in stage_options.items() if k != "quotechar"},
+        )
 
         fn(sink, "changed.tsv", tsvIndex=True, header=True, TSVTextAdapter=True)
         self.assertEqual(calls[2:], [
