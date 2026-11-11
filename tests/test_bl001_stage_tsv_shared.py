@@ -52,7 +52,7 @@ class SharedStageTSVTests(unittest.TestCase):
         self.assertEqual(frame.calls, [
             (("output.tsv",), {
                 "sep": "\t", "index": False,
-                "quoting": csv.QUOTE_NONE, "quotechar": "",
+                "quoting": csv.QUOTE_NONE, "quotechar": None,
                 "escapechar": "\\", "header": False,
                 "encoding": "utf-8",
             })
@@ -104,7 +104,7 @@ class SharedStageTSVTests(unittest.TestCase):
         self.assertEqual(imports, ["csv"])
         self.assertFalse(any(isinstance(node, ast.ImportFrom) for node in tree.body))
 
-    def test_real_pandas_export_is_identical_to_original_options_if_installed(self):
+    def test_real_pandas_export_is_identical_to_nonquoting_baseline_if_installed(self):
         try:
             import pandas as pd
         except ImportError:
@@ -115,28 +115,40 @@ class SharedStageTSVTests(unittest.TestCase):
         ], columns=["ClassLabel", "text", "Score"])
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "expected.tsv"
-            legacy_error = None
+            # None is a portable nonquoting dialect; no TypeError equivalence
+            # may count as successful export on pandas 3.x.
+            data.to_csv(
+                target, sep="\t", index=False, quoting=csv.QUOTE_NONE,
+                quotechar=None, escapechar="\\", header=False,
+                encoding="utf-8",
+            )
+            expected = target.read_bytes()
+            self.assertIn("中文分類".encode("utf-8"), expected)
+            self.assertIn(b"\\\t", expected, "Embedded tab must be escaped")
+            self.assertIn(b"\\\n", expected, "Embedded newline must be escaped")
+            self.assertIn(b"\\\\", expected, "Backslash must remain escaped")
+
+            # Where older pandas accepts the old empty-string quotechar,
+            # prove exactly the same output bytes, not just an equal API call.
+            old_path = Path(tmp) / "old-options.tsv"
             try:
                 data.to_csv(
-                    target, sep="\t", index=False, quoting=csv.QUOTE_NONE,
+                    old_path, sep="\t", index=False, quoting=csv.QUOTE_NONE,
                     quotechar="", escapechar="\\", header=False,
                     encoding="utf-8",
                 )
-            except (TypeError, ValueError) as error:
-                # Pandas 3.x can reject the historical empty quotechar.
-                # This refactor must preserve that exception, not conceal it.
-                legacy_error = error
+            except (TypeError, ValueError):
+                # Modern pandas rejects the old setting, which caused the bug.
+                pass
+            else:
+                self.assertEqual(old_path.read_bytes(), expected)
+
             for provider in STAGE_PROVIDERS:
                 with self.subTest(provider=provider):
                     function, _ = isolated_legacy_tsv(provider)
                     actual_path = Path(tmp) / provider.replace("/", "_")
-                    if legacy_error is not None:
-                        with self.assertRaises(type(legacy_error)) as caught:
-                            function(data, actual_path)
-                        self.assertEqual(str(caught.exception), str(legacy_error))
-                    else:
-                        function(data, actual_path)
-                        self.assertEqual(actual_path.read_bytes(), target.read_bytes())
+                    self.assertIsNone(function(data, actual_path))
+                    self.assertEqual(actual_path.read_bytes(), expected)
 
 
 if __name__ == "__main__":
