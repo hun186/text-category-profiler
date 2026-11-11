@@ -6,6 +6,7 @@
 
 - `DatasetConverter/df_utils.py::dfToSQL` 和 `BertScript/df_utils.py::dfToSQL` 原本各自寫入相同的 `sampleSrc` SQLite 表（`if_exists='replace'`）並建立 `text_Index`。
 - 現集中至 `text_category_profiler/data/stage_sql.py::write_stage_sql`；保留兩個 stage-local public `dfToSQL(SQLname, df, SavingDfColumns=[])` 入口、原有的選欄預設、固定 table/index 名稱與 DataFrame 原始 cell 行為。
+- **2026-11-11 安全性增量（待 Review 與高風險 Merge 授權）：** SQLite 可能將缺少欄位的 `CREATE INDEX ... ("text")` 接受為字串運算式索引，導致 `replace` 已刪除舊資料但 writer 仍回報成功。新候選在 `connect` 之前檢查最終選取欄位必含 `text`；否則明確 `ValueError`，不嘗試開啟或替換資料庫。**這是預期的 fail-closed 行為變更**，不代表已發生正式資料損失；詳見 `KI-011`。
 - **刻意修正連線生命週期：** 原 stage-local 兩份實作執行完後未顯式 `close()`。現在在成功、欄位選取失敗、`DataFrame.to_sql` 失敗、索引建立失敗時，均透過 `finally` 關閉連線，並保留原始錯誤。不新增自動重試、schema 升級、JSON 正規化或新的結果表。
 - 既有 canonical `text_category_profiler/data/df_utils.py::dfToSQL` 支援更多選項與 JSON 結構處理，**未整併**；`DB_utils`、分類模型、GUI/Jaal、WorkPool 命名狀態、索引慣例和資料類別均未變動。
 
@@ -14,10 +15,13 @@
 - 檢驗兩個舊入口皆委派到共用 writer，且各自函式簽名和回傳值維持不變。
 - 隔離 fake DataFrame/SQLite connection：固定 `sampleSrc` replace、`text_Index`、指定欄位、成功及三種異常路徑的連線關閉。
 - 私有共享記憶體 SQLite + pandas：驗證兩個 stage 的中文字串資料與 `text_Index` 在關閉 writer connection 後仍存在。
+- 新增私有 `TemporaryDirectory` **磁碟 SQLite** 驗證：兩個 stage 的重複 `replace`、關閉與重新開啟、`PRAGMA index_info` 真的指向 `text`；預設缺欄或選欄不含 `text` 時禁止連線，且既有 DB 位元組不變。此測試不碰正式檔案，不代表內網部署驗收。
 - BL-001 完整套件清單與 canonical import audit 更新；原有 SQL、TSV、XLSX contract tests 仍應保持 PASS。
 - 上述測試不代表真實磁碟 SQLite 交易、並行寫入、鎖定競爭、WorkPool、模型／GPU 的實機行為。
 
 ## 內網部署前驗收
+
+> **此安全性變更因資料完整性高風險，正式 Merge 需要業主明確核准。** 禁止為了測試而在正式資料上故意移除 text 欄位或執行 replace。
 
 1. 確認更新時間與可回復版本，備份實際工作池資料；不在正式資料庫上直接做清除／replace 的測試。
 2. 使用**隔離的測試工作池與 SQLite 檔案**，分別執行 DatasetConverter 和 BertScript `dfToSQL`；檢查資料列數、Unicode 文字、欄位、`sampleSrc` 與 `text_Index`。
