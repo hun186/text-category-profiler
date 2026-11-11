@@ -93,6 +93,8 @@ text_category_profiler/
 
 - **2026-11-11 canonical 多工作表 XLSX 清單保全（本 PR，Hosted／Review 待驗）**：`data.df_utils.dfListToXLS` 過去對呼叫端 `sheetNameList` 執行 `reverse()`、`pop()`，一次匯出會消耗清單；改為先取得內部反轉複本再依既有順序 `pop()`。維持公開參數、已有 sheet 順序／缺少名稱時 `AutoSheetNameN`、ExcelWriter 設定與預設 row/column 格式；以 AST fake writer + pandas/xlsxwriter 私有 workbook 的多次輸出、Unicode sheet names、例外路徑測試。這不是文件／工作池部署證據，BL-001 繼續 In Progress。
 
+- **2026-11-11 canonical XLSX 列高計算資料保全（本 PR，Hosted／Review 待驗）**：在 `dfListToXLS(AutoAdjustRowWidth=True)` 下，過去 `smart_reset_index(df, ...)` 在寫完工作表後直接修改呼叫端 DataFrame 的 index/columns，可能影響重複匯出；本批在列高路徑用 `reset_index()` 與 `rename()` 的非 inplace 寫法產生新的 DataFrame 供逐列高度計算，避免舊 `smart_reset_index` 對 pandas 3.1.1 的 inplace 棄用警告，保留既有 XLSX worksheet 名稱、列高公式、格式、選用 index 的行為與 API。新增 fake writer 和私有 pandas XLSX 測試，不更動模型、WorkPool 或真正內網資料。BL-001 仍 In Progress。
+
 ### Phase 2：拆分路徑、序列化與基礎 helper
 
 - [ ] 從 `utilities_path.py` 盤點純路徑 helper，搬到 `text_category_profiler/paths.py`；檔案搬移／刪除函式需另行風險審查。

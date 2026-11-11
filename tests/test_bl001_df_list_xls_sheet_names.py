@@ -7,6 +7,7 @@ import ast
 from pathlib import Path
 import tempfile
 import unittest
+import warnings
 import xml.etree.ElementTree as ET
 import zipfile
 
@@ -17,14 +18,14 @@ PROVIDER = ROOT / "text_category_profiler/data/df_utils.py"
 
 def isolated_export(pd):
     tree = ast.parse(PROVIDER.read_text(encoding="utf-8-sig"), filename=str(PROVIDER))
-    matches = [
+    selected = [
         node for node in tree.body
         if isinstance(node, ast.FunctionDef) and node.name == "dfListToXLS"
     ]
-    if len(matches) != 1:
-        raise AssertionError("Canonical dfListToXLS was not found exactly once")
+    if len(selected) != 1:
+        raise AssertionError("Canonical multi-sheet XLSX exporter must exist")
     scope = {"pd": pd}
-    exec(compile(ast.Module(body=matches, type_ignores=[]), str(PROVIDER), "exec"), scope)
+    exec(compile(ast.Module(body=selected, type_ignores=[]), str(PROVIDER), "exec"), scope)
     return scope["dfListToXLS"]
 
 
@@ -34,6 +35,14 @@ class FakeBook:
             def set_align(self, alignment):
                 assert alignment == "vcenter"
         return Format()
+
+
+class FakeSheet:
+    def __init__(self):
+        self.row_heights = []
+
+    def set_row(self, row, height):
+        self.row_heights.append((row, height))
 
 
 class FakeWriter:
@@ -68,7 +77,7 @@ class FakeFrame:
     def to_excel(self, writer, *, index, sheet_name):
         self.calls.append((writer, index, sheet_name))
         writer.names.append(sheet_name)
-        writer.sheets[sheet_name] = object()
+        writer.sheets[sheet_name] = FakeSheet()
 
 
 class CanonicalMultiSheetExcelTests(unittest.TestCase):
@@ -122,6 +131,89 @@ class CanonicalMultiSheetExcelTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "simulated XLSX"):
             export([FailingFrame()], "failed.xlsx", sheetNameList=names)
         self.assertEqual(names, ["First", "Second"])
+
+    def test_row_height_uses_non_inplace_reset_and_keeps_original(self):
+        class RangeIndex:
+            start = 0
+            step = 1
+
+        class HeightPandas(FakePandas):
+            pass
+
+        HeightPandas.RangeIndex = RangeIndex
+
+        class FakeRow:
+            def apply(self, function):
+                class Calculated:
+                    name = "0"
+                    def max(self):
+                        return max(function("one\ntwo"), function("three"))
+                return Calculated()
+
+        class HeightFrame(FakeFrame):
+            def __init__(self, reset=False):
+                super().__init__()
+                self.index = RangeIndex()
+                self.was_reset = reset
+                self.reset_calls = []
+                self.iterated = False
+
+            def reset_index(self, *, drop=False):
+                self.reset_calls.append(drop)
+                return HeightFrame(reset=True)
+
+            def iterrows(self):
+                self.iterated = True
+                if not self.was_reset:
+                    raise AssertionError("Must not iterate original frame")
+                yield 0, FakeRow()
+
+        pd = HeightPandas()
+        export = isolated_export(pd)
+        frame = HeightFrame()
+        export([frame], "private.xlsx", sheetNameList=["Rows"],
+               AutoAdjustRowWidth=True)
+        self.assertEqual(frame.reset_calls, [True])
+        self.assertFalse(frame.was_reset)
+        self.assertFalse(frame.iterated)
+        self.assertEqual(pd.writers[0].sheets["Rows"].row_heights, [(1, 24)])
+
+    def test_real_pandas_row_height_does_not_change_dataframe(self):
+        try:
+            import pandas as pd
+            import xlsxwriter  # noqa: F401
+        except ImportError:
+            self.skipTest("Optional pandas/xlsxwriter not installed")
+        export = isolated_export(pd)
+        with tempfile.TemporaryDirectory(prefix="bl001-row-height-") as folder:
+            for case, index in (
+                ("range", pd.RangeIndex(start=0, stop=2)),
+                ("named", pd.Index(["row\n1", "row2"], name="source")),
+            ):
+                with self.subTest(index=case):
+                    source = pd.DataFrame(
+                        {"text": ["台北\n桃園", "新竹"], "label": ["A", "B"]},
+                        index=index,
+                    )
+                    before = source.copy(deep=True)
+                    output = Path(folder) / f"{case}.xlsx"
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("error")
+                        export([source], output, sheetNameList=["結果"],
+                               AutoAdjustRowWidth=True, excelindex=False)
+                    pd.testing.assert_frame_equal(source, before)
+                    self.assertTrue(zipfile.is_zipfile(output))
+                    with zipfile.ZipFile(output) as workbook:
+                        sheet_xml = ET.fromstring(
+                            workbook.read("xl/worksheets/sheet1.xml")
+                        )
+                        rows = sheet_xml.findall(
+                            ".//{http://schemas.openxmlformats.org/spreadsheetml/2006/main}row"
+                        )
+                        self.assertTrue(
+                            any(row.attrib.get("customHeight") == "1" for row in rows),
+                            "Row-height formatting should still be applied",
+                        )
 
     def test_private_real_xlsx_repeated_exports_have_same_sheet_names(self):
         try:
