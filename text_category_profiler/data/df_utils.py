@@ -145,12 +145,14 @@ def dfListToXLS(dfList, OutputFN="dfListToXLSOutput.xlsx", excelindex=False,
         engine = 'xlsxwriter',
         engine_kwargs = {'options':{'strings_to_urls':False}},
         )
-    sheetNameList.reverse()
+    # Keep caller-owned sheet names intact across repeated exports. The
+    # historical reverse/pop sequence selected names in their original order.
+    remaining_sheet_names = list(reversed(sheetNameList))
     cnt = 1
     for df in dfList:
         if df.shape[0] <= 1048576:
-            if len(sheetNameList) > 0:
-                sheet_name = sheetNameList.pop()
+            if len(remaining_sheet_names) > 0:
+                sheet_name = remaining_sheet_names.pop()
             else:
                 sheet_name = f"AutoSheetName{cnt}"
                 cnt+=1
