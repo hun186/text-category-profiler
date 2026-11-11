@@ -89,6 +89,8 @@ text_category_profiler/
 
 - **2026-11-11 Stage-local writer 快檢（PR #242 已合併）**：新增 Windows `run-bl001-stage-writer-check.bat` 與跨平台 `python -m scripts.bl001_stage_writer_check`，重用既有三組 TSV／XLSX／SQLite 隔離測試，另強制真實寫出私人 TSV（避免 pandas 3.x 舊版預期例外誤判 PASS）；缺 pandas/xlsxwriter、任一 SKIP／失敗、無測試或 TSV 寫出失敗均不回報 PASS。此入口不操作真實 WorkPool、分類模型或正式 DB，成功只代表部署前 focused 環境驗證，不取代 Windows GUI、完整 pipeline 及內網實機 acceptance；BL-001 仍 In Progress。
 
+- **2026-11-11 canonical TSV pandas 3 修復（本 PR，Hosted CI／正式 Review 待驗）**：發現 configurable `text_category_profiler/data/df_utils.py::dfToTSV` 同樣使用 `csv.QUOTE_NONE` + `quotechar=""`，在 pandas 3.1.1 實際輸出會 TypeError。僅改這個內部選項成 `None`；其 `multicoreJob().ComputeNProcess(log=False)`、可選 `TSVTextAdapter`、`tsvIndex`／`header` 與例外傳遞不變，絕不重導向 Stage-local writer。以 isolated function AST + FakeMulticore + 私有 tempfile pandas 2.2.3／3.1.1 fixture 測試成功且等值的輸出位元組。尚未做 Windows／完整 WorkPool acceptance，BL-001 繼續 In Progress。
+
 ### Phase 2：拆分路徑、序列化與基礎 helper
 
 - [ ] 從 `utilities_path.py` 盤點純路徑 helper，搬到 `text_category_profiler/paths.py`；檔案搬移／刪除函式需另行風險審查。
