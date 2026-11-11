@@ -200,8 +200,18 @@ def dfListToXLS(dfList, OutputFN="dfListToXLSOutput.xlsx", excelindex=False,
                     },
                 }
                 #df.reset_index(inplace = True) #會跑出一欄流水號index
-                smart_reset_index(df, new_col_name='MyIndex')
-                for idx, dfrow in df.iterrows():  # loop through all columns
+                # Do not mutate the caller's DataFrame after export.
+                # The legacy smart_reset_index helper uses pandas inplace
+                # operations (deprecated in pandas 3.1), so reproduce its
+                # index policy via non-mutating operations for row heights.
+                if (isinstance(df.index, pd.RangeIndex)
+                        and df.index.start == 0
+                        and df.index.step == 1):
+                    row_height_frame = df.reset_index(drop=True)
+                else:
+                    row_height_frame = df.reset_index().rename(
+                        columns={'index': 'MyIndex'})
+                for idx, dfrow in row_height_frame.iterrows():  # loop through all columns
                     #print("="*50)
                     #print("idx,dfrow",idx,dfrow)
                     series = dfrow.apply(lambda x:str(x).count("\n")+1)
