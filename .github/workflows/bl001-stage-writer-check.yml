@@ -40,13 +40,17 @@ jobs:
   focused-stage-writers:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        pandas-version: ["2.2.3", "3.1.1"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - name: Install isolated real export dependencies
-        run: python -m pip install "pandas==2.2.3" "xlsxwriter==3.2.9"
+        run: python -m pip install "pandas==${{ matrix.pandas-version }}" "xlsxwriter==3.2.9"
       - name: Run fail-closed real TSV XLSX SQLite fixtures
         run: python -m scripts.bl001_stage_writer_check
       - name: Verify preflight exit codes and skip protection
