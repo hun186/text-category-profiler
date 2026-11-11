@@ -18,6 +18,7 @@ FOCUSED_TEST_MODULES = (
     "tests.test_bl001_stage_tsv_shared",
     "tests.test_bl001_stage_xlsx_shared",
     "tests.test_bl001_stage_sql_shared",
+    "tests.test_bl001_df_tsv_provider_contracts",
 )
 
 
