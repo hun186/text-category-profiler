@@ -22,6 +22,10 @@ These commands are manually invoked tools, separate from the production
 - Existing Python helper API is exposed by the old module through lazy delegation.
   Do not remove the wrapper until external import/CLI callers have been surveyed.
 
+## BL-001 Stage-local writer compatibility check (private fixtures)
+
+On Windows, from the repository root in the intended Python/Anaconda environment, run `run-bl001-stage-writer-check.bat` without arguments. Cross-platform equivalent: `python -m scripts.bl001_stage_writer_check`. The command verifies pandas and xlsxwriter can import, then executes existing isolated TSV, XLSX and SQLite writer regression tests using only private tempfiles/in-memory databases. It returns `STATUS=PASS_FOCUSED` (exit 0) only when all selected tests run without skip or failure; missing dependencies return `STATUS=BLOCKED_DEPENDENCY` (exit 2), and failed/empty/skipped tests return `STATUS=FAIL_FOCUSED` (exit 1). This is not a full Windows GUI, production WorkPool, concurrent DB or model acceptance. Do not use it to justify a production migration without the separate release gates in `.codex/workflows.md`.
+
 ## BL-001 stage-local SQLite schema audit (read-only)
 
 For a **quiescent copy** of a DatasetConverter/BertScript stage SQLite database:
