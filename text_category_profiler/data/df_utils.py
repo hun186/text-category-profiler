@@ -179,10 +179,16 @@ def dfListToXLS(dfList, OutputFN="dfListToXLSOutput.xlsx", excelindex=False,
                     series = df[col].apply(lambda x:getLineOfMaxLen(x)[0])# if x is not None else 0)
                     #print("="*50)
                     #print("series",series)
-                    max_len = max((
-                        series.astype(str).map(len).max(),  # len of largest item
-                        len(str(series.name))  # len of column name/header
-                        )) + 1  # adding a little extra space
+                    # An empty series has max() == NaN. Passing that as a
+                    # column width writes width="nan" into the XLSX XML.
+                    # Use the existing header-width floor for empty sheets.
+                    if len(series) == 0:
+                        max_len = len(str(series.name)) + 1
+                    else:
+                        max_len = max((
+                            series.astype(str).map(len).max(),  # data width
+                            len(str(series.name))  # header width
+                            )) + 1
                     #print("idx,max_len b4",idx,max_len)
                     max_len = min(max_len,MaxColWidth) #控制最大寬度
                     #print("max_len af",max_len)

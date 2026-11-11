@@ -95,6 +95,8 @@ text_category_profiler/
 
 - **2026-11-11 canonical XLSX 列高計算資料保全（本 PR，Hosted／Review 待驗）**：在 `dfListToXLS(AutoAdjustRowWidth=True)` 下，過去 `smart_reset_index(df, ...)` 在寫完工作表後直接修改呼叫端 DataFrame 的 index/columns，可能影響重複匯出；本批在列高路徑用 `reset_index()` 與 `rename()` 的非 inplace 寫法產生新的 DataFrame 供逐列高度計算，避免舊 `smart_reset_index` 對 pandas 3.1.1 的 inplace 棄用警告，保留既有 XLSX worksheet 名稱、列高公式、格式、選用 index 的行為與 API。新增 fake writer 和私有 pandas XLSX 測試，不更動模型、WorkPool 或真正內網資料。BL-001 仍 In Progress。
 
+- **2026-11-11 canonical 多工作表 XLSX 空資料欄寬修復（本 PR，Hosted／Review 待驗）**：已重現 `dfListToXLS(AutoAdjustColWidth=True)` 遇到空 DataFrame 的 `Series.max()` 回傳 NaN，xlsxwriter 可將 `width="nan"` 寫入 workbook XML；現在僅在 Series 零列時以欄名長度＋1 取代 NaN，其他非空欄寬及 MaxColWidth 上限規則不變。私有 pandas/xlsxwriter XLSX 測試解析工作表 XML，確認欄寬有限、合理，對非空列仍能套用上限；不碰 WorkPool 或正式 XLSX，BL-001 保持 In Progress。
+
 ### Phase 2：拆分路徑、序列化與基礎 helper
 
 - [ ] 從 `utilities_path.py` 盤點純路徑 helper，搬到 `text_category_profiler/paths.py`；檔案搬移／刪除函式需另行風險審查。
