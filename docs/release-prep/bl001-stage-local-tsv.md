@@ -13,9 +13,9 @@
 
 ## 驗證與發行條件
 
-- 新增針對共用格式、兩個 legacy wrapper、單次寫入、例外透傳及選用真實 pandas 的行為等值測試：當 pandas 支援歷史格式時，比對 TSV 位元組；當 pandas 3.x 不接受空 `quotechar` 時，驗證新舊呼叫皆回報相同例外，不把既有相容性問題誤判為新功能成功。
+- 新增針對共用格式、兩個 legacy wrapper、單次寫入、例外透傳與真實 pandas 的測試：先用私有 DataFrame 確認成功產出中文／Tab／換行／反斜線的 TSV bytes，並在舊 pandas 允許 `quotechar=""` 時證明與新 `quotechar=None` 完全相同；舊失敗等值測試不再能冒充成功輸出。
 - 保留舊的 `tests.test_bl001_df_tsv_provider_contracts`；正式版本必須再通過最新 HEAD 的 Hosted CI 與零未解決問題的 Codex Review。
-- **已知限制：** 某些 pandas 3.x 版本（Review 已確認 3.1.1）對既有 `quotechar=""` 會擲出 `TypeError`；本次重構刻意不改變此歷史格式與失敗行為。更新內網前必須先核對當地 pandas 版本並在非正式資料上驗證 TSV 匯出，不可將 Hosted PASS 當作 pandas 3 相容性認證。未來如需支援 pandas 3，須另做有金標 TSV 比對的兼容修正。
+- **2026-11-11 pandas 3.1.1 相容修正（本 PR，Hosted CI／Review 待驗）**：原 Stage-local `QUOTE_NONE, quotechar=""` 已由正式 Review 在 pandas 3.1.1 重現 TypeError，改為 `quotechar=None`。在 `QUOTE_NONE` 情況無引號、仍以反斜線跳脫，保留 UTF-8、TAB、無 header/index 與既有 wrapper API；私有 pandas fixture 必須成功寫出，對舊版接受空引號者比較原輸出 bytes。Hosted Python 3.11 matrix 指定 pandas 2.2.3／3.1.1；這不證明所有版本或內網 Windows／WorkPool 已驗收，canonical `df_utils.dfToTSV` 未改。
 - 本地部署前，依既有實務流程備份重要資料、確認維護窗口與回復點；先在隔離資料集比較 TSV 檔案 checksum 與關鍵欄位，再重啟完整分類流程。
 - 內網仍需驗收 Windows／Linux 實機所需依賴與現有 CLI；Hosted 單元測試 **不等於** 已更新內網。
 - 回復策略：若 stage TSV 實測不相容，回退到這次重構前的應用 commit；不得透過改名 WorkPool 目錄強迫重新分類。
