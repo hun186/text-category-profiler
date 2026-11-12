@@ -3197,3 +3197,14 @@ Power System Resilience,Power System Resilience-Grid Hardening And Extreme Weath
 Power System Resilience,Power System Resilience-Microgrids And Backup Power,20261105,contains,新增底層細緻類別；聚焦微電網與關鍵供電備援；目標類別：電網擴建、儲能與能源韌性；＠ChatGPT
 Power System Resilience,Power System Resilience-Outage Response And Restoration,20261105,contains,新增底層細緻類別；聚焦事故應變與停電後復電；目標類別：電網擴建、儲能與能源韌性；＠ChatGPT
 Infrastructure,Grid Expansion And Modernization,20261105,contains,新增結構型交叉父類別；電網擴建屬實體基礎設施發展；目標類別：電網擴建、儲能與能源韌性；＠ChatGPT
+Nuclear Power,Small Modular Reactors,20261112,contains,新增主要層級；核電主題下建立小型模組化反應爐專用錨點；目標類別：小型模組化反應爐商業化與核安治理；＠ChatGPT
+Small Modular Reactors,Small Modular Reactors-Commercialization And Deployment,20261112,contains,新增必要中間節點；區分商業化與部署主軸；目標類別：小型模組化反應爐商業化與核安治理；＠ChatGPT
+Small Modular Reactors,Small Modular Reactors-Nuclear Safety And Governance,20261112,contains,新增必要中間節點；區分核安與治理主軸；目標類別：小型模組化反應爐商業化與核安治理；＠ChatGPT
+Small Modular Reactors-Commercialization And Deployment,Small Modular Reactors-Project Development And Construction,20261112,contains,新增底層細緻類別；以專案建置與工程進度建立可持續細分類；目標類別：小型模組化反應爐商業化與核安治理；＠ChatGPT
+Small Modular Reactors-Commercialization And Deployment,Small Modular Reactors-Cost Financing And Business Models,20261112,contains,新增底層細緻類別；以成本融資及商業模式建立可持續細分類；目標類別：小型模組化反應爐商業化與核安治理；＠ChatGPT
+Small Modular Reactors-Commercialization And Deployment,Small Modular Reactors-Manufacturing And Supply Chain,20261112,contains,新增底層細緻類別；以製造與供應鏈建立可持續細分類；目標類別：小型模組化反應爐商業化與核安治理；＠ChatGPT
+Small Modular Reactors-Commercialization And Deployment,Small Modular Reactors-Power And Industrial Applications,20261112,contains,新增底層細緻類別；以電力及工業應用建立可持續細分類；目標類別：小型模組化反應爐商業化與核安治理；＠ChatGPT
+Small Modular Reactors-Nuclear Safety And Governance,Small Modular Reactors-Design Safety And Passive Systems,20261112,contains,新增底層細緻類別；以安全設計與被動系統建立可持續細分類；目標類別：小型模組化反應爐商業化與核安治理；＠ChatGPT
+Small Modular Reactors-Nuclear Safety And Governance,Small Modular Reactors-Licensing And Regulatory Framework,20261112,contains,新增底層細緻類別；以核安許可及監管制度建立可持續細分類；目標類別：小型模組化反應爐商業化與核安治理；＠ChatGPT
+Small Modular Reactors-Nuclear Safety And Governance,Small Modular Reactors-Siting And Emergency Preparedness,20261112,contains,新增底層細緻類別；以場址選擇與緊急應變建立可持續細分類；目標類別：小型模組化反應爐商業化與核安治理；＠ChatGPT
+Small Modular Reactors-Nuclear Safety And Governance,Small Modular Reactors-Fuel Waste And Safeguards,20261112,contains,新增底層細緻類別；以燃料核廢與保防建立可持續細分類；目標類別：小型模組化反應爐商業化與核安治理；＠ChatGPT
