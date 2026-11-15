@@ -24,13 +24,17 @@ EXPECTED = {
     "Hepatology": (2712, "肝臟病學", 2335, "肝臟病學"),
 }
 AI_NOTES = "AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核"
-# 2026-11-08 reviewed floor: historical 2707 rows plus 38 additive labels.
-# New human-reviewed categories may raise the count; do not regress below it.
-MIN_RETAINED_CLASS_LABELS = 2745
+# 2026-11-15 file inventory: 2,769 unique authoritative rows, including
+# later GLP-1/obesity candidates still explicitly marked pending human review.
+# This is a loss-prevention floor, NOT approval of any AI candidate.
+MIN_RETAINED_CLASS_LABELS = 2769
 LATEST_ADDITION_ANCHORS = (
     "Stablecoin",
     "2026 Dakar Youth Olympic Games",
     "Electric Power Infrastructure And Resilience",
+    "GLP-1 Medicines For Obesity",
+    "GLP-1 Medicines For Obesity-Access And Regulation",
+    "Obesity",
 )
 
 
@@ -177,6 +181,39 @@ class DuplicateClassTableCleanupTests(unittest.TestCase):
                         legacy.verify(
                             original, tampered, allow_pending_additions=True
                         )
+
+    @mock.patch.object(legacy, "correct_known")
+    def test_pending_target_metadata_after_status_is_not_an_approval(self, _correct_known):
+        prefix = ("AI新增｜日期=2026-11-13｜來源=分類資料檢查"
+                  "｜理由=保留已存在的新增節點")
+        notes = (
+            prefix + "｜狀態=待人工審核｜目標類別=肥胖症藥物分類",
+            prefix + "｜目標類別=肥胖症藥物分類｜狀態=待人工審核",
+        )
+        actual = {
+            "GLP-1 Sample": {
+                "CT": "測試分類", "Explanation": "",
+                "Notes": notes[0],
+            }
+        }
+        for note in notes:
+            with self.subTest(valid_order=note):
+                actual["GLP-1 Sample"]["Notes"] = note
+                legacy.verify({}, actual, allow_pending_additions=True)
+                with self.assertRaisesRegex(
+                    metadata.MetadataError, "row count or ClassLabel set differs"
+                ):
+                    legacy.verify({}, actual, allow_pending_additions=False)
+        for invalid in (
+            prefix + "｜狀態=已核准｜目標類別=肥胖症藥物分類",
+            prefix + "｜狀態=待人工審核｜目標類別=",
+            prefix + "｜狀態=待人工審核｜目標類別=肥胖症藥物分類｜額外=不准",
+            prefix + "｜狀態=待人工審核｜狀態=待人工審核",
+        ):
+            with self.subTest(rejected=invalid):
+                actual["GLP-1 Sample"]["Notes"] = invalid
+                with self.assertRaises(metadata.MetadataError):
+                    legacy.verify({}, actual, allow_pending_additions=True)
 
     def test_preflight_only_checks_unique_ids_not_human_approval(self):
         base = {"Existing": {"CT": "舊翻譯", "Explanation": "", "Notes": ""}}

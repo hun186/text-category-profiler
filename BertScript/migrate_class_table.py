@@ -175,7 +175,10 @@ def _require_pending_ai_addition(label, entry):
         raise MetadataError(f"{label!r}: invalid AI Notes date") from exc
     if parsed.isoformat() != fields["日期"]:
         raise MetadataError(f"{label!r}: AI Notes date must be YYYY-MM-DD")
-    if fields["狀態"] != "待人工審核" or parts[-1] != "狀態=待人工審核":
+    # The optional 目標類別 can follow 狀態 in manually retained Notes.
+    # Require the exact pending value regardless of field order; the exact
+    # allowed field set above still rejects unknown/duplicate/empty fields.
+    if fields["狀態"] != "待人工審核":
         raise MetadataError(f"{label!r}: AI addition must remain 待人工審核")
 
 
