@@ -151,6 +151,14 @@ def dfListToXLS(dfList, OutputFN="dfListToXLSOutput.xlsx", excelindex=False,
         remaining_sheet_names = list(reversed(sheetNameList))
         cnt = 1
         for df in dfList:
+            # Every index level occupies a worksheet column (MultiIndex too).
+            # Reject overflow before writing cells: xlsxwriter may otherwise
+            # silently discard columns beyond Excel's final XFD column.
+            exported_columns = df.shape[1] + (df.index.nlevels if excelindex else 0)
+            if exported_columns > 16384:
+                raise ValueError(
+                    f"Excel 工作表最多 16384 欄（含索引欄），"
+                    f"但此次輸出需要 {exported_columns} 欄。")
             # Excel's 1,048,576-row limit includes the default header row.
             # A full-size DataFrame would otherwise overrun the worksheet.
             if df.shape[0] + 1 <= 1048576:
