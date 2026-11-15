@@ -103,6 +103,8 @@ text_category_profiler/
 
 - **2026-11-15 canonical XLSX 欄數含索引（本 PR，Hosted CI／Review 待驗）**：`dfListToXLS` 匯出有索引時，索引／MultiIndex 會占用 Excel 欄位，原本缺少索引欄預檢，接近 XFD 最右欄可能遺漏資料。新增在每張資料寫出之前 `df.shape[1] + (df.index.nlevels if excelindex else 0) <= 16384` 驗證，超量即 `ValueError` 且 writer 在既有錯誤收尾路徑關閉；六項 shape-only 測試覆蓋合法與溢位的單索引／多索引，不配置大量欄位。此為輸出欄數安全門檻，不影響正常匯出或正式 WorkPool；BL-001 保持 In Progress。
 
+- **2026-11-15 canonical XLSX 自動工作表命名碰撞（本 PR，Hosted／Review 待驗）**：`dfListToXLS` 有明確 `sheetNameList` 又需要生成額外 `AutoSheetNameN` 時，原版未排除已明確指定的自動式名稱，例如 `AutoSheetName1` 與後續自動名稱重複會讓 xlsxwriter 拒絕輸出。本批只令自動命名略過使用者先指定名稱的大小寫不敏感集合，不更動正式指定頁籤、不替使用者接受重複／非法名稱，並用 FakeWriter 與真實私有 XLSX workbook XML 驗證。仍未做 Windows／WorkPool 驗收，BL-001 In Progress。
+
 ### Phase 2：拆分路徑、序列化與基礎 helper
 
 - [ ] 從 `utilities_path.py` 盤點純路徑 helper，搬到 `text_category_profiler/paths.py`；檔案搬移／刪除函式需另行風險審查。
