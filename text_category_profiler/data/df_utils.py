@@ -145,101 +145,111 @@ def dfListToXLS(dfList, OutputFN="dfListToXLSOutput.xlsx", excelindex=False,
         engine = 'xlsxwriter',
         engine_kwargs = {'options':{'strings_to_urls':False}},
         )
-    # Keep caller-owned sheet names intact across repeated exports. The
-    # historical reverse/pop sequence selected names in their original order.
-    remaining_sheet_names = list(reversed(sheetNameList))
-    cnt = 1
-    for df in dfList:
-        if df.shape[0] <= 1048576:
-            if len(remaining_sheet_names) > 0:
-                sheet_name = remaining_sheet_names.pop()
-            else:
-                sheet_name = f"AutoSheetName{cnt}"
-                cnt+=1
-            #df['index'] = df.index
-            #df.reset_index(inplace = True) #會跑出一欄流水號index
-            df.to_excel(writer,
-                        index = excelindex,
-                        #index = False,
-                        #encoding = encoding,
-                        sheet_name = sheet_name,
-                        )
-            #將所有columns設定垂直置中。
-            workbook  = writer.book
-            my_format = workbook.add_format()
-            my_format.set_align('vcenter')
-            #print("dir(my_format)",dir(my_format))
-            worksheet = writer.sheets[sheet_name]  # pull worksheet object
-            #worksheet.set_column('A:XFD', None, my_format)
-            if AutoAdjustColWidth == True:
-                key_values("Excel column width", [("sheet", sheet_name), ("max width", MaxColWidth)], icon="·")
-                #worksheet = writer.sheets[sheet_name]  # pull worksheet object
-                for idx, col in enumerate(df):  # loop through all columns
-                    #series = df[col]
-                    series = df[col].apply(lambda x:getLineOfMaxLen(x)[0])# if x is not None else 0)
-                    #print("="*50)
-                    #print("series",series)
-                    # An empty series has max() == NaN. Passing that as a
-                    # column width writes width="nan" into the XLSX XML.
-                    # Use the existing header-width floor for empty sheets.
-                    if len(series) == 0:
-                        max_len = len(str(series.name)) + 1
-                    else:
-                        max_len = max((
-                            series.astype(str).map(len).max(),  # data width
-                            len(str(series.name))  # header width
-                            )) + 1
-                    #print("idx,max_len b4",idx,max_len)
-                    max_len = min(max_len,MaxColWidth) #控制最大寬度
-                    #print("max_len af",max_len)
-                    worksheet.set_column(idx, idx, max_len,my_format)  # set column width
-            if AutoAdjustRowWidth == True:
-                factor_of_font_size_to_width = {
-                    # TODO: other sizes
-                    11: {
-                        "factor": 0.8,  # width / count of symbols at row
-                        "height": 12,
-                    },
-                    12: {
-                        "factor": 0.8,  # width / count of symbols at row
-                        "height": 16,
-                    },
-                }
-                #df.reset_index(inplace = True) #會跑出一欄流水號index
-                # Do not mutate the caller's DataFrame after export.
-                # The legacy smart_reset_index helper uses pandas inplace
-                # operations (deprecated in pandas 3.1), so reproduce its
-                # index policy via non-mutating operations for row heights.
-                if (isinstance(df.index, pd.RangeIndex)
-                        and df.index.start == 0
-                        and df.index.step == 1):
-                    row_height_frame = df.reset_index(drop=True)
+    try:
+        # Keep caller-owned sheet names intact across repeated exports. The
+        # historical reverse/pop sequence selected names in their original order.
+        remaining_sheet_names = list(reversed(sheetNameList))
+        cnt = 1
+        for df in dfList:
+            if df.shape[0] <= 1048576:
+                if len(remaining_sheet_names) > 0:
+                    sheet_name = remaining_sheet_names.pop()
                 else:
-                    row_height_frame = df.reset_index().rename(
-                        columns={'index': 'MyIndex'})
-                for idx, dfrow in row_height_frame.iterrows():  # loop through all columns
-                    #print("="*50)
-                    #print("idx,dfrow",idx,dfrow)
-                    series = dfrow.apply(lambda x:str(x).count("\n")+1)
-                    
-                    #print("series",series)
-                    max_nrow = max((
-                        series.max(),  # len of largest item
-                        len(str(series.name))  # len of column name/header
-                        ))  # adding a little extra space
-                    #print("idx,max_nrow b4",idx,max_nrow)
-                    max_nrow = min(max_nrow,CellMaxNRow) #控制最大寬度
-                    #print("max_nrow af",max_nrow)
-                    #set row height
-                    #首列為header，idx=0，df列對應的試算表實際列數需加1
-                    worksheet.set_row(
-                        idx+1, max_nrow*factor_of_font_size_to_width[11]["height"])
-        else:
-            print(f"Excel檔案最大列數限制 1048576，但df含有{df.shape[0]}列，無法存為Excel檔。")
-    #writer.save()
-    writer.close()
+                    sheet_name = f"AutoSheetName{cnt}"
+                    cnt+=1
+                #df['index'] = df.index
+                #df.reset_index(inplace = True) #會跑出一欄流水號index
+                df.to_excel(writer,
+                            index = excelindex,
+                            #index = False,
+                            #encoding = encoding,
+                            sheet_name = sheet_name,
+                            )
+                #將所有columns設定垂直置中。
+                workbook  = writer.book
+                my_format = workbook.add_format()
+                my_format.set_align('vcenter')
+                #print("dir(my_format)",dir(my_format))
+                worksheet = writer.sheets[sheet_name]  # pull worksheet object
+                #worksheet.set_column('A:XFD', None, my_format)
+                if AutoAdjustColWidth == True:
+                    key_values("Excel column width", [("sheet", sheet_name), ("max width", MaxColWidth)], icon="·")
+                    #worksheet = writer.sheets[sheet_name]  # pull worksheet object
+                    for idx, col in enumerate(df):  # loop through all columns
+                        #series = df[col]
+                        series = df[col].apply(lambda x:getLineOfMaxLen(x)[0])# if x is not None else 0)
+                        #print("="*50)
+                        #print("series",series)
+                        # An empty series has max() == NaN. Passing that as a
+                        # column width writes width="nan" into the XLSX XML.
+                        # Use the existing header-width floor for empty sheets.
+                        if len(series) == 0:
+                            max_len = len(str(series.name)) + 1
+                        else:
+                            max_len = max((
+                                series.astype(str).map(len).max(),  # data width
+                                len(str(series.name))  # header width
+                                )) + 1
+                        #print("idx,max_len b4",idx,max_len)
+                        max_len = min(max_len,MaxColWidth) #控制最大寬度
+                        #print("max_len af",max_len)
+                        worksheet.set_column(idx, idx, max_len,my_format)  # set column width
+                if AutoAdjustRowWidth == True:
+                    factor_of_font_size_to_width = {
+                        # TODO: other sizes
+                        11: {
+                            "factor": 0.8,  # width / count of symbols at row
+                            "height": 12,
+                        },
+                        12: {
+                            "factor": 0.8,  # width / count of symbols at row
+                            "height": 16,
+                        },
+                    }
+                    #df.reset_index(inplace = True) #會跑出一欄流水號index
+                    # Do not mutate the caller's DataFrame after export.
+                    # The legacy smart_reset_index helper uses pandas inplace
+                    # operations (deprecated in pandas 3.1), so reproduce its
+                    # index policy via non-mutating operations for row heights.
+                    if (isinstance(df.index, pd.RangeIndex)
+                            and df.index.start == 0
+                            and df.index.step == 1):
+                        row_height_frame = df.reset_index(drop=True)
+                    else:
+                        row_height_frame = df.reset_index().rename(
+                            columns={'index': 'MyIndex'})
+                    for idx, dfrow in row_height_frame.iterrows():  # loop through all columns
+                        #print("="*50)
+                        #print("idx,dfrow",idx,dfrow)
+                        series = dfrow.apply(lambda x:str(x).count("\n")+1)
 
-        
+                        #print("series",series)
+                        max_nrow = max((
+                            series.max(),  # len of largest item
+                            len(str(series.name))  # len of column name/header
+                            ))  # adding a little extra space
+                        #print("idx,max_nrow b4",idx,max_nrow)
+                        max_nrow = min(max_nrow,CellMaxNRow) #控制最大寬度
+                        #print("max_nrow af",max_nrow)
+                        #set row height
+                        #首列為header，idx=0，df列對應的試算表實際列數需加1
+                        worksheet.set_row(
+                            idx+1, max_nrow*factor_of_font_size_to_width[11]["height"])
+            else:
+                print(f"Excel檔案最大列數限制 1048576，但df含有{df.shape[0]}列，無法存為Excel檔。")
+        #writer.save()
+    except BaseException:
+        # An export failure must not leave the workbook writer open. If
+        # finalization also fails, preserve the original export error.
+        try:
+            writer.close()
+        except Exception:
+            pass
+        raise
+    else:
+        writer.close()
+
+
 def dfToTSV(df, OutputFN, tsvIndex=False,header=False, TSVTextAdapter=False):
     #df.dropna(how="all", inplace=True, axis=1)
     #df.dropna(how="any", inplace=True, axis=1)

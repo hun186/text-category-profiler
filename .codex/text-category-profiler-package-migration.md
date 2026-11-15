@@ -97,6 +97,8 @@ text_category_profiler/
 
 - **2026-11-11 canonical 多工作表 XLSX 空資料欄寬修復（本 PR，Hosted／Review 待驗）**：已重現 `dfListToXLS(AutoAdjustColWidth=True)` 遇到空 DataFrame 的 `Series.max()` 回傳 NaN，xlsxwriter 可將 `width="nan"` 寫入 workbook XML；現在僅在 Series 零列時以欄名長度＋1 取代 NaN，其他非空欄寬及 MaxColWidth 上限規則不變。私有 pandas/xlsxwriter XLSX 測試解析工作表 XML，確認欄寬有限、合理，對非空列仍能套用上限；不碰 WorkPool 或正式 XLSX，BL-001 保持 In Progress。
 
+- **2026-11-15 canonical 多工作表 XLSX writer 收尾（本 PR，Hosted CI／正式 Review 待驗）**：`data.df_utils.dfListToXLS` 原本只在完整循環結束後呼叫 `writer.close()`；任何中途 DataFrame 寫入或格式化錯誤都會跳過收尾。本批僅增加例外分支安全關閉，若關閉時另有例外，保留主要輸出錯誤供排查；正常完成則維持原有 close 及其失敗語意。以無服務 FakeWriter 檢查第二張工作表、格式化、雙重故障、正常收尾；不承諾異常時 XLSX 檔案是完整的，也不碰正式 WorkPool／模型，BL-001 仍 In Progress。
+
 ### Phase 2：拆分路徑、序列化與基礎 helper
 
 - [ ] 從 `utilities_path.py` 盤點純路徑 helper，搬到 `text_category_profiler/paths.py`；檔案搬移／刪除函式需另行風險審查。

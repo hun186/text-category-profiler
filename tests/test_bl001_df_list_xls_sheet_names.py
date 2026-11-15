@@ -132,6 +132,57 @@ class CanonicalMultiSheetExcelTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "simulated XLSX"):
             export([FailingFrame()], "failed.xlsx", sheetNameList=names)
         self.assertEqual(names, ["First", "Second"])
+        self.assertEqual(pd.writers[0].closed, 1)
+
+    def test_second_sheet_failure_still_closes_writer_once(self):
+        pd = FakePandas()
+        export = isolated_export(pd)
+
+        class FailingFrame(FakeFrame):
+            def to_excel(self, writer, *, index, sheet_name):
+                raise RuntimeError("second sheet export failed")
+
+        with self.assertRaisesRegex(RuntimeError, "second sheet export failed"):
+            export([FakeFrame(), FailingFrame()], "private.xlsx",
+                   sheetNameList=["First", "Second"])
+        self.assertEqual(pd.writers[0].names, ["First"])
+        self.assertEqual(pd.writers[0].closed, 1)
+
+    def test_formatting_failure_still_closes_writer(self):
+        pd = FakePandas()
+
+        def failed_formatting(*args, **kwargs):
+            raise RuntimeError("column formatting failure")
+
+        export = isolated_export(pd, key_values=failed_formatting)
+        with self.assertRaisesRegex(RuntimeError, "column formatting failure"):
+            export([FakeFrame()], "private.xlsx", AutoAdjustColWidth=True)
+        self.assertEqual(pd.writers[0].closed, 1)
+
+    def test_close_failure_does_not_mask_original_export_error(self):
+        class CloseFailurePandas(FakePandas):
+            def ExcelWriter(self, *args, **kwargs):
+                writer = super().ExcelWriter(*args, **kwargs)
+
+                def failed_close():
+                    writer.closed += 1
+                    raise OSError("close failed")
+
+                writer.close = failed_close
+                return writer
+
+        class FailingFrame(FakeFrame):
+            def to_excel(self, writer, *, index, sheet_name):
+                raise ValueError("original export failure")
+
+        pd = CloseFailurePandas()
+        export = isolated_export(pd)
+        with self.assertRaisesRegex(ValueError, "original export failure"):
+            export([FailingFrame()], "private.xlsx")
+        self.assertEqual(pd.writers[0].closed, 1)
+        with self.assertRaisesRegex(OSError, "close failed"):
+            export([FakeFrame()], "private.xlsx")
+        self.assertEqual(pd.writers[1].closed, 1)
 
     def test_row_height_uses_non_inplace_reset_and_keeps_original(self):
         class RangeIndex:
