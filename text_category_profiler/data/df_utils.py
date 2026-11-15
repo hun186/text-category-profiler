@@ -149,6 +149,11 @@ def dfListToXLS(dfList, OutputFN="dfListToXLSOutput.xlsx", excelindex=False,
         # Keep caller-owned sheet names intact across repeated exports. The
         # historical reverse/pop sequence selected names in their original order.
         remaining_sheet_names = list(reversed(sheetNameList))
+        # Excel worksheet names are case-insensitive. When later frames
+        # need generated names, never reuse a caller-provided worksheet name.
+        reserved_sheet_names = {
+            name.casefold() for name in sheetNameList if isinstance(name, str)
+        }
         cnt = 1
         for df in dfList:
             # Every index level occupies a worksheet column (MultiIndex too).
@@ -166,7 +171,10 @@ def dfListToXLS(dfList, OutputFN="dfListToXLSOutput.xlsx", excelindex=False,
                     sheet_name = remaining_sheet_names.pop()
                 else:
                     sheet_name = f"AutoSheetName{cnt}"
-                    cnt+=1
+                    while sheet_name.casefold() in reserved_sheet_names:
+                        cnt += 1
+                        sheet_name = f"AutoSheetName{cnt}"
+                    cnt += 1
                 #df['index'] = df.index
                 #df.reset_index(inplace = True) #會跑出一欄流水號index
                 df.to_excel(writer,

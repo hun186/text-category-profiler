@@ -173,6 +173,44 @@ class CanonicalMultiSheetExcelTests(unittest.TestCase):
                     self.assertEqual(pd.writers[0].names, [])
                 self.assertEqual(pd.writers[0].closed, 1)
 
+    def test_generated_sheet_names_avoid_case_insensitive_caller_collisions(self):
+        pd = FakePandas()
+        export = isolated_export(pd)
+        names = ["AutoSheetName1", "autosheetname2"]
+        export([FakeFrame() for _ in range(5)], "private.xlsx",
+               sheetNameList=names)
+        self.assertEqual(pd.writers[0].names, [
+            "AutoSheetName1", "autosheetname2",
+            "AutoSheetName3", "AutoSheetName4", "AutoSheetName5",
+        ])
+        self.assertEqual(names, ["AutoSheetName1", "autosheetname2"])
+        self.assertEqual(pd.writers[0].closed, 1)
+
+    def test_real_xlsx_auto_names_do_not_conflict_with_explicit_name(self):
+        try:
+            import pandas as pd
+            import xlsxwriter  # noqa: F401
+        except ImportError:
+            self.skipTest("Optional pandas/xlsxwriter not installed")
+        export = isolated_export(pd)
+        names = ["autosheetname1"]
+        source = pd.DataFrame({"text": ["中文標題"]})
+        with tempfile.TemporaryDirectory(prefix="bl001-xlsx-name-collision-") as folder:
+            output = Path(folder) / "names.xlsx"
+            export([source, source], output, sheetNameList=names)
+            pd.testing.assert_frame_equal(source, pd.DataFrame({"text": ["中文標題"]}))
+            self.assertEqual(names, ["autosheetname1"])
+            self.assertTrue(zipfile.is_zipfile(output))
+            with zipfile.ZipFile(output) as workbook:
+                root = ET.fromstring(workbook.read("xl/workbook.xml"))
+                entries = root.findall(
+                    ".//{http://schemas.openxmlformats.org/spreadsheetml/2006/main}sheet"
+                )
+                self.assertEqual(
+                    [entry.attrib["name"] for entry in entries],
+                    ["autosheetname1", "AutoSheetName2"],
+                )
+
     def test_empty_default_names_do_not_leak_between_calls(self):
         pd = FakePandas()
         export = isolated_export(pd)
