@@ -101,6 +101,8 @@ text_category_profiler/
 
 - **2026-11-15 canonical 多工作表 Excel 上限校正（本 PR，Hosted／Review 待驗）**：`dfListToXLS` 預設輸出標題列，Excel 1048576 列上限需包含標題，故實際允許最多 1048575 筆資料；修正原先直接比較資料列 1048576 的 off-by-one。維持既有超量跳過、顯示提醒、其他頁籤繼續、關閉 writer、命名清單不被修改等政策；以 shape-only 假資料驗證門檻，無百萬筆記憶體分配。此校正尚未改為 fail-closed 整份報告模式，正式使用端應核對輸出頁數；不碰模型、正式 WorkPool，BL-001 仍 In Progress。
 
+- **2026-11-15 canonical XLSX 欄數含索引（本 PR，Hosted CI／Review 待驗）**：`dfListToXLS` 匯出有索引時，索引／MultiIndex 會占用 Excel 欄位，原本缺少索引欄預檢，接近 XFD 最右欄可能遺漏資料。新增在每張資料寫出之前 `df.shape[1] + (df.index.nlevels if excelindex else 0) <= 16384` 驗證，超量即 `ValueError` 且 writer 在既有錯誤收尾路徑關閉；六項 shape-only 測試覆蓋合法與溢位的單索引／多索引，不配置大量欄位。此為輸出欄數安全門檻，不影響正常匯出或正式 WorkPool；BL-001 保持 In Progress。
+
 ### Phase 2：拆分路徑、序列化與基礎 helper
 
 - [ ] 從 `utilities_path.py` 盤點純路徑 helper，搬到 `text_category_profiler/paths.py`；檔案搬移／刪除函式需另行風險審查。

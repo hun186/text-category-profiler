@@ -139,6 +139,40 @@ class CanonicalMultiSheetExcelTests(unittest.TestCase):
         self.assertIn("含標題列", warning.getvalue())
         self.assertIn("已略過", warning.getvalue())
 
+    def test_excel_column_limit_includes_exported_index_levels(self):
+        class Index:
+            def __init__(self, nlevels):
+                self.nlevels = nlevels
+
+        class ShapeOnlyFrame(FakeFrame):
+            def __init__(self, columns, levels=1):
+                super().__init__()
+                self.shape = (1, columns)
+                self.index = Index(levels)
+
+        for cols, levels, include_index, allowed in (
+            (16384, 1, False, True),
+            (16383, 1, True, True),
+            (16382, 2, True, True),
+            (16385, 1, False, False),
+            (16384, 1, True, False),
+            (16383, 2, True, False),
+        ):
+            with self.subTest(columns=cols, levels=levels, index=include_index):
+                pd = FakePandas()
+                export = isolated_export(pd)
+                frame = ShapeOnlyFrame(cols, levels)
+                if allowed:
+                    export([frame], "private.xlsx", excelindex=include_index)
+                    self.assertEqual(len(frame.calls), 1)
+                    self.assertEqual(pd.writers[0].names, ["AutoSheetName1"])
+                else:
+                    with self.assertRaisesRegex(ValueError, "16384"):
+                        export([frame], "private.xlsx", excelindex=include_index)
+                    self.assertEqual(frame.calls, [])
+                    self.assertEqual(pd.writers[0].names, [])
+                self.assertEqual(pd.writers[0].closed, 1)
+
     def test_empty_default_names_do_not_leak_between_calls(self):
         pd = FakePandas()
         export = isolated_export(pd)
