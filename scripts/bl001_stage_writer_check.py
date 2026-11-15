@@ -1,7 +1,7 @@
 """Bounded, non-production BL-001 Stage-local export compatibility check.
 
 Run from repository root with `python -m scripts.bl001_stage_writer_check`.
-The existing tests write only to private temporary files or in-memory SQLite;
+The focused tests use private temporary files or in-memory SQLite;
 this command neither opens a production WorkPool nor invokes classifiers.
 """
 
@@ -19,6 +19,7 @@ FOCUSED_TEST_MODULES = (
     "tests.test_bl001_stage_xlsx_shared",
     "tests.test_bl001_stage_sql_shared",
     "tests.test_bl001_df_tsv_provider_contracts",
+    "tests.test_bl001_df_list_xls_sheet_names",
 )
 
 
@@ -56,7 +57,7 @@ def verify_real_tsv_export():
 
 def main(argv=None):
     parser = argparse.ArgumentParser(
-        description="Run focused, non-production Stage-local TSV/XLSX/SQLite checks."
+        description="Run focused non-production Stage-local and canonical TSV/XLSX/SQLite checks."
     )
     parser.parse_args(argv)
     for name in REQUIRED_PACKAGES:
