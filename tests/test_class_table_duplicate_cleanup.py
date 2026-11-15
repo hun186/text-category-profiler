@@ -182,6 +182,38 @@ class DuplicateClassTableCleanupTests(unittest.TestCase):
                             original, tampered, allow_pending_additions=True
                         )
 
+    def test_pending_target_metadata_after_status_is_not_an_approval(self):
+        prefix = ("AI新增｜日期=2026-11-13｜來源=分類資料檢查"
+                  "｜理由=保留已存在的新增節點")
+        notes = (
+            prefix + "｜狀態=待人工審核｜目標類別=肥胖症藥物分類",
+            prefix + "｜目標類別=肥胖症藥物分類｜狀態=待人工審核",
+        )
+        actual = {
+            "GLP-1 Sample": {
+                "CT": "測試分類", "Explanation": "",
+                "Notes": notes[0],
+            }
+        }
+        for note in notes:
+            with self.subTest(valid_order=note):
+                actual["GLP-1 Sample"]["Notes"] = note
+                legacy.verify({}, actual, allow_pending_additions=True)
+                with self.assertRaisesRegex(
+                    metadata.MetadataError, "row count or ClassLabel set differs"
+                ):
+                    legacy.verify({}, actual, allow_pending_additions=False)
+        for invalid in (
+            prefix + "｜狀態=已核准｜目標類別=肥胖症藥物分類",
+            prefix + "｜狀態=待人工審核｜目標類別=",
+            prefix + "｜狀態=待人工審核｜目標類別=肥胖症藥物分類｜額外=不准",
+            prefix + "｜狀態=待人工審核｜狀態=待人工審核",
+        ):
+            with self.subTest(rejected=invalid):
+                actual["GLP-1 Sample"]["Notes"] = invalid
+                with self.assertRaises(metadata.MetadataError):
+                    legacy.verify({}, actual, allow_pending_additions=True)
+
     def test_preflight_only_checks_unique_ids_not_human_approval(self):
         base = {"Existing": {"CT": "舊翻譯", "Explanation": "", "Notes": ""}}
         proposed = {"New": {"CT": "候選新翻譯", "Explanation": "",
