@@ -24,13 +24,17 @@ EXPECTED = {
     "Hepatology": (2712, "肝臟病學", 2335, "肝臟病學"),
 }
 AI_NOTES = "AI新增｜來源=TopicTree.csv｜理由=ClassTable缺少對應類別｜狀態=待人工審核"
-# 2026-11-08 reviewed floor: historical 2707 rows plus 38 additive labels.
-# New human-reviewed categories may raise the count; do not regress below it.
-MIN_RETAINED_CLASS_LABELS = 2745
+# 2026-11-15 file inventory: 2,769 unique authoritative rows, including
+# later GLP-1/obesity candidates still explicitly marked pending human review.
+# This is a loss-prevention floor, NOT approval of any AI candidate.
+MIN_RETAINED_CLASS_LABELS = 2769
 LATEST_ADDITION_ANCHORS = (
     "Stablecoin",
     "2026 Dakar Youth Olympic Games",
     "Electric Power Infrastructure And Resilience",
+    "GLP-1 Medicines For Obesity",
+    "GLP-1 Medicines For Obesity-Access And Regulation",
+    "Obesity",
 )
 
 
