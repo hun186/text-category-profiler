@@ -99,6 +99,8 @@ text_category_profiler/
 
 - **2026-11-15 canonical 多工作表 XLSX writer 收尾（本 PR，Hosted CI／正式 Review 待驗）**：`data.df_utils.dfListToXLS` 原本只在完整循環結束後呼叫 `writer.close()`；任何中途 DataFrame 寫入或格式化錯誤都會跳過收尾。本批僅增加例外分支安全關閉，若關閉時另有例外，保留主要輸出錯誤供排查；正常完成則維持原有 close 及其失敗語意。以無服務 FakeWriter 檢查第二張工作表、格式化、雙重故障、正常收尾；不承諾異常時 XLSX 檔案是完整的，也不碰正式 WorkPool／模型，BL-001 仍 In Progress。
 
+- **2026-11-15 canonical 多工作表 Excel 上限校正（本 PR，Hosted／Review 待驗）**：`dfListToXLS` 預設輸出標題列，Excel 1048576 列上限需包含標題，故實際允許最多 1048575 筆資料；修正原先直接比較資料列 1048576 的 off-by-one。維持既有超量跳過、顯示提醒、其他頁籤繼續、關閉 writer、命名清單不被修改等政策；以 shape-only 假資料驗證門檻，無百萬筆記憶體分配。此校正尚未改為 fail-closed 整份報告模式，正式使用端應核對輸出頁數；不碰模型、正式 WorkPool，BL-001 仍 In Progress。
+
 ### Phase 2：拆分路徑、序列化與基礎 helper
 
 - [ ] 從 `utilities_path.py` 盤點純路徑 helper，搬到 `text_category_profiler/paths.py`；檔案搬移／刪除函式需另行風險審查。

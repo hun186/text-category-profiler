@@ -151,7 +151,9 @@ def dfListToXLS(dfList, OutputFN="dfListToXLSOutput.xlsx", excelindex=False,
         remaining_sheet_names = list(reversed(sheetNameList))
         cnt = 1
         for df in dfList:
-            if df.shape[0] <= 1048576:
+            # Excel's 1,048,576-row limit includes the default header row.
+            # A full-size DataFrame would otherwise overrun the worksheet.
+            if df.shape[0] + 1 <= 1048576:
                 if len(remaining_sheet_names) > 0:
                     sheet_name = remaining_sheet_names.pop()
                 else:
@@ -236,7 +238,7 @@ def dfListToXLS(dfList, OutputFN="dfListToXLSOutput.xlsx", excelindex=False,
                         worksheet.set_row(
                             idx+1, max_nrow*factor_of_font_size_to_width[11]["height"])
             else:
-                print(f"Excel檔案最大列數限制 1048576，但df含有{df.shape[0]}列，無法存為Excel檔。")
+                print(f"Excel 工作表最多 1048576 列（含標題列），但 df 含有 {df.shape[0]} 筆資料，已略過這張工作表。")
         #writer.save()
     except BaseException:
         # An export failure must not leave the workbook writer open. If

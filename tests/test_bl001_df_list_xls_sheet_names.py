@@ -112,6 +112,33 @@ class CanonicalMultiSheetExcelTests(unittest.TestCase):
         ])
         self.assertEqual(names, ["命名頁"])
 
+    def test_excel_row_limit_reserves_header_without_allocating_million_rows(self):
+        import contextlib
+        import io
+
+        class ShapeOnlyFrame(FakeFrame):
+            def __init__(self, rows):
+                super().__init__()
+                self.shape = (rows, 2)
+
+        pd = FakePandas()
+        export = isolated_export(pd)
+        maximum = ShapeOnlyFrame(1048575)
+        too_many = ShapeOnlyFrame(1048576)
+        names = ["AtLimit", "Skipped", "Next"]
+        warning = io.StringIO()
+        with contextlib.redirect_stdout(warning):
+            export([maximum, too_many, ShapeOnlyFrame(1)], "private.xlsx",
+                   sheetNameList=names)
+        self.assertEqual(len(maximum.calls), 1)
+        self.assertEqual(too_many.calls, [])
+        self.assertEqual(pd.writers[0].names, ["AtLimit", "Skipped"])
+        self.assertEqual(pd.writers[0].closed, 1)
+        self.assertEqual(names, ["AtLimit", "Skipped", "Next"])
+        self.assertIn("1048576", warning.getvalue())
+        self.assertIn("含標題列", warning.getvalue())
+        self.assertIn("已略過", warning.getvalue())
+
     def test_empty_default_names_do_not_leak_between_calls(self):
         pd = FakePandas()
         export = isolated_export(pd)
