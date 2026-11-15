@@ -182,7 +182,8 @@ class DuplicateClassTableCleanupTests(unittest.TestCase):
                             original, tampered, allow_pending_additions=True
                         )
 
-    def test_pending_target_metadata_after_status_is_not_an_approval(self):
+    @mock.patch.object(legacy, "correct_known")
+    def test_pending_target_metadata_after_status_is_not_an_approval(self, _correct_known):
         prefix = ("AI新增｜日期=2026-11-13｜來源=分類資料檢查"
                   "｜理由=保留已存在的新增節點")
         notes = (
