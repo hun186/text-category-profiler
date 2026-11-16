@@ -29,6 +29,8 @@ def fake_runner(args, **kwargs):
             output = '{"status":"PASS_PRIVATE_READER_SNAPSHOT"}\n'
         elif module.endswith("backup_restore"):
             output = '{"status":"PASS_PRIVATE_BACKUP_RESTORE"}\n'
+        elif module.endswith("wal_backup"):
+            output = '{"status":"PASS_PRIVATE_WAL_BACKUP"}\n'
         else:
             output = '{"status":"PASS"}\n'
     else:
@@ -37,6 +39,36 @@ def fake_runner(args, **kwargs):
 
 
 class ReleasePreflightTests(unittest.TestCase):
+    def test_private_wal_backup_is_required_and_bounded(self):
+        matches = [x for x in _PRIVATE_CHECKS if x[0] == "private_wal_backup"]
+        self.assertEqual(matches, [(
+            "private_wal_backup",
+            ("-m", "scripts.bl001_stage_sqlite_wal_backup", "--rows", "12"),
+            "PASS_PRIVATE_WAL_BACKUP",
+        )])
+        result = run_private_preflight(runner=fake_runner)
+        self.assertEqual(result["status"], "PASS_PARTIAL_NO_REAL_MODEL")
+        self.assertEqual(
+            {x["name"]: x["status"] for x in result["checks"]}[
+                "private_wal_backup"
+            ], "PASS",
+        )
+        self.assertFalse(result["production_workpool_verified"])
+
+    def test_wal_backup_false_green_blocks_root_selftest(self):
+        def false_success(args, **kwargs):
+            if "scripts.bl001_stage_sqlite_wal_backup" in args:
+                return subprocess.CompletedProcess(
+                    args, 0, stdout='{"status":"PASS"}\n', stderr=""
+                )
+            return fake_runner(args, **kwargs)
+        result = run_private_preflight(real_port=8050, runner=false_success)
+        self.assertEqual(result["status"], "FAIL")
+        self.assertEqual(result["checks"][-1]["name"], "private_wal_backup")
+        self.assertFalse(any(x["name"].startswith("root_")
+                             for x in result["checks"]))
+        self.assertFalse(result["production_workpool_verified"])
+
     def test_backup_restore_is_required_and_never_certifies_workpool(self):
         private = [entry for entry in _PRIVATE_CHECKS
                    if entry[0] == "private_backup_restore"]
