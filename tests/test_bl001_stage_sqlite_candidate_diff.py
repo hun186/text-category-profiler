@@ -61,6 +61,31 @@ class OfflineCandidateSnapshotDiffTests(unittest.TestCase):
         self.assertEqual(self.before.read_bytes(), a)
         self.assertEqual(self.after.read_bytes(), b)
 
+    def test_equal_count_but_different_schema_names_fail_closed(self):
+        from unittest.mock import patch
+        from scripts import bl001_stage_sqlite_candidate_diff as mod
+        self.candidate(self.before, "a" * 32)
+        self.candidate(self.after, "b" * 32)
+        original = mod._read_candidate_names
+        def replaced_scan(path):
+            candidates, malformed = original(path)
+            if path == self.after:
+                # Simulate a changed schema between inventory and scan;
+                # names are different but count stays the same.
+                return {"__bl001_stage_" + "c" * 32}, malformed
+            return candidates, malformed
+        before_bytes = self.before.read_bytes()
+        after_bytes = self.after.read_bytes()
+        with patch.object(mod, "_read_candidate_names",
+                          side_effect=replaced_scan):
+            result = compare_offline_copies(self.before, self.after)
+        self.assertEqual(result["status"], "UNVERIFIABLE")
+        self.assertIn("snapshot_changed_or_inconsistent", result["issues"])
+        self.assertNotIn("removed_candidate_count", result)
+        self.assertFalse(result["deletion_authorized"])
+        self.assertEqual(self.before.read_bytes(), before_bytes)
+        self.assertEqual(self.after.read_bytes(), after_bytes)
+
     def test_malformed_prefix_counts_and_no_cleanup_inferences(self):
         with closing(sqlite3.connect(self.before)) as db:
             db.execute('CREATE TABLE "__bl001_stage_unknown_old" (v TEXT)')
