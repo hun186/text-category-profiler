@@ -79,7 +79,7 @@ def inspect_offline_replacement_dependencies(filename: str | Path) -> dict:
                 name for kind, name, owner in entries
                 if kind == "trigger" and owner.casefold() == "samplesrc"
             )
-            inbound = []
+            inbound = set()  # (referencing table, foreign-key id)
             for kind, name, _ in entries:
                 if kind != "table" or name.casefold() == "samplesrc":
                     continue
@@ -88,7 +88,7 @@ def inspect_offline_replacement_dependencies(filename: str | Path) -> dict:
                     "PRAGMA foreign_key_list(" + quoted + ")"
                 )):
                     if fk[2].casefold() == "samplesrc":
-                        inbound.append(name)
+                        inbound.add((name, fk[0]))
         after = _identity(path)
         ending = inventory_offline_copy(path)
         if (before != after
@@ -108,7 +108,7 @@ def inspect_offline_replacement_dependencies(filename: str | Path) -> dict:
     report["trigger_count"] = len(triggers)
     report["attached_trigger_names"] = triggers[:_DETAIL_LIMIT]
     report["trigger_names_truncated"] = len(triggers) > _DETAIL_LIMIT
-    table_names = sorted(set(inbound))
+    table_names = sorted({table for table, _ in inbound})
     report["inbound_foreign_key_count"] = len(inbound)
     report["referencing_table_names"] = table_names[:_DETAIL_LIMIT]
     report["referencing_names_truncated"] = len(table_names) > _DETAIL_LIMIT
