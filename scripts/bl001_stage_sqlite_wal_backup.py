@@ -24,6 +24,22 @@ def _verify_detached(path: Path, rows: int) -> None:
     with closing(sqlite3.connect(path)) as db:
         if db.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
             raise AssertionError("Backup SQLite integrity failed")
+        # SQLite integrity_check does NOT inspect foreign keys. Verify the
+        # constraints and their schema independently in each detached copy.
+        if db.execute("PRAGMA foreign_key_check").fetchone() is not None:
+            raise AssertionError("Backup lost foreign-key referential integrity")
+        fks = list(db.execute('PRAGMA foreign_key_list("lookup_child")'))
+        if (len(fks) != 1 or fks[0][2:5] !=
+                ("lookup_parent", "parent_id", "id")):
+            raise AssertionError("Backup changed inbound foreign-key schema")
+        if db.execute(
+            'SELECT "parent_id" FROM "lookup_child"'
+        ).fetchall() != [(1,)]:
+            raise AssertionError("Backup lost referenced child row")
+        if db.execute(
+            'SELECT "id", "name" FROM "lookup_parent"'
+        ).fetchall() != [(1, "保留外鍵")]:
+            raise AssertionError("Backup lost foreign-key parent row")
         actual = db.execute(
             'SELECT "text", "label" FROM "sampleSrc" ORDER BY "index"'
         ).fetchall()
@@ -94,6 +110,14 @@ def private_wal_backup(*, rows: int = 40) -> dict:
             if mode.lower() != "wal":
                 raise AssertionError("Unable to enable private WAL source")
             writer.execute('CREATE VIEW "source_view" AS SELECT "text" FROM "sampleSrc"')
+            writer.execute('CREATE TABLE "lookup_parent" '
+                           '("id" INTEGER PRIMARY KEY, "name" TEXT)')
+            writer.execute('CREATE TABLE "lookup_child" '
+                           '("parent_id" INTEGER REFERENCES "lookup_parent"("id"))')
+            writer.execute(
+                'INSERT INTO "lookup_parent" VALUES (?, ?)', (1, "保留外鍵")
+            )
+            writer.execute('INSERT INTO "lookup_child" VALUES (?)', (1,))
             writer.execute('CREATE TABLE "unrelated" ("note" TEXT)')
             writer.execute('INSERT INTO "unrelated" VALUES (?)', ("保留",))
             writer.execute('CREATE TABLE "' + _CANDIDATE + '" ("text" TEXT)')
@@ -147,6 +171,7 @@ def private_wal_backup(*, rows: int = 40) -> dict:
                 "uncommitted_wal_rows_excluded": True,
                 "backup_restored_with_indexes_and_view": True,
                 "unknown_candidate_preserved": True,
+                "unrelated_foreign_key_integrity_preserved": True,
                 "candidate_owner_status": "UNKNOWN",
                 "candidate_deletion_authorized": False,
                 "production_workpool_verified": False,
