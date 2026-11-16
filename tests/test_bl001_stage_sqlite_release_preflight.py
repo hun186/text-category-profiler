@@ -27,6 +27,8 @@ def fake_runner(args, **kwargs):
             output = '{"status":"PASS_SQLITE_FULL_ROLLBACK"}\n'
         elif module.endswith("reader_snapshot"):
             output = '{"status":"PASS_PRIVATE_READER_SNAPSHOT"}\n'
+        elif module.endswith("backup_restore"):
+            output = '{"status":"PASS_PRIVATE_BACKUP_RESTORE"}\n'
         else:
             output = '{"status":"PASS"}\n'
     else:
@@ -35,6 +37,44 @@ def fake_runner(args, **kwargs):
 
 
 class ReleasePreflightTests(unittest.TestCase):
+    def test_backup_restore_is_required_and_never_certifies_workpool(self):
+        private = [entry for entry in _PRIVATE_CHECKS
+                   if entry[0] == "private_backup_restore"]
+        self.assertEqual(private, [(
+            "private_backup_restore",
+            ("-m", "scripts.bl001_stage_sqlite_backup_restore", "--rows", "15"),
+            "PASS_PRIVATE_BACKUP_RESTORE",
+        )])
+        outcome = run_private_preflight(runner=fake_runner)
+        self.assertEqual(outcome["status"], "PASS_PARTIAL_NO_REAL_MODEL")
+        checks = {x["name"]: x["status"] for x in outcome["checks"]}
+        self.assertEqual(checks["private_backup_restore"], "PASS")
+        self.assertFalse(outcome["production_workpool_verified"])
+
+    def test_backup_restore_generic_pass_cannot_fake_success(self):
+        def incorrect_runner(args, **kwargs):
+            if "scripts.bl001_stage_sqlite_backup_restore" in args:
+                return subprocess.CompletedProcess(
+                    args, 0, stdout='{"status":"PASS"}\n', stderr=""
+                )
+            return fake_runner(args, **kwargs)
+        report = run_private_preflight(runner=incorrect_runner)
+        self.assertEqual(report["status"], "FAIL")
+        self.assertEqual(report["checks"][-1]["name"], "private_backup_restore")
+        self.assertFalse(report["production_workpool_verified"])
+
+    def test_backup_restore_failure_blocks_model_tests(self):
+        def broken_runner(args, **kwargs):
+            if "scripts.bl001_stage_sqlite_backup_restore" in args:
+                return subprocess.CompletedProcess(
+                    args, 1, stdout='{"status":"FAIL_OR_BLOCKED"}\n', stderr=""
+                )
+            return fake_runner(args, **kwargs)
+        report = run_private_preflight(real_port=8050, runner=broken_runner)
+        self.assertEqual(report["status"], "FAIL")
+        self.assertEqual(report["checks"][-1]["name"], "private_backup_restore")
+        self.assertFalse(any(x["name"].startswith("root_") for x in report["checks"]))
+
     def test_reader_snapshot_is_required_with_bounded_private_rows(self):
         required = [item for item in _PRIVATE_CHECKS
                     if item[0] == "reader_snapshot"]
