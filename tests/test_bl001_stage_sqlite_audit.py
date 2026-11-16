@@ -152,6 +152,12 @@ class StageSQLiteAuditTests(unittest.TestCase):
             audit_stage_sqlite(link)["issues"], ["symlink_not_allowed"]
         )
 
+    def test_invalid_ancestor_with_embedded_nul_fails_closed(self):
+        invalid = "invalid\\x00WorkPool/path.sqlite3".replace("\\x00", "\x00")
+        report = audit_stage_sqlite(invalid)
+        self.assertEqual(report["status"], "FAIL")
+        self.assertIn("database_path_not_verifiable", report["issues"])
+
     def test_refuses_workpool_ancestors_before_opening_db(self):
         import shutil
         original = self.valid_database()

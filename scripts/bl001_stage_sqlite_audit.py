@@ -53,7 +53,7 @@ def audit_stage_sqlite(filename: str | Path) -> dict:
         if _has_workpool_ancestor(path):
             issues.append("workpool_path_not_allowed")
             return result
-    except (OSError, RuntimeError):
+    except (OSError, RuntimeError, ValueError):
         issues.append("database_path_not_verifiable")
         return result
     if path.is_symlink():

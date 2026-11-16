@@ -24,7 +24,7 @@ def triage_offline_copy(filename: str | Path) -> dict:
     try:
         guarded = _has_workpool_ancestor(path)
         issue = "workpool_path_not_allowed"
-    except (OSError, RuntimeError):
+    except (OSError, RuntimeError, ValueError):
         guarded = True
         issue = "database_path_not_verifiable"
     if guarded:
