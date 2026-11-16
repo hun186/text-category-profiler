@@ -41,6 +41,9 @@ _PRIVATE_CHECKS = (
     ("private_backup_restore",
      ("-m", "scripts.bl001_stage_sqlite_backup_restore", "--rows", "15"),
      "PASS_PRIVATE_BACKUP_RESTORE"),
+    ("private_wal_backup",
+     ("-m", "scripts.bl001_stage_sqlite_wal_backup", "--rows", "12"),
+     "PASS_PRIVATE_WAL_BACKUP"),
     ("root_isolated", ("TCFMain.py", "--self-test", "isolated"), "FINAL: PASS"),
 )
 

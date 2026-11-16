@@ -183,3 +183,7 @@ run-bl001-sqlite-release-preflight.bat --real-port 8050
 ### KI-012 統一離線來源保護
 
 純讀取 `run-bl001-stage-sqlite-audit.bat` 所使用的 `audit_stage_sqlite` 也會拒絕實際路徑或父目錄別名中以 `WorkPool` 開頭的資料夾元件（不區分大小寫）；不再只靠 inventory/triage 的防線。共用 `_has_workpool_ancestor`，避免不同入口採用不一致的規則。發生路徑解析異常會以 `database_path_not_verifiable` 拒絕，不會嘗試開啟或修復資料庫。若要盤點，必須先停止 writer，獨立備份複本並移到**非 WorkPool** 的隔離暫存資料夾。本檢查仍不能證明磁碟是否靜止；不用於正式 WorkPool。
+
+### KI-012 WAL 私人備份驗收納入一鍵快檢
+
+`run-bl001-sqlite-release-preflight.bat` 現在執行新必要子檢查 `private_wal_backup`（12 筆、僅 TemporaryDirectory，使用 SQLite backup API）。必須回報精確 `PASS_PRIVATE_WAL_BACKUP`；若測試失敗或只是泛用 `PASS`，會在任何實際模型自檢前中止。此項補充 WAL 已提交資料的私人備份驗證，**不表示**可直接操作正在執行的 WorkPool 或已完成正式資料庫復原驗收。完整測試可單獨執行 `run-bl001-sqlite-wal-backup.bat`。
