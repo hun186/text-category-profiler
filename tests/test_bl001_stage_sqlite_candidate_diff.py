@@ -97,6 +97,36 @@ class OfflineCandidateSnapshotDiffTests(unittest.TestCase):
                 "status"], "UNVERIFIABLE",
         )
 
+    def test_copy_modified_during_metadata_scan_is_unverifiable(self):
+        from unittest.mock import patch
+        import os
+        from scripts import bl001_stage_sqlite_candidate_diff as mod
+
+        original = mod._read_candidate_names
+        def changed_after_scan(path):
+            result = original(path)
+            if path == self.after:
+                # Private file only: force a metadata change while preserving
+                # the candidate name sets. This must fail closed.
+                stat = path.stat()
+                os.utime(path, ns=(stat.st_atime_ns, stat.st_mtime_ns + 10_000_000))
+            return result
+
+        with patch.object(mod, "_read_candidate_names",
+                          side_effect=changed_after_scan):
+            report = compare_offline_copies(self.before, self.after)
+        self.assertEqual(report["status"], "UNVERIFIABLE")
+        self.assertIn("offline_copy_changed_during_diff", report["issues"])
+        self.assertFalse(report["deletion_authorized"])
+        self.assertNotIn("added_candidate_count", report)
+
+    def test_invalid_path_fails_as_structured_unverifiable(self):
+        invalid = "private\\x00copy/db.sqlite3".replace("\\x00", "\x00")
+        report = compare_offline_copies(invalid, self.after)
+        self.assertEqual(report["status"], "UNVERIFIABLE")
+        self.assertIn("copy_identity_not_verifiable", report["issues"])
+        self.assertFalse(report["deletion_authorized"])
+
     def test_cli_exit_codes(self):
         out = io.StringIO()
         with redirect_stdout(out):
