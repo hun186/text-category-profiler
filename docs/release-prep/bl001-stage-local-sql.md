@@ -139,4 +139,4 @@ run-bl001-sqlite-release-preflight.bat
 run-bl001-sqlite-release-preflight.bat --real-port 8050
 ```
 
-全部子檢查成功顯示 `PASS_PRIVATE_PREFLIGHT_NOT_PRODUCTION`／exit 0；任一必要測試失敗或檔案缺失回報 `FAIL`／exit 1。實際模型的完整流程由既有 `TCFMain.py --self-test real -p 8050` 以隔離工作池執行，外層 timeout 必須比內部真實流程的 `TCP_REAL_PIPELINE_TIMEOUT_SECONDS` 加上足夠的清理緩衝。即使 `PASS_PRIVATE_PREFLIGHT_NOT_PRODUCTION`，`production_workpool_verified=false`，仍不得宣告正式資料庫上線／清理安全／正式 WorkPool 完整驗收。新一鍵快檢的 Windows 實機結果尚未收到。
+全部子檢查成功顯示 `PASS_PRIVATE_PREFLIGHT_NOT_PRODUCTION`／exit 0；任一必要測試失敗或檔案缺失回報 `FAIL`／exit 1。實際模型的完整流程由既有 `TCFMain.py --self-test real -p 8050` 以隔離工作池執行，目前 `config_from_cli()` 不會轉送 `TCP_REAL_PIPELINE_TIMEOUT_SECONDS` 給真實流程，因此 CLI 真正使用預設 1,800 秒；此快檢外層固定採 2,100 秒（多留 300 秒供 supervisor 終止子程序與清理），不會因外部同名環境變數縮短監督程序的生命週期。若未來 CLI timeout 契約改變，必須同步修正此驗收入口與測試。即使 `PASS_PRIVATE_PREFLIGHT_NOT_PRODUCTION`，`production_workpool_verified=false`，仍不得宣告正式資料庫上線／清理安全／正式 WorkPool 完整驗收。新一鍵快檢的 Windows 實機結果尚未收到。
