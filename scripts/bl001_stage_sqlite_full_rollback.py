@@ -89,6 +89,48 @@ def run_private_sqlite_full(*, rows: int = 500, repeat: int = 200) -> dict:
                 or leftover):
             raise AssertionError("SQLite full error failed safe rollback contract")
 
+        # Prove recovery separately: after SQLITE_FULL rolls back, relax only
+        # this TEMP database's page quota and retry through the actual writer.
+        with closing(sqlite3.connect(db_path)) as db:
+            reset_limit = db.execute(
+                "PRAGMA max_page_count=100000"
+            ).fetchone()[0]
+            db.commit()
+            if reset_limit != 100000:
+                raise AssertionError("Could not restore private database quota")
+        write_stage_sql(str(db_path), replacement, [], sqlite3.connect)
+        with closing(sqlite3.connect(db_path)) as db:
+            retry_count = db.execute(
+                'SELECT COUNT(*) FROM "sampleSrc"'
+            ).fetchone()[0]
+            new_count = db.execute(
+                'SELECT COUNT(*) FROM "sampleSrc" WHERE "label"=?',
+                ("new",),
+            ).fetchone()[0]
+            expected_view = [(replacement["text"].iloc[i],)
+                             for i in range(rows)]
+            actual_view = db.execute(
+                'SELECT "text" FROM "source_view" ORDER BY "index"'
+            ).fetchall()
+            retry_keys = [
+                key[2] for key in db.execute('PRAGMA index_xinfo("text_Index")')
+                if key[5] == 1
+            ]
+            related = db.execute(
+                'SELECT note FROM "unrelated"'
+            ).fetchall()
+            retry_integrity = db.execute("PRAGMA integrity_check").fetchone()[0]
+            retry_candidates = [
+                row[0] for row in db.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                ) if row[0].startswith("__bl001_stage_")
+            ]
+        if (retry_count != rows or new_count != rows
+                or actual_view != expected_view or retry_keys != ["text"]
+                or related != [("應保留",)] or retry_integrity != "ok"
+                or retry_candidates):
+            raise AssertionError("Private quota-release retry or view contract failed")
+
         return {
             "status": "PASS_SQLITE_FULL_ROLLBACK",
             "scope": "private_tempfile_only_no_workpool",
@@ -101,10 +143,14 @@ def run_private_sqlite_full(*, rows: int = 500, repeat: int = 200) -> dict:
             "unrelated_table_preserved": True,
             "candidate_tables_remaining": 0,
             "integrity_check": integrity,
+            "quota_reset_to_pages": 100000,
+            "post_quota_retry_passed": True,
+            "post_quota_retry_rows": retry_count,
+            "post_quota_retry_integrity": retry_integrity,
             "production_workpool_verified": False,
             "limits": (
                 "PRAGMA max_page_count triggers a real SQLite page-quota "
-                "SQLITE_FULL, not an OS ENOSPC, power loss, shared filesystem, "
+                "SQLITE_FULL with a private retry, not OS ENOSPC, shared filesystem, "
                 "or live WorkPool failure. No production data was used."
             ),
         }

@@ -159,3 +159,7 @@ run-bl001-sqlite-release-preflight.bat --real-port 8050
 `run-bl001-sqlite-release-preflight.bat` 現在也會在私人 TemporaryDirectory 中執行 `disk_checkpoints`（100 筆、文字重複 2 次；期待 `PASS_CHECKPOINT_MEASURED`）與 `sqlite_full_rollback`（120 筆、文字重複 64 次；期待 `PASS_SQLITE_FULL_ROLLBACK`）。兩項只使用私人 SQLite，拒絕外部資料庫路徑。任一必要狀態不符即 `FAIL`，不再進行後續模型測試。
 
 **這不改變正式驗收界線。** 無真實模型時結果仍為 `PASS_PARTIAL_NO_REAL_MODEL`／exit 2；明確啟用真實模型的通過結果最多為 `PASS_PRIVATE_PREFLIGHT_NOT_PRODUCTION`。磁碟 checkpoint 不是連續峰值，SQLite page quota 也不是 OS 磁碟滿載；正式 WorkPool、網路共享碟及實際部署仍未驗證。
+
+### KI-012 私人 SQLite 配額解除後重試
+
+`run-bl001-sqlite-full-rollback.bat` 現在除驗證遭 `SQLITE_FULL` 拒絕時原資料完整，也在**同一個私人 tempfile 資料庫**解除測試頁數限制後，透過現有原子式 `write_stage_sql` 重新寫入。僅當重試資料列、`text_Index`、View、其他無關資料、SQLite integrity 和候選表清理均正確時，才回報 `PASS_SQLITE_FULL_ROLLBACK`，並以 `post_quota_retry_passed=true` 表達受控的恢復驗證。這**不是**正式磁碟滿載後一定能恢復的證據，且不影響任何正式 WorkPool。
