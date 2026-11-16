@@ -29,7 +29,7 @@
 - **日期**：2026-11-16
 - **背景**：`KI-012` 的 Windows 私人測試確認原版 pandas sqlite3 `to_sql(if_exists=replace)` 及後續 `CREATE INDEX` 之間中斷後，可留下不完整的 `sampleSrc`，雖然 SQLite integrity=ok。單純在原 `to_sql` 外包 `BEGIN` 不能保證 pandas 不會自行 commit。
 - **方案比較**：重建整個資料庫再以檔案 `os.replace` 替換會破壞其他表、Windows 讀者檔案鎖及並行使用；直接修改 pandas/SQLite commit 行為不可靠；候選表可以在完成 pandas 輸出後再以 SQLite 原生 DDL 單交易替換正式表。
-- **候選決策**：先 `pandas.to_sql` 寫入隨機唯一候選表，提取已建立的 pandas 索引 metadata；接著以 `BEGIN IMMEDIATE` 原子切換 `sampleSrc`、重建與原 schema 同名的 `ix_sampleSrc_*` 及 `text_Index`，最後 commit。任何 SQL 失敗 rollback，原表和索引保全。對不支援的自動索引形態須在切換前 fail closed。
+- **候選決策**：先 `pandas.to_sql` 寫入隨機唯一候選表，提取已建立的 pandas 索引 metadata；接著以 `BEGIN IMMEDIATE` 內 `DROP` 舊表、同名 `CREATE TABLE`、`INSERT ... SELECT` 複製候選資料（不用 `ALTER TABLE RENAME`，避免依賴 `sampleSrc` 的 View 造成 schema 重新驗證失敗），再重建與原 schema 同名的 `ix_sampleSrc_*` 及 `text_Index`，交易內刪除候選表再 commit。需要額外資料複製 I/O／磁碟暫存容量；任何 SQL 失敗 rollback，原表和索引保全。對不支援的自動索引形態須在切換前 fail closed。
 - **必要限制**：此模式可能在 writer 被 SIGKILL 後留下唯一候選表；不能隨意刪除另一個 worker 的候選表。將未解決候選表清理、正式 WorkPool、既有 schema 與並發驗收記於 `KI-012`，不得因單次 Hosted 測試成功就標為全面修復。
 - **轉為 Accepted 條件**：完整 Hosted／Review、Windows 私人中斷及鎖定測試、原有 Stage-local API/schema 相容測試成功，再進行部署核准。不宣稱已部署。
 
