@@ -37,8 +37,15 @@ class FakeConnection:
         self.events = events
         self.fail_index = fail_index
 
-    def execute(self, sql):
+    def execute(self, sql, parameters=()):
         self.events.append(("execute", sql))
+        if sql.startswith("SELECT sql FROM sqlite_master"):
+            table = parameters[0]
+            return type("Cursor", (), {
+                "fetchone": lambda self: (
+                    'CREATE TABLE "' + table + '" ("text" TEXT, "label" TEXT)',
+                ),
+            })()
         if self.fail_index and sql.startswith('CREATE INDEX "text_Index"'):
             raise LookupError("injected index creation error")
         if sql.startswith("PRAGMA "):
@@ -128,8 +135,11 @@ class StageSQLiteTests(unittest.TestCase):
                 self.assertIn("BEGIN IMMEDIATE", sql_statements)
                 self.assertIn('DROP TABLE IF EXISTS "sampleSrc"', sql_statements)
                 self.assertTrue(any(
-                    sql.startswith('ALTER TABLE "__bl001_stage_')
-                    and sql.endswith(' RENAME TO "sampleSrc"')
+                    sql.startswith('CREATE TABLE "sampleSrc"')
+                    for sql in sql_statements
+                ))
+                self.assertTrue(any(
+                    sql.startswith('INSERT INTO "sampleSrc" SELECT * FROM "__bl001_stage_')
                     for sql in sql_statements
                 ))
                 self.assertIn('CREATE INDEX "text_Index" ON "sampleSrc"("text");',
