@@ -62,6 +62,31 @@ except Exception as error:
 """
 
 
+def _writer_index_contract(db: sqlite3.Connection) -> bool:
+    """Check actual SQLite index semantics, never merely expected names."""
+    expected = {"ix_sampleSrc_index": "index", "text_Index": "text"}
+    records = {
+        row[1]: row for row in db.execute('PRAGMA index_list("sampleSrc")')
+    }
+    if set(records) != set(expected):
+        return False
+    for name, column in expected.items():
+        entry = records[name]
+        # Nonunique, explicitly created and not a partial index.
+        if entry[2] != 0 or entry[3] != "c" or entry[4] != 0:
+            return False
+        escaped = name.replace('"', '""')
+        keys = [
+            row for row in db.execute(
+                'PRAGMA index_xinfo("' + escaped + '")'
+            ) if row[5] == 1
+        ]
+        if (len(keys) != 1 or keys[0][1] < 0 or keys[0][2] != column
+                or keys[0][3] != 0 or keys[0][4] != "BINARY"):
+            return False
+    return True
+
+
 def _until(path: Path, child: subprocess.Popen, *, seconds: float = 20) -> None:
     limit = time.monotonic() + seconds
     while time.monotonic() < limit:
@@ -147,7 +172,7 @@ def private_reader_snapshot(*, rows: int = 40) -> dict:
                 after_view = cnx.execute(
                     'SELECT text FROM source_view'
                 ).fetchall()
-                idx = {r[1] for r in cnx.execute('PRAGMA index_list("sampleSrc")')}
+                indexes_ok = _writer_index_contract(cnx)
                 integrity = cnx.execute("PRAGMA integrity_check").fetchone()[0]
                 candidates = [
                     r[0] for r in cnx.execute(
@@ -157,7 +182,7 @@ def private_reader_snapshot(*, rows: int = 40) -> dict:
             updated = [(f"新資料-{i}", "NEW") for i in range(rows)]
             if (after != updated or sorted(after_view) != sorted(
                     (r[0],) for r in updated)
-                    or idx != {"ix_sampleSrc_index", "text_Index"}
+                    or not indexes_ok
                     or integrity != "ok" or candidates):
                 raise AssertionError("Final writer publication is incomplete")
             return {

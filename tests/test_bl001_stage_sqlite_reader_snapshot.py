@@ -2,14 +2,34 @@
 from contextlib import redirect_stdout
 import io
 import json
+import sqlite3
+from contextlib import closing
+from pathlib import Path
+import tempfile
 import unittest
 
 from scripts.bl001_stage_sqlite_reader_snapshot import (
-    main, private_reader_snapshot,
+    main, private_reader_snapshot, _writer_index_contract,
 )
 
 
 class PrivateReaderSnapshotTests(unittest.TestCase):
+    def test_index_names_are_not_enough_to_certify_columns(self):
+        with tempfile.TemporaryDirectory(prefix="ki012-index-negative-") as tmp:
+            path = Path(tmp) / "fake-index.sqlite3"
+            with closing(sqlite3.connect(path)) as db:
+                db.execute('CREATE TABLE sampleSrc ("index" INTEGER, "text" TEXT, "label" TEXT)')
+                db.execute('CREATE INDEX "ix_sampleSrc_index" ON sampleSrc("index")')
+                db.execute('CREATE INDEX "text_Index" ON sampleSrc("label")')
+                self.assertFalse(_writer_index_contract(db))
+                db.execute('DROP INDEX "text_Index"')
+                db.execute('CREATE INDEX "text_Index" ON sampleSrc("text")')
+                self.assertTrue(_writer_index_contract(db))
+                db.execute('DROP INDEX "ix_sampleSrc_index"')
+                db.execute('CREATE UNIQUE INDEX "ix_sampleSrc_index" ON sampleSrc("index")')
+                self.assertFalse(_writer_index_contract(db))
+
+
     @classmethod
     def setUpClass(cls):
         try:
