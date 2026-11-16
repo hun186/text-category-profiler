@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 from pathlib import Path
 import re
 import subprocess
@@ -73,18 +72,13 @@ def _check_output(output: str, expected: str) -> bool:
     return False
 
 def _real_selftest_outer_timeout() -> int:
-    """Give the inner full-pipeline supervisor time to reap its child tree."""
-    try:
-        inner = int(os.environ.get("TCP_REAL_PIPELINE_TIMEOUT_SECONDS", "1800"))
-    except ValueError:
-        # The supervisor will reject malformed configuration itself.
-        return 2100
-    if inner <= 0:
-        return 2100
-    if inner > 7200:
-        raise ValueError("Real self-test inner timeout exceeds 7200s preflight bound")
-    return inner + 300
+    """Use CLI supervisor's actual 1800s timeout plus 300s cleanup headroom.
 
+    config_from_cli() builds a new environment mapping and does NOT forward
+    TCP_REAL_PIPELINE_TIMEOUT_SECONDS to its config resolver. Inheriting the
+    wrapper's environment setting would risk killing the supervisor early.
+    """
+    return 2100
 
 def run_private_preflight(*, real_port: int | None = None,
                           runner=None) -> dict:
