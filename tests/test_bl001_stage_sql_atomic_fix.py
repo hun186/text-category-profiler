@@ -272,6 +272,52 @@ class AtomicStageSQLTests(unittest.TestCase):
             )
         self.assertEqual(before[3], "ok")
 
+    def test_custom_indexes_are_not_silently_dropped_during_stage_swap(self):
+        pd = self.pd
+        for number, index_ddl in enumerate((
+            'CREATE INDEX "manual_search" ON "sampleSrc"("label")',
+            'CREATE UNIQUE INDEX "unique_text" ON "sampleSrc"("text")',
+            'CREATE INDEX "ix_sampleSrc_label" '
+            'ON "sampleSrc"("label" COLLATE NOCASE)',
+        )):
+            with self.subTest(variant=number):
+                filename = f"index-preservation-{number}.sqlite3"
+                path = self._write(
+                    filename,
+                    pd.DataFrame({"text": ["舊資料"], "label": ["KEEP"]}),
+                )
+                with closing(sqlite3.connect(path)) as db:
+                    db.execute(index_ddl)
+                    db.commit()
+                original = self._schema_and_rows(path)
+                with self.assertRaisesRegex(ValueError,
+                                            "Unsafe existing sampleSrc index"):
+                    self._write(
+                        filename,
+                        pd.DataFrame({"text": ["不得提交"], "label": ["NEW"]}),
+                    )
+                self.assertEqual(self._schema_and_rows(path), original)
+
+    def test_modified_text_index_cannot_be_silently_weakened(self):
+        pd = self.pd
+        filename = "modified-text-index.sqlite3"
+        path = self._write(
+            filename, pd.DataFrame({"text": ["原本"], "label": ["KEEP"]})
+        )
+        with closing(sqlite3.connect(path)) as db:
+            db.execute('DROP INDEX "text_Index"')
+            db.execute(
+                'CREATE UNIQUE INDEX "text_Index" ON "sampleSrc"("text")'
+            )
+            db.commit()
+        original = self._schema_and_rows(path)
+        with self.assertRaisesRegex(ValueError, "Unsafe existing sampleSrc index"):
+            self._write(
+                filename,
+                pd.DataFrame({"text": ["不得提交"], "label": ["NEW"]}),
+            )
+        self.assertEqual(self._schema_and_rows(path), original)
+
     def test_unrelated_foreign_keys_and_triggers_do_not_block_stage(self):
         pd = self.pd
         path = self._write(
