@@ -147,3 +147,9 @@ run-bl001-sqlite-release-preflight.bat --real-port 8050
 ```
 
 全部子檢查成功顯示 `PASS_PRIVATE_PREFLIGHT_NOT_PRODUCTION`／exit 0；任一必要測試失敗或檔案缺失回報 `FAIL`／exit 1。實際模型的完整流程由既有 `TCFMain.py --self-test real -p 8050` 以隔離工作池執行，目前 `config_from_cli()` 不會轉送 `TCP_REAL_PIPELINE_TIMEOUT_SECONDS` 給真實流程，因此 CLI 真正使用預設 1,800 秒；此快檢外層固定採 2,100 秒（多留 300 秒供 supervisor 終止子程序與清理），不會因外部同名環境變數縮短監督程序的生命週期。若未來 CLI timeout 契約改變，必須同步修正此驗收入口與測試。即使 `PASS_PRIVATE_PREFLIGHT_NOT_PRODUCTION`，`production_workpool_verified=false`，仍不得宣告正式資料庫上線／清理安全／正式 WorkPool 完整驗收。新一鍵快檢的 Windows 實機結果尚未收到。
+
+## KI-012 私人 SQLite 候選寫入的磁碟階段量測（非正式上線）
+
+`run-bl001-sqlite-disk-profile.bat`（或 `python -m scripts.bl001_stage_sqlite_disk_profile --rows 2000 --repeat 4`）只會在 Python `TemporaryDirectory` 中建立私人 SQLite；沒有 `--db` 或正式 WorkPool 路徑參數。預設 2,000 筆、文字重複 4 次，硬上限 20,000 筆與 8 次，不啟動模型。
+
+量測包含原始資料庫、候選表準備完畢、交易複製、建立 `text_Index`、候選表交易內刪除、提交前／後與完全關閉後的資料庫及 `-journal`／`-wal`／`-shm` 佔用。結果 `PASS_CHECKPOINT_MEASURED` 只代表固定 SQL 階段的檔案大小取樣及最終 schema／資料完整；`checkpoint_max_total_bytes` **不是連續取樣的真正最大磁碟峰值**，也不是實際磁碟剩餘空間、配額或網路共享碟安全界線。若要為正式大批次決策，仍須補獨立空間限制與 WorkPool 隔離驗收。Windows 實機結果尚未回報。
