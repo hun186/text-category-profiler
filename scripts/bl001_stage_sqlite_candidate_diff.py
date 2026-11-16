@@ -34,6 +34,13 @@ def _read_candidate_names(path: Path) -> tuple[set[str], set[str]]:
     return candidates, malformed
 
 
+def _file_identity(path: Path) -> tuple[int, int, int, int, int]:
+    """Metadata sentinel, not proof of quiescence or cryptographic identity."""
+    stat = path.stat()
+    return (stat.st_dev, stat.st_ino, stat.st_size,
+            stat.st_mtime_ns, stat.st_ctime_ns)
+
+
 def compare_offline_copies(before: str | Path, after: str | Path) -> dict:
     first, second = Path(before), Path(after)
     report = {
@@ -57,7 +64,7 @@ def compare_offline_copies(before: str | Path, after: str | Path) -> dict:
         if first.is_file() and second.is_file() and first.samefile(second):
             report["issues"].append("distinct_offline_copies_required")
             return report
-    except OSError:
+    except (OSError, ValueError, RuntimeError):
         report["issues"].append("copy_identity_not_verifiable")
         return report
 
@@ -72,8 +79,16 @@ def compare_offline_copies(before: str | Path, after: str | Path) -> dict:
         return report
 
     try:
+        # If input is unexpectedly changed between validation and the second
+        # schema scan, refuse to claim a consistent offline comparison.
+        before_identity = _file_identity(first)
+        after_identity = _file_identity(second)
         before_candidates, before_malformed = _read_candidate_names(first)
         after_candidates, after_malformed = _read_candidate_names(second)
+        if (before_identity != _file_identity(first)
+                or after_identity != _file_identity(second)):
+            report["issues"].append("offline_copy_changed_during_diff")
+            return report
     except (OSError, sqlite3.Error, ValueError):
         report["issues"].append("candidate_comparison_failed")
         return report
