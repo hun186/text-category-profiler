@@ -48,6 +48,15 @@ def inspect_offline_replacement_dependencies(filename: str | Path) -> dict:
             "to replace a database or clean candidate tables."
         ),
     }
+    # Enforce the hard-link boundary BEFORE inventory opens SQLite:
+    # a detached-looking hard link may still be the live WorkPool inode.
+    try:
+        if path.is_file() and path.stat().st_nlink != 1:
+            report["issues"].append("hardlink_not_allowed")
+            return report
+    except (OSError, ValueError):
+        report["issues"].append("database_path_not_verifiable")
+        return report
     source = inventory_offline_copy(path)
     report["candidate_count"] = source["candidate_count"]
     if source["status"] == "UNVERIFIABLE":
