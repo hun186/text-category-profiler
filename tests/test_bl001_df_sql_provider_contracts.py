@@ -53,8 +53,15 @@ class RecorderConnection:
     def __init__(self, events):
         self.events = events
 
-    def execute(self, statement):
+    def execute(self, statement, parameters=()):
         self.events.append(("execute", statement))
+        if statement.startswith("SELECT sql FROM sqlite_master"):
+            table = parameters[0]
+            return type("Cursor", (), {
+                "fetchone": lambda self: (
+                    'CREATE TABLE "' + table + '" ("text" TEXT, "label" TEXT)',
+                ),
+            })()
         if statement.startswith("PRAGMA "):
             return []
         return None
@@ -98,8 +105,11 @@ class SQLProviderContractTests(unittest.TestCase):
                 self.assertIn("BEGIN IMMEDIATE", executed)
                 self.assertIn('DROP TABLE IF EXISTS "sampleSrc"', executed)
                 self.assertTrue(any(
-                    sql.startswith('ALTER TABLE "__bl001_stage_')
-                    and sql.endswith(' RENAME TO "sampleSrc"')
+                    sql.startswith('CREATE TABLE "sampleSrc"')
+                    for sql in executed
+                ))
+                self.assertTrue(any(
+                    sql.startswith('INSERT INTO "sampleSrc" SELECT * FROM "__bl001_stage_')
                     for sql in executed
                 ))
                 self.assertIn('CREATE INDEX "text_Index" ON "sampleSrc"("text");',
