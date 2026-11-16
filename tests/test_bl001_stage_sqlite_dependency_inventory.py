@@ -57,6 +57,25 @@ class OfflineReplacementDependencyTests(unittest.TestCase):
         self.assertFalse(report["replacement_authorized"])
         self.assertEqual(self.db.read_bytes(), before)
 
+    def test_multicolumn_foreign_key_counts_constraint_only_once(self):
+        with closing(sqlite3.connect(self.db)) as db:
+            db.execute('ALTER TABLE "sampleSrc" ADD COLUMN "label" TEXT')
+            db.execute(
+                'CREATE UNIQUE INDEX "unique_pair" '
+                'ON "sampleSrc"("text", "label")'
+            )
+            db.execute(
+                'CREATE TABLE "composite_child" ('
+                'a TEXT, b TEXT, '
+                'FOREIGN KEY(a, b) REFERENCES "sampleSrc"("text", "label"))'
+            )
+            db.commit()
+        result = inspect_offline_replacement_dependencies(self.db)
+        self.assertEqual(result["status"], "REVIEW_REQUIRED")
+        self.assertEqual(result["inbound_foreign_key_count"], 1)
+        self.assertEqual(result["referencing_table_names"], ["composite_child"])
+        self.assertFalse(result["replacement_authorized"])
+
     def test_unrelated_fk_and_trigger_are_not_inbound(self):
         with closing(sqlite3.connect(self.db)) as db:
             db.execute('CREATE TABLE "parent" (id INTEGER PRIMARY KEY)')
