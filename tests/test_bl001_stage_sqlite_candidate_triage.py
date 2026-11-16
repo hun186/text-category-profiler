@@ -61,6 +61,40 @@ class OfflineCandidateTriageTests(unittest.TestCase):
         self.assertFalse(report["candidates"][0]["has_pandas_index"])
         self.assertFalse(report["deletion_authorized"])
 
+    def test_unique_pandas_named_index_is_invalid(self):
+        candidate = self._create_candidate("d" * 32, pandas_index=False)
+        with closing(sqlite3.connect(self.path)) as db:
+            db.execute('CREATE UNIQUE INDEX "ix_' + candidate
+                       + '_index" ON "' + candidate + '" ("index")')
+            db.commit()
+        before = self.path.read_bytes()
+        rec = triage_offline_copy(self.path)["candidates"][0]
+        self.assertFalse(rec["has_pandas_index"])
+        self.assertEqual(rec["invalid_pandas_index_count"], 1)
+        self.assertFalse(rec["all_indexes_pandas_compatible"])
+        self.assertFalse(rec["safe_to_delete"])
+        self.assertEqual(self.path.read_bytes(), before)
+
+    def test_mixed_valid_wrong_collation_and_unexpected_index(self):
+        candidate = self._create_candidate("e" * 32)
+        with closing(sqlite3.connect(self.path)) as db:
+            db.execute('CREATE INDEX "ix_' + candidate
+                       + '_text" ON "' + candidate + '" ("text" COLLATE NOCASE)')
+            db.execute('CREATE INDEX "unexpected_index" ON "'
+                       + candidate + '" ("text")')
+            db.commit()
+        before = self.path.read_bytes()
+        result = triage_offline_copy(self.path)
+        rec = result["candidates"][0]
+        self.assertTrue(rec["has_pandas_index"])
+        self.assertEqual(rec["invalid_pandas_index_count"], 1)
+        self.assertEqual(rec["unexpected_index_count"], 1)
+        self.assertEqual(rec["all_index_count"], 3)
+        self.assertFalse(rec["all_indexes_pandas_compatible"])
+        self.assertEqual(result["owner_status"], "UNKNOWN")
+        self.assertFalse(result["deletion_authorized"])
+        self.assertEqual(self.path.read_bytes(), before)
+
     def test_real_pandas_named_and_multiindex_are_recognized(self):
         try:
             import pandas as pd
@@ -81,6 +115,7 @@ class OfflineCandidateTriageTests(unittest.TestCase):
             )
             self.assertTrue(record["has_pandas_index"], record)
             self.assertTrue(record["pandas_index_names"])
+            self.assertTrue(record["all_indexes_pandas_compatible"])
 
     def test_malformed_prefix_total_not_lost_when_name_list_is_capped(self):
         with closing(sqlite3.connect(self.path)) as db:
