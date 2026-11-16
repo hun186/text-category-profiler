@@ -93,10 +93,14 @@ class OfflineReplacementDependencyTests(unittest.TestCase):
         except (OSError, NotImplementedError):
             pass
         else:
-            self.assertEqual(
-                inspect_offline_replacement_dependencies(alias)["status"],
-                "UNVERIFIABLE",
-            )
+            from unittest.mock import patch
+            with patch(
+                "scripts.bl001_stage_sqlite_dependency_inventory.inventory_offline_copy",
+                side_effect=AssertionError("must refuse before SQLite opens"),
+            ):
+                result = inspect_offline_replacement_dependencies(alias)
+            self.assertEqual(result["status"], "UNVERIFIABLE")
+            self.assertIn("hardlink_not_allowed", result["issues"])
 
     def test_cli_json_and_exit_codes(self):
         out = io.StringIO()
