@@ -66,9 +66,28 @@ def offline_quick_check(filename: str | Path, *, max_mib: int = 256) -> dict:
             report["quick_check"] = "FAIL"
             return report
         report["quick_check"] = "ok"
+        # Re-run the SAME safe inventory after page inspection, including
+        # the full schema-name digests rather than a truncated display set.
+        # This catches candidate creation or equal-count rename between
+        # the first metadata snapshot and the health scan.
+        ending = inventory_offline_copy(path)
+        stable = path.stat()
+        if (ending["status"] != source["status"]
+                or ending["candidate_count"] != source["candidate_count"]
+                or ending["unexpected_prefix_count"]
+                != source["unexpected_prefix_count"]
+                or ending["candidate_names_sha256"]
+                != source["candidate_names_sha256"]
+                or ending["unexpected_prefix_names_sha256"]
+                != source["unexpected_prefix_names_sha256"]
+                or first.st_size != stable.st_size
+                or first.st_mtime_ns != stable.st_mtime_ns
+                or getattr(first, "st_ino", None) != getattr(stable, "st_ino", None)):
+            report["issues"].append("offline_copy_changed_during_check")
+            return report
         report["checked_db_bytes"] = first.st_size
         report["status"] = (
-            "REVIEW_REQUIRED" if source["status"] == "REVIEW_REQUIRED"
+            "REVIEW_REQUIRED" if ending["status"] == "REVIEW_REQUIRED"
             else "PASS_OFFLINE_QUICK_CHECK"
         )
         return report

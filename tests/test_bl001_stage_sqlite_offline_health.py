@@ -46,6 +46,59 @@ class OfflineHealthTests(unittest.TestCase):
         self.assertEqual(result["candidate_count"], 1)
         self.assertFalse(result["candidate_deletion_authorized"])
 
+    def test_candidate_created_after_quickcheck_cannot_false_green(self):
+        from unittest.mock import patch
+        from scripts import bl001_stage_sqlite_offline_health as mod
+        original = mod.inventory_offline_copy
+        count = 0
+        def new_candidate_on_second_inventory(path):
+            nonlocal count
+            count += 1
+            if count == 2:
+                with closing(sqlite3.connect(path)) as db:
+                    db.execute(
+                        'CREATE TABLE "__bl001_stage_'
+                        + "f" * 32 + '" ("text" TEXT)'
+                    )
+                    db.commit()
+            return original(path)
+        with patch.object(mod, "inventory_offline_copy",
+                          side_effect=new_candidate_on_second_inventory):
+            result = offline_quick_check(self.path)
+        self.assertEqual(count, 2)
+        self.assertEqual(result["status"], "UNVERIFIABLE")
+        self.assertIn("offline_copy_changed_during_check", result["issues"])
+        self.assertFalse(result["candidate_deletion_authorized"])
+        self.assertFalse(result["production_workpool_verified"])
+
+    def test_equal_count_candidate_rename_after_quickcheck_is_detected(self):
+        from unittest.mock import patch
+        from scripts import bl001_stage_sqlite_offline_health as mod
+        old = "__bl001_stage_" + "a" * 32
+        new = "__bl001_stage_" + "b" * 32
+        with closing(sqlite3.connect(self.path)) as db:
+            db.execute('CREATE TABLE "' + old + '" ("text" TEXT)')
+            db.commit()
+        original = mod.inventory_offline_copy
+        count = 0
+        def rename_on_second_inventory(path):
+            nonlocal count
+            count += 1
+            if count == 2:
+                with closing(sqlite3.connect(path)) as db:
+                    db.execute(
+                        'ALTER TABLE "' + old + '" RENAME TO "' + new + '"'
+                    )
+                    db.commit()
+            return original(path)
+        with patch.object(mod, "inventory_offline_copy",
+                          side_effect=rename_on_second_inventory):
+            result = offline_quick_check(self.path)
+        self.assertEqual(result["status"], "UNVERIFIABLE")
+        self.assertIn("offline_copy_changed_during_check", result["issues"])
+        self.assertEqual(result["quick_check"], "ok")
+        self.assertFalse(result["candidate_deletion_authorized"])
+
     def test_workpool_and_sidecar_are_refused_before_quickcheck(self):
         folder = self.root / "WorkPool-copy"
         folder.mkdir()
