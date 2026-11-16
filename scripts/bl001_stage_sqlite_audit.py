@@ -30,6 +30,11 @@ def _has_workpool_ancestor(path: Path) -> bool:
     return any(part.casefold().startswith("workpool") for part in parts)
 
 
+def _has_multiple_file_links(path: Path) -> bool:
+    """Fail closed if detached copy shares its inode through hard links."""
+    return path.stat().st_nlink != 1
+
+
 def audit_stage_sqlite(filename: str | Path) -> dict:
     """Check only SQLite schema metadata; never open a writable connection.
 
@@ -61,6 +66,13 @@ def audit_stage_sqlite(filename: str | Path) -> dict:
         return result
     if not path.is_file():
         issues.append("database_not_found")
+        return result
+    try:
+        if _has_multiple_file_links(path):
+            issues.append("hardlink_not_allowed")
+            return result
+    except (OSError, ValueError):
+        issues.append("database_path_not_verifiable")
         return result
     if any(Path(str(path) + suffix).exists()
            for suffix in ("-wal", "-shm", "-journal")):
