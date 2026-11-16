@@ -30,10 +30,12 @@ def offline_quick_check(filename: str | Path, *, max_mib: int = 256) -> dict:
         "production_workpool_verified": False,
         "issues": [],
         "quick_check": "NOT_RUN",
+        "foreign_key_check": "NOT_RUN",
         "limitations": (
-            "PRAGMA quick_check(1) checks SQLite consistency on a detached "
-            "copy only; it does not verify all foreign keys, application "
-            "semantics, complete disk durability, or live WorkPool state."
+            "PRAGMA quick_check(1) checks SQLite page consistency and "
+            "PRAGMA foreign_key_check inspects referential integrity on a "
+            "detached copy. Neither establishes application semantics, "
+            "complete disk durability, or live WorkPool state."
         ),
     }
     # This guard refuses live-looking WorkPool ancestry, symlinks, sidecars,
@@ -55,6 +57,12 @@ def offline_quick_check(filename: str | Path, *, max_mib: int = 256) -> dict:
         with closing(sqlite3.connect(_readonly_uri(path), uri=True, timeout=1)) as db:
             db.execute("PRAGMA query_only=ON")
             rows = db.execute("PRAGMA quick_check(1)").fetchall()
+            if len(rows) == 1 and rows[0][0] == "ok":
+                # A single violating row is enough to fail closed. Never
+                # expose rowids, table names or sensitive child-row data.
+                fk_violation = db.execute("PRAGMA foreign_key_check").fetchone()
+            else:
+                fk_violation = None
         last = path.stat()
         if (first.st_size != last.st_size
                 or first.st_mtime_ns != last.st_mtime_ns
@@ -66,6 +74,11 @@ def offline_quick_check(filename: str | Path, *, max_mib: int = 256) -> dict:
             report["quick_check"] = "FAIL"
             return report
         report["quick_check"] = "ok"
+        if fk_violation is not None:
+            report["foreign_key_check"] = "FAIL"
+            report["issues"].append("sqlite_foreign_key_violations")
+            return report
+        report["foreign_key_check"] = "ok"
         # Re-run the SAME safe inventory after page inspection, including
         # the full schema-name digests rather than a truncated display set.
         # This catches candidate creation or equal-count rename between

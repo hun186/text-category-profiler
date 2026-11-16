@@ -20,3 +20,9 @@ SQLite `quick_check(1)` **不是**完整 `integrity_check`，也不檢查全部�
 `offline_quick_check` 現在會在完成 SQLite 頁面檢查後再次讀取**完整**候選表與可疑前綴名稱指紋，與前一次盤點比對。即使候選表總數沒變、只在兩次檢查之間改名，也會回報 `UNVERIFIABLE`／`offline_copy_changed_during_check`，而非 `PASS_OFFLINE_QUICK_CHECK`。若第二次盤點因 sidecar、路徑或 schema 問題不可判讀，也不放行。
 
 注意：這是對「執行中意外變動」的額外偵測，**不是**對靜止性或完整性做無條件保證；惡意竄改、改完又復原及資料庫真正業務正確性仍不在可證明範圍，必須使用已停止寫入的獨立複本。工具不讀取業務資料列，也不授權刪除候選表。
+
+## 外鍵參照完整性同時檢查
+
+離線 SQLite 健康檢查除了 `PRAGMA quick_check(1)`，現在也預設執行 `PRAGMA foreign_key_check`，只需找到**一筆**外鍵違規就回報 `UNVERIFIABLE`／`sqlite_foreign_key_violations`。不輸出任何外鍵違規的列號、子表名稱或資料內容。當外鍵檢查正常時才顯示 `foreign_key_check=ok`，否則是 `FAIL` 或 `NOT_RUN`。
+
+完整性快檢依然只接受已停止 writer 的非 WorkPool 路徑獨立複本，最多掃描 `--max-mib` 設定內的 SQLite 檔案；它不執行修復、不刪除候選表，也不代表業務邏輯正確或正式資料庫已驗收。
