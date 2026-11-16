@@ -30,6 +30,7 @@ def inventory_offline_copy(filename: str | Path) -> dict:
         "candidate_count": 0,
         "candidate_names": [],
         "candidate_names_truncated": False,
+        "unexpected_prefix_count": 0,
         "unexpected_prefixed_names": [],
         "unexpected_names_truncated": False,
         "schema_status": "NOT_CHECKED",
@@ -80,6 +81,7 @@ def inventory_offline_copy(filename: str | Path) -> dict:
     result["candidate_count"] = len(candidates)
     result["candidate_names"] = candidates[:_DISPLAY_LIMIT]
     result["candidate_names_truncated"] = len(candidates) > _DISPLAY_LIMIT
+    result["unexpected_prefix_count"] = len(suspicious)
     result["unexpected_prefixed_names"] = suspicious[:_DISPLAY_LIMIT]
     result["unexpected_names_truncated"] = len(suspicious) > _DISPLAY_LIMIT
 

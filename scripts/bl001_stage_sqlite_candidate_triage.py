@@ -27,6 +27,7 @@ def triage_offline_copy(filename: str | Path) -> dict:
         prior = {
             "status": "UNVERIFIABLE", "candidate_count": 0,
             "candidate_names": [], "candidate_names_truncated": False,
+            "unexpected_prefix_count": 0,
             "unexpected_prefixed_names": [], "unexpected_names_truncated": False,
             "issues": ["workpool_path_not_allowed"],
         }
@@ -40,6 +41,7 @@ def triage_offline_copy(filename: str | Path) -> dict:
         "candidates": [],
         "candidate_detail_truncated": prior["candidate_names_truncated"],
         "unexpected_prefix_count_known": len(prior["unexpected_prefixed_names"]),
+        "unexpected_prefix_count": prior["unexpected_prefix_count"],
         "unexpected_prefix_names_truncated": prior["unexpected_names_truncated"],
         "issues": prior["issues"][:],
         "owner_status": "UNKNOWN",
