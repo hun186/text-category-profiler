@@ -188,6 +188,23 @@ class StageSQLiteAuditTests(unittest.TestCase):
         self.assertEqual(result["status"], "FAIL")
         self.assertIn("workpool_path_not_allowed", result["issues"])
 
+    def test_hardlinked_offline_alias_is_refused_before_sqlite_open(self):
+        import os
+        path = self.valid_database()
+        alias = Path(self.tmp.name) / "second-hardlink.sqlite3"
+        try:
+            os.link(path, alias)
+        except (OSError, NotImplementedError):
+            self.skipTest("Hard-link creation not supported on this filesystem")
+        before = path.read_bytes()
+        for candidate in (path, alias):
+            with self.subTest(candidate=candidate):
+                result = audit_stage_sqlite(candidate)
+                self.assertEqual(result["status"], "FAIL")
+                self.assertIn("hardlink_not_allowed", result["issues"])
+        self.assertEqual(path.read_bytes(), before)
+        self.assertEqual(alias.read_bytes(), before)
+
     def test_cli_prints_machine_readable_json_and_status(self):
         path = self.valid_database()
         out = io.StringIO()

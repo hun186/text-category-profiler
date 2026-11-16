@@ -15,7 +15,8 @@ import re
 import sqlite3
 
 from scripts.bl001_stage_sqlite_audit import (
-    _has_workpool_ancestor, _readonly_uri, audit_stage_sqlite,
+    _has_multiple_file_links, _has_workpool_ancestor, _readonly_uri,
+    audit_stage_sqlite,
 )
 
 
@@ -67,6 +68,13 @@ def inventory_offline_copy(filename: str | Path) -> dict:
         return result
     if not path.is_file():
         issues.append("database_not_found")
+        return result
+    try:
+        if _has_multiple_file_links(path):
+            issues.append("hardlink_not_allowed")
+            return result
+    except (OSError, ValueError):
+        issues.append("database_path_not_verifiable")
         return result
     if any(Path(str(path) + suffix).exists()
            for suffix in ("-wal", "-shm", "-journal")):
