@@ -25,6 +25,11 @@ _PREFIX = "__bl001_stage_"
 _DISPLAY_LIMIT = 20
 
 
+def _has_candidate_prefix(name: str) -> bool:
+    """SQLite table identifiers are case-insensitive, unlike exact writer UUIDs."""
+    return name.casefold().startswith(_PREFIX)
+
+
 def _name_digest(names) -> str:
     """Full sorted schema-name digest, never truncated to display count."""
     encoded = json.dumps(sorted(names), ensure_ascii=True,
@@ -98,7 +103,7 @@ def inventory_offline_copy(filename: str | Path) -> dict:
     candidates = [name for name in names if _CANDIDATE.fullmatch(name)]
     suspicious = [
         name for name in names
-        if name.startswith(_PREFIX) and not _CANDIDATE.fullmatch(name)
+        if _has_candidate_prefix(name) and not _CANDIDATE.fullmatch(name)
     ]
     result["candidate_count"] = len(candidates)
     result["candidate_names"] = candidates[:_DISPLAY_LIMIT]

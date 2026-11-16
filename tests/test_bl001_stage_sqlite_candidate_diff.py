@@ -86,6 +86,17 @@ class OfflineCandidateSnapshotDiffTests(unittest.TestCase):
         self.assertEqual(self.before.read_bytes(), before_bytes)
         self.assertEqual(self.after.read_bytes(), after_bytes)
 
+    def test_case_variant_prefix_in_diff_requires_review(self):
+        with closing(sqlite3.connect(self.after)) as db:
+            db.execute('CREATE TABLE "__BL001_STAGE_'
+                       + "a" * 32 + '" ("text" TEXT)')
+            db.commit()
+        report = compare_offline_copies(self.before, self.after)
+        self.assertEqual(report["status"], "REVIEW_REQUIRED")
+        self.assertEqual(report["added_candidate_count"], 0)
+        self.assertEqual(report["added_malformed_prefix_count"], 1)
+        self.assertFalse(report["deletion_authorized"])
+
     def test_malformed_prefix_counts_and_no_cleanup_inferences(self):
         with closing(sqlite3.connect(self.before)) as db:
             db.execute('CREATE TABLE "__bl001_stage_unknown_old" (v TEXT)')

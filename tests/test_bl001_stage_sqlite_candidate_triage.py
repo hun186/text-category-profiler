@@ -117,6 +117,18 @@ class OfflineCandidateTriageTests(unittest.TestCase):
             self.assertTrue(record["pandas_index_names"])
             self.assertTrue(record["all_indexes_pandas_compatible"])
 
+    def test_case_variant_prefix_is_reported_as_suspicious(self):
+        with closing(sqlite3.connect(self.path)) as db:
+            db.execute('CREATE TABLE "__BL001_STAGE_'
+                       + "a" * 32 + '" ("text" TEXT)')
+            db.commit()
+        report = triage_offline_copy(self.path)
+        self.assertEqual(report["status"], "REVIEW_REQUIRED")
+        self.assertEqual(report["candidate_count"], 0)
+        self.assertEqual(report["unexpected_prefix_count"], 1)
+        self.assertEqual(report["owner_status"], "UNKNOWN")
+        self.assertFalse(report["deletion_authorized"])
+
     def test_malformed_prefix_total_not_lost_when_name_list_is_capped(self):
         with closing(sqlite3.connect(self.path)) as db:
             for n in range(23):
