@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -71,11 +72,27 @@ def _check_output(output: str, expected: str) -> bool:
             return record.get("status") == expected
     return False
 
+def _real_selftest_outer_timeout() -> int:
+    """Give the inner full-pipeline supervisor time to reap its child tree."""
+    try:
+        inner = int(os.environ.get("TCP_REAL_PIPELINE_TIMEOUT_SECONDS", "1800"))
+    except ValueError:
+        # The supervisor will reject malformed configuration itself.
+        return 2100
+    if inner <= 0:
+        return 2100
+    if inner > 7200:
+        raise ValueError("Real self-test inner timeout exceeds 7200s preflight bound")
+    return inner + 300
+
 
 def run_private_preflight(*, real_port: int | None = None,
                           runner=None) -> dict:
     if real_port is not None and not 1 <= real_port <= 65535:
         raise ValueError("real_port must be between 1 and 65535")
+    real_outer_timeout = (
+        _real_selftest_outer_timeout() if real_port is not None else None
+    )
     if runner is None:
         runner = subprocess.run
     checks = list(_PRIVATE_CHECKS)
@@ -99,7 +116,7 @@ def run_private_preflight(*, real_port: int | None = None,
     results = []
     for name, argv, expected in checks:
         args = [sys.executable, *argv]
-        timeout = 1200 if name == "root_real_opt_in" else 300
+        timeout = real_outer_timeout if name == "root_real_opt_in" else 300
         try:
             done = runner(
                 args, cwd=str(_ROOT), capture_output=True,

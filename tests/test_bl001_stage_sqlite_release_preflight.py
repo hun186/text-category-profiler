@@ -7,7 +7,7 @@ import io
 import json
 
 from scripts.bl001_stage_sqlite_release_preflight import (
-    _PRIVATE_CHECKS, _missing_child_modules,
+    _PRIVATE_CHECKS, _missing_child_modules, _real_selftest_outer_timeout,
     _check_output, main, run_private_preflight,
 )
 
@@ -29,6 +29,23 @@ def fake_runner(args, **kwargs):
 
 
 class ReleasePreflightTests(unittest.TestCase):
+    def test_real_supervisor_timeout_has_inner_cleanup_headroom(self):
+        from unittest.mock import patch
+        with patch.dict("os.environ", {}, clear=True):
+            self.assertEqual(_real_selftest_outer_timeout(), 2100)
+        with patch.dict("os.environ", {"TCP_REAL_PIPELINE_TIMEOUT_SECONDS": "3600"}):
+            self.assertEqual(_real_selftest_outer_timeout(), 3900)
+            captured = []
+            def capture_runner(args, **kwargs):
+                captured.append((args, kwargs["timeout"]))
+                return fake_runner(args, **kwargs)
+            outcome = run_private_preflight(real_port=8050, runner=capture_runner)
+            self.assertEqual(outcome["status"], "PASS_PRIVATE_PREFLIGHT_NOT_PRODUCTION")
+            self.assertEqual(captured[-1][1], 3900)
+        with patch.dict("os.environ", {"TCP_REAL_PIPELINE_TIMEOUT_SECONDS": "7300"}):
+            with self.assertRaises(ValueError):
+                run_private_preflight(real_port=8050, runner=fake_runner)
+
     def test_all_configured_checkout_modules_exist(self):
         self.assertEqual(_missing_child_modules(_PRIVATE_CHECKS), [])
         self.assertEqual(
