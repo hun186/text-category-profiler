@@ -15,7 +15,7 @@ import sqlite3
 
 from scripts.bl001_stage_sqlite_audit import _has_workpool_ancestor, _readonly_uri
 from scripts.bl001_stage_sqlite_candidate_inventory import (
-    _CANDIDATE, _PREFIX, _name_digest, inventory_offline_copy,
+    _CANDIDATE, _has_candidate_prefix, _name_digest, inventory_offline_copy,
 )
 
 
@@ -76,7 +76,7 @@ def triage_offline_copy(filename: str | Path) -> dict:
             candidate_names = [name for name in names if _CANDIDATE.fullmatch(name)]
             unexpected_names = [
                 name for name in names
-                if name.startswith(_PREFIX) and not _CANDIDATE.fullmatch(name)
+                if _has_candidate_prefix(name) and not _CANDIDATE.fullmatch(name)
             ]
             if (len(candidate_names) != prior["candidate_count"]
                     or len(unexpected_names) != prior["unexpected_prefix_count"]
