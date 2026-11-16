@@ -173,3 +173,9 @@ run-bl001-sqlite-release-preflight.bat --real-port 8050
 ### KI-012 一鍵快檢加入私人 reader-snapshot 交錯測試
 
 `run-bl001-sqlite-release-preflight.bat` 已將 `reader_snapshot`（20 筆、跨程序、TemporaryDirectory）列為必要子檢查，必須取得 `PASS_PRIVATE_READER_SNAPSHOT`；`PASS` 等其他回應不能冒充通過。原子式 writer、讀取端快照、View 和實際欄位索引必須保持一致。這仍**不是**正式 WorkPool／網路共享碟驗收；未啟用實際模型時，整體狀態依舊 `PASS_PARTIAL_NO_REAL_MODEL`。
+
+## KI-012 私人 SQLite 備份、還原及候選表保全（非正式備援驗收）
+
+`run-bl001-sqlite-backup-restore.bat`（或 `python -m scripts.bl001_stage_sqlite_backup_restore --rows 40`）**只建立三份私人 TemporaryDirectory SQLite**：來源、sqlite3.backup 複本及從複本還原的目標。驗證 `sampleSrc` 文字資料、原生 `text_Index` 與 pandas index 的欄位契約、依賴 View、無關表及一張刻意保留的候選表，全部在備份及還原後一致；並確認來源檔案位元組未變。候選表一律標記 `owner_status=UNKNOWN`、不允許刪除。沒有 `--db`／WorkPool 路徑入口。
+
+原本一鍵 `run-bl001-sqlite-release-preflight.bat` 現在額外納入 `private_backup_restore`（15 筆），期望 **精確** `PASS_PRIVATE_BACKUP_RESTORE`；任一缺模組、異常返回或狀態不符都中止後續檢查。這不構成真實 WorkPool 備份／復原策略、磁碟耗盡／網路磁碟保證或正式部署驗收；無真實模型的最終狀態仍是 `PASS_PARTIAL_NO_REAL_MODEL`。

@@ -38,6 +38,9 @@ _PRIVATE_CHECKS = (
     ("reader_snapshot",
      ("-m", "scripts.bl001_stage_sqlite_reader_snapshot", "--rows", "20"),
      "PASS_PRIVATE_READER_SNAPSHOT"),
+    ("private_backup_restore",
+     ("-m", "scripts.bl001_stage_sqlite_backup_restore", "--rows", "15"),
+     "PASS_PRIVATE_BACKUP_RESTORE"),
     ("root_isolated", ("TCFMain.py", "--self-test", "isolated"), "FINAL: PASS"),
 )
 
