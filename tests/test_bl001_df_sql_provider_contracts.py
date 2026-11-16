@@ -53,8 +53,24 @@ class RecorderConnection:
     def __init__(self, events):
         self.events = events
 
-    def execute(self, statement):
+    def execute(self, statement, parameters=()):
         self.events.append(("execute", statement))
+        if statement.startswith("SELECT sql FROM sqlite_master"):
+            table = parameters[0]
+            return type("Cursor", (), {
+                "fetchone": lambda self: (
+                    'CREATE TABLE "' + table + '" ("text" TEXT, "label" TEXT)',
+                ),
+            })()
+        if statement.startswith("PRAGMA "):
+            return []
+        return None
+
+    def commit(self):
+        self.events.append(("commit",))
+
+    def rollback(self):
+        self.events.append(("rollback",))
 
     def close(self):
         self.events.append(("close",))
@@ -80,18 +96,31 @@ class SQLProviderContractTests(unittest.TestCase):
                 frame = RecorderFrame(events)
                 fn = isolate_sql_writer(path, lite=lite)
                 self.assertIsNone(fn("legacy.sql3", frame))
-                self.assertEqual(events, [
-                    ("connect", "legacy.sql3"),
-                    ("select", ["text", "label"]),
-                    ("to_sql", {"name": "sampleSrc", "con": lite.connection, "if_exists": "replace"}),
-                    ("execute", 'CREATE INDEX "text_Index" ON "sampleSrc"("text");'),
-                    ("close",),
-                ])
-                observed.append([item[0] for item in events])
+                sql = [event for event in events if event[0] == "to_sql"]
+                self.assertEqual(len(sql), 1)
+                self.assertTrue(sql[0][1]["name"].startswith("__bl001_stage_"))
+                self.assertIs(sql[0][1]["con"], lite.connection)
+                self.assertEqual(sql[0][1]["if_exists"], "fail")
+                executed = [event[1] for event in events if event[0] == "execute"]
+                self.assertIn("BEGIN IMMEDIATE", executed)
+                self.assertIn('DROP TABLE IF EXISTS "sampleSrc"', executed)
+                self.assertTrue(any(
+                    sql.startswith('CREATE TABLE "sampleSrc"')
+                    for sql in executed
+                ))
+                self.assertTrue(any(
+                    sql.startswith('INSERT INTO "sampleSrc" SELECT * FROM "__bl001_stage_')
+                    for sql in executed
+                ))
+                self.assertIn('CREATE INDEX "text_Index" ON "sampleSrc"("text");',
+                              executed)
+                self.assertIn(("commit",), events)
+                self.assertEqual(events[-1], ("close",))
+                observed.append([event[0] for event in events])
                 with self.assertRaises(TypeError):
                     fn("legacy.sql3", frame, table="another")
         self.assertEqual(observed[0], observed[1])
-        # Stage-local shared writer now closes connections deterministically.
+        # Canonical remains distinct and retains its old direct to_sql API.
 
     def test_canonical_defaults_use_logger_and_close_connection(self):
         events = []

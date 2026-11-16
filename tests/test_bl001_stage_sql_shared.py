@@ -37,10 +37,28 @@ class FakeConnection:
         self.events = events
         self.fail_index = fail_index
 
-    def execute(self, sql):
+    def execute(self, sql, parameters=()):
         self.events.append(("execute", sql))
-        if self.fail_index:
+        if sql.startswith("SELECT sql FROM sqlite_master"):
+            table = parameters[0]
+            return type("Cursor", (), {
+                "fetchone": lambda self: (
+                    'CREATE TABLE "' + table + '" ("text" TEXT, "label" TEXT)',
+                ),
+            })()
+        if self.fail_index and sql.startswith('CREATE INDEX "text_Index"'):
             raise LookupError("injected index creation error")
+        if sql.startswith("PRAGMA "):
+            # Stage index metadata has no indexes in the fake test; real
+            # pandas index contracts are verified against real SQLite below.
+            return []
+        return None
+
+    def commit(self):
+        self.events.append(("commit",))
+
+    def rollback(self):
+        self.events.append(("rollback",))
 
     def close(self):
         self.events.append(("close",))
@@ -107,14 +125,28 @@ class StageSQLiteTests(unittest.TestCase):
                 frame = FakeDataFrame(events)
                 fn, _ = isolated_stage_writer(path, lite=db)
                 self.assertIsNone(fn("out.sql3", frame))
-                self.assertEqual(events, [
-                    ("connect", "out.sql3"),
-                    ("select", ["text", "label"]),
-                    ("to_sql", {"name": "sampleSrc", "con": db.conn,
-                                "if_exists": "replace"}),
-                    ("execute", 'CREATE INDEX "text_Index" ON "sampleSrc"("text");'),
-                    ("close",),
-                ])
+                sql_writes = [event for event in events if event[0] == "to_sql"]
+                self.assertEqual(len(sql_writes), 1)
+                options = sql_writes[0][1]
+                self.assertTrue(options["name"].startswith("__bl001_stage_"))
+                self.assertEqual(options["con"], db.conn)
+                self.assertEqual(options["if_exists"], "fail")
+                sql_statements = [event[1] for event in events if event[0] == "execute"]
+                self.assertIn("BEGIN IMMEDIATE", sql_statements)
+                self.assertIn('DROP TABLE IF EXISTS "sampleSrc"', sql_statements)
+                self.assertTrue(any(
+                    sql.startswith('CREATE TABLE "sampleSrc"')
+                    for sql in sql_statements
+                ))
+                self.assertTrue(any(
+                    sql.startswith('INSERT INTO "sampleSrc" SELECT * FROM "__bl001_stage_')
+                    for sql in sql_statements
+                ))
+                self.assertIn('CREATE INDEX "text_Index" ON "sampleSrc"("text");',
+                              sql_statements)
+                self.assertEqual(events.count(("commit",)), 1)
+                self.assertEqual(events.count(("close",)), 1)
+                self.assertEqual(events[-1], ("close",))
                 with self.assertRaises(TypeError):
                     fn("out.sql3", frame, table="other")
 
