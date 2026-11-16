@@ -14,7 +14,8 @@ import sqlite3
 
 from scripts.bl001_stage_sqlite_audit import _readonly_uri
 from scripts.bl001_stage_sqlite_candidate_inventory import (
-    _CANDIDATE, _DISPLAY_LIMIT, _PREFIX, _name_digest, inventory_offline_copy,
+    _CANDIDATE, _DISPLAY_LIMIT, _has_candidate_prefix, _name_digest,
+    inventory_offline_copy,
 )
 
 
@@ -29,7 +30,7 @@ def _read_candidate_names(path: Path) -> tuple[set[str], set[str]]:
     candidates = {name for name in names if _CANDIDATE.fullmatch(name)}
     malformed = {
         name for name in names
-        if name.startswith(_PREFIX) and not _CANDIDATE.fullmatch(name)
+        if _has_candidate_prefix(name) and not _CANDIDATE.fullmatch(name)
     }
     return candidates, malformed
 
