@@ -25,6 +25,8 @@ def fake_runner(args, **kwargs):
             output = '{"status":"PASS_CHECKPOINT_MEASURED"}\n'
         elif module.endswith("full_rollback"):
             output = '{"status":"PASS_SQLITE_FULL_ROLLBACK"}\n'
+        elif module.endswith("reader_snapshot"):
+            output = '{"status":"PASS_PRIVATE_READER_SNAPSHOT"}\n'
         else:
             output = '{"status":"PASS"}\n'
     else:
@@ -33,6 +35,35 @@ def fake_runner(args, **kwargs):
 
 
 class ReleasePreflightTests(unittest.TestCase):
+    def test_reader_snapshot_is_required_with_bounded_private_rows(self):
+        required = [item for item in _PRIVATE_CHECKS
+                    if item[0] == "reader_snapshot"]
+        self.assertEqual(required, [(
+            "reader_snapshot",
+            ("-m", "scripts.bl001_stage_sqlite_reader_snapshot",
+             "--rows", "20"), "PASS_PRIVATE_READER_SNAPSHOT",
+        )])
+        outcome = run_private_preflight(runner=fake_runner)
+        self.assertEqual(outcome["status"], "PASS_PARTIAL_NO_REAL_MODEL")
+        self.assertEqual(
+            {item["name"]: item["status"] for item in outcome["checks"]}[
+                "reader_snapshot"
+            ], "PASS",
+        )
+        self.assertFalse(outcome["production_workpool_verified"])
+
+    def test_reader_snapshot_wrong_success_token_fails_closed(self):
+        def faulty_runner(args, **kwargs):
+            if "scripts.bl001_stage_sqlite_reader_snapshot" in args:
+                return subprocess.CompletedProcess(
+                    args, 0, stdout='{"status":"PASS"}\n', stderr=""
+                )
+            return fake_runner(args, **kwargs)
+        result = run_private_preflight(runner=faulty_runner)
+        self.assertEqual(result["status"], "FAIL")
+        self.assertEqual(result["checks"][-1]["name"], "reader_snapshot")
+        self.assertFalse(result["production_workpool_verified"])
+
     def test_private_preflight_includes_disk_and_sqlite_quota_checks(self):
         expected = {
             "disk_checkpoints": "PASS_CHECKPOINT_MEASURED",

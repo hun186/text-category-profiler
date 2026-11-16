@@ -35,6 +35,9 @@ _PRIVATE_CHECKS = (
       "--rows", "120", "--repeat", "64"), "PASS_SQLITE_FULL_ROLLBACK"),
     ("parallel_stress", ("-m", "scripts.bl001_stage_sqlite_parallel_stress",
                          "--workers", "2", "--rounds", "1", "--rows", "20"), "PASS"),
+    ("reader_snapshot",
+     ("-m", "scripts.bl001_stage_sqlite_reader_snapshot", "--rows", "20"),
+     "PASS_PRIVATE_READER_SNAPSHOT"),
     ("root_isolated", ("TCFMain.py", "--self-test", "isolated"), "FINAL: PASS"),
 )
 
