@@ -153,3 +153,9 @@ run-bl001-sqlite-release-preflight.bat --real-port 8050
 `run-bl001-sqlite-disk-profile.bat`（或 `python -m scripts.bl001_stage_sqlite_disk_profile --rows 2000 --repeat 4`）只會在 Python `TemporaryDirectory` 中建立私人 SQLite；沒有 `--db` 或正式 WorkPool 路徑參數。預設 2,000 筆、文字重複 4 次，硬上限 20,000 筆與 8 次，不啟動模型。
 
 量測包含原始資料庫、候選表準備完畢、交易複製、建立 `text_Index`、候選表交易內刪除、提交前／後與完全關閉後的資料庫及 `-journal`／`-wal`／`-shm` 佔用。結果 `PASS_CHECKPOINT_MEASURED` 只代表固定 SQL 階段的檔案大小取樣及最終 schema／資料完整；`checkpoint_max_total_bytes` **不是連續取樣的真正最大磁碟峰值**，也不是實際磁碟剩餘空間、配額或網路共享碟安全界線。若要為正式大批次決策，仍須補獨立空間限制與 WorkPool 隔離驗收。Windows 實機結果尚未回報。
+
+## KI-012 一鍵快檢加入私人磁碟量測及 SQLITE_FULL 回滾驗收
+
+`run-bl001-sqlite-release-preflight.bat` 現在也會在私人 TemporaryDirectory 中執行 `disk_checkpoints`（100 筆、文字重複 2 次；期待 `PASS_CHECKPOINT_MEASURED`）與 `sqlite_full_rollback`（120 筆、文字重複 64 次；期待 `PASS_SQLITE_FULL_ROLLBACK`）。兩項只使用私人 SQLite，拒絕外部資料庫路徑。任一必要狀態不符即 `FAIL`，不再進行後續模型測試。
+
+**這不改變正式驗收界線。** 無真實模型時結果仍為 `PASS_PARTIAL_NO_REAL_MODEL`／exit 2；明確啟用真實模型的通過結果最多為 `PASS_PRIVATE_PREFLIGHT_NOT_PRODUCTION`。磁碟 checkpoint 不是連續峰值，SQLite page quota 也不是 OS 磁碟滿載；正式 WorkPool、網路共享碟及實際部署仍未驗證。
