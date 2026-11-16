@@ -120,3 +120,23 @@ run-bl001-sqlite-candidate-inventory.bat --db "D:\\private\\offline-copy.sqlite3
 CI 回歸入口：`python -m unittest -v tests.test_bl001_stage_sqlite_candidate_inventory`。新工具 Windows 實機尚待驗證，但此前原子修復與多程序重疊的 Windows UAT 已經通過。這個唯讀工具**不能證明候選表是否真正孤兒**，也沒有任何清理正式 DB 的能力。
 
 **離線路徑保護（新增）**：唯讀候選表工具除了拒絕檔案自身 symlink／WAL/journal sidecar，也拒絕提交路徑或解析後路徑中任何以 `WorkPool` 開頭的目錄元件（不分大小寫，包括 WorkPool 備份資料夾）。這是防呆而不是對活躍資料庫的檢測能力；需把已靜止且另存的複本移到明確獨立的暫存位置才能查，不能拿正式 DB 冒險。
+
+## KI-012 私人環境進階快檢（PR #263～#267）
+
+此批新增的命令都維持**不操作正式 WorkPool**的界線。先使用已合併的 `run-bl001-sqlite-perf-check.bat` 測量本機私人 SQLite 的舊式與原子式寫入相對耗時（預設 1,000 rows × 2 rounds；最多 20,000 rows × 3 rounds），以及 `run-bl001-sqlite-parallel-stress.bat` 驗證有限的多程序重疊寫入（預設 3 workers × 2 rounds × 50 rows）。兩者通過也**不是正式共享磁碟、大批次或全工作池效能證明**。Windows 實測這兩項尚待回傳。
+
+在所有 writer 已停止且有獨立離線 SQLite 複本時，`run-bl001-sqlite-candidate-inventory.bat --db "<offline-copy.sqlite3>"` 與 `run-bl001-sqlite-candidate-triage.bat --db "<offline-copy.sqlite3>"` 只檢查 metadata。**任何 WorkPool 目錄中的 DB 均被拒絕**；候選表即使包含 `text` 欄及有效 pandas 索引，也仍標為 `owner_status=UNKNOWN`、`safe_to_delete=false`；目前**完全沒有自動或人工正式庫刪表入口**。
+
+如需集中驗收，可在 Windows Anaconda Prompt 的 repository root 使用：
+
+```bat
+run-bl001-sqlite-release-preflight.bat
+```
+
+沒有明確模型參數時，全部私人寫入測試及隔離主流程成功會顯示 `PASS_PARTIAL_NO_REAL_MODEL`／exit 2（這是刻意的不完整狀態，不是失敗，也不是完整 PASS）。若本機已安裝 8050 對應的實際模型，才選擇：
+
+```bat
+run-bl001-sqlite-release-preflight.bat --real-port 8050
+```
+
+全部子檢查成功顯示 `PASS_PRIVATE_PREFLIGHT_NOT_PRODUCTION`／exit 0；任一必要測試失敗或檔案缺失回報 `FAIL`／exit 1。實際模型的完整流程由既有 `TCFMain.py --self-test real -p 8050` 以隔離工作池執行，目前 `config_from_cli()` 不會轉送 `TCP_REAL_PIPELINE_TIMEOUT_SECONDS` 給真實流程，因此 CLI 真正使用預設 1,800 秒；此快檢外層固定採 2,100 秒（多留 300 秒供 supervisor 終止子程序與清理），不會因外部同名環境變數縮短監督程序的生命週期。若未來 CLI timeout 契約改變，必須同步修正此驗收入口與測試。即使 `PASS_PRIVATE_PREFLIGHT_NOT_PRODUCTION`，`production_workpool_verified=false`，仍不得宣告正式資料庫上線／清理安全／正式 WorkPool 完整驗收。新一鍵快檢的 Windows 實機結果尚未收到。
