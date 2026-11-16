@@ -21,6 +21,10 @@ def fake_runner(args, **kwargs):
             output = '{"status":"PASS_ATOMICITY"}\n'
         elif module.endswith("performance_profile"):
             output = '{"status":"PASS_MEASURED"}\n'
+        elif module.endswith("disk_profile"):
+            output = '{"status":"PASS_CHECKPOINT_MEASURED"}\n'
+        elif module.endswith("full_rollback"):
+            output = '{"status":"PASS_SQLITE_FULL_ROLLBACK"}\n'
         else:
             output = '{"status":"PASS"}\n'
     else:
@@ -29,6 +33,46 @@ def fake_runner(args, **kwargs):
 
 
 class ReleasePreflightTests(unittest.TestCase):
+    def test_private_preflight_includes_disk_and_sqlite_quota_checks(self):
+        expected = {
+            "disk_checkpoints": "PASS_CHECKPOINT_MEASURED",
+            "sqlite_full_rollback": "PASS_SQLITE_FULL_ROLLBACK",
+        }
+        self.assertEqual(
+            {name: status for name, _, status in _PRIVATE_CHECKS
+             if name in expected}, expected,
+        )
+        outcome = run_private_preflight(runner=fake_runner)
+        self.assertEqual(outcome["status"], "PASS_PARTIAL_NO_REAL_MODEL")
+        statuses = {x["name"]: x["status"] for x in outcome["checks"]}
+        self.assertEqual({name: statuses[name] for name in expected},
+                         dict.fromkeys(expected, "PASS"))
+        self.assertFalse(outcome["production_workpool_verified"])
+
+    def test_disk_false_green_status_is_rejected(self):
+        def false_green(args, **kwargs):
+            if "scripts.bl001_stage_sqlite_disk_profile" in args:
+                return subprocess.CompletedProcess(
+                    args, 0, stdout='{"status":"PASS"}\n', stderr=""
+                )
+            return fake_runner(args, **kwargs)
+        outcome = run_private_preflight(runner=false_green)
+        self.assertEqual(outcome["status"], "FAIL")
+        self.assertEqual(outcome["checks"][-1]["name"], "disk_checkpoints")
+        self.assertFalse(outcome["production_workpool_verified"])
+
+    def test_sqlite_full_failure_stops_before_any_root_selftest(self):
+        def fail_full(args, **kwargs):
+            if "scripts.bl001_stage_sqlite_full_rollback" in args:
+                return subprocess.CompletedProcess(
+                    args, 1, stdout='{"status":"FAIL_OR_BLOCKED"}\n', stderr=""
+                )
+            return fake_runner(args, **kwargs)
+        outcome = run_private_preflight(real_port=8050, runner=fail_full)
+        self.assertEqual(outcome["status"], "FAIL")
+        self.assertEqual(outcome["checks"][-1]["name"], "sqlite_full_rollback")
+        self.assertFalse(any(x["name"].startswith("root_") for x in outcome["checks"]))
+
     def test_real_supervisor_timeout_tracks_actual_cli_default_not_env(self):
         from unittest.mock import patch
         captured = []
