@@ -70,6 +70,28 @@ class CandidateInventoryTests(unittest.TestCase):
         self.assertTrue(report["unexpected_names_truncated"])
         self.assertEqual(self.db.read_bytes(), before)
 
+    def test_full_candidate_digest_changes_even_if_display_is_truncated(self):
+        from scripts.bl001_stage_sqlite_candidate_inventory import _name_digest
+        for number in range(24):
+            self._add_table("__bl001_stage_" + format(number, "032x"))
+        before = inventory_offline_copy(self.db)
+        self.assertEqual(before["candidate_count"], 24)
+        self.assertEqual(before["candidate_names_sha256"], _name_digest(
+            ["__bl001_stage_" + format(i, "032x") for i in range(24)
+        ]))
+        # Change an item *beyond* the 20 displayed names, preserving total
+        # number. Full digest must detect a difference.
+        with closing(sqlite3.connect(self.db)) as db:
+            db.execute('DROP TABLE "__bl001_stage_' + format(23, "032x") + '"')
+            db.execute('CREATE TABLE "__bl001_stage_' + "f" * 32 + '" ("sample" TEXT)')
+            db.commit()
+        after = inventory_offline_copy(self.db)
+        self.assertEqual(after["candidate_count"], before["candidate_count"])
+        self.assertEqual(after["candidate_names"], before["candidate_names"])
+        self.assertNotEqual(
+            before["candidate_names_sha256"], after["candidate_names_sha256"]
+        )
+
     def test_no_unbounded_table_name_output(self):
         for i in range(23):
             self._add_table("__bl001_stage_" + format(i, "032x"))
