@@ -79,3 +79,13 @@ run-bl001-sqlite-lock-check.bat
 - **故障清理阻擋**：pandas 準備候選表的交易可能先完成，因此寫入程序在正式切換前死亡，可能留下僅供候選的孤兒資料表。不能在未辨識活動程序或與其他 worker 協調的情況下任意刪除。
 - **其他驗收**：需要涵蓋正式表以外的 schema／views／FK，外部與並行 caller、資料及索引完全等價；在私人暫存 DB 上多個注入點測試，然後使用者 Windows/Anaconda 實測與完整 WorkPool 隔離測試。測試原型 `python -m unittest -v tests.test_bl001_stage_sql_shadow_feasibility` 僅確認回滾特性及索引名差異，**不能用其 PASS 宣稱正式 writer 修復**。
 - 這批只記錄實機缺口與設計可行性；正式 Stage-local writer、公開 API、真實資料及 WorkPool 均**維持不變**，KI-012 繼續 Open。
+
+## KI-012 原子式 SQLite writer 修正候選（Windows／WorkPool 尚待驗收）
+
+- **2026-11-16 實機證據**：修正前 Windows `run-bl001-sqlite-atomicity-probe.bat` 報 `FAIL_ATOMICITY`，舊資料未保留、新資料已可見、`text_Index` 不存在但 `integrity_check=ok`。只在私人 tempfile 重現，未見正式 WorkPool 損壞。
+- **根因**：原生 sqlite3 pandas `to_sql(if_exists="replace")` 可能自行提交，接續的 `CREATE INDEX text_Index` 尚未執行時若程序死亡，原表已被替換。
+- **修正**：新 `stage_sql.write_stage_sql` 在相同 SQLite DB 裡先寫入唯一候選表 `__bl001_stage_<uuid>`（pandas 仍可自行 commit）；候選表成功後，於 `BEGIN IMMEDIATE` 下依序刪除舊 `sampleSrc`、改名候選表、依實際 `PRAGMA index_xinfo` 恢復預設／具名／MultiIndex 的 `ix_sampleSrc_*` 索引，建立 `text_Index`，最後同一 `COMMIT`。建立過程拋錯則 rollback 回原表；不改兩個 stage-local public `dfToSQL` 入口與 canonical 其他 writer。
+- **相容限制**：未知／不支援的 pandas 候選索引在替換原表前拒絕；不會對正式 `sampleSrc` 進行自動修復。成功輸出依 `PRAGMA` 驗證索引的欄位、順序、類型，SQL 建表／建索引的字串空白格式可能與原版不同但語意相同。
+- **未完成風險**：候選表先提交，程序若在切換前／切換期間突然死亡，可能留下獨立 `__bl001_stage_*` 孤兒表；不能自動刪除其他工作者可能正在操作的候選表。多工作者、網路磁碟、磁碟容量、較大批次、正式 WorkPool 專屬條件尚未驗收。
+- **一鍵 Windows 私人驗收**：從 GitHub 更新修正版本，在原 Anaconda Prompt 的 repo 根執行 `run-bl001-sqlite-atomic-fix-check.bat`。這會測真實 pandas SQLite index/schema 等價、多個 DDL 注入失敗回滾、以子程序真正中斷 writer（預期 `PASS_ATOMICITY`）、跨程序鎖與解鎖重試；最後應為 `STATUS=PASS_KI012_PRIVATE`。若任何 FAIL，不得拿新版本處理正式 WorkPool。原版資料保全證據不等於本版 Windows 驗收。
+- **部署 Gate**：Hosted CI／正式 Review、使用者 Windows 私人一鍵測試均通過、既有 `TCFMain.py --self-test isolated`／`--self-test real -p 8050` 復測及正式 WorkPool 備份確認後，才可討論內網實際部署；`KI-012` 仍先保持 Open／待 Windows UAT。
