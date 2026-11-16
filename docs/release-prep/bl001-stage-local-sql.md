@@ -160,6 +160,10 @@ run-bl001-sqlite-release-preflight.bat --real-port 8050
 
 **這不改變正式驗收界線。** 無真實模型時結果仍為 `PASS_PARTIAL_NO_REAL_MODEL`／exit 2；明確啟用真實模型的通過結果最多為 `PASS_PRIVATE_PREFLIGHT_NOT_PRODUCTION`。磁碟 checkpoint 不是連續峰值，SQLite page quota 也不是 OS 磁碟滿載；正式 WorkPool、網路共享碟及實際部署仍未驗證。
 
+### KI-012 私人 SQLite 配額解除後重試
+
+`run-bl001-sqlite-full-rollback.bat` 現在除驗證遭 `SQLITE_FULL` 拒絕時原資料完整，也在**同一個私人 tempfile 資料庫**解除測試頁數限制後，透過現有原子式 `write_stage_sql` 重新寫入。僅當重試資料列、`text_Index`、View、其他無關資料、SQLite integrity 和候選表清理均正確時，才回報 `PASS_SQLITE_FULL_ROLLBACK`，並以 `post_quota_retry_passed=true` 表達受控的恢復驗證。這**不是**正式磁碟滿載後一定能恢復的證據，且不影響任何正式 WorkPool。
+
 ## KI-012 私人 SQLite 讀取者與寫入者快照一致性
 
 `run-bl001-sqlite-reader-snapshot.bat`（預設 40 rows；最多 500 rows）使用私人 TemporaryDirectory SQLite，真正啟動第二個 Python writer。先讓 writer 建好候選表並暫停在 `BEGIN IMMEDIATE` 前，讀取端開始交易並讀取舊內容，接著放行 writer；其 final swap 尚未提交時，再透過同一 reader transaction 查 `sampleSrc` 與 View，必須仍是舊內容。讀取端提交釋鎖後，writer 才可完成，重新連線必須讀到完整新內容、保留 `text_Index` 與 pandas index、View 正確、無候選表且 `integrity_check=ok`。
