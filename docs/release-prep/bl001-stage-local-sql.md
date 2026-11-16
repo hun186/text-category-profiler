@@ -123,7 +123,14 @@ CI 回歸入口：`python -m unittest -v tests.test_bl001_stage_sqlite_candidate
 
 ## KI-012 私人環境進階快檢（PR #263～#267）
 
-此批新增的命令都維持**不操作正式 WorkPool**的界線。先使用已合併的 `run-bl001-sqlite-perf-check.bat` 測量本機私人 SQLite 的舊式與原子式寫入相對耗時（預設 1,000 rows × 2 rounds；最多 20,000 rows × 3 rounds），以及 `run-bl001-sqlite-parallel-stress.bat` 驗證有限的多程序重疊寫入（預設 3 workers × 2 rounds × 50 rows）。兩者通過也**不是正式共享磁碟、大批次或全工作池效能證明**。Windows 實測這兩項尚待回傳。
+此批新增的命令都維持**不操作正式 WorkPool**的界線。先使用已合併的 `run-bl001-sqlite-perf-check.bat` 測量本機私人 SQLite 的舊式與原子式寫入相對耗時（預設 1,000 rows × 2 rounds；最多 20,000 rows × 3 rounds），以及 `run-bl001-sqlite-parallel-stress.bat` 驗證有限的多程序重疊寫入（預設 3 workers × 2 rounds × 50 rows）。兩者通過也**不是正式共享磁碟、大批次或全工作池效能證明**。**2026-11-16 Windows／Anaconda 私人 SQLite 實機回報（業主提供的 CLI JSON）**：
+
+- `run-bl001-sqlite-overlap-check.bat`：`status=PASS`，六項指定重疊／中斷／回滾檢查全部通過；`orphan_candidates_after_pre_swap_kill=1`、`orphan_candidates_after_mid_swap_kill=1`。兩個數值是受控中斷留下的候選表，不表示可清理正式庫。
+- `run-bl001-sqlite-perf-check.bat`：`status=PASS_MEASURED`、`rows=1000`、`rounds=2`。atomic-staging 的實測耗時 `0.02638`、`0.027866` 秒；legacy two-step 為 `0.024825`、`0.028017` 秒；工具回報 `atomic_vs_legacy_elapsed_ratio=1.027`（約多 2.7% 耗時）。完成後 DB 大小 atomic `487424` bytes、legacy `319488` bytes（約多 52.6%，**不是**峰值磁碟空間）。短樣本不能推論大規模吞吐、磁碟 peak、共享磁碟或 SLA。
+- `run-bl001-sqlite-parallel-stress.bat`：`status=PASS`、`workers=3`、`rounds=2`、`rows_per_writer=50`；兩回合各 `committed=3`／`locked=0`，最終勝出的 writer 為 `r0-w1`、`r1-w0`。表示這次測試最終資料一致，不代表三個 writer 同時持有 SQLite 寫入鎖，也未覆蓋長時間負載或所有交錯時序。
+- 三項 JSON 均標為 `private_tempfile_only_no_workpool`，所以**正式 WorkPool、共享磁碟及峰值空間仍未驗收**；不可將私人 PASS 當成 Production PASS。
+
+`run-bl001-sqlite-release-preflight.bat` **本次尚未提供 Windows 實測輸出**；一鍵整合驗收仍待回報。
 
 在所有 writer 已停止且有獨立離線 SQLite 複本時，`run-bl001-sqlite-candidate-inventory.bat --db "<offline-copy.sqlite3>"` 與 `run-bl001-sqlite-candidate-triage.bat --db "<offline-copy.sqlite3>"` 只檢查 metadata。**任何 WorkPool 目錄中的 DB 均被拒絕**；候選表即使包含 `text` 欄及有效 pandas 索引，也仍標為 `owner_status=UNKNOWN`、`safe_to_delete=false`；目前**完全沒有自動或人工正式庫刪表入口**。
 
