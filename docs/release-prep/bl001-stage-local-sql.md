@@ -62,7 +62,7 @@ run-bl001-sqlite-lock-check.bat
 
 ## 下一項：寫入程序在 replace 與索引之間終止（獨立高風險診斷）
 
-**前置事實**：共享 Stage-local writer 先呼叫 pandas `to_sql(name="sampleSrc", if_exists="replace")`，然後才執行 `CREATE INDEX "text_Index" ...`，兩步間沒有應用層原子事務保障。在開發隔離環境中，使用同一寫入順序於替換之後故意中斷，可觀察到新的表資料已提交，但 `text_Index` 缺失，`PRAGMA integrity_check` 仍是 `ok`。**這不是正式資料損壞報告，更不代表使用者 Windows 已執行此新測試**。
+**前置事實**：共享 Stage-local writer 先呼叫 pandas `to_sql(name="sampleSrc", if_exists="replace")`，然後才執行 `CREATE INDEX "text_Index" ...`，兩步間沒有應用層原子事務保障。在開發隔離環境中，使用同一寫入順序於替換之後故意中斷，可觀察到新的表資料已提交，但 `text_Index` 缺失，`PRAGMA integrity_check` 仍是 `ok`。**2026-11-16 Windows/Anaconda 已用私人 tempfile 實測重現相同結果**：`status=FAIL_ATOMICITY`、`original_preserved=false`、`new_partial_rows_present=true`、`text_index_present=false`、`integrity_check=ok`。這不是正式 WorkPool 已受損的證據。
 
 新增可選診斷：`run-bl001-sqlite-atomicity-probe.bat`（或 `python -m scripts.bl001_stage_sqlite_atomicity_probe`）。工具**沒有 `--db` 或正式 WorkPool 輸入參數**；只使用新建私人臨時資料庫。它先寫入原始資料及原生 `text_Index`，在真正的子程序用現有 `write_stage_sql` 更新，當子程序正要執行 `CREATE INDEX` 時先寫入同步標記並暫停。母程序確認子程序仍存活後強制終止它，然後以新 SQLite 連線檢查原始資料是否保全、是否留下部分更新、索引是否保全與 SQLite integrity。
 
@@ -71,3 +71,11 @@ run-bl001-sqlite-lock-check.bat
 - `status=BLOCKED_DIAGNOSTIC`／exit 1：測試環境或子程序啟動未能提供有效診斷。
 
 回歸 `python -m unittest -v tests.test_bl001_stage_sqlite_atomicity_probe` 只保證診斷正確分類、安全隔離及禁止外部 DB 參數；即使診斷回報 `FAIL_ATOMICITY`，回歸可以 PASS，**不能拿測試套件綠燈宣稱 writer 已原子化**。高風險 writer 重構、交易回復／備援設計與各平台進一步驗收須另行處理；不得用正式資料執行中斷注入。
+
+## 原子替換可行性研究（**測試原型，未改正式 writer**）
+
+- 採「先備妥候選表，後交易切換」：在私有 SQLite 用 pandas `to_sql` 寫入候選表（此階段不更動既有 `sampleSrc`）；再以 `BEGIN IMMEDIATE` 包住 `DROP TABLE sampleSrc`、`ALTER TABLE candidate RENAME TO sampleSrc`、`CREATE INDEX text_Index`，最後 `COMMIT`。在 index 之前故意 `ROLLBACK` 時，舊表資料與原索引會留下，SQLite DDL 於單一交易內可回滾。這不等於直接在現有 `pandas.to_sql(if_exists='replace')` 外面加 `BEGIN`；pandas 對原生 sqlite3 的內部 commit 行為須另外處理。
+- **相容性阻擋**：pandas 依寫入的表名產生輔助索引（例如正式表的 `ix_sampleSrc_index` 與候選表的 `ix___bl001_candidate_index`）；直接改名候選表不會自動將該索引重新命名。成功切換後雖有 `text_Index`，但額外索引名稱仍不同。若工作池工具或舊 caller 依賴它，可能不相容。包含 named index／MultiIndex 的情況亦待證實。
+- **故障清理阻擋**：pandas 準備候選表的交易可能先完成，因此寫入程序在正式切換前死亡，可能留下僅供候選的孤兒資料表。不能在未辨識活動程序或與其他 worker 協調的情況下任意刪除。
+- **其他驗收**：需要涵蓋正式表以外的 schema／views／FK，外部與並行 caller、資料及索引完全等價；在私人暫存 DB 上多個注入點測試，然後使用者 Windows/Anaconda 實測與完整 WorkPool 隔離測試。測試原型 `python -m unittest -v tests.test_bl001_stage_sql_shadow_feasibility` 僅確認回滾特性及索引名差異，**不能用其 PASS 宣稱正式 writer 修復**。
+- 這批只記錄實機缺口與設計可行性；正式 Stage-local writer、公開 API、真實資料及 WorkPool 均**維持不變**，KI-012 繼續 Open。
