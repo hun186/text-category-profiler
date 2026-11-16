@@ -20,6 +20,7 @@ class PrivateWalBackupTests(unittest.TestCase):
         self.assertEqual(result["status"], "PASS_PRIVATE_WAL_BACKUP")
         self.assertTrue(result["source_wal_detected_and_refused_for_offline_inventory"])
         self.assertTrue(result["committed_wal_rows_in_backup"])
+        self.assertTrue(result["uncommitted_wal_rows_excluded"])
         self.assertTrue(result["backup_restored_with_indexes_and_view"])
         self.assertTrue(result["unknown_candidate_preserved"])
         self.assertEqual(result["candidate_owner_status"], "UNKNOWN")
