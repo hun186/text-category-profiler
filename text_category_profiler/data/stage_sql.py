@@ -2,8 +2,8 @@
 
 pandas.to_sql on native sqlite3 commits internally, so wrapping its direct
 sampleSrc replacement in BEGIN does not make CREATE INDEX atomic. Stage into a
-unique candidate table first, then switch table and indexes inside one SQLite
-transaction. Neither caller signature nor the final pandas table/index contract
+unique candidate table first, then reconstruct sampleSrc, copy staged rows and build indexes inside one
+SQLite transaction. Avoid ALTER TABLE RENAME because dependent views may break. Neither caller signature nor the final pandas table/index contract
 changes. A killed writer before COMMIT leaves the prior sampleSrc and indexes.
 A kill during candidate creation may leave a uniquely named orphan candidate;
 never remove another process's candidates automatically.
@@ -71,23 +71,35 @@ def write_stage_sql(sql_name, df, saving_columns, connect):
         # here: partial candidate writes must never replace the prior output.
         selected.to_sql(name=candidate, con=cnx, if_exists="fail")
         pandas_indexes = _pandas_candidate_indexes(cnx, candidate)
+        schema = cnx.execute(
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name=?",
+            (candidate,),
+        ).fetchone()
+        expected_prefix = "CREATE TABLE " + _quote_identifier(candidate)
+        if (not schema or not schema[0].startswith(expected_prefix)
+                or schema[0][len(expected_prefix):len(expected_prefix) + 1]
+                not in (" ", "(")):
+            raise ValueError("Unsupported pandas candidate CREATE TABLE schema")
+        final_table_ddl = 'CREATE TABLE "sampleSrc"' + schema[0][len(expected_prefix):]
 
-        # SQLite DDL is transactional. Serialize concurrent final swaps, then
-        # retain the *exact final* legacy sampleSrc and ix_sampleSrc_* names.
+        # SQLite DDL and INSERT are transactional. Copying inside the final
+        # transaction (instead of ALTER TABLE RENAME) preserves dependent views
+        # that still refer to the name sampleSrc across the replacement.
         cnx.execute("BEGIN IMMEDIATE")
         transaction_started = True
         cnx.execute('DROP TABLE IF EXISTS "sampleSrc"')
+        cnx.execute(final_table_ddl)
         cnx.execute(
-            "ALTER TABLE " + _quote_identifier(candidate) + ' RENAME TO "sampleSrc"'
+            'INSERT INTO "sampleSrc" SELECT * FROM ' + _quote_identifier(candidate)
         )
-        for staging_name, final_name, columns in pandas_indexes:
-            cnx.execute("DROP INDEX " + _quote_identifier(staging_name))
+        for _, final_name, columns in pandas_indexes:
             cnx.execute(
                 "CREATE INDEX " + _quote_identifier(final_name)
                 + ' ON "sampleSrc" ('
                 + ", ".join(_quote_identifier(column) for column in columns) + ")"
             )
         cnx.execute('CREATE INDEX "text_Index" ON "sampleSrc"("text");')
+        cnx.execute("DROP TABLE " + _quote_identifier(candidate))
         cnx.commit()
         transaction_started = False
     except BaseException:
