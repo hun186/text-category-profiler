@@ -39,6 +39,8 @@ class FakeConnection:
 
     def execute(self, sql, parameters=()):
         self.events.append(("execute", sql))
+        if sql.startswith("SELECT type, name, tbl_name FROM sqlite_master"):
+            return []
         if sql.startswith("SELECT sql FROM sqlite_master"):
             table = parameters[0]
             return type("Cursor", (), {

@@ -49,6 +49,35 @@ def _pandas_candidate_indexes(cnx, candidate):
     return mappings
 
 
+def _guard_replace_dependencies(cnx):
+    """Fail closed under BEGIN IMMEDIATE before DROP can erase dependencies.
+
+    SQLite DROP TABLE can cascade into other tables when foreign_keys=ON.
+    It also drops triggers defined ON the replaced table. Preserve those
+    objects by refusing replacement rather than silently deleting them.
+    Only sqlite_master/PRAGMA metadata is inspected; no user rows are read.
+    """
+    # Materialize and finish sqlite_master cursor before any rejection.
+    # Otherwise an active schema cursor can block DROP of our own staged
+    # candidate during failure cleanup on the SAME SQLite connection.
+    metadata = list(cnx.execute(
+        "SELECT type, name, tbl_name FROM sqlite_master "
+        "WHERE type IN ('table', 'trigger')"
+    ))
+    for kind, name, owner in metadata:
+        if kind == "trigger" and owner.casefold() == "samplesrc":
+            raise ValueError("Unsafe sampleSrc trigger dependency: " + name)
+        if kind != "table" or name.casefold() == "samplesrc":
+            continue
+        for foreign_key in list(cnx.execute(
+            "PRAGMA foreign_key_list(" + _quote_identifier(name) + ")"
+        )):
+            if foreign_key[2].casefold() == "samplesrc":
+                raise ValueError(
+                    "Unsafe sampleSrc inbound foreign-key dependency: " + name
+                )
+
+
 def write_stage_sql(sql_name, df, saving_columns, connect):
     """Replace sampleSrc and its pandas/text indexes as one SQLite commit.
 
@@ -87,6 +116,7 @@ def write_stage_sql(sql_name, df, saving_columns, connect):
         # that still refer to the name sampleSrc across the replacement.
         cnx.execute("BEGIN IMMEDIATE")
         transaction_started = True
+        _guard_replace_dependencies(cnx)
         cnx.execute('DROP TABLE IF EXISTS "sampleSrc"')
         cnx.execute(final_table_ddl)
         cnx.execute(
