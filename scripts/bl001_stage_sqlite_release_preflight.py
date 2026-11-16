@@ -33,6 +33,27 @@ _PRIVATE_CHECKS = (
 )
 
 
+
+def _missing_child_modules(checks) -> list[str]:
+    """Validate all checkout-owned commands before executing a preflight."""
+    missing = []
+    for _, argv, _ in checks:
+        if argv[:2] == ("-m", "unittest"):
+            names = [arg for arg in argv[2:] if not arg.startswith("-")]
+        elif len(argv) >= 2 and argv[0] == "-m":
+            names = [argv[1]]
+        elif argv and argv[0].endswith(".py"):
+            names = [argv[0]]
+        else:
+            names = []
+        for name in names:
+            path = (_ROOT / name) if name.endswith(".py") else (
+                _ROOT / (name.replace(".", "/") + ".py")
+            )
+            if not path.is_file():
+                missing.append(name)
+    return missing
+
 def _check_output(output: str, expected: str) -> bool:
     if expected == "unittest":
         match = re.search(r"\bRan (\d+) tests?\b", output)
@@ -62,6 +83,18 @@ def run_private_preflight(*, real_port: int | None = None,
         checks.append(("root_real_opt_in",
                        ("TCFMain.py", "--self-test", "real",
                         "-p", str(real_port)), "FINAL: PASS"))
+
+    missing = _missing_child_modules(checks)
+    if missing:
+        return {
+            "status": "FAIL",
+            "scope": "private_checks_and_disposable_root_selftests_only",
+            "reason": "missing_child_modules",
+            "missing_modules": missing,
+            "checks": [],
+            "real_model_opt_in": real_port is not None,
+            "production_workpool_verified": False,
+        }
 
     results = []
     for name, argv, expected in checks:

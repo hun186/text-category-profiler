@@ -93,6 +93,32 @@ class CandidateInventoryTests(unittest.TestCase):
             return  # Windows may require special privileges for symlinks
         self.assertIn("symlink_not_allowed", inventory_offline_copy(link)["issues"])
 
+    def test_live_workpool_spelling_is_rejected_even_for_valid_database(self):
+        import shutil
+        pool = Path(self.private.name) / "WorkPool"
+        pool.mkdir()
+        live = pool / "active.sqlite3"
+        shutil.copyfile(self.db, live)
+        before = live.read_bytes()
+        result = inventory_offline_copy(live)
+        self.assertEqual(result["status"], "UNVERIFIABLE")
+        self.assertIn("workpool_path_not_allowed", result["issues"])
+        self.assertEqual(live.read_bytes(), before)
+
+        # A standalone off-line copy may itself be named WorkPool-*.sqlite3.
+        standalone = Path(self.private.name) / "WorkPool-offline.sqlite3"
+        shutil.copyfile(self.db, standalone)
+        self.assertEqual(inventory_offline_copy(standalone)["status"],
+                         "PASS_NO_CANDIDATES")
+
+        parent = Path(self.private.name) / "workpool-backups"
+        parent.mkdir()
+        shutil.copyfile(self.db, parent / "copy.sqlite3")
+        self.assertIn(
+            "workpool_path_not_allowed",
+            inventory_offline_copy(parent / "copy.sqlite3")["issues"],
+        )
+
     def test_cli_exit_codes_are_distinct_and_report_json(self):
         out = io.StringIO()
         with redirect_stdout(out):

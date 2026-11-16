@@ -7,6 +7,7 @@ import io
 import json
 
 from scripts.bl001_stage_sqlite_release_preflight import (
+    _PRIVATE_CHECKS, _missing_child_modules,
     _check_output, main, run_private_preflight,
 )
 
@@ -28,6 +29,31 @@ def fake_runner(args, **kwargs):
 
 
 class ReleasePreflightTests(unittest.TestCase):
+    def test_all_configured_checkout_modules_exist(self):
+        self.assertEqual(_missing_child_modules(_PRIVATE_CHECKS), [])
+        self.assertEqual(
+            _missing_child_modules((
+                ("deliberate_missing", ("-m", "scripts.no_such_ki012_probe"), "PASS"),
+            )),
+            ["scripts.no_such_ki012_probe"],
+        )
+
+    def test_missing_child_fails_closed_without_running_commands(self):
+        from unittest.mock import patch
+        invoked = []
+        def must_not_run(*args, **kwargs):
+            invoked.append(True)
+            raise AssertionError("runner must not be called")
+        with patch(
+            "scripts.bl001_stage_sqlite_release_preflight._missing_child_modules",
+            return_value=["scripts.bl001_stage_sqlite_parallel_stress"],
+        ):
+            outcome = run_private_preflight(runner=must_not_run)
+        self.assertEqual(outcome["status"], "FAIL")
+        self.assertEqual(outcome["reason"], "missing_child_modules")
+        self.assertFalse(outcome["production_workpool_verified"])
+        self.assertEqual(invoked, [])
+
     def test_partial_without_real_model_is_not_full_pass(self):
         outcome = run_private_preflight(runner=fake_runner)
         self.assertEqual(outcome["status"], "PASS_PARTIAL_NO_REAL_MODEL")
