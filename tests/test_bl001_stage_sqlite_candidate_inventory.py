@@ -109,6 +109,47 @@ class CandidateInventoryTests(unittest.TestCase):
             before["candidate_names_sha256"], after["candidate_names_sha256"]
         )
 
+    def test_new_candidate_after_schema_audit_is_not_false_clear(self):
+        from unittest.mock import patch
+        from scripts import bl001_stage_sqlite_candidate_inventory as mod
+        original = mod.audit_stage_sqlite
+        def create_after_audit(path):
+            verified = original(path)
+            with closing(sqlite3.connect(path)) as db:
+                db.execute('CREATE TABLE "__bl001_stage_'
+                           + "f" * 32 + '" ("sample" TEXT)')
+                db.commit()
+            return verified
+        with patch.object(mod, "audit_stage_sqlite",
+                          side_effect=create_after_audit):
+            report = inventory_offline_copy(self.db)
+        self.assertEqual(report["status"], "UNVERIFIABLE")
+        self.assertEqual(report["schema_status"], "PASS")
+        self.assertIn("offline_inventory_changed_during_audit",
+                      report["issues"])
+
+    def test_equal_count_candidate_rename_during_audit_is_not_trusted(self):
+        from unittest.mock import patch
+        from scripts import bl001_stage_sqlite_candidate_inventory as mod
+        old_name = "__bl001_stage_" + "a" * 32
+        new_name = "__bl001_stage_" + "b" * 32
+        self._add_table(old_name)
+        original = mod.audit_stage_sqlite
+        def rename_after_audit(path):
+            verified = original(path)
+            with closing(sqlite3.connect(path)) as db:
+                db.execute('ALTER TABLE "' + old_name
+                           + '" RENAME TO "' + new_name + '"')
+                db.commit()
+            return verified
+        with patch.object(mod, "audit_stage_sqlite",
+                          side_effect=rename_after_audit):
+            report = inventory_offline_copy(self.db)
+        self.assertEqual(report["status"], "UNVERIFIABLE")
+        self.assertEqual(report["candidate_count"], 1)
+        self.assertIn("offline_inventory_changed_during_audit",
+                      report["issues"])
+
     def test_no_unbounded_table_name_output(self):
         for i in range(23):
             self._add_table("__bl001_stage_" + format(i, "032x"))
