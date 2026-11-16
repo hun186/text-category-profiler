@@ -13,7 +13,7 @@ import json
 from pathlib import Path
 import sqlite3
 
-from scripts.bl001_stage_sqlite_audit import _readonly_uri
+from scripts.bl001_stage_sqlite_audit import _has_workpool_ancestor, _readonly_uri
 from scripts.bl001_stage_sqlite_candidate_inventory import inventory_offline_copy
 
 
@@ -21,15 +21,19 @@ def triage_offline_copy(filename: str | Path) -> dict:
     path = Path(filename)
     # Fail closed before invoking even the immutable inventory. The inventory
     # guard lives in a separate PR and may not yet be on the running branch.
-    ancestors = (part.casefold() for part in path.parent.parts)
-    resolved = (part.casefold() for part in path.parent.resolve(strict=False).parts)
-    if any(part.startswith("workpool") for part in (*ancestors, *resolved)):
+    try:
+        guarded = _has_workpool_ancestor(path)
+        issue = "workpool_path_not_allowed"
+    except (OSError, RuntimeError, ValueError):
+        guarded = True
+        issue = "database_path_not_verifiable"
+    if guarded:
         prior = {
             "status": "UNVERIFIABLE", "candidate_count": 0,
             "candidate_names": [], "candidate_names_truncated": False,
             "unexpected_prefix_count": 0,
             "unexpected_prefixed_names": [], "unexpected_names_truncated": False,
-            "issues": ["workpool_path_not_allowed"],
+            "issues": [issue],
         }
     else:
         prior = inventory_offline_copy(filename)

@@ -13,7 +13,9 @@ from pathlib import Path
 import re
 import sqlite3
 
-from scripts.bl001_stage_sqlite_audit import _readonly_uri, audit_stage_sqlite
+from scripts.bl001_stage_sqlite_audit import (
+    _has_workpool_ancestor, _readonly_uri, audit_stage_sqlite,
+)
 
 
 _CANDIDATE = re.compile(r"__bl001_stage_[0-9a-f]{32}\Z")
@@ -43,10 +45,12 @@ def inventory_offline_copy(filename: str | Path) -> dict:
     issues = result["issues"]
     # Immutable/read-only does not make a live WorkPool DB a safe source:
     # reject submitted spelling and resolved path (symlinked parent aliases).
-    submitted_parts = (part.casefold() for part in path.parent.parts)
-    resolved_parts = (part.casefold() for part in path.parent.resolve(strict=False).parts)
-    if any(part.startswith("workpool") for part in (*submitted_parts, *resolved_parts)):
-        issues.append("workpool_path_not_allowed")
+    try:
+        if _has_workpool_ancestor(path):
+            issues.append("workpool_path_not_allowed")
+            return result
+    except (OSError, RuntimeError, ValueError):
+        issues.append("database_path_not_verifiable")
         return result
     if path.is_symlink():
         issues.append("symlink_not_allowed")
