@@ -57,4 +57,17 @@ run-bl001-sqlite-lock-check.bat
 
 `status=PASS` 僅證明該機器的**私人 SQLite 跨程序鎖拒絕與釋鎖後重試**運作正常。`status=FAIL` 或 `BLOCKED_DEPENDENCY` 不可視為通過。此測試**不是**在 `to_sql(replace)` 與 `CREATE INDEX` 之間終止**寫入程序**，不能據此保證整段 writer 的交易原子性或生產資料中斷恢復；也不證明正式 WorkPool 的多工作者競爭、Windows 網路磁碟鎖或長時間穩定性。若要驗證這些高風險情境，須另以隔離的完整測試工作池及失敗注入設計，不能拿正式 SQLite 做破壞測試。
 
-**2026-11-16 已收到的 Windows 實機證據：** pandas 2.0.1／xlsxwriter 3.1.9 下 Stage writer 快檢 39/39 PASS；`TCFMain.py --self-test isolated` 10 PASS；`TCFMain.py --self-test real -p 8050` 7 PASS、1 CPU WARN、0 FAIL，模型和 FixedTest 均 unchanged，`_rdy_for_Spike=1`。Jaal／歷史預覽畫面及 Stage 4 篩選由使用者回報正常。**新的跨程序鎖工具尚未取得 Windows 實機結果**，不得提前標記 PASS。
+**2026-11-16 已收到的 Windows 實機證據：** pandas 2.0.1／xlsxwriter 3.1.9 下 Stage writer 快檢 39/39 PASS；`TCFMain.py --self-test isolated` 10 PASS；`TCFMain.py --self-test real -p 8050` 7 PASS、1 CPU WARN、0 FAIL，模型和 FixedTest 均 unchanged，`_rdy_for_Spike=1`。Jaal／歷史預覽畫面及 Stage 4 篩選由使用者回報正常。**2026-11-16 跨程序鎖工具 Windows 實測 PASS：** 五項 `initial_write_and_index`、`graceful_unlock_rejects_write_and_preserves_rows`、`graceful_unlock_retry_and_index`、`terminated_lock_holder_rejects_write_and_preserves_rows`、`terminated_lock_holder_retry_and_index` 均 PASS；JSON `scope=private_tempfile_only_no_workpool`。這僅代表在該 Windows/Anaconda 環境、該私人資料庫的鎖拒絕與重試通過，不能視為寫入程序異常終止的原子性保證。
+
+
+## 下一項：寫入程序在 replace 與索引之間終止（獨立高風險診斷）
+
+**前置事實**：共享 Stage-local writer 先呼叫 pandas `to_sql(name="sampleSrc", if_exists="replace")`，然後才執行 `CREATE INDEX "text_Index" ...`，兩步間沒有應用層原子事務保障。在開發隔離環境中，使用同一寫入順序於替換之後故意中斷，可觀察到新的表資料已提交，但 `text_Index` 缺失，`PRAGMA integrity_check` 仍是 `ok`。**這不是正式資料損壞報告，更不代表使用者 Windows 已執行此新測試**。
+
+新增可選診斷：`run-bl001-sqlite-atomicity-probe.bat`（或 `python -m scripts.bl001_stage_sqlite_atomicity_probe`）。工具**沒有 `--db` 或正式 WorkPool 輸入參數**；只使用新建私人臨時資料庫。它先寫入原始資料及原生 `text_Index`，在真正的子程序用現有 `write_stage_sql` 更新，當子程序正要執行 `CREATE INDEX` 時先寫入同步標記並暫停。母程序確認子程序仍存活後強制終止它，然後以新 SQLite 連線檢查原始資料是否保全、是否留下部分更新、索引是否保全與 SQLite integrity。
+
+- `status=PASS_ATOMICITY`／exit 0：僅這個中斷點保全原始資料及索引。
+- `status=FAIL_ATOMICITY`／exit 1：已觀察到部分寫入狀態；這是診斷發現的問題，**不是**診斷工具本身失靈。
+- `status=BLOCKED_DIAGNOSTIC`／exit 1：測試環境或子程序啟動未能提供有效診斷。
+
+回歸 `python -m unittest -v tests.test_bl001_stage_sqlite_atomicity_probe` 只保證診斷正確分類、安全隔離及禁止外部 DB 參數；即使診斷回報 `FAIL_ATOMICITY`，回歸可以 PASS，**不能拿測試套件綠燈宣稱 writer 已原子化**。高風險 writer 重構、交易回復／備援設計與各平台進一步驗收須另行處理；不得用正式資料執行中斷注入。
