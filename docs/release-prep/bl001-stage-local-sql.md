@@ -92,7 +92,7 @@ run-bl001-sqlite-lock-check.bat
 
 ## KI-012 多程序交錯寫入與候選表殘留（私人 Windows 驗收候選）
 
-原子式 Stage-local writer 已於 PR #260 合併 main；但原版 `FAIL_ATOMICITY` 的 Windows 重現結果不代表修正版已通過實機。修正版 `run-bl001-sqlite-atomic-fix-check.bat` 尚待在使用者 Windows/Anaconda 執行。另有並行和候選表殘留風險，不應直接列為已解決。
+原子式 Stage-local writer 已於 PR #260 合併 main；但原版 `FAIL_ATOMICITY` 的 Windows 重現結果不代表修正版已通過實機。修正版已於 2026-11-16 通過使用者 Windows/Anaconda 私有 SQLite 實機：21 tests OK、`PASS_ATOMICITY`、跨程序鎖 PASS、`STATUS=PASS_KI012_PRIVATE`；新增的 `run-bl001-sqlite-overlap-check.bat` 六項檢查也全部 PASS，兩種中斷各留下 1 張候選表。**正式 WorkPool／網路磁碟尚未驗收**。另有並行和候選表殘留風險，不應直接列為已解決。
 
 新增 `run-bl001-sqlite-overlap-check.bat`，也可執行 `python -m scripts.bl001_stage_sqlite_overlap_acceptance`。此工具**不接受 --db、--WorkPool 等外部路徑**，只新建私人 TemporaryDirectory SQLite，啟動真正的 Python 子程序測兩種交錯：
 
@@ -102,3 +102,19 @@ run-bl001-sqlite-lock-check.bat
 輸出 JSON 的 `status=PASS` 表示指定兩種交錯情境在目前環境通過，且 `orphan_candidates_after_pre_swap_kill=1` 和 `orphan_candidates_after_mid_swap_kill=1` 只表示**測試本身刻意留下孤兒表，證實必須管理空間與清理的所有權**，不表示可以直接刪除現實 DB 中的任何同名表。所有測試檔案在私人 TemporaryDirectory 結束後清理；CLI 出現 `FAIL`／`BLOCKED_DEPENDENCY` 不得視為成功。
 
 測試模組：`python -m unittest -v tests.test_bl001_stage_sqlite_overlap_acceptance`。尚未涵蓋大資料量、真正連續併發壓力、共用網路磁碟、正式 WorkPool、殘留表的安全清理協議，或使用者修正版 Windows 實機驗收；`KI-012` 繼續 Open。**不允許直接操作正式資料庫去製造鎖或刪除殘留表。**
+
+## KI-012 離線 SQLite 候選表唯讀盤點（不提供清理）
+
+已確認兩種中斷情境都可能留下 `__bl001_stage_<32個十六進位字元>` 候選表，**是否仍有活動 writer 無法僅憑表名判定**。因此新增 `run-bl001-sqlite-candidate-inventory.bat`，只查詢 **已停止寫入且另存的離線 SQLite 複本**，不允許拿正式／活動中的資料庫做此項判斷。避免直接複製正在執行的 SQLite（尤其 WAL 模式）；必須先停止所有 writer 並確認複本不含 sidecar。
+
+```bat
+run-bl001-sqlite-candidate-inventory.bat --db "D:\\private\\offline-copy.sqlite3"
+```
+
+此處路徑僅為**自行準備的離線複本示意**；沒有必要為了執行新工具而操作你的正式 WorkPool。工具採 `mode=ro&immutable=1`、`PRAGMA query_only=ON`，只讀 SQLite schema metadata；不查資料列、不開啟可寫連線、不執行 `DROP`／`VACUUM`／`DELETE`／任何修復。檢查結果：
+
+- `PASS_NO_CANDIDATES`／exit 0：來源複本的 `sampleSrc`／`text_Index` 合約通過，且沒有候選表名稱；不代表曾經沒有失敗或正式資料庫健康。
+- `REVIEW_REQUIRED`／exit 1：存在符合格式的候選表或可疑前綴。列出候選表數量及最多前 20 名供人工查核；**不是自動清理建議**，絕對不能憑此直接 DROP。
+- `UNVERIFIABLE`／exit 2：缺檔、symlink、WAL／journal／SHM sidecar、資料庫無效、或原有 schema 不符合。此時不能信任零候選的判斷，必須重新準備靜止複本。
+
+CI 回歸入口：`python -m unittest -v tests.test_bl001_stage_sqlite_candidate_inventory`。新工具 Windows 實機尚待驗證，但此前原子修復與多程序重疊的 Windows UAT 已經通過。這個唯讀工具**不能證明候選表是否真正孤兒**，也沒有任何清理正式 DB 的能力。
