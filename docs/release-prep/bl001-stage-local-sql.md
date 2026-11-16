@@ -159,3 +159,9 @@ run-bl001-sqlite-release-preflight.bat --real-port 8050
 `run-bl001-sqlite-release-preflight.bat` 現在也會在私人 TemporaryDirectory 中執行 `disk_checkpoints`（100 筆、文字重複 2 次；期待 `PASS_CHECKPOINT_MEASURED`）與 `sqlite_full_rollback`（120 筆、文字重複 64 次；期待 `PASS_SQLITE_FULL_ROLLBACK`）。兩項只使用私人 SQLite，拒絕外部資料庫路徑。任一必要狀態不符即 `FAIL`，不再進行後續模型測試。
 
 **這不改變正式驗收界線。** 無真實模型時結果仍為 `PASS_PARTIAL_NO_REAL_MODEL`／exit 2；明確啟用真實模型的通過結果最多為 `PASS_PRIVATE_PREFLIGHT_NOT_PRODUCTION`。磁碟 checkpoint 不是連續峰值，SQLite page quota 也不是 OS 磁碟滿載；正式 WorkPool、網路共享碟及實際部署仍未驗證。
+
+## KI-012 私人 SQLite 讀取者與寫入者快照一致性
+
+`run-bl001-sqlite-reader-snapshot.bat`（預設 40 rows；最多 500 rows）使用私人 TemporaryDirectory SQLite，真正啟動第二個 Python writer。先讓 writer 建好候選表並暫停在 `BEGIN IMMEDIATE` 前，讀取端開始交易並讀取舊內容，接著放行 writer；其 final swap 尚未提交時，再透過同一 reader transaction 查 `sampleSrc` 與 View，必須仍是舊內容。讀取端提交釋鎖後，writer 才可完成，重新連線必須讀到完整新內容、保留 `text_Index` 與 pandas index、View 正確、無候選表且 `integrity_check=ok`。
+
+`PASS_PRIVATE_READER_SNAPSHOT` 只代表這個被控制的讀寫交錯在私人本機 SQLite 成功；不是正式 WorkPool、網路檔案系統或全部併發時序的保證，也沒有正式 DB 輸入參數。Windows 實機尚未驗收。
