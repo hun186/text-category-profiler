@@ -152,6 +152,36 @@ class StageSQLiteAuditTests(unittest.TestCase):
             audit_stage_sqlite(link)["issues"], ["symlink_not_allowed"]
         )
 
+    def test_refuses_workpool_ancestors_before_opening_db(self):
+        import shutil
+        original = self.valid_database()
+        for folder in ("WorkPool", "workpool-archive"):
+            with self.subTest(folder=folder):
+                blocked = Path(self.tmp.name) / folder
+                blocked.mkdir()
+                db_copy = blocked / "offline.sqlite3"
+                shutil.copyfile(original, db_copy)
+                original_bytes = db_copy.read_bytes()
+                result = audit_stage_sqlite(db_copy)
+                self.assertEqual(result["status"], "FAIL")
+                self.assertEqual(result["issues"], ["workpool_path_not_allowed"])
+                self.assertEqual(db_copy.read_bytes(), original_bytes)
+
+    def test_workpool_parent_symlink_alias_fails_closed(self):
+        import shutil
+        original = self.valid_database()
+        blocked = Path(self.tmp.name) / "WorkPool-original"
+        blocked.mkdir()
+        shutil.copyfile(original, blocked / "offline.sqlite3")
+        alias = Path(self.tmp.name) / "alias-parent"
+        try:
+            alias.symlink_to(blocked, target_is_directory=True)
+        except (OSError, NotImplementedError):
+            return  # Windows symlinks may need elevated privilege.
+        result = audit_stage_sqlite(alias / "offline.sqlite3")
+        self.assertEqual(result["status"], "FAIL")
+        self.assertIn("workpool_path_not_allowed", result["issues"])
+
     def test_cli_prints_machine_readable_json_and_status(self):
         path = self.valid_database()
         out = io.StringIO()

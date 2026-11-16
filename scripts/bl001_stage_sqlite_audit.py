@@ -22,6 +22,14 @@ def _readonly_uri(path: Path) -> str:
     return "file:" + encoded + "?mode=ro&immutable=1"
 
 
+
+def _has_workpool_ancestor(path: Path) -> bool:
+    """Refuse named WorkPool roots and parent aliases; safe copy lives elsewhere."""
+    parts = list(path.parent.parts)
+    parts.extend(path.parent.resolve(strict=False).parts)
+    return any(part.casefold().startswith("workpool") for part in parts)
+
+
 def audit_stage_sqlite(filename: str | Path) -> dict:
     """Check only SQLite schema metadata; never open a writable connection.
 
@@ -41,6 +49,13 @@ def audit_stage_sqlite(filename: str | Path) -> dict:
         "issues": [],
     }
     issues = result["issues"]
+    try:
+        if _has_workpool_ancestor(path):
+            issues.append("workpool_path_not_allowed")
+            return result
+    except (OSError, RuntimeError):
+        issues.append("database_path_not_verifiable")
+        return result
     if path.is_symlink():
         issues.append("symlink_not_allowed")
         return result
