@@ -14,7 +14,7 @@ import sqlite3
 
 from scripts.bl001_stage_sqlite_audit import _readonly_uri
 from scripts.bl001_stage_sqlite_candidate_inventory import (
-    _CANDIDATE, _DISPLAY_LIMIT, _PREFIX, inventory_offline_copy,
+    _CANDIDATE, _DISPLAY_LIMIT, _PREFIX, _name_digest, inventory_offline_copy,
 )
 
 
@@ -98,7 +98,11 @@ def compare_offline_copies(before: str | Path, after: str | Path) -> dict:
     if (len(before_candidates) != pre["candidate_count"]
             or len(after_candidates) != post["candidate_count"]
             or len(before_malformed) != pre["unexpected_prefix_count"]
-            or len(after_malformed) != post["unexpected_prefix_count"]):
+            or len(after_malformed) != post["unexpected_prefix_count"]
+            or _name_digest(before_candidates) != pre["candidate_names_sha256"]
+            or _name_digest(after_candidates) != post["candidate_names_sha256"]
+            or _name_digest(before_malformed) != pre["unexpected_prefix_names_sha256"]
+            or _name_digest(after_malformed) != post["unexpected_prefix_names_sha256"]):
         report["issues"].append("snapshot_changed_or_inconsistent")
         return report
 
