@@ -105,6 +105,12 @@ class CandidateInventoryTests(unittest.TestCase):
         self.assertIn("workpool_path_not_allowed", result["issues"])
         self.assertEqual(live.read_bytes(), before)
 
+        # A standalone off-line copy may itself be named WorkPool-*.sqlite3.
+        standalone = Path(self.private.name) / "WorkPool-offline.sqlite3"
+        shutil.copyfile(self.db, standalone)
+        self.assertEqual(inventory_offline_copy(standalone)["status"],
+                         "PASS_NO_CANDIDATES")
+
         parent = Path(self.private.name) / "workpool-backups"
         parent.mkdir()
         shutil.copyfile(self.db, parent / "copy.sqlite3")
