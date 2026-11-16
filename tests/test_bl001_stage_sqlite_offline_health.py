@@ -64,10 +64,12 @@ class OfflineHealthTests(unittest.TestCase):
         # Avoid creating a 1 MiB fixture; inject metadata size for a valid DB.
         from unittest.mock import patch
         import os
-        fake = type("Stat", (), {
-            "st_size": 2 * 1024 * 1024,
-            "st_mtime_ns": 0, "st_ino": 0,
-        })()
+        source_stat = self.path.stat()
+        class OversizedStat:
+            st_size = 2 * 1024 * 1024
+            def __getattr__(self, key):
+                return getattr(source_stat, key)
+        fake = OversizedStat()
         original_stat = Path.stat
         def oversized(path, *args, **kwargs):
             if path == self.path:
