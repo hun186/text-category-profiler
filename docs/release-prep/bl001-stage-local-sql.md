@@ -89,3 +89,16 @@ run-bl001-sqlite-lock-check.bat
 - **未完成風險**：候選表先提交，程序若在切換前／切換期間突然死亡，可能留下獨立 `__bl001_stage_*` 孤兒表；不能自動刪除其他工作者可能正在操作的候選表。多工作者、網路磁碟、磁碟容量、較大批次、正式 WorkPool 專屬條件尚未驗收。
 - **一鍵 Windows 私人驗收**：從 GitHub 更新修正版本，在原 Anaconda Prompt 的 repo 根執行 `run-bl001-sqlite-atomic-fix-check.bat`。這會測真實 pandas SQLite index/schema 等價、多個 DDL 注入失敗回滾、以子程序真正中斷 writer（預期 `PASS_ATOMICITY`）、跨程序鎖與解鎖重試；最後應為 `STATUS=PASS_KI012_PRIVATE`。若任何 FAIL，不得拿新版本處理正式 WorkPool。原版資料保全證據不等於本版 Windows 驗收。
 - **部署 Gate**：Hosted CI／正式 Review、使用者 Windows 私人一鍵測試均通過、既有 `TCFMain.py --self-test isolated`／`--self-test real -p 8050` 復測及正式 WorkPool 備份確認後，才可討論內網實際部署；`KI-012` 仍先保持 Open／待 Windows UAT。
+
+## KI-012 多程序交錯寫入與候選表殘留（私人 Windows 驗收候選）
+
+原子式 Stage-local writer 已於 PR #260 合併 main；但原版 `FAIL_ATOMICITY` 的 Windows 重現結果不代表修正版已通過實機。修正版 `run-bl001-sqlite-atomic-fix-check.bat` 尚待在使用者 Windows/Anaconda 執行。另有並行和候選表殘留風險，不應直接列為已解決。
+
+新增 `run-bl001-sqlite-overlap-check.bat`，也可執行 `python -m scripts.bl001_stage_sqlite_overlap_acceptance`。此工具**不接受 --db、--WorkPool 等外部路徑**，只新建私人 TemporaryDirectory SQLite，啟動真正的 Python 子程序測兩種交錯：
+
+1. **交易開始前**：writer A 先由 pandas 提交唯一候選表並暫停在 BEGIN IMMEDIATE 前；writer B 可完成新的 sampleSrc 與索引，接著終止 A。已成功提交的 B 不應受到 A 中斷影響；A 的候選表應可檢出且不應被其他 writer 擅自刪除。
+2. **交易鎖期間**：writer A 已進入 SQLite 交易但尚未建立 text_Index，另一 writer 嘗試寫入須收到 `database is locked`，不得偷偷提交；中斷 A 後原來的 sampleSrc 與索引應回滾，後續 writer 才能重新提交。中斷 A 遺留的候選表不得被不相關 writer 自動清掉。
+
+輸出 JSON 的 `status=PASS` 表示指定兩種交錯情境在目前環境通過，且 `orphan_candidates_after_pre_swap_kill=1` 和 `orphan_candidates_after_mid_swap_kill=1` 只表示**測試本身刻意留下孤兒表，證實必須管理空間與清理的所有權**，不表示可以直接刪除現實 DB 中的任何同名表。所有測試檔案在私人 TemporaryDirectory 結束後清理；CLI 出現 `FAIL`／`BLOCKED_DEPENDENCY` 不得視為成功。
+
+測試模組：`python -m unittest -v tests.test_bl001_stage_sqlite_overlap_acceptance`。尚未涵蓋大資料量、真正連續併發壓力、共用網路磁碟、正式 WorkPool、殘留表的安全清理協議，或使用者修正版 Windows 實機驗收；`KI-012` 繼續 Open。**不允許直接操作正式資料庫去製造鎖或刪除殘留表。**
