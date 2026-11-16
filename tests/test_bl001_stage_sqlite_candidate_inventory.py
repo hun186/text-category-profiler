@@ -66,13 +66,14 @@ class CandidateInventoryTests(unittest.TestCase):
         )
         for name in names:
             self._add_table(name)
+        before = self.db.read_bytes()
         report = inventory_offline_copy(self.db)
         self.assertEqual(report["status"], "REVIEW_REQUIRED")
         self.assertEqual(report["candidate_count"], 0)
         self.assertEqual(report["unexpected_prefix_count"], 3)
         self.assertEqual(set(report["unexpected_prefixed_names"]), set(names))
         self.assertEqual(report["schema_status"], "PASS")
-        self.assertEqual(self.db.read_bytes(), self.db.read_bytes())
+        self.assertEqual(self.db.read_bytes(), before)
 
     def test_unexpected_prefix_count_is_exact_even_when_display_truncated(self):
         for i in range(24):
