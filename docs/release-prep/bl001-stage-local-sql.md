@@ -118,3 +118,5 @@ run-bl001-sqlite-candidate-inventory.bat --db "D:\\private\\offline-copy.sqlite3
 - `UNVERIFIABLE`／exit 2：缺檔、symlink、WAL／journal／SHM sidecar、資料庫無效、或原有 schema 不符合。此時不能信任零候選的判斷，必須重新準備靜止複本。
 
 CI 回歸入口：`python -m unittest -v tests.test_bl001_stage_sqlite_candidate_inventory`。新工具 Windows 實機尚待驗證，但此前原子修復與多程序重疊的 Windows UAT 已經通過。這個唯讀工具**不能證明候選表是否真正孤兒**，也沒有任何清理正式 DB 的能力。
+
+**離線路徑保護（新增）**：唯讀候選表工具除了拒絕檔案自身 symlink／WAL/journal sidecar，也拒絕提交路徑或解析後路徑中任何以 `WorkPool` 開頭的目錄元件（不分大小寫，包括 WorkPool 備份資料夾）。這是防呆而不是對活躍資料庫的檢測能力；需把已靜止且另存的複本移到明確獨立的暫存位置才能查，不能拿正式 DB 冒險。
