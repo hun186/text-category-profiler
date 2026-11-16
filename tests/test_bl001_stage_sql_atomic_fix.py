@@ -191,6 +191,122 @@ class AtomicStageSQLTests(unittest.TestCase):
             )
             self.assertEqual(db.execute("PRAGMA integrity_check").fetchone()[0], "ok")
 
+    def test_inbound_foreign_key_cascade_is_refused_without_data_loss(self):
+        pd = self.pd
+        path = self._write(
+            "inbound-foreign-key.sqlite3",
+            pd.DataFrame({"text": ["舊資料"], "label": ["KEEP"]}),
+        )
+        with closing(sqlite3.connect(path)) as db:
+            db.execute("PRAGMA foreign_keys=ON")
+            db.execute('CREATE UNIQUE INDEX "parent_text_key" ON "sampleSrc"("text")')
+            db.execute(
+                'CREATE TABLE "child" ('
+                '"ref" TEXT REFERENCES "sampleSrc"("text") ON DELETE CASCADE)'
+            )
+            db.execute('INSERT INTO "child" VALUES ("舊資料")')
+            db.commit()
+
+        def connect_with_fk(name):
+            result = sqlite3.connect(name)
+            result.execute("PRAGMA foreign_keys=ON")
+            return result
+
+        before = self._schema_and_rows(path)
+        with self.assertRaisesRegex(ValueError, "inbound foreign-key dependency"):
+            self._write(
+                "inbound-foreign-key.sqlite3",
+                pd.DataFrame({"text": ["新資料"], "label": ["NEW"]}),
+                factory=connect_with_fk,
+            )
+        with closing(sqlite3.connect(path)) as db:
+            db.execute("PRAGMA foreign_keys=ON")
+            self.assertEqual(
+                db.execute('SELECT "ref" FROM "child"').fetchall(),
+                [("舊資料",)],
+            )
+            self.assertEqual(
+                db.execute('SELECT "text", "label" FROM "sampleSrc"').fetchall(),
+                [("舊資料", "KEEP")],
+            )
+            self.assertEqual(db.execute("PRAGMA foreign_key_check").fetchall(), [])
+        self.assertEqual(self._schema_and_rows(path), before)
+
+    def test_attached_trigger_is_not_silently_dropped(self):
+        pd = self.pd
+        path = self._write(
+            "trigger-preservation.sqlite3",
+            pd.DataFrame({"text": ["舊資料"], "label": ["KEEP"]}),
+        )
+        with closing(sqlite3.connect(path)) as db:
+            db.execute('CREATE TABLE "audit_rows" (value TEXT)')
+            db.execute(
+                'CREATE TRIGGER "sampleSrc_insert_log" '
+                'AFTER INSERT ON "sampleSrc" '
+                'BEGIN INSERT INTO "audit_rows" VALUES (NEW."text"); END'
+            )
+            db.commit()
+        before = self._schema_and_rows(path)
+        with self.assertRaisesRegex(ValueError, "trigger dependency"):
+            self._write(
+                "trigger-preservation.sqlite3",
+                pd.DataFrame({"text": ["不得提交"], "label": ["NEW"]}),
+            )
+        with closing(sqlite3.connect(path)) as db:
+            self.assertIsNotNone(db.execute(
+                "SELECT sql FROM sqlite_master WHERE type='trigger' "
+                "AND name='sampleSrc_insert_log'"
+            ).fetchone())
+            self.assertEqual(
+                db.execute('SELECT "text" FROM "sampleSrc"').fetchall(),
+                [("舊資料",)],
+            )
+            db.execute(
+                'INSERT INTO "sampleSrc" ("index", "text", "label") '
+                'VALUES (1, "新記錄", "OK")'
+            )
+            db.commit()
+            self.assertEqual(
+                db.execute('SELECT value FROM audit_rows').fetchall(),
+                [("新記錄",)],
+            )
+        self.assertEqual(before[3], "ok")
+
+    def test_unrelated_foreign_keys_and_triggers_do_not_block_stage(self):
+        pd = self.pd
+        path = self._write(
+            "unrelated-dependencies.sqlite3",
+            pd.DataFrame({"text": ["舊"], "label": ["A"]}),
+        )
+        with closing(sqlite3.connect(path)) as db:
+            db.execute('CREATE TABLE "parent" ("id" INTEGER PRIMARY KEY)')
+            db.execute(
+                'CREATE TABLE "child" ('
+                '"ref" INTEGER REFERENCES "parent"("id") ON DELETE CASCADE)'
+            )
+            db.execute('CREATE TABLE "audit_rows" ("note" TEXT)')
+            db.execute(
+                'CREATE TRIGGER "parent_insert_log" AFTER INSERT ON "parent" '
+                'BEGIN INSERT INTO "audit_rows" VALUES ("seen"); END'
+            )
+            db.execute('INSERT INTO "parent" VALUES (1)')
+            db.execute('INSERT INTO "child" VALUES (1)')
+            db.commit()
+        self._write("unrelated-dependencies.sqlite3",
+                    pd.DataFrame({"text": ["新"], "label": ["B"]}))
+        with closing(sqlite3.connect(path)) as db:
+            self.assertEqual(
+                db.execute('SELECT "text" FROM "sampleSrc"').fetchall(),
+                [("新",)],
+            )
+            self.assertEqual(
+                db.execute('SELECT "ref" FROM "child"').fetchall(), [(1,)],
+            )
+            self.assertIsNotNone(db.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='trigger' "
+                "AND name='parent_insert_log'"
+            ).fetchone())
+
     def test_failed_preflight_does_not_connect_or_replace(self):
         pd = self.pd
         path = self._write("preflight.sqlite3",
