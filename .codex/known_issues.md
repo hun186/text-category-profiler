@@ -22,7 +22,7 @@
 - 現行 `data.stage_sql.write_stage_sql` 先由 pandas `to_sql(if_exists="replace")` 替換 `sampleSrc`，再於同一 SQLite connection 執行 `CREATE INDEX "text_Index"`；兩者並非經已證實的單次原子提交。
 - 開發隔離暫存 SQLite 程序終止測試：在 to_sql 返回、建立 index 之前暫停並強制終止 writer，可觀察到「新資料出現、text_Index 缺失、PRAGMA integrity_check=ok」。SQLite 完整性不等於應用資料／索引階段完整。
 - 使用者 Windows 在 2026-11-16 執行的 `run-bl001-sqlite-lock-check.bat` 為五項 PASS，但終止的是**持鎖程序**，不包含 writer 中途終止。新診斷 `run-bl001-sqlite-atomicity-probe.bat` 待 Windows 實測；仍只准私人臨時資料庫。
-- **本分支原子提交修復候選（尚未合併／部署）**：pandas 對新建唯一候選表寫入並提交後，透過 `BEGIN IMMEDIATE` 在單一交易中完成 `DROP TABLE sampleSrc`、候選表 rename、pandas 原 `ix_sampleSrc_*` 索引重建及 `text_Index` 建立；失敗時 rollback 保留舊表。保留原兩個 Stage-local API，不自動刪其他程序留下的候選表；中途遭 SIGKILL 可能留下 `__bl001_stage_*` 孤兒表，需隔離測試、明確擁有者協調和清理策略。不應以 CI 綠燈宣稱 Windows／正式 WorkPool 已驗收。
+- **本分支原子提交修復候選（尚未合併／部署）**：pandas 對新建唯一候選表寫入並提交後，透過 `BEGIN IMMEDIATE` 在單一交易中完成 `DROP TABLE sampleSrc`、同名 `CREATE TABLE`、交易內 `INSERT ... SELECT` 複製候選資料（維持 dependent views）、pandas 原 `ix_sampleSrc_*` 索引重建及 `text_Index` 建立；失敗時 rollback 保留舊表。保留原兩個 Stage-local API，不自動刪其他程序留下的候選表；中途遭 SIGKILL 可能留下 `__bl001_stage_*` 孤兒表，需隔離測試、明確擁有者協調和清理策略。這種方式增加完整資料複製 I/O／磁碟暫存成本，需測量大資料與網路磁碟；不應以 CI 綠燈宣稱 Windows／正式 WorkPool 已驗收。
 - **其他修復阻擋**：必須在不改 legacy caller contract、`sampleSrc`/`text_Index` 命名、資料語意及 Windows 檔案行為下，提供成對成功／失敗的提交及已驗證的恢復途徑；不能以單純加 SQLite BEGIN 就假定 pandas to_sql 內部不 commit。未經額外設計、CI、Review 和內網核准，不改 production writer。
 
 - **Windows 實機確證（2026-11-16）**：使用者在 Windows/Anaconda 先 fast-forward 至 `main@b6e13fa0038665c47d90f01607bbebac7e96760b`，執行 `run-bl001-sqlite-atomicity-probe.bat`，回報 `status=FAIL_ATOMICITY`、`original_preserved=false`、`new_partial_rows_present=true`、`text_index_present=false`、`integrity_check=ok`，scope 為私人 tempfile；**不是正式 WorkPool 損壞**，writer 仍未修復。
