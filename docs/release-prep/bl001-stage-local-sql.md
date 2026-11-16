@@ -42,3 +42,19 @@ python scripts/bl001_stage_sqlite_audit.py --db "path/to/copied-stage.sqlite3"
 工具只檢查 `sampleSrc` 是否存在且包含 **精確** `text` 欄位、`text_Index` 是否只綁定該欄位且是原始 `CREATE INDEX` 的非唯一、非 partial、升冪 BINARY 索引（不是同鍵的 UNIQUE、partial、DESC、NOCASE 變體），使用 `mode=ro&immutable=1` 且 `PRAGMA query_only=ON`；不讀取任何資料列、不執行 `CREATE/REPLACE/UPDATE`、不修復或轉移資料、不修改 WorkPool。輸出單行 JSON：`status=PASS/FAIL`、`issues`、欄位與索引 key 欄位，PASS exit 0、FAIL exit 1。缺檔、symlink、WAL／SHM／journal sidecar、SQLite 無法讀取與 schema 不符均 fail closed。
 
 **重要限制：** 使用 SQLite immutable 會略過即時 journal/WAL 狀態；即使沒有 sidecar，也**不能**證明並行寫入安全，必須先建立已靜止的複本才能合理解讀結果。這只是 schema 確認，不會證明原始資料內容、交易 rollback／原子性、磁碟鎖、正式 Windows runtime 或分類成功。測試：`python -m unittest -v tests.test_bl001_stage_sqlite_audit`（私有 tempfile SQLite，無正式資料庫）。
+
+## Windows 跨程序檔案鎖與持鎖程序中斷快檢（私人測試檔）
+
+更新含 `run-bl001-sqlite-lock-check.bat` 的 GitHub 版本後，在平常使用的 Windows Anaconda Prompt、repository root 直接執行：
+
+```bat
+run-bl001-sqlite-lock-check.bat
+```
+
+跨平台等價命令：`python -m scripts.bl001_stage_sqlite_lock_acceptance`；回歸測試：`python -m unittest -v tests.test_bl001_stage_sqlite_lock_acceptance`。
+
+這個 CLI **不提供 `--db` / WorkPool / 輸出路徑參數**；它只在 `tempfile.TemporaryDirectory` 建立測試用 SQLite，透過現行 `data.stage_sql.write_stage_sql` 寫入 Unicode 資料、`sampleSrc` 及 `text_Index`。子程序執行 `BEGIN EXCLUSIVE` 真正持鎖，驗證寫入被拒絕，接著先正常釋鎖，再測一次強制終止持鎖子程序，於新連線核對未被覆寫的資料與原生 text 索引，最後驗證重試成功與 SQLite integrity_check。測試絕不讀寫正式 WorkPool／外部 DB、也不改工作池階段狀態。
+
+`status=PASS` 僅證明該機器的**私人 SQLite 跨程序鎖拒絕與釋鎖後重試**運作正常。`status=FAIL` 或 `BLOCKED_DEPENDENCY` 不可視為通過。此測試**不是**在 `to_sql(replace)` 與 `CREATE INDEX` 之間終止**寫入程序**，不能據此保證整段 writer 的交易原子性或生產資料中斷恢復；也不證明正式 WorkPool 的多工作者競爭、Windows 網路磁碟鎖或長時間穩定性。若要驗證這些高風險情境，須另以隔離的完整測試工作池及失敗注入設計，不能拿正式 SQLite 做破壞測試。
+
+**2026-11-16 已收到的 Windows 實機證據：** pandas 2.0.1／xlsxwriter 3.1.9 下 Stage writer 快檢 39/39 PASS；`TCFMain.py --self-test isolated` 10 PASS；`TCFMain.py --self-test real -p 8050` 7 PASS、1 CPU WARN、0 FAIL，模型和 FixedTest 均 unchanged，`_rdy_for_Spike=1`。Jaal／歷史預覽畫面及 Stage 4 篩選由使用者回報正常。**新的跨程序鎖工具尚未取得 Windows 實機結果**，不得提前標記 PASS。
