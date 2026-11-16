@@ -169,3 +169,7 @@ run-bl001-sqlite-release-preflight.bat --real-port 8050
 `run-bl001-sqlite-reader-snapshot.bat`（預設 40 rows；最多 500 rows）使用私人 TemporaryDirectory SQLite，真正啟動第二個 Python writer。先讓 writer 建好候選表並暫停在 `BEGIN IMMEDIATE` 前，讀取端開始交易並讀取舊內容，接著放行 writer；其 final swap 尚未提交時，再透過同一 reader transaction 查 `sampleSrc` 與 View，必須仍是舊內容。讀取端提交釋鎖後，writer 才可完成，重新連線必須讀到完整新內容、保留 `text_Index` 與 pandas index、View 正確、無候選表且 `integrity_check=ok`。
 
 `PASS_PRIVATE_READER_SNAPSHOT` 只代表這個被控制的讀寫交錯在私人本機 SQLite 成功；不是正式 WorkPool、網路檔案系統或全部併發時序的保證，也沒有正式 DB 輸入參數。Windows 實機尚未驗收。
+
+### KI-012 一鍵快檢加入私人 reader-snapshot 交錯測試
+
+`run-bl001-sqlite-release-preflight.bat` 已將 `reader_snapshot`（20 筆、跨程序、TemporaryDirectory）列為必要子檢查，必須取得 `PASS_PRIVATE_READER_SNAPSHOT`；`PASS` 等其他回應不能冒充通過。原子式 writer、讀取端快照、View 和實際欄位索引必須保持一致。這仍**不是**正式 WorkPool／網路共享碟驗收；未啟用實際模型時，整體狀態依舊 `PASS_PARTIAL_NO_REAL_MODEL`。
