@@ -55,6 +55,8 @@ class RecorderConnection:
 
     def execute(self, statement, parameters=()):
         self.events.append(("execute", statement))
+        if statement.startswith("SELECT type, name, tbl_name FROM sqlite_master"):
+            return []
         if statement.startswith("SELECT sql FROM sqlite_master"):
             table = parameters[0]
             return type("Cursor", (), {
