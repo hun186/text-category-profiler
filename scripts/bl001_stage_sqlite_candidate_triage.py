@@ -18,7 +18,20 @@ from scripts.bl001_stage_sqlite_candidate_inventory import inventory_offline_cop
 
 
 def triage_offline_copy(filename: str | Path) -> dict:
-    prior = inventory_offline_copy(filename)
+    path = Path(filename)
+    # Fail closed before invoking even the immutable inventory. The inventory
+    # guard lives in a separate PR and may not yet be on the running branch.
+    ancestors = (part.casefold() for part in path.parent.parts)
+    resolved = (part.casefold() for part in path.parent.resolve(strict=False).parts)
+    if any(part.startswith("workpool") for part in (*ancestors, *resolved)):
+        prior = {
+            "status": "UNVERIFIABLE", "candidate_count": 0,
+            "candidate_names": [], "candidate_names_truncated": False,
+            "unexpected_prefixed_names": [], "unexpected_names_truncated": False,
+            "issues": ["workpool_path_not_allowed"],
+        }
+    else:
+        prior = inventory_offline_copy(filename)
     report = {
         "status": "UNVERIFIABLE",
         "scope": "offline_quiescent_copy_readonly",
@@ -57,17 +70,31 @@ def triage_offline_copy(filename: str | Path) -> dict:
                         "PRAGMA table_info(" + name + ")"
                     )
                 ]
-                indexes = [
-                    row[1] for row in db.execute(
-                        "PRAGMA index_list(" + name + ")"
-                    )
-                ]
-                expected = "ix_" + candidate + "_index"
+                indexes = list(db.execute("PRAGMA index_list(" + name + ")"))
+                pandas_prefix = "ix_" + candidate + "_"
+                valid_pandas_indexes = []
+                for item in indexes:
+                    index_name = item[1]
+                    if not index_name.startswith(pandas_prefix):
+                        continue
+                    keys = [
+                        key for key in db.execute(
+                            'PRAGMA index_xinfo("' + index_name.replace('"', '""') + '")'
+                        ) if key[5] == 1
+                    ]
+                    if (item[2] == 0 and item[3] == "c" and item[4] == 0
+                            and keys and all(
+                                key[1] >= 0 and key[2] in fields
+                                and key[3] == 0 and key[4] == "BINARY"
+                                for key in keys
+                            )):
+                        valid_pandas_indexes.append(index_name)
                 report["candidates"].append({
                     "table": candidate,
                     "column_count": len(fields),
                     "has_text_column": "text" in fields,
-                    "has_pandas_index": expected in indexes,
+                    "has_pandas_index": bool(valid_pandas_indexes),
+                    "pandas_index_names": valid_pandas_indexes[:8],
                     "all_index_count": len(indexes),
                     "owner_status": "UNKNOWN",
                     "safe_to_delete": False,
