@@ -7,6 +7,7 @@
 | ID | 決策 | 狀態 | 日期 | 影響範圍 | 被取代／取代者 |
 | --- | --- | --- | --- | --- | --- |
 | `ADR-0002` | Python package 使用 `text_category_profiler` namespace | Accepted | 2026-08-06 | Python package、imports、stage boundaries | 取代 `ADR-0001` |
+| `ADR-0003` | Stage-local SQLite 以唯一候選表＋單次 DDL transaction 提交 sampleSrc 與索引 | Proposed | 2026-11-16 | DatasetConverter/BertScript SQLite writer、並行候選表清理 | — |
 | `ADR-0001` | 跨 stage 共用工具使用 `tcf_utils` namespace | Superseded | 2026-08-06 | Python shared utilities、imports、stage boundaries | 被 `ADR-0002` 取代 |
 
 ## 何時建立 Decision Record
@@ -21,6 +22,16 @@
 不要為重新命名、單純 bug fix、格式調整、每次拆檔或理所當然的最佳實務建立決策紀錄，除非其中真的存在專案特有取捨。
 
 ## Decision Records
+
+### ADR-0003：Stage-local SQLite 以候選表＋交易切換原子提交
+
+- **狀態**：Proposed（修復候選，正式 Windows／WorkPool 尚待驗收）
+- **日期**：2026-11-16
+- **背景**：`KI-012` 的 Windows 私人測試確認原版 pandas sqlite3 `to_sql(if_exists=replace)` 及後續 `CREATE INDEX` 之間中斷後，可留下不完整的 `sampleSrc`，雖然 SQLite integrity=ok。單純在原 `to_sql` 外包 `BEGIN` 不能保證 pandas 不會自行 commit。
+- **方案比較**：重建整個資料庫再以檔案 `os.replace` 替換會破壞其他表、Windows 讀者檔案鎖及並行使用；直接修改 pandas/SQLite commit 行為不可靠；候選表可以在完成 pandas 輸出後再以 SQLite 原生 DDL 單交易替換正式表。
+- **候選決策**：先 `pandas.to_sql` 寫入隨機唯一候選表，提取已建立的 pandas 索引 metadata；接著以 `BEGIN IMMEDIATE` 原子切換 `sampleSrc`、重建與原 schema 同名的 `ix_sampleSrc_*` 及 `text_Index`，最後 commit。任何 SQL 失敗 rollback，原表和索引保全。對不支援的自動索引形態須在切換前 fail closed。
+- **必要限制**：此模式可能在 writer 被 SIGKILL 後留下唯一候選表；不能隨意刪除另一個 worker 的候選表。將未解決候選表清理、正式 WorkPool、既有 schema 與並發驗收記於 `KI-012`，不得因單次 Hosted 測試成功就標為全面修復。
+- **轉為 Accepted 條件**：完整 Hosted／Review、Windows 私人中斷及鎖定測試、原有 Stage-local API/schema 相容測試成功，再進行部署核准。不宣稱已部署。
 
 ### ADR-0002：Python package 使用 `text_category_profiler` namespace
 
