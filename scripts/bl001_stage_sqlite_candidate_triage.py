@@ -79,9 +79,12 @@ def triage_offline_copy(filename: str | Path) -> dict:
                 indexes = list(db.execute("PRAGMA index_list(" + name + ")"))
                 pandas_prefix = "ix_" + candidate + "_"
                 valid_pandas_indexes = []
+                invalid_pandas_indexes = []
+                unexpected_indexes = []
                 for item in indexes:
                     index_name = item[1]
                     if not index_name.startswith(pandas_prefix):
+                        unexpected_indexes.append(index_name)
                         continue
                     keys = [
                         key for key in db.execute(
@@ -95,12 +98,24 @@ def triage_offline_copy(filename: str | Path) -> dict:
                                 for key in keys
                             )):
                         valid_pandas_indexes.append(index_name)
+                    else:
+                        invalid_pandas_indexes.append(index_name)
                 report["candidates"].append({
                     "table": candidate,
                     "column_count": len(fields),
                     "has_text_column": "text" in fields,
                     "has_pandas_index": bool(valid_pandas_indexes),
                     "pandas_index_names": valid_pandas_indexes[:8],
+                    "invalid_pandas_index_count": len(invalid_pandas_indexes),
+                    "invalid_pandas_index_names": invalid_pandas_indexes[:8],
+                    "invalid_names_truncated": len(invalid_pandas_indexes) > 8,
+                    "unexpected_index_count": len(unexpected_indexes),
+                    "unexpected_index_names": unexpected_indexes[:8],
+                    "unexpected_names_truncated": len(unexpected_indexes) > 8,
+                    "all_indexes_pandas_compatible": (
+                        bool(valid_pandas_indexes)
+                        and not invalid_pandas_indexes and not unexpected_indexes
+                    ),
                     "all_index_count": len(indexes),
                     "owner_status": "UNKNOWN",
                     "safe_to_delete": False,
