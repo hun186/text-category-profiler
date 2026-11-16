@@ -114,9 +114,11 @@ class AtomicStageSQLTests(unittest.TestCase):
         candidate = pd.DataFrame({"text": ["不得提交"], "label": ["X"]})
         triggers = (
             'DROP TABLE IF EXISTS "sampleSrc"',
-            'ALTER TABLE "__bl001_stage_',
+            'CREATE TABLE "sampleSrc"',
+            'INSERT INTO "sampleSrc"',
             'CREATE INDEX "ix_sampleSrc_index"',
             'CREATE INDEX "text_Index"',
+            'DROP TABLE "__bl001_stage_',
         )
 
         for attempt, trigger in enumerate(triggers):
@@ -138,6 +140,56 @@ class AtomicStageSQLTests(unittest.TestCase):
                         ),
                     )
                 self.assertEqual(self._schema_and_rows(path), original)
+
+    def test_dependent_view_survives_replacement_and_failed_index_build(self):
+        pd = self.pd
+        original = pd.DataFrame({"text": ["舊新聞"], "label": ["OLD"]})
+        replacement = pd.DataFrame({"text": ["新新聞"], "label": ["NEW"]})
+        path = self._write("view.sqlite3", original)
+        with closing(sqlite3.connect(path)) as db:
+            db.execute('CREATE VIEW "text_view" AS SELECT "text" FROM "sampleSrc"')
+            db.commit()
+            original_view_sql = db.execute(
+                "SELECT sql FROM sqlite_master WHERE type='view' AND name='text_view'"
+            ).fetchone()[0]
+
+        class FailIndex(sqlite3.Connection):
+            def execute(self, sql, *args):
+                if sql.startswith('CREATE INDEX "text_Index"'):
+                    raise RuntimeError("injected index failure with dependent view")
+                return super().execute(sql, *args)
+
+        with self.assertRaisesRegex(RuntimeError, "injected index failure"):
+            self._write(
+                "view.sqlite3", replacement,
+                factory=lambda name: sqlite3.connect(name, factory=FailIndex),
+            )
+        with closing(sqlite3.connect(path)) as db:
+            self.assertEqual(
+                db.execute('SELECT "text" FROM "text_view"').fetchall(),
+                [("舊新聞",)],
+            )
+
+        self._write("view.sqlite3", replacement)
+        with closing(sqlite3.connect(path)) as db:
+            self.assertEqual(
+                db.execute('SELECT "text" FROM "text_view"').fetchall(),
+                [("新新聞",)],
+            )
+            self.assertEqual(
+                db.execute('SELECT "text", "label" FROM "sampleSrc"').fetchall(),
+                [("新新聞", "NEW")],
+            )
+            self.assertEqual(
+                db.execute(
+                    "SELECT sql FROM sqlite_master WHERE type='view' AND name='text_view'"
+                ).fetchone()[0], original_view_sql,
+            )
+            self.assertEqual(
+                {row[1] for row in db.execute('PRAGMA index_list("sampleSrc")')},
+                {"ix_sampleSrc_index", "text_Index"},
+            )
+            self.assertEqual(db.execute("PRAGMA integrity_check").fetchone()[0], "ok")
 
     def test_failed_preflight_does_not_connect_or_replace(self):
         pd = self.pd
