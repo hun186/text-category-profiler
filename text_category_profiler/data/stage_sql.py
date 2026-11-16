@@ -49,6 +49,34 @@ def _pandas_candidate_indexes(cnx, candidate):
     return mappings
 
 
+def _guard_existing_stage_indexes(cnx):
+    """Reject index/constraint definitions that a DROP/CREATE would discard.
+
+    Pandas Stage-local indexes are ix_sampleSrc_*, plus plain text_Index.
+    An unrecognized or altered index may encode a business constraint;
+    never silently replace it with a weaker schema. Schema metadata only.
+    """
+    entries = list(cnx.execute('PRAGMA index_list("sampleSrc")'))
+    columns = {item[1] for item in cnx.execute('PRAGMA table_info("sampleSrc")')}
+    for entry in entries:
+        name, unique, origin, partial = entry[1:5]
+        if (unique != 0 or origin != "c" or partial != 0
+                or (name != "text_Index"
+                    and not name.startswith("ix_sampleSrc_"))):
+            raise ValueError("Unsafe existing sampleSrc index: " + name)
+        keys = [
+            key for key in cnx.execute(
+                "PRAGMA index_xinfo(" + _quote_identifier(name) + ")"
+            ) if key[5] == 1
+        ]
+        if (not keys or any(key[1] < 0 or key[2] not in columns
+                            or key[3] != 0 or key[4] != "BINARY"
+                            for key in keys)
+                or (name == "text_Index"
+                    and (len(keys) != 1 or keys[0][2] != "text"))):
+            raise ValueError("Unsafe existing sampleSrc index keys: " + name)
+
+
 def _guard_replace_dependencies(cnx):
     """Fail closed under BEGIN IMMEDIATE before DROP can erase dependencies.
 
@@ -76,6 +104,7 @@ def _guard_replace_dependencies(cnx):
                 raise ValueError(
                     "Unsafe sampleSrc inbound foreign-key dependency: " + name
                 )
+    _guard_existing_stage_indexes(cnx)
 
 
 def write_stage_sql(sql_name, df, saving_columns, connect):
