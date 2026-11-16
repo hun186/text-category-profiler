@@ -15,3 +15,8 @@ run-bl001-sqlite-offline-health.bat --db "D:\private\offline-copy.sqlite3"
 預設最多讀取 256 MiB SQLite 複本，`--max-mib` 可設定 1～4096 MiB。使用 `mode=ro&immutable=1` 與 `PRAGMA query_only=ON`，不執行 DROP、VACUUM、刪除、修復或備份操作。
 
 SQLite `quick_check(1)` **不是**完整 `integrity_check`，也不檢查全部外鍵，不能證明業務資料內容正確、Windows／網路共享磁碟可靠性或正式 WorkPool 復原能力。檔案大小及修改時間前後檢查只是一種警戒，**不能證明**檔案在驗收期間完全靜止。
+## 檢查期間結構變動的第二道保護
+
+`offline_quick_check` 現在會在完成 SQLite 頁面檢查後再次讀取**完整**候選表與可疑前綴名稱指紋，與前一次盤點比對。即使候選表總數沒變、只在兩次檢查之間改名，也會回報 `UNVERIFIABLE`／`offline_copy_changed_during_check`，而非 `PASS_OFFLINE_QUICK_CHECK`。若第二次盤點因 sidecar、路徑或 schema 問題不可判讀，也不放行。
+
+注意：這是對「執行中意外變動」的額外偵測，**不是**對靜止性或完整性做無條件保證；惡意竄改、改完又復原及資料庫真正業務正確性仍不在可證明範圍，必須使用已停止寫入的獨立複本。工具不讀取業務資料列，也不授權刪除候選表。
