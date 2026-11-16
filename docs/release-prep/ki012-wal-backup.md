@@ -7,3 +7,7 @@
 測試要求來源因 WAL sidecar 被離線盤點拒絕，備份與還原則必須包含完整 `sampleSrc`、`text_Index`、pandas index、View、無關資料表，以及所有權未知的候選表。所有候選表保留 `owner_status=UNKNOWN`、`candidate_deletion_authorized=false`。
 
 可設定 `--rows` 10～500，但**沒有可指定正式資料庫的 `--db` 參數**。`PASS_PRIVATE_WAL_BACKUP` 只代表這種受控私人 WAL 備份情境通過，不代表可以直接備份活動中的正式 WorkPool、網路共享磁碟、實際災難恢復或 OS 磁碟滿載。
+
+## 外鍵備份一致性（私人資料庫）
+
+WAL 私人驗證會額外建立一組與 `sampleSrc` 無關的父子表及有效 SQLite 外鍵約束。備份與還原不只要保留外鍵 schema、父子資料，也必須讓 `PRAGMA foreign_key_check` 無違規；另有私人負向測試確保破壞參照的 SQLite 會被拒絕，而非僅憑 `integrity_check=ok` 放行。通過仍不代表正式 WorkPool 的備份、還原或跨平台災難復原已驗證。
