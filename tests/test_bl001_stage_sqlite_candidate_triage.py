@@ -144,6 +144,50 @@ class OfflineCandidateTriageTests(unittest.TestCase):
         self.assertEqual(triage_offline_copy(pool / "missing.sqlite3")["status"],
                          "UNVERIFIABLE")
 
+    def test_new_candidate_after_clear_inventory_is_not_false_pass(self):
+        from unittest.mock import patch
+        from scripts import bl001_stage_sqlite_candidate_triage as mod
+        original = mod.inventory_offline_copy
+        def change_after_inventory(path):
+            summary = original(path)
+            with closing(sqlite3.connect(path)) as db:
+                db.execute(
+                    'CREATE TABLE "__bl001_stage_'
+                    + "f" * 32 + '" ("text" TEXT)'
+                )
+                db.commit()
+            return summary
+        with patch.object(mod, "inventory_offline_copy",
+                          side_effect=change_after_inventory):
+            report = triage_offline_copy(self.path)
+        self.assertEqual(report["status"], "UNVERIFIABLE")
+        self.assertIn("candidate_schema_changed_since_inventory", report["issues"])
+        self.assertEqual(report["candidates"], [])
+        self.assertFalse(report["deletion_authorized"])
+
+    def test_equal_count_rename_after_inventory_is_not_false_triage(self):
+        from unittest.mock import patch
+        from scripts import bl001_stage_sqlite_candidate_triage as mod
+        old_name = self._create_candidate("a" * 32)
+        original = mod.inventory_offline_copy
+        def change_after_inventory(path):
+            summary = original(path)
+            with closing(sqlite3.connect(path)) as db:
+                db.execute(
+                    'ALTER TABLE "' + old_name + '" RENAME TO "'
+                    + "__bl001_stage_" + "e" * 32 + '"'
+                )
+                db.commit()
+            return summary
+        with patch.object(mod, "inventory_offline_copy",
+                          side_effect=change_after_inventory):
+            result = triage_offline_copy(self.path)
+        self.assertEqual(result["status"], "UNVERIFIABLE")
+        self.assertIn("candidate_schema_changed_since_inventory", result["issues"])
+        self.assertEqual(result["candidates"], [])
+        self.assertEqual(result["owner_status"], "UNKNOWN")
+        self.assertFalse(result["deletion_authorized"])
+
     def test_cli_status_codes_distinguish_review_and_missing_db(self):
         out = io.StringIO()
         with redirect_stdout(out):

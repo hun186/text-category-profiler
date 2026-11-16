@@ -14,7 +14,9 @@ from pathlib import Path
 import sqlite3
 
 from scripts.bl001_stage_sqlite_audit import _has_workpool_ancestor, _readonly_uri
-from scripts.bl001_stage_sqlite_candidate_inventory import inventory_offline_copy
+from scripts.bl001_stage_sqlite_candidate_inventory import (
+    _CANDIDATE, _PREFIX, _name_digest, inventory_offline_copy,
+)
 
 
 def triage_offline_copy(filename: str | Path) -> dict:
@@ -57,16 +59,32 @@ def triage_offline_copy(filename: str | Path) -> dict:
     }
     if prior["status"] == "UNVERIFIABLE":
         return report
-    if prior["status"] == "PASS_NO_CANDIDATES":
-        report["status"] = "PASS_NO_CANDIDATES"
-        return report
-
     path = Path(filename)
     try:
         with closing(sqlite3.connect(
             _readonly_uri(path), uri=True, timeout=1,
         )) as db:
             db.execute("PRAGMA query_only=ON")
+            # Re-read the FULL name sets, including entries beyond the
+            # 20-name display cap. A valid earlier inventory cannot certify
+            # that the schema stayed fixed until triage inspected it.
+            names = [
+                item[0] for item in db.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+                )
+            ]
+            candidate_names = [name for name in names if _CANDIDATE.fullmatch(name)]
+            unexpected_names = [
+                name for name in names
+                if name.startswith(_PREFIX) and not _CANDIDATE.fullmatch(name)
+            ]
+            if (len(candidate_names) != prior["candidate_count"]
+                    or len(unexpected_names) != prior["unexpected_prefix_count"]
+                    or _name_digest(candidate_names) != prior["candidate_names_sha256"]
+                    or _name_digest(unexpected_names)
+                    != prior["unexpected_prefix_names_sha256"]):
+                report["issues"].append("candidate_schema_changed_since_inventory")
+                return report
             for candidate in prior["candidate_names"]:
                 # Names already match a strict 32-hex allowlist in the
                 # inventory; quote them anyway to avoid SQL injection.
@@ -124,7 +142,7 @@ def triage_offline_copy(filename: str | Path) -> dict:
         report["issues"].append("candidate_metadata_read_failed")
         return report
 
-    report["status"] = "REVIEW_REQUIRED"
+    report["status"] = prior["status"]
     return report
 
 
