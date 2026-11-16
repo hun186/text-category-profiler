@@ -46,6 +46,40 @@ class OfflineHealthTests(unittest.TestCase):
         self.assertEqual(result["candidate_count"], 1)
         self.assertFalse(result["candidate_deletion_authorized"])
 
+    def test_valid_foreign_key_is_checked_without_mutation(self):
+        with closing(sqlite3.connect(self.path)) as db:
+            db.execute('CREATE UNIQUE INDEX "unique_parent_text" '
+                       'ON "sampleSrc"("text")')
+            db.execute('CREATE TABLE "child" ('
+                       '"ref" TEXT REFERENCES "sampleSrc"("text"))')
+            db.execute('INSERT INTO "child" VALUES ("中文")')
+            db.commit()
+        before = self.path.read_bytes()
+        result = offline_quick_check(self.path)
+        self.assertEqual(result["status"], "PASS_OFFLINE_QUICK_CHECK")
+        self.assertEqual(result["foreign_key_check"], "ok")
+        self.assertEqual(self.path.read_bytes(), before)
+
+    def test_broken_foreign_key_is_not_false_green_even_if_quick_check_ok(self):
+        with closing(sqlite3.connect(self.path)) as db:
+            db.execute('CREATE UNIQUE INDEX "unique_parent_text" '
+                       'ON "sampleSrc"("text")')
+            db.execute('CREATE TABLE "child" ('
+                       '"ref" TEXT REFERENCES "sampleSrc"("text"))')
+            # With SQLite's default foreign_keys=OFF, a broken reference can
+            # exist on an otherwise page-integrity-clean detached DB.
+            db.execute('INSERT INTO "child" VALUES ("missing-parent")')
+            db.commit()
+        before = self.path.read_bytes()
+        result = offline_quick_check(self.path)
+        self.assertEqual(result["status"], "UNVERIFIABLE")
+        self.assertEqual(result["quick_check"], "ok")
+        self.assertEqual(result["foreign_key_check"], "FAIL")
+        self.assertIn("sqlite_foreign_key_violations", result["issues"])
+        self.assertNotIn("missing-parent", json.dumps(result))
+        self.assertFalse(result["candidate_deletion_authorized"])
+        self.assertEqual(self.path.read_bytes(), before)
+
     def test_candidate_created_after_quickcheck_cannot_false_green(self):
         from unittest.mock import patch
         from scripts import bl001_stage_sqlite_offline_health as mod
