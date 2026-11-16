@@ -86,7 +86,8 @@ def inventory_offline_copy(filename: str | Path) -> dict:
         issues.append("sqlite_journal_or_wal_present")
         return result
     try:
-        if path.stat().st_size < 100:
+        start_stat = path.stat()
+        if start_stat.st_size < 100:
             issues.append("database_empty_or_truncated")
             return result
         with closing(sqlite3.connect(_readonly_uri(path), uri=True, timeout=1)) as db:
@@ -121,6 +122,44 @@ def inventory_offline_copy(filename: str | Path) -> dict:
     if audit["status"] != "PASS":
         issues.append("main_stage_schema_not_verified")
         issues.extend(audit["issues"])
+        return result
+
+    # A separate schema audit opened this copy after the candidate-name
+    # snapshot. Detect new/renamed names (including items beyond display cap)
+    # before declaring the original inventory result trustworthy.
+    try:
+        if path.is_symlink() or _has_multiple_file_links(path):
+            issues.append("offline_inventory_changed_during_audit")
+            return result
+        if any(Path(str(path) + suffix).exists()
+               for suffix in ("-wal", "-shm", "-journal")):
+            issues.append("offline_inventory_changed_during_audit")
+            return result
+        with closing(sqlite3.connect(_readonly_uri(path), uri=True, timeout=1)) as db:
+            db.execute("PRAGMA query_only=ON")
+            ending_names = [
+                row[0] for row in db.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+                )
+            ]
+        finish_stat = path.stat()
+        identity = lambda stat: (
+            stat.st_dev, stat.st_ino, stat.st_nlink, stat.st_size,
+            stat.st_mtime_ns, stat.st_ctime_ns,
+        )
+        ending_candidates = [name for name in ending_names
+                             if _CANDIDATE.fullmatch(name)]
+        ending_suspicious = [
+            name for name in ending_names
+            if _has_candidate_prefix(name) and not _CANDIDATE.fullmatch(name)
+        ]
+        if (identity(start_stat) != identity(finish_stat)
+                or _name_digest(candidates) != _name_digest(ending_candidates)
+                or _name_digest(suspicious) != _name_digest(ending_suspicious)):
+            issues.append("offline_inventory_changed_during_audit")
+            return result
+    except (OSError, ValueError, sqlite3.Error):
+        issues.append("offline_inventory_changed_during_audit")
         return result
 
     result["status"] = (
