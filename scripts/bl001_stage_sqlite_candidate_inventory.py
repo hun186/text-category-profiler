@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 from contextlib import closing
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -23,6 +24,13 @@ _PREFIX = "__bl001_stage_"
 _DISPLAY_LIMIT = 20
 
 
+def _name_digest(names) -> str:
+    """Full sorted schema-name digest, never truncated to display count."""
+    encoded = json.dumps(sorted(names), ensure_ascii=True,
+                         separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
 def inventory_offline_copy(filename: str | Path) -> dict:
     path = Path(filename)
     result = {
@@ -32,9 +40,11 @@ def inventory_offline_copy(filename: str | Path) -> dict:
         "candidate_count": 0,
         "candidate_names": [],
         "candidate_names_truncated": False,
+        "candidate_names_sha256": None,
         "unexpected_prefix_count": 0,
         "unexpected_prefixed_names": [],
         "unexpected_names_truncated": False,
+        "unexpected_prefix_names_sha256": None,
         "schema_status": "NOT_CHECKED",
         "issues": [],
         "safety": (
@@ -85,9 +95,11 @@ def inventory_offline_copy(filename: str | Path) -> dict:
     result["candidate_count"] = len(candidates)
     result["candidate_names"] = candidates[:_DISPLAY_LIMIT]
     result["candidate_names_truncated"] = len(candidates) > _DISPLAY_LIMIT
+    result["candidate_names_sha256"] = _name_digest(candidates)
     result["unexpected_prefix_count"] = len(suspicious)
     result["unexpected_prefixed_names"] = suspicious[:_DISPLAY_LIMIT]
     result["unexpected_names_truncated"] = len(suspicious) > _DISPLAY_LIMIT
+    result["unexpected_prefix_names_sha256"] = _name_digest(suspicious)
 
     # A candidate count cannot certify anything if the main stage schema is
     # corrupted. Reuse the existing fail-closed schema-only audit.
