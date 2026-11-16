@@ -57,18 +57,21 @@ def _guard_replace_dependencies(cnx):
     objects by refusing replacement rather than silently deleting them.
     Only sqlite_master/PRAGMA metadata is inspected; no user rows are read.
     """
-    metadata = cnx.execute(
+    # Materialize and finish sqlite_master cursor before any rejection.
+    # Otherwise an active schema cursor can block DROP of our own staged
+    # candidate during failure cleanup on the SAME SQLite connection.
+    metadata = list(cnx.execute(
         "SELECT type, name, tbl_name FROM sqlite_master "
         "WHERE type IN ('table', 'trigger')"
-    )
+    ))
     for kind, name, owner in metadata:
         if kind == "trigger" and owner.casefold() == "samplesrc":
             raise ValueError("Unsafe sampleSrc trigger dependency: " + name)
         if kind != "table" or name.casefold() == "samplesrc":
             continue
-        for foreign_key in cnx.execute(
+        for foreign_key in list(cnx.execute(
             "PRAGMA foreign_key_list(" + _quote_identifier(name) + ")"
-        ):
+        )):
             if foreign_key[2].casefold() == "samplesrc":
                 raise ValueError(
                     "Unsafe sampleSrc inbound foreign-key dependency: " + name
