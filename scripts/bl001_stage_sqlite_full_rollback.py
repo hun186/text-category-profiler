@@ -107,15 +107,19 @@ def run_private_sqlite_full(*, rows: int = 500, repeat: int = 200) -> dict:
                 'SELECT COUNT(*) FROM "sampleSrc" WHERE "label"=?',
                 ("new",),
             ).fetchone()[0]
-            expected_view = [(replacement["text"].iloc[i],)
-                             for i in range(rows)]
-            actual_view = db.execute(
-                'SELECT "text" FROM "source_view" ORDER BY "index"'
-            ).fetchall()
+            # source_view exposes only text, not the pandas "index" field.
+            # Compare as multisets without relying on SQLite rowid scan order.
+            expected_view = sorted((value,) for value in replacement["text"])
+            actual_view = sorted(db.execute(
+                'SELECT "text" FROM "source_view"'
+            ).fetchall())
             retry_keys = [
                 key[2] for key in db.execute('PRAGMA index_xinfo("text_Index")')
                 if key[5] == 1
             ]
+            retry_index_names = {
+                item[1] for item in db.execute('PRAGMA index_list("sampleSrc")')
+            }
             related = db.execute(
                 'SELECT note FROM "unrelated"'
             ).fetchall()
@@ -126,7 +130,7 @@ def run_private_sqlite_full(*, rows: int = 500, repeat: int = 200) -> dict:
                 ) if row[0].startswith("__bl001_stage_")
             ]
         if (retry_count != rows or new_count != rows
-                or actual_view != expected_view or retry_keys != ["text"]
+                or actual_view != expected_view or retry_keys != ["text"] or retry_index_names != before["indexes"]
                 or related != [("應保留",)] or retry_integrity != "ok"
                 or retry_candidates):
             raise AssertionError("Private quota-release retry or view contract failed")
