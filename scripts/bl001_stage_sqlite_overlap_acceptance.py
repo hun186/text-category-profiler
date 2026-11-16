@@ -178,8 +178,10 @@ def run_private_overlap_acceptance() -> dict:
             locked = False
             try:
                 _write(locked_path, "不准提交", "BLOCKED")
-            except sqlite3.OperationalError as error:
-                if "locked" not in str(error).lower():
+            except Exception as error:
+                # pandas may wrap the SQLite OperationalError in DatabaseError.
+                # Accept only a real lock error, never another writer failure.
+                if "database is locked" not in str(error).lower():
                     raise
                 locked = True
             if not locked:
