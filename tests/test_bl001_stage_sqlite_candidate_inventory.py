@@ -56,6 +56,19 @@ class CandidateInventoryTests(unittest.TestCase):
         self.assertEqual(report["status"], "REVIEW_REQUIRED")
         self.assertEqual(report["candidate_count"], 0)
         self.assertEqual(report["unexpected_prefixed_names"], ["__bl001_stage_invalid"])
+        self.assertEqual(report["unexpected_prefix_count"], 1)
+
+    def test_unexpected_prefix_count_is_exact_even_when_display_truncated(self):
+        for i in range(24):
+            self._add_table("__bl001_stage_odd_" + str(i).zfill(3))
+        before = self.db.read_bytes()
+        report = inventory_offline_copy(self.db)
+        self.assertEqual(report["status"], "REVIEW_REQUIRED")
+        self.assertEqual(report["candidate_count"], 0)
+        self.assertEqual(report["unexpected_prefix_count"], 24)
+        self.assertEqual(len(report["unexpected_prefixed_names"]), 20)
+        self.assertTrue(report["unexpected_names_truncated"])
+        self.assertEqual(self.db.read_bytes(), before)
 
     def test_no_unbounded_table_name_output(self):
         for i in range(23):

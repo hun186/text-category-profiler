@@ -82,6 +82,23 @@ class OfflineCandidateTriageTests(unittest.TestCase):
             self.assertTrue(record["has_pandas_index"], record)
             self.assertTrue(record["pandas_index_names"])
 
+    def test_malformed_prefix_total_not_lost_when_name_list_is_capped(self):
+        with closing(sqlite3.connect(self.path)) as db:
+            for n in range(23):
+                db.execute(
+                    'CREATE TABLE "__bl001_stage_unexpected_' + str(n) + '" ("text" TEXT)'
+                )
+            db.commit()
+        original = self.path.read_bytes()
+        report = triage_offline_copy(self.path)
+        self.assertEqual(report["status"], "REVIEW_REQUIRED")
+        self.assertEqual(report["unexpected_prefix_count"], 23)
+        self.assertEqual(report["unexpected_prefix_count_known"], 20)
+        self.assertTrue(report["unexpected_prefix_names_truncated"])
+        self.assertFalse(report["deletion_authorized"])
+        self.assertEqual(report["owner_status"], "UNKNOWN")
+        self.assertEqual(original, self.path.read_bytes())
+
     def test_workpool_ancestor_and_missing_db_refused(self):
         pool = Path(self.tmp.name) / "WorkPool"
         pool.mkdir()
