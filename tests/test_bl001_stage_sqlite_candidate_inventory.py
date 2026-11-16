@@ -154,6 +154,22 @@ class CandidateInventoryTests(unittest.TestCase):
             inventory_offline_copy(parent / "copy.sqlite3")["issues"],
         )
 
+    def test_hardlink_alias_refused_without_sqlite_reads(self):
+        import os
+        alias = Path(self.private.name) / "alias.sqlite3"
+        try:
+            os.link(self.db, alias)
+        except (OSError, NotImplementedError):
+            self.skipTest("Hard links unavailable")
+        before = self.db.read_bytes()
+        for candidate in (self.db, alias):
+            with self.subTest(candidate=candidate):
+                outcome = inventory_offline_copy(candidate)
+                self.assertEqual(outcome["status"], "UNVERIFIABLE")
+                self.assertIn("hardlink_not_allowed", outcome["issues"])
+                self.assertEqual(outcome["schema_status"], "NOT_CHECKED")
+        self.assertEqual(self.db.read_bytes(), before)
+
     def test_cli_exit_codes_are_distinct_and_report_json(self):
         out = io.StringIO()
         with redirect_stdout(out):
