@@ -62,12 +62,12 @@ run-bl001-sqlite-lock-check.bat
 
 ## 下一項：寫入程序在 replace 與索引之間終止（獨立高風險診斷）
 
-**前置事實**：共享 Stage-local writer 先呼叫 pandas \`to_sql(name="sampleSrc", if_exists="replace")\`，然後才執行 \`CREATE INDEX "text_Index" ...\`，兩步間沒有應用層原子事務保障。在開發隔離環境中，使用同一寫入順序於替換之後故意中斷，可觀察到新的表資料已提交，但 \`text_Index\` 缺失，\`PRAGMA integrity_check\` 仍是 \`ok\`。**這不是正式資料損壞報告，更不代表使用者 Windows 已執行此新測試**。
+**前置事實**：共享 Stage-local writer 先呼叫 pandas `to_sql(name="sampleSrc", if_exists="replace")`，然後才執行 `CREATE INDEX "text_Index" ...`，兩步間沒有應用層原子事務保障。在開發隔離環境中，使用同一寫入順序於替換之後故意中斷，可觀察到新的表資料已提交，但 `text_Index` 缺失，`PRAGMA integrity_check` 仍是 `ok`。**這不是正式資料損壞報告，更不代表使用者 Windows 已執行此新測試**。
 
-新增可選診斷：\`run-bl001-sqlite-atomicity-probe.bat\`（或 \`python -m scripts.bl001_stage_sqlite_atomicity_probe\`）。工具**沒有 \`--db\` 或正式 WorkPool 輸入參數**；只使用新建私人臨時資料庫。它先寫入原始資料及原生 \`text_Index\`，在真正的子程序用現有 \`write_stage_sql\` 更新，當子程序正要執行 \`CREATE INDEX\` 時先寫入同步標記並暫停。母程序確認子程序仍存活後強制終止它，然後以新 SQLite 連線檢查原始資料是否保全、是否留下部分更新、索引是否保全與 SQLite integrity。
+新增可選診斷：`run-bl001-sqlite-atomicity-probe.bat`（或 `python -m scripts.bl001_stage_sqlite_atomicity_probe`）。工具**沒有 `--db` 或正式 WorkPool 輸入參數**；只使用新建私人臨時資料庫。它先寫入原始資料及原生 `text_Index`，在真正的子程序用現有 `write_stage_sql` 更新，當子程序正要執行 `CREATE INDEX` 時先寫入同步標記並暫停。母程序確認子程序仍存活後強制終止它，然後以新 SQLite 連線檢查原始資料是否保全、是否留下部分更新、索引是否保全與 SQLite integrity。
 
-- \`status=PASS_ATOMICITY\`／exit 0：僅這個中斷點保全原始資料及索引。
-- \`status=FAIL_ATOMICITY\`／exit 1：已觀察到部分寫入狀態；這是診斷發現的問題，**不是**診斷工具本身失靈。
-- \`status=BLOCKED_DIAGNOSTIC\`／exit 1：測試環境或子程序啟動未能提供有效診斷。
+- `status=PASS_ATOMICITY`／exit 0：僅這個中斷點保全原始資料及索引。
+- `status=FAIL_ATOMICITY`／exit 1：已觀察到部分寫入狀態；這是診斷發現的問題，**不是**診斷工具本身失靈。
+- `status=BLOCKED_DIAGNOSTIC`／exit 1：測試環境或子程序啟動未能提供有效診斷。
 
-回歸 \`python -m unittest -v tests.test_bl001_stage_sqlite_atomicity_probe\` 只保證診斷正確分類、安全隔離及禁止外部 DB 參數；即使診斷回報 \`FAIL_ATOMICITY\`，回歸可以 PASS，**不能拿測試套件綠燈宣稱 writer 已原子化**。高風險 writer 重構、交易回復／備援設計與各平台進一步驗收須另行處理；不得用正式資料執行中斷注入。
+回歸 `python -m unittest -v tests.test_bl001_stage_sqlite_atomicity_probe` 只保證診斷正確分類、安全隔離及禁止外部 DB 參數；即使診斷回報 `FAIL_ATOMICITY`，回歸可以 PASS，**不能拿測試套件綠燈宣稱 writer 已原子化**。高風險 writer 重構、交易回復／備援設計與各平台進一步驗收須另行處理；不得用正式資料執行中斷注入。
