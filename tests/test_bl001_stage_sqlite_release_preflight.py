@@ -249,6 +249,40 @@ class ReleasePreflightTests(unittest.TestCase):
         self.assertEqual(outcome["checks"][-1]["name"], "lock_recovery")
         self.assertFalse(outcome["production_workpool_verified"])
 
+    def test_unittest_verdict_must_be_terminal_and_unambiguous(self):
+        good = "Ran 21 tests in 0.005s\n\nOK\n"
+        self.assertTrue(_check_output(good, "unittest"))
+        failures = (
+            "test_somecase ... ok\n" + good + "\nFAILED (errors=1)\n",
+            "OK\n" + "Ran 21 tests in 0.005s\n" + "ERROR\n",
+            "Ran 21 tests in 0.005s\nOK\nextra child output\n",
+            "Ran 0 tests in 0.005s\n\nOK\n",
+            "Ran 21 tests in 0.005s\n\nOK (skipped=1)\n",
+            "Ran 21 tests in 0.005s\nRan 22 tests in 0.005s\nOK\n",
+            "Ran 21 tests in 0.005s\n\nOK\nskipped=0\n",
+        )
+        for raw in failures:
+            with self.subTest(output=raw):
+                self.assertFalse(_check_output(raw, "unittest"))
+
+    def test_false_unittest_success_blocks_preflight(self):
+        def false_positive_runner(args, **kwargs):
+            if "-m" in args and "unittest" in args:
+                return subprocess.CompletedProcess(
+                    args, 0,
+                    stdout="Ran 3 tests in 0.01s\n\nOK\nFAILED (errors=1)\n",
+                    stderr="",
+                )
+            return fake_runner(args, **kwargs)
+        outcome = run_private_preflight(
+            real_port=8050, runner=false_positive_runner,
+        )
+        self.assertEqual(outcome["status"], "FAIL")
+        self.assertEqual(outcome["checks"][-1]["name"], "stage_contracts")
+        self.assertFalse(outcome["production_workpool_verified"])
+        self.assertNotIn("root_real_opt_in",
+                         [x["name"] for x in outcome["checks"]])
+
     def test_preflight_rejects_skips_and_fake_green_exit_without_evidence(self):
         self.assertFalse(_check_output("Ran 0 tests\nOK", "unittest"))
         self.assertFalse(_check_output("Ran 7 tests\nOK (skipped=2)", "unittest"))
