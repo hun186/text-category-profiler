@@ -42,8 +42,8 @@ def inventory_offline_copy(filename: str | Path) -> dict:
     issues = result["issues"]
     # Immutable/read-only does not make a live WorkPool DB a safe source:
     # reject submitted spelling and resolved path (symlinked parent aliases).
-    submitted_parts = (part.casefold() for part in path.parts)
-    resolved_parts = (part.casefold() for part in path.resolve(strict=False).parts)
+    submitted_parts = (part.casefold() for part in path.parent.parts)
+    resolved_parts = (part.casefold() for part in path.parent.resolve(strict=False).parts)
     if any(part.startswith("workpool") for part in (*submitted_parts, *resolved_parts)):
         issues.append("workpool_path_not_allowed")
         return result
