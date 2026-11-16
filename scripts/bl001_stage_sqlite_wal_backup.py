@@ -112,12 +112,26 @@ def private_wal_backup(*, rows: int = 40) -> dict:
                     or "sqlite_journal_or_wal_present" not in source_report["issues"]):
                 raise AssertionError("WAL source was not refused by offline inventory")
 
+            # Keep an additional SQL row UNCOMMITTED during backup. WAL
+            # readers must see the prior committed snapshot only.
+            writer.execute(
+                'INSERT INTO "sampleSrc" ("index", "text", "label") '
+                'VALUES (?, ?, ?)',
+                (rows, "NOT-COMMITTED", "DO_NOT_BACKUP"),
+            )
             _copy_by_sqlite_backup(source, backup)
             backup_report = inventory_offline_copy(backup)
             if (backup_report["status"] != "REVIEW_REQUIRED"
                     or backup_report["candidate_count"] != 1):
                 raise AssertionError("Private backup incorrectly cleared candidate")
             _verify_detached(backup, rows)
+            # Nothing may have silently committed the pending writer row.
+            writer.rollback()
+            if writer.execute(
+                'SELECT COUNT(*) FROM "sampleSrc" WHERE "text"=?',
+                ("NOT-COMMITTED",),
+            ).fetchone()[0] != 0:
+                raise AssertionError("Rolled-back source WAL row persisted")
             _copy_by_sqlite_backup(backup, restored)
             restored_report = inventory_offline_copy(restored)
             if (restored_report["status"] != "REVIEW_REQUIRED"
@@ -130,6 +144,7 @@ def private_wal_backup(*, rows: int = 40) -> dict:
                 "rows": rows,
                 "source_wal_detected_and_refused_for_offline_inventory": True,
                 "committed_wal_rows_in_backup": True,
+                "uncommitted_wal_rows_excluded": True,
                 "backup_restored_with_indexes_and_view": True,
                 "unknown_candidate_preserved": True,
                 "candidate_owner_status": "UNKNOWN",
