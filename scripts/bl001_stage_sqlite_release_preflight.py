@@ -71,10 +71,15 @@ def _missing_child_modules(checks) -> list[str]:
 
 def _check_output(output: str, expected: str) -> bool:
     if expected == "unittest":
-        match = re.search(r"\bRan (\d+) tests?\b", output)
-        return (match is not None and int(match.group(1)) > 0
-                and re.search(r"(?m)^OK(?:\s*)$", output) is not None
-                and "skipped=" not in output)
+        # The command has already been required to exit 0; also demand a
+        # terminal unittest verdict instead of finding an unrelated "OK"
+        # somewhere in captured child output. A later failure or warning
+        # must not masquerade as an earlier success.
+        lines = [line.strip() for line in output.splitlines() if line.strip()]
+        if not lines or lines[-1] != "OK" or "skipped=" in output:
+            return False
+        matches = re.findall(r"(?m)^Ran (\d+) tests? in [^\n]+$", output)
+        return len(matches) == 1 and int(matches[0]) > 0
     if expected == "FINAL: PASS":
         return re.search(r"(?m)^FINAL: PASS\s*$", output) is not None
     for line in reversed(output.splitlines()):
