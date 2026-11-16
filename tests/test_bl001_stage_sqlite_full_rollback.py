@@ -28,8 +28,20 @@ class PrivateSqliteFullRollbackTests(unittest.TestCase):
         self.assertEqual(report["integrity_check"], "ok")
         self.assertEqual(report["candidate_tables_remaining"], 0)
         self.assertFalse(report["production_workpool_verified"])
+        self.assertTrue(report["post_quota_retry_passed"])
+        self.assertEqual(report["post_quota_retry_rows"], 120)
+        self.assertEqual(report["post_quota_retry_integrity"], "ok")
         self.assertEqual(report["quota_at_swap"]["page_count"],
                          report["quota_at_swap"]["max_page_count"])
+
+    def test_second_quota_failure_then_retry_is_consistent(self):
+        # A second invocation gets a fresh private DB; never reuses external DB.
+        report = run_private_sqlite_full(rows=140, repeat=96)
+        self.assertEqual(report["status"], "PASS_SQLITE_FULL_ROLLBACK")
+        self.assertEqual(report["post_quota_retry_rows"], 140)
+        self.assertTrue(report["original_rows_preserved"])
+        self.assertTrue(report["post_quota_retry_passed"])
+        self.assertFalse(report["production_workpool_verified"])
 
     def test_args_bounded_and_no_external_db(self):
         for args in (["--rows", "99"], ["--rows", "2001"],
