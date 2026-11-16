@@ -29,22 +29,28 @@ def fake_runner(args, **kwargs):
 
 
 class ReleasePreflightTests(unittest.TestCase):
-    def test_real_supervisor_timeout_has_inner_cleanup_headroom(self):
+    def test_real_supervisor_timeout_tracks_actual_cli_default_not_env(self):
         from unittest.mock import patch
-        with patch.dict("os.environ", {}, clear=True):
-            self.assertEqual(_real_selftest_outer_timeout(), 2100)
-        with patch.dict("os.environ", {"TCP_REAL_PIPELINE_TIMEOUT_SECONDS": "3600"}):
-            self.assertEqual(_real_selftest_outer_timeout(), 3900)
-            captured = []
-            def capture_runner(args, **kwargs):
-                captured.append((args, kwargs["timeout"]))
-                return fake_runner(args, **kwargs)
-            outcome = run_private_preflight(real_port=8050, runner=capture_runner)
-            self.assertEqual(outcome["status"], "PASS_PRIVATE_PREFLIGHT_NOT_PRODUCTION")
-            self.assertEqual(captured[-1][1], 3900)
-        with patch.dict("os.environ", {"TCP_REAL_PIPELINE_TIMEOUT_SECONDS": "7300"}):
-            with self.assertRaises(ValueError):
-                run_private_preflight(real_port=8050, runner=fake_runner)
+        captured = []
+
+        def capture_runner(args, **kwargs):
+            captured.append((args, kwargs["timeout"]))
+            return fake_runner(args, **kwargs)
+
+        for configured in ("600", "1800", "3600", "invalid"):
+            with self.subTest(configured=configured):
+                with patch.dict("os.environ", {
+                    "TCP_REAL_PIPELINE_TIMEOUT_SECONDS": configured,
+                }):
+                    self.assertEqual(_real_selftest_outer_timeout(), 2100)
+                    outcome = run_private_preflight(
+                        real_port=8050, runner=capture_runner,
+                    )
+                self.assertEqual(
+                    outcome["status"], "PASS_PRIVATE_PREFLIGHT_NOT_PRODUCTION"
+                )
+                self.assertEqual(captured[-1][1], 2100)
+                self.assertEqual(captured[-1][0][-2:], ["-p", "8050"])
 
     def test_all_configured_checkout_modules_exist(self):
         self.assertEqual(_missing_child_modules(_PRIVATE_CHECKS), [])
