@@ -61,6 +61,27 @@ class OfflineCandidateTriageTests(unittest.TestCase):
         self.assertFalse(report["candidates"][0]["has_pandas_index"])
         self.assertFalse(report["deletion_authorized"])
 
+    def test_real_pandas_named_and_multiindex_are_recognized(self):
+        try:
+            import pandas as pd
+        except ImportError:
+            self.skipTest("pandas not available")
+        cases = (
+            pd.Index(["甲"], name="uid"),
+            pd.MultiIndex.from_tuples([("A", 3)], names=["group", "unit"]),
+        )
+        for i, index in enumerate(cases, 1):
+            name = "__bl001_stage_" + format(i, "032x")
+            frame = pd.DataFrame({"text": ["中文"]}, index=index)
+            with closing(sqlite3.connect(self.path)) as cnx:
+                frame.to_sql(name=name, con=cnx, if_exists="fail")
+            record = next(
+                x for x in triage_offline_copy(self.path)["candidates"]
+                if x["table"] == name
+            )
+            self.assertTrue(record["has_pandas_index"], record)
+            self.assertTrue(record["pandas_index_names"])
+
     def test_workpool_ancestor_and_missing_db_refused(self):
         pool = Path(self.tmp.name) / "WorkPool"
         pool.mkdir()
