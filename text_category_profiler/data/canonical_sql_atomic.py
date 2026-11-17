@@ -57,8 +57,13 @@ def _replacement_indexes(cnx, candidate, table, requested):
     return indexes
 
 
-def _guard_replacement(cnx, table, expected_indexes):
-    """Fail closed before DROP would erase a trigger/FK or custom index."""
+def _guard_replacement(cnx, table):
+    """Fail closed before DROP would erase a trigger/FK or custom index.
+
+    Existing *canonical* pandas/IndexCols indexes are validated against their
+    own names and keys, not the new frame's index labels. A legal replacement
+    may change pandas index names or requested IndexCols.
+    """
     objects = list(cnx.execute(
         "SELECT type, name, tbl_name FROM sqlite_master "
         "WHERE type IN ('table', 'trigger')"
@@ -74,9 +79,13 @@ def _guard_replacement(cnx, table, expected_indexes):
             if foreign_key[2].casefold() == table.casefold():
                 raise ValueError("Unsafe inbound foreign key: " + name)
 
-    allowed = {name.casefold(): keys for name, keys in expected_indexes}
+    pandas_prefix = "ix_" + table + "_"
     for name, keys in _index_entries(cnx, table):
-        if allowed.get(name.casefold()) != keys:
+        pandas_key = (name.startswith(pandas_prefix)
+                      and name[len(pandas_prefix):] == "_".join(keys))
+        canonical_column_key = (len(keys) == 1
+                                and name == keys[0] + "_Index")
+        if not (pandas_key or canonical_column_key):
             raise ValueError("Unsafe existing index: " + name)
 
 
@@ -110,7 +119,7 @@ def replace_canonical_table(cnx, frame, *, table, dtype, index_label, index_cols
 
         cnx.execute("BEGIN IMMEDIATE")
         started = True
-        _guard_replacement(cnx, table, indexes)
+        _guard_replacement(cnx, table)
         cnx.execute("DROP TABLE IF EXISTS " + table_name)
         cnx.execute(new_ddl)
         cnx.execute(
