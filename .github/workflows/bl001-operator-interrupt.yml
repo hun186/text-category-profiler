@@ -1,0 +1,39 @@
+name: BL-001 Operator Ctrl-C Evidence
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "TCFMain.py"
+      - "text_category_profiler/execution/operator_interrupt.py"
+      - "tests/test_bl001_operator_interrupt.py"
+      - "tests/test_tcf_main_characterization.py"
+      - ".github/workflows/bl001-operator-interrupt.yml"
+  push:
+    branches: [main]
+    paths:
+      - "TCFMain.py"
+      - "text_category_profiler/execution/operator_interrupt.py"
+      - "tests/test_bl001_operator_interrupt.py"
+      - "tests/test_tcf_main_characterization.py"
+      - ".github/workflows/bl001-operator-interrupt.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  keyboard-interrupt-safety:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify private Ctrl-C evidence, no WorkPool mutation or false positives
+        run: python -m unittest -v tests.test_bl001_operator_interrupt tests.test_tcf_main_characterization

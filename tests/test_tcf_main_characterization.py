@@ -3,6 +3,7 @@ import importlib.util
 import os
 from pathlib import Path
 import runpy
+import subprocess as stdlib_subprocess
 import sys
 import tempfile
 import types
@@ -59,9 +60,15 @@ def fake_modules(args=None, completed_codes=None, trace=None):
                        if value != "" and key not in ignored)
 
     no_op = lambda *a, **k: None
+    # A Windows platform.system() call may lazily use multiple functions
+    # from subprocess; mirror the complete stdlib surface in this fixture
+    # and replace ONLY run() to intercept the root pipeline invocation.
+    subprocess_stub = types.ModuleType("subprocess")
+    subprocess_stub.__dict__.update(vars(stdlib_subprocess))
+    subprocess_stub.run = subprocess_run
     return {
         "setproctitle": _module("setproctitle", setproctitle=no_op),
-        "subprocess": _module("subprocess", run=subprocess_run),
+        "subprocess": subprocess_stub,
         "TCF_Params.TCFParameters": _module(
             "TCFParameters", setArguments=lambda: args,
             planArguments=lambda *unused: types.SimpleNamespace(args=args),
@@ -164,6 +171,52 @@ class RootPipelineCharacterizationTests(unittest.TestCase):
         module = load_main(trace=trace)
         module.run_stage_command("python stage.py --path a b", "stage")
         self.assertEqual([("command", "python stage.py --path a b", True, False)], trace)
+
+    def test_explicit_keyboard_interrupt_records_stage_and_preserves_exception(self):
+        with tempfile.TemporaryDirectory() as temp:
+            trace = []
+            args = default_args(_dataset_dir=temp, _output_dir=temp)
+            module = load_main(args, trace=trace)
+            evidence = []
+            module.record_operator_interrupt = lambda stage: evidence.append(stage) or (
+                Path(temp) / "logs" / "tcf_operator_interruptions.jsonl"
+            )
+
+            def stage_command(command, stage):
+                trace.append(("stage_called", stage))
+                if stage == "Test_result_Vis":
+                    raise KeyboardInterrupt()
+
+            module.run_stage_command = stage_command
+            with self.assertRaises(KeyboardInterrupt):
+                module.main([])
+            self.assertEqual(
+                [("stage_called", "DataConverter"),
+                 ("stage_called", "RunClassfier"),
+                 ("stage_called", "CombineTestResult"),
+                 ("stage_called", "Test_result_Vis")],
+                [x for x in trace if x[0] == "stage_called"],
+            )
+            self.assertEqual(evidence, ["TestResultVis"])
+
+    def test_subprocess_nonzero_code_never_masquerades_as_ctrl_c(self):
+        with tempfile.TemporaryDirectory() as temp:
+            args = default_args(_dataset_dir=temp, _output_dir=temp)
+            module = load_main(args, completed_codes=[130])
+            module.record_operator_interrupt = lambda stage: self.fail(
+                "child subprocess nonzero is not a confirmed operator Ctrl+C"
+            )
+            with self.assertRaisesRegex(RuntimeError, "exit code 130"):
+                module.main([])
+
+    def test_regular_pipeline_success_never_creates_interrupt_evidence(self):
+        with tempfile.TemporaryDirectory() as temp:
+            args = default_args(_dataset_dir=temp, _output_dir=temp)
+            module = load_main(args)
+            module.record_operator_interrupt = lambda stage: self.fail(
+                "normal success must not create interruption evidence"
+            )
+            self.assertEqual(module.main([]), 0)
 
     def test_nonzero_stage_aborts_with_command_and_code(self):
         trace = []
