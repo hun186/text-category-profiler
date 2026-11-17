@@ -9,7 +9,11 @@ import unittest
 from unittest import mock
 
 from scripts.bl001_workpool_readonly_inventory import (
-    _canonical_windows_path, inventory_workpool_metadata, main,
+    _FILETIME_UNIX_EPOCH_TICKS,
+    _canonical_windows_path,
+    _running_dir_age_bucket,
+    _windows_filetime_to_unix_ns,
+    inventory_workpool_metadata, main,
 )
 
 
@@ -76,6 +80,78 @@ class WorkPoolMetadataInventoryTests(unittest.TestCase):
             self.assertFalse(report["production_workpool_verified"])
             self.assertFalse(report["deployment_authorized"])
             self.assertFalse(report["candidate_deletion_authorized"])
+
+    def test_running_name_mtime_age_buckets_are_counts_not_liveness(self):
+        # Only top-level directory timestamps are read: the test intentionally
+        # never opens their contents, even if a directory looks old.
+        hour_ns = 3600 * 1_000_000_000
+        now = 2_000_000_000_000_000_000  # stable 2033 fixture clock
+        cases = (
+            ("recent", now - hour_ns // 2, "under_1h"),
+            ("today", now - 8 * hour_ns, "from_1h_to_24h"),
+            ("fewdays", now - 3 * 24 * hour_ns, "from_1d_to_7d"),
+            ("older", now - 10 * 24 * hour_ns, "at_least_7d"),
+            ("future", now + hour_ns, "unknown_or_future"),
+        )
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / "WorkPool"
+            root.mkdir()
+            for name, stamp, _ in cases:
+                directory = root / f"dataset_{name}_is_running_RunClassfier"
+                directory.mkdir()
+                os.utime(directory, ns=(stamp, stamp))
+            (root / "dataset_other_rdy_for_Spike").mkdir()
+            with mock.patch(
+                "scripts.bl001_workpool_readonly_inventory.time.time_ns",
+                return_value=now,
+            ), mock.patch("builtins.open", side_effect=AssertionError(
+                "must not read workspace files"
+            )), mock.patch("sqlite3.connect", side_effect=AssertionError(
+                "must not open workspace SQLite"
+            )):
+                report = inventory_workpool_metadata(root)
+            self.assertEqual(report["workspace_running"], len(cases))
+            self.assertEqual(report["workspace_ready"], 1)
+            self.assertEqual(
+                report["workspace_running_dir_lastwrite_age"],
+                {item[2]: 1 for item in cases},
+            )
+            self.assertEqual(
+                sum(report["workspace_running_dir_lastwrite_age"].values()),
+                report["workspace_running"],
+            )
+            self.assertEqual(report["status"], "REVIEW_REQUIRED")
+            self.assertEqual(
+                report["running_age_basis"],
+                "root_directory_last_write_not_job_liveness",
+            )
+            self.assertFalse(report["deployment_authorized"])
+            self.assertFalse(report["production_workpool_verified"])
+            for name, *_ in cases:
+                self.assertNotIn(f"dataset_{name}", json.dumps(report))
+
+    def test_age_boundaries_and_windows_filetime_math(self):
+        hour = 3600 * 1_000_000_000
+        now = 2_000_000_000_000_000_000
+        self.assertEqual(_running_dir_age_bucket(now, now), "under_1h")
+        self.assertEqual(_running_dir_age_bucket(now - hour, now), "from_1h_to_24h")
+        self.assertEqual(
+            _running_dir_age_bucket(now - 24 * hour, now), "from_1d_to_7d"
+        )
+        self.assertEqual(
+            _running_dir_age_bucket(now - 7 * 24 * hour, now), "at_least_7d"
+        )
+        for value in (None, 0, -1, now + 100):
+            self.assertEqual(
+                _running_dir_age_bucket(value, now), "unknown_or_future"
+            )
+        self.assertIsNone(
+            _windows_filetime_to_unix_ns(_FILETIME_UNIX_EPOCH_TICKS)
+        )
+        self.assertEqual(
+            _windows_filetime_to_unix_ns(_FILETIME_UNIX_EPOCH_TICKS + 10_000_000),
+            1_000_000_000,
+        )
 
     def test_root_name_missing_or_file_are_unverifiable(self):
         with tempfile.TemporaryDirectory() as temp:
