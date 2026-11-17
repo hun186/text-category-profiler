@@ -156,6 +156,84 @@ class CanonicalAtomicReplaceTests(unittest.TestCase):
                 self.assertIn("ix_sampleSrc_index", {r[1] for r in self.indexes()})
 
 
+    def test_view_schema_contract_compatible_replacement(self):
+        self.old()
+        with closing(self.conn()) as db:
+            db.execute('CREATE VIEW source_view AS SELECT text, OutLabel FROM sampleSrc')
+            db.execute('CREATE TABLE audit_event(id INTEGER)')
+            db.execute('CREATE TRIGGER audit_event_trigger AFTER INSERT ON audit_event BEGIN SELECT 1; END')
+            db.commit()
+        frame = pd.DataFrame({"text": ["new"], "OutLabel": ["N"]})
+        with closing(self.conn()) as db:
+            replace_canonical_table(db, frame, table="sampleSrc", dtype=None,
+                                    index_label=None, index_cols=[])
+            self.assertEqual(
+                db.execute("SELECT text,OutLabel FROM source_view").fetchall(),
+                [("new", "N")],
+            )
+            self.assertIsNotNone(db.execute(
+                "SELECT name FROM sqlite_master WHERE type='trigger' "
+                "AND name='audit_event_trigger'"
+            ).fetchone())
+
+    def test_view_schema_contract_invalid_reference_rolls_back(self):
+        self.old()
+        with closing(self.conn()) as db:
+            db.execute('CREATE VIEW source_view AS SELECT OutLabel FROM sampleSrc')
+            db.commit()
+        frame = pd.DataFrame({"text": ["new"]})
+        with closing(self.conn()) as db:
+            with self.assertRaises(sqlite3.OperationalError):
+                replace_canonical_table(db, frame, table="sampleSrc",
+                                        dtype=None, index_label=None, index_cols=[])
+        self.assertEqual(self.row(), [("old", "KEEP")])
+        with closing(self.conn()) as db:
+            self.assertEqual(
+                db.execute("SELECT OutLabel FROM source_view").fetchall(),
+                [("KEEP",)],
+            )
+
+    def test_view_schema_contract_select_star_change_rolls_back(self):
+        self.old()
+        with closing(self.conn()) as db:
+            db.execute('CREATE VIEW source_view AS SELECT * FROM sampleSrc')
+            db.commit()
+        frame = pd.DataFrame({
+            "text": ["new"], "OutLabel": ["N"], "unexpected": ["extra"],
+        })
+        with closing(self.conn()) as db:
+            with self.assertRaisesRegex(ValueError, "Unsafe changed SQLite view interface"):
+                replace_canonical_table(db, frame, table="sampleSrc",
+                                        dtype=None, index_label=None, index_cols=[])
+        self.assertEqual(self.row(), [("old", "KEEP")])
+        with closing(self.conn()) as db:
+            self.assertEqual(
+                [r[1] for r in db.execute("PRAGMA table_info(source_view)")],
+                ["index", "text", "OutLabel"],
+            )
+
+    def test_external_trigger_dependency_rejects_without_mutation(self):
+        self.old()
+        with closing(self.conn()) as db:
+            db.execute('CREATE TABLE audit_event(id INTEGER)')
+            db.execute(
+                'CREATE TRIGGER copy_event AFTER INSERT ON audit_event '
+                'BEGIN UPDATE sampleSrc SET text = "modified" '
+                'WHERE "index" = NEW.id; END'
+            )
+            db.commit()
+        frame = pd.DataFrame({"text": ["new"], "OutLabel": ["N"]})
+        with closing(self.conn()) as db:
+            with self.assertRaisesRegex(ValueError, "Unsafe dependent trigger"):
+                replace_canonical_table(db, frame, table="sampleSrc", dtype=None,
+                                        index_label=None, index_cols=[])
+        self.assertEqual(self.row(), [("old", "KEEP")])
+        with closing(self.conn()) as db:
+            self.assertIsNotNone(db.execute(
+                "SELECT name FROM sqlite_master WHERE type='trigger' "
+                "AND name='copy_event'"
+            ).fetchone())
+
     def test_missing_index_column_rolls_back_without_data_loss(self):
         self.old()
         frame = pd.DataFrame({"text": ["new"], "OutLabel": ["N"]})
