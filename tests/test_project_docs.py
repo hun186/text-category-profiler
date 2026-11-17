@@ -107,7 +107,7 @@ class ProjectDocumentationTests(unittest.TestCase):
         # an unbindable TCP port, or mistake private preflight for deployment.
         self.assertNotIn("-p 8099999", readme)
         example_ports = [
-            int(match) for match in re.findall(r"-p (\\d+)", readme)
+            int(match) for match in re.findall(r"-p (\d+)", readme)
         ]
         self.assertTrue(example_ports)
         self.assertTrue(all(1 <= p <= 65535 for p in example_ports))
