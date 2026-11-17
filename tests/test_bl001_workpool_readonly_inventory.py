@@ -131,6 +131,28 @@ class WorkPoolMetadataInventoryTests(unittest.TestCase):
             self.assertEqual(report["sqlite_sidecars_observed"], 0)
             self.assertFalse(report["sqlite_sidecar_scan_complete"])
 
+    def test_replaced_root_after_handle_scan_is_unverifiable(self):
+        with tempfile.TemporaryDirectory() as temp:
+            base = Path(temp)
+            root = base / "WorkPool"
+            root.mkdir()
+            other = base / "new-root"
+            other.mkdir()
+            from scripts import bl001_workpool_readonly_inventory as module
+            target = "_walk_windows_root_only" if os.name == "nt" else "_walk_posix"
+            original = getattr(module, target)
+
+            def replace_after_scan(*args, **kwargs):
+                original(*args, **kwargs)
+                root.rename(base / "old-root")
+                other.rename(root)
+
+            with mock.patch.object(module, target, side_effect=replace_after_scan):
+                report = inventory_workpool_metadata(root)
+            self.assertEqual(report["status"], "UNVERIFIABLE")
+            self.assertIn("root_replaced_during_scan", report["issues"])
+            self.assertFalse(report["deployment_authorized"])
+
     @unittest.skipIf(os.name == "nt", "POSIX dirfd traversal race fixture")
     def test_directory_swap_to_external_symlink_is_rejected_without_external_scan(self):
         with tempfile.TemporaryDirectory() as temp:
