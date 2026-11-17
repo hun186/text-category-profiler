@@ -55,7 +55,7 @@ def record_operator_interrupt(stage: str, *,
             "workpool_modified": False,
             "cleanup_attempted": False,
         }
-        line = (json.dumps(event, ensure_ascii=True, sort_keys=True) + "\\n").encode("utf-8")
+        line = (json.dumps(event, ensure_ascii=True, sort_keys=True) + "\n").encode("utf-8")
         dir_flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
         previous = root.lstat()
         root_fd = os.open(root, dir_flags)
