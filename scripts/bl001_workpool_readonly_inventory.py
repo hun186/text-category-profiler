@@ -320,7 +320,10 @@ def inventory_workpool_metadata(workpool: str | Path, *,
     # descendants. Only a completed POSIX traversal with no skipped child
     # directory is allowed to claim sidecar coverage.
     report["sqlite_sidecar_scan_complete"] = (
-        os.name != "nt" and report["directories_not_descended"] == 0
+        os.name != "nt"
+        and report["directories_not_descended"] == 0
+        and report["reparse_entries_observed"] == 0
+        and not report["issues"]
     )
     if report["workspace_running"]:
         report["issues"].append("running_workspaces_observed")
