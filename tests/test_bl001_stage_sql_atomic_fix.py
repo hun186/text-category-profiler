@@ -272,6 +272,82 @@ class AtomicStageSQLTests(unittest.TestCase):
             )
         self.assertEqual(before[3], "ok")
 
+    def test_custom_indexes_are_not_silently_dropped_during_stage_swap(self):
+        pd = self.pd
+        for number, index_ddl in enumerate((
+            'CREATE INDEX "manual_search" ON "sampleSrc"("label")',
+            'CREATE UNIQUE INDEX "unique_text" ON "sampleSrc"("text")',
+            'CREATE INDEX "ix_sampleSrc_label" '
+            'ON "sampleSrc"("label" COLLATE NOCASE)',
+            'CREATE INDEX "ix_sampleSrc_manual_search" ON "sampleSrc"("label")',
+        )):
+            with self.subTest(variant=number):
+                filename = f"index-preservation-{number}.sqlite3"
+                path = self._write(
+                    filename,
+                    pd.DataFrame({"text": ["舊資料"], "label": ["KEEP"]}),
+                )
+                with closing(sqlite3.connect(path)) as db:
+                    db.execute(index_ddl)
+                    db.commit()
+                original = self._schema_and_rows(path)
+                with self.assertRaisesRegex(ValueError,
+                                            "Unsafe existing sampleSrc index"):
+                    self._write(
+                        filename,
+                        pd.DataFrame({"text": ["不得提交"], "label": ["NEW"]}),
+                    )
+                self.assertEqual(self._schema_and_rows(path), original)
+
+    def test_legitimate_multiindex_suffix_matches_actual_key_columns(self):
+        pd = self.pd
+        filename = "multi-index-suffix.sqlite3"
+        index = pd.MultiIndex.from_tuples(
+            [("group-1", 5)], names=["group", "unit"]
+        )
+        path = self._write(
+            filename,
+            pd.DataFrame(
+                {"text": ["舊資料"], "label": ["KEEP"]}, index=index
+            ),
+        )
+        # Must not reject a legitimate pandas multi-index on previous output.
+        self._write(
+            filename,
+            pd.DataFrame(
+                {"text": ["新資料"], "label": ["NEW"]}, index=index
+            ),
+        )
+        with closing(sqlite3.connect(path)) as db:
+            self.assertEqual(
+                {r[1] for r in db.execute('PRAGMA index_list("sampleSrc")')},
+                {"ix_sampleSrc_group_unit", "text_Index"},
+            )
+            self.assertEqual(
+                db.execute('SELECT "text" FROM "sampleSrc"').fetchall(),
+                [("新資料",)],
+            )
+
+    def test_modified_text_index_cannot_be_silently_weakened(self):
+        pd = self.pd
+        filename = "modified-text-index.sqlite3"
+        path = self._write(
+            filename, pd.DataFrame({"text": ["原本"], "label": ["KEEP"]})
+        )
+        with closing(sqlite3.connect(path)) as db:
+            db.execute('DROP INDEX "text_Index"')
+            db.execute(
+                'CREATE UNIQUE INDEX "text_Index" ON "sampleSrc"("text")'
+            )
+            db.commit()
+        original = self._schema_and_rows(path)
+        with self.assertRaisesRegex(ValueError, "Unsafe existing sampleSrc index"):
+            self._write(
+                filename,
+                pd.DataFrame({"text": ["不得提交"], "label": ["NEW"]}),
+            )
+        self.assertEqual(self._schema_and_rows(path), original)
+
     def test_unrelated_foreign_keys_and_triggers_do_not_block_stage(self):
         pd = self.pd
         path = self._write(
