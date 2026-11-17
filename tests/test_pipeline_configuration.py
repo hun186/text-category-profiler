@@ -1,4 +1,5 @@
 import argparse
+import ast
 import importlib.util
 from pathlib import Path
 import sys
@@ -61,6 +62,70 @@ class RecordingFileSystem:
 
 
 class PipelineConfigurationTests(unittest.TestCase):
+    def test_tcp_port_rejects_out_of_range_before_runtime_activation(self):
+        configuration = configuration_module()
+        good = ("1", "8059", "65535", 8050, 65535)
+        for raw in good:
+            with self.subTest(valid=raw):
+                self.assertEqual(configuration.parse_trv_port(raw), int(raw))
+        invalid = ("0", "65536", "-1", "noninteger", "8059.5", 0, 65536,
+                   -2, None, True, False, 8059.5)
+        for raw in invalid:
+            with self.subTest(invalid=raw):
+                with self.assertRaises(argparse.ArgumentTypeError):
+                    configuration.parse_trv_port(raw)
+                with self.assertRaisesRegex(ValueError, "between 1 and 65535"):
+                    configuration.build_pipeline_plan(
+                        argv=["-p", str(raw)],
+                        parser=lambda _argv: namespace(
+                            TRVPort=raw, WeiTechFormatInputPATH="never-rename",
+                        ),
+                        clock=lambda: self.fail("clock must not run"),
+                        filesystem=types.SimpleNamespace(
+                            rename=lambda *_: self.fail("must not rename"),
+                        ),
+                        process_source=lambda: self.fail(
+                            "must not inspect processes"
+                        ),
+                    )
+
+    def test_argparse_production_port_uses_preflight_validator(self):
+        source = (ROOT / "text_category_profiler" / "pipeline" /
+                  "TCF_utils.py").read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        parser = next(
+            node for node in tree.body
+            if isinstance(node, ast.FunctionDef)
+            and node.name == "ClassfierOptionParser"
+        )
+        calls = [
+            n for n in ast.walk(parser)
+            if isinstance(n, ast.Call)
+            and isinstance(n.func, ast.Attribute)
+            and n.func.attr == "add_argument"
+        ]
+        port_calls = [
+            n for n in calls if any(
+                isinstance(arg, ast.Constant)
+                and arg.value in ("-p", "--TRVPort")
+                for arg in n.args
+            )
+        ]
+        self.assertEqual(len(port_calls), 1)
+        keywords = {key.arg: key.value for key in port_calls[0].keywords}
+        self.assertEqual(keywords["type"].id, "parse_trv_port")
+        self.assertEqual(keywords["default"].value, 8050)
+
+    def test_valid_port_remains_in_normal_planning(self):
+        plan = configuration_module().build_pipeline_plan(
+            argv=["-p", "8059"],
+            parser=lambda _values: namespace(TRVPort="8059"),
+            clock=lambda: "20261117180000",
+            platform_name=lambda: "Windows",
+        )
+        self.assertEqual(plan.args.TRVPort, 8059)
+        self.assertEqual(plan.args.ExecutionTime, "20261117180000")
+
     def test_process_policy_preserves_explicit_options_and_autodetects_omissions(self):
         configuration = configuration_module()
         processes = types.SimpleNamespace(
