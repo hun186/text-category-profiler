@@ -207,8 +207,21 @@ def run_private_preflight(*, real_port: int | None = None,
                 args, cwd=str(_ROOT), capture_output=True,
                 text=True, timeout=timeout,
             )
-            output = (done.stdout or "") + "\n" + (done.stderr or "")
-            ok = (done.returncode == 0 and _check_output(output, expected))
+            # TCFMain's terminal FINAL verdict is a stdout-only contract.
+            # Never let a forged or unrelated FINAL: PASS printed to stderr
+            # create a false-green root self-test. Any stderr content remains
+            # a fail-closed observation for this strict release preflight.
+            if expected == "FINAL: PASS":
+                ok = (
+                    done.returncode == 0
+                    and not (done.stderr or "").strip()
+                    and _check_output(done.stdout or "", expected)
+                )
+            else:
+                # unittest normally writes its summary to stderr; retain the
+                # established combined-output contract for non-root probes.
+                output = (done.stdout or "") + "\n" + (done.stderr or "")
+                ok = (done.returncode == 0 and _check_output(output, expected))
             state = "PASS" if ok else "FAIL"
         except (OSError, subprocess.TimeoutExpired) as error:
             state = "FAIL"
