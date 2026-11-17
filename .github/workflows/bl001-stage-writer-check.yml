@@ -31,6 +31,8 @@ on:
       - "tests/test_bl001_stage_xlsx_shared.py"
       - "tests/test_bl001_stage_sql_shared.py"
       - "text_category_profiler/data/df_utils.py"
+      - "text_category_profiler/data/canonical_sql_atomic.py"
+      - "tests/test_bl001_canonical_atomic_replace.py"
       - "tests/test_bl001_df_tsv_provider_contracts.py"
       - "tests/test_bl001_df_list_xls_sheet_names.py"
       - "text_category_profiler/data/stage_tsv.py"
@@ -46,12 +48,20 @@ permissions:
 
 jobs:
   focused-stage-writers:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        pandas-version: ["2.0.1", "2.2.3", "3.1.1"]
+        include:
+          - os: ubuntu-latest
+            pandas-version: "2.0.1"
+          - os: ubuntu-latest
+            pandas-version: "2.2.3"
+          - os: ubuntu-latest
+            pandas-version: "3.1.1"
+          - os: windows-latest
+            pandas-version: "2.2.3"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
