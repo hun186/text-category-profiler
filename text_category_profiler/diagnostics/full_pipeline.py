@@ -450,6 +450,10 @@ def _preflight_private_model_copy(source_model_dir: Path, runtime_root: Path,
         while not disk_root.exists():
             disk_root = disk_root.parent
         available = shutil.disk_usage(disk_root).free
+    except ModelFacadeError:
+        # Preserve specific policy verdicts, notably cyclic directory links,
+        # instead of hiding them behind a generic estimation error.
+        raise
     except (OSError, RuntimeError, ValueError) as error:
         raise ModelFacadeError("cannot estimate private checkpoint copy capacity") from error
     # Leave room for model inference outputs, metadata growth, and filesystem
