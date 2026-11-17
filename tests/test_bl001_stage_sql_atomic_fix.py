@@ -108,6 +108,67 @@ class AtomicStageSQLTests(unittest.TestCase):
             self.assertEqual(names, {"ix_sampleSrc_new_id", "text_Index"})
             self.assertEqual(db.execute('PRAGMA integrity_check').fetchone()[0], "ok")
 
+    def test_uuid_collision_never_drops_another_writers_candidate(self):
+        from types import SimpleNamespace
+        from unittest.mock import patch
+        pd = self.pd
+        path = self._write(
+            "candidate-collision.sqlite3",
+            pd.DataFrame({"text": ["原始"], "label": ["KEEP"]}),
+        )
+        name = "__bl001_stage_" + "f" * 32
+        with closing(sqlite3.connect(path)) as db:
+            db.execute('CREATE TABLE "' + name + '" ("text" TEXT)')
+            db.execute('INSERT INTO "' + name + '" VALUES ("other-writer")')
+            db.commit()
+        before = path.read_bytes()
+        with patch("uuid.uuid4", return_value=SimpleNamespace(hex="f" * 32)):
+            with self.assertRaisesRegex(ValueError, "already exists"):
+                self._write(
+                    "candidate-collision.sqlite3",
+                    pd.DataFrame({"text": ["不得寫入"], "label": ["NEW"]}),
+                )
+        with closing(sqlite3.connect(path)) as db:
+            self.assertEqual(
+                db.execute('SELECT "text" FROM "' + name + '"').fetchall(),
+                [("other-writer",)],
+            )
+            self.assertEqual(
+                db.execute('SELECT "text", "label" FROM "sampleSrc"').fetchall(),
+                [("原始", "KEEP")],
+            )
+        self.assertEqual(path.read_bytes(), before)
+
+    def test_failed_partial_staging_keeps_unproven_candidate_for_review(self):
+        pd = self.pd
+        path = self._write(
+            "partial-stage.sqlite3",
+            pd.DataFrame({"text": ["原始"], "label": ["KEEP"]}),
+        )
+        old = self._schema_and_rows(path)
+        class PartialFrame:
+            columns = pd.Index(["text", "label"])
+            def __init__(self):
+                self.loc = self
+            def __getitem__(self, selection):
+                return self
+            def to_sql(self, *, name, con, if_exists):
+                self_name = '"' + name.replace('"', '""') + '"'
+                con.execute('CREATE TABLE ' + self_name + ' ("text" TEXT)')
+                con.commit()
+                raise RuntimeError("injected interrupted candidate stage")
+        with self.assertRaisesRegex(RuntimeError, "interrupted candidate stage"):
+            self._write("partial-stage.sqlite3", PartialFrame())
+        after = self._schema_and_rows(path)
+        self.assertEqual(after[:4], old[:4], "prior table/index/rows must survive")
+        self.assertEqual(len(after[4]), 1, "unverified candidate is retained")
+        self.assertTrue(after[4][0].startswith("__bl001_stage_"))
+        with closing(sqlite3.connect(path)) as db:
+            self.assertEqual(
+                db.execute('SELECT "text" FROM "sampleSrc"').fetchall(),
+                [("原始",)],
+            )
+
     def test_rollback_on_swap_or_index_failure_keeps_prior_committed_data(self):
         pd = self.pd
         before = pd.DataFrame({"text": ["原本"], "label": ["P"]})
