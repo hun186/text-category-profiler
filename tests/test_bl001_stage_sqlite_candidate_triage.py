@@ -93,6 +93,24 @@ class OfflineCandidateTriageTests(unittest.TestCase):
         self.assertFalse(record["safe_to_delete"])
         self.assertEqual(self.path.read_bytes(), before)
 
+    def test_expression_index_is_invalid_without_crashing_triage(self):
+        candidate = self._create_candidate("9" * 32, pandas_index=False)
+        manual = "ix_" + candidate + "_manual_expression"
+        with closing(sqlite3.connect(self.path)) as db:
+            db.execute('CREATE INDEX "' + manual
+                       + '" ON "' + candidate + '" (lower("text"))')
+            db.commit()
+        before = self.path.read_bytes()
+        report = triage_offline_copy(self.path)
+        self.assertEqual(report["status"], "REVIEW_REQUIRED")
+        record = report["candidates"][0]
+        self.assertEqual(record["invalid_pandas_index_count"], 1)
+        self.assertEqual(record["invalid_pandas_index_names"], [manual])
+        self.assertFalse(record["has_pandas_index"])
+        self.assertFalse(record["all_indexes_pandas_compatible"])
+        self.assertFalse(record["safe_to_delete"])
+        self.assertEqual(self.path.read_bytes(), before)
+
     def test_mixed_valid_wrong_collation_and_unexpected_index(self):
         candidate = self._create_candidate("e" * 32)
         with closing(sqlite3.connect(self.path)) as db:
