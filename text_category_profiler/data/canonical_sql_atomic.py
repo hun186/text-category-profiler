@@ -124,7 +124,7 @@ def _trigger_mentions_target(sql, table):
 
     normalized = (sql or "").replace('""', '"')
     return re.search(
-        r"(?<![\\w])" + re.escape(table) + r"(?![\\w])",
+        r"(?<!\w)" + re.escape(table) + r"(?!\w)",
         normalized, re.IGNORECASE,
     ) is not None
 
