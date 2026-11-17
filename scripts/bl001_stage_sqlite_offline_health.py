@@ -16,12 +16,16 @@ from scripts.bl001_stage_sqlite_audit import _readonly_uri
 from scripts.bl001_stage_sqlite_candidate_inventory import inventory_offline_copy
 
 
-def offline_quick_check(filename: str | Path, *, max_mib: int = 256) -> dict:
+def offline_quick_check(filename: str | Path, *, max_mib: int = 256,
+                        profile: str = "stage-local") -> dict:
     if not 1 <= max_mib <= 4096:
         raise ValueError("max_mib must be 1..4096")
+    if profile not in ("stage-local", "canonical"):
+        raise ValueError("Unsupported offline SQLite profile")
     path = Path(filename)
     report = {
         "status": "UNVERIFIABLE",
+        "profile": profile,
         "scope": "offline_quiescent_copy_readonly",
         "database": str(path),
         "max_mib": max_mib,
@@ -40,7 +44,10 @@ def offline_quick_check(filename: str | Path, *, max_mib: int = 256) -> dict:
     }
     # This guard refuses live-looking WorkPool ancestry, symlinks, sidecars,
     # unreadable files and failed sampleSrc/text_Index schema before opening.
-    source = inventory_offline_copy(path)
+    inspect = (lambda candidate: inventory_offline_copy(candidate)
+               if profile == "stage-local"
+               else inventory_offline_copy(candidate, profile="canonical"))
+    source = inspect(path)
     report["candidate_count"] = source["candidate_count"]
     report["unexpected_prefix_count"] = source["unexpected_prefix_count"]
     if source["status"] == "UNVERIFIABLE":
@@ -83,7 +90,7 @@ def offline_quick_check(filename: str | Path, *, max_mib: int = 256) -> dict:
         # the full schema-name digests rather than a truncated display set.
         # This catches candidate creation or equal-count rename between
         # the first metadata snapshot and the health scan.
-        ending = inventory_offline_copy(path)
+        ending = inspect(path)
         stable = path.stat()
         if (ending["status"] != source["status"]
                 or ending["candidate_count"] != source["candidate_count"]
@@ -116,9 +123,12 @@ def main(argv=None) -> int:
     parser.add_argument("--db", required=True,
                         help="Stopped-writer independent detached SQLite copy")
     parser.add_argument("--max-mib", type=int, default=256)
+    parser.add_argument("--profile", choices=("stage-local", "canonical"),
+                        default="stage-local")
     args = parser.parse_args(argv)
     try:
-        result = offline_quick_check(args.db, max_mib=args.max_mib)
+        result = offline_quick_check(args.db, max_mib=args.max_mib,
+                                     profile=args.profile)
     except ValueError as err:
         result = {
             "status": "UNVERIFIABLE", "issues": [str(err)],
