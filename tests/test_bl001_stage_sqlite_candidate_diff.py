@@ -156,6 +156,49 @@ class OfflineCandidateSnapshotDiffTests(unittest.TestCase):
         self.assertFalse(report["deletion_authorized"])
         self.assertNotIn("added_candidate_count", report)
 
+    def test_sidecar_created_during_second_scan_refuses_diff(self):
+        from unittest.mock import patch
+        from scripts import bl001_stage_sqlite_candidate_diff as mod
+        original = mod._read_candidate_names
+        sidecar = Path(str(self.after) + "-wal")
+        before_bytes, after_bytes = self.before.read_bytes(), self.after.read_bytes()
+        def add_sidecar_after_scan(path):
+            names = original(path)
+            if path == self.after:
+                sidecar.write_bytes(b"pending-after-inventory")
+            return names
+        with patch.object(mod, "_read_candidate_names",
+                          side_effect=add_sidecar_after_scan):
+            result = compare_offline_copies(self.before, self.after)
+        self.assertEqual(result["status"], "UNVERIFIABLE")
+        self.assertIn("offline_copy_changed_during_diff", result["issues"])
+        self.assertNotIn("added_candidate_count", result)
+        self.assertFalse(result["deletion_authorized"])
+        self.assertEqual(self.before.read_bytes(), before_bytes)
+        self.assertEqual(self.after.read_bytes(), after_bytes)
+        self.assertEqual(sidecar.read_bytes(), b"pending-after-inventory")
+
+    def test_hardlink_created_during_second_scan_refuses_diff(self):
+        import os
+        from unittest.mock import patch
+        from scripts import bl001_stage_sqlite_candidate_diff as mod
+        link = Path(self.tmp.name) / "late-hardlink.sqlite3"
+        original = mod._read_candidate_names
+        def link_after_scan(path):
+            result = original(path)
+            if path == self.after:
+                try:
+                    os.link(path, link)
+                except (OSError, NotImplementedError):
+                    self.skipTest("Hard links unsupported on this filesystem")
+            return result
+        with patch.object(mod, "_read_candidate_names",
+                          side_effect=link_after_scan):
+            report = compare_offline_copies(self.before, self.after)
+        self.assertEqual(report["status"], "UNVERIFIABLE")
+        self.assertIn("offline_copy_changed_during_diff", report["issues"])
+        self.assertFalse(report["deletion_authorized"])
+
     def test_invalid_path_fails_as_structured_unverifiable(self):
         invalid = "private\\x00copy/db.sqlite3".replace("\\x00", "\x00")
         report = compare_offline_copies(invalid, self.after)
