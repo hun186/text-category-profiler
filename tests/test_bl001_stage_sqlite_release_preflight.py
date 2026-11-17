@@ -283,6 +283,43 @@ class ReleasePreflightTests(unittest.TestCase):
         self.assertNotIn("root_real_opt_in",
                          [x["name"] for x in outcome["checks"]])
 
+    def test_conflicting_child_json_statuses_are_never_false_green(self):
+        self.assertFalse(_check_output(
+            '{"status":"FAIL"}\n{"status":"PASS"}\n', "PASS"
+        ))
+        self.assertFalse(_check_output(
+            '{"status":"PASS"}\n{"status":"UNVERIFIABLE"}\n', "PASS"
+        ))
+        self.assertFalse(_check_output(
+            '{"status":"PASS_PRIVATE_WAL_BACKUP"}\n'
+            '{"status":"FAIL_OR_BLOCKED"}\n',
+            "PASS_PRIVATE_WAL_BACKUP",
+        ))
+        self.assertTrue(_check_output(
+            'preflight child logs\n{"status":"PASS"}\n{"status":"PASS"}\n',
+            "PASS",
+        ))
+        self.assertFalse(_check_output('{"status":"PASS"}\n', "PASS_MEASURED"))
+        self.assertFalse(_check_output('{}\n', "PASS"))
+
+    def test_previous_failure_followed_by_pass_blocks_real_selftest(self):
+        def contradictory_child(args, **kwargs):
+            if "scripts.bl001_stage_sqlite_wal_backup" in args:
+                return subprocess.CompletedProcess(
+                    args, 0,
+                    stdout='{"status":"FAIL_OR_BLOCKED"}\n'
+                           '{"status":"PASS_PRIVATE_WAL_BACKUP"}\n',
+                    stderr="",
+                )
+            return fake_runner(args, **kwargs)
+        report = run_private_preflight(real_port=8050,
+                                       runner=contradictory_child)
+        self.assertEqual(report["status"], "FAIL")
+        self.assertEqual(report["checks"][-1]["name"], "private_wal_backup")
+        self.assertFalse(any(x["name"].startswith("root_")
+                             for x in report["checks"]))
+        self.assertFalse(report["production_workpool_verified"])
+
     def test_preflight_rejects_skips_and_fake_green_exit_without_evidence(self):
         self.assertFalse(_check_output("Ran 0 tests\nOK", "unittest"))
         self.assertFalse(_check_output("Ran 7 tests\nOK (skipped=2)", "unittest"))

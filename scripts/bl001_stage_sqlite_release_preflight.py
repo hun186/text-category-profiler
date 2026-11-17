@@ -82,14 +82,19 @@ def _check_output(output: str, expected: str) -> bool:
         return len(matches) == 1 and int(matches[0]) > 0
     if expected == "FINAL: PASS":
         return re.search(r"(?m)^FINAL: PASS\s*$", output) is not None
-    for line in reversed(output.splitlines()):
-        if line.strip().startswith("{"):
-            try:
-                record = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            return record.get("status") == expected
-    return False
+    statuses = []
+    for line in output.splitlines():
+        if not line.strip().startswith("{"):
+            continue
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(record, dict) and "status" in record:
+            statuses.append(record["status"])
+    # Do not let a later PASS mask earlier FAIL/UNVERIFIABLE evidence in the
+    # same child output, even if the child's exit code is unexpectedly zero.
+    return bool(statuses) and all(status == expected for status in statuses)
 
 def _real_selftest_outer_timeout() -> int:
     """Use CLI supervisor's actual 1800s timeout plus 300s cleanup headroom.
