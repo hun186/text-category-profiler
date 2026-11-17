@@ -3,6 +3,7 @@ import importlib.util
 import os
 from pathlib import Path
 import runpy
+import subprocess as stdlib_subprocess
 import sys
 import tempfile
 import types
@@ -61,7 +62,15 @@ def fake_modules(args=None, completed_codes=None, trace=None):
     no_op = lambda *a, **k: None
     return {
         "setproctitle": _module("setproctitle", setproctitle=no_op),
-        "subprocess": _module("subprocess", run=subprocess_run),
+        # Windows platform.system() can lazily query win32_ver through
+        # subprocess.check_output during runpy; preserve real introspection
+        # functions while intercepting only the TCF pipeline's run() call.
+        "subprocess": _module(
+            "subprocess",
+            run=subprocess_run,
+            check_output=stdlib_subprocess.check_output,
+            CalledProcessError=stdlib_subprocess.CalledProcessError,
+        ),
         "TCF_Params.TCFParameters": _module(
             "TCFParameters", setArguments=lambda: args,
             planArguments=lambda *unused: types.SimpleNamespace(args=args),
