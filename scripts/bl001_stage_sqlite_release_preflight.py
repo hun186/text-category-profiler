@@ -100,6 +100,68 @@ def _check_output(output: str, expected: str) -> bool:
     # same child output, even if the child's exit code is unexpectedly zero.
     return bool(statuses) and all(status == expected for status in statuses)
 
+_ROOT_CHECK_TITLES = frozenset((
+    "Runtime isolation", "Root pipeline", "DataConverter",
+    "RunClassfier", "CombineTestResult", "Test_result_Vis",
+    "Required artifacts", "Result consistency", "Final handoff",
+    "Source mutation guard", "Runtime setup", "Model facade",
+    "Process launch", "Configuration", "Source snapshot",
+))
+
+
+def _root_failure_evidence(done: subprocess.CompletedProcess) -> dict:
+    """Give actionable status-only evidence without printing raw child logs.
+
+    The isolated root self-test can include full file paths and child process
+    traces in stderr/stdout. Never copy these bytes into the preflight JSON.
+    Maintain the existing strict final-verdict and exit-code gate.
+    """
+    stdout = done.stdout or ""
+    stderr = done.stderr or ""
+    lines = [line.strip() for line in stdout.splitlines() if line.strip()]
+    verdicts = re.findall(r"(?m)^FINAL:\s*(PASS|FAIL)\s*$", stdout)
+    failed_titles = []
+    for title in re.findall(r"(?m)^\[FAIL\]\s*([^\r\n]+)", stdout):
+        title = title.strip()
+        label = title if title in _ROOT_CHECK_TITLES else "unrecognized_check"
+        if label not in failed_titles:
+            failed_titles.append(label)
+    if len(verdicts) != 1:
+        final = "MISSING_OR_AMBIGUOUS"
+    else:
+        final = verdicts[0]
+    terminal = bool(lines) and lines[-1] == "FINAL: PASS"
+    if done.returncode != 0:
+        reason = "child_exit_nonzero"
+    elif final == "FAIL":
+        reason = "root_reported_fail"
+    elif final == "MISSING_OR_AMBIGUOUS":
+        reason = "missing_or_ambiguous_verdict"
+    elif not terminal:
+        reason = "nonterminal_stdout_verdict"
+    elif re.search(r"(?m)^FINAL:\s*(?:PASS|FAIL)\s*$", stderr):
+        reason = "additional_stderr_verdict"
+    elif stderr.strip():
+        reason = "stderr_after_stdout_verdict"
+    else:
+        reason = "output_contract_mismatch"
+    evidence = {
+        "root_failure_reason": reason,
+        "root_process_return_code": done.returncode,
+        "root_stdout_verdict": final,
+        "root_stdout_terminal_pass": terminal,
+        "root_stderr_nonempty": bool(stderr.strip()),
+        "root_failed_checks": failed_titles,
+    }
+    matched = re.search(r"(?m)^\s*return code:\s*(-?\d+)\s*$", stdout)
+    if matched:
+        evidence["root_pipeline_return_code"] = int(matched.group(1))
+    matched = re.search(r"(?m)^\s*timed out:\s*(True|False)\s*$", stdout)
+    if matched:
+        evidence["root_pipeline_timed_out"] = matched.group(1) == "True"
+    return evidence
+
+
 def _real_selftest_outer_timeout() -> int:
     """Use CLI supervisor's actual 1800s timeout plus 300s cleanup headroom.
 
@@ -157,6 +219,10 @@ def run_private_preflight(*, real_port: int | None = None,
             result["error_type"] = (
                 error_name if "error_name" in locals() else "FAILED_CHECK"
             )
+            if expected == "FINAL: PASS" and "done" in locals() and (
+                "error_name" not in locals()
+            ):
+                result.update(_root_failure_evidence(done))
         results.append(result)
         if state == "FAIL":
             return {

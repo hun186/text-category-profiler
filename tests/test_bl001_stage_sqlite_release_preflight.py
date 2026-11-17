@@ -316,6 +316,78 @@ class ReleasePreflightTests(unittest.TestCase):
                          [x["name"] for x in report["checks"]])
         self.assertFalse(report["production_workpool_verified"])
 
+    def test_root_failure_exposes_safe_sections_and_exit_codes(self):
+        """Windows failure evidence must not expose child traceback or paths."""
+        private_text = r"D:\secret\private\model\checkpoint-private"
+        def failed_root(args, **kwargs):
+            if args[1:4] == ["TCFMain.py", "--self-test", "isolated"]:
+                return subprocess.CompletedProcess(
+                    args, 1,
+                    stdout=(
+                        "TCF Full-Pipeline Self-Test — isolated\n"
+                        "[FAIL] Root pipeline\n"
+                        "       return code: 17\n"
+                        "       timed out: False\n"
+                        "[FAIL] DataConverter\n"
+                        "Failure evidence:\n" + private_text + "\n"
+                        "FINAL: FAIL\n"
+                    ),
+                    stderr="Traceback: " + private_text,
+                )
+            return fake_runner(args, **kwargs)
+
+        outcome = run_private_preflight(runner=failed_root)
+        last = outcome["checks"][-1]
+        self.assertEqual(outcome["status"], "FAIL")
+        self.assertEqual(last["name"], "root_isolated")
+        self.assertEqual(last["error_type"], "FAILED_CHECK")
+        self.assertEqual(last["root_process_return_code"], 1)
+        self.assertEqual(last["root_pipeline_return_code"], 17)
+        self.assertFalse(last["root_pipeline_timed_out"])
+        self.assertEqual(last["root_stdout_verdict"], "FAIL")
+        self.assertEqual(last["root_failed_checks"], ["Root pipeline", "DataConverter"])
+        self.assertEqual(last["root_failure_reason"], "child_exit_nonzero")
+        self.assertNotIn(private_text, json.dumps(outcome))
+        self.assertFalse(outcome["production_workpool_verified"])
+
+    def test_root_diagnostic_distinguishes_stderr_only_after_pass(self):
+        def stderr_only(args, **kwargs):
+            if args[1:4] == ["TCFMain.py", "--self-test", "isolated"]:
+                return subprocess.CompletedProcess(
+                    args, 0, stdout="FINAL: PASS\n",
+                    stderr="warning from private runner\n",
+                )
+            return fake_runner(args, **kwargs)
+
+        outcome = run_private_preflight(runner=stderr_only)
+        last = outcome["checks"][-1]
+        # Existing strict gate must NOT be silently softened here.
+        self.assertEqual(outcome["status"], "FAIL")
+        self.assertEqual(last["root_process_return_code"], 0)
+        self.assertEqual(last["root_stdout_verdict"], "PASS")
+        self.assertTrue(last["root_stdout_terminal_pass"])
+        self.assertTrue(last["root_stderr_nonempty"])
+        self.assertEqual(last["root_failure_reason"], "stderr_after_stdout_verdict")
+
+    def test_root_diagnostic_unknown_title_and_conflicting_final_fail_closed(self):
+        def contradictory_root(args, **kwargs):
+            if args[1:4] == ["TCFMain.py", "--self-test", "isolated"]:
+                return subprocess.CompletedProcess(
+                    args, 0,
+                    stdout="[FAIL] C:\\private\\subject\\secret\n"
+                           "FINAL: PASS\nFINAL: FAIL\n",
+                    stderr="",
+                )
+            return fake_runner(args, **kwargs)
+
+        outcome = run_private_preflight(runner=contradictory_root)
+        last = outcome["checks"][-1]
+        self.assertEqual(outcome["status"], "FAIL")
+        self.assertEqual(last["root_stdout_verdict"], "MISSING_OR_AMBIGUOUS")
+        self.assertEqual(last["root_failed_checks"], ["unrecognized_check"])
+        self.assertEqual(last["root_failure_reason"], "missing_or_ambiguous_verdict")
+        self.assertNotIn("private", json.dumps(last).lower())
+
     def test_conflicting_child_json_statuses_are_never_false_green(self):
         self.assertFalse(_check_output(
             '{"status":"FAIL"}\n{"status":"PASS"}\n', "PASS"
