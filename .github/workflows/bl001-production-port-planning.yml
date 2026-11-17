@@ -1,0 +1,41 @@
+name: BL-001 Production Port Planning Guard
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "text_category_profiler/pipeline/configuration.py"
+      - "text_category_profiler/pipeline/TCF_utils.py"
+      - "tests/test_pipeline_configuration.py"
+      - "tests/test_project_docs.py"
+      - "README.md"
+      - ".github/workflows/bl001-production-port-planning.yml"
+  push:
+    branches: [main]
+    paths:
+      - "text_category_profiler/pipeline/configuration.py"
+      - "text_category_profiler/pipeline/TCF_utils.py"
+      - "tests/test_pipeline_configuration.py"
+      - "tests/test_project_docs.py"
+      - "README.md"
+      - ".github/workflows/bl001-production-port-planning.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  port-preactivation-guard:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Validate CLI port bounds, planning boundary, and safe README example
+        run: python -m unittest -v tests.test_pipeline_configuration tests.test_project_docs
