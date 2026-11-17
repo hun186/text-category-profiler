@@ -138,6 +138,8 @@ class ModelFacadeCopyIsolationTests(unittest.TestCase):
                 (ckpt / "linked").symlink_to(target, target_is_directory=True)
             except (OSError, NotImplementedError):
                 self.skipTest("symlink privilege unavailable")
+            # Capacity accounting must include dereferenced source bytes.
+            self.assertEqual(_directory_copy_bytes(ckpt), len(b"original"))
             facade = create_model_facade(source, root / "runtime")
             copy = facade / "checkpoint-123" / "linked"
             self.assertTrue(copy.is_dir())
