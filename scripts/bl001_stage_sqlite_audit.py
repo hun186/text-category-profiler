@@ -79,7 +79,9 @@ def audit_stage_sqlite(filename: str | Path) -> dict:
         issues.append("sqlite_journal_or_wal_present")
         return result
     try:
-        if path.stat().st_size < 100:
+        begin_stat = path.stat()
+        begin_resolved = path.resolve(strict=True)
+        if begin_stat.st_size < 100:
             issues.append("database_empty_or_truncated")
             return result
         with closing(sqlite3.connect(_readonly_uri(path), uri=True, timeout=1)) as db:
@@ -144,7 +146,21 @@ def audit_stage_sqlite(filename: str | Path) -> dict:
                     }
                     if entry[2] != 0 or entry[3] != "c" or entry[4] != 0:
                         issues.append("text_Index_not_plain_nonunique_full")
-    except (OSError, sqlite3.Error, ValueError):
+        # A direct audit may be used without the higher-level inventory.
+        # Revalidate the physical copy identity and sidecar state before
+        # reporting PASS; a detached copy must not change mid-audit.
+        end_stat = path.stat()
+        identity = lambda x: (
+            x.st_dev, x.st_ino, x.st_nlink, x.st_size,
+            x.st_mtime_ns, x.st_ctime_ns,
+        )
+        if (identity(begin_stat) != identity(end_stat)
+                or begin_resolved != path.resolve(strict=True)
+                or path.is_symlink() or _has_multiple_file_links(path)
+                or any(Path(str(path) + suffix).exists()
+                       for suffix in ("-wal", "-shm", "-journal"))):
+            issues.append("offline_copy_changed_during_audit")
+    except (OSError, sqlite3.Error, ValueError, RuntimeError):
         issues.append("database_unreadable_or_invalid")
     if not issues:
         result["status"] = "PASS"
