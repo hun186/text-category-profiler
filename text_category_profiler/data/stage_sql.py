@@ -126,11 +126,16 @@ def write_stage_sql(sql_name, df, saving_columns, connect):
     candidate = "__bl001_stage_" + uuid.uuid4().hex
     cnx = connect(sql_name)
     transaction_started = False
+    candidate_staged = False
     try:
         selected = df.loc[:, saving_columns]
         # pandas commits its own sqlite3 transaction. Do not touch sampleSrc
         # here: partial candidate writes must never replace the prior output.
         selected.to_sql(name=candidate, con=cnx, if_exists="fail")
+        # Only after the pandas staging call returns successfully is this
+        # uniquely named table known to belong to this invocation. A failed
+        # to_sql may have collided with another writer's existing table.
+        candidate_staged = True
         pandas_indexes = _pandas_candidate_indexes(cnx, candidate)
         schema = cnx.execute(
             "SELECT sql FROM sqlite_master WHERE type='table' AND name=?",
@@ -173,13 +178,14 @@ def write_stage_sql(sql_name, df, saving_columns, connect):
         # This connection owns only this randomly named candidate. A killed
         # process may leave orphan candidates; do not guess whether any other
         # candidate table belongs to a still-running worker.
-        try:
-            cnx.execute(
-                "DROP TABLE IF EXISTS " + _quote_identifier(candidate)
-            )
-            cnx.commit()
-        except Exception:
-            pass
+        if candidate_staged:
+            try:
+                cnx.execute(
+                    "DROP TABLE IF EXISTS " + _quote_identifier(candidate)
+                )
+                cnx.commit()
+            except Exception:
+                pass
         raise
     finally:
         cnx.close()
