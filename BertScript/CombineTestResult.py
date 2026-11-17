@@ -507,7 +507,7 @@ def _build_result_combination_plan(argv, stage_api):
     plan = stage_api.ResultCombinationPlan(args, dataset_dir, output_dir)
     return plan, {
         "combine": _combine_results,
-        "activate_rename": os.rename,
+        "activate_rename": _handoff_rename_noreplace,
         "success_handoff": _result_combination_handoff,
     }
 
