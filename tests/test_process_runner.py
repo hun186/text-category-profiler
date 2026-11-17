@@ -9,6 +9,7 @@ from text_category_profiler.execution.process import (
     LegacyShellProcessRunner,
     ProcessRunner,
     RootFailFastPolicy,
+    child_exit_interpretation,
     sanitize_windows_dot_path,
     preflight_windows_dll_path,
 )
@@ -173,6 +174,62 @@ class ProcessRunnerTests(unittest.TestCase):
         self.assertEqual(
             [("Classifier", 7, "python classifier.py")], reports
         )
+
+    def test_signal_like_child_exit_is_not_confirmed_operator_ctrl_c(self):
+        for code in (130, -2, -1073741510, 3221225786):
+            with self.subTest(code=code):
+                reports = []
+                policy = RootFailFastPolicy(
+                    failure_reporter=lambda stage, rc, cmd: reports.append(
+                        (stage, rc, cmd)
+                    )
+                )
+                self.assertEqual(
+                    child_exit_interpretation(code), "interruption_like_unconfirmed"
+                )
+                with self.assertRaises(RuntimeError) as captured:
+                    policy.check(
+                        types.SimpleNamespace(returncode=code),
+                        "Test_result_Vis", "python visual.py",
+                    )
+                message = str(captured.exception)
+                self.assertIn(f"exit code {code}", message)
+                self.assertIn("operator interruption UNCONFIRMED", message)
+                self.assertIn("Abort following stages.", message)
+                self.assertIn("no WorkPool cleanup or automatic resume", message)
+                self.assertEqual(
+                    reports, [("Test_result_Vis", code, "python visual.py")]
+                )
+
+    def test_ordinary_nonzero_exits_are_not_signal_like(self):
+        reports = []
+        policy = RootFailFastPolicy(
+            failure_reporter=lambda *args: reports.append(args)
+        )
+        for code in (1, 2, 7, 255, -9, 137):
+            with self.subTest(code=code):
+                self.assertEqual(
+                    child_exit_interpretation(code), "nonzero_child_exit"
+                )
+                with self.assertRaises(RuntimeError) as caught:
+                    policy.check(
+                        types.SimpleNamespace(returncode=code),
+                        "Classifier", "python classifier.py",
+                    )
+                self.assertNotIn("UNCONFIRMED", str(caught.exception))
+        self.assertEqual(len(reports), 6)
+        self.assertEqual(
+            child_exit_interpretation(True), "nonzero_child_exit"
+        )
+
+    def test_zero_child_return_still_succeeds_without_interpretation(self):
+        policy = RootFailFastPolicy(
+            failure_reporter=lambda *args: self.fail(
+                "zero exit must not call failure reporter"
+            )
+        )
+        result = types.SimpleNamespace(returncode=0)
+        self.assertIs(policy.check(result, "DataConverter", "python data.py"), result)
 
     def test_root_compatibility_function_delegates_to_default_runner(self):
         calls = []

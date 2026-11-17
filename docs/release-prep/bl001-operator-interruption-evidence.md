@@ -45,6 +45,24 @@ the process abruptly. Such cases are **unknown cause**, not confirmed user
 interrupts. Existing 24 running-named workspace directories cannot be
 retroactively reclassified based on this new log.
 
+### Child subprocess exits resembling interruption (unconfirmed)
+
+The canonical root still uses `subprocess.run(shell=True, check=False)` and
+**fails fast** on every nonzero child result. Some exit codes resemble a
+console/signal interruption: `130` (shell 128+SIGINT), `-2` (POSIX
+SIGINT), and Windows `STATUS_CONTROL_C_EXIT` as signed `-1073741510`
+or unsigned `3221225786`. These return codes can also arise without a
+user pressing Ctrl+C.
+
+For these codes, the raised `RuntimeError` now adds the cautious message
+`Signal-like child exit; operator interruption UNCONFIRMED`; it continues
+to report the original numeric exit code and stop following stages. An ordinary
+nonzero child exit retains the existing error text. **Neither case** creates
+an operator-interruption JSONL record unless the root process independently
+receives Python `KeyboardInterrupt`. No child status triggers WorkPool
+cleanup, renaming, restart, or an assertion that a specific workspace is safe
+to delete.
+
 To view this local evidence after a future Ctrl+C on Linux/POSIX:
 
 ```sh

@@ -206,8 +206,11 @@ class RootPipelineCharacterizationTests(unittest.TestCase):
             module.record_operator_interrupt = lambda stage: self.fail(
                 "child subprocess nonzero is not a confirmed operator Ctrl+C"
             )
-            with self.assertRaisesRegex(RuntimeError, "exit code 130"):
+            with self.assertRaisesRegex(
+                RuntimeError, "exit code 130"
+            ) as caught:
                 module.main([])
+            self.assertIn("operator interruption UNCONFIRMED", str(caught.exception))
 
     def test_regular_pipeline_success_never_creates_interrupt_evidence(self):
         with tempfile.TemporaryDirectory() as temp:
