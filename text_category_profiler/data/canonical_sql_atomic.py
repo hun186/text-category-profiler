@@ -76,12 +76,12 @@ def _guard_existing_table_contract(cnx, table):
     if entry is None:
         return
     ddl = entry[0] or ""
-    if not re.match(r"^\\s*CREATE\\s+TABLE\\b", ddl, re.IGNORECASE):
+    if not re.match(r"^\s*CREATE\s+TABLE\b", ddl, re.IGNORECASE):
         raise ValueError("Unsafe existing table kind")
     # SQLite has no PRAGMA for CHECK clauses or column COLLATE clauses. This
     # conservative rejection can refuse unusual identifiers, but cannot
     # silently discard the old constraints.
-    if re.search(r"\\b(CHECK|COLLATE|GENERATED|STRICT)\\b|\\bAS\\s*\\(",
+    if re.search(r"\b(CHECK|COLLATE|GENERATED|STRICT)\b|\bAS\s*\(",
                  ddl, re.IGNORECASE):
         raise ValueError("Unsafe existing table DDL constraints")
     for col in cnx.execute("PRAGMA table_xinfo(" + _quote(table) + ")"):
