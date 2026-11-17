@@ -81,7 +81,11 @@ def _check_output(output: str, expected: str) -> bool:
         matches = re.findall(r"(?m)^Ran (\d+) tests? in [^\n]+$", output)
         return len(matches) == 1 and int(matches[0]) > 0
     if expected == "FINAL: PASS":
-        return re.search(r"(?m)^FINAL: PASS\s*$", output) is not None
+        # The root self-test prints a single terminal FINAL verdict. Do not
+        # trust an early FINAL: PASS if later work failed or output is partial.
+        lines = [line.strip() for line in output.splitlines() if line.strip()]
+        verdicts = re.findall(r"(?m)^FINAL:\s*(PASS|FAIL)\s*$", output)
+        return bool(lines) and lines[-1] == "FINAL: PASS" and verdicts == ["PASS"]
     statuses = []
     for line in output.splitlines():
         if not line.strip().startswith("{"):
