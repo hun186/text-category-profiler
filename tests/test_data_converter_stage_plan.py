@@ -107,6 +107,13 @@ class DataConverterStagePlanTests(unittest.TestCase):
             patch.object(DataConverter, "BuildSamplesDfFromPaths", side_effect=record_reader),
             patch.object(DataConverter, "empty_dataframe", return_value=FakeFrame()),
             patch.object(DataConverter, "concat_dataframes", return_value=FakeFrame()),
+            # This test models reader process propagation with FakeFrame, not
+            # pandas column/index semantics. Real 0x0 schema/index coverage is
+            # in test_bl001_empty_source_schema.
+            patch.object(
+                DataConverter, "preserve_empty_source_metadata_schema",
+                side_effect=lambda frame: frame,
+            ) as normalize_empty,
             patch.object(DataConverter, "dfOutputer", return_value=SimpleNamespace(run=lambda: None)),
             patch.object(DataConverter, "multicoreJob", return_value=SimpleNamespace(run=lambda: [])),
             patch.object(DataConverter, "key_values"),
@@ -118,6 +125,9 @@ class DataConverterStagePlanTests(unittest.TestCase):
             [("fixed test source", 7), ("Elasticsearch source", 7)],
             reader_calls,
         )
+        # Both secondary source branches must still pass through the schema
+        # normalization boundary before output, despite using FakeFrames here.
+        self.assertEqual(normalize_empty.call_count, 2)
 
     def test_job_generator_resolves_empty_tokenizer_model_directory(self):
         args = SimpleNamespace(ModelType="bert", MaxSeqLength=128)
