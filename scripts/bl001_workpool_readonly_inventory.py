@@ -131,7 +131,8 @@ def _walk_posix(root: Path, report: dict, baseline: os.stat_result) -> None:
         os.close(root_fd)
 
 
-def _walk_windows_root_only(root: Path, expected_root: Path, report: dict) -> None:
+def _walk_windows_root_only(root: Path, expected_root: Path,
+                            expected_stat: os.stat_result, report: dict) -> None:
     """Handle-bound Win32 top-level enumeration; never path-scan descendants.
 
     Python's Windows scandir() cannot use a directory fd, and opening child
@@ -175,6 +176,16 @@ def _walk_windows_root_only(root: Path, expected_root: Path, report: dict) -> No
             raise _BoundaryLost()
         attrs = int.from_bytes(attrs_buf.raw[:4], "little")
         if (attrs & _REPARSE_FLAG) or not (attrs & 0x10):
+            raise _BoundaryLost()
+        # FILE_ID_INFO (class 18) = 8-byte volume serial + 16-byte ID.
+        # Paths can be replaced by an ordinary different directory without
+        # changing their spelling. Match the original inode before reading
+        # any entries, not just GetFinalPathNameByHandleW.
+        id_buf = ctypes.create_string_buffer(24)
+        if not GetInfo(handle, 18, id_buf, len(id_buf)):
+            raise _BoundaryLost()
+        root_file_id = int.from_bytes(id_buf.raw[8:24], "little")
+        if not expected_stat.st_ino or root_file_id != expected_stat.st_ino:
             raise _BoundaryLost()
         actual_buf = ctypes.create_unicode_buffer(32768)
         length = GetFinalPathNameByHandleW(handle, actual_buf, len(actual_buf), 0)
@@ -287,7 +298,7 @@ def inventory_workpool_metadata(workpool: str | Path, *,
         return report
     try:
         if os.name == "nt":
-            _walk_windows_root_only(root, expected_root, report)
+            _walk_windows_root_only(root, expected_root, expected_root_stat, report)
         elif hasattr(os, "O_NOFOLLOW") and hasattr(os, "O_DIRECTORY"):
             _walk_posix(root, report, expected_root_stat)
         else:
