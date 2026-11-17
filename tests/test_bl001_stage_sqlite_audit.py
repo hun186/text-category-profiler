@@ -205,6 +205,43 @@ class StageSQLiteAuditTests(unittest.TestCase):
         self.assertEqual(path.read_bytes(), before)
         self.assertEqual(alias.read_bytes(), before)
 
+    def test_file_change_between_precheck_and_sqlite_open_fails_closed(self):
+        from unittest.mock import patch
+        from scripts import bl001_stage_sqlite_audit as mod
+        path = self.valid_database()
+        uri = mod._readonly_uri
+        before = path.read_bytes()
+        called = 0
+        def change_copy_before_open(candidate):
+            nonlocal called
+            called += 1
+            with closing(sqlite3.connect(candidate)) as db:
+                db.execute('CREATE TABLE "unrelated_added" ("x" TEXT)')
+                db.commit()
+            return uri(candidate)
+        with patch.object(mod, "_readonly_uri",
+                          side_effect=change_copy_before_open):
+            report = audit_stage_sqlite(path)
+        self.assertEqual(called, 1)
+        self.assertEqual(report["status"], "FAIL")
+        self.assertIn("offline_copy_changed_during_audit", report["issues"])
+        self.assertNotEqual(path.read_bytes(), before)
+
+    def test_sidecar_created_during_schema_scan_is_never_audit_pass(self):
+        from unittest.mock import patch
+        from scripts import bl001_stage_sqlite_audit as mod
+        path = self.valid_database()
+        sidecar = Path(str(path) + "-wal")
+        uri = mod._readonly_uri
+        def add_sidecar(candidate):
+            sidecar.write_bytes(b"fake-pending-log")
+            return uri(candidate)
+        with patch.object(mod, "_readonly_uri", side_effect=add_sidecar):
+            report = audit_stage_sqlite(path)
+        self.assertEqual(report["status"], "FAIL")
+        self.assertIn("offline_copy_changed_during_audit", report["issues"])
+        self.assertEqual(sidecar.read_bytes(), b"fake-pending-log")
+
     def test_cli_prints_machine_readable_json_and_status(self):
         path = self.valid_database()
         out = io.StringIO()
