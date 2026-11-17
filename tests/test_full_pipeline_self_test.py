@@ -7,6 +7,7 @@ from pathlib import Path
 from unittest import mock
 
 from text_category_profiler.diagnostics.full_pipeline import (
+    ModelFacadeError,
     SmokeConfig,
     SmokeResult,
     build_root_command,
@@ -57,7 +58,7 @@ class FullPipelineSelfTestTests(unittest.TestCase):
                     runtime, "Model facade",
                 )
 
-    def test_real_model_facade_link_runtime_error_is_structured_and_cleans_runtime(self):
+    def test_real_model_facade_copy_failure_is_structured_and_cleans_runtime(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             model = root / "model"
@@ -75,8 +76,8 @@ class FullPipelineSelfTestTests(unittest.TestCase):
                 return_value=runtime,
             ), mock.patch(
                 "text_category_profiler.diagnostics.full_pipeline.create_model_facade",
-                side_effect=RuntimeError(
-                    f"cannot link model checkpoint {model / 'checkpoint-1'}"
+                side_effect=ModelFacadeError(
+                    f"cannot copy model checkpoint {model / 'checkpoint-1'}"
                 ),
             ):
                 self.assert_structured_setup_failure(

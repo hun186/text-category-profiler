@@ -1,0 +1,39 @@
+name: BL-001 Real-Model Copy Isolation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "text_category_profiler/diagnostics/full_pipeline.py"
+      - "tests/test_full_pipeline_harness.py"
+      - "tests/test_full_pipeline_self_test.py"
+      - "tests/test_bl001_model_facade_copy.py"
+      - ".github/workflows/bl001-real-model-copy-isolation.yml"
+  push:
+    branches: [main]
+    paths:
+      - "text_category_profiler/diagnostics/full_pipeline.py"
+      - "tests/test_full_pipeline_harness.py"
+      - "tests/test_full_pipeline_self_test.py"
+      - "tests/test_bl001_model_facade_copy.py"
+      - ".github/workflows/bl001-real-model-copy-isolation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checkpoint-copy-safety:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify real-model checkpoint copies cannot modify original model
+        run: python -m unittest -v tests.test_bl001_model_facade_copy
