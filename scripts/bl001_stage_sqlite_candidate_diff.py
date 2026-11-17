@@ -12,7 +12,9 @@ import json
 from pathlib import Path
 import sqlite3
 
-from scripts.bl001_stage_sqlite_audit import _readonly_uri
+from scripts.bl001_stage_sqlite_audit import (
+    _has_multiple_file_links, _has_workpool_ancestor, _readonly_uri,
+)
 from scripts.bl001_stage_sqlite_candidate_inventory import (
     _CANDIDATE, _DISPLAY_LIMIT, _has_candidate_prefix, _name_digest,
     inventory_offline_copy,
@@ -38,8 +40,19 @@ def _read_candidate_names(path: Path) -> tuple[set[str], set[str]]:
 def _file_identity(path: Path) -> tuple[int, int, int, int, int]:
     """Metadata sentinel, not proof of quiescence or cryptographic identity."""
     stat = path.stat()
-    return (stat.st_dev, stat.st_ino, stat.st_size,
+    return (stat.st_dev, stat.st_ino, stat.st_nlink, stat.st_size,
             stat.st_mtime_ns, stat.st_ctime_ns)
+
+
+def _changed_offline_source(path: Path) -> bool:
+    """Recheck the same source guards after metadata reads have finished."""
+    return (
+        _has_workpool_ancestor(path)
+        or path.is_symlink()
+        or _has_multiple_file_links(path)
+        or any(Path(str(path) + suffix).exists()
+               for suffix in ("-wal", "-shm", "-journal"))
+    )
 
 
 def compare_offline_copies(before: str | Path, after: str | Path) -> dict:
@@ -87,7 +100,9 @@ def compare_offline_copies(before: str | Path, after: str | Path) -> dict:
         before_candidates, before_malformed = _read_candidate_names(first)
         after_candidates, after_malformed = _read_candidate_names(second)
         if (before_identity != _file_identity(first)
-                or after_identity != _file_identity(second)):
+                or after_identity != _file_identity(second)
+                or _changed_offline_source(first)
+                or _changed_offline_source(second)):
             report["issues"].append("offline_copy_changed_during_diff")
             return report
     except (OSError, sqlite3.Error, ValueError):
