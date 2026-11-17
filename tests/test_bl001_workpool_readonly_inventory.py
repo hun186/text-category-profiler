@@ -129,6 +129,7 @@ class WorkPoolMetadataInventoryTests(unittest.TestCase):
             self.assertEqual(report["status"], "REVIEW_REQUIRED")
             self.assertEqual(report["reparse_entries_observed"], 1)
             self.assertEqual(report["sqlite_sidecars_observed"], 0)
+            self.assertFalse(report["sqlite_sidecar_scan_complete"])
 
     @unittest.skipIf(os.name == "nt", "POSIX dirfd traversal race fixture")
     def test_directory_swap_to_external_symlink_is_rejected_without_external_scan(self):
