@@ -29,6 +29,7 @@ from text_category_profiler.core.utilities import IsVersionValid
 from text_category_profiler.core.utilities import getLineOfMaxLen
 from text_category_profiler.data.DB_utils import ensure_schema
 from text_category_profiler.data.DB_utils import createIndex
+from text_category_profiler.data.canonical_sql_atomic import replace_canonical_table
 from text_category_profiler.core.log_display import key_values
 from text_category_profiler.core.log_display import summarize_sequence
 from text_category_profiler.core.log_display import warning
@@ -423,20 +424,26 @@ def dfToSQL(SQLname,df,SavingDfColumns=[],
             index_label = UniqueIndexCols
         else:
             index_label = None
-        sql_df.to_sql(name=table, con=cnx,
-                      if_exists=if_exists,
-                      dtype=dtype,
-                      index_label=index_label
-                      )
-
-        #創造index，以提升讀取速度。
-        #getIndex = f'SELECT name FROM sqlite_master WHERE type = "index";'
-        #sqlIndexCols = [term[0] for term in list(cnx.execute(getIndex))]
-        #print("sqlIndexCols",sqlIndexCols)
-        for col in IndexCols:
-            createIndex(SQLname,table=table,IndexCol=col,connection=cnx,MPLOGGER=MPLOGGER)
-        #for col in UniqueIndexCols:
-            #createIndex(col,connection=cnx,uniqueIndex=True,MPLOGGER=MPLOGGER)
+        if if_exists == "replace":
+            # Staging with pandas and the final table/index swap are separate
+            # phases; only the final phase touches the existing target.
+            # build IndexCols within the SAME SQLite transaction, not via
+            # DB_utils.createIndex (which opens another connection).
+            replace_canonical_table(
+                cnx, sql_df, table=table, dtype=dtype,
+                index_label=index_label, index_cols=IndexCols,
+            )
+        else:
+            # Preserve existing append/fail-mode behavior until those
+            # contracts have their own separately reviewed changes.
+            sql_df.to_sql(name=table, con=cnx,
+                          if_exists=if_exists,
+                          dtype=dtype,
+                          index_label=index_label
+                          )
+            for col in IndexCols:
+                createIndex(SQLname,table=table,IndexCol=col,
+                            connection=cnx,MPLOGGER=MPLOGGER)
     finally:
         cnx.close()
 
