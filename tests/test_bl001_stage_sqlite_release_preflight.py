@@ -283,6 +283,39 @@ class ReleasePreflightTests(unittest.TestCase):
         self.assertNotIn("root_real_opt_in",
                          [x["name"] for x in outcome["checks"]])
 
+    def test_root_final_verdict_must_be_unique_and_terminal(self):
+        self.assertTrue(_check_output(
+            "selftest\nSummary: 14 PASS, 0 WARN, 0 FAIL\nFINAL: PASS\n",
+            "FINAL: PASS",
+        ))
+        failures = (
+            "FINAL: PASS\nFINAL: FAIL\n",
+            "FINAL: FAIL\nFINAL: PASS\n",
+            "FINAL: PASS\nFINAL: PASS\n",
+            "FINAL: PASS\nunexpected tail\n",
+            "FINAL: PASS\nFINAL: ERROR\n",
+            "Summary: 14 PASS, 0 WARN, 0 FAIL\n",
+        )
+        for output in failures:
+            with self.subTest(output=output):
+                self.assertFalse(_check_output(output, "FINAL: PASS"))
+
+    def test_false_root_success_cannot_enable_real_selftest(self):
+        seen = []
+        def false_green(args, **kwargs):
+            seen.append(args)
+            if args[1:4] == ["TCFMain.py", "--self-test", "isolated"]:
+                return subprocess.CompletedProcess(
+                    args, 0, stdout="FINAL: PASS\nFINAL: FAIL\n", stderr=""
+                )
+            return fake_runner(args, **kwargs)
+        report = run_private_preflight(real_port=8050, runner=false_green)
+        self.assertEqual(report["status"], "FAIL")
+        self.assertEqual(report["checks"][-1]["name"], "root_isolated")
+        self.assertNotIn("root_real_opt_in",
+                         [x["name"] for x in report["checks"]])
+        self.assertFalse(report["production_workpool_verified"])
+
     def test_conflicting_child_json_statuses_are_never_false_green(self):
         self.assertFalse(_check_output(
             '{"status":"FAIL"}\n{"status":"PASS"}\n', "PASS"
