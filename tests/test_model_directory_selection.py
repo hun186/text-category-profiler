@@ -43,6 +43,65 @@ class ModelDirectorySelectionTests(unittest.TestCase):
                 (checkpoint_dir / model_file).write_bytes(b"weights")
         return output
 
+    def test_numeric_training_step_order_precedes_lexical_checkpoint_names(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            model = self.candidate(root, "20261117180000")
+            for step in (9, 10, 120, 99):
+                checkpoint = model / f"checkpoint-{step}"
+                checkpoint.mkdir()
+                (checkpoint / "model.safetensors").write_bytes(b"weights")
+            inspection = self.module.inspect_pytorch_output_candidate(str(model))
+            self.assertTrue(inspection.usable)
+            self.assertEqual(inspection.checkpoint, "checkpoint-120")
+            self.assertEqual(inspection.model_file, "model.safetensors")
+
+    def test_latest_incomplete_checkpoint_falls_back_to_older_valid(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            model = self.candidate(root, "20261117180000")
+            newer = model / "checkpoint-1000"
+            newer.mkdir()
+            (newer / "model.safetensors").write_bytes(b"")
+            older = model / "checkpoint-100"
+            older.mkdir()
+            (older / "pytorch_model.bin").write_bytes(b"usable")
+            inspection = self.module.inspect_pytorch_output_candidate(str(model))
+            self.assertEqual(inspection.checkpoint, "checkpoint-100")
+            self.assertEqual(inspection.model_file, "pytorch_model.bin")
+
+    def test_fake_checkpoint_file_and_malformed_names_do_not_crash_or_select(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            model = self.candidate(root, "20261117180000")
+            (model / "checkpoint-999").write_bytes(b"not a directory")
+            for invalid_name in ("checkpoint-999.bad", "checkpoint-9extra",
+                                 "checkpoint--3", "checkpoint-1.tmp"):
+                candidate = model / invalid_name
+                candidate.mkdir()
+                (candidate / "model.safetensors").write_bytes(b"weights")
+            correct = model / "checkpoint-7"
+            correct.mkdir()
+            (correct / "model.safetensors").mkdir()
+            inspection = self.module.inspect_pytorch_output_candidate(str(model))
+            self.assertFalse(inspection.usable)
+            self.assertEqual(
+                inspection.rejection_reason,
+                "checkpoint directories contain no supported model file",
+            )
+
+    def test_checkpoint_only_matching_files_remains_rejected_without_crash(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            model = self.candidate(root, "20261117180000")
+            (model / "checkpoint-101").write_bytes(b"not a folder")
+            inspection = self.module.inspect_pytorch_output_candidate(str(model))
+            self.assertFalse(inspection.usable)
+            self.assertEqual(
+                inspection.rejection_reason,
+                "no checkpoint-* directory found",
+            )
+
     def test_newest_valid_candidate_is_selected_with_checkpoint_diagnostics(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
