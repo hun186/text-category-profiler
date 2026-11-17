@@ -3,10 +3,11 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
+from types import SimpleNamespace
 from unittest import mock
 
 from text_category_profiler.diagnostics.full_pipeline import (
-    ModelFacadeError, create_model_facade, snapshot_regular_files,
+    ModelFacadeError, _directory_copy_bytes, create_model_facade, snapshot_regular_files,
 )
 
 
@@ -60,6 +61,68 @@ class ModelFacadeCopyIsolationTests(unittest.TestCase):
                              b"original")
             self.assertFalse((root / "runtime" / "model-facade"
                               / "checkpoint-123").exists())
+
+    def test_disk_shortage_blocks_before_model_copy_or_launch(self):
+        with tempfile.TemporaryDirectory(prefix="bl001-checkpoint-space-") as parent:
+            root = Path(parent)
+            source = root / "source"
+            ckpt = source / "checkpoint-123"
+            ckpt.mkdir(parents=True)
+            (ckpt / "weights").write_bytes(b"model-bytes")
+            runtime = root / "runtime"
+            runtime.mkdir()
+            before = snapshot_regular_files(source)
+            with mock.patch(
+                "text_category_profiler.diagnostics.full_pipeline.shutil.disk_usage",
+                return_value=SimpleNamespace(free=128 * 1024 * 1024),
+            ), mock.patch(
+                "text_category_profiler.diagnostics.full_pipeline.shutil.copytree",
+                side_effect=AssertionError("model copy must not begin"),
+            ) as copytree, self.assertRaisesRegex(
+                ModelFacadeError, "insufficient temporary disk for model copy"
+            ):
+                create_model_facade(source, runtime)
+            copytree.assert_not_called()
+            self.assertFalse((runtime / "model-facade").exists())
+            self.assertEqual(snapshot_regular_files(source), before)
+
+    def test_runtime_directory_inside_source_and_vice_versa_fail_closed(self):
+        with tempfile.TemporaryDirectory(prefix="bl001-checkpoint-overlap-") as parent:
+            root = Path(parent)
+            source = root / "source"
+            ckpt = source / "checkpoint-123"
+            ckpt.mkdir(parents=True)
+            (ckpt / "weights").write_bytes(b"model")
+            for runtime in (source / "nested-runtime", root):
+                with self.subTest(runtime=runtime):
+                    with mock.patch(
+                        "text_category_profiler.diagnostics.full_pipeline.shutil.copytree",
+                        side_effect=AssertionError("copy forbidden"),
+                    ) as copytree, self.assertRaisesRegex(
+                        ModelFacadeError, "model source and temporary runtime overlap"
+                    ):
+                        create_model_facade(source, runtime)
+                    copytree.assert_not_called()
+
+    @unittest.skipUnless(hasattr(os, "symlink"), "symlink unavailable")
+    def test_recursive_checkpoint_symlink_is_blocked_before_copy(self):
+        with tempfile.TemporaryDirectory(prefix="bl001-checkpoint-cycle-") as parent:
+            root = Path(parent)
+            source = root / "source"
+            ckpt = source / "checkpoint-123"
+            ckpt.mkdir(parents=True)
+            try:
+                (ckpt / "recursive").symlink_to(ckpt, target_is_directory=True)
+            except (OSError, NotImplementedError):
+                self.skipTest("symlink privilege unavailable")
+            with mock.patch(
+                "text_category_profiler.diagnostics.full_pipeline.shutil.copytree",
+                side_effect=AssertionError("copy forbidden on cyclic links"),
+            ) as copytree, self.assertRaisesRegex(
+                ModelFacadeError, "cyclic checkpoint directory link"
+            ):
+                create_model_facade(source, root / "runtime")
+            copytree.assert_not_called()
 
     @unittest.skipUnless(hasattr(os, "symlink"), "symlink unavailable")
     def test_nested_directory_symlink_target_is_copied(self):
