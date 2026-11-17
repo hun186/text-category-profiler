@@ -49,6 +49,26 @@ alive**. The buckets only help prioritize an operator's subsequent,
 separately authorized task-state investigation; they **never permit cleanup,
 renaming or resumption**.
 
+### Running-name pipeline stage distribution
+
+The report additionally includes `workspace_running_stage_counts`, which
+counts **only the top-level directory name suffix** for running-named
+workspaces. Supported canonical names correspond to the stages defined in
+the root pipeline:
+
+- `DataConverter`
+- `RunClassfier` (retains the existing pipeline spelling)
+- `CombineTestResult`
+- `TestResultVis`
+- `other_or_unrecognized` (noncanonical/unexpected suffix)
+
+On a complete scan these five counts sum to `workspace_running`.
+The names are never emitted as individual job identifiers; output is aggregate
+only. **These labels do not identify any currently active process**, nor
+prove a workspace's content integrity, restartability or eligibility for
+cleanup. Use them to choose which stage's log/heartbeat evidence to inspect
+later on an operator-authorized, independent copy.
+
 ### Next gate — independent detached SQLite copy
 
 For SQLite integrity and schema checks, stop writers and prepare a verified **independent copy outside WorkPool** using the site's approved backup process. Existing `run-bl001-sqlite-offline-health.bat --db <copy>` and the stage dependency/inventory scripts are for those offline copies only; do **not** run them directly on a live WorkPool file. Keep production write-enable and automated deletion disabled until a separately authorized, documented production acceptance plan has passed.
