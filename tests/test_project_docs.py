@@ -99,6 +99,23 @@ class ProjectDocumentationTests(unittest.TestCase):
         self.assertIn("python -m unittest discover -s tests", readme)
         self.assertIn("完整 `python TCFMain.py ...` 流程仍需本機資料", readme)
 
+    def test_readme_example_port_is_valid_and_acceptance_is_not_production(self):
+        import re
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        # Guard against the former invalid 8099999 example. More important,
+        # do not invite operators to run a mutating production command with
+        # an unbindable TCP port, or mistake private preflight for deployment.
+        self.assertNotIn("-p 8099999", readme)
+        example_ports = [
+            int(match) for match in re.findall(r"-p (\\d+)", readme)
+        ]
+        self.assertTrue(example_ports)
+        self.assertTrue(all(1 <= p <= 65535 for p in example_ports))
+        self.assertIn("run-bl001-sqlite-release-preflight.bat", readme)
+        self.assertIn("PASS_PARTIAL_NO_REAL_MODEL", readme)
+        self.assertIn("不代表故障或可刪除", readme)
+        self.assertIn("不是唯讀命令", readme)
+
     def test_readme_presents_scoring_recommendation_methodology(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         asset = ROOT / "docs" / "assets" / "text-scoring-recommendation.svg"
