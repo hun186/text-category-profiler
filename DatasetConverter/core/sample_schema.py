@@ -45,17 +45,21 @@ SOURCE_METADATA_COLUMNS = ("SrcType", "Src")
 
 
 def preserve_empty_source_metadata_schema(frame):
-    """Keep provenance columns on zero-row regular-source handoffs.
+    """Restore the true sample columns when a zero-row source has none.
 
-    The nonempty DataConverter path calls GetDataSRC to populate these fields.
-    When no regular samples were found, that call is deliberately skipped; the
-    empty canonical total table still needs its real Src column because its
-    writer requests a Src_Index. Never invent rows or silently drop the index.
-    The Series on the existing empty file column preserves index and object
-    dtype without importing pandas in this dependency-free policy module.
+    A regular-source result starts with SAMPLE_ROW_COLUMNS, but optional
+    FixedTest/Elasticsearch branches can use a bare pandas.DataFrame() with
+    zero columns. They still export an *empty* sample table with physical text
+    and Src columns because downstream canonical SQLite requests real indexes
+    on both names. Do not fabricate any sample row, remove the indexes, or
+    mask missing columns on nonempty source data.
+
+    Keep any existing columns and their dtypes, inserting only missing schema
+    columns. An empty index-to-Series conversion creates object columns with
+    the original DataFrame index and does not import pandas into this module.
     """
     if len(frame) == 0:
-        for name in SOURCE_METADATA_COLUMNS:
+        for name in (*SAMPLE_ROW_COLUMNS, *SOURCE_METADATA_COLUMNS):
             if name not in frame.columns:
-                frame[name] = frame["file"].astype("object")
+                frame[name] = frame.index.to_series().astype("object")
     return frame

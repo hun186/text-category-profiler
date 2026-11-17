@@ -971,6 +971,9 @@ class DatasetGenerator:
                         DCkwargs = self.DCkwargs)
                 else:
                     FT_df = empty_dataframe()
+                # No FixedTest files is valid, but the exported zero-row
+                # table still needs real text/Src columns for its indexes.
+                FT_df = preserve_empty_source_metadata_schema(FT_df)
                 key_values("Fixed test samples", [
                     ("paths", summarize_sequence(self.FixedTestPATHList, limit=4)),
                     ("rows", len(FT_df)),
@@ -1002,6 +1005,10 @@ class DatasetGenerator:
                     ], icon="·")
                 else:
                     es_df = empty_dataframe()
+                # A disabled/empty Elasticsearch source is also a valid
+                # zero-row output; do not let an untyped 0x0 placeholder
+                # bypass the required canonical text/Src index contract.
+                es_df = preserve_empty_source_metadata_schema(es_df)
                 Partdf = concat_dataframes(
                     [Partdf, es_df], ignore_index=True
                 )
