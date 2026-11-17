@@ -108,6 +108,7 @@ from DatasetConverter.adapters.dataframe_source import concat_dataframes
 from DatasetConverter.adapters.dataframe_source import dataframe_from_dict
 from DatasetConverter.adapters.dataframe_source import empty_dataframe
 from DatasetConverter.core.sample_schema import columns_for_sample_rows, validate_sample_rows
+from DatasetConverter.core.sample_schema import preserve_empty_source_metadata_schema
 from DatasetConverter.core.sample_pipeline import aggregate_multi_label_counts
 from DatasetConverter.core.sample_pipeline import collect_reader_results
 from DatasetConverter.core.sample_pipeline import collect_source_metadata
@@ -701,6 +702,11 @@ def BuildSamplesDfFromPaths(
     #依書籍或google蒐索爬文所獲情況，決定Src及SrcType。
     if df.shape[0] != 0:
         df = multicoreJob(nProcess=nProcess).parallelize_dataframe(df, GetDataSRC)
+    else:
+        # No regular-source rows is valid in FixedTest-only runs. Match the
+        # nonempty provenance schema so canonical Src_Index is a real index,
+        # without adding rows or hiding missing-column errors in SQL writer.
+        df = preserve_empty_source_metadata_schema(df)
 
     key_values("Source/type columns", [
         ("rows", df.shape[0]),
