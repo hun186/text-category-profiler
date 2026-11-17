@@ -5,6 +5,7 @@ import unittest
 from unittest.mock import patch
 from unittest.mock import MagicMock
 import importlib
+import os
 import sys
 
 from BertScript.result_combination_stage import (
@@ -48,10 +49,10 @@ class ResultCombinationStageTests(unittest.TestCase):
                                              rename=lambda *_: None)
         running = "/custom_is_running_CombineTestResult"
         self.assertEqual(lookups, [
-            ("glob", f"{running}/datasetDB", "CUSTOM_DB_PATTERN"),
-            ("label", f"{running}/custom-labels.txt"),
-            ("test", f"{running}/custom-test.sql3"),
-            ("result", f"{running}/custom-results.tsv"),
+            ("glob", os.path.join(running, "datasetDB"), "CUSTOM_DB_PATTERN"),
+            ("label", os.path.join(running, "custom-labels.txt")),
+            ("test", os.path.join(running, "custom-test.sql3")),
+            ("result", os.path.join(running, "custom-results.tsv")),
         ])
 
     def test_combine_entrypoint_routes_through_result_combination_stage_runner(self):
@@ -93,7 +94,7 @@ class ResultCombinationStageTests(unittest.TestCase):
         self.assertEqual(self.plan().source_db_glob, r"dataset_total_with_filename.*\.sql3")
 
     def test_model_type_mapping_is_unchanged(self):
-        module = ast.parse(Path("text_category_profiler/pipeline/TCF_utils.py").read_text())
+        module = ast.parse(Path("text_category_profiler/pipeline/TCF_utils.py").read_text(encoding="utf-8"))
         assignments = {target.id: ast.literal_eval(node.value) for node in module.body
                        if isinstance(node, ast.Assign) for target in node.targets
                        if isinstance(target, ast.Name) and target.id == "PYTORCH_MODEL_TYPES"}

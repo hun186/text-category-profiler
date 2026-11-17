@@ -32,11 +32,12 @@ from functools import partial
 from text_category_profiler.pipeline.TCF_utils import datasetDirOutputDirPickers
 from text_category_profiler.pipeline.TCF_utils import ClassfierOptionParser
 from text_category_profiler.pipeline.TCF_utils import PYTORCH_MODEL_TYPES
+from text_category_profiler.pipeline.TCF_utils import _handoff_rename_noreplace
+from text_category_profiler.pipeline.TCF_utils import _is_link_or_reparse
 from text_category_profiler.core.utilities import OSWALK
 from text_category_profiler.core.utilities import WaitUntilFileIsStable
 from text_category_profiler.core.utilities import SplitList
 from text_category_profiler.core.utilities import getFNFromFullPath
-from text_category_profiler.core.utilities import RenameDir
 from text_category_profiler.core.utilities import flattenList
 from text_category_profiler.concurrency.MP_utils import MPlogger
 from text_category_profiler.concurrency.MP_utils import multicoreJob
@@ -453,11 +454,41 @@ def _combine_results(active_plan, database_dir):
         if args.SummarizePerformance == True:
             SummarizePerformance()
 def _result_combination_handoff(source, destination):
-    RenameDir(SrcDir=source, DesDir=destination)
+    # This stage must not replace an existing ready folder. The generic
+    # RenameDir helper allows overwrite on POSIX and may leave partial copy
+    # results on EXDEV. Reuse the same atomic no-replace publisher as Stage 1.
+    source_path = Path(source)
+    source_suffix = "_is_running_CombineTestResult"
+    if not source_path.name.endswith(source_suffix):
+        raise ValueError("COMBINE_HANDOFF_INVALID_SOURCE_STATE")
+    expected = source_path.with_name(
+        source_path.name[:-len(source_suffix)] + "_rdy_for_TestResultVis"
+    )
+    if os.fspath(expected) != os.fspath(Path(destination)):
+        raise ValueError("COMBINE_HANDOFF_DESTINATION_MISMATCH")
+    if not source_path.is_dir() or _is_link_or_reparse(source_path):
+        raise FileNotFoundError("COMBINE_HANDOFF_SOURCE_NOT_A_DIRECTORY")
+    if os.path.lexists(destination):
+        raise FileExistsError("COMBINE_HANDOFF_DESTINATION_ALREADY_EXISTS")
+
+    _handoff_rename_noreplace(source, destination)
+
+    # Any partial cross-volume copy must preserve the work directories and
+    # abort next-stage promotion; do not rename/delete/retry either side.
+    if (os.path.lexists(source)
+            or not Path(destination).is_dir()
+            or _is_link_or_reparse(destination)):
+        raise RuntimeError("COMBINE_HANDOFF_NOT_COMPLETE")
+
     stage_done("CombineTestResult")
     message = f"CombineTestResult is finished. Rename {source} as {destination}"
     key_values("CombineTestResult handoff", [("from", source), ("to", destination)])
-    MPlogger(logSubDir=f"{destination}/logs").logW(message, printOnScreen=False)
+    try:
+        MPlogger(logSubDir=f"{destination}/logs").logW(message, printOnScreen=False)
+    except Exception:
+        # A failure to write a completion log after successful rename must
+        # not cause callers to retry/overwrite the now-ready workspace.
+        print("CombineTestResult handoff completed; stage logging failed")
 
 
 def _build_result_combination_plan(argv, stage_api):
