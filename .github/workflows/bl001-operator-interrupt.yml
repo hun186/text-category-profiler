@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - "TCFMain.py"
+      - "text_category_profiler/execution/process.py"
+      - "tests/test_process_runner.py"
       - "text_category_profiler/execution/operator_interrupt.py"
       - "tests/test_bl001_operator_interrupt.py"
       - "tests/test_tcf_main_characterization.py"
@@ -13,6 +15,8 @@ on:
     branches: [main]
     paths:
       - "TCFMain.py"
+      - "text_category_profiler/execution/process.py"
+      - "tests/test_process_runner.py"
       - "text_category_profiler/execution/operator_interrupt.py"
       - "tests/test_bl001_operator_interrupt.py"
       - "tests/test_tcf_main_characterization.py"
@@ -36,4 +40,4 @@ jobs:
         with:
           python-version: "3.11"
       - name: Verify private Ctrl-C evidence, no WorkPool mutation or false positives
-        run: python -m unittest -v tests.test_bl001_operator_interrupt tests.test_tcf_main_characterization
+        run: python -m unittest -v tests.test_bl001_operator_interrupt tests.test_tcf_main_characterization tests.test_process_runner
