@@ -51,12 +51,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pandas-version: ["2.2.3", "3.1.1"]
+        pandas-version: ["2.0.1", "2.2.3", "3.1.1"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Pin legacy NumPy ABI for user pandas 2.0.1
+        if: matrix.pandas-version == '2.0.1'
+        run: python -m pip install "numpy>=1.23.2,<2"
       - name: Install isolated real export dependencies
         run: python -m pip install "pandas==${{ matrix.pandas-version }}" "xlsxwriter==3.2.9"
       - name: Run fail-closed Stage-local and canonical writer fixtures
