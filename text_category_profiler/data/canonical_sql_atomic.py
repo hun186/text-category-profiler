@@ -92,6 +92,43 @@ def _guard_existing_table_contract(cnx, table):
         raise ValueError("Unsafe existing outbound foreign key")
 
 
+def _view_schema_signatures(cnx):
+    """Read all view column interfaces without loading any data rows.
+
+    SQLite permits DROP+CREATE of a referenced table, but a dependent view
+    may become invalid or silently change its SELECT * output. Inspecting the
+    views before and after the transaction's new table DDL detects both cases.
+    """
+    names = [
+        r[0] for r in cnx.execute(
+            "SELECT name FROM sqlite_master WHERE type='view' ORDER BY name"
+        )
+    ]
+    signatures = {}
+    for name in names:
+        columns = tuple(cnx.execute("PRAGMA table_info(" + _quote(name) + ")"))
+        if not columns:
+            raise ValueError("Unreadable existing SQLite view: " + name)
+        signatures[name] = columns
+    return signatures
+
+
+def _trigger_mentions_target(sql, table):
+    """Conservatively reject external trigger SQL referencing the target.
+
+    SQLite does not expose a trigger dependency graph through PRAGMA. An
+    identifier-token match can refuse an innocent quoted literal, but cannot
+    silently invalidate a trigger attached to another table.
+    """
+    import re
+
+    normalized = (sql or "").replace('""', '"')
+    return re.search(
+        r"(?<!\w)" + re.escape(table) + r"(?!\w)",
+        normalized, re.IGNORECASE,
+    ) is not None
+
+
 def _guard_replacement(cnx, table):
     """Fail closed before DROP would erase a trigger/FK or custom index.
 
@@ -100,12 +137,16 @@ def _guard_replacement(cnx, table):
     may change pandas index names or requested IndexCols.
     """
     objects = list(cnx.execute(
-        "SELECT type, name, tbl_name FROM sqlite_master "
+        "SELECT type, name, tbl_name, sql FROM sqlite_master "
         "WHERE type IN ('table', 'trigger')"
     ))
-    for kind, name, owner in objects:
-        if kind == "trigger" and owner.casefold() == table.casefold():
-            raise ValueError("Unsafe target trigger: " + name)
+    for kind, name, owner, sql in objects:
+        if kind == "trigger":
+            if owner.casefold() == table.casefold():
+                raise ValueError("Unsafe target trigger: " + name)
+            if _trigger_mentions_target(sql, table):
+                raise ValueError("Unsafe dependent trigger: " + name)
+            continue
         if kind != "table" or name.casefold() == table.casefold():
             continue
         for foreign_key in list(cnx.execute(
@@ -156,6 +197,7 @@ def replace_canonical_table(cnx, frame, *, table, dtype, index_label, index_cols
         cnx.execute("BEGIN IMMEDIATE")
         started = True
         _guard_replacement(cnx, table)
+        view_signatures_before = _view_schema_signatures(cnx)
         cnx.execute("DROP TABLE IF EXISTS " + table_name)
         cnx.execute(new_ddl)
         cnx.execute(
@@ -166,6 +208,8 @@ def replace_canonical_table(cnx, frame, *, table, dtype, index_label, index_cols
                 "CREATE INDEX " + _quote(name) + " ON " + table_name + " ("
                 + ", ".join(_quote(col) for col in keys) + ")"
             )
+        if _view_schema_signatures(cnx) != view_signatures_before:
+            raise ValueError("Unsafe changed SQLite view interface")
         cnx.execute("DROP TABLE " + candidate_name)
         cnx.commit()
         started = False
