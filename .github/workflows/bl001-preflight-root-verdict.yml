@@ -1,0 +1,35 @@
+name: KI-012 Private Root Verdict Contract
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/bl001_stage_sqlite_release_preflight.py"
+      - "tests/test_bl001_stage_sqlite_release_preflight.py"
+      - ".github/workflows/bl001-preflight-root-verdict.yml"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/bl001_stage_sqlite_release_preflight.py"
+      - "tests/test_bl001_stage_sqlite_release_preflight.py"
+      - ".github/workflows/bl001-preflight-root-verdict.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  root-verdict-contract:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run fake-child private preflight verdict regressions only
+        run: python -m unittest -v tests.test_bl001_stage_sqlite_release_preflight
