@@ -12,11 +12,42 @@ import ntpath
 import os
 from pathlib import Path
 import stat
+import time
 
 
 _SIDECARS = ("-wal", "-shm", "-journal")
 _DATABASE_EXTENSIONS = (".sql3", ".sqlite", ".sqlite3", ".db")
 _REPARSE_FLAG = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+_FILETIME_UNIX_EPOCH_TICKS = 116444736000000000
+_NS_PER_HOUR = 3600 * 1_000_000_000
+
+
+def _running_dir_age_bucket(last_write_ns: int | None,
+                            reference_ns: int) -> str:
+    """Age of the root *directory entry*; NEVER process liveness.
+
+    Windows FILE_ID_BOTH_DIR_INFO and POSIX stat report directory mtime, not
+    recent changes inside already-existing files. Negative/future timestamps
+    are not silently treated as recent task activity.
+    """
+    if last_write_ns is None or last_write_ns <= 0 or last_write_ns > reference_ns:
+        return "unknown_or_future"
+    age_ns = reference_ns - last_write_ns
+    if age_ns < _NS_PER_HOUR:
+        return "under_1h"
+    if age_ns < 24 * _NS_PER_HOUR:
+        return "from_1h_to_24h"
+    if age_ns < 7 * 24 * _NS_PER_HOUR:
+        return "from_1d_to_7d"
+    return "at_least_7d"
+
+
+def _windows_filetime_to_unix_ns(value: int) -> int | None:
+    if value <= _FILETIME_UNIX_EPOCH_TICKS:
+        return None
+    return (value - _FILETIME_UNIX_EPOCH_TICKS) * 100
+
+
 
 
 def _identity(info: os.stat_result) -> tuple[int, int, int, int, int]:
@@ -65,7 +96,8 @@ class _BoundaryLost(Exception):
 def _observe_entry(report: dict, name: str, depth: int,
                    *, is_dir: bool, is_reparse: bool,
                    is_file: bool = False, size: int = 0,
-                   max_depth: int = 3) -> bool:
+                   max_depth: int = 3,
+                   directory_last_write_ns: int | None = None) -> bool:
     """Record metadata only; return whether a child directory should be opened."""
     if report["entries_observed"] >= report["max_entries"]:
         raise _BudgetReached()
@@ -78,6 +110,10 @@ def _observe_entry(report: dict, name: str, depth: int,
             lower = name.casefold()
             if "_is_running_" in lower:
                 report["workspace_running"] += 1
+                bucket = _running_dir_age_bucket(
+                    directory_last_write_ns, time.time_ns()
+                )
+                report["workspace_running_dir_lastwrite_age"][bucket] += 1
             elif "_rdy_for_" in lower:
                 report["workspace_ready"] += 1
             else:
@@ -114,6 +150,7 @@ def _walk_posix_directory(fd: int, depth: int, report: dict) -> None:
                 is_reparse=_reparse(info),
                 is_file=stat.S_ISREG(info.st_mode), size=info.st_size,
                 max_depth=report["max_depth"],
+                directory_last_write_ns=info.st_mtime_ns,
             )
             if child:
                 child_fd = os.open(entry.name, flags, dir_fd=fd)
@@ -223,6 +260,9 @@ def _walk_windows_root_only(root: Path, expected_root: Path,
                 length_bytes = int.from_bytes(buffer.raw[offset + 60:offset + 64], "little")
                 file_size = int.from_bytes(buffer.raw[offset + 40:offset + 48],
                                            "little", signed=True)
+                last_write_filetime = int.from_bytes(
+                    buffer.raw[offset + 24:offset + 32], "little"
+                )
                 if length_bytes % 2 or offset + 104 + length_bytes > len(buffer):
                     raise _BoundaryLost()
                 raw_name = buffer.raw[offset + 104:offset + 104 + length_bytes]
@@ -233,6 +273,9 @@ def _walk_windows_root_only(root: Path, expected_root: Path,
                         is_reparse=bool(attrs & _REPARSE_FLAG),
                         is_file=not (attrs & 0x10),
                         size=max(0, file_size), max_depth=0,
+                        directory_last_write_ns=_windows_filetime_to_unix_ns(
+                            last_write_filetime
+                        ),
                     )
                     if child:
                         raise _BoundaryLost()  # Windows never opens children
@@ -268,6 +311,14 @@ def inventory_workpool_metadata(workpool: str | Path, *,
         "directories_observed": 0,
         "files_observed": 0,
         "workspace_running": 0,
+        "workspace_running_dir_lastwrite_age": {
+            "under_1h": 0,
+            "from_1h_to_24h": 0,
+            "from_1d_to_7d": 0,
+            "at_least_7d": 0,
+            "unknown_or_future": 0,
+        },
+        "running_age_basis": "root_directory_last_write_not_job_liveness",
         "workspace_ready": 0,
         "workspace_other": 0,
         "sqlite_files_observed": 0,
@@ -287,7 +338,9 @@ def inventory_workpool_metadata(workpool: str | Path, *,
         "limits": (
             "Metadata-only bounded observation; no quiescence, database "
             "integrity, writer ownership, backup recovery or deployment "
-            "certification. Windows inspects top-level entries ONLY."
+            "certification. Workspace last-write buckets do NOT prove tasks "
+            "are alive or stale; file-content updates may not alter directory "
+            "mtime. Windows inspects top-level entries ONLY."
         ),
     }
     # Fix the expected approved inode/path BEFORE any reopen, so a
