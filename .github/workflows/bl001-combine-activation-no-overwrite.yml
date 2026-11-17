@@ -1,0 +1,37 @@
+name: BL-001 Stage 3 Activation No Overwrite
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "BertScript/CombineTestResult.py"
+      - "BertScript/result_combination_stage.py"
+      - "tests/test_bl001_combine_activation_no_overwrite.py"
+      - ".github/workflows/bl001-combine-activation-no-overwrite.yml"
+  push:
+    branches: [main]
+    paths:
+      - "BertScript/CombineTestResult.py"
+      - "BertScript/result_combination_stage.py"
+      - "tests/test_bl001_combine_activation_no_overwrite.py"
+      - ".github/workflows/bl001-combine-activation-no-overwrite.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stage-three-activation-guard:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Validate private Stage 3 activation and existing lifecycle
+        run: python -m unittest -v tests.test_bl001_combine_activation_no_overwrite tests.test_result_combination_stage
