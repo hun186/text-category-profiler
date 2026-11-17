@@ -106,6 +106,33 @@ class OperatorInterruptEvidenceTests(unittest.TestCase):
             ))
             self.assertEqual(target.read_text(encoding="utf-8"), "untouched")
 
+    @unittest.skipIf(os.name == "nt", "POSIX nofollow dirfd fixture")
+    def test_posix_logs_directory_swap_to_workpool_is_rejected(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            pool = root / "WorkPool"
+            pool.mkdir()
+            real_open = os.open
+            swapped = False
+
+            def inject_directory_replacement(path, flags, *args, **kwargs):
+                nonlocal swapped
+                if path == "logs" and kwargs.get("dir_fd") is not None and not swapped:
+                    swapped = True
+                    (root / "logs").rename(root / "original-logs")
+                    (root / "logs").symlink_to(pool, target_is_directory=True)
+                return real_open(path, flags, *args, **kwargs)
+
+            with mock.patch(
+                "text_category_profiler.execution.operator_interrupt.os.open",
+                side_effect=inject_directory_replacement,
+            ):
+                self.assertIsNone(record_operator_interrupt(
+                    "DataConverter", project_root=root
+                ))
+            self.assertTrue(swapped)
+            self.assertEqual(list(pool.iterdir()), [])
+
     @unittest.skipUnless(os.name == "nt", "Windows junction safety fixture")
     def test_windows_junction_to_workpool_never_writes_even_on_ctrl_c(self):
         with tempfile.TemporaryDirectory() as temp:
