@@ -110,14 +110,13 @@ def triage_offline_copy(filename: str | Path) -> dict:
                         ) if key[5] == 1
                     ]
                     if (item[2] == 0 and item[3] == "c" and item[4] == 0
-                            and keys
-                            and index_name[len(pandas_prefix):]
-                            == "_".join(key[2] for key in keys)
-                            and all(
+                            and keys and all(
                                 key[1] >= 0 and key[2] in fields
                                 and key[3] == 0 and key[4] == "BINARY"
                                 for key in keys
-                            )):
+                            )
+                            and index_name[len(pandas_prefix):]
+                            == "_".join(key[2] for key in keys)):
                         valid_pandas_indexes.append(index_name)
                     else:
                         invalid_pandas_indexes.append(index_name)
