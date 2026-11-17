@@ -11,13 +11,17 @@ from typing import Callable, Optional
 
 def parse_trv_port(value):
     """Accept only bindable TCP ports before any pipeline runtime activation."""
+    if isinstance(value, bool) or not isinstance(value, (str, int)):
+        raise argparse.ArgumentTypeError(
+            "TRVPort must be an integer between 1 and 65535"
+        )
     try:
         port = int(value)
     except (TypeError, ValueError, OverflowError) as exc:
         raise argparse.ArgumentTypeError(
             "TRVPort must be an integer between 1 and 65535"
         ) from exc
-    if isinstance(value, bool) or not 1 <= port <= 65535:
+    if not 1 <= port <= 65535:
         raise argparse.ArgumentTypeError(
             "TRVPort must be an integer between 1 and 65535"
         )
