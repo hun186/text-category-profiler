@@ -39,3 +39,23 @@ def columns_for_sample_rows(rows: Sequence[Any]) -> list[str]:
     """Supply the standard schema only when no reader rows define it for us."""
 
     return list(SAMPLE_ROW_COLUMNS) if not rows else []
+
+
+SOURCE_METADATA_COLUMNS = ("SrcType", "Src")
+
+
+def preserve_empty_source_metadata_schema(frame):
+    """Keep provenance columns on zero-row regular-source handoffs.
+
+    The nonempty DataConverter path calls GetDataSRC to populate these fields.
+    When no regular samples were found, that call is deliberately skipped; the
+    empty canonical total table still needs its real Src column because its
+    writer requests a Src_Index. Never invent rows or silently drop the index.
+    The Series on the existing empty file column preserves index and object
+    dtype without importing pandas in this dependency-free policy module.
+    """
+    if len(frame) == 0:
+        for name in SOURCE_METADATA_COLUMNS:
+            if name not in frame.columns:
+                frame[name] = frame["file"].astype("object")
+    return frame
