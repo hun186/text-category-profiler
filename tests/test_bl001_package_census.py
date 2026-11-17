@@ -30,14 +30,24 @@ class BL001PackageCensusTests(unittest.TestCase):
         self.assertEqual(report["catalogue_paths_missing"], [])
         self.assertEqual(report["invalid_catalog_entries"], [])
         self.assertEqual(report["identity_failures"], [])
-        self.assertEqual(report["summary"]["total_tracked_package_files"], 75)
+        self.assertEqual(report["summary"]["total_tracked_package_files"], 76)
         self.assertEqual(report["summary"]["legacy_preserved"], 13)
-        self.assertEqual(report["summary"]["canonical_domain_owned"], 62)
+        self.assertEqual(report["summary"]["canonical_domain_owned"], 63)
         self.assertEqual(
             report["summary"]["total_tracked_package_files"],
             report["summary"]["legacy_preserved"]
             + report["summary"]["canonical_domain_owned"],
         )
+
+    def test_operator_interrupt_is_explicitly_owned_by_execution_domain(self):
+        report = audit_package(ROOT)
+        entry = next(
+            x for x in report["files"]
+            if x["path"] == "text_category_profiler/execution/operator_interrupt.py"
+        )
+        self.assertEqual(entry["classification"], "domain_module")
+        self.assertEqual(entry["ownership"], "canonical")
+        self.assertEqual(entry["domain"], "execution")
 
     def test_new_shared_tsv_writer_is_explicitly_owned_by_data_domain(self):
         report = audit_package(ROOT)
