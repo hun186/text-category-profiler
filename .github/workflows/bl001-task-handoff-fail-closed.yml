@@ -1,0 +1,35 @@
+name: BL-001 Stage Handoff Fail Closed
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "text_category_profiler/pipeline/TCF_utils.py"
+      - "tests/test_bl001_task_connector_handoff.py"
+      - ".github/workflows/bl001-task-handoff-fail-closed.yml"
+  push:
+    branches: [main]
+    paths:
+      - "text_category_profiler/pipeline/TCF_utils.py"
+      - "tests/test_bl001_task_connector_handoff.py"
+      - ".github/workflows/bl001-task-handoff-fail-closed.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  handoff-no-partial-false-green:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Assert private stage handoff postconditions and no cleanup
+        run: python -m unittest -v tests.test_bl001_task_connector_handoff tests.test_tcf_workpool_characterization
