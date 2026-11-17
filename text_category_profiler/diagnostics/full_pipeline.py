@@ -444,7 +444,12 @@ def _preflight_private_model_copy(source_model_dir: Path, runtime_root: Path,
         bytes_to_copy = _directory_copy_bytes_for_source(
             source_model_dir, checkpoints
         )
-        available = shutil.disk_usage(runtime_root).free
+        # Direct harness callers may pass a future disposable runtime
+        # directory; inspect the nearest existing parent on the same volume.
+        disk_root = runtime_root
+        while not disk_root.exists():
+            disk_root = disk_root.parent
+        available = shutil.disk_usage(disk_root).free
     except (OSError, RuntimeError, ValueError) as error:
         raise ModelFacadeError("cannot estimate private checkpoint copy capacity") from error
     # Leave room for model inference outputs, metadata growth, and filesystem
