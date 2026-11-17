@@ -316,6 +316,19 @@ def inventory_workpool_metadata(workpool: str | Path, *,
     except (_BoundaryLost, OSError, ValueError, RuntimeError):
         report["issues"].append("directory_boundary_not_verifiable")
         return report
+    # The anchored handle may still point at the OLD directory after a
+    # concurrent rename/replacement of the WorkPool pathname. Never report
+    # a successful observation for a path that now names another directory.
+    try:
+        current = root.lstat()
+        if (_reparse(current)
+                or (current.st_dev, current.st_ino) != (
+                    expected_root_stat.st_dev, expected_root_stat.st_ino)):
+            report["issues"].append("root_replaced_during_scan")
+            return report
+    except (OSError, ValueError):
+        report["issues"].append("root_replaced_during_scan")
+        return report
     # A bounded scan can observe zero sidecars while leaving unseen
     # descendants. Only a completed POSIX traversal with no skipped child
     # directory is allowed to claim sidecar coverage.
