@@ -1,0 +1,35 @@
+name: BL-001 PyTorch Checkpoint Candidate Order
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "text_category_profiler/pipeline/TCF_utils.py"
+      - "tests/test_model_directory_selection.py"
+      - ".github/workflows/bl001-checkpoint-candidate-order.yml"
+  push:
+    branches: [main]
+    paths:
+      - "text_category_profiler/pipeline/TCF_utils.py"
+      - "tests/test_model_directory_selection.py"
+      - ".github/workflows/bl001-checkpoint-candidate-order.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  numeric-checkpoint-selection:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Validate model checkpoint inspection with disposable fixtures
+        run: python -m unittest -v tests.test_model_directory_selection

@@ -53,27 +53,45 @@ class PytorchOutputInspection(NamedTuple):
 
 
 def inspect_pytorch_output_candidate(output_dir):
-    """Inspect one output directory using the production checkpoint contract."""
-    checkpoint_pattern = re.compile(r"^checkpoint-\d{1,}")
-    checkpoint_dirs = sorted(
-        filter(checkpoint_pattern.match, os.listdir(output_dir)), reverse=True
-    )
-    if not checkpoint_dirs:
+    """Inspect checkpoint names by *numeric training step*, newest first.
+
+    A lexical reverse sort would prefer checkpoint-9 over checkpoint-10.
+    A checkpoint must be an actual directory containing a nonempty model
+    file; stray files and incomplete checkpoints are not valid candidates.
+    """
+    checkpoint_pattern = re.compile(r"^checkpoint-([0-9]+)$")
+    checkpoints = []
+    for name in os.listdir(output_dir):
+        match = checkpoint_pattern.fullmatch(name)
+        if match is None:
+            continue
+        candidate = os.path.join(output_dir, name)
+        if not os.path.isdir(candidate):
+            continue
+        checkpoints.append((int(match.group(1)), name))
+    checkpoints.sort(key=lambda item: (item[0], item[1]), reverse=True)
+
+    if not checkpoints:
         return PytorchOutputInspection(
             output_dir=output_dir,
             rejection_reason="no checkpoint-* directory found",
         )
 
-    for checkpoint in checkpoint_dirs:
+    for _step, checkpoint in checkpoints:
         checkpoint_path = os.path.join(output_dir, checkpoint)
-        checkpoint_contents = os.listdir(checkpoint_path)
         for model_file in SUPPORTED_PYTORCH_MODEL_FILES:
-            if model_file in checkpoint_contents:
-                return PytorchOutputInspection(
-                    output_dir=output_dir,
-                    checkpoint=checkpoint,
-                    model_file=model_file,
-                )
+            model_path = os.path.join(checkpoint_path, model_file)
+            try:
+                if os.path.isfile(model_path) and os.path.getsize(model_path) > 0:
+                    return PytorchOutputInspection(
+                        output_dir=output_dir,
+                        checkpoint=checkpoint,
+                        model_file=model_file,
+                    )
+            except FileNotFoundError:
+                # A concurrent writer/rotation may remove the candidate
+                # between the file check and stat; do not choose it.
+                continue
 
     return PytorchOutputInspection(
         output_dir=output_dir,
