@@ -88,33 +88,83 @@ def get_base_model_checkpoint(ModelType):
 
 
 class TaskConnector:
-    def __init__(self,SrcTask="",DesTask="",WorkingDir="",logFile=""):
+    def __init__(self, SrcTask="", DesTask="", WorkingDir="", logFile=""):
         self.SrcTask = SrcTask
         self.DesTask = DesTask
         self.WorkingDir = WorkingDir
         self.logFile = logFile
+
     def proc(self):
-        NewWorkingDir = self.WorkingDir.replace(
-            f"_is_running_{self.SrcTask}",f"_rdy_for_{self.DesTask}")
-        key_values("Stage handoff", [("from", self.WorkingDir), ("to", NewWorkingDir)], icon="·")
-        for i in range(3):
+        # The source state must be a terminal suffix on the workspace NAME,
+        # not an arbitrary parent path substring. Never move/overwrite an
+        # existing destination, including broken symlinks and old test dirs.
+        source = pathlib.Path(self.WorkingDir)
+        source_suffix = f"_is_running_{self.SrcTask}"
+        if (not self.SrcTask or not self.DesTask
+                or not source.name.endswith(source_suffix)):
+            raise ValueError("HANDOFF_INVALID_SOURCE_STATE")
+        destination = source.with_name(
+            source.name[:-len(source_suffix)] + f"_rdy_for_{self.DesTask}"
+        )
+        if not source.is_dir() or os.path.islink(source):
+            raise FileNotFoundError("HANDOFF_SOURCE_NOT_A_DIRECTORY")
+        if os.path.lexists(destination):
+            raise FileExistsError("HANDOFF_DESTINATION_ALREADY_EXISTS")
+
+        key_values(
+            "Stage handoff",
+            [("from", self.WorkingDir), ("to", str(destination))], icon="·",
+        )
+        for attempt in range(3):
             try:
-                #os.rename(self.WorkingDir,NewWorkingDir)
-                #import shutil
-                #shutil.copytree(self.WorkingDir,NewWorkingDir)
-                #shutil.rmtree(self.WorkingDir)
-                RenameDir(SrcDir=self.WorkingDir,DesDir=NewWorkingDir)
-                if self.logFile != "":
-                    stage_done(self.SrcTask)
-                    MES = f"{self.SrcTask} is finished. Rename {self.WorkingDir} as {NewWorkingDir}"
-                    MPlogger().logW(MES,logFile=self.logFile)
-                #BackupAndDelFile(SrcDir=self.WorkingDir,DesDir=NewWorkingDir,BackFNrePat=".*dataset_total.*")
-                break
-            except Exception as e:
-                warning(f"When try to applying os.rename in TCF_utils.TaskConnector,the following occurs:\n{e}.")
-                MES = f"When try to applying os.rename in TCF_utils.TaskConnector,the following occurs:\n{e}."
-                MPlogger().logW(MES,logFile=self.logFile)
-                #time.sleep(13)
+                # Keep the legacy os.rename -> copytree fallback; however
+                # the fallback may LOG and return after *both* operations
+                # fail. Never count that silent return as a handoff.
+                RenameDir(SrcDir=self.WorkingDir, DesDir=str(destination))
+                source_remains = os.path.lexists(source)
+                destination_ready = destination.is_dir()
+                if not source_remains and destination_ready:
+                    break
+                if source_remains and not os.path.lexists(destination):
+                    raise RuntimeError("HANDOFF_SOURCE_STILL_PRESENT")
+                # Partial copy or disappearance: do NOT retry a destructive
+                # rename/copy into a possibly partial destination.
+                raise RuntimeError("HANDOFF_PARTIAL_OR_AMBIGUOUS_STATE")
+            except Exception as error:
+                warning(
+                    "TaskConnector handoff attempt failed "
+                    f"({attempt + 1}/3): {type(error).__name__}"
+                )
+                if self.logFile:
+                    try:
+                        MPlogger().logW(
+                            f"TaskConnector handoff not complete: {type(error).__name__}",
+                            logFile=self.logFile,
+                        )
+                    except Exception:
+                        # Logging failure must not be confused with the move
+                        # outcome or trigger another destructive attempt.
+                        pass
+                if (attempt == 2
+                        or (os.path.lexists(destination)
+                            or not os.path.lexists(source))):
+                    raise RuntimeError("HANDOFF_NOT_COMPLETE") from error
+        else:
+            # Defensive: no control flow is allowed to silently exhaust retries.
+            raise RuntimeError("HANDOFF_NOT_COMPLETE")
+
+        # The handoff is already finished. A best-effort logging error must
+        # NOT cause a second rename, which could corrupt the now-ready folder.
+        if self.logFile:
+            stage_done(self.SrcTask)
+            try:
+                MPlogger().logW(
+                    f"{self.SrcTask} is finished. Rename {self.WorkingDir} as {destination}",
+                    logFile=self.logFile,
+                )
+            except Exception:
+                warning("TaskConnector handoff completed; logging failed")
+        return None
 
 
 def ClassfierOptionParser(argv=None):
