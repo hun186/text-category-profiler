@@ -4,23 +4,18 @@
   "scope": "Exact tracked paths of canonical domain-owned package code and docs; structural ownership only, not evidence of cross-stage use, execution or external caller coverage",
   "entries": [
     {
-      "path": "text_category_profiler/cli/README.md",
-      "domain": "cli",
-      "kind": "domain_document"
-    },
-    {
       "path": "text_category_profiler/cli/__init__.py",
       "domain": "cli",
       "kind": "package_initializer"
     },
     {
-      "path": "text_category_profiler/cli/selector.py",
+      "path": "text_category_profiler/cli/README.md",
       "domain": "cli",
-      "kind": "domain_module"
+      "kind": "domain_document"
     },
     {
-      "path": "text_category_profiler/concurrency/MP_utils.py",
-      "domain": "concurrency",
+      "path": "text_category_profiler/cli/selector.py",
+      "domain": "cli",
       "kind": "domain_module"
     },
     {
@@ -35,6 +30,11 @@
     },
     {
       "path": "text_category_profiler/concurrency/istarmap2.py",
+      "domain": "concurrency",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/concurrency/MP_utils.py",
       "domain": "concurrency",
       "kind": "domain_module"
     },
@@ -79,12 +79,12 @@
       "kind": "domain_module"
     },
     {
-      "path": "text_category_profiler/core/utilities.py",
+      "path": "text_category_profiler/core/utilities_path.py",
       "domain": "core",
       "kind": "domain_module"
     },
     {
-      "path": "text_category_profiler/core/utilities_path.py",
+      "path": "text_category_profiler/core/utilities.py",
       "domain": "core",
       "kind": "domain_module"
     },
@@ -94,17 +94,17 @@
       "kind": "domain_module"
     },
     {
-      "path": "text_category_profiler/data/DB_utils.py",
-      "domain": "data",
-      "kind": "domain_module"
-    },
-    {
       "path": "text_category_profiler/data/__init__.py",
       "domain": "data",
       "kind": "package_initializer"
     },
     {
       "path": "text_category_profiler/data/canonical_sql_atomic.py",
+      "domain": "data",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/data/DB_utils.py",
       "domain": "data",
       "kind": "domain_module"
     },
@@ -169,6 +169,11 @@
       "kind": "package_initializer"
     },
     {
+      "path": "text_category_profiler/execution/operator_interrupt.py",
+      "domain": "execution",
+      "kind": "domain_module"
+    },
+    {
       "path": "text_category_profiler/execution/process.py",
       "domain": "execution",
       "kind": "domain_module"
@@ -184,14 +189,9 @@
       "kind": "domain_module"
     },
     {
-      "path": "text_category_profiler/integrations/ES_JOB_TEMPLATE.md",
+      "path": "text_category_profiler/integrations/__init__.py",
       "domain": "integrations",
-      "kind": "domain_document"
-    },
-    {
-      "path": "text_category_profiler/integrations/ES_utils.py",
-      "domain": "integrations",
-      "kind": "domain_module"
+      "kind": "package_initializer"
     },
     {
       "path": "text_category_profiler/integrations/Email_utils.py",
@@ -199,14 +199,9 @@
       "kind": "domain_module"
     },
     {
-      "path": "text_category_profiler/integrations/FTP_utils.py",
+      "path": "text_category_profiler/integrations/ES_JOB_TEMPLATE.md",
       "domain": "integrations",
-      "kind": "domain_module"
-    },
-    {
-      "path": "text_category_profiler/integrations/__init__.py",
-      "domain": "integrations",
-      "kind": "package_initializer"
+      "kind": "domain_document"
     },
     {
       "path": "text_category_profiler/integrations/es_job_template.py",
@@ -214,23 +209,13 @@
       "kind": "domain_module"
     },
     {
-      "path": "text_category_profiler/pipeline/DataConverter_utils.py",
-      "domain": "pipeline",
+      "path": "text_category_profiler/integrations/ES_utils.py",
+      "domain": "integrations",
       "kind": "domain_module"
     },
     {
-      "path": "text_category_profiler/pipeline/DataConverter_utils_Parameters.py",
-      "domain": "pipeline",
-      "kind": "domain_module"
-    },
-    {
-      "path": "text_category_profiler/pipeline/TCF_utils.py",
-      "domain": "pipeline",
-      "kind": "domain_module"
-    },
-    {
-      "path": "text_category_profiler/pipeline/TextClassfier_utils.py",
-      "domain": "pipeline",
+      "path": "text_category_profiler/integrations/FTP_utils.py",
+      "domain": "integrations",
       "kind": "domain_module"
     },
     {
@@ -249,6 +234,16 @@
       "kind": "domain_module"
     },
     {
+      "path": "text_category_profiler/pipeline/DataConverter_utils_Parameters.py",
+      "domain": "pipeline",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/pipeline/DataConverter_utils.py",
+      "domain": "pipeline",
+      "kind": "domain_module"
+    },
+    {
       "path": "text_category_profiler/pipeline/defaults.py",
       "domain": "pipeline",
       "kind": "domain_module"
@@ -259,13 +254,18 @@
       "kind": "domain_module"
     },
     {
-      "path": "text_category_profiler/pipeline/workpool.py",
+      "path": "text_category_profiler/pipeline/TCF_utils.py",
       "domain": "pipeline",
       "kind": "domain_module"
     },
     {
-      "path": "text_category_profiler/text/TextProcessor_utils.py",
-      "domain": "text",
+      "path": "text_category_profiler/pipeline/TextClassfier_utils.py",
+      "domain": "pipeline",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/pipeline/workpool.py",
+      "domain": "pipeline",
       "kind": "domain_module"
     },
     {
@@ -277,6 +277,16 @@
       "path": "text_category_profiler/text/similarity_utils.py",
       "domain": "text",
       "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/text/TextProcessor_utils.py",
+      "domain": "text",
+      "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/visualization/__init__.py",
+      "domain": "visualization",
+      "kind": "package_initializer"
     },
     {
       "path": "text_category_profiler/visualization/Dash_utils.py",
@@ -294,19 +304,14 @@
       "kind": "domain_module"
     },
     {
-      "path": "text_category_profiler/visualization/TULIP_BOUNDARY.md",
-      "domain": "visualization",
-      "kind": "domain_document"
-    },
-    {
-      "path": "text_category_profiler/visualization/__init__.py",
-      "domain": "visualization",
-      "kind": "package_initializer"
-    },
-    {
       "path": "text_category_profiler/visualization/reusable_components.py",
       "domain": "visualization",
       "kind": "domain_module"
+    },
+    {
+      "path": "text_category_profiler/visualization/TULIP_BOUNDARY.md",
+      "domain": "visualization",
+      "kind": "domain_document"
     },
     {
       "path": "text_category_profiler/visualization/tulip_graph_builder.py",
