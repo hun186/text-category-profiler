@@ -32,7 +32,7 @@ class BL001PackageCensusTests(unittest.TestCase):
         self.assertEqual(report["identity_failures"], [])
         self.assertEqual(report["summary"]["total_tracked_package_files"], 75)
         self.assertEqual(report["summary"]["legacy_preserved"], 13)
-        self.assertEqual(report["summary"]["canonical_domain_owned"], 61)
+        self.assertEqual(report["summary"]["canonical_domain_owned"], 62)
         self.assertEqual(
             report["summary"]["total_tracked_package_files"],
             report["summary"]["legacy_preserved"]
