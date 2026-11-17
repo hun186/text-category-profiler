@@ -9,6 +9,21 @@ from dataclasses import dataclass
 from typing import Callable, Optional
 
 
+def parse_trv_port(value):
+    """Accept only bindable TCP ports before any pipeline runtime activation."""
+    try:
+        port = int(value)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise argparse.ArgumentTypeError(
+            "TRVPort must be an integer between 1 and 65535"
+        ) from exc
+    if isinstance(value, bool) or not 1 <= port <= 65535:
+        raise argparse.ArgumentTypeError(
+            "TRVPort must be an integer between 1 and 65535"
+        )
+    return port
+
+
 BASE_FINAL_OUTPUT_PATTERNS = (
     "^DFPreambleCols_df_ALL.*",
     "dataset_total_with_filename_FixedTest.sql3",
@@ -123,6 +138,14 @@ def build_pipeline_plan(
     """
     del filesystem, process_source
     args = copy.deepcopy(parser(argv))
+    # Even a custom parser/compatibility caller cannot enter activation
+    # with an invalid port: reject it before source-directory rename,
+    # process discovery, or any WorkPool stage transition.
+    if hasattr(args, "TRVPort"):
+        try:
+            args.TRVPort = parse_trv_port(args.TRVPort)
+        except argparse.ArgumentTypeError as exc:
+            raise ValueError(str(exc)) from exc
     args.WeiTechworkIDPath = args.WeiTechworkIDPath.replace("\\", "/")
     if args.ExecutionTime == "":
         args.ExecutionTime = clock()
