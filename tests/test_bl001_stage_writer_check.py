@@ -17,6 +17,7 @@ class StageWriterCheckTests(unittest.TestCase):
             "tests.test_bl001_df_tsv_provider_contracts",
             "tests.test_bl001_df_list_xls_sheet_names",
             "tests.test_bl001_canonical_atomic_replace",
+            "tests.test_bl001_empty_source_schema",
         ))
 
     def test_missing_dependency_blocks_without_running_suite(self):
