@@ -9,7 +9,7 @@ import unittest
 from unittest import mock
 
 from scripts.bl001_workpool_readonly_inventory import (
-    inventory_workpool_metadata, main,
+    _canonical_windows_path, inventory_workpool_metadata, main,
 )
 
 
@@ -108,6 +108,7 @@ class WorkPoolMetadataInventoryTests(unittest.TestCase):
             report = inventory_workpool_metadata(root, max_depth=1)
             self.assertEqual(report["directories_not_descended"], 1)
             self.assertEqual(report["sqlite_sidecars_observed"], 0)
+            self.assertFalse(report["sqlite_sidecar_scan_complete"])
             self.assertEqual(report["status"], "OBSERVED_METADATA_ONLY")
             self.assertFalse(report["production_workpool_verified"])
 
@@ -219,6 +220,16 @@ class WorkPoolMetadataInventoryTests(unittest.TestCase):
             with contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(main(["--workpool", str(root), "--max-depth", "9"]), 2)
                 self.assertEqual(main(["--workpool", str(root / "absent")]), 2)
+
+    def test_extended_unc_paths_normalize_to_same_root_as_standard_unc(self):
+        self.assertEqual(
+            _canonical_windows_path("\\\\?\\UNC\\server\\share\\WorkPool"),
+            _canonical_windows_path("\\\\server\\share\\WorkPool"),
+        )
+        self.assertEqual(
+            _canonical_windows_path("\\\\?\\C:\\dir\\WorkPool"),
+            _canonical_windows_path("C:\\dir\\WorkPool"),
+        )
 
     def test_invalid_bounds_rejected_before_scan(self):
         with self.assertRaises(ValueError):
