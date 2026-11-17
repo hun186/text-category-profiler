@@ -2,6 +2,7 @@
 import contextlib
 import io
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -36,15 +37,28 @@ class WorkPoolMetadataInventoryTests(unittest.TestCase):
             self.assertEqual(result["workspace_running"], 1)
             self.assertEqual(result["workspace_ready"], 1)
             self.assertEqual(result["workspace_other"], 1)
-            self.assertEqual(result["sqlite_files_observed"], 1)
-            self.assertEqual(result["sqlite_sidecars_observed"], 1)
-            self.assertEqual(result["sqlite_file_bytes_observed"], len(b"fake db, never parse"))
+            # Win32 verifies/inspects only the root HANDLE; it does not
+            # claim to have enumerated nested dataset SQLite files.
+            if os.name == "nt":
+                self.assertEqual(result["sqlite_files_observed"], 0)
+                self.assertEqual(result["sqlite_sidecars_observed"], 0)
+                self.assertFalse(result["sqlite_sidecar_scan_complete"])
+                self.assertFalse(result["nested_files_examined"])
+                self.assertTrue(result["windows_root_only"])
+            else:
+                self.assertEqual(result["sqlite_files_observed"], 1)
+                self.assertEqual(result["sqlite_sidecars_observed"], 1)
+                self.assertEqual(
+                    result["sqlite_file_bytes_observed"], len(b"fake db, never parse")
+                )
+                self.assertTrue(result["sqlite_sidecar_scan_complete"])
             self.assertEqual(result["file_contents_read"], False)
             self.assertFalse(result["sqlite_connections_opened"])
             self.assertFalse(result["production_workpool_verified"])
             self.assertFalse(result["deployment_authorized"])
             self.assertIn("running_workspaces_observed", result["issues"])
-            self.assertIn("sqlite_sidecars_observed", result["issues"])
+            if os.name != "nt":
+                self.assertIn("sqlite_sidecars_observed", result["issues"])
             self.assertNotIn("sensitive contents", json.dumps(result))
             self.assertNotIn("dataset_1", json.dumps(result))
             after = {p.relative_to(root).as_posix(): (p.stat().st_size, p.stat().st_mtime_ns)
@@ -114,6 +128,35 @@ class WorkPoolMetadataInventoryTests(unittest.TestCase):
             self.assertEqual(report["status"], "REVIEW_REQUIRED")
             self.assertEqual(report["reparse_entries_observed"], 1)
             self.assertEqual(report["sqlite_sidecars_observed"], 0)
+
+    @unittest.skipIf(os.name == "nt", "POSIX dirfd traversal race fixture")
+    def test_directory_swap_to_external_symlink_is_rejected_without_external_scan(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / "WorkPool"
+            nested = root / "job" / "nested"
+            nested.mkdir(parents=True)
+            external = Path(temp) / "external"
+            external.mkdir()
+            (external / "secret.sql3-wal").write_bytes(b"outside")
+            original_open = os.open
+            swapped = False
+
+            def race_open(path, flags, *args, **kwargs):
+                nonlocal swapped
+                if path == "nested" and not swapped:
+                    swapped = True
+                    nested.rename(nested.with_name("old-nested"))
+                    nested.symlink_to(external, target_is_directory=True)
+                return original_open(path, flags, *args, **kwargs)
+
+            with mock.patch("scripts.bl001_workpool_readonly_inventory.os.open",
+                            side_effect=race_open):
+                report = inventory_workpool_metadata(root)
+            self.assertTrue(swapped)
+            self.assertEqual(report["status"], "UNVERIFIABLE")
+            self.assertIn("directory_boundary_not_verifiable", report["issues"])
+            self.assertEqual(report["sqlite_sidecars_observed"], 0)
+            self.assertFalse(report["deployment_authorized"])
 
     def test_root_symlink_is_rejected_before_scan(self):
         with tempfile.TemporaryDirectory() as temp:
