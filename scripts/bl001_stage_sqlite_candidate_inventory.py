@@ -37,9 +37,42 @@ def _name_digest(names) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
-def inventory_offline_copy(filename: str | Path) -> dict:
+
+def _canonical_schema_audit(path: Path) -> dict:
+    """Metadata-only Canonical sampleSrc schema check, no fixed text_Index requirement.
+
+    Canonical dfToSQL accepts an optional IndexCols list; an ordinary pandas
+    index is not proof of a text_Index. The caller performs physical copy
+    safety and candidate identity checks before/after this read.
+    """
+    result = {"status": "FAIL", "issues": []}
+    try:
+        with closing(sqlite3.connect(_readonly_uri(path), uri=True, timeout=1)) as db:
+            db.execute("PRAGMA query_only=ON")
+            table = db.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",
+                ("sampleSrc",),
+            ).fetchone()
+            if table is None:
+                result["issues"].append("missing_sampleSrc_table")
+            else:
+                columns = {
+                    row[1] for row in db.execute('PRAGMA table_info("sampleSrc")')
+                }
+                if "text" not in columns:
+                    result["issues"].append("missing_text_column")
+    except (OSError, sqlite3.Error, ValueError):
+        result["issues"].append("canonical_schema_unreadable")
+    if not result["issues"]:
+        result["status"] = "PASS"
+    return result
+
+def inventory_offline_copy(filename: str | Path, *, profile: str = "stage-local") -> dict:
+    if profile not in ("stage-local", "canonical"):
+        raise ValueError("Unsupported offline SQLite profile")
     path = Path(filename)
     result = {
+        "profile": profile,
         "status": "UNVERIFIABLE",
         "scope": "offline_quiescent_copy_readonly",
         "database": str(path),
@@ -117,7 +150,8 @@ def inventory_offline_copy(filename: str | Path) -> dict:
 
     # A candidate count cannot certify anything if the main stage schema is
     # corrupted. Reuse the existing fail-closed schema-only audit.
-    audit = audit_stage_sqlite(path)
+    audit = (audit_stage_sqlite(path) if profile == "stage-local"
+             else _canonical_schema_audit(path))
     result["schema_status"] = audit["status"]
     if audit["status"] != "PASS":
         issues.append("main_stage_schema_not_verified")
@@ -175,8 +209,10 @@ def main(argv=None) -> int:
     parser.add_argument(
         "--db", required=True, help="A separate OFFLINE SQLite copy; NOT the live WorkPool DB"
     )
+    parser.add_argument("--profile", choices=("stage-local", "canonical"),
+                        default="stage-local")
     args = parser.parse_args(argv)
-    report = inventory_offline_copy(args.db)
+    report = inventory_offline_copy(args.db, profile=args.profile)
     print(json.dumps(report, ensure_ascii=False, sort_keys=True))
     return {"PASS_NO_CANDIDATES": 0, "REVIEW_REQUIRED": 1}.get(report["status"], 2)
 
