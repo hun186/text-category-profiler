@@ -23,6 +23,18 @@ def isolate_sql_writer(path, **dependencies):
     if len(methods) != 1:
         raise AssertionError(f"Expected exactly one dfToSQL in {path}")
     scope = dict(dependencies)
+    # AST-isolated Canonical signature tests use a fake atomic delegate.
+    # Real pandas/SQLite commit and rollback tests live in the private
+    # canonical_sql_atomic module's focused integration suite.
+    def fake_atomic(conn, frame, *, table, dtype, index_label, index_cols):
+        if hasattr(frame, "events"):
+            frame.events.append(("atomic_replace", {
+                "table": table, "dtype": dtype,
+                "index_label": index_label, "index_cols": index_cols,
+            }))
+        frame.to_sql(name=table, con=conn, if_exists="replace",
+                     dtype=dtype, index_label=index_label)
+    scope.setdefault("replace_canonical_table", fake_atomic)
     exec(compile(ast.Module(body=methods, type_ignores=[]), path, "exec"), scope)
     return scope["dfToSQL"]
 
@@ -139,6 +151,8 @@ class SQLProviderContractTests(unittest.TestCase):
             ("logger",),
             ("connect", "canonical.sql3"),
             ("select", ["text", "label"]),
+            ("atomic_replace", {"table": "sampleSrc", "dtype": None,
+                                "index_label": None, "index_cols": []}),
             ("to_sql", {
                 "name": "sampleSrc", "con": lite.connection, "if_exists": "replace",
                 "dtype": None, "index_label": None,
@@ -189,10 +203,13 @@ class SQLProviderContractTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "injected SQL export failure"):
             fn("failed.sql3", frame)
         self.assertEqual(
-            [e[0] for e in events], ["connect", "select", "to_sql", "close"]
+            [e[0] for e in events],
+            ["connect", "select", "atomic_replace", "to_sql", "close"]
         )
 
     def test_canonical_index_exception_closes_connection(self):
+        # Canonical replace now delegates its index build to the atomic
+        # writer, so a standalone createIndex failure belongs to append.
         events = []
         lite = FakeLite(events)
         frame = RecorderFrame(events)
@@ -206,7 +223,8 @@ class SQLProviderContractTests(unittest.TestCase):
             createIndex=broken_index,
         )
         with self.assertRaisesRegex(LookupError, "injected index failure"):
-            fn("failed-index.sql3", frame, IndexCols=["text"])
+            fn("failed-index.sql3", frame, IndexCols=["text"],
+               if_exists="append")
         self.assertEqual(
             [e[0] for e in events],
             ["connect", "select", "to_sql", "create_index", "close"],

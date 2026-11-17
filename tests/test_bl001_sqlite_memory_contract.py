@@ -1,8 +1,9 @@
 """BL-001 bounded pandas + real in-memory SQLite writer characterization.
 
 No on-disk database, WorkPool, model, external SQL service or production import.
-Only the two canonical writer ASTs are executed; schema creation is deliberately
-injected for the alternate writer, not a full runtime/transaction acceptance.
+Only the two canonical writer ASTs are executed; canonical atomic replace is
+injected as the REAL dependency-light helper and the alternate schema creation
+is deliberately injected. This is still not WorkPool/model acceptance.
 """
 import ast
 import json
@@ -10,6 +11,7 @@ from pathlib import Path
 import sqlite3
 import unittest
 from unittest.mock import patch
+from text_category_profiler.data.canonical_sql_atomic import replace_canonical_table
 import uuid
 
 try:
@@ -97,6 +99,7 @@ class RealMemorySqliteContracts(unittest.TestCase):
     def test_canonical_writer_persists_unicode_json_and_closes(self):
         writer = isolated_writer(
             "dfToSQL", lite=sqlite3, json=json, MPlogger=lambda: object(),
+            replace_canonical_table=replace_canonical_table,
         )
         frame = pd.DataFrame({
             "payload": [{"城市": "台北"}, ["甲", "乙"]],

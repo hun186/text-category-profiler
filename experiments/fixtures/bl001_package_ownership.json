@@ -104,6 +104,11 @@
       "kind": "package_initializer"
     },
     {
+      "path": "text_category_profiler/data/canonical_sql_atomic.py",
+      "domain": "data",
+      "kind": "domain_module"
+    },
+    {
       "path": "text_category_profiler/data/df_utils.py",
       "domain": "data",
       "kind": "domain_module"

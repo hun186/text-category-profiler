@@ -20,6 +20,7 @@ FOCUSED_TEST_MODULES = (
     "tests.test_bl001_stage_sql_shared",
     "tests.test_bl001_df_tsv_provider_contracts",
     "tests.test_bl001_df_list_xls_sheet_names",
+    "tests.test_bl001_canonical_atomic_replace",
 )
 
 
