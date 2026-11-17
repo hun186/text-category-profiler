@@ -182,7 +182,6 @@ class FullPipelineHarnessTests(unittest.TestCase):
             result = self._dispatch(root, child, root / "classifier.py")
             self.assertEqual(result.returncode, 23)
 
-    @unittest.skipIf(os.name == "nt", "POSIX process liveness assertion")
     def test_proc_status_disappearing_during_read_is_not_a_test_error(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "already-reaped-status"
@@ -201,6 +200,7 @@ class FullPipelineHarnessTests(unittest.TestCase):
                 with self.assertRaises(PermissionError):
                     _proc_status_if_available(path)
 
+    @unittest.skipIf(os.name == "nt", "POSIX process liveness assertion")
     def test_timeout_kills_descendants_and_formats_bounded_diagnostics(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
