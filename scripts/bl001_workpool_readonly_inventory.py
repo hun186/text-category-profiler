@@ -20,6 +20,22 @@ _DATABASE_EXTENSIONS = (".sql3", ".sqlite", ".sqlite3", ".db")
 _REPARSE_FLAG = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
 _FILETIME_UNIX_EPOCH_TICKS = 116444736000000000
 _NS_PER_HOUR = 3600 * 1_000_000_000
+_RUNNING_STAGE_SUFFIXES = {
+    "_is_running_dataconverter": "DataConverter",
+    "_is_running_runclassfier": "RunClassfier",
+    "_is_running_combinetestresult": "CombineTestResult",
+    "_is_running_testresultvis": "TestResultVis",
+}
+
+
+def _running_stage_from_name(name: str) -> str:
+    """Classify *name-only* stage suffix, never a job/process ownership claim."""
+    lowered = name.casefold()
+    for suffix, stage in _RUNNING_STAGE_SUFFIXES.items():
+        if lowered.endswith(suffix):
+            return stage
+    return "other_or_unrecognized"
+
 
 
 def _running_dir_age_bucket(last_write_ns: int | None,
@@ -110,6 +126,8 @@ def _observe_entry(report: dict, name: str, depth: int,
             lower = name.casefold()
             if "_is_running_" in lower:
                 report["workspace_running"] += 1
+                stage = _running_stage_from_name(lower)
+                report["workspace_running_stage_counts"][stage] += 1
                 bucket = _running_dir_age_bucket(
                     directory_last_write_ns, time.time_ns()
                 )
@@ -311,6 +329,14 @@ def inventory_workpool_metadata(workpool: str | Path, *,
         "directories_observed": 0,
         "files_observed": 0,
         "workspace_running": 0,
+        "workspace_running_stage_counts": {
+            "DataConverter": 0,
+            "RunClassfier": 0,
+            "CombineTestResult": 0,
+            "TestResultVis": 0,
+            "other_or_unrecognized": 0,
+        },
+        "running_stage_basis": "top_level_directory_name_suffix_not_process_state",
         "workspace_running_dir_lastwrite_age": {
             "under_1h": 0,
             "from_1h_to_24h": 0,
@@ -338,9 +364,10 @@ def inventory_workpool_metadata(workpool: str | Path, *,
         "limits": (
             "Metadata-only bounded observation; no quiescence, database "
             "integrity, writer ownership, backup recovery or deployment "
-            "certification. Workspace last-write buckets do NOT prove tasks "
-            "are alive or stale; file-content updates may not alter directory "
-            "mtime. Windows inspects top-level entries ONLY."
+            "certification. Stage counts come from workspace name suffixes, "
+            "not actual process state. Workspace last-write buckets do NOT "
+            "prove tasks are alive or stale; file-content updates may not "
+            "alter directory mtime. Windows inspects top-level entries ONLY."
         ),
     }
     # Fix the expected approved inode/path BEFORE any reopen, so a
