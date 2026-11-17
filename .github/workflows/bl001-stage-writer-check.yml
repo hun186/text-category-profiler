@@ -11,6 +11,8 @@ on:
       - "tests/test_bl001_stage_xlsx_shared.py"
       - "tests/test_bl001_stage_sql_shared.py"
       - "text_category_profiler/data/df_utils.py"
+      - "text_category_profiler/data/canonical_sql_atomic.py"
+      - "tests/test_bl001_canonical_atomic_replace.py"
       - "tests/test_bl001_df_tsv_provider_contracts.py"
       - "tests/test_bl001_df_list_xls_sheet_names.py"
       - "text_category_profiler/data/stage_tsv.py"
