@@ -427,7 +427,11 @@ def RenameDir(SrcDir,DesDir):
             shutil.copytree(SrcDir,DesDir)
             shutil.rmtree(SrcDir)
         except Exception as e:
-            print(f"When try to apply RenameDir in utilities with shutil.copytree and rmtree, the following error occurs:\n{e}\n")    
+            print(f"When try to apply RenameDir in utilities with shutil.copytree and rmtree, the following error occurs:\n{e}\n")
+            # Never report a completed handoff after the fallback copy or
+            # removal failed. Preserve any partially copied folders for
+            # operator inspection; do not remove, retry or "repair" them here.
+            raise
 
 def safe_move(src, dst, retries=5, delay=0.05):
     MKDIR(getPathFromFN(dst))
