@@ -1,0 +1,36 @@
+name: BL-001 Process Exit Readiness Race
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "tests/test_full_pipeline_harness.py"
+      - ".github/workflows/bl001-proc-status-race.yml"
+  push:
+    branches: [main]
+    paths:
+      - "tests/test_full_pipeline_harness.py"
+      - ".github/workflows/bl001-proc-status-race.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  proc-exit-race:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify disappearance/permission regression without production data
+        run: python -m unittest -v tests.test_full_pipeline_harness.FullPipelineHarnessTests.test_proc_status_disappearing_during_read_is_not_a_test_error
+      - name: Verify actual timed-out descendant cleanup on Linux fixture
+        if: runner.os == 'Linux'
+        run: python -m unittest -v tests.test_full_pipeline_harness.FullPipelineHarnessTests.test_timeout_kills_descendants_and_formats_bounded_diagnostics
