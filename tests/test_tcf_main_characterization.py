@@ -60,17 +60,15 @@ def fake_modules(args=None, completed_codes=None, trace=None):
                        if value != "" and key not in ignored)
 
     no_op = lambda *a, **k: None
+    # A Windows platform.system() call may lazily use multiple functions
+    # from subprocess; mirror the complete stdlib surface in this fixture
+    # and replace ONLY run() to intercept the root pipeline invocation.
+    subprocess_stub = types.ModuleType("subprocess")
+    subprocess_stub.__dict__.update(vars(stdlib_subprocess))
+    subprocess_stub.run = subprocess_run
     return {
         "setproctitle": _module("setproctitle", setproctitle=no_op),
-        # Windows platform.system() can lazily query win32_ver through
-        # subprocess.check_output during runpy; preserve real introspection
-        # functions while intercepting only the TCF pipeline's run() call.
-        "subprocess": _module(
-            "subprocess",
-            run=subprocess_run,
-            check_output=stdlib_subprocess.check_output,
-            CalledProcessError=stdlib_subprocess.CalledProcessError,
-        ),
+        "subprocess": subprocess_stub,
         "TCF_Params.TCFParameters": _module(
             "TCFParameters", setArguments=lambda: args,
             planArguments=lambda *unused: types.SimpleNamespace(args=args),
