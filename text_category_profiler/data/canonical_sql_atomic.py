@@ -57,6 +57,41 @@ def _replacement_indexes(cnx, candidate, table, requested):
     return indexes
 
 
+def _guard_existing_table_contract(cnx, table):
+    """Never destroy table-level constraints that pandas staging cannot copy.
+
+    A canonical pandas-created table has ordinary nullable columns without
+    defaults, primary keys, outbound FKs, generated/hidden columns, CHECK or
+    collation clauses. The candidate schema replaces the original schema, so
+    unsupported target constraints must be rejected before DROP, even when
+    every existing index looks like a pandas-generated index.
+    """
+    import re
+
+    entry = cnx.execute(
+        "SELECT sql FROM sqlite_master "
+        "WHERE type='table' AND name=? COLLATE NOCASE",
+        (table,),
+    ).fetchone()
+    if entry is None:
+        return
+    ddl = entry[0] or ""
+    if not re.match(r"^\\s*CREATE\\s+TABLE\\b", ddl, re.IGNORECASE):
+        raise ValueError("Unsafe existing table kind")
+    # SQLite has no PRAGMA for CHECK clauses or column COLLATE clauses. This
+    # conservative rejection can refuse unusual identifiers, but cannot
+    # silently discard the old constraints.
+    if re.search(r"\\b(CHECK|COLLATE|GENERATED|STRICT)\\b|\\bAS\\s*\\(",
+                 ddl, re.IGNORECASE):
+        raise ValueError("Unsafe existing table DDL constraints")
+    for col in cnx.execute("PRAGMA table_xinfo(" + _quote(table) + ")"):
+        # table_xinfo: cid, name, type, notnull, default, pk, hidden
+        if col[3] or col[4] is not None or col[5] or col[6]:
+            raise ValueError("Unsafe existing table column constraints")
+    if list(cnx.execute("PRAGMA foreign_key_list(" + _quote(table) + ")")):
+        raise ValueError("Unsafe existing outbound foreign key")
+
+
 def _guard_replacement(cnx, table):
     """Fail closed before DROP would erase a trigger/FK or custom index.
 
@@ -79,6 +114,7 @@ def _guard_replacement(cnx, table):
             if foreign_key[2].casefold() == table.casefold():
                 raise ValueError("Unsafe inbound foreign key: " + name)
 
+    _guard_existing_table_contract(cnx, table)
     pandas_prefix = "ix_" + table + "_"
     for name, keys in _index_entries(cnx, table):
         pandas_key = (name.startswith(pandas_prefix)
