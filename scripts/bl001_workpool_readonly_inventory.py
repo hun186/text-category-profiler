@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import ntpath
 import os
 from pathlib import Path
 import stat
@@ -42,6 +43,15 @@ def _root_guard(path: Path) -> str | None:
     except (OSError, ValueError):
         return "root_unavailable"
     return None
+
+
+def _canonical_windows_path(path: str) -> str:
+    """Compare Win32 handle paths to ordinary drive and UNC spellings."""
+    if path.startswith("\\\\?\\UNC\\"):
+        path = "\\\\" + path[8:]
+    elif path.startswith("\\\\?\\"):
+        path = path[4:]
+    return ntpath.normcase(ntpath.normpath(path))
 
 
 class _BudgetReached(Exception):
@@ -191,11 +201,7 @@ def _walk_windows_root_only(root: Path, expected_root: Path,
         length = GetFinalPathNameByHandleW(handle, actual_buf, len(actual_buf), 0)
         if not length or length >= len(actual_buf):
             raise _BoundaryLost()
-        def canonical_windows_path(path: str) -> str:
-            if path.startswith("\\\\?\\"):
-                path = path[4:]
-            return os.path.normcase(os.path.normpath(path))
-        if canonical_windows_path(actual_buf.value) != canonical_windows_path(str(before)):
+        if _canonical_windows_path(actual_buf.value) != _canonical_windows_path(str(before)):
             raise _BoundaryLost()
         report["directories_observed"] += 1
         report["windows_root_only"] = True
@@ -237,7 +243,7 @@ def _walk_windows_root_only(root: Path, expected_root: Path,
                 offset += next_offset
         # If root moved/renamed midscan, the opened handle remains the old
         # root. Fail instead of treating a detached handle as current.
-        if canonical_windows_path(str(root.resolve(strict=True))) != canonical_windows_path(str(before)):
+        if _canonical_windows_path(str(root.resolve(strict=True))) != _canonical_windows_path(str(before)):
             raise _BoundaryLost()
     finally:
         CloseHandle(handle)
@@ -271,7 +277,7 @@ def inventory_workpool_metadata(workpool: str | Path, *,
         "directories_not_descended": 0,
         "windows_root_only": False,
         "nested_files_examined": os.name != "nt",
-        "sqlite_sidecar_scan_complete": os.name != "nt",
+        "sqlite_sidecar_scan_complete": False,
         "issues": [],
         "file_contents_read": False,
         "sqlite_connections_opened": False,
@@ -310,6 +316,12 @@ def inventory_workpool_metadata(workpool: str | Path, *,
     except (_BoundaryLost, OSError, ValueError, RuntimeError):
         report["issues"].append("directory_boundary_not_verifiable")
         return report
+    # A bounded scan can observe zero sidecars while leaving unseen
+    # descendants. Only a completed POSIX traversal with no skipped child
+    # directory is allowed to claim sidecar coverage.
+    report["sqlite_sidecar_scan_complete"] = (
+        os.name != "nt" and report["directories_not_descended"] == 0
+    )
     if report["workspace_running"]:
         report["issues"].append("running_workspaces_observed")
     if report["sqlite_sidecars_observed"]:
