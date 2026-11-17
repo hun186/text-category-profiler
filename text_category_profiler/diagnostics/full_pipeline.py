@@ -405,6 +405,14 @@ def cleanup_runtime_root(runtime_root: Path, repository_root: Path) -> None:
 
 
 def create_model_facade(source_model_dir: Path, runtime_root: Path) -> Path:
+    """Copy opt-in real-model checkpoints into a disposable, writable tree.
+
+    A symlink or Windows junction exposes the ORIGINAL checkpoint to writes
+    by the production classifier. A post-run mutation snapshot would detect
+    damage only after it happened. Copying each checkpoint avoids sharing any
+    writable file or directory with the source model; the intentional disk
+    overhead is preferable to silently risking original model weights.
+    """
     source_model_dir = source_model_dir.resolve()
     checkpoints = sorted(path for path in source_model_dir.glob("checkpoint-*") if path.is_dir())
     if not checkpoints:
@@ -417,17 +425,13 @@ def create_model_facade(source_model_dir: Path, runtime_root: Path) -> Path:
     for checkpoint in checkpoints:
         target = facade / checkpoint.name
         try:
-            target.symlink_to(checkpoint, target_is_directory=True)
+            # shutil.copytree defaults to symlinks=False; copy the bytes behind
+            # any nested symlink too rather than keeping a live writable alias.
+            shutil.copytree(checkpoint, target, symlinks=False)
         except OSError as error:
-            if os.name != "nt":
-                raise ModelFacadeError(
-                    f"cannot link model checkpoint {checkpoint}: {error}"
-                ) from error
-            result = subprocess.run(["cmd", "/c", "mklink", "/J", str(target), str(checkpoint)],
-                                    capture_output=True, text=True, check=False)
-            if result.returncode != 0:
-                raise ModelFacadeError(
-                    f"cannot safely link model checkpoint {checkpoint}: {result.stderr.strip()}")
+            raise ModelFacadeError(
+                f"cannot copy model checkpoint {checkpoint}: {error}"
+            ) from error
     return facade
 
 
