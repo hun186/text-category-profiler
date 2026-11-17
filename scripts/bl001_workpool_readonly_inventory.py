@@ -118,8 +118,7 @@ def _walk_posix_directory(fd: int, depth: int, report: dict) -> None:
         report["issues"].append("directory_changed_during_scan")
 
 
-def _walk_posix(root: Path, report: dict) -> None:
-    baseline = root.lstat()
+def _walk_posix(root: Path, report: dict, baseline: os.stat_result) -> None:
     flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
     root_fd = os.open(root, flags)
     try:
@@ -132,7 +131,7 @@ def _walk_posix(root: Path, report: dict) -> None:
         os.close(root_fd)
 
 
-def _walk_windows_root_only(root: Path, report: dict) -> None:
+def _walk_windows_root_only(root: Path, expected_root: Path, report: dict) -> None:
     """Handle-bound Win32 top-level enumeration; never path-scan descendants.
 
     Python's Windows scandir() cannot use a directory fd, and opening child
@@ -163,7 +162,7 @@ def _walk_windows_root_only(root: Path, report: dict) -> None:
     GetInfo.argtypes = (wintypes.HANDLE, ctypes.c_int, wintypes.LPVOID, wintypes.DWORD)
     GetInfo.restype = wintypes.BOOL
 
-    before = root.resolve(strict=True)
+    before = expected_root
     handle = CreateFileW(
         str(root), 0x0001 | 0x0080, 0x0001 | 0x0002 | 0x0004,
         None, 3, 0x02000000 | 0x00200000, None,
@@ -171,6 +170,12 @@ def _walk_windows_root_only(root: Path, report: dict) -> None:
     if handle == ctypes.c_void_p(-1).value:
         raise _BoundaryLost()
     try:
+        attrs_buf = ctypes.create_string_buffer(8)
+        if not GetInfo(handle, 9, attrs_buf, len(attrs_buf)):
+            raise _BoundaryLost()
+        attrs = int.from_bytes(attrs_buf.raw[:4], "little")
+        if (attrs & _REPARSE_FLAG) or not (attrs & 0x10):
+            raise _BoundaryLost()
         actual_buf = ctypes.create_unicode_buffer(32768)
         length = GetFinalPathNameByHandleW(handle, actual_buf, len(actual_buf), 0)
         if not length or length >= len(actual_buf):
@@ -268,15 +273,23 @@ def inventory_workpool_metadata(workpool: str | Path, *,
             "certification. Windows inspects top-level entries ONLY."
         ),
     }
+    # Fix the expected approved inode/path BEFORE any reopen, so a
+    # path-component replacement cannot redefine "the approved WorkPool".
+    try:
+        expected_root_stat = root.lstat()
+        expected_root = root.resolve(strict=True)
+    except (OSError, ValueError, RuntimeError):
+        report["issues"].append("root_unavailable")
+        return report
     reason = _root_guard(root)
     if reason:
         report["issues"].append(reason)
         return report
     try:
         if os.name == "nt":
-            _walk_windows_root_only(root, report)
+            _walk_windows_root_only(root, expected_root, report)
         elif hasattr(os, "O_NOFOLLOW") and hasattr(os, "O_DIRECTORY"):
-            _walk_posix(root, report)
+            _walk_posix(root, report, expected_root_stat)
         else:
             report["issues"].append("handle_bound_traversal_unavailable")
             return report
