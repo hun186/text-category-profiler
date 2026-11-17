@@ -404,6 +404,77 @@ def cleanup_runtime_root(runtime_root: Path, repository_root: Path) -> None:
             pass
 
 
+_MODEL_COPY_MIN_HEADROOM = 128 * 1024 * 1024
+
+
+def _directory_copy_bytes(directory: Path, ancestors: frozenset[Path] = frozenset()) -> int:
+    """Estimate recursive copy footprint, including followed symlink targets.
+
+    shutil.copytree(..., symlinks=False) dereferences nested directory links.
+    Use the same traversal semantics to avoid underestimating disk needs;
+    reject cycles before starting a potentially destructive/never-ending copy.
+    Identical targets reached by different links must be counted each time
+    because copytree duplicates their bytes.
+    """
+    resolved = directory.resolve(strict=True)
+    if resolved in ancestors:
+        raise ModelFacadeError("cyclic checkpoint directory link")
+    current_ancestors = ancestors | {resolved}
+    total = 0
+    with os.scandir(directory) as entries:
+        for item in entries:
+            if item.is_dir(follow_symlinks=True):
+                total += _directory_copy_bytes(Path(item.path), current_ancestors)
+            elif item.is_file(follow_symlinks=True):
+                total += item.stat(follow_symlinks=True).st_size
+            else:
+                raise ModelFacadeError("unsupported checkpoint filesystem entry")
+    return total
+
+
+def _preflight_private_model_copy(source_model_dir: Path, runtime_root: Path,
+                                  checkpoints: list[Path]) -> None:
+    """Fail before any model copy if temp space or source isolation is unsafe."""
+    real_source = source_model_dir.resolve()
+    real_runtime = runtime_root.resolve()
+    if (real_runtime.is_relative_to(real_source)
+            or real_source.is_relative_to(real_runtime)):
+        raise ModelFacadeError("model source and temporary runtime overlap")
+    try:
+        bytes_to_copy = _directory_copy_bytes_for_source(
+            source_model_dir, checkpoints
+        )
+        # Direct harness callers may pass a future disposable runtime
+        # directory; inspect the nearest existing parent on the same volume.
+        disk_root = runtime_root
+        while not disk_root.exists():
+            disk_root = disk_root.parent
+        available = shutil.disk_usage(disk_root).free
+    except ModelFacadeError:
+        # Preserve specific policy verdicts, notably cyclic directory links,
+        # instead of hiding them behind a generic estimation error.
+        raise
+    except (OSError, RuntimeError, ValueError) as error:
+        raise ModelFacadeError("cannot estimate private checkpoint copy capacity") from error
+    # Leave room for model inference outputs, metadata growth, and filesystem
+    # accounting drift; this is a disk precheck, not a storage reservation.
+    headroom = max(_MODEL_COPY_MIN_HEADROOM, bytes_to_copy // 10)
+    if available < bytes_to_copy + headroom:
+        raise ModelFacadeError(
+            "insufficient temporary disk for model copy "
+            f"(required_bytes={bytes_to_copy + headroom}, available_bytes={available})"
+        )
+
+
+def _directory_copy_bytes_for_source(source_model_dir: Path,
+                                      checkpoints: list[Path]) -> int:
+    total = sum(_directory_copy_bytes(path) for path in checkpoints)
+    for entry in source_model_dir.iterdir():
+        if entry.is_file():
+            total += entry.stat().st_size
+    return total
+
+
 def create_model_facade(source_model_dir: Path, runtime_root: Path) -> Path:
     """Copy opt-in real-model checkpoints into a disposable, writable tree.
 
@@ -417,6 +488,7 @@ def create_model_facade(source_model_dir: Path, runtime_root: Path) -> Path:
     checkpoints = sorted(path for path in source_model_dir.glob("checkpoint-*") if path.is_dir())
     if not checkpoints:
         raise ValueError(f"no checkpoint-* directory in source model: {source_model_dir}")
+    _preflight_private_model_copy(source_model_dir, runtime_root, checkpoints)
     facade = runtime_root / "model-facade"
     facade.mkdir(parents=True, exist_ok=False)
     for source in source_model_dir.iterdir():
