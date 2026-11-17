@@ -352,9 +352,9 @@ class ReleasePreflightTests(unittest.TestCase):
 
     def test_root_selftest_cannot_be_passed_by_stderr_only_final(self):
         for stdout, stderr in (
-            ("", "FINAL: PASS\\n"),
-            ("unexpected root output\\n", "FINAL: PASS\\n"),
-            ("FINAL: FAIL\\n", "FINAL: PASS\\n"),
+            ("", "FINAL: PASS\n"),
+            ("unexpected root output\n", "FINAL: PASS\n"),
+            ("FINAL: FAIL\n", "FINAL: PASS\n"),
         ):
             with self.subTest(stdout=stdout, stderr=stderr):
                 def forged_stderr(args, **kwargs):
@@ -378,8 +378,8 @@ class ReleasePreflightTests(unittest.TestCase):
         def forged_real(args, **kwargs):
             if args[1:4] == ["TCFMain.py", "--self-test", "real"]:
                 return subprocess.CompletedProcess(
-                    args, 0, stdout="model ran\\n",
-                    stderr="FINAL: PASS\\n",
+                    args, 0, stdout="model ran\n",
+                    stderr="FINAL: PASS\n",
                 )
             return fake_runner(args, **kwargs)
         outcome = run_private_preflight(real_port=8059, runner=forged_real)
@@ -395,8 +395,8 @@ class ReleasePreflightTests(unittest.TestCase):
         def root_with_warning(args, **kwargs):
             if args[1:4] == ["TCFMain.py", "--self-test", "isolated"]:
                 return subprocess.CompletedProcess(
-                    args, 0, stdout="FINAL: PASS\\n",
-                    stderr="model warning\\n",
+                    args, 0, stdout="FINAL: PASS\n",
+                    stderr="model warning\n",
                 )
             return fake_runner(args, **kwargs)
         outcome = run_private_preflight(runner=root_with_warning)
