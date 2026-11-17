@@ -1,4 +1,9 @@
 import os
+import ctypes
+import errno
+import shutil
+import stat
+import sys
 #import glob
 import re
 import time
@@ -87,6 +92,56 @@ def get_base_model_checkpoint(ModelType):
         raise Exception
 
 
+def _is_link_or_reparse(path):
+    """Detect POSIX symlink and Win32 junction/symlink from lstat metadata."""
+    info = os.lstat(path)
+    return (
+        stat.S_ISLNK(info.st_mode)
+        or bool(getattr(info, "st_file_attributes", 0)
+                & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400))
+    )
+
+
+def _handoff_rename_noreplace(source, destination):
+    """Publish a stage directory without replacing a concurrent destination.
+
+    Linux uses renameat2(RENAME_NOREPLACE); Windows os.rename already
+    rejects existing destinations. Cross-device fallback uses copytree's
+    exclusive destination creation, and may leave partial data on failure:
+    the caller must stop and preserve both paths. Unsupported POSIX systems
+    fail closed rather than silently overwrite an existing stage.
+    """
+    try:
+        if os.name == "nt":
+            os.rename(source, destination)
+        elif sys.platform.startswith("linux"):
+            libc = ctypes.CDLL(None, use_errno=True)
+            renameat2 = getattr(libc, "renameat2", None)
+            if renameat2 is None:
+                raise OSError(errno.ENOTSUP, "atomic no-replace rename unavailable")
+            renameat2.argtypes = [
+                ctypes.c_int, ctypes.c_char_p, ctypes.c_int,
+                ctypes.c_char_p, ctypes.c_uint,
+            ]
+            renameat2.restype = ctypes.c_int
+            # Linux constants: AT_FDCWD=-100, RENAME_NOREPLACE=1.
+            outcome = renameat2(
+                -100, os.fsencode(source), -100, os.fsencode(destination), 1
+            )
+            if outcome:
+                error_number = ctypes.get_errno()
+                raise OSError(error_number, os.strerror(error_number), source)
+        else:
+            raise OSError(errno.ENOTSUP, "atomic no-replace rename unavailable")
+    except OSError as error:
+        if error.errno != errno.EXDEV:
+            raise
+        # Cross-volume destination creation remains exclusive; never pass
+        # dirs_exist_ok=True or merge into a pre-existing stage directory.
+        shutil.copytree(source, destination)
+        shutil.rmtree(source)
+
+
 class TaskConnector:
     def __init__(self, SrcTask="", DesTask="", WorkingDir="", logFile=""):
         self.SrcTask = SrcTask
@@ -106,7 +161,7 @@ class TaskConnector:
         destination = source.with_name(
             source.name[:-len(source_suffix)] + f"_rdy_for_{self.DesTask}"
         )
-        if not source.is_dir() or os.path.islink(source):
+        if not source.is_dir() or _is_link_or_reparse(source):
             raise FileNotFoundError("HANDOFF_SOURCE_NOT_A_DIRECTORY")
         if os.path.lexists(destination):
             raise FileExistsError("HANDOFF_DESTINATION_ALREADY_EXISTS")
@@ -117,12 +172,14 @@ class TaskConnector:
         )
         for attempt in range(3):
             try:
-                # Keep the legacy os.rename -> copytree fallback; however
-                # the fallback may LOG and return after *both* operations
-                # fail. Never count that silent return as a handoff.
-                RenameDir(SrcDir=self.WorkingDir, DesDir=str(destination))
+                # Use an atomic no-replace rename, not the legacy generic
+                # RenameDir, whose os.rename can overwrite a concurrent
+                # empty destination on POSIX and swallow fallback failure.
+                _handoff_rename_noreplace(self.WorkingDir, str(destination))
                 source_remains = os.path.lexists(source)
-                destination_ready = destination.is_dir()
+                destination_ready = (
+                    destination.is_dir() and not _is_link_or_reparse(destination)
+                )
                 if not source_remains and destination_ready:
                     break
                 if source_remains and not os.path.lexists(destination):
