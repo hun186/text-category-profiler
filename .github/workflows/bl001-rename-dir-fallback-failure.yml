@@ -1,0 +1,35 @@
+name: BL-001 Legacy RenameDir Failure Propagation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "text_category_profiler/core/utilities_path.py"
+      - "tests/test_bl001_rename_dir_fallback_failure.py"
+      - ".github/workflows/bl001-rename-dir-fallback-failure.yml"
+  push:
+    branches: [main]
+    paths:
+      - "text_category_profiler/core/utilities_path.py"
+      - "tests/test_bl001_rename_dir_fallback_failure.py"
+      - ".github/workflows/bl001-rename-dir-fallback-failure.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  legacy-rename-error-gate:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify legacy RenameDir fallback failure propagation (fixtures only)
+        run: python -m unittest -v tests.test_bl001_rename_dir_fallback_failure
