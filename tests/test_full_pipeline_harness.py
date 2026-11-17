@@ -193,22 +193,62 @@ class FullPipelineHarnessTests(unittest.TestCase):
                           str(result.workpool_root), "Workspaces:"):
                 self.assertIn(value, diagnostic)
 
-    def test_model_facade_copies_metadata_and_links_checkpoints(self):
+    def test_model_facade_copies_metadata_and_checkpoints_without_shared_writes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "source"
+            checkpoint = source / "checkpoint-10"
+            checkpoint.mkdir(parents=True)
+            label_list = source / "TopicAnalysis_LabelList.txt"
+            label_list.write_text("Aloha\n", encoding="utf-8")
+            (checkpoint / "config.json").write_text("{}", encoding="utf-8")
+            weight = checkpoint / "model.safetensors"
+            weight.write_bytes(b"weights")
+            source_before = snapshot_regular_files(source)
+            facade = create_model_facade(source, root / "runtime")
+            self.assertEqual((facade / "TopicAnalysis_LabelList.txt").read_text(), "Aloha\n")
+            copied = facade / "checkpoint-10"
+            self.assertTrue(copied.is_dir())
+            self.assertFalse(copied.is_symlink())
+            self.assertFalse((copied / "model.safetensors").is_symlink())
+            # Writes by the real model to a checkpoint under the facade must
+            # NEVER touch original model bytes, on Windows or on POSIX.
+            (copied / "model.safetensors").write_bytes(b"new-weights")
+            (copied / "config.json").write_text('{"changed":true}', encoding="utf-8")
+            (copied / "new-checkpoint-marker.txt").write_text("local", encoding="utf-8")
+            (facade / "TopicAnalysis_LabelList.txt").write_text("New\n", encoding="utf-8")
+            (facade / "UsingMark.txt").write_text("local", encoding="utf-8")
+            self.assertEqual(weight.read_bytes(), b"weights")
+            self.assertEqual((checkpoint / "config.json").read_text(encoding="utf-8"), "{}")
+            self.assertFalse((checkpoint / "new-checkpoint-marker.txt").exists())
+            self.assertEqual(label_list.read_text(encoding="utf-8"), "Aloha\n")
+            self.assertFalse((source / "UsingMark.txt").exists())
+            self.assertEqual(snapshot_regular_files(source), source_before)
+
+    @unittest.skipUnless(hasattr(os, "symlink"), "symlinks unavailable")
+    def test_model_facade_never_preserves_nested_checkpoint_symlink(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             source = root / "source"
             checkpoint = source / "checkpoint-10"
             checkpoint.mkdir(parents=True)
             (source / "TopicAnalysis_LabelList.txt").write_text("Aloha\n", encoding="utf-8")
-            (checkpoint / "config.json").write_text("{}", encoding="utf-8")
-            (checkpoint / "model.safetensors").write_bytes(b"weights")
+            external = root / "outside-weights"
+            external.mkdir()
+            external_weight = external / "weights.bin"
+            external_weight.write_bytes(b"original")
+            try:
+                (checkpoint / "linked-weights").symlink_to(
+                    external, target_is_directory=True
+                )
+            except (OSError, NotImplementedError):
+                self.skipTest("platform does not permit symlink fixtures")
             facade = create_model_facade(source, root / "runtime")
-            self.assertEqual((facade / "TopicAnalysis_LabelList.txt").read_text(), "Aloha\n")
-            self.assertTrue((facade / "checkpoint-10").is_dir())
-            if os.name != "nt":
-                self.assertTrue((facade / "checkpoint-10").is_symlink())
-            (facade / "UsingMark.txt").write_text("local", encoding="utf-8")
-            self.assertFalse((source / "UsingMark.txt").exists())
+            copied = facade / "checkpoint-10" / "linked-weights"
+            self.assertTrue(copied.is_dir())
+            self.assertFalse(copied.is_symlink())
+            (copied / "weights.bin").write_bytes(b"changed")
+            self.assertEqual(external_weight.read_bytes(), b"original")
 
     def test_real_runtime_configuration_names_missing_variable_before_launch(self):
         with tempfile.TemporaryDirectory() as directory:
