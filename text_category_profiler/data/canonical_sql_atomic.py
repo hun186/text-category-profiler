@@ -1,0 +1,139 @@
+"""Atomic canonical DataFrame SQLite REPLACE, preserving the legacy schema contract.
+
+pandas.to_sql(..., if_exists='replace') performs its own sqlite3 COMMIT.
+Therefore materialize the *candidate* with pandas first; only swap the target
+table, copy the rows, and recreate the existing pandas/IndexCols indexes under
+one BEGIN IMMEDIATE. Avoid auto-delete of unowned or interrupted candidates.
+Does not affect append/fail modes or the distinct Stage-local writer.
+"""
+from __future__ import annotations
+
+import uuid
+
+
+def _quote(name):
+    if not isinstance(name, str) or not name or "\x00" in name:
+        raise ValueError("Invalid SQLite identifier")
+    return '"' + name.replace('"', '""') + '"'
+
+
+def _index_entries(cnx, table):
+    result = []
+    for entry in cnx.execute("PRAGMA index_list(" + _quote(table) + ")"):
+        name, unique, origin, partial = entry[1:5]
+        if unique or origin != "c" or partial:
+            raise ValueError("Unsupported existing or staged SQLite index: " + name)
+        keys = [row for row in cnx.execute(
+            "PRAGMA index_xinfo(" + _quote(name) + ")"
+        ) if row[5] == 1]
+        cols = {row[1] for row in cnx.execute(
+            "PRAGMA table_info(" + _quote(table) + ")"
+        )}
+        if not keys or any(
+            key[1] < 0 or key[2] not in cols or key[3] != 0
+            or key[4] != "BINARY" for key in keys
+        ):
+            raise ValueError("Unsupported SQLite index keys: " + name)
+        result.append((name, tuple(key[2] for key in keys)))
+    return result
+
+
+def _replacement_indexes(cnx, candidate, table, requested):
+    indexes = []
+    prefix = "ix_" + candidate + "_"
+    for name, keys in _index_entries(cnx, candidate):
+        if not name.startswith(prefix) or name[len(prefix):] != "_".join(keys):
+            raise ValueError("Unsupported pandas index: " + name)
+        indexes.append(("ix_" + table + "_" + name[len(prefix):], keys))
+    column_names = {r[1] for r in cnx.execute(
+        "PRAGMA table_info(" + _quote(candidate) + ")"
+    )}
+    for col in requested:
+        if col not in column_names:
+            raise ValueError("Requested index column absent: " + str(col))
+        indexes.append((col + "_Index", (col,)))
+    if len({name.casefold() for name, _ in indexes}) != len(indexes):
+        raise ValueError("Conflicting target index names")
+    return indexes
+
+
+def _guard_replacement(cnx, table, expected_indexes):
+    """Fail closed before DROP would erase a trigger/FK or custom index."""
+    objects = list(cnx.execute(
+        "SELECT type, name, tbl_name FROM sqlite_master "
+        "WHERE type IN ('table', 'trigger')"
+    ))
+    for kind, name, owner in objects:
+        if kind == "trigger" and owner.casefold() == table.casefold():
+            raise ValueError("Unsafe target trigger: " + name)
+        if kind != "table" or name.casefold() == table.casefold():
+            continue
+        for foreign_key in list(cnx.execute(
+            "PRAGMA foreign_key_list(" + _quote(name) + ")"
+        )):
+            if foreign_key[2].casefold() == table.casefold():
+                raise ValueError("Unsafe inbound foreign key: " + name)
+
+    allowed = {name.casefold(): keys for name, keys in expected_indexes}
+    for name, keys in _index_entries(cnx, table):
+        if allowed.get(name.casefold()) != keys:
+            raise ValueError("Unsafe existing index: " + name)
+
+
+def replace_canonical_table(cnx, frame, *, table, dtype, index_label, index_cols):
+    """Replace target table without exposing an index-less committed target.
+
+    Caller owns and closes `cnx`; any side effects are limited to its DB.
+    Failed staging may leave an unknown-owner candidate for manual triage.
+    """
+    table_name = _quote(table)
+    candidate = "__bl001_canonical_" + uuid.uuid4().hex
+    candidate_name = _quote(candidate)
+    owned = False
+    started = False
+    try:
+        # Pandas commits automatically. This touches only a fresh candidate.
+        frame.to_sql(name=candidate, con=cnx, if_exists="fail",
+                     dtype=dtype, index_label=index_label)
+        owned = True
+        schema = cnx.execute(
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name=?",
+            (candidate,),
+        ).fetchone()
+        prefix = "CREATE TABLE " + candidate_name
+        if not schema or not schema[0].startswith(prefix) or (
+            schema[0][len(prefix):len(prefix) + 1] not in (" ", "(")
+        ):
+            raise ValueError("Unexpected candidate table DDL")
+        new_ddl = "CREATE TABLE " + table_name + schema[0][len(prefix):]
+        indexes = _replacement_indexes(cnx, candidate, table, index_cols)
+
+        cnx.execute("BEGIN IMMEDIATE")
+        started = True
+        _guard_replacement(cnx, table, indexes)
+        cnx.execute("DROP TABLE IF EXISTS " + table_name)
+        cnx.execute(new_ddl)
+        cnx.execute(
+            "INSERT INTO " + table_name + " SELECT * FROM " + candidate_name
+        )
+        for name, keys in indexes:
+            cnx.execute(
+                "CREATE INDEX " + _quote(name) + " ON " + table_name + " ("
+                + ", ".join(_quote(col) for col in keys) + ")"
+            )
+        cnx.execute("DROP TABLE " + candidate_name)
+        cnx.commit()
+        started = False
+    except BaseException:
+        if started:
+            try:
+                cnx.rollback()
+            except Exception:
+                pass
+        if owned:
+            try:
+                cnx.execute("DROP TABLE IF EXISTS " + candidate_name)
+                cnx.commit()
+            except Exception:
+                pass
+        raise
