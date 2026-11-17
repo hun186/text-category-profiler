@@ -66,6 +66,33 @@ class CanonicalAtomicReplaceTests(unittest.TestCase):
                 {"ix_records_index"},
             )
 
+
+    def test_change_pandas_index_name_and_requested_indexes_is_allowed(self):
+        """Changing canonical index labels may replace an old index schema."""
+        self.old()
+        frame = pd.DataFrame({"text": ["new"], "OutLabel": ["N"]})
+        with closing(self.conn()) as db:
+            replace_canonical_table(db, frame, table="sampleSrc",
+                                    dtype=None, index_label=["document_id"],
+                                    index_cols=["text"])
+        self.assertEqual(self.row(), [("new", "N")])
+        self.assertEqual(
+            {r[1] for r in self.indexes()},
+            {"ix_sampleSrc_document_id", "text_Index"},
+        )
+
+    def test_old_canonical_extra_index_can_be_replaced_by_new_index_policy(self):
+        self.old()
+        with closing(self.conn()) as db:
+            db.execute('CREATE INDEX "OutLabel_Index" ON sampleSrc("OutLabel")')
+            db.commit()
+        frame = pd.DataFrame({"text": ["new"], "OutLabel": ["N"]})
+        with closing(self.conn()) as db:
+            replace_canonical_table(db, frame, table="sampleSrc", dtype=None,
+                                    index_label=None, index_cols=[])
+        self.assertEqual(self.row(), [("new", "N")])
+        self.assertEqual({x[1] for x in self.indexes()}, {"ix_sampleSrc_index"})
+
     def test_unknown_existing_index_rejects_and_preserves_rows(self):
         self.old()
         with closing(self.conn()) as db:
