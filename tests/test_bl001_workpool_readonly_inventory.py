@@ -158,6 +158,38 @@ class WorkPoolMetadataInventoryTests(unittest.TestCase):
             self.assertEqual(report["sqlite_sidecars_observed"], 0)
             self.assertFalse(report["deployment_authorized"])
 
+    @unittest.skipUnless(os.name == "nt", "Windows Win32 root-handle identity fixture")
+    def test_windows_same_name_root_replacement_is_rejected_before_enumeration(self):
+        with tempfile.TemporaryDirectory() as temp:
+            parent = Path(temp)
+            root = parent / "WorkPool"
+            root.mkdir()
+            (root / "safe.txt").write_bytes(b"safe")
+            replacement = parent / "replacement"
+            replacement.mkdir()
+            (replacement / "external.sql3").write_bytes(b"external")
+            from scripts import bl001_workpool_readonly_inventory as module
+            original_guard = module._root_guard
+            swapped = False
+
+            def replace_after_guard(path):
+                nonlocal swapped
+                outcome = original_guard(path)
+                if outcome is None and not swapped:
+                    swapped = True
+                    root.rename(parent / "original-WorkPool")
+                    replacement.rename(root)
+                return outcome
+
+            with mock.patch.object(module, "_root_guard",
+                                   side_effect=replace_after_guard):
+                report = inventory_workpool_metadata(root)
+            self.assertTrue(swapped)
+            self.assertEqual(report["status"], "UNVERIFIABLE")
+            self.assertIn("directory_boundary_not_verifiable", report["issues"])
+            self.assertEqual(report["sqlite_files_observed"], 0)
+            self.assertFalse(report["deployment_authorized"])
+
     def test_root_symlink_is_rejected_before_scan(self):
         with tempfile.TemporaryDirectory() as temp:
             base = Path(temp)
