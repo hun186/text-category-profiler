@@ -73,7 +73,10 @@ def _guard_existing_stage_indexes(cnx):
                             or key[3] != 0 or key[4] != "BINARY"
                             for key in keys)
                 or (name == "text_Index"
-                    and (len(keys) != 1 or keys[0][2] != "text"))):
+                    and (len(keys) != 1 or keys[0][2] != "text"))
+                or (name.startswith("ix_sampleSrc_")
+                    and name[len("ix_sampleSrc_"):]
+                    != "_".join(key[2] for key in keys))):
             raise ValueError("Unsafe existing sampleSrc index keys: " + name)
 
 
