@@ -86,6 +86,24 @@ class LegacyShellProcessRunner:
         return self.run_process(command, shell=True, check=False)
 
 
+# These are compatible with signal/console interruption, but can also be
+# returned deliberately by a child or shell. They are NOT proof of Ctrl+C.
+# POSIX: 130 commonly means shell(128 + SIGINT), -2 means terminated by SIGINT.
+# Windows: STATUS_CONTROL_C_EXIT is 0xC000013A (signed and unsigned forms).
+_UNCONFIRMED_INTERRUPT_EXIT_CODES = frozenset(
+    (130, -2, -1073741510, 3221225786)
+)
+
+
+def child_exit_interpretation(returncode: int) -> str:
+    """Describe child exit status without attributing intent or modifying jobs."""
+    return (
+        "interruption_like_unconfirmed"
+        if type(returncode) is int and returncode in _UNCONFIRMED_INTERRUPT_EXIT_CODES
+        else "nonzero_child_exit"
+    )
+
+
 @dataclass(frozen=True)
 class RootFailFastPolicy:
     """Retain the root orchestrator's non-zero exit behavior."""
@@ -95,8 +113,18 @@ class RootFailFastPolicy:
     def check(self, result: Any, stage_name: str, command: str) -> Any:
         if result.returncode != 0:
             self.failure_reporter(stage_name, result.returncode, command)
+            interpretation = child_exit_interpretation(result.returncode)
+            # Keep the legacy fail-fast type, stage order and exact numeric
+            # code. Appending a cautious hint must NOT invoke the root's
+            # KeyboardInterrupt-only recorder or imply the job can be cleaned.
+            suffix = (
+                " [Signal-like child exit; operator interruption UNCONFIRMED; "
+                "no WorkPool cleanup or automatic resume.]"
+                if interpretation == "interruption_like_unconfirmed"
+                else ""
+            )
             raise RuntimeError(
                 f"{stage_name} failed with exit code {result.returncode}. "
-                f"Abort following stages. Command: {command}"
+                f"Abort following stages. Command: {command}{suffix}"
             )
         return result
