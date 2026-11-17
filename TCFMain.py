@@ -25,6 +25,7 @@ from text_category_profiler.execution.process import (
     sanitize_windows_dot_path,
     preflight_windows_dll_path,
 )
+from text_category_profiler.execution.operator_interrupt import record_operator_interrupt
 
 #import plotly.io as pio; pio.renderers.default='notebook'
 #from zhconv import convert
@@ -262,16 +263,46 @@ def main(argv=None):
         final_output_patterns=tuple(FinalOfferedOutputFNrePatList),
         run_mode="legacy",
     )
+    current_stage = "startup"
+
+    def tracked(stage, operation):
+        def run():
+            nonlocal current_stage
+            current_stage = stage
+            return operation()
+        return run
+
     orchestrator = PipelineOrchestrator(
         context,
-        convert=lambda: DataConvert(args, exeTimeDict=exeTimeDict),
-        classify=lambda: RunClassfier(args, exeTimeDict=exeTimeDict),
-        combine=lambda: CombineTestResult(args, exeTimeDict=exeTimeDict),
-        visualize=lambda: TestResultVis(args, exeTimeDict=exeTimeDict),
-        merge=lambda: RawAndPredictionMerger(args=args).proc(),
-        deliver=lambda: BackupAndClean(args),
+        convert=tracked("DataConverter", lambda: DataConvert(args, exeTimeDict=exeTimeDict)),
+        classify=tracked("RunClassfier", lambda: RunClassfier(args, exeTimeDict=exeTimeDict)),
+        combine=tracked("CombineTestResult", lambda: CombineTestResult(args, exeTimeDict=exeTimeDict)),
+        visualize=tracked("TestResultVis", lambda: TestResultVis(args, exeTimeDict=exeTimeDict)),
+        merge=tracked("RawAndPredictionMerger",
+                      lambda: RawAndPredictionMerger(args=args).proc()),
+        deliver=tracked("BackupAndClean", lambda: BackupAndClean(args)),
     )
-    orchestrator.run()
+    try:
+        orchestrator.run()
+    except KeyboardInterrupt:
+        # Preserve the original Ctrl+C behavior. Only add private evidence;
+        # never rewrite, delete, or infer recovery status of WorkPool folders.
+        try:
+            path = record_operator_interrupt(current_stage)
+            if path is not None:
+                print(
+                    "\\n[TCF Ctrl+C] 使用者中斷階段："
+                    f"{current_stage}；紀錄：{path}；WorkPool 保持原狀。"
+                )
+            else:
+                print(
+                    "\\n[TCF Ctrl+C] 使用者中斷階段："
+                    f"{current_stage}；紀錄未能儲存；WorkPool 保持原狀。"
+                )
+        except BaseException:
+            # Logging (including a second Ctrl+C) must not mask the original.
+            pass
+        raise
 
     info(f"各階段耗時摘要: {exeTimeDict}", icon="⏱️")
     return 0
