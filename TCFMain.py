@@ -297,7 +297,7 @@ def main(argv=None):
             else:
                 print(
                     "\\n[TCF Ctrl+C] 使用者中斷階段："
-                    f"{current_stage}；紀錄未能儲存；WorkPool 保持原狀。"
+                    f"{current_stage}；檔案紀錄未建立（安全限制或不可寫）；WorkPool 保持原狀。"
                 )
         except BaseException:
             # Logging (including a second Ctrl+C) must not mask the original.
