@@ -2,6 +2,7 @@
 from datetime import datetime, timezone
 import json
 import os
+import subprocess
 from pathlib import Path
 import tempfile
 import unittest
@@ -13,6 +14,7 @@ from text_category_profiler.execution.operator_interrupt import (
 
 
 class OperatorInterruptEvidenceTests(unittest.TestCase):
+    @unittest.skipIf(os.name == "nt", "Windows intentionally has console-only Ctrl+C evidence")
     def test_only_operator_event_is_appended_with_no_workpool_mutation(self):
         when = datetime(2026, 11, 17, 8, 10, tzinfo=timezone.utc)
         with tempfile.TemporaryDirectory() as temp:
@@ -51,6 +53,7 @@ class OperatorInterruptEvidenceTests(unittest.TestCase):
             self.assertNotIn("dataset_old", path.read_text(encoding="utf-8"))
             self.assertEqual((marker.read_bytes(), marker.stat().st_mtime_ns), before)
 
+    @unittest.skipIf(os.name == "nt", "Windows intentionally has console-only Ctrl+C evidence")
     def test_unknown_stage_is_sanitized_without_raw_args(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -102,6 +105,41 @@ class OperatorInterruptEvidenceTests(unittest.TestCase):
                 "TestResultVis", project_root=root
             ))
             self.assertEqual(target.read_text(encoding="utf-8"), "untouched")
+
+    @unittest.skipUnless(os.name == "nt", "Windows junction safety fixture")
+    def test_windows_junction_to_workpool_never_writes_even_on_ctrl_c(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            workpool = root / "WorkPool"
+            workpool.mkdir()
+            logs = root / "logs"
+            result = subprocess.run(
+                ["cmd", "/c", "mklink", "/J", str(logs), str(workpool)],
+                capture_output=True, text=True, check=False,
+            )
+            if result.returncode != 0:
+                self.skipTest("Windows junction creation unavailable")
+            try:
+                with mock.patch(
+                    "text_category_profiler.execution.operator_interrupt.os.open",
+                    side_effect=AssertionError("Windows must not file-open logs"),
+                ):
+                    self.assertIsNone(record_operator_interrupt(
+                        "TestResultVis", project_root=root
+                    ))
+                self.assertEqual(list(workpool.iterdir()), [])
+            finally:
+                # Remove the junction itself, never recurse into its target.
+                logs.rmdir()
+
+    @unittest.skipUnless(os.name == "nt", "Windows console-only policy")
+    def test_windows_no_file_creation_even_in_safe_empty_project(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self.assertIsNone(record_operator_interrupt(
+                "DataConverter", project_root=root
+            ))
+            self.assertFalse((root / "logs").exists())
 
     def test_unwritable_log_is_best_effort_not_exception(self):
         with tempfile.TemporaryDirectory() as temp:
