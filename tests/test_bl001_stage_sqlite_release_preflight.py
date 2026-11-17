@@ -350,6 +350,62 @@ class ReleasePreflightTests(unittest.TestCase):
         self.assertNotIn(private_text, json.dumps(outcome))
         self.assertFalse(outcome["production_workpool_verified"])
 
+    def test_root_selftest_cannot_be_passed_by_stderr_only_final(self):
+        for stdout, stderr in (
+            ("", "FINAL: PASS\\n"),
+            ("unexpected root output\\n", "FINAL: PASS\\n"),
+            ("FINAL: FAIL\\n", "FINAL: PASS\\n"),
+        ):
+            with self.subTest(stdout=stdout, stderr=stderr):
+                def forged_stderr(args, **kwargs):
+                    if args[1:4] == ["TCFMain.py", "--self-test", "isolated"]:
+                        return subprocess.CompletedProcess(
+                            args, 0, stdout=stdout, stderr=stderr,
+                        )
+                    return fake_runner(args, **kwargs)
+                outcome = run_private_preflight(
+                    real_port=8050, runner=forged_stderr,
+                )
+                self.assertEqual(outcome["status"], "FAIL")
+                self.assertEqual(outcome["checks"][-1]["name"], "root_isolated")
+                self.assertFalse(any(
+                    x["name"] == "root_real_opt_in" for x in outcome["checks"]
+                ))
+                self.assertTrue(outcome["checks"][-1]["root_stderr_nonempty"])
+                self.assertFalse(outcome["production_workpool_verified"])
+
+    def test_root_real_selftest_requires_stdout_only_final_pass(self):
+        def forged_real(args, **kwargs):
+            if args[1:4] == ["TCFMain.py", "--self-test", "real"]:
+                return subprocess.CompletedProcess(
+                    args, 0, stdout="model ran\\n",
+                    stderr="FINAL: PASS\\n",
+                )
+            return fake_runner(args, **kwargs)
+        outcome = run_private_preflight(real_port=8059, runner=forged_real)
+        self.assertEqual(outcome["status"], "FAIL")
+        self.assertEqual(outcome["checks"][-1]["name"], "root_real_opt_in")
+        self.assertEqual(
+            outcome["checks"][-1]["root_failure_reason"],
+            "missing_or_ambiguous_verdict",
+        )
+        self.assertFalse(outcome["production_workpool_verified"])
+
+    def test_root_success_with_any_stderr_is_not_accepted(self):
+        def root_with_warning(args, **kwargs):
+            if args[1:4] == ["TCFMain.py", "--self-test", "isolated"]:
+                return subprocess.CompletedProcess(
+                    args, 0, stdout="FINAL: PASS\\n",
+                    stderr="model warning\\n",
+                )
+            return fake_runner(args, **kwargs)
+        outcome = run_private_preflight(runner=root_with_warning)
+        self.assertEqual(outcome["status"], "FAIL")
+        self.assertEqual(
+            outcome["checks"][-1]["root_failure_reason"],
+            "stderr_after_stdout_verdict",
+        )
+
     def test_root_diagnostic_distinguishes_stderr_only_after_pass(self):
         def stderr_only(args, **kwargs):
             if args[1:4] == ["TCFMain.py", "--self-test", "isolated"]:
