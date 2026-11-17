@@ -125,6 +125,37 @@ class CanonicalAtomicReplaceTests(unittest.TestCase):
                                                 dtype=None, index_label=None, index_cols=[])
                 self.assertEqual(self.row(), [("old", "KEEP")])
 
+    def test_existing_table_constraints_refuse_replacement(self):
+        # Replacement changes the table DDL, not only its rows and indexes.
+        # Existing CHECK, DEFAULT, NOT NULL, PK, COLLATE, and outbound FK
+        # protections must not silently disappear after a successful commit.
+        existing = {
+            "check": 'CREATE TABLE sampleSrc ("index" INTEGER, text TEXT, OutLabel TEXT CHECK (length(OutLabel)>0))',
+            "default": 'CREATE TABLE sampleSrc ("index" INTEGER, text TEXT DEFAULT \'fallback\', OutLabel TEXT)',
+            "not_null": 'CREATE TABLE sampleSrc ("index" INTEGER, text TEXT NOT NULL, OutLabel TEXT)',
+            "collation": 'CREATE TABLE sampleSrc ("index" INTEGER, text TEXT COLLATE NOCASE, OutLabel TEXT)',
+            "outbound_fk": 'CREATE TABLE sampleSrc ("index" INTEGER, text TEXT REFERENCES parent(id), OutLabel TEXT)',
+            "primary_key": 'CREATE TABLE sampleSrc ("index" INTEGER PRIMARY KEY, text TEXT, OutLabel TEXT)',
+        }
+        frame = pd.DataFrame({"text": ["new"], "OutLabel": ["N"]})
+        for kind, ddl in existing.items():
+            with self.subTest(kind=kind):
+                if self.path.exists():
+                    self.path.unlink()
+                with closing(self.conn()) as db:
+                    db.execute(ddl)
+                    db.execute('INSERT INTO sampleSrc VALUES (0, "old", "KEEP")')
+                    db.execute('CREATE INDEX "ix_sampleSrc_index" ON sampleSrc("index")')
+                    db.commit()
+                with closing(self.conn()) as db:
+                    with self.assertRaisesRegex(ValueError, "Unsafe existing"):
+                        replace_canonical_table(db, frame, table="sampleSrc",
+                                                dtype=None, index_label=None,
+                                                index_cols=[])
+                self.assertEqual(self.row(), [("old", "KEEP")])
+                self.assertIn("ix_sampleSrc_index", {r[1] for r in self.indexes()})
+
+
     def test_missing_index_column_rolls_back_without_data_loss(self):
         self.old()
         frame = pd.DataFrame({"text": ["new"], "OutLabel": ["N"]})
