@@ -21,6 +21,18 @@ from text_category_profiler.diagnostics.full_pipeline import (
 from text_category_profiler.pipeline.defaults import DEFAULT_MODEL_TYPE
 
 
+def _proc_status_if_available(path: Path) -> str | None:
+    """A terminated child may be reaped between /proc existence and read.
+
+    Missing or vanishing /proc/<pid>/status is compatible with a fully
+    terminated descendant; unrelated access/IO errors still fail the test.
+    """
+    try:
+        return path.read_text()
+    except (FileNotFoundError, ProcessLookupError):
+        return None
+
+
 class FullPipelineHarnessTests(unittest.TestCase):
     def test_build_root_command_is_explicit_and_isolated(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -170,6 +182,24 @@ class FullPipelineHarnessTests(unittest.TestCase):
             result = self._dispatch(root, child, root / "classifier.py")
             self.assertEqual(result.returncode, 23)
 
+    def test_proc_status_disappearing_during_read_is_not_a_test_error(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "already-reaped-status"
+            self.assertIsNone(_proc_status_if_available(path))
+            path.write_text("State:\tZ", encoding="utf-8")
+            self.assertEqual(_proc_status_if_available(path), "State:\tZ")
+            # Simulates Linux /proc status exiting after a previous exists()
+            # check: ESRCH is expected, not an application regression.
+            with mock.patch.object(
+                Path, "read_text", side_effect=ProcessLookupError(3, "gone")
+            ):
+                self.assertIsNone(_proc_status_if_available(path))
+            with mock.patch.object(
+                Path, "read_text", side_effect=PermissionError(13, "denied")
+            ):
+                with self.assertRaises(PermissionError):
+                    _proc_status_if_available(path)
+
     @unittest.skipIf(os.name == "nt", "POSIX process liveness assertion")
     def test_timeout_kills_descendants_and_formats_bounded_diagnostics(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -186,8 +216,9 @@ class FullPipelineHarnessTests(unittest.TestCase):
             self.assertTrue(result.timed_out)
             pid = int((result.workpool_root / "pid").read_text())
             process_status = Path(f"/proc/{pid}/status")
-            if process_status.exists():
-                self.assertIn("State:\tZ", process_status.read_text())
+            state = _proc_status_if_available(process_status)
+            if state is not None:
+                self.assertIn("State:\tZ", state)
             diagnostic = format_failure(result, tail_lines=1)
             for value in ("Command:", "timed_out=True", "out-line", "err-line",
                           str(result.workpool_root), "Workspaces:"):
