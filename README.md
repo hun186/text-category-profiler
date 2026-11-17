@@ -4,9 +4,9 @@
 
 ## 目前狀態
 
-- 階段：待確認；目前程式與樣本顯示為內部資料處理與模型實驗工作區。
+- 階段：持續開發與部署前驗收；已具備私人 SQLite／隔離模型測試及 Hosted CI，但不能據此宣稱正式 WorkPool 或所有 GPU 環境已驗收。
 - 已具備：資料集轉換、BERTScript 分類流程、分類結果合併、Dash/Plotly 視覺化相關腳本、Class tree 工具與共用 Python utilities。
-- 主要限制：根目錄已提供 `requirements.txt` 與輕量測試，但尚無 lockfile 或 CI；模型、資料集、工作池與部分外部路徑需由使用者提供。
+- 主要限制：根目錄有 `requirements.txt`、多組 GitHub Actions CI 與輕量測試，但沒有可通用於所有 CPU／CUDA 主機的完整 lockfile；正式資料集、模型、工作池與部分外部路徑需由使用者提供。
 
 
 ## 核心能力
@@ -78,14 +78,26 @@ python -m pip install -r requirements.txt
 根入口由 `TCFMain.py` 提供，範例註解顯示可用於 WeiTech／SDSMS 工作池流程；實際參數需依本機資料與模型調整：
 
 ```bash
-python TCFMain.py --WeiTechworkIDPath <path-to-work-id-root> --WeiTechWorkPoolPATH <path-to-work-pool> -p 8099999 -TRVHost False -task SDSMS_Prediction
+python TCFMain.py --WeiTechworkIDPath <path-to-work-id-root> --WeiTechWorkPoolPATH <path-to-work-pool> -p 8059 -TRVHost False -task SDSMS_Prediction
 ```
 
 > 注意：以上命令會讀寫工作池與輸出資料，初始化時未執行。請先確認資料、模型與輸出路徑。
 
+> **連線埠安全檢查：** `-p / --TRVPort` 只接受 TCP 埠 `1～65535`；無效埠在參數解析／啟動規劃階段就拒絕，不會開始分類或更動 WorkPool。以上範例含正式工作池參數，**不是唯讀命令**，不可在未確認資料與備份的環境直接複製執行。
+
+### 無正式資料副作用的部署前檢查
+
+先在更新後的 repository 根目錄執行：
+
+```bat
+run-bl001-sqlite-release-preflight.bat
+```
+
+此命令只使用私人 tempfile SQLite 與隔離的 root self-test，**預設不載入真實模型、不使用正式 WorkPool**。回傳 `PASS_PARTIAL_NO_REAL_MODEL` 是預期的**部分通過**，不是上線許可；`--real-port 8059` 會額外執行真實 checkpoint 隔離自檢並複製模型檔，需足夠本機磁碟空間（不要為了確認文件而重跑昂貴模型）。正式 WorkPool 盤點另有 `run-bl001-workpool-readonly-inventory.bat --workpool "<現有 WorkPool 位置>"`，只檢查檔案系統中繼資料；`_is_running_` 目錄可能來自正常 Ctrl+C 測試，不代表故障或可刪除。
+
 ### 驗證
 
-目前已提供以 `unittest` discovery 為主的 lightweight 驗證入口，涵蓋 architecture/package boundaries、current-state 文件契約，以及小型 DataConverter fixture 等不需真實模型／工作池的檢查；Layer A／B full-pipeline profiles 未 opt in 時會明確 SKIP。**目前在僅依 `requirements.txt` 建立的乾淨環境中，完整 discovery 仍有 2 個已知 `GPUtil` dependency errors，因此這條命令尚不能視為 clean PASS gate**：
+目前已提供以 `unittest` discovery 為主的 lightweight 驗證入口，涵蓋 architecture/package boundaries、current-state 文件契約，以及小型 DataConverter fixture 等不需真實模型／工作池的檢查；Layer A／B full-pipeline profiles 未 opt in 時會明確 SKIP。歷史上的 `GPUtil` 缺依賴問題已有相應宣告與專項 CI 修復；**GitHub Hosted CI 的 dependency-light discovery PASS 不等於已在新建、僅安裝完整 `requirements.txt` 的本機環境驗證所有模型或正式 WorkPool**：
 
 ```bash
 python -m unittest discover -s tests
@@ -131,5 +143,5 @@ python -m py_compile <changed-python-files>
 ## 已知限制
 
 - 根 README 先前描述 FastAPI／Elasticsearch RAG 代理人，但目前根目錄盤點未找到對應 `api/`、`agent/`、FastAPI manifest 或 RAG runtime；本 README 已改為反映目前可由程式碼查證的文字分類工作區。
-- 根目錄已有 `requirements.txt` 與 lightweight `unittest` 測試；但 `requirements.txt` 目前未涵蓋 `GPUtil`，所以 `python -m unittest discover -s tests` 在乾淨環境仍有 2 個已知 dependency errors，不能當作全綠 gate。完整依賴版本仍需在目標主機依 Python/CUDA/模型條件確認。
+- 根目錄已有 `requirements.txt`（包含 `GPUtil`）與多組 Hosted CI；先前 `GPUtil` 的 2 個依賴錯誤是歷史問題，不能當成目前所有環境都會失敗的結論。尚未於每種全新 Windows／Linux + 完整 requirements + 模型／GPU 組合進行驗收，應依目標主機另行確認。
 - 多數 runnable 腳本可能讀寫本機資料、工作池或模型產物；未確認資料邊界前不要當作無副作用測試執行。

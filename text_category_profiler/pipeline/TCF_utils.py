@@ -24,6 +24,7 @@ from text_category_profiler.core.log_display import stage_done
 from text_category_profiler.core.log_display import summarize_sequence
 from text_category_profiler.core.log_display import warning
 from text_category_profiler.pipeline.defaults import DEFAULT_MODEL_TYPE
+from text_category_profiler.pipeline.configuration import parse_trv_port
 
 PYTORCH_MODEL_TYPES = ["PytorchXLM", "PytorchRBTL3", "PytorchMMBERT"]
 BASE_MODEL_CHECKPOINTS = {
@@ -128,7 +129,7 @@ def ClassfierOptionParser(argv=None):
         type=str2bool, default=False)
     parser.add_argument(
         "-p", "--TRVPort", help="Input the port for hosting the web.",
-        type=int, default=8050)
+        type=parse_trv_port, default=8050)
     parser.add_argument(
         "-pub", "--public", help="Publish the web.",
         type=str2bool, default=False)
