@@ -12,6 +12,7 @@ from scripts.bl001_workpool_readonly_inventory import (
     _FILETIME_UNIX_EPOCH_TICKS,
     _canonical_windows_path,
     _running_dir_age_bucket,
+    _running_stage_from_name,
     _windows_filetime_to_unix_ns,
     inventory_workpool_metadata, main,
 )
@@ -129,6 +130,62 @@ class WorkPoolMetadataInventoryTests(unittest.TestCase):
             self.assertFalse(report["production_workpool_verified"])
             for name, *_ in cases:
                 self.assertNotIn(f"dataset_{name}", json.dumps(report))
+
+    def test_running_stage_suffix_counts_never_claim_process_state(self):
+        stage_inputs = (
+            ("dataset_01_is_running_DataConverter", "DataConverter"),
+            ("dataset_02_is_running_RunClassfier", "RunClassfier"),
+            ("dataset_03_is_running_CombineTestResult", "CombineTestResult"),
+            ("dataset_04_is_running_TestResultVis", "TestResultVis"),
+            ("dataset_05_is_running_Mystery", "other_or_unrecognized"),
+            ("dataset_06_is_running_RunClassfier-extra", "other_or_unrecognized"),
+        )
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / "WorkPool"
+            root.mkdir()
+            for name, _ in stage_inputs:
+                (root / name).mkdir()
+            (root / "dataset_07_rdy_for_Spike").mkdir()
+            with mock.patch("builtins.open", side_effect=AssertionError(
+                "must never open workspace contents"
+            )), mock.patch("sqlite3.connect", side_effect=AssertionError(
+                "must never open SQLite"
+            )):
+                result = inventory_workpool_metadata(root)
+            counts = result["workspace_running_stage_counts"]
+            self.assertEqual(result["workspace_running"], len(stage_inputs))
+            self.assertEqual(result["workspace_ready"], 1)
+            self.assertEqual(sum(counts.values()), len(stage_inputs))
+            self.assertEqual(counts["DataConverter"], 1)
+            self.assertEqual(counts["RunClassfier"], 1)
+            self.assertEqual(counts["CombineTestResult"], 1)
+            self.assertEqual(counts["TestResultVis"], 1)
+            self.assertEqual(counts["other_or_unrecognized"], 2)
+            self.assertEqual(
+                result["running_stage_basis"],
+                "top_level_directory_name_suffix_not_process_state",
+            )
+            self.assertEqual(result["status"], "REVIEW_REQUIRED")
+            self.assertFalse(result["production_workpool_verified"])
+            self.assertFalse(result["deployment_authorized"])
+            self.assertFalse(result["candidate_deletion_authorized"])
+            for name, _ in stage_inputs:
+                self.assertNotIn(name, json.dumps(result))
+
+    def test_stage_parser_is_exact_case_insensitive_suffix_not_heuristic(self):
+        self.assertEqual(
+            _running_stage_from_name("dataset_X_IS_RUNNING_RUNCLASSFIER"),
+            "RunClassfier",
+        )
+        for name in (
+            "dataset_is_running_RunClassfier-other",
+            "dataset_is_running",
+            "dataset_RunClassfier",
+            "dataset_is_running_Pending",
+        ):
+            self.assertEqual(
+                _running_stage_from_name(name), "other_or_unrecognized"
+            )
 
     def test_age_boundaries_and_windows_filetime_math(self):
         hour = 3600 * 1_000_000_000
