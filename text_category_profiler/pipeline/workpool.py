@@ -139,9 +139,10 @@ class DeliveryManager:
                 pass
             raise
 
-        # The move has committed. Do not report "Complete" prematurely.
-        # Conversely, a log failure after a successful move must never
-        # cause an automatic retry of a non-idempotent handoff.
+        # The move has committed; the earlier backup and this move are
+        # separate operations, not one atomic transaction. Do not report
+        # "Complete" prematurely. Conversely, a logging failure after the
+        # move must never replay this non-idempotent handoff.
         try:
             self.output_logger(completion_message)
         except Exception as error:
