@@ -1,4 +1,5 @@
 """BL-001 external work-ID folder moves: private fixture-only validation."""
+import errno
 import os
 from pathlib import Path
 import shutil
@@ -8,6 +9,7 @@ import unittest
 from unittest import mock
 
 import text_category_profiler.filesystem.legacy as legacy_fs
+import text_category_profiler.filesystem.no_replace as publisher
 from text_category_profiler.filesystem.legacy import LegacyFileSystem
 from text_category_profiler.pipeline.workpool import (
     WorkPoolManager, DeliveryManager, WorkPoolPlan,
@@ -118,6 +120,42 @@ class ExternalWorkItemMoveNoOverwriteTests(unittest.TestCase):
                     self.filesystem().move(str(source), str(processing))
             self.assertTrue((source / "marker.txt").is_file())
             self.assertTrue((processing / "marker.txt").is_file())
+            self.assertFalse(processed.exists())
+
+    def test_forced_exdev_preserves_nested_and_dangling_symlinks(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source, processing, processed, plan = self.paths(directory)
+            target = Path(directory) / "outside"
+            target.write_bytes(b"external-kept")
+            nested = source / "nested-symlink"
+            dangling = source / "dangling-symlink"
+            try:
+                nested.symlink_to(target)
+                dangling.symlink_to("missing-target")
+            except (OSError, NotImplementedError):
+                self.skipTest("symlink creation unavailable")
+            # Force EXDEV without relying on host mount layout. The production
+            # helper must keep links as links, including dangling links.
+            fault = OSError(errno.EXDEV, "synthetic cross-volume move")
+            if os.name == "nt":
+                patcher = mock.patch.object(
+                    publisher.os, "rename", side_effect=fault,
+                )
+            else:
+                patcher = mock.patch.object(
+                    publisher.ctypes, "CDLL", side_effect=fault,
+                )
+            with patcher:
+                self.assertEqual(
+                    self.filesystem().move(str(source), str(processing)),
+                    str(processing),
+                )
+            self.assertFalse(source.exists())
+            self.assertTrue((processing / "nested-symlink").is_symlink())
+            self.assertTrue((processing / "dangling-symlink").is_symlink())
+            self.assertEqual((processing / "nested-symlink").read_bytes(),
+                             b"external-kept")
+            self.assertEqual(target.read_bytes(), b"external-kept")
             self.assertFalse(processed.exists())
 
     def test_source_file_and_symlink_are_rejected(self):
