@@ -57,5 +57,7 @@ def _handoff_rename_noreplace(source, destination):
             raise
         # Cross-volume destination creation remains exclusive; never pass
         # dirs_exist_ok=True or merge into a pre-existing stage directory.
-        shutil.copytree(source, destination)
+        # shutil.move preserves nested links during its cross-volume copy.
+        # Preserve that contract and avoid dereferencing dangling/outer links.
+        shutil.copytree(source, destination, symlinks=True)
         shutil.rmtree(source)
