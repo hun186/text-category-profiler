@@ -30,14 +30,24 @@ class BL001PackageCensusTests(unittest.TestCase):
         self.assertEqual(report["catalogue_paths_missing"], [])
         self.assertEqual(report["invalid_catalog_entries"], [])
         self.assertEqual(report["identity_failures"], [])
-        self.assertEqual(report["summary"]["total_tracked_package_files"], 76)
+        self.assertEqual(report["summary"]["total_tracked_package_files"], 77)
         self.assertEqual(report["summary"]["legacy_preserved"], 13)
-        self.assertEqual(report["summary"]["canonical_domain_owned"], 63)
+        self.assertEqual(report["summary"]["canonical_domain_owned"], 64)
         self.assertEqual(
             report["summary"]["total_tracked_package_files"],
             report["summary"]["legacy_preserved"]
             + report["summary"]["canonical_domain_owned"],
         )
+
+    def test_no_replace_publisher_has_explicit_filesystem_domain_owner(self):
+        report = audit_package(ROOT)
+        owner = next(
+            item for item in report["files"]
+            if item["path"] == "text_category_profiler/filesystem/no_replace.py"
+        )
+        self.assertEqual(owner["classification"], "domain_module")
+        self.assertEqual(owner["domain"], "filesystem")
+        self.assertEqual(owner["ownership"], "canonical")
 
     def test_operator_interrupt_is_explicitly_owned_by_execution_domain(self):
         report = audit_package(ROOT)
