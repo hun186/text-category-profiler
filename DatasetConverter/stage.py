@@ -6,6 +6,7 @@ normalization and side-effecting directory/logger activation.  The canonical
 """
 
 import argparse
+import os
 import time
 from dataclasses import dataclass
 
@@ -26,6 +27,7 @@ from DatasetConverter.config import mode_config_from_namespace
 from DatasetConverter.config import source_config_from_namespace
 from DatasetConverter.config import workspace_config_from_namespace
 from DatasetConverter.core.stage_utils import make_directory
+from DatasetConverter.core.stage_utils import acquire_stage_directory_exclusive
 from text_category_profiler.core.log_display import info
 from text_category_profiler.core.log_display import key_values
 from text_category_profiler.core.log_display import stage_banner
@@ -139,10 +141,14 @@ def activate_stage_context(plan, runtime_config=DEFAULT_RUNTIME_CONFIG):
     if not isinstance(runtime_config, RuntimeConfig):
         raise ConfigValidationError("runtime_config must be a RuntimeConfig")
     args = plan.args
+    # Only after exclusive directory acquisition may we open a logger or
+    # start conversion. An interrupted run's existing work dir is evidence,
+    # not a directory to be re-used by the next invocation.
+    make_directory(WORK_POOL_ROOT)
+    make_directory(os.path.dirname(plan.work_directory))
+    acquire_stage_directory_exclusive(plan.work_directory)
     stage_banner("DataConverter", detail=f"WorkDir: {plan.work_directory}")
     message = f"DataConveter started. WorkDir is {plan.work_directory}."
-    make_directory(WORK_POOL_ROOT)
-    make_directory(plan.work_directory)
     logger = create_logger(logSubDir=f"{plan.work_directory}/logs")
     tcf_main_logger = create_logger(
         logSubDir=f"{plan.work_directory}/logs",
