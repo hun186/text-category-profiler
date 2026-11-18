@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 import os
+from pathlib import Path
 import platform
 from typing import Callable, Optional
 
@@ -58,26 +59,64 @@ def build_visualization_plan(args, ready_workspace, output_dir):
     )
 
 
-def activate_visualization(plan, rename=os.rename):
-    rename(plan.ready_workspace, plan.running_workspace)
+def _stage4_move_noreplace(source, destination):
+    """Transition Stage 4 without replacing any existing work directory.
+
+    Only the exact ready -> running or running -> completed states are legal.
+    The shared cross-platform no-replace primitive is imported on demand so
+    pure planning, diagnostics and read-only viewers stay dependency-light.
+    """
+    source_path, destination_path = Path(source), Path(destination)
+    transitions = (
+        (READY_SUFFIX, RUNNING_SUFFIX),
+        (RUNNING_SUFFIX, NEXT_SUFFIX),
+    )
+    if not any(
+            source_path.name.endswith(old_suffix)
+            and destination_path == source_path.with_name(
+                source_path.name[:-len(old_suffix)] + new_suffix)
+            for old_suffix, new_suffix in transitions):
+        raise ValueError("VISUALIZATION_INVALID_STAGE_TRANSITION")
+
+    from text_category_profiler.pipeline.TCF_utils import (
+        _handoff_rename_noreplace, _is_link_or_reparse,
+    )
+    if not source_path.is_dir() or _is_link_or_reparse(source_path):
+        raise FileNotFoundError("VISUALIZATION_SOURCE_NOT_A_DIRECTORY")
+    # lexists also protects dangling symlinks and Windows junctions.
+    if os.path.lexists(destination):
+        raise FileExistsError("VISUALIZATION_DESTINATION_ALREADY_EXISTS")
+    _handoff_rename_noreplace(source, destination)
+    # EXDEV copy/removal may have failed partway. Do not run the application
+    # or proclaim completion while both names still exist.
+    if (os.path.lexists(source)
+            or not destination_path.is_dir()
+            or _is_link_or_reparse(destination_path)):
+        raise RuntimeError("VISUALIZATION_STAGE_MOVE_INCOMPLETE")
+
+
+def activate_visualization(plan, rename=None):
+    move = _stage4_move_noreplace if rename is None else rename
+    move(plan.ready_workspace, plan.running_workspace)
     return plan.running_workspace
 
 
 def run_visualization_stage(
         plan,
         *,
-        rename=os.rename,
+        rename=None,
         application: Callable[[str], None],
         start_server: Callable[[VisualizationPlan], None],
         validate: Callable[[str], bool]):
     """Activate, execute, validate, and complete the visualization stage."""
-    running_workspace = activate_visualization(plan, rename=rename)
+    move = _stage4_move_noreplace if rename is None else rename
+    running_workspace = activate_visualization(plan, rename=move)
     application(running_workspace)
     if plan.hosted:
         start_server(plan)
     if not validate(running_workspace):
         raise RuntimeError("Visualization stage output validation failed")
-    rename(running_workspace, plan.completed_workspace)
+    move(running_workspace, plan.completed_workspace)
     return plan.completed_workspace
 
 
@@ -187,6 +226,12 @@ def import_dash_runtime(import_module=None):
 
 
 def _replace_suffix(path, old_suffix, new_suffix):
-    if not path.endswith(old_suffix):
+    # Pickers and explicit -VisDir may preserve trailing separators. Remove
+    # only those; normpath also rewrites '/' spelling to '\\' on Windows and
+    # breaks existing callback/path contracts using forward slashes.
+    if not isinstance(path, str):
+        raise ValueError("stage path must be a string")
+    normalized = path.rstrip("/\\")
+    if not os.path.basename(normalized).endswith(old_suffix):
         raise ValueError("{} does not end with {}".format(path, old_suffix))
-    return path[:-len(old_suffix)] + new_suffix
+    return normalized[:-len(old_suffix)] + new_suffix
