@@ -46,6 +46,27 @@ def make_directory(path: str) -> None:
         os.makedirs(path, exist_ok=True)
 
 
+def acquire_stage_directory_exclusive(path: str) -> None:
+    """Atomically acquire a NEW DataConverter running workspace.
+
+    A pre-existing directory can be another run or a Ctrl+C leftover. Never
+    reuse, truncate, delete, rename, or merge into it. The caller prepares
+    its parent directory; os.mkdir provides exclusive leaf creation.
+    """
+    if not isinstance(path, str):
+        raise ValueError("DATACONVERTER_INVALID_WORKSPACE_PATH")
+    directory = path.rstrip("/\\")
+    if (not directory or not os.path.basename(directory).endswith(
+            "_is_running_DataConverter")):
+        raise ValueError("DATACONVERTER_INVALID_WORKSPACE_PATH")
+    try:
+        os.mkdir(directory)
+    except FileExistsError as exc:
+        raise FileExistsError(
+            "DATACONVERTER_WORKSPACE_ALREADY_EXISTS"
+        ) from exc
+
+
 def split_list(values: Sequence[Any], chunks: int = 2) -> list[list[Any]]:
     """Distribute contiguous values across exactly ``chunks`` buckets."""
 
