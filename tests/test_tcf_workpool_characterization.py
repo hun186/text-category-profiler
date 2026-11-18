@@ -364,6 +364,9 @@ class WorkpoolCharacterizationTests(unittest.TestCase):
                                 WeiTechWorkPoolPATH=str(pool), _dataset_dir=temp,
                                 _output_dir=temp)
             module = load_main(args)
+            # Completion now propagates errors; the private fixture must
+            # create the processed parent instead of relying on stub MKDIR.
+            module.MKDIR = lambda path: Path(path).mkdir(parents=True, exist_ok=True)
             ownership = []
             module.platform.system = lambda: "Linux"
             module.OSWALK = lambda path: [str(processed / work_id / "artifact.tsv")]
