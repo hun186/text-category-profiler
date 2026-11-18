@@ -23,12 +23,15 @@ class ResultCombinationPlan:
 def activate_result_combination(plan, rename=os.rename):
     # Only a precise basename READY suffix is eligible for acquisition.
     # Never replace a similarly named parent directory or an arbitrary path.
-    if not isinstance(plan.dataset_dir, str) or not os.path.basename(
-        plan.dataset_dir
-    ).endswith(READY_SUFFIX):
+    if not isinstance(plan.dataset_dir, str):
         raise ValueError("COMBINE_ACTIVATION_INVALID_READY_STATE")
-    running = plan.dataset_dir[:-len(READY_SUFFIX)] + RUNNING_SUFFIX
-    rename(plan.dataset_dir, running)
+    # WorkPool picker can preserve the trailing slash/backslash supplied by
+    # -BertDataDir. Normalize only the path spelling, not any workspace data.
+    ready = os.path.normpath(plan.dataset_dir)
+    if not os.path.basename(ready).endswith(READY_SUFFIX):
+        raise ValueError("COMBINE_ACTIVATION_INVALID_READY_STATE")
+    running = ready[:-len(READY_SUFFIX)] + RUNNING_SUFFIX
+    rename(ready, running)
     return ResultCombinationPlan(
         plan.args, running, plan.output_dir, plan.source_db_glob,
         plan.label_file, plan.test_database, plan.result_file)
