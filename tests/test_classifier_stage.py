@@ -1,4 +1,5 @@
 import ast
+import os
 from argparse import Namespace
 from pathlib import Path
 import unittest
@@ -160,13 +161,13 @@ class ClassifierStageTests(unittest.TestCase):
 
     def test_plan_preserves_pytorch_command(self):
         command = render_pytorch_command(args(), "/work_rdy_for_RunClassfier", "/model", "./BertScript")
-        self.assertEqual(command, 'python ./BertScript/TextClassification_transformers.py -ts True -mdlDir /model -BertDataDir /work_rdy_for_RunClassfier -mdlType XLNet -ZeroShot False -MaxSeqLen 128 -SaveOptimizer False > "/work_rdy_for_RunClassfier/logs/RunClassfier.log" 2>&1 \n\n')
+        self.assertEqual(command, 'python ./BertScript/TextClassification_transformers.py -ts True -mdlDir /model -BertDataDir /work_rdy_for_RunClassfier -mdlType XLNet -ZeroShot False -MaxSeqLen 128 -SaveOptimizer False > "' + os.path.join("/work_rdy_for_RunClassfier", "logs", "RunClassfier.log") + '" 2>&1 \n\n')
 
     def test_plan_preserves_tf_template_flags(self):
         command = render_tf_command(args(), "/data", "/model", "python run_classifier.py^\n", windows=False)
         self.assertEqual(
             command,
-            'python run_classifier.py\\\n--do_train=False \\\n--output_dir=/model/  \\\n--do_predict=True \\\n--keep_checkpoint_max=2 \\\n--data_dir=/data/  \\\n> "/data/logs/RunClassfier.log" 2>&1 \n\n')
+            'python run_classifier.py\\\n--do_train=False \\\n--output_dir=/model/  \\\n--do_predict=True \\\n--keep_checkpoint_max=2 \\\n--data_dir=/data/  \\\n> "' + os.path.join("/data", "logs", "RunClassfier.log") + '" 2>&1 \n\n')
         for flag in ("--do_train=False", "--output_dir=/model/", "--do_predict=True", "--keep_checkpoint_max=2", "--data_dir=/data/"):
             self.assertIn(flag, command)
 
@@ -198,7 +199,7 @@ class ClassifierStageTests(unittest.TestCase):
     def test_chmod_nonzero_still_runs_tf_batch(self):
         plan = ClassifierPlan(args(), "/x_rdy_for_RunClassfier", "/m", "tf", "tf", "batch")
         _, calls = self._run(plan, returns=7)
-        self.assertIn(("system", "./batch"), calls)
+        self.assertIn(("system", "batch" if os.name == "nt" else "./batch"), calls)
 
     @patch("BertScript.classifier_stage.platform.system", return_value="Linux")
     def test_linux_tf_preserves_chmod_target_and_dot_slash_execution(self, _):
@@ -206,7 +207,7 @@ class ClassifierStageTests(unittest.TestCase):
         _, calls = self._run(plan)
         systems = [call for call in calls if call[0] == "system"]
         self.assertEqual(systems[:2], [("system", "chmod 700 /tmp/run.bat"),
-                                      ("system", ".//tmp/run.bat")])
+                                      ("system", "." + os.path.sep + "/tmp/run.bat")])
 
     def test_tf_test_finalization_occurs_after_wait_and_before_handoff(self):
         calls = []
