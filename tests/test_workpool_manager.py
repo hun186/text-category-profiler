@@ -148,7 +148,7 @@ class WorkPoolManagerTests(unittest.TestCase):
     def test_linux_chown_scope_matches_baseline(self):
         fs = RecordingFileSystem(system="Linux")
         DeliveryManager(plan(work_id="job-1"), fs).backup_and_complete("/dataset")
-        processing = "/jobs/AutoBertClassify/../AutoBertClassify_Processing"
+        processing = os.path.join("/jobs/AutoBertClassify", "..", "AutoBertClassify_Processing")
         processed = os.path.join("/jobs/AutoBertClassify", "..", "AutoBertClassify_Processed")
         self.assertEqual([
             processing,
