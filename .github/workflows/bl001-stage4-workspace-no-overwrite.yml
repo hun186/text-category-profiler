@@ -1,0 +1,35 @@
+name: BL-001 Stage 4 Workspace No Overwrite
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "BertScript/visualization_stage.py"
+      - "tests/test_bl001_stage4_workspace_no_overwrite.py"
+      - ".github/workflows/bl001-stage4-workspace-no-overwrite.yml"
+  push:
+    branches: [main]
+    paths:
+      - "BertScript/visualization_stage.py"
+      - "tests/test_bl001_stage4_workspace_no_overwrite.py"
+      - ".github/workflows/bl001-stage4-workspace-no-overwrite.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stage4-workspace-safety:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Stage 4 private no-overwrite fixture and existing stage contracts
+        run: python -m unittest -v tests.test_bl001_stage4_workspace_no_overwrite tests.test_visualization_stage
