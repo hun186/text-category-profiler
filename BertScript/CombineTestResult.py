@@ -453,6 +453,21 @@ def _combine_results(active_plan, database_dir):
 
         if args.SummarizePerformance == True:
             SummarizePerformance()
+def _result_combination_activate(source, destination):
+    """Acquire exactly one ready Stage 3 workspace without replacement."""
+    if not Path(source).is_dir() or _is_link_or_reparse(source):
+        raise FileNotFoundError("COMBINE_ACTIVATION_SOURCE_NOT_A_DIRECTORY")
+    if os.path.lexists(destination):
+        raise FileExistsError("COMBINE_ACTIVATION_DESTINATION_ALREADY_EXISTS")
+    _handoff_rename_noreplace(source, destination)
+    # Do not run a computation after a cross-volume copy was only partial.
+    # No cleanup or automatic recovery of an existing running folder.
+    if (os.path.lexists(source)
+            or not Path(destination).is_dir()
+            or _is_link_or_reparse(destination)):
+        raise RuntimeError("COMBINE_ACTIVATION_NOT_COMPLETE")
+
+
 def _result_combination_handoff(source, destination):
     # This stage must not replace an existing ready folder. The generic
     # RenameDir helper allows overwrite on POSIX and may leave partial copy
@@ -507,7 +522,7 @@ def _build_result_combination_plan(argv, stage_api):
     plan = stage_api.ResultCombinationPlan(args, dataset_dir, output_dir)
     return plan, {
         "combine": _combine_results,
-        "activate_rename": os.rename,
+        "activate_rename": _result_combination_activate,
         "success_handoff": _result_combination_handoff,
     }
 

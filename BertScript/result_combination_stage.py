@@ -21,8 +21,18 @@ class ResultCombinationPlan:
 
 
 def activate_result_combination(plan, rename=os.rename):
-    running = plan.dataset_dir.replace(READY_SUFFIX, RUNNING_SUFFIX)
-    rename(plan.dataset_dir, running)
+    # Only a precise basename READY suffix is eligible for acquisition.
+    # Never replace a similarly named parent directory or an arbitrary path.
+    if not isinstance(plan.dataset_dir, str):
+        raise ValueError("COMBINE_ACTIVATION_INVALID_READY_STATE")
+    # The picker may retain a trailing separator. Strip only that suffix;
+    # normpath would also rewrite existing '/' spelling to '\\' on Windows,
+    # breaking the caller's returned-path contract.
+    ready = plan.dataset_dir.rstrip("/\\")
+    if not os.path.basename(ready).endswith(READY_SUFFIX):
+        raise ValueError("COMBINE_ACTIVATION_INVALID_READY_STATE")
+    running = ready[:-len(READY_SUFFIX)] + RUNNING_SUFFIX
+    rename(ready, running)
     return ResultCombinationPlan(
         plan.args, running, plan.output_dir, plan.source_db_glob,
         plan.label_file, plan.test_database, plan.result_file)
@@ -42,7 +52,9 @@ def run_result_combination_stage(plan, *, combine: Callable,
     except Exception:
         # Deliberately leave the directory in its running state.
         raise
-    destination = active.dataset_dir.replace(RUNNING_SUFFIX, NEXT_SUFFIX)
+    # Activation above produced an exact terminal RUNNING suffix. Compute
+    # the next-stage destination without replacing substrings in parent paths.
+    destination = active.dataset_dir[:-len(RUNNING_SUFFIX)] + NEXT_SUFFIX
     completion(active.dataset_dir, destination)
     return destination
 
