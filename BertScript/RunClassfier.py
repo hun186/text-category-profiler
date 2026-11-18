@@ -22,6 +22,8 @@ from text_category_profiler.pipeline.TCF_utils import freeModelDirConformer
 from text_category_profiler.pipeline.TCF_utils import ClearOldTestResFile
 from text_category_profiler.pipeline.TCF_utils import ClassfierOptionParser
 from text_category_profiler.pipeline.TCF_utils import PYTORCH_MODEL_TYPES
+from text_category_profiler.pipeline.TCF_utils import _handoff_rename_noreplace
+from text_category_profiler.pipeline.TCF_utils import _is_link_or_reparse
 from text_category_profiler.core.utilities import MKDIR
 from text_category_profiler.core.utilities import MKDIRandCopy
 from text_category_profiler.core.utilities import getFNFromFullPath
@@ -351,8 +353,36 @@ def _retry_classifier_handoff(source, destination, *, rename=os.rename,
         sleep(2)
 
 
+def _classifier_transition_noreplace(source, destination):
+    """Acquire or publish a classifier workspace without replacing a peer."""
+    source_path, destination_path = Path(source), Path(destination)
+    transitions = (
+        ("_rdy_for_RunClassfier", "_is_running_RunClassfier"),
+        ("_is_running_RunClassfier", "_rdy_for_CombineTestResult"),
+    )
+    if not any(
+            source_path.name.endswith(old)
+            and destination_path == source_path.with_name(
+                source_path.name[:-len(old)] + new)
+            for old, new in transitions):
+        raise ValueError("CLASSIFIER_INVALID_WORKSPACE_TRANSITION")
+    if not source_path.is_dir() or _is_link_or_reparse(source_path):
+        raise FileNotFoundError("CLASSIFIER_SOURCE_NOT_A_DIRECTORY")
+    if os.path.lexists(destination):
+        raise FileExistsError("CLASSIFIER_DESTINATION_ALREADY_EXISTS")
+    _handoff_rename_noreplace(source, destination)
+    # Incomplete cross-volume copy/removal must never count as a successful
+    # acquisition or handoff. Leave both copies for explicit inspection.
+    if (os.path.lexists(source)
+            or not destination_path.is_dir()
+            or _is_link_or_reparse(destination_path)):
+        raise RuntimeError("CLASSIFIER_WORKSPACE_TRANSITION_INCOMPLETE")
+
+
 def _classifier_handoff(source, destination):
-    _retry_classifier_handoff(source, destination)
+    # The legacy retry helper remains for explicit compatibility callers,
+    # but production must fail closed rather than retry over an existing dir.
+    _classifier_transition_noreplace(source, destination)
     stage_done("RunClassfier")
     message = f"RunClassfier is finished. Rename {source} as {destination}"
     key_values("RunClassfier handoff", [("from", source), ("to", destination)])
@@ -380,7 +410,7 @@ def _build_classifier_plan(argv, stage_api):
             render_tf_command=stage_api.render_tf_command),
         "system": os.system,
         "wait_until_stable": WaitUntilFileIsStable,
-        "rename": os.rename,
+        "rename": _classifier_transition_noreplace,
         "warn": warning,
         "handoff": _classifier_handoff,
     }

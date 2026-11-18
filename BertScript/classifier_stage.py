@@ -73,8 +73,15 @@ def render_tf_command(args, dataset_dir, output_dir, template, windows=False):
 
 
 def activate_classifier(plan, rename=os.rename):
-    running = plan.dataset_dir.replace(READY_SUFFIX, RUNNING_SUFFIX)
-    rename(plan.dataset_dir, running)
+    if not isinstance(plan.dataset_dir, str):
+        raise ValueError("CLASSIFIER_ACTIVATION_INVALID_READY_STATE")
+    # The picker may preserve an explicit trailing separator; do not normalize
+    # other path spelling (notably '/' on Windows) or alter matching parents.
+    ready = plan.dataset_dir.rstrip("/\\")
+    if not os.path.basename(ready).endswith(READY_SUFFIX):
+        raise ValueError("CLASSIFIER_ACTIVATION_INVALID_READY_STATE")
+    running = ready[:-len(READY_SUFFIX)] + RUNNING_SUFFIX
+    rename(ready, running)
     return ClassifierPlan(plan.args, running, plan.output_dir,
                           plan.command.replace(plan.dataset_dir, running),
                           plan.model_kind, plan.batch_file,
@@ -112,7 +119,10 @@ def run_classifier_stage(plan, *, system=os.system,
         for filename in result_files:
             wait_until_stable(filename)
         finalize(active)
-        destination = active.dataset_dir.replace(RUNNING_SUFFIX, NEXT_SUFFIX)
+        if (not isinstance(active.dataset_dir, str)
+                or not os.path.basename(active.dataset_dir).endswith(RUNNING_SUFFIX)):
+            raise ValueError("CLASSIFIER_HANDOFF_INVALID_RUNNING_STATE")
+        destination = active.dataset_dir[:-len(RUNNING_SUFFIX)] + NEXT_SUFFIX
         (handoff or rename)(active.dataset_dir, destination)
         return destination
     return active.dataset_dir
