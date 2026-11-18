@@ -1,0 +1,35 @@
+name: BL-001 External Work-ID No Overwrite Move
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "text_category_profiler/filesystem/legacy.py"
+      - "tests/test_bl001_external_workitem_move_no_overwrite.py"
+      - ".github/workflows/bl001-external-workitem-no-overwrite.yml"
+  push:
+    branches: [main]
+    paths:
+      - "text_category_profiler/filesystem/legacy.py"
+      - "tests/test_bl001_external_workitem_move_no_overwrite.py"
+      - ".github/workflows/bl001-external-workitem-no-overwrite.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  external-workitem-no-overwrite:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Validate private external Work-ID moves and legacy lifecycle
+        run: python -m unittest -v tests.test_bl001_external_workitem_move_no_overwrite tests.test_workpool_manager tests.test_tcf_workpool_characterization
