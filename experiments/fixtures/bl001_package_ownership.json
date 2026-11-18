@@ -189,6 +189,11 @@
       "kind": "domain_module"
     },
     {
+      "path": "text_category_profiler/filesystem/no_replace.py",
+      "domain": "filesystem",
+      "kind": "domain_module"
+    },
+    {
       "path": "text_category_profiler/integrations/__init__.py",
       "domain": "integrations",
       "kind": "package_initializer"
