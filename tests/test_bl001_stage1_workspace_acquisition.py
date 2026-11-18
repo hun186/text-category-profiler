@@ -16,7 +16,7 @@ from tests.test_data_converter_stage_plan import converter_args
 
 class StageOneExclusiveWorkspaceTests(unittest.TestCase):
     def plan(self, base):
-        args = converter_args(WeiTechFormatInputPATH="", FixedTestPATH="fixture")
+        args = converter_args(WeiTechFormatInputPATH="", FixedTestPATH="fixture", TRVPort=8059)
         with (
             mock.patch.object(stage, "parse_converter_options", return_value=args),
             mock.patch.object(stage, "pick_dataset_directories",
