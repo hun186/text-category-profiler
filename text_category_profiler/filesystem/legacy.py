@@ -4,6 +4,9 @@ import os
 import platform
 from pathlib import Path
 
+from text_category_profiler.filesystem.no_replace import _handoff_rename_noreplace
+from text_category_profiler.filesystem.no_replace import _is_link_or_reparse
+
 
 class LegacyFileSystem:
     def __init__(self, *, make_directory, walk, chown, backup,
@@ -27,10 +30,6 @@ class LegacyFileSystem:
         moving a job inside a stale/competing completed job. Reuse the shared
         no-replace stage publisher, imported only for this runtime operation.
         """
-        from text_category_profiler.pipeline.TCF_utils import (
-            _handoff_rename_noreplace, _is_link_or_reparse,
-        )
-
         source_path, destination_path = Path(source), Path(destination)
         if not source_path.is_dir() or _is_link_or_reparse(source_path):
             raise FileNotFoundError("WORKITEM_MOVE_SOURCE_NOT_A_REAL_DIRECTORY")
