@@ -108,7 +108,7 @@ class DeliveryManager:
             DesDir=destination,
             BackFNrePatList=patterns,
         )
-        self.output_logger(
+        completion_message = (
             f"Complete {self.plan.incoming_path}/{self.plan.work_id}, Move Output "
             f"{dataset_dir}/DFPreambleCols_df_ALL.sql3 to {destination}"
         )
@@ -130,4 +130,22 @@ class DeliveryManager:
         try:
             self.filesystem.move(source, completed)
         except Exception as error:
-            self.move_error_reporter(error)
+            # An external job is NOT complete if its processing -> processed
+            # handoff failed. Report it, but preserve the original exception
+            # even when the diagnostic callback itself is broken.
+            try:
+                self.move_error_reporter(error)
+            except Exception:
+                pass
+            raise
+
+        # The move has committed. Do not report "Complete" prematurely.
+        # Conversely, a log failure after a successful move must never
+        # cause an automatic retry of a non-idempotent handoff.
+        try:
+            self.output_logger(completion_message)
+        except Exception as error:
+            try:
+                self.move_error_reporter(error)
+            except Exception:
+                pass
