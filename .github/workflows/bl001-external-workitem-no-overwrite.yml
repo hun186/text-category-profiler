@@ -8,6 +8,8 @@ on:
       - "text_category_profiler/filesystem/no_replace.py"
       - "text_category_profiler/pipeline/TCF_utils.py"
       - "tests/test_workpool_manager.py"
+      - "tests/test_tcf_workpool_characterization.py"
+      - "tests/test_bl001_task_connector_handoff.py"
       - "tests/test_bl001_external_workitem_move_no_overwrite.py"
       - ".github/workflows/bl001-external-workitem-no-overwrite.yml"
   push:
