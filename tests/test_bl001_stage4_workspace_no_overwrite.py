@@ -62,6 +62,29 @@ class VisualizationWorkspaceSafetyTests(unittest.TestCase):
                 b"private-not-production",
             )
 
+    def test_valid_ready_workspace_with_trailing_separator_succeeds(self):
+        with tempfile.TemporaryDirectory() as root:
+            ready, running, complete = self.workspace(root)
+            plan = self.plan(ready)
+            # Match the production picker preserving a user supplied path.
+            plan = stage.VisualizationPlan(
+                ready_workspace=plan.ready_workspace + os.sep,
+                output_dir=plan.output_dir, hosted=plan.hosted,
+                host=plan.host, port=plan.port,
+                weitech_separate_work_pool=plan.weitech_separate_work_pool,
+                weitech_input_path=plan.weitech_input_path,
+                weitech_output_path=plan.weitech_output_path,
+                ssl_context=plan.ssl_context,
+            )
+            outcome = stage.run_visualization_stage(
+                plan, application=lambda p: self.assertEqual(p, str(running)),
+                start_server=lambda *_: self.fail("must not host"),
+                validate=lambda p: Path(p).is_dir(),
+            )
+            self.assertEqual(outcome, str(complete))
+            self.assertEqual((complete / "private-result.sql3").read_bytes(),
+                             b"private-not-production")
+
     def test_preexisting_running_workspace_stays_untouched(self):
         with tempfile.TemporaryDirectory() as root:
             ready, running, complete = self.workspace(root)
