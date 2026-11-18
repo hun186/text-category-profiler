@@ -80,10 +80,10 @@ class WorkPoolManagerTests(unittest.TestCase):
         })
         selected = WorkPoolManager(plan(), fs).acquire()
         self.assertEqual("job-002", selected)
-        processing = "/jobs/AutoBertClassify/../AutoBertClassify_Processing"
+        processing = os.path.join("/jobs/AutoBertClassify", "..", "AutoBertClassify_Processing")
         self.assertIn(("mkdir", processing), fs.calls)
-        self.assertIn(("move", "/jobs/AutoBertClassify/job-002",
-                       processing + "/job-002"), fs.calls)
+        self.assertIn(("move", os.path.join("/jobs/AutoBertClassify", "job-002"),
+                       os.path.join(processing, "job-002")), fs.calls)
 
     def test_acquire_fails_before_command_when_empty(self):
         fs = RecordingFileSystem({"/jobs/AutoBertClassify": [], "/jobs/WorkPool": []})
@@ -141,20 +141,20 @@ class WorkPoolManagerTests(unittest.TestCase):
         fs = RecordingFileSystem()
         DeliveryManager(plan(work_id="job-1"), fs).backup_and_complete("/dataset")
         self.assertIn(("move",
-                       "/jobs/AutoBertClassify/../AutoBertClassify_Processing/job-1",
-                       "/jobs/AutoBertClassify/../AutoBertClassify_Processed/job-1"),
+                       os.path.join("/jobs/AutoBertClassify", "..", "AutoBertClassify_Processing", "job-1"),
+                       os.path.join("/jobs/AutoBertClassify", "..", "AutoBertClassify_Processed", "job-1")),
                       fs.calls)
 
     def test_linux_chown_scope_matches_baseline(self):
         fs = RecordingFileSystem(system="Linux")
         DeliveryManager(plan(work_id="job-1"), fs).backup_and_complete("/dataset")
-        processing = "/jobs/AutoBertClassify/../AutoBertClassify_Processing"
-        processed = "/jobs/AutoBertClassify/../AutoBertClassify_Processed"
+        processing = os.path.join("/jobs/AutoBertClassify", "..", "AutoBertClassify_Processing")
+        processed = os.path.join("/jobs/AutoBertClassify", "..", "AutoBertClassify_Processed")
         self.assertEqual([
             processing,
             processed,
-            processing + "/job-1",
-            processed + "/job-1/artifact.tsv",
+            os.path.join(processing, "job-1"),
+            os.path.join(processed, "job-1", "artifact.tsv"),
         ], [call[1] for call in fs.calls if call[0] == "chown"])
 
     def test_adapter_propagates_validation_and_backup_errors(self):
