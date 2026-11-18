@@ -343,6 +343,7 @@ class WorkpoolCharacterizationTests(unittest.TestCase):
                     WeiTechworkIDPath=str(incoming), WeiTechWorkPoolPATH=str(pool),
                     _dataset_dir=temp, _output_dir=temp)
                 module = load_main(args)
+                module.MKDIR = lambda path: Path(path).mkdir(parents=True, exist_ok=True)
                 module.BackupAIPredictResultAndDelTempFile = lambda **kw: calls.append(kw)
                 module.BackupAndClean(args)
                 self.assertEqual(expected, len(calls))
