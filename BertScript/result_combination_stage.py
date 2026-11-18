@@ -25,9 +25,10 @@ def activate_result_combination(plan, rename=os.rename):
     # Never replace a similarly named parent directory or an arbitrary path.
     if not isinstance(plan.dataset_dir, str):
         raise ValueError("COMBINE_ACTIVATION_INVALID_READY_STATE")
-    # WorkPool picker can preserve the trailing slash/backslash supplied by
-    # -BertDataDir. Normalize only the path spelling, not any workspace data.
-    ready = os.path.normpath(plan.dataset_dir)
+    # The picker may retain a trailing separator. Strip only that suffix;
+    # normpath would also rewrite existing '/' spelling to '\\' on Windows,
+    # breaking the caller's returned-path contract.
+    ready = plan.dataset_dir.rstrip("/\\")
     if not os.path.basename(ready).endswith(READY_SUFFIX):
         raise ValueError("COMBINE_ACTIVATION_INVALID_READY_STATE")
     running = ready[:-len(READY_SUFFIX)] + RUNNING_SUFFIX
