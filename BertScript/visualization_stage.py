@@ -226,6 +226,12 @@ def import_dash_runtime(import_module=None):
 
 
 def _replace_suffix(path, old_suffix, new_suffix):
-    if not path.endswith(old_suffix):
+    # Pickers and explicit -VisDir may preserve a trailing / or \\ even for
+    # an existing valid workspace. Strip only syntactic separators, then
+    # validate the terminal directory NAME (never rewrite parent names).
+    if not isinstance(path, str):
+        raise ValueError("stage path must be a string")
+    normalized = os.path.normpath(path)
+    if not os.path.basename(normalized).endswith(old_suffix):
         raise ValueError("{} does not end with {}".format(path, old_suffix))
-    return path[:-len(old_suffix)] + new_suffix
+    return normalized[:-len(old_suffix)] + new_suffix
