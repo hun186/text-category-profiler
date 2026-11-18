@@ -58,6 +58,32 @@ class CombineActivationNoOverwriteTests(unittest.TestCase):
             self.assertEqual((final / "test.sql3").read_bytes(),
                              b"test-data-not-production")
 
+    def test_valid_ready_directory_with_trailing_separator_activates(self):
+        # Both Linux '/' and Windows '\\' are accepted when supplied as
+        # a trailing directory separator by the production picker.
+        with tempfile.TemporaryDirectory() as temp:
+            src, active, final = self.paths(temp)
+            supplied_plan = ResultCombinationPlan(
+                args=type("Args", (), {"datasetDataBaseSubDir": "datasetDB"})(),
+                dataset_dir=str(src) + os.sep,
+                output_dir=str(src.parent),
+            )
+            trace = []
+            outcome = run_result_combination_stage(
+                supplied_plan,
+                combine=lambda plan, db: trace.append((plan.dataset_dir, db)),
+                activate_rename=self.stage._result_combination_activate,
+                success_handoff=os.rename,
+            )
+            self.assertEqual(trace, [
+                (str(active), os.path.join(str(active), "datasetDB"))
+            ])
+            self.assertEqual(outcome, str(final))
+            self.assertFalse(src.exists())
+            self.assertFalse(active.exists())
+            self.assertEqual((final / "test.sql3").read_bytes(),
+                             b"test-data-not-production")
+
     def test_existing_running_destination_fails_before_computation(self):
         with tempfile.TemporaryDirectory() as temp:
             src, active, final = self.paths(temp)
