@@ -3,28 +3,20 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
-import sys
 import tempfile
 import unittest
 from unittest import mock
 
+import text_category_profiler.filesystem.legacy as legacy_fs
 from text_category_profiler.filesystem.legacy import LegacyFileSystem
 from text_category_profiler.pipeline.workpool import (
     WorkPoolManager, DeliveryManager, WorkPoolPlan,
 )
-from tests.test_tcf_cli_contract import load_tcf_utils
 
 
 class ExternalWorkItemMoveNoOverwriteTests(unittest.TestCase):
     def setUp(self):
-        self.helpers = load_tcf_utils()
-        self.original_move = self.helpers._handoff_rename_noreplace
-        patcher = mock.patch.dict(
-            sys.modules,
-            {"text_category_profiler.pipeline.TCF_utils": self.helpers},
-        )
-        patcher.start()
-        self.addCleanup(patcher.stop)
+        self.original_move = legacy_fs._handoff_rename_noreplace
 
     def filesystem(self, errors=None):
         return LegacyFileSystem(
@@ -108,9 +100,9 @@ class ExternalWorkItemMoveNoOverwriteTests(unittest.TestCase):
                 processing.mkdir()
                 (processing / "other-owner").write_bytes(b"keep")
                 return self.original_move(src, dst)
-            self.helpers._handoff_rename_noreplace = competing_rename
-            with self.assertRaises((OSError, FileExistsError)):
-                self.filesystem().move(str(source), str(processing))
+            with mock.patch.object(legacy_fs, "_handoff_rename_noreplace", competing_rename):
+                with self.assertRaises((OSError, FileExistsError)):
+                    self.filesystem().move(str(source), str(processing))
             self.assertTrue((source / "marker.txt").is_file())
             self.assertEqual((processing / "other-owner").read_bytes(), b"keep")
             self.assertFalse(processed.exists())
@@ -118,11 +110,12 @@ class ExternalWorkItemMoveNoOverwriteTests(unittest.TestCase):
     def test_cross_device_partial_copy_aborts_and_leaves_evidence(self):
         with tempfile.TemporaryDirectory() as directory:
             source, processing, processed, plan = self.paths(directory)
-            self.helpers._handoff_rename_noreplace = (
-                lambda src, dst: shutil.copytree(src, dst)
-            )
-            with self.assertRaisesRegex(RuntimeError, "WORKITEM_MOVE_INCOMPLETE"):
-                self.filesystem().move(str(source), str(processing))
+            with mock.patch.object(
+                legacy_fs, "_handoff_rename_noreplace",
+                side_effect=lambda src, dst: shutil.copytree(src, dst),
+            ):
+                with self.assertRaisesRegex(RuntimeError, "WORKITEM_MOVE_INCOMPLETE"):
+                    self.filesystem().move(str(source), str(processing))
             self.assertTrue((source / "marker.txt").is_file())
             self.assertTrue((processing / "marker.txt").is_file())
             self.assertFalse(processed.exists())
