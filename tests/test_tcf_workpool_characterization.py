@@ -166,6 +166,7 @@ class WorkpoolCharacterizationTests(unittest.TestCase):
                                 WeiTechWorkPoolPATH=str(pool), _dataset_dir=temp,
                                 _output_dir=temp)
             module = load_main(args)
+            module.MKDIR = lambda path: Path(path).mkdir(parents=True, exist_ok=True)
             module.DataConvert(args, {"start": 0})
             self.assertEqual("job-002", args.WeiTechworkID)
             self.assertFalse((incoming / "job-002").exists())
@@ -320,6 +321,7 @@ class WorkpoolCharacterizationTests(unittest.TestCase):
                 args = default_args(RemoveBertDataDir=remove, _dataset_dir=temp,
                                     _output_dir=temp)
                 module = load_main(args)
+                module.MKDIR = lambda path: Path(path).mkdir(parents=True, exist_ok=True)
                 module.BackupAIPredictResultAndDelTempFile = lambda **kw: calls.append(kw)
                 module.BackupAndClean(args)
                 self.assertEqual(expected, len(calls))
