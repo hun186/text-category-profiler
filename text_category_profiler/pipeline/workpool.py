@@ -162,6 +162,9 @@ class WorkPoolManager:
         # os.listdir; validate it before even inspecting external directories.
         if self.plan.work_id != "":
             validate_external_work_id(self.plan.work_id)
+        if not validate_external_workpool_path_pair(
+                self.plan.incoming_path, self.plan.pool_path):
+            raise ValueError("EXTERNAL_WORKPOOL_PATH_PAIR_REQUIRED")
         candidates = sorted(
             self.filesystem.list_directory(self.plan.incoming_path), reverse=True
         )
