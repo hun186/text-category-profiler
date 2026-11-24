@@ -90,7 +90,18 @@ from text_category_profiler.core.log_display import warning
 # entries are now repaired/validated before costly test pipeline stages.
 # This avoids injecting another ambiguous PATH entry into Stage 4.
 
-def DataConvert(args,exeTimeDict=dict()):
+def _stage_timing(exe_time_dict):
+    """Allocate timing for a standalone stage invocation; preserve injected maps.
+
+    The canonical root orchestrator supplies one explicitly shared map per
+    pipeline run. Legacy direct callers that omit it must not share mutable
+    default state with other invocations.
+    """
+    return {"start": time.time()} if exe_time_dict is None else exe_time_dict
+
+
+def DataConvert(args,exeTimeDict=None):
+    exeTimeDict = _stage_timing(exeTimeDict)
     stage_start_time = time.time()
     stage_banner("DataConverter", detail="整理輸入資料並產生 train/dev/test handoff 檔案")
     print_args_summary(args)
@@ -127,7 +138,8 @@ def DataConvert(args,exeTimeDict=dict()):
     exeTimeDict["DataConverter"] = f"{time.time()-stage_start_time:.2f}"
     stage_done("DataConverter", time.time()-stage_start_time)
 
-def RunClassfier(args,exeTimeDict=dict()):
+def RunClassfier(args,exeTimeDict=None):
+    exeTimeDict = _stage_timing(exeTimeDict)
     stage_start_time = time.time()
     stage_banner("RunClassfier", detail="執行模型訓練或推論")
     print_args_summary(args)
@@ -144,7 +156,8 @@ def RunClassfier(args,exeTimeDict=dict()):
     exeTimeDict["RunClassfier"] = f"{time.time()-stage_start_time:.2f}"
     stage_done("RunClassfier", time.time()-stage_start_time)
 
-def CombineTestResult(args,exeTimeDict=dict()):
+def CombineTestResult(args,exeTimeDict=None):
+    exeTimeDict = _stage_timing(exeTimeDict)
     stage_start_time = time.time()
     #if args.test == True:
     stage_banner("CombineTestResult", detail="合併預測結果與原始文本索引")
@@ -160,7 +173,8 @@ def CombineTestResult(args,exeTimeDict=dict()):
     exeTimeDict["Combine AI Result and TextPieces"] = f"{time.time()-stage_start_time:.2f}"
     stage_done("CombineTestResult", time.time()-stage_start_time)
 
-def TestResultVis(args,exeTimeDict=dict()):
+def TestResultVis(args,exeTimeDict=None):
+    exeTimeDict = _stage_timing(exeTimeDict)
     command = visualization_command(
         args, BertClassfierPath, args_renderer=convert_to_args_str
     )
@@ -218,7 +232,8 @@ def _legacy_filesystem():
         platform_name=lambda: platform.system(),
     )
 
-def ArticleAnalysis(args,exeTimeDict=dict()):
+def ArticleAnalysis(args,exeTimeDict=None):
+    exeTimeDict = _stage_timing(exeTimeDict)
     #綜合輸入資料及推論結果，製作資料庫，以供檢索
     CombineTestResult(args,exeTimeDict=exeTimeDict)
     #建置可視化研閱界面
