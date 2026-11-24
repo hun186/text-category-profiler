@@ -1,0 +1,35 @@
+name: BL-001 Reserved Windows External WorkIDs
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "text_category_profiler/pipeline/workpool.py"
+      - "tests/test_bl001_windows_reserved_workids.py"
+      - ".github/workflows/bl001-windows-reserved-workids.yml"
+  push:
+    branches: [main]
+    paths:
+      - "text_category_profiler/pipeline/workpool.py"
+      - "tests/test_bl001_windows_reserved_workids.py"
+      - ".github/workflows/bl001-windows-reserved-workids.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reserved-workids:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify portable WorkPool child names and legacy lifecycle
+        run: python -m unittest -v tests.test_bl001_windows_reserved_workids tests.test_bl001_external_workid_path_validation tests.test_workpool_manager
