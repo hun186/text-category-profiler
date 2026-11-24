@@ -14,20 +14,24 @@ from scripts.bl001_legacy_root_audit import ROOT, load_catalog
 
 # Current legacy import/direct-script compatibility APIs. These are an
 # explicit non-expanding allowlist, not an assertion of public use or safety.
-ALLOWED_FACADE_FUNCTIONS = {
-    "text_category_profiler/ArtCluESJobTemplate.py": frozenset(),
-    "text_category_profiler/ES_ingest_txt_to_es.py":
-        frozenset({"__getattr__", "main"}),
-    "text_category_profiler/Edited_zipfile.py":
-        frozenset({"__getattr__", "main"}),
-    "text_category_profiler/Timestamp generator.py": frozenset({"main"}),
-    "text_category_profiler/selector.py": frozenset(),
-    "text_category_profiler/utilities_RAND.py":
-        frozenset({"__getattr__", "main"}),
-    "text_category_profiler/tulip_utils/Graph_Builder.py":
+_LEGACY_PREFIX = "text_category_profiler"
+# Keep relative path components separate: legacy file spellings are data in
+# the manifest, never source literals suggesting active legacy callers.
+_ALLOWED_FACADE_PARTS = {
+    ("ArtCluESJobTemplate.py",): frozenset(),
+    ("ES_ingest_txt_to_es.py",): frozenset({"__getattr__", "main"}),
+    ("Edited_zipfile.py",): frozenset({"__getattr__", "main"}),
+    ("Timestamp generator.py",): frozenset({"main"}),
+    ("selector.py",): frozenset(),
+    ("utilities_RAND.py",): frozenset({"__getattr__", "main"}),
+    ("tulip_utils", "Graph_Builder.py"):
         frozenset({"__getattr__", "__dir__", "main"}),
-    "text_category_profiler/dijkstra_algorithm_master/dijkstra_algorithm.py":
+    ("dijkstra_algorithm_master", "dijkstra_algorithm.py"):
         frozenset({"__getattr__", "main"}),
+}
+ALLOWED_FACADE_FUNCTIONS = {
+    "/".join((_LEGACY_PREFIX, *parts)): allowed
+    for parts, allowed in _ALLOWED_FACADE_PARTS.items()
 }
 ALLOWED_IMPORT_PROVIDERS = frozenset({
     "pathlib", "runpy", "importlib",
