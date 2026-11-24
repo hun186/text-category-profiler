@@ -13,6 +13,7 @@ NAMES = (
     "datatable_filter_state",
     "is_redundant_table_filter_event",
     "is_redundant_table_page_event",
+    "restore_derived_query_state",
 )
 
 

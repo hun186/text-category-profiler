@@ -76,3 +76,19 @@ def is_redundant_table_page_event(triggered, *, page_current,
         and triggered[0].get("prop_id") == "VisDatatable.page_current"
         and last_rendered.get("page_current") == page_current
     )
+
+
+def restore_derived_query_state(
+        filter_query, derived_query_structure, previous_structure_json, *,
+        loads):
+    """Recover the structured filter on a remounted DataTable only if needed.
+
+    Always decode previous JSON first, matching the original callback error
+    propagation and before any logging, DB reads or downstream exports.
+    The loads function is provided by the caller to keep this policy module
+    import-free and directly testable without Dash.
+    """
+    old_derived_query_structure = loads(previous_structure_json)
+    if filter_query and derived_query_structure is None:
+        derived_query_structure = old_derived_query_structure
+    return old_derived_query_structure, derived_query_structure

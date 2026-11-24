@@ -1974,11 +1974,14 @@ def FilteredDF_update(
         #*args
         ):
     
-    Old_derived_query_structure = json.loads(Old_derived_filter_query_structure_json)
-    # Dash may reset the parser to None while remounting a table whose
-    # filter_query is still nonempty. Recover the prior parsed expression.
-    if filter_query and derived_query_structure is None:
-        derived_query_structure = Old_derived_query_structure
+    # Restore a parsed filter before any callback logging, reads or exports.
+    # Preserve the old policy: even an empty current query decodes the prior
+    # JSON state, and an explicitly supplied parsed query always takes priority.
+    (Old_derived_query_structure,
+     derived_query_structure) = visualization_stage.restore_derived_query_state(
+         filter_query, derived_query_structure,
+         Old_derived_filter_query_structure_json, loads=json.loads,
+     )
     triggered = dash.callback_context.triggered
     if visualization_stage.is_spurious_datatable_filter_notification(
             triggered,
