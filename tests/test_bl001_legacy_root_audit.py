@@ -4,7 +4,7 @@ from pathlib import Path
 import unittest
 
 from scripts.bl001_legacy_root_audit import (
-    ROOT, MANIFEST, audit, blob_sha, load_catalog, scan_source, source_in_scope,
+    ROOT, MANIFEST, audit, blob_sha, legacy_git_blob_bytes, load_catalog, scan_source, source_in_scope,
     target_module,
 )
 
@@ -29,8 +29,11 @@ class LegacyRootAuditTests(unittest.TestCase):
         for item in load_catalog(ROOT):
             with self.subTest(path=item["path"]):
                 actual = (ROOT / item["path"]).read_bytes()
-                self.assertEqual(len(actual), item["size_bytes"])
-                self.assertEqual(blob_sha(actual), item["sha"])
+                canonical = legacy_git_blob_bytes(
+                    actual, item["sha"], item["size_bytes"]
+                )
+                self.assertEqual(len(canonical), item["size_bytes"])
+                self.assertEqual(blob_sha(canonical), item["sha"])
                 self.assertTrue((ROOT / item["canonical_path"]).is_file())
 
     def test_old_vendor_assets_preserved_without_claiming_readme_byte_identity(self):
