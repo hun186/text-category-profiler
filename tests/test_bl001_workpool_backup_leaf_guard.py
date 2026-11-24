@@ -34,6 +34,15 @@ class WorkIDBackupAliasGuardTests(unittest.TestCase):
             })])
             self.assertTrue(leaf.is_dir())
 
+    def test_real_directory_with_trailing_separator_keeps_backend_spelling(self):
+        with tempfile.TemporaryDirectory() as temp:
+            leaf = Path(temp) / "real"
+            leaf.mkdir()
+            supplied = str(leaf) + "/"
+            calls = []
+            self.filesystem(calls).backup(DesDir=supplied)
+            self.assertEqual(calls, [("backup", {"DesDir": supplied})])
+
     def test_existing_file_at_workpool_leaf_is_rejected_before_delegate(self):
         with tempfile.TemporaryDirectory() as temp:
             leaf = Path(temp) / "work-id"
@@ -61,11 +70,15 @@ class WorkIDBackupAliasGuardTests(unittest.TestCase):
             calls = []
             fs = self.filesystem(calls)
             for path in (link, broken):
-                with self.subTest(path=path):
-                    with self.assertRaisesRegex(
-                        RuntimeError, "WORKITEM_BACKUP_DESTINATION_NOT_REAL_DIRECTORY"
-                    ):
-                        fs.backup(DesDir=str(path))
+                spellings = (str(path), str(path) + "/", str(path) + "///")
+                if os.name == "nt":
+                    spellings += (str(path) + "\\",)
+                for spelling in spellings:
+                    with self.subTest(path=spelling):
+                        with self.assertRaisesRegex(
+                            RuntimeError, "WORKITEM_BACKUP_DESTINATION_NOT_REAL_DIRECTORY"
+                        ):
+                            fs.backup(DesDir=spelling)
             self.assertEqual(calls, [])
             self.assertEqual((actual / "keep.txt").read_bytes(), b"not-a-backup-target")
             self.assertTrue(link.is_symlink())
@@ -123,7 +136,7 @@ class WorkIDBackupAliasGuardTests(unittest.TestCase):
 
     def test_invalid_destination_types_rejected(self):
         calls = []
-        for target in ("", None, 5, b"bytes-not-portable"):
+        for target in ("", "/", "C:\\", "\\\\server\\share\\", None, 5, b"bytes-not-portable"):
             with self.subTest(target=repr(target)):
                 with self.assertRaisesRegex(
                         ValueError, "WORKITEM_BACKUP_INVALID_DESTINATION_PATH"):
