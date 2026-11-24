@@ -23,3 +23,18 @@ SQLite/XLS 輸出、版面或 Stage 4 的執行狀態。
 真實 Windows Dash 的 0 筆／非 0 筆篩選、分頁、排序、
 靜置時的回呼迴圈（KI-008）仍需獨立驗收，
 Hosted CI 通過不代表已做 UI E2E。
+
+## Filter DataFrame application follow-up
+
+後續將同一 Stage 4 區域中直接使用 `split_filter_part` 的
+`df_upd_filter_query(df, filter_query)` **整函式原樣搬入**
+`BertScript/visualization_filter.py`，並在大型 Stage 4
+入口中以原名重新匯出。這讓 DataTable 字串語法、衍生查詢結構，
+以及對既有 pandas-like DataFrame 的篩選套用，共同由同一個
+Stage 4 模組持有；新功能可直接寫純函式回歸測試，不必載入 Dash。
+
+現有 `ge/lt/eq/contains/datestartswith`、`&&`、
+不明篩選運算子無動作以及原本 `.str.contains` 的 pandas
+regex 預設行為皆**刻意維持不變**。不宣稱修復過濾語法注入、
+複雜查詢效能或 KI-008 真實 GUI 的回饋迴圈；
+Windows Dash 瀏覽器、資料庫與檔案輸出的 UAT 仍另外驗證。
