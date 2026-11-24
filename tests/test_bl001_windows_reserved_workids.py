@@ -16,6 +16,8 @@ RESERVED = (
     "AUX", "aux.foo", "NUL", "nul.json", "CONIN$", "CONOUT$",
     "COM1", "com9", "COM1.job", "LPT1", "lpt9.txt",
     "COM¹", "COM².ext", "COM³", "LPT¹", "LPT².job", "LPT³",
+    "CON .txt", "CON  .TXT", "COM1 .foo", "LPT² .job",
+    "nul .json", "PRN .txt", "AUX  .bak", "lpt9  .backup",
 )
 
 SAFE = (
