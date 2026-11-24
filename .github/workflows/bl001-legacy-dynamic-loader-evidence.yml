@@ -1,0 +1,42 @@
+name: BL-001 Legacy Dynamic Caller Evidence
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/bl001_legacy_root_audit.py"
+      - "tests/test_bl001_legacy_dynamic_loader_evidence.py"
+      - ".github/workflows/bl001-legacy-dynamic-loader-evidence.yml"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/bl001_legacy_root_audit.py"
+      - "tests/test_bl001_legacy_dynamic_loader_evidence.py"
+      - ".github/workflows/bl001-legacy-dynamic-loader-evidence.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bounded-dynamic-evidence:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify static loader candidates and immutable Git identities
+        run: python -m unittest -v tests.test_bl001_legacy_dynamic_loader_evidence tests.test_bl001_legacy_root_audit tests.test_bl001_legacy_git_blob_identity
+      - name: Export read-only bounded in-repo AST evidence
+        run: python -m scripts.bl001_legacy_root_audit --output bl001-dynamic-loader-evidence.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bl001-dynamic-evidence-${{ matrix.os }}
+          path: bl001-dynamic-loader-evidence.json
+          retention-days: 7

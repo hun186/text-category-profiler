@@ -37,6 +37,7 @@ LIMITATIONS = [
     "Historical deployment snapshots, vendor, tests and experiments were excluded.",
     "Only explicit AST imports, unresolved bare-import candidates, and string-literal filename/module hints are detected.",
     "String hints do not prove file I/O, execution, or a runtime dependency.",
+    "Computed loader arguments are candidates only; target identity is unresolved and calls are not executed.",
     "Manual, external, generated, non-Python, dynamic imports and computed paths remain unverified.",
 ]
 
@@ -156,17 +157,86 @@ def scan_source(source_path, source_text, catalog):
     return refs, hints, bare_candidates, parse_error
 
 
+def scan_dynamic_loader_calls(source_path, source_text, catalog):
+    """Find bounded loader-call *candidates*, never evaluate target objects.
+
+    Direct known literal targets are evidence of an in-repo dynamic reference.
+    Computed arguments are unresolved even when their source contains a
+    legacy filename elsewhere; do not assert a target or execute the code.
+    """
+    try:
+        tree = ast.parse(source_text, filename=source_path)
+    except (SyntaxError, ValueError):
+        return []
+    candidates = {}
+    for item in catalog:
+        if item["category"] != "compat_entrypoint":
+            continue
+        path = item["path"]
+        module = target_module(path)
+        candidates[path] = path
+        if module:
+            candidates[module] = path
+    evidence = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        call = node.func
+        loader = None
+        if isinstance(call, ast.Name) and call.id in (
+                "__import__", "import_module", "run_module", "run_path"):
+            loader = call.id
+        elif (isinstance(call, ast.Attribute)
+                and isinstance(call.value, ast.Name)
+                and (call.value.id, call.attr) in {
+                    ("importlib", "import_module"),
+                    ("runpy", "run_module"), ("runpy", "run_path"),
+                }):
+            loader = call.value.id + "." + call.attr
+        if loader is None:
+            continue
+        argument = node.args[0] if node.args else None
+        if (isinstance(argument, ast.Constant)
+                and isinstance(argument.value, str)):
+            # Path hint only: do not normalize away relative/absolute
+            # semantics or pretend loader invocation has succeeded.
+            literal = argument.value
+            target = candidates.get(literal) or candidates.get(
+                literal.replace("\\", "/")
+            )
+            if target is None:
+                continue
+            classification = "known_legacy_literal"
+        else:
+            target = None
+            classification = "computed_or_missing_argument"
+        evidence.append({
+            "source": source_path,
+            "line": node.lineno,
+            "loader": loader,
+            "classification": classification,
+            "target": target,
+            "evidence": "ast_loader_call_candidate",
+        })
+    return sorted(evidence, key=lambda row: (row["source"], row["line"],
+                                              row["loader"], row["target"] or ""))
+
+
 def audit(root=ROOT, source_paths=None):
     root = Path(root)
     catalog = load_catalog(root)
     source_paths = tracked_sources(root) if source_paths is None else source_paths
     imports, hints, bare_imports, errors = [], [], [], []
+    dynamic_loader_callsites = []
     for source in source_paths:
         text = (root / source).read_text(encoding="utf-8", errors="replace")
         i, h, bare, error = scan_source(source, text, catalog)
         imports.extend(i)
         hints.extend(h)
         bare_imports.extend(bare)
+        dynamic_loader_callsites.extend(
+            scan_dynamic_loader_calls(source, text, catalog)
+        )
         if error:
             errors.append({"source": source, "error_type": error})
     actual_root = sorted(
@@ -204,6 +274,13 @@ def audit(root=ROOT, source_paths=None):
         ),
         "string_reference_candidates": sorted(hints, key=lambda x: (x["source"], x["line"], x["target"])),
         "parse_errors": errors,
+        "dynamic_loader_callsites": sorted(
+            dynamic_loader_callsites,
+            key=lambda row: (row["source"], row["line"],
+                             row["loader"], row["target"] or ""),
+        ),
+        "dynamic_callsites_derived_only_from_ast": True,
+        "external_dynamic_callers_verified": False,
     }
 
 
