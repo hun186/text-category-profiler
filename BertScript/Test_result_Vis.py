@@ -8,6 +8,7 @@ if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
 from BertScript import visualization_stage
+from BertScript.visualization_mission_selection import mission_colortable_rows
 from BertScript.visualization_filter import (
     to_string,
     operators,
@@ -1896,21 +1897,9 @@ def MissionTableSelection(
         ("selected rows", derived_virtual_selected_rows or []),
         ("available missions", len(data or [])),
     ], icon="·")
-    #print("Colortable_data",Colortable_data)
-    selectedLabels = []
-    if derived_virtual_selected_rows is None:
-        return []
-    for i in derived_virtual_selected_rows:
-        selectedLabels.extend(ast.literal_eval(data[i]['Topics']))
-        #selectedLabels.extend(data[i]['Topics'])
-    selectedLabels = sorted(selectedLabels)
-    Colortable_rows = []
-    for Label in selectedLabels:
-        for i,CILPair in enumerate(Colortable_data):
-            if CILPair['Label'] == Label:
-                Colortable_rows.append(i)
-    #print("Colortable_rows",Colortable_rows)
-    return Colortable_rows
+    return mission_colortable_rows(
+        derived_virtual_selected_rows, data, Colortable_data,
+    )
 
 
 
