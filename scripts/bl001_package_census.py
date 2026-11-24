@@ -6,7 +6,6 @@ callers, or that a module is genuinely cross-stage shared.
 """
 import argparse
 from collections import Counter
-import hashlib
 import json
 import os
 from pathlib import Path, PurePosixPath
@@ -15,8 +14,10 @@ import subprocess
 # Keep the script directly executable without mutating sys.path or cwd.
 if __package__ in (None, ""):
     from bl001_legacy_root_audit import load_catalog
+    from bl001_git_blob_identity import git_blob_sha, legacy_git_blob_bytes
 else:
     from scripts.bl001_legacy_root_audit import load_catalog
+    from scripts.bl001_git_blob_identity import git_blob_sha, legacy_git_blob_bytes
 
 ROOT = Path(__file__).resolve().parents[1]
 OWNERSHIP_PATH = "experiments/fixtures/bl001_package_ownership.json"
@@ -31,30 +32,6 @@ LIMITATIONS = [
     "External, dynamic, generated, untracked and manual callers have not been verified.",
     "Dependency-light test results do not validate models, GPU, Elasticsearch, SQL or WorkPool.",
 ]
-
-
-def git_blob_sha(data):
-    return hashlib.sha1(
-        ("blob %d" % len(data)).encode("ascii") + b"\0" + data
-    ).hexdigest()
-
-
-def legacy_git_blob_bytes(content, expected_sha, expected_size):
-    """Accept only Git's CRLF checkout presentation of the SAME stored blob.
-
-    The repository has '* text=auto'. Windows Git checkout may materialize
-    tracked text blobs with CRLF, while the manifest records the canonical
-    LF Git blob bytes. Reject all other changes; do not touch worktree files.
-    This exception applies only to reviewed legacy entries with exact SHA
-    and length, not to arbitrary new canonical owners or binary assets.
-    """
-    if git_blob_sha(content) == expected_sha and len(content) == expected_size:
-        return content
-    normalized = content.replace(b"\r\n", b"\n")
-    if (normalized != content and git_blob_sha(normalized) == expected_sha
-            and len(normalized) == expected_size):
-        return normalized
-    return content
 
 
 def tracked_package_files(root=ROOT):
