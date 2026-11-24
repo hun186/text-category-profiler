@@ -342,6 +342,10 @@ class PipelineConfigurationTests(unittest.TestCase):
                     _dataset_dir=temp,
                     _output_dir=temp,
                 )
+                # The legacy destination computation contains
+                # incoming/../AutoBertClassify_Processing. Its incoming
+                # ancestor must exist for an actual runtime source lookup.
+                (Path(temp) / "incoming").mkdir()
                 processing = Path(temp) / "AutoBertClassify_Processing" / "job"
                 processing.mkdir(parents=True)
                 (Path(temp) / "pool" / "job").mkdir(parents=True)
