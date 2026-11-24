@@ -1,0 +1,35 @@
+name: BL-001 Pipeline Failure Stage Provenance
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "text_category_profiler/pipeline/orchestrator.py"
+      - "tests/test_bl001_pipeline_stage_failure_notes.py"
+      - ".github/workflows/bl001-pipeline-stage-failure-notes.yml"
+  push:
+    branches: [main]
+    paths:
+      - "text_category_profiler/pipeline/orchestrator.py"
+      - "tests/test_bl001_pipeline_stage_failure_notes.py"
+      - ".github/workflows/bl001-pipeline-stage-failure-notes.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fail-stop-provenance:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify original errors and no downstream stages on faults
+        run: python -m unittest -v tests.test_bl001_pipeline_stage_failure_notes tests.test_pipeline_orchestrator
