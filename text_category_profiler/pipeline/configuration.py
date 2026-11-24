@@ -2,10 +2,17 @@
 
 import argparse
 import copy
+import ntpath
 import os
 import platform
 import sys
 from dataclasses import dataclass
+from pathlib import Path
+
+from text_category_profiler.filesystem.no_replace import (
+    _handoff_rename_noreplace,
+    _is_link_or_reparse,
+)
 from typing import Callable, Optional
 
 
@@ -60,7 +67,18 @@ class PipelineContext:
 
 class LocalFileSystem:
     def rename(self, source, destination):
-        os.rename(source, destination)
+        """Acquire a unique incoming-workspace state without replacing peers."""
+        source_path = Path(source)
+        target_path = Path(destination)
+        if not source_path.is_dir() or _is_link_or_reparse(source_path):
+            raise FileNotFoundError("WEITECH_INPUT_SOURCE_NOT_REAL_DIRECTORY")
+        if os.path.lexists(destination):
+            raise FileExistsError("WEITECH_INPUT_RUNNING_DESTINATION_EXISTS")
+        _handoff_rename_noreplace(source, destination)
+        # EXDEV fallback can leave a partial copy: preserve both and fail.
+        if (os.path.lexists(source) or not target_path.is_dir()
+                or _is_link_or_reparse(target_path)):
+            raise RuntimeError("WEITECH_INPUT_HANDOFF_INCOMPLETE")
 
     def make_directory(self, path):
         from text_category_profiler.core.utilities import MKDIR
@@ -172,6 +190,22 @@ def build_pipeline_plan(
     )
 
 
+def normalize_weitech_input_base(value):
+    """Keep a literal directory *name* when appending the running-state suffix.
+
+    A trailing separator must not turn a sibling handoff into a rename inside
+    the source. An empty/drive/share root has no safe stateful sibling name.
+    """
+    if not isinstance(value, str):
+        raise ValueError("WEITECH_INPUT_INVALID_PATH")
+    cleaned = value.rstrip("/\\")
+    drive, rest = ntpath.splitdrive(cleaned)
+    if (not cleaned or cleaned in (".", "..")
+            or (drive and not rest)):
+        raise ValueError("WEITECH_INPUT_INVALID_PATH")
+    return cleaned
+
+
 def activate_pipeline_runtime(
     plan,
     *,
@@ -183,7 +217,7 @@ def activate_pipeline_runtime(
     process_source = process_source or _default_process_source
     args = copy.deepcopy(plan.args)
     if args.WeiTechFormatInputPATH != "":
-        original = args.WeiTechFormatInputPATH
+        original = normalize_weitech_input_base(args.WeiTechFormatInputPATH)
         renamed = "{}_{}_is_running_AI".format(original, args.ExecutionTime)
         filesystem.rename(original, renamed)
         filesystem.make_directory(original)
