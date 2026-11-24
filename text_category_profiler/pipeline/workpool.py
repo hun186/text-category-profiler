@@ -220,6 +220,14 @@ class DeliveryManager:
         # logging or final move. An empty ID remains the legacy no-job mode.
         if self.plan.work_id != "":
             validate_external_work_id(self.plan.work_id)
+            processing = os.path.join(
+                self.plan.incoming_path, "..", "AutoBertClassify_Processing"
+            )
+            source = os.path.join(processing, self.plan.work_id)
+            # Do not write report backup artifacts for a missing, file-like,
+            # symlinked or reparse-point source that was never securely claimed.
+            # The final no-replace move remains authoritative for races.
+            self.filesystem.verify_delivery_source(source)
         if self.plan.remove_dataset is True:
             self.filesystem.backup(
                 WorkPoolROOT=self.plan.workpool_root,
@@ -246,13 +254,9 @@ class DeliveryManager:
             f"{dataset_dir}/DFPreambleCols_df_ALL.sql3 to {destination}"
         )
 
-        processing = os.path.join(
-            self.plan.incoming_path, "..", "AutoBertClassify_Processing"
-        )
         processed = os.path.join(
             self.plan.incoming_path, "..", "AutoBertClassify_Processed"
         )
-        source = os.path.join(processing, self.plan.work_id)
         completed = os.path.join(processed, self.plan.work_id)
 
         # Create the parent before Linux ownership changes. Never inspect
