@@ -4,6 +4,27 @@ import os
 from dataclasses import dataclass
 
 
+def validate_external_work_id(work_id):
+    """Require one portable, literal child name before any WorkPool side effect.
+
+    IDs may include Unicode or interior spaces, but must never be interpreted
+    as a path, Windows drive/ADS name, or platform-normalized alias. The empty
+    string is handled by callers as the existing no-external-work mode.
+    """
+    if (
+        not isinstance(work_id, str)
+        or not work_id
+        or work_id in (".", "..")
+        or "/" in work_id
+        or "\\" in work_id
+        or ":" in work_id
+        or work_id.endswith((".", " "))
+        or any(ord(char) < 32 or ord(char) == 127 for char in work_id)
+    ):
+        raise ValueError("EXTERNAL_WORK_ID_INVALID")
+    return work_id
+
+
 @dataclass(frozen=True)
 class WorkPoolPlan:
     incoming_path: str
@@ -47,6 +68,10 @@ class WorkPoolManager:
         self.info = info or (lambda message: None)
 
     def acquire(self):
+        # A preselected ID can originate in CLI configuration rather than
+        # os.listdir; validate it before even inspecting external directories.
+        if self.plan.work_id != "":
+            validate_external_work_id(self.plan.work_id)
         candidates = sorted(
             self.filesystem.list_directory(self.plan.incoming_path), reverse=True
         )
@@ -61,6 +86,9 @@ class WorkPoolManager:
         selected_work_id = self.plan.work_id
         for work_id in candidates:
             if work_id in available:
+                # Validate selected listdir entries before creating the
+                # processing parent or moving any work-ID directory.
+                validate_external_work_id(work_id)
                 processing = os.path.join(
                     self.plan.incoming_path, "..", "AutoBertClassify_Processing"
                 )
@@ -87,6 +115,10 @@ class DeliveryManager:
         self.move_error_reporter = move_error_reporter or print
 
     def backup_and_complete(self, dataset_dir):
+        # Fail before optional cleanup-backup, per-work-ID backup, chown,
+        # logging or final move. An empty ID remains the legacy no-job mode.
+        if self.plan.work_id != "":
+            validate_external_work_id(self.plan.work_id)
         if self.plan.remove_dataset is True:
             self.filesystem.backup(
                 WorkPoolROOT=self.plan.workpool_root,
