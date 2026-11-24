@@ -184,7 +184,7 @@ class WorkpoolCharacterizationTests(unittest.TestCase):
             with self.assertRaises(Exception):
                 module.DataConvert(args, {"start": 0})
 
-    def test_nonempty_weitech_queue_without_pool_match_continues_to_dataset_command(self):
+    def test_nonempty_weitech_queue_without_pool_match_aborts_before_dataset_command(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             incoming = root / "AutoBertClassify"
@@ -202,10 +202,12 @@ class WorkpoolCharacterizationTests(unittest.TestCase):
             )
             module = load_main(args, trace=trace)
 
-            module.DataConvert(args, {"start": 0})
+            with self.assertRaisesRegex(
+                    RuntimeError, "EXTERNAL_WORK_ID_NOT_CLAIMED"):
+                module.DataConvert(args, {"start": 0})
 
             self.assertEqual("preselected-job", args.WeiTechworkID)
-            self.assertEqual(1, sum(entry[0] == "command" for entry in trace))
+            self.assertEqual(0, sum(entry[0] == "command" for entry in trace))
             self.assertTrue((incoming / "job-003").is_dir())
             self.assertFalse(
                 (root / "AutoBertClassify_Processing" / "job-003").exists()
