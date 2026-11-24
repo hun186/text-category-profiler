@@ -1,0 +1,39 @@
+name: BL-001 Delivery Processing Source Before Backup
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "text_category_profiler/filesystem/legacy.py"
+      - "text_category_profiler/pipeline/workpool.py"
+      - "tests/test_workpool_manager.py"
+      - "tests/test_bl001_delivery_source_preflight.py"
+      - ".github/workflows/bl001-delivery-source-preflight.yml"
+  push:
+    branches: [main]
+    paths:
+      - "text_category_profiler/filesystem/legacy.py"
+      - "text_category_profiler/pipeline/workpool.py"
+      - "tests/test_workpool_manager.py"
+      - "tests/test_bl001_delivery_source_preflight.py"
+      - ".github/workflows/bl001-delivery-source-preflight.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  delivery-source:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify missing or aliased Processing source fails before backup
+        run: python -m unittest -v tests.test_bl001_delivery_source_preflight tests.test_workpool_manager tests.test_bl001_delivery_completion_fail_closed tests.test_bl001_external_workitem_move_no_overwrite
