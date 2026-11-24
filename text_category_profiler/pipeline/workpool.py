@@ -45,6 +45,9 @@ def validate_external_work_id(work_id):
         or "/" in work_id
         or "\\" in work_id
         or ":" in work_id
+        # Reserved Windows child-name characters are invalid even on a
+        # Linux producer: the same external Work-ID may reach a Win worker.
+        or any(char in '<>"|?*' for char in work_id)
         or work_id.endswith((".", " "))
         or is_windows_device_work_id(work_id)
         or any(ord(char) < 32 or ord(char) == 127 for char in work_id)
@@ -226,6 +229,14 @@ class DeliveryManager:
             if not validate_external_workpool_path_pair(
                     self.plan.incoming_path, self.plan.pool_path):
                 raise ValueError("EXTERNAL_WORKPOOL_PATH_PAIR_REQUIRED")
+            processing = os.path.join(
+                self.plan.incoming_path, "..", "AutoBertClassify_Processing"
+            )
+            source = os.path.join(processing, self.plan.work_id)
+            # Do not write report backup artifacts for a missing, file-like,
+            # symlinked or reparse-point source that was never securely claimed.
+            # The final no-replace move remains authoritative for races.
+            self.filesystem.verify_delivery_source(source)
         if self.plan.remove_dataset is True:
             self.filesystem.backup(
                 WorkPoolROOT=self.plan.workpool_root,
@@ -252,13 +263,9 @@ class DeliveryManager:
             f"{dataset_dir}/DFPreambleCols_df_ALL.sql3 to {destination}"
         )
 
-        processing = os.path.join(
-            self.plan.incoming_path, "..", "AutoBertClassify_Processing"
-        )
         processed = os.path.join(
             self.plan.incoming_path, "..", "AutoBertClassify_Processed"
         )
-        source = os.path.join(processing, self.plan.work_id)
         completed = os.path.join(processed, self.plan.work_id)
 
         # Create the parent before Linux ownership changes. Never inspect
