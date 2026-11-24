@@ -20,3 +20,5 @@
 工作單相衝突、指定 ID 缺席、Unicode ID 和非法 Windows
 device alias 的 fail-before-I/O。正式多使用者／跨程序 claim
 race 及原 preselected fallback 的實機設計仍待獨立驗收。
+
+補充（#352）：上述舊 `preselected-ID fallback` 已由本次後續修正取消；若未從 incoming 成功認領指定 ID，現在明確 fail closed，而不是直接進入 Pipeline。詳見 `bl001-explicit-workid-unclaimed.md`。
