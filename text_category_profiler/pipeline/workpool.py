@@ -20,7 +20,7 @@ def is_windows_device_work_id(work_id):
     """
     if not isinstance(work_id, str):
         return False
-    basename = work_id.split(".", 1)[0].upper()
+    basename = work_id.split(".", 1)[0].rstrip(" ").upper()
     return (
         basename in _WINDOWS_RESERVED_DOS_DEVICE_BASES
         or (
