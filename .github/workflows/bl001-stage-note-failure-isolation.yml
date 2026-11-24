@@ -1,0 +1,35 @@
+name: BL-001 Original Stage Failure Identity
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "text_category_profiler/pipeline/orchestrator.py"
+      - "tests/test_bl001_stage_note_failure_isolation.py"
+      - ".github/workflows/bl001-stage-note-failure-isolation.yml"
+  push:
+    branches: [main]
+    paths:
+      - "text_category_profiler/pipeline/orchestrator.py"
+      - "tests/test_bl001_stage_note_failure_isolation.py"
+      - ".github/workflows/bl001-stage-note-failure-isolation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  original-exception:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify stage exception identity even if annotation fails
+        run: python -m unittest -v tests.test_bl001_stage_note_failure_isolation tests.test_bl001_pipeline_stage_failure_notes tests.test_pipeline_orchestrator

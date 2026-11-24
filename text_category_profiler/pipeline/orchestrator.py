@@ -33,10 +33,17 @@ class PipelineOrchestrator:
         try:
             return invoke()
         except Exception as error:
-            note = "TCP_PIPELINE_FAILED_STAGE=" + name
-            add_note = getattr(error, "add_note", None)
-            if callable(add_note) and note not in getattr(error, "__notes__", ()):
-                add_note(note)
+            # Provenance is diagnostic only. Exception subclasses can expose
+            # broken custom add_note/__notes__ implementations; those must
+            # never replace the original stage failure or trigger any replay.
+            try:
+                note = "TCP_PIPELINE_FAILED_STAGE=" + name
+                add_note = getattr(error, "add_note", None)
+                if (callable(add_note)
+                        and note not in getattr(error, "__notes__", ())):
+                    add_note(note)
+            except Exception:
+                pass
             raise
 
     def run(self):
