@@ -1,0 +1,35 @@
+name: BL-001 Stage 1 Trailing Separator Plan
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "DatasetConverter/stage.py"
+      - "tests/test_bl001_stage1_trailing_separator.py"
+      - ".github/workflows/bl001-stage1-trailing-separator.yml"
+  push:
+    branches: [main]
+    paths:
+      - "DatasetConverter/stage.py"
+      - "tests/test_bl001_stage1_trailing_separator.py"
+      - ".github/workflows/bl001-stage1-trailing-separator.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stage1-trailing-separator:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify Stage 1 path planning and existing exclusive running workspace
+        run: python -m unittest -v tests.test_bl001_stage1_trailing_separator tests.test_bl001_stage1_workspace_acquisition tests.test_data_converter_stage_plan tests.test_data_converter_entrypoint
