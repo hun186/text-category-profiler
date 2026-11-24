@@ -9,6 +9,7 @@ if str(REPOSITORY_ROOT) not in sys.path:
 
 from BertScript import visualization_stage
 from BertScript.visualization_mission_selection import mission_colortable_rows
+from BertScript.visualization_pagination import select_table_page
 from BertScript.visualization_filter import (
     to_string,
     operators,
@@ -2278,8 +2279,8 @@ def table_update(
     button_id = get_button_id(
         dash.callback_context, inspect.currentframe().f_code.co_name)
 
-    if button_id in ["Page Size Bar"]:
-        page_current = 0
+    # Page-size reset and filtered-data clamp are owned by the same
+    # dependency-light policy; apply them once the row count is known.
         
     
     
@@ -2292,11 +2293,11 @@ def table_update(
     #PartColDF =  pd.read_json(PartColDF_json, orient='split')
     
     
-    #page_max = len(FilteredDF)//page_size+(len(FilteredDF)%page_size!=0) -1
-    page_max = max((len(FilteredDF)-1)//page_size,0)
-    # A filter can reduce the number of pages (including zero rows).
-    # Clamping avoids leaving an outdated table mounted on an invalid page.
-    page_current = min(max(page_current or 0, 0), page_max)
+    # Filter changes and page-size input can invalidate the requested page.
+    page_current = select_table_page(
+        row_count=len(FilteredDF), page_size=page_size,
+        page_current=page_current, button_id=button_id,
+    )
     '''
     if button_id in ["VisDatatable"]:
         (pd_query_string, PartColDF) = construct_filter(

@@ -1,0 +1,39 @@
+name: BL-001 Stage4 Pagination Boundary
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "BertScript/visualization_pagination.py"
+      - "BertScript/Test_result_Vis.py"
+      - "tests/test_bl001_stage4_pagination_boundary.py"
+      - "tests/test_visualization_stage.py"
+      - ".github/workflows/bl001-stage4-pagination-boundary.yml"
+  push:
+    branches: [main]
+    paths:
+      - "BertScript/visualization_pagination.py"
+      - "BertScript/Test_result_Vis.py"
+      - "tests/test_bl001_stage4_pagination_boundary.py"
+      - "tests/test_visualization_stage.py"
+      - ".github/workflows/bl001-stage4-pagination-boundary.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pagination:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify page reset, clamping and legacy callbacks
+        run: python -m unittest -v tests.test_bl001_stage4_pagination_boundary tests.test_visualization_stage

@@ -384,8 +384,9 @@ class VisualizationStageTests(unittest.TestCase):
         self.assertIn("return [PredSum_children, TwinsCard_children]", chunk_body)
         table_body = source[source.index("def table_update("):
                             source.index("def func1(")]
-        self.assertIn("page_current = min(max(page_current or 0, 0), page_max)",
-                      table_body)
+        self.assertIn("page_current = select_table_page(", table_body)
+        self.assertIn("row_count=len(FilteredDF), page_size=page_size,", table_body)
+        self.assertNotIn("page_current = min(max(", table_body)
         self.assertIn("sort_by=sort_by", table_body)
         self.assertIn("page_current + 1,", table_body)
         self.assertNotIn("page_current+1", source[
