@@ -182,13 +182,20 @@ class WorkPoolManagerTests(unittest.TestCase):
             stage_boundary()
         self.assertEqual([], trace)
 
-    def test_final_move_error_remains_caught(self):
+    def test_final_move_failure_is_reported_and_propagated(self):
         errors = []
-        fs = RecordingFileSystem(move_error=OSError("move failed"))
-        DeliveryManager(
-            plan(work_id="job-1"), fs, move_error_reporter=errors.append
-        ).backup_and_complete("/dataset")
-        self.assertEqual(["move failed"], [str(error) for error in errors])
+        move_failure = OSError("move failed")
+        fs = RecordingFileSystem(move_error=move_failure)
+        delivered = []
+        with self.assertRaises(OSError) as raised:
+            DeliveryManager(
+                plan(work_id="job-1"), fs,
+                move_error_reporter=errors.append,
+                output_logger=delivered.append,
+            ).backup_and_complete("/dataset")
+        self.assertIs(raised.exception, move_failure)
+        self.assertEqual([move_failure], errors)
+        self.assertEqual([], delivered)
 
 
 if __name__ == "__main__":

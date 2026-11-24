@@ -83,12 +83,14 @@ class ExternalWorkItemMoveNoOverwriteTests(unittest.TestCase):
             processed.mkdir()
             (processed / "older").write_bytes(b"preserve")
             reported = []
-            DeliveryManager(
-                plan.with_work_id(source.name), fs,
-                move_error_reporter=reported.append,
-            ).backup_and_complete(str(Path(directory) / "report"))
-            # The current legacy delivery policy reports and catches errors;
-            # this PR protects the filesystem operation itself only.
+            # The completion policy now forwards collision failures to
+            # callers rather than claiming the external job is complete.
+            with self.assertRaisesRegex(
+                    FileExistsError, "WORKITEM_MOVE_DESTINATION_ALREADY_EXISTS"):
+                DeliveryManager(
+                    plan.with_work_id(source.name), fs,
+                    move_error_reporter=reported.append,
+                ).backup_and_complete(str(Path(directory) / "report"))
             self.assertEqual(len(reported), 1)
             self.assertIsInstance(reported[0], FileExistsError)
             self.assertTrue((processing / "marker.txt").is_file())
