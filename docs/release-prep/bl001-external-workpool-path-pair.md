@@ -18,7 +18,7 @@
   **非 Work-ID** 的一般 cleanup 模式維持舊行為。
 
 本批不更動 `build_pipeline_plan` 以免將原本單獨供
-`WeiTechFormatInputPATH` 或測試用的 CLI plan 
+`WeiTechFormatInputPATH` 或測試用的 CLI plan
 路徑範例誤判；真正 WorkPool 進入點在 runtime
 各自檢查。這是設定契約，不是實體路徑 ACL、
 liveness 或安全 resume 的保證。
