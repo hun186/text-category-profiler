@@ -4,6 +4,33 @@ import os
 from dataclasses import dataclass
 
 
+_WINDOWS_RESERVED_DOS_DEVICE_BASES = frozenset({
+    "CON", "PRN", "AUX", "NUL", "CONIN$", "CONOUT$",
+})
+_WINDOWS_RESERVED_DOS_PORT_PREFIXES = frozenset({"COM", "LPT"})
+# Windows also treats superscript 1, 2, 3 as device-port digits.
+_WINDOWS_RESERVED_DOS_PORT_DIGITS = frozenset("123456789¹²³")
+
+
+def is_windows_device_work_id(work_id):
+    """Check Windows device aliases, even when an extension is appended.
+
+    This is a lexical check only. Callers must also validate child-name
+    grammar and must not attempt to open filesystem paths before validation.
+    """
+    if not isinstance(work_id, str):
+        return False
+    basename = work_id.split(".", 1)[0].upper()
+    return (
+        basename in _WINDOWS_RESERVED_DOS_DEVICE_BASES
+        or (
+            len(basename) == 4
+            and basename[:3] in _WINDOWS_RESERVED_DOS_PORT_PREFIXES
+            and basename[3] in _WINDOWS_RESERVED_DOS_PORT_DIGITS
+        )
+    )
+
+
 def validate_external_work_id(work_id):
     """Require one portable, literal child name before any WorkPool side effect.
 
@@ -19,6 +46,7 @@ def validate_external_work_id(work_id):
         or "\\" in work_id
         or ":" in work_id
         or work_id.endswith((".", " "))
+        or is_windows_device_work_id(work_id)
         or any(ord(char) < 32 or ord(char) == 127 for char in work_id)
     ):
         raise ValueError("EXTERNAL_WORK_ID_INVALID")
