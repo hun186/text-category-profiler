@@ -1,0 +1,35 @@
+name: BL-001 Root Stage Timing Isolation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "TCFMain.py"
+      - "tests/test_bl001_root_stage_timing_isolation.py"
+      - ".github/workflows/bl001-root-stage-timing-isolation.yml"
+  push:
+    branches: [main]
+    paths:
+      - "TCFMain.py"
+      - "tests/test_bl001_root_stage_timing_isolation.py"
+      - ".github/workflows/bl001-root-stage-timing-isolation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  timing-isolation:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify per-call timing and root orchestration contracts
+        run: python -m unittest -v tests.test_bl001_root_stage_timing_isolation tests.test_tcf_main_characterization
