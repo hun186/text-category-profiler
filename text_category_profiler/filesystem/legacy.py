@@ -1,5 +1,6 @@
 """Thin adapter over the legacy root filesystem operations."""
 
+import ntpath
 import os
 import platform
 from pathlib import Path
@@ -46,6 +47,34 @@ class LegacyFileSystem:
         return destination
 
     def backup(self, **kwargs):
+        """Reject an existing alias at an explicitly selected backup leaf.
+
+        An external Work-ID backup can write directly into an existing
+        WorkPool/<work-id>. Do not follow symlinks, junctions, dangling links
+        or special files at that leaf; never delete or repair them here.
+        Other legacy backup modes without DesDir preserve their contract.
+        """
+        if "DesDir" in kwargs:
+            destination = kwargs["DesDir"]
+            if not isinstance(destination, (str, os.PathLike)):
+                raise ValueError("WORKITEM_BACKUP_INVALID_DESTINATION_PATH")
+            path = os.fspath(destination)
+            if not isinstance(path, str):
+                raise ValueError("WORKITEM_BACKUP_INVALID_DESTINATION_PATH")
+            # lstat("leaf/") can follow a directory symlink on POSIX.
+            # Inspect the literal leaf instead, without altering the path
+            # spelling passed to the legacy backup writer.
+            inspection_path = path.rstrip("/\\")
+            drive, remainder = ntpath.splitdrive(inspection_path)
+            if (not inspection_path or (drive and not remainder)
+                    or inspection_path in (".", "..")):
+                raise ValueError("WORKITEM_BACKUP_INVALID_DESTINATION_PATH")
+            if os.path.lexists(inspection_path):
+                if (_is_link_or_reparse(inspection_path)
+                        or not Path(inspection_path).is_dir()):
+                    raise RuntimeError(
+                        "WORKITEM_BACKUP_DESTINATION_NOT_REAL_DIRECTORY"
+                    )
         return self._backup(**kwargs)
 
     def platform_name(self):

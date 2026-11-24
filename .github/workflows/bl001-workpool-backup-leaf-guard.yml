@@ -1,0 +1,35 @@
+name: BL-001 WorkPool Backup Leaf Alias Guard
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "text_category_profiler/filesystem/legacy.py"
+      - "tests/test_bl001_workpool_backup_leaf_guard.py"
+      - ".github/workflows/bl001-workpool-backup-leaf-guard.yml"
+  push:
+    branches: [main]
+    paths:
+      - "text_category_profiler/filesystem/legacy.py"
+      - "tests/test_bl001_workpool_backup_leaf_guard.py"
+      - ".github/workflows/bl001-workpool-backup-leaf-guard.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup-leaf-alias-guard:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify backup leaf symlink rejection and external work-ID contracts
+        run: python -m unittest -v tests.test_bl001_workpool_backup_leaf_guard tests.test_workpool_manager tests.test_bl001_external_workitem_move_no_overwrite
