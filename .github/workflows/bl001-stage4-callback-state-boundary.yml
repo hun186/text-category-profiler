@@ -1,0 +1,37 @@
+name: BL-001 Stage4 Callback State Boundary
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "BertScript/visualization_stage.py"
+      - "BertScript/visualization_callback_state.py"
+      - "tests/test_bl001_stage4_callback_state_boundary.py"
+      - ".github/workflows/bl001-stage4-callback-state-boundary.yml"
+  push:
+    branches: [main]
+    paths:
+      - "BertScript/visualization_stage.py"
+      - "BertScript/visualization_callback_state.py"
+      - "tests/test_bl001_stage4_callback_state_boundary.py"
+      - ".github/workflows/bl001-stage4-callback-state-boundary.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  callback-boundary:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Validate pure callback state and legacy Stage4 acceptance
+        run: python -m unittest -v tests.test_bl001_stage4_callback_state_boundary tests.test_visualization_stage
