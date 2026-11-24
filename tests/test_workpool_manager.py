@@ -42,6 +42,11 @@ class RecordingFileSystem:
         if self.move_error:
             raise self.move_error
 
+    def verify_delivery_source(self, source):
+        # Fake filesystem has no real private WorkPool tree. Real adapter
+        # verification is exercised separately with tempfile directories.
+        return None
+
     def backup(self, **kwargs):
         self.calls.append(("backup", kwargs))
         if self.backup_error:
