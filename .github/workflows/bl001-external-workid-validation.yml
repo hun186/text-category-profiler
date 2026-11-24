@@ -1,0 +1,37 @@
+name: BL-001 External Work-ID Path Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "text_category_profiler/pipeline/workpool.py"
+      - "tests/test_bl001_external_workid_path_validation.py"
+      - "tests/test_workpool_manager.py"
+      - ".github/workflows/bl001-external-workid-validation.yml"
+  push:
+    branches: [main]
+    paths:
+      - "text_category_profiler/pipeline/workpool.py"
+      - "tests/test_bl001_external_workid_path_validation.py"
+      - "tests/test_workpool_manager.py"
+      - ".github/workflows/bl001-external-workid-validation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  external-workid-validation:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify leaf-only Work-ID and unchanged lifecycle contracts
+        run: python -m unittest -v tests.test_bl001_external_workid_path_validation tests.test_workpool_manager
