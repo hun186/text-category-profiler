@@ -107,3 +107,21 @@ def construct_filter(derived_query_structure, df, complexOperator=None):
         to_string(derived_query_structure) if left_query != '' and right_query != '' else '',
         right_query
     ).strip(), right_df)
+
+
+def df_upd_filter_query(df, filter_query):
+    filtering_expressions = filter_query.split(' && ')
+    dff = df
+    for filter_part in filtering_expressions:
+        col_name, operator, filter_value = split_filter_part(filter_part)
+
+        if operator in ('eq', 'ne', 'lt', 'le', 'gt', 'ge'):
+            # these operators match pandas series operator method names
+            dff = dff.loc[getattr(dff[col_name], operator)(filter_value)]
+        elif operator == 'contains':
+            dff = dff.loc[dff[col_name].str.contains(filter_value)]
+        elif operator == 'datestartswith':
+            # this is a simplification of the front-end filtering logic,
+            # only works with complete fields in standard format
+            dff = dff.loc[dff[col_name].str.startswith(filter_value)]
+    return dff
