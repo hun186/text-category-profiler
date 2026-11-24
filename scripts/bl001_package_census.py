@@ -39,6 +39,24 @@ def git_blob_sha(data):
     ).hexdigest()
 
 
+def legacy_git_blob_bytes(content, expected_sha, expected_size):
+    """Accept only Git's CRLF checkout presentation of the SAME stored blob.
+
+    The repository has '* text=auto'. Windows Git checkout may materialize
+    tracked text blobs with CRLF, while the manifest records the canonical
+    LF Git blob bytes. Reject all other changes; do not touch worktree files.
+    This exception applies only to reviewed legacy entries with exact SHA
+    and length, not to arbitrary new canonical owners or binary assets.
+    """
+    if git_blob_sha(content) == expected_sha and len(content) == expected_size:
+        return content
+    normalized = content.replace(b"\r\n", b"\n")
+    if (normalized != content and git_blob_sha(normalized) == expected_sha
+            and len(normalized) == expected_size):
+        return normalized
+    return content
+
+
 def tracked_package_files(root=ROOT):
     result = subprocess.run(
         ["git", "ls-files", "-z", "--", "text_category_profiler/"],
@@ -126,9 +144,14 @@ def audit_package(root=ROOT):
     legacy_by_path = {x["path"]: x for x in legacy}
     rows, identity_failures = [], []
     for path in sorted(tracked):
-        content = (root / path).read_bytes()
-        digest = git_blob_sha(content)
+        worktree_content = (root / path).read_bytes()
         legacy_item = legacy_by_path.get(path)
+        content = (
+            legacy_git_blob_bytes(
+                worktree_content, legacy_item["sha"], legacy_item["size_bytes"]
+            ) if legacy_item is not None else worktree_content
+        )
+        digest = git_blob_sha(content)
         if legacy_item is not None and (
             digest != legacy_item["sha"] or len(content) != legacy_item["size_bytes"]
             or not (root / legacy_item["canonical_path"]).is_file()
