@@ -7,6 +7,11 @@
 
 本 PR 在**實際備份 adapter 的副作用前**加入 `DesDir` 預檢：
 
+檢查前先只對目的地**字串副本**移除尾端 `/` 或 `\\`，避免 Linux
+`lstat("job/")` 跟隨目錄 symlink 而漏判；傳給既有備份工具的原始
+`DesDir` 字串不改寫，且拒絕空／drive root／UNC share root。
+
+
 - 現有目的地葉節點必須是真實目錄，拒絕普通檔案、有效/損壞 symlink、reparse/Junction；
 - `DesDir` 為空、非字串或不合法 path-like 也拒絕；
 - 沒有 `DesDir` 的既有一般備份模式照舊；
