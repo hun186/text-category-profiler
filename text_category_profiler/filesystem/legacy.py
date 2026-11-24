@@ -46,6 +46,25 @@ class LegacyFileSystem:
         return destination
 
     def backup(self, **kwargs):
+        """Reject an existing alias at an explicitly selected backup leaf.
+
+        An external Work-ID backup can write directly into an existing
+        WorkPool/<work-id>. Do not follow symlinks, junctions, dangling links
+        or special files at that leaf; never delete or repair them here.
+        Other legacy backup modes without DesDir preserve their contract.
+        """
+        if "DesDir" in kwargs:
+            destination = kwargs["DesDir"]
+            if not isinstance(destination, (str, os.PathLike)):
+                raise ValueError("WORKITEM_BACKUP_INVALID_DESTINATION_PATH")
+            path = os.fspath(destination)
+            if not isinstance(path, str) or not path:
+                raise ValueError("WORKITEM_BACKUP_INVALID_DESTINATION_PATH")
+            if os.path.lexists(path):
+                if _is_link_or_reparse(path) or not Path(path).is_dir():
+                    raise RuntimeError(
+                        "WORKITEM_BACKUP_DESTINATION_NOT_REAL_DIRECTORY"
+                    )
         return self._backup(**kwargs)
 
     def platform_name(self):
