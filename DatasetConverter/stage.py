@@ -6,6 +6,7 @@ normalization and side-effecting directory/logger activation.  The canonical
 """
 
 import argparse
+import ntpath
 import os
 import time
 from dataclasses import dataclass
@@ -93,6 +94,21 @@ class StageContext:
         return list(self.source_config.fixed_test_paths)
 
 
+def _stage1_dataset_base(path):
+    """Preserve path spelling while removing only trailing separators.
+
+    Stage 1 appends a state suffix to the *directory name*, not a child
+    directory. Never collapse a drive/UNC share root into a different path.
+    """
+    if not isinstance(path, str):
+        raise ConfigValidationError("DATACONVERTER_INVALID_DATASET_BASE_PATH")
+    base = path.rstrip("/\\")
+    drive, remainder = ntpath.splitdrive(base)
+    if not base or base in (".", "..") or (drive and not remainder):
+        raise ConfigValidationError("DATACONVERTER_INVALID_DATASET_BASE_PATH")
+    return base
+
+
 def normalize_stage_plan(converter_settings, argv=None):
     """Normalize CLI and source settings without creating files or loggers."""
     args = parse_converter_options(argv)
@@ -100,7 +116,10 @@ def normalize_stage_plan(converter_settings, argv=None):
         args=args,
         ready_for_stage="DataConverter",
     )
-    dataset_directory = args.BertDatasetSubDir + "_is_running_DataConverter"
+    dataset_directory = (
+        _stage1_dataset_base(args.BertDatasetSubDir)
+        + "_is_running_DataConverter"
+    )
     args.BertDatasetSubDir = dataset_directory
 
     if args.FixedTestPATH == "" and args.test is True:
