@@ -181,6 +181,13 @@ class WorkPoolManager:
                 )
                 selected_work_id = work_id
                 break
+        else:
+            # An explicitly requested external job must be claimed from
+            # incoming, not silently carried forward from a prior run.
+            # Otherwise the pipeline may process/backup/deliver another job
+            # without any successful incoming -> processing handoff.
+            if self.plan.work_id:
+                raise RuntimeError("EXTERNAL_WORK_ID_NOT_CLAIMED")
         self.info(
             f"Found workID {selected_work_id} in {self.plan.incoming_path}, "
             "we will start to apply this task."
