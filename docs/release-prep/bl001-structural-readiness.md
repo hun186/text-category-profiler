@@ -41,6 +41,18 @@ CI 的 Windows/Ubuntu jobs 會輸出 machine-readable JSON artifact。
   `bl001_formally_done` 固定為 false；全部外部項目
   `UNVERIFIED`，不能靠重跑此工具改成 true。
 
+## Windows checkout 與 Git blob 保全
+
+Repository 的 `.gitattributes` 指定 `* text=auto`，Windows checkout
+可能把已追蹤的 legacy 文字檔從 Git blob 的 LF 呈現為工作樹 CRLF。
+`scripts.bl001_package_census` 因此先檢查原始位元組；若不符，
+**只對已登錄 legacy 檔案**以 CRLF → LF 產生記憶體副本，
+再與 manifest 的原 Git blob SHA／大小核對。只有完全吻合原 Git
+blob 才接受，否則仍算 `identity_failures`；不修正、不覆寫檔案，
+也不放寬未分類檔案、二進位資料或權威目的地的檢查。
+這讓 Windows/Ubuntu 的結構 CI 對同一個 Git 物件採同一份權威證據，
+但**不是**外部檔案相容性的真實驗收。
+
 ## 新功能如何選擇結構歸屬
 
 | 新需求 | 應修改的主要模組 | 不應採取的做法 |
