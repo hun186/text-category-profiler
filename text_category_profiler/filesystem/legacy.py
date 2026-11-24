@@ -46,6 +46,19 @@ class LegacyFileSystem:
             raise RuntimeError("WORKITEM_MOVE_INCOMPLETE")
         return destination
 
+    def verify_delivery_source(self, source):
+        """Reject a missing or aliased Processing leaf before report backup.
+
+        This is a *read-only preflight*, not an exclusive ownership token:
+        another process can still change the leaf before the final move.
+        """
+        path = Path(source)
+        if (not os.path.lexists(source)
+                or not path.is_dir() or _is_link_or_reparse(path)):
+            raise FileNotFoundError(
+                "WORKITEM_DELIVERY_SOURCE_NOT_REAL_DIRECTORY"
+            )
+
     def backup(self, **kwargs):
         """Reject an existing alias at an explicitly selected backup leaf.
 
