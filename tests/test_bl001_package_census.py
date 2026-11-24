@@ -9,7 +9,7 @@ from unittest import mock
 
 from scripts.bl001_package_census import (
     ROOT, audit_package, load_ownership, tracked_package_files,
-    verify_catalogs,
+    verify_catalogs, legacy_git_blob_bytes, git_blob_sha,
 )
 
 
@@ -37,6 +37,30 @@ class BL001PackageCensusTests(unittest.TestCase):
             report["summary"]["total_tracked_package_files"],
             report["summary"]["legacy_preserved"]
             + report["summary"]["canonical_domain_owned"],
+        )
+
+    def test_legacy_identity_accepts_git_crlf_checkout_only(self):
+        baseline = b"first line\nsecond line\n"
+        expected_sha = git_blob_sha(baseline)
+        rendered = b"first line\r\nsecond line\r\n"
+        self.assertEqual(
+            legacy_git_blob_bytes(rendered, expected_sha, len(baseline)),
+            baseline,
+        )
+        self.assertEqual(
+            legacy_git_blob_bytes(baseline, expected_sha, len(baseline)),
+            baseline,
+        )
+        modified = b"first line\r\nMODIFIED\r\n"
+        self.assertIs(
+            legacy_git_blob_bytes(modified, expected_sha, len(baseline)),
+            modified,
+        )
+        # Bare CR and unrelated modifications are not silently normalized.
+        bare_cr = b"first line\rsecond line\r"
+        self.assertEqual(
+            legacy_git_blob_bytes(bare_cr, expected_sha, len(baseline)),
+            bare_cr,
         )
 
     def test_no_replace_publisher_has_explicit_filesystem_domain_owner(self):

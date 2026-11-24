@@ -1,0 +1,50 @@
+name: BL-001 Structural Readiness Evidence Gate
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/bl001_structural_readiness.py"
+      - "scripts/bl001_package_census.py"
+      - "tests/test_bl001_package_census.py"
+      - "tests/test_bl001_structural_readiness.py"
+      - ".github/workflows/bl001-structural-readiness.yml"
+      - ".codex/architecture.md"
+      - ".codex/text-category-profiler-package-migration.md"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/bl001_structural_readiness.py"
+      - "scripts/bl001_package_census.py"
+      - "tests/test_bl001_package_census.py"
+      - "tests/test_bl001_structural_readiness.py"
+      - ".github/workflows/bl001-structural-readiness.yml"
+      - ".codex/architecture.md"
+      - ".codex/text-category-profiler-package-migration.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  structural-readiness:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Validate module boundaries and complete package census
+        run: python -m unittest -v tests.test_bl001_structural_readiness tests.test_bl001_package_census tests.test_package_layout
+      - name: Generate machine-readable evidence, not deployment authorization
+        run: python -m scripts.bl001_structural_readiness --output bl001-readiness.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bl001-structural-readiness-${{ matrix.os }}
+          path: bl001-readiness.json
+          retention-days: 7

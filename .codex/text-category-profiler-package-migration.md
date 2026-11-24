@@ -4,6 +4,14 @@
 
 > 目前狀態：application-side package namespace、path injection 與 deployment boundary 已收斂；`TRV_deploy` 保留為獨立 legacy snapshot。Phase 5 的 legacy path/container 與 current-state 文件同步已完成，但 `text_category_profiler/` root 仍有 Phase 0–3 所追蹤的 research/test/script/vendor/legacy artifact 候選需要逐批分類與分流；PR #145 已有 fresh targeted lightweight full discovery 912 OK（2 opt-in SKIP）證據，但仍須完成剩餘分流與合併後最新 main 驗收才能將 `BL-001` 標記 Done。
 
+## 2026-11-24 最新結構驗證（與正式 BL-001 結案分開）
+
+- Git-tracked `text_category_profiler/` 目前已由雙 manifest 覆蓋 **77 個檔案：64 領域 owned、13 保全的 legacy 相容／vendor／空標記，0 未分類**；`scripts/bl001_package_census.py` 會檢查每個已追蹤檔案、legacy 原始 Git blob 與 canonical 目的地。這是 ownership，不是證明 64 個檔案皆跨多 stage 被實際呼叫。
+- #323～#334 已逐步保護階段交接、Work-ID、root WeiTech 輸入與多次 root stage 呼叫的獨立狀態；#335～#336 已將 Stage 4 篩選解析和 DataFrame 套用抽至無 GUI 重依賴的 stage-local `BertScript/visualization_filter.py`。
+- 新的 `scripts/bl001_structural_readiness.py` 產生只含 Git/AST/manifest 的可重現 JSON Gate。此 Gate **只要沒有結構缺陷即可 PASS，但會固定把 external/dynamic callers、真實 WorkPool、Windows GUI、GPU、production SQLite 標成 UNVERIFIED**，不能用來自動標記 BL-001 Done。
+- 剩餘 Phase 0–3 的「外部／動態呼叫端、重複 provider 語意一致性、第一方跨階段 caller 覆蓋」尚未獲完整實證，8 個舊入口因此不能僅因內部 AST 沒命中就刪除。13 個 legacy 路徑都是受控相容邊界；新功能應只寫入 canonical domain/stage 模組，避免在 shim 增加實作。
+- BL-001 的產品環境完成條件與 KI-003、KI-008、KI-012 等仍然分開；目前 **結構靜態檢查可完成，但整體 BL-001 維持 In Progress**。不得把 Phase 5 的舊文字視為最新正式驗收結論。
+
 ## 目標
 
 將 `PythonModule/utils/` 中真正跨 stage 共用的 helper 整理為根目錄 `text_category_profiler/` package，同時把具明確領域歸屬、測試、實驗、維護腳本與第三方程式移到合適邊界。遷移完成後，active code 不再依賴 `PackageImporter` 修改 `sys.path`，但既有 CLI、stage handoff 與資料格式保持相容。
