@@ -17,6 +17,8 @@ INVALID_IDS = (
     "C:\\absolute", "\\\\server\\share\\job", "job:stream",
     "trailing.", "trailing ", "newline\njob", "tab\tjob",
     "null\x00job", "delete\x7fjob", "   ", None, 42,
+    "job<evil", "job>evil", 'job"evil', "job|evil", "job?evil",
+    "job*evil",
 )
 
 
