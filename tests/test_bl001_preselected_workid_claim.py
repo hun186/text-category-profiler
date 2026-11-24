@@ -30,10 +30,8 @@ class ExplicitWorkIDAcquisitionTests(unittest.TestCase):
 
     def test_unselected_candidate_is_never_moved_even_if_only_eligible(self):
         fs = self.fs(["job-900", "job-001"], ["job-900"])
-        chosen = WorkPoolManager(plan(work_id="job-001"), fs).acquire()
-        # Preserve the existing preselected/no-claim mode rather than
-        # silently claiming a different work item.
-        self.assertEqual(chosen, "job-001")
+        with self.assertRaisesRegex(RuntimeError, "EXTERNAL_WORK_ID_NOT_CLAIMED"):
+            WorkPoolManager(plan(work_id="job-001"), fs).acquire()
         self.assertEqual([x for x in fs.calls if x[0] in ("mkdir", "move")], [])
 
     def test_blank_selection_preserves_latest_matched_id(self):
