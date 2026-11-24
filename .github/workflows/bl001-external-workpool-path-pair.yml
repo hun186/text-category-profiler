@@ -1,0 +1,37 @@
+name: BL-001 External WorkPool Paired Configuration
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "text_category_profiler/pipeline/workpool.py"
+      - "TCFMain.py"
+      - "tests/test_bl001_external_workpool_path_pair.py"
+      - ".github/workflows/bl001-external-workpool-path-pair.yml"
+  push:
+    branches: [main]
+    paths:
+      - "text_category_profiler/pipeline/workpool.py"
+      - "TCFMain.py"
+      - "tests/test_bl001_external_workpool_path_pair.py"
+      - ".github/workflows/bl001-external-workpool-path-pair.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  paired-paths:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Reject one-sided external WorkPool before stage command
+        run: python -m unittest -v tests.test_bl001_external_workpool_path_pair tests.test_tcf_main_characterization tests.test_workpool_manager
