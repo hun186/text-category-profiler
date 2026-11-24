@@ -45,6 +45,9 @@ def validate_external_work_id(work_id):
         or "/" in work_id
         or "\\" in work_id
         or ":" in work_id
+        # Reserved Windows child-name characters are invalid even on a
+        # Linux producer: the same external Work-ID may reach a Win worker.
+        or any(char in '<>"|?*' for char in work_id)
         or work_id.endswith((".", " "))
         or is_windows_device_work_id(work_id)
         or any(ord(char) < 32 or ord(char) == 127 for char in work_id)
