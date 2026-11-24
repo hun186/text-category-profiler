@@ -13,6 +13,7 @@ from BertScript.visualization_filter import (
     operators,
     split_filter_part,
     construct_filter,
+    df_upd_filter_query,
 )
 
 # Stage 4 environment diagnostics run before Dash/native modules and before
@@ -884,23 +885,8 @@ def Build_VisDatatable_style(df, ColorDict, BinMissionDict):
     ]
     return style_data_conditional,style_cell_conditional,style_cell,tooltip_data
 
-def df_upd_filter_query(df, filter_query):
-    filtering_expressions = filter_query.split(' && ')
-    dff = df
-    for filter_part in filtering_expressions:
-        col_name, operator, filter_value = split_filter_part(filter_part)
-
-        if operator in ('eq', 'ne', 'lt', 'le', 'gt', 'ge'):
-            # these operators match pandas series operator method names
-            dff = dff.loc[getattr(dff[col_name], operator)(filter_value)]
-        elif operator == 'contains':
-            dff = dff.loc[dff[col_name].str.contains(filter_value)]
-        elif operator == 'datestartswith':
-            # this is a simplification of the front-end filtering logic,
-            # only works with complete fields in standard format
-            dff = dff.loc[dff[col_name].str.startswith(filter_value)]
-    return dff
-
+# DataFrame filter application is re-exported from visualization_filter,
+# alongside the query helpers, preserving the Stage 4 public name.
 
 #創建VisDatatable，並回傳目前頁面中的檔名及分數資訊，
 #供Build_Pred_Block中的PredsData及dash_pivottable.PivotTable使用。

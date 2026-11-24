@@ -4,7 +4,7 @@ from pathlib import Path
 import unittest
 
 from BertScript.visualization_filter import (
-    construct_filter, operators, split_filter_part, to_string,
+    construct_filter, df_upd_filter_query, operators, split_filter_part, to_string,
 )
 
 
@@ -22,6 +22,11 @@ class FakeSeries:
     def str(self):
         return self
 
+    def __getattr__(self, name):
+        if name in ("eq", "ne", "lt", "le", "gt", "ge"):
+            return lambda value: (name, self.column, value)
+        raise AttributeError(name)
+
     def contains(self, value):
         return ("contains", self.column, value)
 
@@ -32,6 +37,10 @@ class FakeSeries:
 class FakeDataFrame:
     def __init__(self):
         self.filters = []
+
+    @property
+    def loc(self):
+        return self
 
     def __getitem__(self, item):
         if isinstance(item, tuple):
@@ -59,7 +68,8 @@ class Stage4FilterBoundaryTests(unittest.TestCase):
                              for n in ast.walk(tree)))
         self.assertEqual(
             {n.name for n in tree.body if isinstance(n, ast.FunctionDef)},
-            {"to_string", "split_filter_part", "construct_filter"},
+            {"to_string", "split_filter_part", "construct_filter",
+             "df_upd_filter_query"},
         )
 
     def test_stage4_compatibility_exports_are_imported_not_redefined(self):
@@ -72,13 +82,15 @@ class Stage4FilterBoundaryTests(unittest.TestCase):
         self.assertEqual(len(imports), 1)
         self.assertEqual(
             {name.name for name in imports[0].names},
-            {"to_string", "split_filter_part", "construct_filter", "operators"},
+            {"to_string", "split_filter_part", "construct_filter", "operators",
+             "df_upd_filter_query"},
         )
         definitions = {
             n.name for n in tree.body if isinstance(n, ast.FunctionDef)
         }
         self.assertTrue(definitions.isdisjoint({
             "to_string", "split_filter_part", "construct_filter",
+            "df_upd_filter_query",
         }))
 
     def test_to_string_operator_and_literal_contract(self):
@@ -103,6 +115,30 @@ class Stage4FilterBoundaryTests(unittest.TestCase):
             with self.subTest(raw=raw):
                 self.assertEqual(split_filter_part(raw), expected)
         self.assertEqual(split_filter_part("invalid"), [None, None, None])
+
+    def test_frontend_filter_application_keeps_pandas_operator_contract(self):
+        frame = FakeDataFrame()
+        self.assertIs(df_upd_filter_query(
+            frame, "{Score} ge 10 && {Tag} contains 'AI'"),
+            frame)
+        self.assertEqual(frame.filters, [
+            ("ge", "Score", 10.0), ("contains", "Tag", "AI"),
+        ])
+
+    def test_frontend_filter_application_supports_dates_and_empty_query(self):
+        frame = FakeDataFrame()
+        self.assertIs(df_upd_filter_query(frame, ""), frame)
+        self.assertEqual(frame.filters, [])
+        self.assertIs(df_upd_filter_query(
+            frame, '{Date} datestartswith "2026"'), frame)
+        self.assertEqual(frame.filters, [
+            ("datestartswith", "Date", "2026"),
+        ])
+
+    def test_frontend_filter_application_preserves_existing_noop_on_unknown(self):
+        frame = FakeDataFrame()
+        self.assertIs(df_upd_filter_query(frame, "{Bad} unrecognized 9"), frame)
+        self.assertEqual(frame.filters, [])
 
     def test_none_query_preserves_same_dataframe(self):
         frame = FakeDataFrame()
