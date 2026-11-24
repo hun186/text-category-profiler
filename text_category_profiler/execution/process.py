@@ -112,7 +112,12 @@ class RootFailFastPolicy:
 
     def check(self, result: Any, stage_name: str, command: str) -> Any:
         if result.returncode != 0:
-            self.failure_reporter(stage_name, result.returncode, command)
+            # Reporting is diagnostic only. A log failure must never hide
+            # the child exit status or allow following pipeline stages to run.
+            try:
+                self.failure_reporter(stage_name, result.returncode, command)
+            except Exception:
+                pass
             interpretation = child_exit_interpretation(result.returncode)
             # Keep the legacy fail-fast type, stage order and exact numeric
             # code. Appending a cautious hint must NOT invoke the root's
