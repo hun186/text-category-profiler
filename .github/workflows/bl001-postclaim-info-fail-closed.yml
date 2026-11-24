@@ -1,0 +1,35 @@
+name: BL-001 WorkPool Postclaim Logging Boundary
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "text_category_profiler/pipeline/workpool.py"
+      - "tests/test_bl001_postclaim_info_fail_closed.py"
+      - ".github/workflows/bl001-postclaim-info-fail-closed.yml"
+  push:
+    branches: [main]
+    paths:
+      - "text_category_profiler/pipeline/workpool.py"
+      - "tests/test_bl001_postclaim_info_fail_closed.py"
+      - ".github/workflows/bl001-postclaim-info-fail-closed.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  postclaim-diagnostics:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Test immutable move result despite info callback failure
+        run: python -m unittest -v tests.test_bl001_postclaim_info_fail_closed tests.test_workpool_manager tests.test_bl001_preselected_workid_claim
