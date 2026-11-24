@@ -54,6 +54,55 @@ def validate_external_work_id(work_id):
 
 
 @dataclass(frozen=True)
+class WorkItemRecoveryObservation:
+    """Safe-only interpretation of supplied WorkPool location metadata.
+
+    Observation is NOT a claim of liveness, completed artifacts, ownership,
+    quiescence, durability or permission to start/restart/relabel a job.
+    """
+    status: str
+    observed_locations: tuple
+    observations_complete: bool
+    requires_operator_review: bool = True
+    automatic_retry_authorized: bool = False
+    delivery_verified: bool = False
+
+
+def classify_external_work_item_locations(
+        work_id, *, incoming, processing, processed):
+    """Classify *supplied* three-valued metadata without touching a WorkPool.
+
+    Values must be bool or None (unknown). A location can exist while it is
+    still being written, stale, incomplete, aliased, or owned by another run.
+    No outcome can authorize retry, cleanup or return completed reports.
+    """
+    validate_external_work_id(work_id)
+    evidence = {
+        "incoming": incoming,
+        "processing": processing,
+        "processed": processed,
+    }
+    if any(value is not None and type(value) is not bool
+           for value in evidence.values()):
+        raise TypeError("WORKITEM_RECOVERY_OBSERVATION_NOT_BOOLEAN")
+    present = tuple(name for name, value in evidence.items() if value is True)
+    complete = all(value is not None for value in evidence.values())
+    if len(present) > 1:
+        status = "MULTIPLE_LOCATIONS"
+    elif not complete:
+        status = "INCOMPLETE_OBSERVATION"
+    elif not present:
+        status = "NO_LOCATION_OBSERVED"
+    else:
+        status = present[0].upper() + "_ONLY"
+    return WorkItemRecoveryObservation(
+        status=status,
+        observed_locations=present,
+        observations_complete=complete,
+    )
+
+
+@dataclass(frozen=True)
 class WorkPoolPlan:
     incoming_path: str
     pool_path: str
