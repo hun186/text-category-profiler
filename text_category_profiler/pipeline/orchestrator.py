@@ -23,13 +23,29 @@ class PipelineOrchestrator:
         self.merge = merge
         self.deliver = deliver
 
+    @staticmethod
+    def _run_named_stage(name, invoke):
+        """Preserve an error's identity while marking its failing stage.
+
+        No automatic replay, rollback, file writes or private work identifiers.
+        Python versions without Exception.add_note keep legacy propagation.
+        """
+        try:
+            return invoke()
+        except Exception as error:
+            note = "TCP_PIPELINE_FAILED_STAGE=" + name
+            add_note = getattr(error, "add_note", None)
+            if callable(add_note) and note not in getattr(error, "__notes__", ()):
+                add_note(note)
+            raise
+
     def run(self):
-        self.convert()
-        self.classify()
+        self._run_named_stage("convert", self.convert)
+        self._run_named_stage("classify", self.classify)
         if self.context.args.test is not True:
             return
-        self.combine()
-        self.visualize()
+        self._run_named_stage("combine", self.combine)
+        self._run_named_stage("visualize", self.visualize)
         if self.context.args.task in ("SDSMS", "SDSMS_Prediction"):
-            self.merge()
-        self.deliver()
+            self._run_named_stage("merge", self.merge)
+        self._run_named_stage("deliver", self.deliver)
