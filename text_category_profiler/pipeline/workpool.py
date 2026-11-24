@@ -182,11 +182,14 @@ class DeliveryManager:
         source = os.path.join(processing, self.plan.work_id)
         completed = os.path.join(processed, self.plan.work_id)
 
-        if "linux" in self.filesystem.platform_name().lower():
-            for path in [processing, processed, source] + self.filesystem.walk(completed):
-                self.filesystem.chown(path)
-
+        # Create the parent before Linux ownership changes. Never inspect
+        # or chown a pre-existing completed/<work-id> here: it can belong to
+        # another run and the exclusive move may still fail with a collision.
         self.filesystem.make_directory(processed)
+        linux_ownership = "linux" in self.filesystem.platform_name().lower()
+        if linux_ownership:
+            for path in (processing, processed, source):
+                self.filesystem.chown(path)
         try:
             self.filesystem.move(source, completed)
         except Exception as error:
@@ -198,6 +201,19 @@ class DeliveryManager:
             except Exception:
                 pass
             raise
+
+        # Only after successful exclusive move is completed/<work-id> this
+        # run's directory. Apply descendant ownership now; a failure here is
+        # post-commit and must not trigger a replay of the non-idempotent move.
+        if linux_ownership:
+            try:
+                for path in self.filesystem.walk(completed):
+                    self.filesystem.chown(path)
+            except Exception as error:
+                try:
+                    self.move_error_reporter(error)
+                except Exception:
+                    pass
 
         # The move has committed; the earlier backup and this move are
         # separate operations, not one atomic transaction. Do not report
