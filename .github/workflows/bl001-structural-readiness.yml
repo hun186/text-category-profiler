@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - "scripts/bl001_structural_readiness.py"
+      - "scripts/bl001_package_census.py"
+      - "tests/test_bl001_package_census.py"
       - "tests/test_bl001_structural_readiness.py"
       - ".github/workflows/bl001-structural-readiness.yml"
       - ".codex/architecture.md"
@@ -13,6 +15,8 @@ on:
     branches: [main]
     paths:
       - "scripts/bl001_structural_readiness.py"
+      - "scripts/bl001_package_census.py"
+      - "tests/test_bl001_package_census.py"
       - "tests/test_bl001_structural_readiness.py"
       - ".github/workflows/bl001-structural-readiness.yml"
       - ".codex/architecture.md"
