@@ -1,0 +1,37 @@
+name: BL-001 Portable External WorkID Filename
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "text_category_profiler/pipeline/workpool.py"
+      - "tests/test_bl001_external_workid_path_validation.py"
+      - "tests/test_bl001_portable_workid_filename.py"
+      - ".github/workflows/bl001-portable-workid-filename.yml"
+  push:
+    branches: [main]
+    paths:
+      - "text_category_profiler/pipeline/workpool.py"
+      - "tests/test_bl001_external_workid_path_validation.py"
+      - "tests/test_bl001_portable_workid_filename.py"
+      - ".github/workflows/bl001-portable-workid-filename.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  portable-ids:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Reject invalid IDs before acquisition or delivery
+        run: python -m unittest -v tests.test_bl001_portable_workid_filename tests.test_bl001_external_workid_path_validation tests.test_workpool_manager
