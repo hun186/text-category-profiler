@@ -162,6 +162,11 @@ class WorkPoolManager:
         available = self.filesystem.list_directory(self.plan.pool_path)
         selected_work_id = self.plan.work_id
         for work_id in candidates:
+            # A caller-specified external ID must never acquire another
+            # work item simply because it sorts newer. Retain legacy behavior
+            # when no ID is specified (latest matching WorkPool entry).
+            if selected_work_id and work_id != selected_work_id:
+                continue
             if work_id in available:
                 # Validate selected listdir entries before creating the
                 # processing parent or moving any work-ID directory.
