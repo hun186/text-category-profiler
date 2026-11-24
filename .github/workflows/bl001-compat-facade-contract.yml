@@ -1,0 +1,50 @@
+name: BL-001 Legacy Compatibility Facade Boundary
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/bl001_compat_facade_contract.py"
+      - "tests/test_bl001_compat_facade_contract.py"
+      - ".github/workflows/bl001-compat-facade-contract.yml"
+      - "text_category_profiler/*.py"
+      - "text_category_profiler/tulip_utils/*.py"
+      - "text_category_profiler/dijkstra_algorithm_master/*.py"
+      - "experiments/fixtures/bl001_legacy_root_inventory.json"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/bl001_compat_facade_contract.py"
+      - "tests/test_bl001_compat_facade_contract.py"
+      - ".github/workflows/bl001-compat-facade-contract.yml"
+      - "text_category_profiler/*.py"
+      - "text_category_profiler/tulip_utils/*.py"
+      - "text_category_profiler/dijkstra_algorithm_master/*.py"
+      - "experiments/fixtures/bl001_legacy_root_inventory.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  facade-shapes:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify preserved shims do not gain new business implementations
+        run: python -m unittest -v tests.test_bl001_compat_facade_contract
+      - name: Emit facade evidence without approving removal
+        run: python -m scripts.bl001_compat_facade_contract --output bl001-compat-facade.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bl001-compat-facade-${{ matrix.os }}
+          path: bl001-compat-facade.json
+          retention-days: 7
