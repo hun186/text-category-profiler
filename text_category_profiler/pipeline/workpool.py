@@ -188,6 +188,9 @@ class WorkPoolManager:
             # without any successful incoming -> processing handoff.
             if self.plan.work_id:
                 raise RuntimeError("EXTERNAL_WORK_ID_NOT_CLAIMED")
+            # With external mode configured, zero matches is not permission
+            # to run a generic dataset pipeline without a claimed work item.
+            raise RuntimeError("EXTERNAL_WORKPOOL_NO_MATCH")
         self.info(
             f"Found workID {selected_work_id} in {self.plan.incoming_path}, "
             "we will start to apply this task."
