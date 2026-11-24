@@ -1,0 +1,37 @@
+name: BL-001 Stage4 Mission Selection Boundary
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "BertScript/Test_result_Vis.py"
+      - "BertScript/visualization_mission_selection.py"
+      - "tests/test_bl001_stage4_mission_selection_boundary.py"
+      - ".github/workflows/bl001-stage4-mission-selection-boundary.yml"
+  push:
+    branches: [main]
+    paths:
+      - "BertScript/Test_result_Vis.py"
+      - "BertScript/visualization_mission_selection.py"
+      - "tests/test_bl001_stage4_mission_selection_boundary.py"
+      - ".github/workflows/bl001-stage4-mission-selection-boundary.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mission-selection:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify mission-to-color selection isolated from Dash
+        run: python -m unittest -v tests.test_bl001_stage4_mission_selection_boundary tests.test_visualization_stage
