@@ -1,0 +1,43 @@
+name: BL-001 Shared Legacy Git Blob Identity
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/bl001_git_blob_identity.py"
+      - "scripts/bl001_legacy_root_audit.py"
+      - "scripts/bl001_package_census.py"
+      - "tests/test_bl001_legacy_git_blob_identity.py"
+      - "tests/test_bl001_legacy_root_audit.py"
+      - "tests/test_bl001_package_census.py"
+      - ".github/workflows/bl001-shared-legacy-git-blob-identity.yml"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/bl001_git_blob_identity.py"
+      - "scripts/bl001_legacy_root_audit.py"
+      - "scripts/bl001_package_census.py"
+      - "tests/test_bl001_legacy_git_blob_identity.py"
+      - "tests/test_bl001_legacy_root_audit.py"
+      - "tests/test_bl001_package_census.py"
+      - ".github/workflows/bl001-shared-legacy-git-blob-identity.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  portable-legacy-identity:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Validate shared blob digest and both legacy evidence reports
+        run: python -m unittest -v tests.test_bl001_legacy_git_blob_identity tests.test_bl001_legacy_root_audit tests.test_bl001_package_census

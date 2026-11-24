@@ -7,11 +7,18 @@ is imported and no data files are executed.
 import argparse
 import ast
 from collections import defaultdict
-import hashlib
 import json
 import os
 from pathlib import Path
 import subprocess
+
+
+if __package__ in (None, ""):
+    from bl001_git_blob_identity import git_blob_sha as blob_sha
+    from bl001_git_blob_identity import legacy_git_blob_bytes
+else:
+    from scripts.bl001_git_blob_identity import git_blob_sha as blob_sha
+    from scripts.bl001_git_blob_identity import legacy_git_blob_bytes
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -32,12 +39,6 @@ LIMITATIONS = [
     "String hints do not prove file I/O, execution, or a runtime dependency.",
     "Manual, external, generated, non-Python, dynamic imports and computed paths remain unverified.",
 ]
-
-
-def blob_sha(data):
-    return hashlib.sha1(
-        ("blob %d" % len(data)).encode("ascii") + b"\0" + data
-    ).hexdigest()
 
 
 def load_catalog(root=ROOT):
@@ -180,7 +181,10 @@ def audit(root=ROOT, source_paths=None):
     preserved = []
     for item in catalog:
         path = root / item["path"]
-        content = path.read_bytes()
+        worktree = path.read_bytes()
+        content = legacy_git_blob_bytes(
+            worktree, item["sha"], item["size_bytes"]
+        )
         preserved.append({
             "path": item["path"], "blob_matches_baseline": blob_sha(content) == item["sha"],
             "size_matches_baseline": len(content) == item["size_bytes"],
