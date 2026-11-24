@@ -26,3 +26,5 @@ compatibility function 定義清單、canonical target 存在、
 `runtime_verified=false`。** 合併本次 CI 不能用來刪除
 13 個 legacy 資產，也不能取代外部 Win/Linux 工具、
 CLI、歷史 deployment snapshot 的使用盤點。
+
+此專項 CI 只驗證 facade 形狀；完整 Git blob 的跨平台身份由已合併的 #345 (`scripts/bl001_git_blob_identity.py`) 與其 Windows/Ubuntu CI 另行覆核，避免在舊 PR base 上重複執行過時的原始位元組斷言。
