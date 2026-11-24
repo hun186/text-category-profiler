@@ -1,0 +1,39 @@
+name: BL-001 Explicit WorkID Must Be Claimed
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "text_category_profiler/pipeline/workpool.py"
+      - "tests/test_bl001_explicit_workid_unclaimed.py"
+      - "tests/test_bl001_preselected_workid_claim.py"
+      - "tests/test_workpool_manager.py"
+      - ".github/workflows/bl001-explicit-workid-unclaimed.yml"
+  push:
+    branches: [main]
+    paths:
+      - "text_category_profiler/pipeline/workpool.py"
+      - "tests/test_bl001_explicit_workid_unclaimed.py"
+      - "tests/test_bl001_preselected_workid_claim.py"
+      - "tests/test_workpool_manager.py"
+      - ".github/workflows/bl001-explicit-workid-unclaimed.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fail-closed:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Confirm explicit Work-ID cannot proceed without claim
+        run: python -m unittest -v tests.test_bl001_explicit_workid_unclaimed tests.test_bl001_preselected_workid_claim tests.test_workpool_manager
