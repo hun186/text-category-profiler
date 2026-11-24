@@ -181,10 +181,16 @@ class WorkPoolManager:
                 )
                 selected_work_id = work_id
                 break
-        self.info(
-            f"Found workID {selected_work_id} in {self.plan.incoming_path}, "
-            "we will start to apply this task."
-        )
+        # This message is post-claim diagnostic evidence, not part of the
+        # non-idempotent move. Never turn a successfully acquired work item
+        # into a failed pipeline merely because its info callback is broken.
+        try:
+            self.info(
+                f"Found workID {selected_work_id} in {self.plan.incoming_path}, "
+                "we will start to apply this task."
+            )
+        except Exception:
+            pass
         return selected_work_id
 
 
