@@ -24,3 +24,5 @@ Unicode、內部空白、合法延伸副檔名的 Work-ID 仍可使用。
 已存在保留名稱的外部工作單應如何遷移。
 Windows/Ubuntu 使用 fake filesystem 進行隔離驗證，
 不執行分類、SQLite、GPU 或 GUI。
+
+保留裝置名與副檔名之間若有空白（例如 `CON .txt`、`COM1 .foo`、`LPT² .job`），Windows 仍視為裝置別名，故詞法檢查對第一個句點前的 stem 另行去除尾端 ASCII 空白後比較。此處不修改原工作單識別字串，也不把 `con data` 等合法內部空白混為同一個名稱。
