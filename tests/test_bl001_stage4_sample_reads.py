@@ -1,5 +1,6 @@
 """Temporary SQLite fixtures for the Stage 4 read-only sample boundary."""
 import ast
+from contextlib import closing
 from pathlib import Path
 import sqlite3
 from tempfile import TemporaryDirectory
@@ -14,7 +15,7 @@ class Stage4SampleReadsTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.path = Path(self.temp.name) / "樣本 # 1.sql3"
         self.name = '中文 "引號" O\'Brien.txt'
-        with sqlite3.connect(self.path) as connection:
+        with closing(sqlite3.connect(self.path)) as connection, connection:
             connection.execute("CREATE TABLE sampleSrc (File, Src, PartNO, pred_Type, text)")
             connection.executemany("INSERT INTO sampleSrc VALUES (?, ?, ?, ?, ?)", [
                 (self.name, "src2", 2, "B", "第二"),
