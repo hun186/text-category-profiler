@@ -233,6 +233,8 @@ def main(argv: list[str] | None = None) -> int:
     validate.add_argument("--csv", type=Path, default=DEFAULT_CSV)
     validate.add_argument("--topic-tree", type=Path, default=DEFAULT_TREE)
     validate.add_argument("--strict-tree", action="store_true")
+    validate.add_argument("--strict-order", action="store_true",
+                          help="Reject noncanonical ClassLabel row order; never rewrite the CSV")
     validate.add_argument("--json", action="store_true")
     merge = sub.add_parser("merge")
     merge.add_argument("--csv", type=Path, default=DEFAULT_CSV)
@@ -258,6 +260,9 @@ def main(argv: list[str] | None = None) -> int:
                       "no CSV was written; still requires human review")
             return 0
         if args.command == "validate":
+            if args.strict_order and list(table) != sorted(table):
+                raise MetadataError("ClassTable is not in canonical ClassLabel order; "
+                                    "sort existing rows before committing, preserving all metadata")
             check_active_consumers()
             report = audit(table, args.topic_tree)
             if args.json:

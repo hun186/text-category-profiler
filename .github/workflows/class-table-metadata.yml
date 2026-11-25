@@ -58,7 +58,7 @@ jobs:
       - name: Run dependency-light metadata tests
         run: python -m unittest -v tests.test_class_table_metadata tests.test_class_table_ai_proposals tests.test_class_table_csv_only tests.test_class_table_duplicate_cleanup
       - name: Validate ClassTable against TopicTree (warn-only graph differences)
-        run: python -m BertScript.class_table_metadata validate
+        run: python -m BertScript.class_table_metadata validate --strict-order
       - name: Verify full historical migration
         run: |
           git show ec212fd17835dd939b010a680955f95f12593598:BertScript/ClassTable.py > old-ClassTable.py

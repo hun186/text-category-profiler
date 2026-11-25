@@ -13,6 +13,8 @@ on:
       - "TCF_Params/**"
       - "TCFMain.py"
       - "experiments/fixtures/**"
+      - "ClassesTree/data/**"
+      - "ClassesTree/review/**"
       - ".codex/**"
   push:
     branches: [main]
@@ -26,6 +28,8 @@ on:
       - "TCF_Params/**"
       - "TCFMain.py"
       - "experiments/fixtures/**"
+      - "ClassesTree/data/**"
+      - "ClassesTree/review/**"
       - ".codex/**"
   workflow_dispatch:
 

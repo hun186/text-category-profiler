@@ -53,7 +53,12 @@ reviewed revision, not a second CSV row.
 
 Validation (stdlib-only):
 
-    python -m BertScript.class_table_metadata validate --json
+    python -m BertScript.class_table_metadata validate --strict-order --json
+
+After editing metadata manually, run this read-only preflight before committing.
+`--strict-order` rejects out-of-order ClassLabel rows without sorting or rewriting
+any file; the existing default validation behavior is unchanged. Changes under
+`ClassesTree/data/` or `ClassesTree/review/` also trigger full dependency-light CI.
 
 By default duplicate CT, graph nodes missing metadata, and orphan metadata are warnings (no mass auto-fill). --strict-tree turns set differences into failures. Duplicate/blank ClassLabels, blank CT, malformed CSV, or round-trip failures are errors.
 

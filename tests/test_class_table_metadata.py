@@ -1,5 +1,7 @@
 """Stdlib-only ClassTable CSV compatibility and TopicTree merge tests."""
+import contextlib
 import csv
+import io
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
@@ -132,6 +134,28 @@ class ClassTableTests(unittest.TestCase):
         data = {"Z": {"CT": "末"}, "A": {"CT": "首"}}
         self.assertEqual(m.table_to_csv(data).splitlines()[1:], ["A,首,,", "Z,末,,"])
         m.check_round_trip(data)
+
+    def test_validate_strict_order_is_read_only_and_opt_in(self):
+        tree = self.graph("order-tree.csv", [("A", "Z")])
+        for ordered in (False, True):
+            with self.subTest(ordered=ordered):
+                rows = [["Z", "末", "", "待審"], ["A", "首", "說明", ""]]
+                if ordered:
+                    rows.reverse()
+                path = self.csv_file("order.csv", rows)
+                before = path.read_bytes()
+                args = ["validate", "--csv", str(path), "--topic-tree", str(tree)]
+                with contextlib.redirect_stdout(io.StringIO()):
+                    self.assertEqual(m.main(args), 0)
+                    if ordered:
+                        self.assertEqual(m.main(args + ["--strict-order"]), 0)
+                    else:
+                        error = io.StringIO()
+                        with contextlib.redirect_stderr(error), self.assertRaises(SystemExit) as exc:
+                            m.main(args + ["--strict-order"])
+                        self.assertEqual(exc.exception.code, 2)
+                        self.assertIn("canonical ClassLabel order", error.getvalue())
+                self.assertEqual(path.read_bytes(), before)
 
     def test_graph_endpoint_union_and_duplicate_ct_warning(self):
         tree = self.graph("tree.csv", [("A", "B"), ("B", "C")])
