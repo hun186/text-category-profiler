@@ -43,6 +43,9 @@ CONTRACTS = {
     },
     "BertScript/visualization_mission_selection.py": {"mission_colortable_rows"},
     "BertScript/visualization_pagination.py": {"select_table_page"},
+    "BertScript/visualization_scoring.py": {
+        "rating_stars", "score_sum_interval", "score_mean_interval",
+    },
     "text_category_profiler/pipeline/orchestrator.py": {
         "PipelineOrchestrator",
     },
@@ -87,6 +90,9 @@ def inspect_module(path, expected):
 
 
 STAGE4_POLICY_OWNERS = {
+    "BertScript/visualization_scoring.py": (
+        "BertScript/Test_result_Vis.py", set(),
+    ),
     "BertScript/visualization_callback_state.py": (
         "BertScript/visualization_stage.py", set(),
     ),
