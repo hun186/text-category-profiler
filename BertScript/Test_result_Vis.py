@@ -180,16 +180,16 @@ from ClassesTree.ClassesTree_utils import BuildSubTopicsDict
 from text_category_profiler.text.TextProcessor_utils import textReader
 from text_category_profiler.core.conformer import freeGPUConformer
 
-from Test_result_Vis_utils import GetInfoScoreStastic
-from Test_result_Vis_utils import GetClassOfMostPieces
-from Test_result_Vis_utils import GetClassOfHighestScore
-from Test_result_Vis_utils import ComputeExempt
-from Test_result_Vis_utils import TwinsClassifier
-from Test_result_Vis_utils import EvaluatePreference
-from Test_result_Vis_utils import ExportDFAllToDatabase
+from BertScript.Test_result_Vis_utils import GetInfoScoreStastic
+from BertScript.Test_result_Vis_utils import GetClassOfMostPieces
+from BertScript.Test_result_Vis_utils import GetClassOfHighestScore
+from BertScript.Test_result_Vis_utils import ComputeExempt
+from BertScript.Test_result_Vis_utils import TwinsClassifier
+from BertScript.Test_result_Vis_utils import EvaluatePreference
+from BertScript.Test_result_Vis_utils import ExportDFAllToDatabase
 
-from VisParameters import BinMissionDict
-from Test_result_Vis_utils import BinMissionVerifier
+from BertScript.VisParameters import BinMissionDict
+from BertScript.Test_result_Vis_utils import BinMissionVerifier
 #from Test_result_Vis_utils import VisDfToRowTagsList
 #from Test_result_Vis_utils import BuildClassesPivotTable
 from BertScript.class_table_metadata import load_class_table
@@ -197,9 +197,9 @@ from BertScript.embedded_tree_panel import build_tree_panel, register_tree_callb
 from BertScript.jaal_original_panel import build_original_jaal_panel, register_original_jaal
 
 ClassTable = load_class_table()
-from VisParameters import SimilarPiecesExemptMethod
-from VisParameters_Format import MT_style_cell,MT_style_cell_conditional
-from VisParameters_Format import Colortable_style_cell,Colortable_style_cell_conditional,Colortable_style_header
+from BertScript.VisParameters import SimilarPiecesExemptMethod
+from BertScript.VisParameters_Format import MT_style_cell,MT_style_cell_conditional
+from BertScript.VisParameters_Format import Colortable_style_cell,Colortable_style_cell_conditional,Colortable_style_header
 
 #from GenerativeLanguageModel.GenerativeSummary import SummarizingPathText
 
@@ -3825,8 +3825,8 @@ def _run_visualization_application(running_workspace, plan):
         = Build_VisDatatable_style(df, ColorDict, BinMissionDict)
 
 
-    from Test_result_Vis_layout import Build_Upload_Block
-    from Test_result_Vis_layout import Build_Finished_Task_Block
+    from BertScript.Test_result_Vis_layout import Build_Upload_Block
+    from BertScript.Test_result_Vis_layout import Build_Finished_Task_Block
 
     app.layout = serve_layout
     #app.layout = serve_layout(datasetDir)
