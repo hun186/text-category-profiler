@@ -783,7 +783,7 @@ assert namespace['visualization_stage'].__name__ == 'BertScript.visualization_st
             node for node in application.body
             if isinstance(node, (ast.Global, ast.ImportFrom))
             and (not isinstance(node, ast.ImportFrom)
-                 or node.module == "Test_result_Vis_layout")
+                 or node.module == "BertScript.Test_result_Vis_layout")
         ]
         relevant_body.extend(
             node for node in application.body
@@ -798,7 +798,7 @@ assert namespace['visualization_stage'].__name__ == 'BertScript.visualization_st
         )
 
         calls = []
-        fake_layout_module = types.ModuleType("Test_result_Vis_layout")
+        fake_layout_module = types.ModuleType("BertScript.Test_result_Vis_layout")
         for helper_name in helper_names:
             setattr(
                 fake_layout_module,
@@ -828,7 +828,7 @@ assert namespace['visualization_stage'].__name__ == 'BertScript.visualization_st
             body=[reduced_layout, reduced_application], type_ignores=[]))
         exec(compile(harness, "Test_result_Vis.py", "exec"), namespace)
         with mock.patch.dict(sys.modules, {
-                "Test_result_Vis_layout": fake_layout_module}):
+                "BertScript.Test_result_Vis_layout": fake_layout_module}):
             namespace[application.name]("workspace", mock.Mock())
 
         self.assertTrue(helper_names.issubset(namespace))

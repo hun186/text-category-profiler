@@ -322,6 +322,29 @@ class PackageLayoutTests(unittest.TestCase):
         source = path.read_text(encoding="utf-8-sig")
         self.assertEqual(layout_boundary_violations(source), [])
 
+    def test_stage4_internal_provider_imports_are_package_qualified(self):
+        # The direct-script root bootstrap already exposes BertScript.
+        # Private optional VisParameters_DRN discovery is deliberately unchanged.
+        providers = {
+            "Test_result_Vis_utils", "VisParameters",
+            "VisParameters_Format", "Test_result_Vis_layout",
+        }
+        for relative, required in (
+            ("BertScript/Test_result_Vis.py", providers),
+            ("BertScript/Test_result_Vis_utils.py", {"VisParameters"}),
+        ):
+            tree = ast.parse((REPOSITORY_ROOT / relative).read_text(encoding="utf-8-sig"))
+            qualified = set()
+            for node in ast.walk(tree):
+                if isinstance(node, ast.ImportFrom):
+                    self.assertNotIn(node.module, providers, relative)
+                    if node.level == 0 and node.module and node.module.startswith("BertScript."):
+                        qualified.add(node.module.split(".", 1)[1])
+                elif isinstance(node, ast.Import):
+                    for alias in node.names:
+                        self.assertNotIn(alias.name, providers, relative)
+            self.assertTrue(required <= qualified, relative)
+
     def test_package_import_consumers_match_reviewed_inventory(self):
         self.assertEqual(executable_package_import_consumers(), PACKAGE_IMPORT_CONSUMERS)
         self.assertTrue(CANONICAL_ACTIVE_BOUNDARIES.isdisjoint(PACKAGE_IMPORT_CONSUMERS))
