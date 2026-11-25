@@ -9,10 +9,10 @@ from statistics import stdev
 from statistics import variance
 
 #from VisParameters import ZeroSubtreeRootList
-from VisParameters import LocalExemptDict
-from VisParameters import GlobalExemptDict
-from VisParameters import SimilarPiecesExemptMethod
-from VisParameters import SimilarPiecesExemptSetting
+from BertScript.VisParameters import LocalExemptDict
+from BertScript.VisParameters import GlobalExemptDict
+from BertScript.VisParameters import SimilarPiecesExemptMethod
+from BertScript.VisParameters import SimilarPiecesExemptSetting
 
 #print("Finish loading Vis")
 '''
