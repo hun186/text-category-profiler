@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def run(port: int, evidence: Path) -> None:
-    from playwright.sync_api import sync_playwright
+    from playwright.sync_api import expect, sync_playwright
 
     evidence.mkdir(parents=True, exist_ok=True)
     log_file = evidence / "stage4-jaal-only-server.log"
@@ -59,8 +59,22 @@ def run(port: int, evidence: Path) -> None:
                 page.locator("#btn_JaalOriginalLoad").wait_for(
                     state="visible", timeout=90000
                 )
-                assert page.locator("#JaalOriginalRoot").count() == 1
-                assert page.locator("#btn_JaalOriginalLoad").count() == 1
+                # A visible Load button does not prove the asynchronously
+                # hydrated dcc.Dropdown has mounted. Retain exact uniqueness
+                # checks, but wait for the complete parent controls.
+                try:
+                    expect(page.locator("#JaalOriginalRoot")).to_have_count(1, timeout=30000)
+                    expect(page.locator("#JaalOriginalRoot")).to_be_visible(timeout=30000)
+                    expect(page.locator("#btn_JaalOriginalLoad")).to_have_count(1, timeout=30000)
+                except AssertionError:
+                    page.screenshot(path=str(evidence / "parent-control-failure.png"), full_page=True)
+                    (evidence / "parent-control-failure.html").write_text(
+                        page.content(), encoding="utf-8"
+                    )
+                    (evidence / "parent-control-errors.txt").write_text(
+                        "\n".join(browser_errors), encoding="utf-8"
+                    )
+                    raise
                 assert page.locator(".jaal-original-iframe").count() == 0, (
                     "Stage 4 must not construct a Jaal iframe until explicit Load"
                 )
@@ -482,6 +496,33 @@ def run(port: int, evidence: Path) -> None:
                             for n in s["nodes"]),
                 )
                 assert len(restored["nodes"]) > 2
+                # Pan the real graph far outside its viewport, then use the
+                # visible control rather than calling the fit API from the test.
+                frame.locator("body").evaluate("""() => {
+                    const c = window.__stage4JaalNetwork;
+                    c.net.stopSimulation();
+                    window.__fitBefore = JSON.stringify([c.nn.get(), c.ee.get()]);
+                    c.net.moveTo({position: {x: 1000000, y: -1000000},
+                                  scale: 1, animation: false});
+                }""")
+                frame.locator("#jaal-original-fit-view").click()
+                frame.get_by_text("已重新定位", exact=False).wait_for(timeout=15000)
+                assert frame.locator("body").evaluate("""() => {
+                    const c = window.__stage4JaalNetwork;
+                    const net = c.net;
+                    const view = net.getViewPosition();
+                    const host = net.body.container.querySelector("canvas");
+                    const ids = c.nn.get().filter(n => !n.hidden).map(n => n.id);
+                    const positions = net.getPositions(ids);
+                    return JSON.stringify([c.nn.get(), c.ee.get()]) === window.__fitBefore
+                        && Math.abs(view.x) < 100000 && Math.abs(view.y) < 100000
+                        && !!host && ids.length > 0 && ids.every(id => {
+                            const p = net.canvasToDOM(positions[id]);
+                            return p.x >= -2 && p.y >= -2
+                                && p.x <= host.clientWidth + 2 && p.y <= host.clientHeight + 2;
+                        });
+                }"""), "Fit must restore the real graph without changing its data"
+
                 assert not browser_errors, "Browser JS errors: " + " | ".join(browser_errors)
                 (evidence / "verified-scope.txt").write_text(
                     "PASS: hosted Windows Chromium opened actual --viewer-only Stage 4 "
