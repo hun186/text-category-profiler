@@ -170,7 +170,9 @@ from text_category_profiler.text.similarity_utils import InnerCrossSimilarityFor
 from text_category_profiler.pipeline.TCF_utils import ClassfierOptionParser
 from text_category_profiler.pipeline.TCF_utils import LoadDatasetCount
 from text_category_profiler.data.DB_utils import sqlite3Query
-from BertScript.visualization_sample_reads import read_sample_rows
+from BertScript.visualization_sample_reads import (
+    read_sample_rows, read_predictions_for_files, read_labels_for_files,
+)
 
 #print("args", args)
 #from text_category_profiler.pipeline.DataConverter_utils import LabelListLoader
@@ -1068,13 +1070,7 @@ def BuildPredsdf(sql3File, FileList):
     #考慮到sql3File中的File欄位可能為不含txt副檔名之id或為txt完整檔名，將FileList進行兩種情況之擴增
     FileList = list(FileList)
     FileList.extend([x if x.endswith(".txt") else x+".txt" for x in list(FileList)])
-    colList=','.join(cols)
-    FileListPat =','.join([f'"{x}"' for x in FileList])
-    
-    query = f'SELECT {colList} FROM sampleSrc \
-        WHERE File IN ({FileListPat});'
-    #print("sql3File in BuildPref",sql3File)
-    rowslist.extend(sqlite3Query(sql3File,query = query,ListForm = True))
+    rowslist.extend(read_predictions_for_files(sql3File, FileList))
     #print("fin query")
     #print("rowslist",rowslist)
     rowslist = [(getMFNFromFN(x[0]),)+x[1:] for x in rowslist]
@@ -1083,7 +1079,7 @@ def BuildPredsdf(sql3File, FileList):
     query = f'SELECT File FROM \
         (SELECT File,COUNT(pred_Type) AS CT FROM sampleSrc GROUP BY File)\
         ORDER BY CT DESC;'
-    FileListWithNPiecesDESC = sqlite3Query(sql3File,query = query,ListForm = True)
+    FileListWithNPiecesDESC = read_sample_rows(sql3File, query, ())
     FileListWithNPiecesDESC = list(filter(None, FileListWithNPiecesDESC))
     #print("rowslist",rowslist)
     return result,FileListWithNPiecesDESC
@@ -2620,12 +2616,7 @@ def update_output(
         LabelList = []
         if ListOnlyOccuringLabels == True:
             cols=['pred_Type']
-            FileListPat =','.join([
-                f'"{x}"' for x in list(df["File"])])
-            query = f'SELECT DISTINCT pred_Type FROM sampleSrc \
-                WHERE File IN ({FileListPat});'
-            FileLabelList = sqlite3Query(
-                sql3File, query = query,ListForm = True)
+            FileLabelList = read_labels_for_files(sql3File, df["File"])
             LabelList.extend(FileLabelList)
 
         LabelList = sorted(set(LabelList))
@@ -3745,12 +3736,7 @@ def _run_visualization_application(running_workspace, plan):
         #LabelList = sorted(set(
             #[x[0] for x in sqlite3Query(SQLname=sql3File, table = "sampleSrc", cols=cols)]))
         #考慮分數限制等篩選條件後，列出df剩下出現的檔案中所有曾出現的pred_Type值。
-        FileListPat =','.join([
-            f'"{x}"' for x in list(df["File"])])
-        query = f'SELECT DISTINCT pred_Type FROM sampleSrc \
-            WHERE File IN ({FileListPat});'
-        FileLabelList = sqlite3Query(
-            sql3File, query = query,ListForm = True)
+        FileLabelList = read_labels_for_files(sql3File, df["File"])
         LabelList.extend(FileLabelList)
 
     #LabelList = sorted(set(LabelList), key=lambda L: (L.lower(), L))
