@@ -4,6 +4,13 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - "TCFMain.py"
+      - "DatasetConverter/stage.py"
+      - "BertScript/classifier_stage.py"
+      - "BertScript/result_combination_stage.py"
+      - "BertScript/visualization_*.py"
+      - "BertScript/Test_result_Vis.py"
+      - "text_category_profiler/**"
       - "scripts/bl001_structural_readiness.py"
       - "scripts/bl001_package_census.py"
       - "tests/test_bl001_package_census.py"
@@ -14,6 +21,13 @@ on:
   push:
     branches: [main]
     paths:
+      - "TCFMain.py"
+      - "DatasetConverter/stage.py"
+      - "BertScript/classifier_stage.py"
+      - "BertScript/result_combination_stage.py"
+      - "BertScript/visualization_*.py"
+      - "BertScript/Test_result_Vis.py"
+      - "text_category_profiler/**"
       - "scripts/bl001_structural_readiness.py"
       - "scripts/bl001_package_census.py"
       - "tests/test_bl001_package_census.py"

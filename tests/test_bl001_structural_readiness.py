@@ -10,7 +10,7 @@ from unittest import mock
 from scripts.bl001_package_census import audit_package
 from scripts.bl001_structural_readiness import (
     CONTRACTS, EXTERNAL_ACCEPTANCE, ROOT, audit, check_boundary,
-    inspect_module, main,
+    inspect_module, main, check_policy_owner,
 )
 
 
@@ -55,6 +55,24 @@ class StructuralReadinessTests(unittest.TestCase):
             path.unlink()
             self.assertEqual(inspect_module(path, set())[1],
                              ["module_not_parseable:FileNotFoundError"])
+
+    def test_stage4_policy_owner_checks_imports_and_exports(self):
+        module = "BertScript.visualization_mission_selection"
+        owner = ast.parse("import ast\ndef select(): pass")
+        consumer = ast.parse("from " + module + " import select")
+        self.assertEqual(check_policy_owner(owner, consumer, module,
+                                            {"select"}, {"ast"}), [])
+        for source in ("import dash", "from . import runtime",
+                       "def f():\n    import pandas"):
+            with self.subTest(source=source):
+                self.assertIn("unexpected_policy_import", check_policy_owner(
+                    ast.parse(source), consumer, module, {"select"}, {"ast"}))
+        for source in ("pass", "from " + module + " import select as other"):
+            self.assertIn("missing_consumer_exports", check_policy_owner(
+                owner, ast.parse(source), module, {"select"}, {"ast"}))
+        self.assertIn("duplicate_consumer_logic", check_policy_owner(
+            owner, ast.parse("from " + module + " import select\ndef select(): pass"),
+            module, {"select"}, {"ast"}))
 
     def test_census_unknown_and_bad_identity_cannot_be_reported_ready(self):
         baseline = audit_package(ROOT)
