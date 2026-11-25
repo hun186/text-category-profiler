@@ -26,6 +26,7 @@ import setproctitle
 #import multiprocessing as mp
 from multiprocessing import  Pool
 from functools import partial
+from BertScript.result_combination_parallel import parallelize_chunks
 #import numpy as np
 
 #read the original test data for the text and id
@@ -159,12 +160,9 @@ class SpecTopicResultOutputer:
 
 #若要使用multiprocessing，注意不要在主環境import keras，否則mp會卡住，無法執行。
 def parallelize(data, func, num_of_processes=8):
-    data_split = np.array_split(data, num_of_processes)
-    pool = Pool(num_of_processes)
-    data = pd.concat(pool.map(func, data_split))
-    pool.close()
-    pool.join()
-    return data
+    return parallelize_chunks(data, func, num_of_processes,
+                              split=np.array_split, pool_factory=Pool,
+                              concatenate=pd.concat)
 
 def run_on_subset(func, data_subset):
     #return data_subset.apply(func, axis=1)
