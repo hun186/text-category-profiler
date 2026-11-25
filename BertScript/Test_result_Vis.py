@@ -170,6 +170,9 @@ from text_category_profiler.text.similarity_utils import InnerCrossSimilarityFor
 from text_category_profiler.pipeline.TCF_utils import ClassfierOptionParser
 from text_category_profiler.pipeline.TCF_utils import LoadDatasetCount
 from text_category_profiler.data.DB_utils import sqlite3Query
+from BertScript.visualization_row_filter_reads import (
+    read_files_for_labels, read_matching_block_counts,
+)
 from BertScript.visualization_sample_reads import read_sample_rows
 
 #print("args", args)
@@ -1438,156 +1441,32 @@ def cmapSet():
     result = UniqueList(result)
     return result
 
-def RowsFilter(df, selectedLabels, sql3File, keywords=[]):#, PiecesBound=[1, 100]):
-    #ShowingRows = []
-    def CountKeyWordMatchingRow(df, keywords):
-        #print("start to compute conDF")
-        conDF = concat_df_str1(df.drop(PreambleCols, axis=1).applymap(
-            lambda x:','.join(str(x).split(",")[1:]) if x is not None else ""))
-        return df[conDF.apply(lambda x:re.match(".*"+keywords[0],x) is not None)]
-    def CountMatchingBlockOld(df, selectedLabels, keywords = []):
-        patt = '|'.join(["#T#{}#T#".format(x) for x in selectedLabels])
-        nMatchingBlockSeries = df.drop(PreambleCols, axis=1).apply(
-            lambda r: r.astype(str).str.contains(
-            patt, case=False)).apply(
-                lambda row: sum(row[:]==True) ,axis=1)
-        if keywords == []:
-            nMatchingBlockWithKWSeries = pd.DataFrame(
-                "", index=np.arange(len(df)),columns=["KW"])
-        else:
-            #sample:假設r是"#T#CPTPP#T#,会是重要价值伙伴。它呼吁CPTPP会员国"
-            #選擇Label為CPTPP
-            #則re.sub(patt,"",str(r))是"会是重要价值伙伴。它呼吁CPTPP会员国"
-            nMatchingBlockWithKWSeries = df.drop(PreambleCols, axis=1).applymap(
-                lambda r: re.match(patt,str(r)) and (
-                    re.match(".*"+keywords[0],re.sub(patt,"",str(r))) is not None)).apply(
-                    lambda row: sum(row[:]==True) ,axis=1)
-            nMatchingBlockWithKWSeries = nMatchingBlockWithKWSeries.astype(int)
-        #使用int64而不使用float
-        nMatchingBlockSeries = nMatchingBlockSeries.astype(int)
-        return nMatchingBlockSeries, nMatchingBlockWithKWSeries
-    
-    def CountMatchingBlock(df, selectedLabels, keywords = []):
-        patt = '|'.join(["#T#{}#T#".format(x) for x in selectedLabels])
-        #FileListPat =' OR '.join([
-            #f'(File LIKE "%{x}%")' for x in df["File"]])
-        FileListPat =','.join([
-            f'"{x}"' for x in df["File"]])
-        #pred_Type_patt =' OR '.join([
-            #f'(pred_Type LIKE "%{x}%")' for x in selectedLabels])
-        pred_Type_patt =','.join([
-            f'"{x}"' for x in selectedLabels])        
-        
-        query = f'SELECT File,SUM(CT) From \
-            (SELECT File,pred_Type, COUNT() AS CT FROM sampleSrc \
-            WHERE pred_Type IN ({pred_Type_patt}) AND File IN ({FileListPat}) GROUP BY File,pred_Type) \
-                GROUP BY File;'
-        #print("query", query)
-        '''
-        query = f'SELECT File,SUM(CT) From \
-            (SELECT File,pred_Type, COUNT() AS CT FROM sampleSrc \
-            WHERE ({pred_Type_patt}) GROUP BY File,pred_Type) \
-                GROUP BY File;'
-        '''
-        nMatchingBlockSeries = sqlite3Query(
-            sql3File, query = query,ListForm = True)
-        #nMatchingBlockSeries = [('File A.txt', 10), ('File B', 2)]
-        #print("nMatchingBlockSeries b4",nMatchingBlockSeries)
-        #nMatchingBlockSeries = [x for x in nMatchingBlockSeries 
-                                #if x[0] in list(df["File"])]
-        #print("nMatchingBlockSeries",nMatchingBlockSeries)
-        nMatchingBlockSeries = pd.DataFrame(
-            nMatchingBlockSeries,columns=['File','NumberOfMatchingBlock'])
-        #使用int64而不使用float
-        nMatchingBlockSeries['NumberOfMatchingBlock']=nMatchingBlockSeries[
-            'NumberOfMatchingBlock'].astype(int)
-        #print("nMatchingBlockSeries",nMatchingBlockSeries[:10])
-        #print('len(nMatchingBlockSeries)',len(nMatchingBlockSeries))
-        #print("FileListPat",FileListPat)
-        if keywords == []:
-            nMatchingBlockWithKWSeries = pd.DataFrame(df['File'])
-            nMatchingBlockWithKWSeries['NumberOfMatchingBlockWithKW'] = ""
-        else:
-            KWListPat ='|'.join([
-                f'"{x}"' for x in keywords])
-            
-            query = f'SELECT File,SUM(CT) From \
-                (SELECT File,pred_Type, COUNT() AS CT FROM sampleSrc \
-                WHERE (pred_Type IN ({pred_Type_patt})) AND \
-                (File IN ({FileListPat})) AND \
-                    (text REGEXP ({KWListPat})) \
-                    GROUP BY File,pred_Type) \
-                    GROUP BY File;'
-            nMatchingBlockWithKWSeries = sqlite3Query(
-            sql3File, query = query,ListForm = True)
-            nMatchingBlockWithKWSeries = pd.DataFrame(
-                nMatchingBlockWithKWSeries,columns=['File','NumberOfMatchingBlockWithKW'])
-            nMatchingBlockWithKWSeries['NumberOfMatchingBlockWithKW'
-                ]=nMatchingBlockWithKWSeries['NumberOfMatchingBlockWithKW'].astype(int)
-        result = pd.merge(nMatchingBlockSeries,nMatchingBlockWithKWSeries,
-                          on='File')
-        return result
-    
-    #newPiecesBoundMinMax = PiecesBound
-    #如果關鍵字設定非空，進行列篩選。
-    print("In RF, KW",keywords)
-    #if keywords != []:
-        #df = CountKeyWordMatchingRow(df, keywords)
-    print("selectedLabels",selectedLabels)
+def RowsFilter(df, selectedLabels, sql3File, keywords=[]):
+    print("In RF, KW", keywords)
+    print("selectedLabels", selectedLabels)
     if selectedLabels == []:
-        FilteredDF = df
+        return df
+
+    FileList = read_files_for_labels(sql3File, selectedLabels)
+    FilteredDF = df[df['File'].isin(FileList)]
+    counts, keyword_counts = read_matching_block_counts(
+        sql3File, FilteredDF["File"], selectedLabels, keywords)
+    nMatchingBlockSeries = pd.DataFrame(
+        counts, columns=['File', 'NumberOfMatchingBlock'])
+    nMatchingBlockSeries['NumberOfMatchingBlock'] = (
+        nMatchingBlockSeries['NumberOfMatchingBlock'].astype(int))
+    if keywords == []:
+        nMatchingBlockWithKWSeries = pd.DataFrame(FilteredDF['File'])
+        nMatchingBlockWithKWSeries['NumberOfMatchingBlockWithKW'] = ""
     else:
-        #query = 'SELECT DISTINCT File FROM sampleSrc \
-            #WHERE pred_Type LIKE {Tags};'.format(
-            #Tags=' OR '.join([f'"%{x}%"' for x in selectedLabels]))
-        pred_Type_patt =','.join([
-            f'"{x}"' for x in selectedLabels])  
-        query = f'SELECT DISTINCT File FROM sampleSrc \
-            WHERE pred_Type IN ({pred_Type_patt});'
-
-        FileList = sqlite3Query(
-            sql3File, query = query,ListForm = True)
-        FilteredDF = df[df['File'].isin(FileList)]
-        #FilteredDF2 = VDT_DFBuilder.run(ListCap(FileList,df['File']))
-        
-        #print("FilteredDF2",FilteredDF2)
-        #print("FilteredDF==FilteredDF2",FilteredDF==FilteredDF2)
-        #raise Exception
-
-        #patt = '|'.join(["#T#{}#T#".format(x) for x in selectedLabels])
-        #FilteredDF = df[df.apply(
-            #lambda r: r.astype(str).str.contains(
-            #patt, case=False).any(), axis=1)]
-        MBDF = CountMatchingBlock(FilteredDF, selectedLabels, keywords)
-        FilteredDF = FilteredDF.drop(["NumberOfMatchingBlock","NumberOfMatchingBlockWithKW"],axis=1)
-        FilteredDF = pd.merge(FilteredDF, MBDF,on = 'File')
-        #print("nMatchingBlockSeries",nMatchingBlockSeries)
-        #print("nMatchingBlockWithKWSeries",nMatchingBlockWithKWSeries)
-        #df["NumberOfMatchingBlock"] = nMatchingBlockSeries
-        #df["NumberOfMatchingBlockWithKW"] = nMatchingBlockWithKWSeries
-        
-        #FilteredDF = df[df["NumberOfMatchingBlock"].between(
-            #PiecesBound[0], PiecesBound[1])]
-
-        #FilteredDF = df[df.apply(
-            #any([lambda r: r.astype(str).str.contains(
-            #label, case=False) for label in selectedLabels]), axis=1)]
-        #FilteredDF = df['Scrap' in df[df.columns][0]).any(axis=1)]
-            #(df[df.columns].str.contains('Scrap')).any(axis=1)]
-        #print("IN RF, FilteredDF",FilteredDF, FilteredDF.shape)
-        #raise Exception
-        #masked_nMBS = np.ma.masked_equal(
-            #nMatchingBlockSeries, 0, copy=False)
-        '''
-        masked_nMBS = df["NumberOfMatchingBlock"][df["NumberOfMatchingBlock"]!=0]
-        
-        if len(masked_nMBS) == 0:
-            newPiecesBoundMinMax = [0,0]
-        else:
-            newPiecesBoundMinMax = [max(min(masked_nMBS),1),
-                              max(df["NumberOfMatchingBlock"])]
-        '''
-    return FilteredDF#, newPiecesBoundMinMax
+        nMatchingBlockWithKWSeries = pd.DataFrame(
+            keyword_counts, columns=['File', 'NumberOfMatchingBlockWithKW'])
+        nMatchingBlockWithKWSeries['NumberOfMatchingBlockWithKW'] = (
+            nMatchingBlockWithKWSeries['NumberOfMatchingBlockWithKW'].astype(int))
+    MBDF = pd.merge(nMatchingBlockSeries, nMatchingBlockWithKWSeries, on='File')
+    FilteredDF = FilteredDF.drop(
+        ["NumberOfMatchingBlock", "NumberOfMatchingBlockWithKW"], axis=1)
+    return pd.merge(FilteredDF, MBDF, on='File')
 
 
 def LoadMissionDataOld(FN='SPCMission.txt',Cols=['Mission','Expiry Date','Topics']):
