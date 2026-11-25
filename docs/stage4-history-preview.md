@@ -33,6 +33,9 @@ python BertScript\Test_result_Vis.py --history-preview --workpool WorkPool -p 80
   `DFPreambleCols_df_ALL.sql3` 和 `test_results_verification.sql3`。
   直接選擇 SQLite 資料表，分頁讀取（每頁至多 50 列、前 24 欄、
   每個欄位值至多 600 字元），無需再次建立 441 秒分析資料表。
+- 表格欄寬按欄名分配：索引與數值較窄、分類欄適中、長正文較寬；
+  欄寬不因翻頁資料而跳動。表頭與內容自動換行，表格可左右捲動。
+  未辨識欄位採固定合理寬度，不更動任何 SQLite 欄位或資料。
 - 保留同埠獨立 Jaal 進階檢視、根分類搜尋、中文翻譯、
   網狀／階層等模式，以及按需載入的輕量 Cytoscape 分類樹。
 - 預覽模式不呼叫正式 Stage 4 工作流程，不重新計算或匯出
