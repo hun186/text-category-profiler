@@ -11,6 +11,8 @@ on:
       - "BertScript/jaal_viewer_only.py"
       - "run-jaal-viewer-only.bat"
       - "BertScript/assets/15.jaal_embedded_autoheight.js"
+      - "BertScript/assets/19.stage4_jaal_viewport.js"
+      - "tests/jaal_viewport.test.cjs"
       - "BertScript/Test_result_Vis.py"
       - "ClassesTree/Visualization/jaal/jaalViewer.py"
       - "ClassesTree/Visualization/jaal/label_format.py"
@@ -38,6 +40,8 @@ on:
       - "BertScript/jaal_viewer_only.py"
       - "run-jaal-viewer-only.bat"
       - "BertScript/assets/15.jaal_embedded_autoheight.js"
+      - "BertScript/assets/19.stage4_jaal_viewport.js"
+      - "tests/jaal_viewport.test.cjs"
       - "BertScript/Test_result_Vis.py"
       - "ClassesTree/Visualization/jaal/jaalViewer.py"
       - "ClassesTree/Visualization/jaal/label_format.py"
@@ -91,6 +95,8 @@ jobs:
       - name: Verify Jaal iframe auto-height sizing and sidebar reflow
         run: |
           node --check BertScript/assets/15.jaal_embedded_autoheight.js
+          node --check BertScript/assets/19.stage4_jaal_viewport.js
+          node --test tests/jaal_viewport.test.cjs
           assets_dir="$(python -c 'from jaal_topology import ASSETS_DIR; print(ASSETS_DIR)')"
           test -s "$assets_dir/16.jaal_visible_labels.js"
           test -s "$assets_dir/17.jaal_structural_collapse.js"

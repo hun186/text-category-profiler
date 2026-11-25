@@ -315,7 +315,7 @@ def _register_embedded_jaal_visible_labels(app, candidate=None):
 
     app.clientside_callback(
         ClientsideFunction(
-            namespace="jaal_visible_labels", function_name="apply"
+            namespace="stage4_jaal_viewport", function_name="project_and_capture"
         ),
         Output("graph", "run"),
         Input("jaal-original-layout-mode", "value"),
@@ -325,6 +325,14 @@ def _register_embedded_jaal_visible_labels(app, candidate=None):
         *([Input("jaal-community-membership", "data"),
            Input("jaal-structural-eligible", "data")] if candidate is not None else []),
         prevent_initial_call=False,
+    )
+
+
+    app.clientside_callback(
+        ClientsideFunction(namespace="stage4_jaal_viewport", function_name="fit"),
+        Output("jaal-original-fit-status", "children"),
+        Input("jaal-original-fit-view", "n_clicks"),
+        prevent_initial_call=True,
     )
 
 
@@ -439,7 +447,14 @@ def _add_embedded_jaal_sidebar_toggle(layout, candidate=None):
         inputStyle={"marginRight": "4px"},
     )
     toolbar = html.Div(
-        [toggle, html.Span("顯示模式："), mode_choice, chinese_choice,
+        [toggle, html.Button(
+             "⊕ 重新定位／顯示全圖", id="jaal-original-fit-view", n_clicks=0,
+             type="button", className="btn btn-outline-primary btn-sm",
+             title="將目前可見節點置中並縮放至畫布內，不重算或重設篩選",
+             **{"aria-label": "重新定位並顯示全圖"},
+         ), html.Span(id="jaal-original-fit-status", role="status",
+                      style={"fontSize": "12px", "color": "#475569"}),
+         html.Span("顯示模式："), mode_choice, chinese_choice,
          translation_store,
          *([
              dcc.Store(id="jaal-community-membership",
