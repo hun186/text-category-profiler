@@ -33,6 +33,20 @@ def _proc_status_if_available(path: Path) -> str | None:
         return None
 
 
+def _proc_status_is_terminated(status: str | None) -> bool:
+    """Only a reaped process or a Linux terminal task state is accepted.
+
+    X (dead) can be observed briefly during reaping, in addition to Z
+    (zombie). A present but malformed or nonterminal state fails closed.
+    """
+    if status is None:
+        return True
+    states = [line.partition(":")[2].split() for line in status.splitlines()
+              if line.startswith("State:")]
+    return (len(states) == 1 and bool(states[0])
+            and states[0][0] in ("Z", "X"))
+
+
 class FullPipelineHarnessTests(unittest.TestCase):
     def test_build_root_command_is_explicit_and_isolated(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -200,6 +214,18 @@ class FullPipelineHarnessTests(unittest.TestCase):
                 with self.assertRaises(PermissionError):
                     _proc_status_if_available(path)
 
+    def test_proc_terminal_state_accepts_reaped_zombie_and_dead_only(self):
+        for state in (None, "Name:\tpython\nState:\tZ (zombie)\n",
+                      "Name:\tpython\nState:\tX (dead)\n"):
+            with self.subTest(state=state):
+                self.assertTrue(_proc_status_is_terminated(state))
+        for state in ("State:\tR (running)", "State:\tS (sleeping)",
+                      "State:\tD (disk sleep)", "State:\tT (stopped)",
+                      "State:\t", "Name:\tState: Z", "",
+                      "State:\tZ\nState:\tR"):
+            with self.subTest(state=state):
+                self.assertFalse(_proc_status_is_terminated(state))
+
     @unittest.skipIf(os.name == "nt", "POSIX process liveness assertion")
     def test_timeout_kills_descendants_and_formats_bounded_diagnostics(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -217,8 +243,7 @@ class FullPipelineHarnessTests(unittest.TestCase):
             pid = int((result.workpool_root / "pid").read_text())
             process_status = Path(f"/proc/{pid}/status")
             state = _proc_status_if_available(process_status)
-            if state is not None:
-                self.assertIn("State:\tZ", state)
+            self.assertTrue(_proc_status_is_terminated(state), state)
             diagnostic = format_failure(result, tail_lines=1)
             for value in ("Command:", "timed_out=True", "out-line", "err-line",
                           str(result.workpool_root), "Workspaces:"):
