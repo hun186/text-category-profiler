@@ -1,0 +1,36 @@
+name: BL-001 Stage 3 Parallel Pool Boundary
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "BertScript/CombineTestResult.py"
+      - "BertScript/result_combination_parallel.py"
+      - "tests/test_bl001_stage3_parallel_boundary.py"
+      - ".github/workflows/bl001-stage3-parallel-boundary.yml"
+  push:
+    branches: [main]
+    paths:
+      - "BertScript/CombineTestResult.py"
+      - "BertScript/result_combination_parallel.py"
+      - "tests/test_bl001_stage3_parallel_boundary.py"
+      - ".github/workflows/bl001-stage3-parallel-boundary.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  parallel-boundary:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m unittest -v tests.test_bl001_stage3_parallel_boundary
