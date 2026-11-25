@@ -36,6 +36,13 @@ CONTRACTS = {
         "to_string", "split_filter_part", "construct_filter",
         "df_upd_filter_query",
     },
+    "BertScript/visualization_callback_state.py": {
+        "is_spurious_datatable_filter_notification", "datatable_filter_state",
+        "is_redundant_table_filter_event", "is_redundant_table_page_event",
+        "restore_derived_query_state",
+    },
+    "BertScript/visualization_mission_selection.py": {"mission_colortable_rows"},
+    "BertScript/visualization_pagination.py": {"select_table_page"},
     "text_category_profiler/pipeline/orchestrator.py": {
         "PipelineOrchestrator",
     },
@@ -77,6 +84,42 @@ def inspect_module(path, expected):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
     }
     return tree, ["missing_symbol:" + name for name in sorted(expected - available)]
+
+
+STAGE4_POLICY_OWNERS = {
+    "BertScript/visualization_callback_state.py": (
+        "BertScript/visualization_stage.py", set(),
+    ),
+    "BertScript/visualization_mission_selection.py": (
+        "BertScript/Test_result_Vis.py", {"ast"},
+    ),
+    "BertScript/visualization_pagination.py": (
+        "BertScript/Test_result_Vis.py", set(),
+    ),
+}
+
+
+def check_policy_owner(owner_tree, consumer_tree, module, names, allowed_imports):
+    """Check bounded AST ownership and explicit compatibility imports."""
+    issues = []
+    for node in ast.walk(owner_tree):
+        if isinstance(node, ast.Import):
+            if any(alias.name not in allowed_imports for alias in node.names):
+                issues.append("unexpected_policy_import")
+        elif isinstance(node, ast.ImportFrom):
+            if node.level or node.module not in allowed_imports:
+                issues.append("unexpected_policy_import")
+    imported = {
+        alias.name for node in consumer_tree.body
+        if isinstance(node, ast.ImportFrom) and not node.level and node.module == module
+        for alias in node.names if alias.asname in (None, alias.name)
+    }
+    if names - imported:
+        issues.append("missing_consumer_exports")
+    if any(isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+           and node.name in names for node in consumer_tree.body):
+        issues.append("duplicate_consumer_logic")
+    return sorted(set(issues))
 
 
 def check_boundary(root, package_report):
@@ -141,6 +184,20 @@ def check_boundary(root, package_report):
         }
         if duplicates:
             issues.append("stage4_filter_duplicate_entrypoint_logic")
+
+    if app_tree is not None:
+        trees["BertScript/Test_result_Vis.py"] = app_tree
+    for path, (consumer, allowed_imports) in STAGE4_POLICY_OWNERS.items():
+        if path in trees and consumer in trees:
+            module = path[:-3].replace("/", ".")
+            issues.extend(path + ":" + issue for issue in check_policy_owner(
+                trees[path], trees[consumer], module, CONTRACTS[path], allowed_imports))
+        # Callback-state compatibility exports must not become duplicated
+        # implementations in the main Dash entrypoint either.
+        if path == "BertScript/visualization_callback_state.py" and app_tree is not None:
+            if any(isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+                   and node.name in CONTRACTS[path] for node in app_tree.body):
+                issues.append(path + ":duplicate_dash_entrypoint_logic")
 
     issues = sorted(set(issues))
     return {
