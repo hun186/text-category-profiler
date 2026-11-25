@@ -167,6 +167,7 @@ from text_category_profiler.text.similarity_utils import InnerCrossSimilarityFor
 from text_category_profiler.pipeline.TCF_utils import ClassfierOptionParser
 from text_category_profiler.pipeline.TCF_utils import LoadDatasetCount
 from text_category_profiler.data.DB_utils import sqlite3Query
+from BertScript.visualization_sample_reads import read_sample_rows
 
 #print("args", args)
 #from text_category_profiler.pipeline.DataConverter_utils import LabelListLoader
@@ -399,13 +400,13 @@ class VisDatatableRowsListBuilder:
                 #continue
             try:
                 query = f'SELECT Src FROM sampleSrc \
-                    WHERE File = "{file}" ORDER BY PartNO;'
-                FileSrcQueryList = sqlite3Query(self.sql3File,query = query, ListForm=True)
+                    WHERE File = ? ORDER BY PartNO;'
+                FileSrcQueryList = read_sample_rows(self.sql3File, query, (file,))
             except Exception as e:
                 MES = f"When query Src of {file} with SQL QUERY\n {query} \n in Test_result_Vis, the following error occurs:\n{e}\n"
                 MPLOGGER.logW(MES,logFile="Exception.log")
                 continue
-            if FileSrcQueryList ==[None,None]:
+            if not FileSrcQueryList or FileSrcQueryList[0] is None:
                 continue
             
             dateCand = DateExtractor.proc(
@@ -414,13 +415,12 @@ class VisDatatableRowsListBuilder:
                 rowDict["Date"] = dateCand
 
             query = 'SELECT {colList} FROM sampleSrc \
-                WHERE File = "{file}" ORDER BY PartNO;'.format(
-                colList=','.join(self.sqlCols), file=file)
+                WHERE File = ? ORDER BY PartNO;'.format(
+                colList=','.join(self.sqlCols))
             segTuples = []
             try:
                 #segTuples = list(sqlite3Query(self.sql3File,  query = query))
-                segTuples = sqlite3Query(
-                    self.sql3File,query = query, ListForm=True)
+                segTuples = read_sample_rows(self.sql3File, query, (file,))
                 segTuples = UniqueList(segTuples)
             except Exception as e:
                 MES = f"When Apply the query {query} to build segTuples in Test_result_Vis.py, "
