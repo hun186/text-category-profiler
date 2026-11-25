@@ -72,6 +72,15 @@ class LegacyFileSystem:
                 "WORKITEM_DELIVERY_SOURCE_NOT_REAL_DIRECTORY"
             )
 
+    def verify_delivery_destination_absent(self, destination):
+        """Read-only collision preflight, not an exclusive reservation."""
+        try:
+            os.lstat(destination)
+        except FileNotFoundError:
+            return
+        # Do not follow or modify any existing leaf, including dangling links.
+        raise FileExistsError("WORKITEM_MOVE_DESTINATION_ALREADY_EXISTS")
+
     def backup(self, **kwargs):
         """Reject an existing alias at an explicitly selected backup leaf.
 

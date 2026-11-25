@@ -252,6 +252,20 @@ class DeliveryManager:
             # symlinked or reparse-point source that was never securely claimed.
             # The final no-replace move remains authoritative for races.
             self.filesystem.verify_delivery_source(source)
+            processed = os.path.join(
+                self.plan.incoming_path, "..", "AutoBertClassify_Processed"
+            )
+            completed = os.path.join(processed, self.plan.work_id)
+            # A known collision must not publish or clean report artifacts.
+            # This read-only check does not reserve the destination.
+            try:
+                self.filesystem.verify_delivery_destination_absent(completed)
+            except Exception as error:
+                try:
+                    self.move_error_reporter(error)
+                except Exception:
+                    pass
+                raise
         if self.plan.remove_dataset is True:
             self.filesystem.backup(
                 WorkPoolROOT=self.plan.workpool_root,
@@ -278,13 +292,8 @@ class DeliveryManager:
             f"{dataset_dir}/DFPreambleCols_df_ALL.sql3 to {destination}"
         )
 
-        processed = os.path.join(
-            self.plan.incoming_path, "..", "AutoBertClassify_Processed"
-        )
-        completed = os.path.join(processed, self.plan.work_id)
-
-        # Create the parent before Linux ownership changes. Never inspect
-        # or chown a pre-existing completed/<work-id> here: it can belong to
+        # Create the parent before Linux ownership changes. Never walk
+        # or chown a pre-existing completed/<work-id>: it can belong to
         # another run and the exclusive move may still fail with a collision.
         self.filesystem.make_directory(processed)
         linux_ownership = "linux" in self.filesystem.platform_name().lower()

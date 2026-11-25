@@ -51,6 +51,9 @@ class RecordingFileSystem:
         # verification is exercised separately with tempfile directories.
         return None
 
+    def verify_delivery_destination_absent(self, destination):
+        return None
+
     def backup(self, **kwargs):
         self.calls.append(("backup", kwargs))
         if self.backup_error:
