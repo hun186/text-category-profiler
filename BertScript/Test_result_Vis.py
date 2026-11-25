@@ -10,6 +10,9 @@ if str(REPOSITORY_ROOT) not in sys.path:
 from BertScript import visualization_stage
 from BertScript.visualization_mission_selection import mission_colortable_rows
 from BertScript.visualization_pagination import select_table_page
+from BertScript.visualization_scoring import (
+    rating_stars, score_sum_interval, score_mean_interval,
+)
 from BertScript.visualization_filter import (
     to_string,
     operators,
@@ -237,7 +240,7 @@ def complementaryColor(my_hex):
 
 def CountRating(df):
     df['Rating'] = df.apply(
-        lambda x:'⭐'*(min(x.InfoScoreSum//1000,5)+min((x.InfoScoreMean-100)//50,3)*2),
+        lambda x: rating_stars(x.InfoScoreSum, x.InfoScoreMean),
         axis=1)
     return df
 
@@ -246,34 +249,11 @@ def PerformanceColExt(df):
     pd.options.mode.chained_assignment = None
     df['InfoScoreSumInterval'] = df.apply(
         lambda x:
-            'G7. 5000+' if x.InfoScoreSum >= 5000 else (
-            'G6. 4000~5000' if x.InfoScoreSum >= 4000 else (
-            'G5. 3000~3999' if x.InfoScoreSum >= 3000 else (
-            'G4. 2000~2999' if x.InfoScoreSum >= 2000 else (
-            'G3. 1000~1999' if x.InfoScoreSum >= 1000 else (
-            'G2. 500~999' if x.InfoScoreSum>=500 else (
-            'G1. 0~499' if x.InfoScoreSum>=0 else (
-            'B3. -500~-1' if x.InfoScoreSum>= -500 else (
-            'B2. -2000~-501' if x.InfoScoreSum>=-2000 else
-            'B1. <-2000'
-                )))))))),
+            score_sum_interval(x.InfoScoreSum),
         axis=1)
     df['InfoScoreMeanInterval'] = df.apply(
         lambda x:
-            'G9. 500+' if x.InfoScoreMean >= 500 else (
-            'G8. 300~499' if x.InfoScoreMean >= 300 else (
-            'G7. 200~299' if x.InfoScoreMean >= 200 else (
-            'G6. 170~200' if x.InfoScoreMean >= 170 else (
-            'G5. 130~170' if x.InfoScoreMean >= 130 else (
-            'G4. 100~130' if x.InfoScoreMean >= 100 else (
-            'G3. 70~100' if x.InfoScoreMean >= 70 else (
-            'G2. 40~70' if x.InfoScoreMean >= 40 else (
-            'G1. 0~40' if x.InfoScoreMean>=0 else (
-            'B4. -50~0' if x.InfoScoreMean>= -50 else (
-            'B3. -100~-50' if x.InfoScoreMean>= -100 else (
-            'B2. -200~-100' if x.InfoScoreMean>= -200 else (
-            'B1. <-200'
-                )))))))))))),
+            score_mean_interval(x.InfoScoreMean),
         axis=1)
         
     df["Recommanded"] = df.apply(
