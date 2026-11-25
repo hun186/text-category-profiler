@@ -234,6 +234,33 @@ def run(port: int, evidence: Path) -> None:
                     and len(s["clusters"]) > 0,
                 )
 
+                # Pan the real graph far outside its viewport, then use the
+                # visible control rather than calling the fit API from the test.
+                frame.locator("body").evaluate("""() => {
+                    const c = window.__stage4CommunityNetwork;
+                    c.net.stopSimulation();
+                    window.__fitBefore = JSON.stringify([c.nn.get(), c.ee.get()]);
+                    c.net.moveTo({position: {x: 1000000, y: -1000000},
+                                  scale: 1, animation: false});
+                }""")
+                frame.locator("#jaal-original-fit-view").click()
+                frame.get_by_text("已重新定位", exact=False).wait_for(timeout=15000)
+                assert frame.locator("body").evaluate("""() => {
+                    const c = window.__stage4CommunityNetwork;
+                    const net = c.net;
+                    const view = net.getViewPosition();
+                    const host = net.body.container.querySelector("canvas");
+                    const ids = c.nn.get().filter(n => !n.hidden).map(n => n.id);
+                    const positions = net.getPositions(ids);
+                    return JSON.stringify([c.nn.get(), c.ee.get()]) === window.__fitBefore
+                        && Math.abs(view.x) < 100000 && Math.abs(view.y) < 100000
+                        && !!host && ids.length > 0 && ids.every(id => {
+                            const p = net.canvasToDOM(positions[id]);
+                            return p.x >= -2 && p.y >= -2
+                                && p.x <= host.clientWidth + 2 && p.y <= host.clientHeight + 2;
+                        });
+                }"""), "Fit must restore the real graph without changing its data"
+
                 frame.get_by_label("網狀（全展開）", exact=True).check(timeout=25000)
                 restored = until(
                     "exiting Louvain restores exact original IDs and directed edges",
