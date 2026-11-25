@@ -375,6 +375,27 @@ class Stage4HistoryLauncherTests(unittest.TestCase):
         self.assertEqual(chart["data"][0]["y"], ["B", "A"])
         self.assertEqual(chart["layout"]["showlegend"], False)
 
+    def test_column_widths_keep_long_text_wider_than_numeric_columns(self):
+        from BertScript.stage4_history_preview import _history_column_styles
+        columns = ("index", "Rating", "InfoScoreSum", "NumberOfMatchingBlockWithKW",
+                   "Compositions", "Class Of Most Pieces",
+                   "Text Of Class Of Most Pieces", "Text Of Class Of Highest Score",
+                   "text", "正文", 'odd"column')
+        rules = _history_column_styles(columns)
+        self.assertEqual([r["if"]["column_id"] for r in rules], list(columns))
+        widths = {r["if"]["column_id"]: int(r["width"][:-2]) for r in rules}
+        for rule in rules:
+            self.assertEqual(rule["minWidth"], rule["width"])
+            self.assertEqual(rule["maxWidth"], rule["width"])
+        self.assertLessEqual(widths["index"], 100)
+        self.assertLessEqual(widths["NumberOfMatchingBlockWithKW"], 140)
+        self.assertGreaterEqual(widths["Text Of Class Of Most Pieces"], 400)
+        self.assertEqual(widths["Text Of Class Of Highest Score"], widths["text"])
+        self.assertEqual(widths["正文"], widths["text"])
+        self.assertGreaterEqual(widths["Class Of Most Pieces"], 180)
+        self.assertGreaterEqual(widths['odd"column'], 160)
+        self.assertEqual(_history_column_styles(()), [])
+
     def test_real_dash_app_has_results_and_embedded_jaal(self):
         try:
             import dash
@@ -394,6 +415,45 @@ class Stage4HistoryLauncherTests(unittest.TestCase):
             import json
             serialized = json.dumps(data, ensure_ascii=False)
             self.assertIn("HistoryDataTable", serialized)
+            def find_table(node):
+                if isinstance(node, dict):
+                    if node.get("props", {}).get("id") == "HistoryDataTable":
+                        return node["props"]
+                    for value in node.values():
+                        result = find_table(value)
+                        if result is not None:
+                            return result
+                elif isinstance(node, list):
+                    for value in node:
+                        result = find_table(value)
+                        if result is not None:
+                            return result
+                return None
+            table = find_table(data)
+            self.assertIsNotNone(table)
+            self.assertFalse(table["fill_width"])
+            self.assertEqual(table["style_table"]["overflowX"], "auto")
+            self.assertEqual(table["style_cell"]["verticalAlign"], "top")
+            self.assertEqual(table["style_cell"]["whiteSpace"], "normal")
+            self.assertEqual(table["style_cell_conditional"], [])
+            key = next(k for k in app.callback_map
+                       if "HistoryDataTable.style_cell_conditional" in k)
+            page_callback = app.callback_map[key]["callback"].__wrapped__
+            self.assertEqual(page_callback({}, None, None, 1)[:3], ([], [], []))
+            from BertScript import stage4_history_preview as viewer
+            payload = {"columns": ("index", "text"),
+                       "rows": [{"index": "0", "text": "測試"}],
+                       "page": 1, "has_next": False, "truncated_columns": False}
+            with mock.patch.object(viewer, "read_page", return_value=payload):
+                result = page_callback({"workspace": "fixture"}, "db", "sampleSrc", 1)
+            self.assertEqual(result[0], [{"name": "index", "id": "index"},
+                                         {"name": "text", "id": "text"}])
+            self.assertEqual(result[1], payload["rows"])
+            self.assertEqual(result[2], viewer._history_column_styles(payload["columns"]))
+            with mock.patch.object(viewer, "read_page",
+                                   side_effect=history.HistoryPreviewError("blocked")):
+                self.assertEqual(page_callback({"workspace": "fixture"}, "db",
+                                               "sampleSrc", 1)[:3], ([], [], []))
             self.assertIn("HistoryDistributionColumn", serialized)
             self.assertIn("HistoryDistributionPlot", serialized)
             self.assertIn("HistoryDistributionInfo", serialized)
