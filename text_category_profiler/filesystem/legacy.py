@@ -46,6 +46,19 @@ class LegacyFileSystem:
             raise RuntimeError("WORKITEM_MOVE_INCOMPLETE")
         return destination
 
+    def verify_acquisition_pool_leaf(self, source):
+        """Read-only check of the selected WorkPool input leaf before claim.
+
+        The subsequent exclusive incoming move remains authoritative. This
+        preflight is not a lock and does not guarantee later input readiness.
+        """
+        path = Path(source)
+        if (not os.path.lexists(source)
+                or not path.is_dir() or _is_link_or_reparse(path)):
+            raise FileNotFoundError(
+                "WORKITEM_ACQUISITION_POOL_NOT_REAL_DIRECTORY"
+            )
+
     def verify_delivery_source(self, source):
         """Reject a missing or aliased Processing leaf before report backup.
 

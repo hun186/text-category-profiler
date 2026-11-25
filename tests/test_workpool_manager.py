@@ -42,6 +42,10 @@ class RecordingFileSystem:
         if self.move_error:
             raise self.move_error
 
+    def verify_acquisition_pool_leaf(self, source):
+        # Private real-adapter tests cover file, link and missing leaves.
+        return None
+
     def verify_delivery_source(self, source):
         # Fake filesystem has no real private WorkPool tree. Real adapter
         # verification is exercised separately with tempfile directories.
