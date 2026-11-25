@@ -98,15 +98,15 @@ class WorkPoolManagerTests(unittest.TestCase):
             trace.append("command")
         self.assertEqual([], trace)
 
-    def test_nonempty_unmatched_candidates_preserve_existing_work_id_without_raising(self):
+    def test_nonempty_unmatched_candidates_fail_closed_in_external_mode(self):
         fs = RecordingFileSystem({
             "/jobs/AutoBertClassify": ["job-003", "job-002"],
             "/jobs/WorkPool": ["unrelated-job"],
         })
 
-        selected = WorkPoolManager(plan(), fs).acquire()
+        with self.assertRaisesRegex(RuntimeError, "EXTERNAL_WORKPOOL_NO_MATCH"):
+            WorkPoolManager(plan(), fs).acquire()
 
-        self.assertEqual("", selected)
         self.assertFalse(any(call[0] == "mkdir" for call in fs.calls))
         self.assertFalse(any(call[0] == "move" for call in fs.calls))
 
