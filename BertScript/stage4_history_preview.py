@@ -52,6 +52,43 @@ def _preferred_distribution_column(columns):
                 columns[0] if columns else None)
 
 
+def _history_column_styles(columns):
+    """Stable widths from column names, never from private row contents.
+
+    Bound all columns explicitly so wide tables scroll horizontally instead
+    of compressing long text. Keep the same widths across pages of a table.
+    Unknown schema columns retain a readable default.
+    """
+    styles = []
+    for name in columns:
+        key = "".join(char for char in name.casefold() if char.isalnum())
+        if (key.startswith("textof") or key in
+                {"text", "body", "content", "payload", "article", "rawtext",
+                 "originaltext", "fulltext", "smscontent", "正文", "原文", "內文"}):
+            width = 440
+        elif key in {"title", "headline", "url", "description", "summary",
+                     "filename", "filepath", "標題", "摘要"}:
+            width = 320
+        elif key == "compositions":
+            width = 300
+        elif key in {"index", "id", "rowid", "rating"}:
+            width = 88
+        elif (key.startswith(("infoscore", "numberof", "countof"))
+              or key in {"score", "count", "rank", "probability"}):
+            width = 128
+        elif key.startswith("classof") or key in {
+                "classlabel", "label", "classlabels", "topic", "category"}:
+            width = 196
+        else:
+            width = 180
+        size = f"{width}px"
+        styles.append({
+            "if": {"column_id": name},
+            "minWidth": size, "width": size, "maxWidth": size,
+        })
+    return styles
+
+
 def _distribution_chart(payload):
     """Small Plotly figure from the already bounded, read-only SQLite sample."""
     groups = list(reversed(payload["categories"]))
@@ -138,14 +175,25 @@ def build_app(workpool):
                   "marginTop": "12px"}),
         html.Div(id="HistoryPageInfo", role="status",
                  style={"margin": "10px 0"}),
+        html.P("數值欄較窄、正文欄較寬；其餘欄位可在表格內左右捲動。",
+               style={"fontSize": "13px", "margin": "6px 0"}),
         dash_table.DataTable(
             id="HistoryDataTable",
             data=[], columns=[],
             page_action="none",
-            style_table={"overflowX": "auto", "maxWidth": "100%"},
-            style_cell={"fontSize": 12, "maxWidth": 360,
-                        "overflow": "hidden", "textOverflow": "ellipsis",
-                        "textAlign": "left", "whiteSpace": "normal"},
+            fill_width=False,
+            style_table={"overflowX": "auto", "width": "100%", "maxWidth": "100%"},
+            style_cell={"fontFamily": "system-ui, sans-serif", "fontSize": 13,
+                        "minWidth": "180px", "width": "180px", "maxWidth": "180px",
+                        "padding": "8px", "height": "auto", "verticalAlign": "top",
+                        "textAlign": "left", "whiteSpace": "normal",
+                        "overflowWrap": "anywhere", "lineHeight": "1.5"},
+            style_header={"fontWeight": "600", "backgroundColor": "#f3f4f6",
+                          "color": "#1f2937", "verticalAlign": "middle",
+                          "whiteSpace": "normal", "overflowWrap": "anywhere"},
+            style_cell_conditional=[],
+            css=[{"selector": ".column-header-name",
+                  "rule": "white-space: normal; overflow-wrap: anywhere;"}],
         ),
         html.Hr(),
         html.H3("已儲存結果｜欄位值前綴分布（唯讀）"),
@@ -167,7 +215,7 @@ def build_app(workpool):
         html.H3("分類樹與 Jaal（獨立於歷史結果）"),
         build_tree_panel(),
         build_original_jaal_panel(),
-    ], style={"maxWidth": "1500px", "margin": "0 auto",
+    ], style={"width": "100%", "boxSizing": "border-box", "margin": "0 auto",
               "padding": "18px", "fontFamily": "sans-serif"})
 
     @app.callback(
@@ -219,6 +267,7 @@ def build_app(workpool):
     @app.callback(
         Output("HistoryDataTable", "columns"),
         Output("HistoryDataTable", "data"),
+        Output("HistoryDataTable", "style_cell_conditional"),
         Output("HistoryPageInfo", "children"),
         Input("HistoryAuthorization", "data"),
         Input("HistoryDatabase", "value"),
@@ -229,18 +278,18 @@ def build_app(workpool):
         authorization = authorization or {}
         workspace = authorization.get("workspace")
         if not workspace or not table:
-            return [], [], "請先選擇可讀取的資料表。"
+            return [], [], [], "請先選擇可讀取的資料表。"
         try:
             page_data = read_page(
                 root, workspace, database, table, page,
                 confirm_running=authorization.get("confirmed") is True,
             )
         except (HistoryPreviewError, OSError) as exc:
-            return [], [], "未讀取： " + str(exc)
+            return [], [], [], "未讀取： " + str(exc)
         cols = [{"name": name, "id": name} for name in page_data["columns"]]
         extra = "；僅顯示前 24 欄" if page_data["truncated_columns"] else ""
         suffix = "（還有下一頁）" if page_data["has_next"] else "（最後一頁）"
-        return cols, page_data["rows"], (
+        return cols, page_data["rows"], _history_column_styles(page_data["columns"]), (
             f"第 {page_data['page']} 頁，{len(page_data['rows'])} 列"
             + suffix + extra + "；文字欄位最多顯示 600 字元。"
         )
