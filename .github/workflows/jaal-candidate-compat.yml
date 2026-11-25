@@ -10,6 +10,8 @@ on:
       - "tests/stage4_jaal_browser.py"
       - "tests/stage4_jaal_community_browser.py"
       - "BertScript/jaal_original_mount.py"
+      - "BertScript/assets/19.stage4_jaal_viewport.js"
+      - "tests/jaal_viewport.test.cjs"
       - "requirements.txt"
       - "tools/stage4_candidate_desktop_acceptance.py"
       - "tests/test_stage4_candidate_desktop_acceptance.py"
@@ -67,6 +69,7 @@ jobs:
           tests/jaal_visible_labels.test.cjs
           tests/jaal_structural_collapse.test.cjs
           tests/jaal_autoheight.test.cjs
+          tests/jaal_viewport.test.cjs
       # Original Stage 4 JaalViewMain imports app-level helpers transitively;
       # the candidate-only package install intentionally avoids full ML deps.
       - name: Install real Stage 4 graph-only runtime imports

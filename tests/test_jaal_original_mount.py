@@ -310,9 +310,9 @@ class OriginalJaalMountTests(unittest.TestCase):
         self.assertEqual(len(canvas), 1)
         self.assertTrue(canvas[0]["clientside_function"])
         self.assertEqual(canvas[0]["clientside_function"]["namespace"],
-                         "jaal_visible_labels")
+                         "stage4_jaal_viewport")
         self.assertEqual(canvas[0]["clientside_function"]["function_name"],
-                         "apply")
+                         "project_and_capture")
         self.assertEqual(
             {v["id"] for v in canvas[0]["inputs"]},
             {"graph", "jaal-original-layout-mode",
@@ -330,6 +330,15 @@ class OriginalJaalMountTests(unittest.TestCase):
         structural_js = client.get(url + "assets/17.jaal_structural_collapse.js")
         self.assertEqual(structural_js.status_code, 200)
         self.assertIn("uniqueDescendants", structural_js.get_data(as_text=True))
+        fit = [d for d in deps if d["output"] == "jaal-original-fit-status.children"]
+        self.assertEqual(len(fit), 1)
+        self.assertEqual(fit[0]["clientside_function"]["namespace"], "stage4_jaal_viewport")
+        self.assertEqual(fit[0]["clientside_function"]["function_name"], "fit")
+        self.assertEqual(fit[0]["inputs"], [{"id": "jaal-original-fit-view", "property": "n_clicks"}])
+        self.assertNotIn("jaal-original-fit-view", str(canvas))
+        asset = client.get(url + "assets/19.stage4_jaal_viewport.js")
+        self.assertEqual(asset.status_code, 200)
+        self.assertIn(b"project_and_capture", asset.data)
         search_dep = next(d for d in deps if "graph.data" in d["output"])
         self.assertTrue(any(inp["id"] == "search_graph" for inp in search_dep["inputs"]))
         for search_term in ("CN Intelligence And Espionage Against TW",
@@ -427,6 +436,11 @@ class OriginalJaalMountTests(unittest.TestCase):
         self.assertIn("收合左側設定", toggle["props"]["children"])
         self.assertEqual(toggle["props"]["n_clicks"], 0)
         self.assertIn("aria-label", toggle["props"])
+        fit_button = components_by_id["jaal-original-fit-view"]["props"]
+        self.assertEqual(fit_button["n_clicks"], 0)
+        self.assertIn("aria-label", fit_button)
+        self.assertIn("jaal-original-fit-view", json.dumps(graph_column, ensure_ascii=False))
+        self.assertNotIn("jaal-original-fit-view", json.dumps(sidebar, ensure_ascii=False))
         # The toggle stays in the graph column even when sidebar is hidden.
         self.assertIn("jaal-original-sidebar-toggle", json.dumps(graph_column,
                           ensure_ascii=False))
