@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def run(port: int, evidence: Path) -> None:
-    from playwright.sync_api import sync_playwright
+    from playwright.sync_api import expect, sync_playwright
 
     evidence.mkdir(parents=True, exist_ok=True)
     log_file = evidence / "stage4-community-server.log"
@@ -55,6 +55,22 @@ def run(port: int, evidence: Path) -> None:
                 page.locator("#btn_JaalOriginalLoad").wait_for(
                     state="visible", timeout=90000
                 )
+                # A visible Load button does not prove the asynchronously
+                # hydrated dcc.Dropdown has mounted. Retain exact uniqueness
+                # checks, but wait for the complete parent controls.
+                try:
+                    expect(page.locator("#JaalOriginalRoot")).to_have_count(1, timeout=30000)
+                    expect(page.locator("#JaalOriginalRoot")).to_be_visible(timeout=30000)
+                    expect(page.locator("#btn_JaalOriginalLoad")).to_have_count(1, timeout=30000)
+                except AssertionError:
+                    page.screenshot(path=str(evidence / "parent-control-failure.png"), full_page=True)
+                    (evidence / "parent-control-failure.html").write_text(
+                        page.content(), encoding="utf-8"
+                    )
+                    (evidence / "parent-control-errors.txt").write_text(
+                        "\n".join(browser_errors), encoding="utf-8"
+                    )
+                    raise
                 assert page.locator(".jaal-original-iframe").count() == 0
                 page.locator("#btn_JaalOriginalLoad").click()
                 iframe = page.locator(".jaal-original-iframe")

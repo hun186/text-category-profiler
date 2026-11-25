@@ -190,6 +190,11 @@ class WorkPoolManager:
                 # Validate selected listdir entries before creating the
                 # processing parent or moving any work-ID directory.
                 validate_external_work_id(work_id)
+                # Name membership is not proof of a real input directory.
+                # Reject file/alias/stale entries before taking the work item.
+                self.filesystem.verify_acquisition_pool_leaf(
+                    os.path.join(self.plan.pool_path, work_id)
+                )
                 processing = os.path.join(
                     self.plan.incoming_path, "..", "AutoBertClassify_Processing"
                 )
