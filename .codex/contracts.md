@@ -70,7 +70,7 @@
 - 輸入：模型預測結果、label list、dataset DB。
 - 輸出：`DFPreambleCols_df_ALL*`、`dataset_total_with_filename_FixedTest.sql3`、`test.sql3`、`test.tsv`，SDSMS 任務另包含 `SDSMS.*` patterns。
 - 驗證與約束：每個 `PipelinePlan` 擁有 fresh immutable pattern tuple；legacy `FinalOfferedOutputFNrePatList` 保留為 import-safe compatibility list，activation 以當次內容更新。`BackupAndClean` 對一般任務使用 base patterns，對 SDSMS／SDSMS_Prediction 使用 base 加 `SDSMS.*`；修改需同步外部工作池 consumer。
-- 錯誤／失敗語意：備份／搬移失敗目前多為 print/log；完整 rollback 待確認。
+- 錯誤／失敗語意：external Work-ID 交付在備份前驗證 Processing source 與既有 Processed destination；已知目的地碰撞直接失敗。最終搬移採 no-replace，錯誤傳回呼叫端，只有成功移交才記錄 Complete。備份／搬移不是單一原子交易，晚到競爭可能留下備份；沒有自動 rollback、重試或復原授權（#329、#355、#359）。
 - Stage 4 runtime：`VisualizationPlan` 保存 workspace、host/port 與 lifecycle-relevant WeiTech options；non-hosted 仍執行 data/application processing但不啟動 server。Summary command returned non-zero 仍繼續 artifact processing，Python invocation exception 則傳播；upload callback `CommandExecutor` 仍內部捕捉 child non-zero，兩者都不套用 root `RootFailFastPolicy`。
 - 版本與相容性：無明確版本；破壞性檔名變更需 migration plan。
 - 安全與敏感資訊：輸出可能包含原文、預測、分數與內部任務 ID；不得提交真實輸出。

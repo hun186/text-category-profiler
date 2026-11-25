@@ -12,6 +12,19 @@
 - 剩餘 Phase 0–3 的「外部／動態呼叫端、重複 provider 語意一致性、第一方跨階段 caller 覆蓋」尚未獲完整實證，8 個舊入口因此不能僅因內部 AST 沒命中就刪除。13 個 legacy 路徑都是受控相容邊界；新功能應只寫入 canonical domain/stage 模組，避免在 shim 增加實作。
 - BL-001 的產品環境完成條件與 KI-003、KI-008、KI-012 等仍然分開；目前 **結構靜態檢查可完成，但整體 BL-001 維持 In Progress**。不得把 Phase 5 的舊文字視為最新正式驗收結論。
 
+## 2026-11-25 結構收斂盤點（基準 main `7009222`）
+
+| 工作範圍 | 已合併證據 | 尚未完成／界線 |
+| --- | --- | --- |
+| Application namespace、path injection、部署隔離 | Phase 4–5 已記錄完成項；package census #337 | 外部 legacy import 不在靜態證據內 |
+| Stage 4 運算與 lifecycle 分離 | #335–336 filter、#338/#341 callback-state、#339 mission selection、#342 pagination | 大型 Dash callback wiring 仍存在；真實瀏覽器驗收依 KI-008 |
+| Legacy 保全與 API 邊界 | #346 compatibility facade contract、#350 bounded dynamic loader audit | 8 個相容入口仍不可移除；computed/external callers 待驗 |
+| WorkPool acquisition / delivery | #328–334、#343、#347–359 的 no-replace、fail-stop、read-only observation 與前置檢查 | 非原子跨備份交易，未確認程序存活、所有權或自動復原資格；不得自動清理或重跑 |
+| ClassTable | #361 canonical order、#362 read-only strict-order 與分類資料變更的完整輕量 CI | 不代表 taxonomy 語意或 AI metadata 已審核 |
+| Jaal 與歷史預覽 | #363 視野重新定位已合併，含 Windows Chromium 測試 | 使用者實際畫布與其資料仍需獨立確認 |
+
+開發路由：新功能使用 canonical domain 或 stage-local 模組，不在 compatibility facade 新增實作。重複 provider 只在已有等價語意及 characterization evidence 時整併，不為降低檔案數而強制統一。外部 caller、實際 GPU/模型、WorkPool/network filesystem、正式 SQLite/recovery 與完整 GUI 是獨立驗收項；不由 Hosted 或靜態檢查推論通過。保留 Phase 0–3 未完成項與 BL-001 In Progress，不因單一 PR 合併而標記 Done。
+
 ## 目標
 
 將 `PythonModule/utils/` 中真正跨 stage 共用的 helper 整理為根目錄 `text_category_profiler/` package，同時把具明確領域歸屬、測試、實驗、維護腳本與第三方程式移到合適邊界。遷移完成後，active code 不再依賴 `PackageImporter` 修改 `sys.path`，但既有 CLI、stage handoff 與資料格式保持相容。

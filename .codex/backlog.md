@@ -16,6 +16,14 @@
 - `text_category_profiler/` Git tracked 完整清單現為 **77 = 64 canonical domain owned + 13 legacy 保全 + 0 未分類**，比上方歷史紀錄的 71/58 更新。靜態檢查可執行 `python -m scripts.bl001_structural_readiness --output <private-result.json>`，報告中的 PASS 只證明目前 module/manifest boundaries，仍固定明示外部 caller、WorkPool、GUI、GPU、SQLite 全部未由此驗證。
 - **維持 `BL-001 In Progress`**：外部與動態 callers 尚未查完、8 個 compatibility entrypoints 仍保留、部分 provider/資料行為及正式環境驗收仍在 Phase 0–3／KI 待辦；不能因 structural gate PASS 而自動更改 Backlog 狀態或刪除舊資產。
 
+### BL-001 收斂路由｜2026-11-25（main `7009222`）
+
+- #338/#339/#341/#342 已合併，Stage 4 回呼狀態、任務選取及分頁政策各有明確 owner；尚未宣稱所有 GUI 回呼重構或使用者實機驗收完成。
+- #346/#350 已合併，8 個 legacy facade 受 API／import 契約保護，動態載入僅有 bounded AST evidence；外部 caller 未驗證，不移除保全路徑。
+- #347–359 已合併的 WorkPool 防護保持 fail-stop；read-only recovery observation 不構成 resume 或 cleanup 授權。#359 已知目的地碰撞在備份前拒絕；晚到競爭仍可能留下備份。
+- #362 已合併，ClassTable strict-order 驗證與分類資料變更的完整輕量 CI 生效；不核准分類 metadata。
+- Phase 0–3 的剩餘項目與產品環境 acceptance 分開列於 [遷移收斂盤點](text-category-profiler-package-migration.md#2026-11-25-結構收斂盤點基準-main-7009222)。BL-001 維持 In Progress；不重跑已通過且未受變更影響的驗收，不以 PR 數作完成條件。
+
 ## Candidate Ideas
 
 只有使用者希望先保存、但尚未承諾實作的構想放這裡；Agent 在一般任務中不得自行累積建議。
