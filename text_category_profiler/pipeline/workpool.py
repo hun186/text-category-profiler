@@ -184,6 +184,13 @@ class WorkPoolManager:
                 )
                 selected_work_id = work_id
                 break
+        else:
+            # An explicitly requested external job must be claimed from
+            # incoming, not silently carried forward from a prior run.
+            # Otherwise the pipeline may process/backup/deliver another job
+            # without any successful incoming -> processing handoff.
+            if self.plan.work_id:
+                raise RuntimeError("EXTERNAL_WORK_ID_NOT_CLAIMED")
         # This message is post-claim diagnostic evidence, not part of the
         # non-idempotent move. Never turn a successfully acquired work item
         # into a failed pipeline merely because its info callback is broken.
