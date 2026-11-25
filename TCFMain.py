@@ -61,6 +61,7 @@ from text_category_profiler.pipeline.workpool import (
     DeliveryManager,
     WorkPoolManager,
     WorkPoolPlan,
+    validate_external_workpool_path_pair,
 )
 from text_category_profiler.filesystem import LegacyFileSystem
 
@@ -105,6 +106,11 @@ def DataConvert(args,exeTimeDict=None):
     stage_start_time = time.time()
     stage_banner("DataConverter", detail="整理輸入資料並產生 train/dev/test handoff 檔案")
     print_args_summary(args)
+    # Reject one-sided external configuration before discovery or launching
+    # an unrelated generic DataConverter with a silently disabled WorkPool.
+    validate_external_workpool_path_pair(
+        args.WeiTechworkIDPath, args.WeiTechWorkPoolPATH
+    )
     #如果有設定WeiTechworkIDPath和WeiTechWorkPoolPATH，則抓取workID，
     #並續於DataConverter將該workID相關dataset_total_with_filename_FixedTest.sql3和test3.sql3拷貝到WorkPool
     #print("start to find WeiTechworkIDPath")

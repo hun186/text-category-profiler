@@ -56,6 +56,19 @@ def validate_external_work_id(work_id):
     return work_id
 
 
+def validate_external_workpool_path_pair(incoming_path, pool_path):
+    """Require two configured external paths or an explicitly disabled mode.
+
+    A single populated path must never silently disable job acquisition;
+    neither path is inspected, normalized or written to by this validator.
+    """
+    if (not isinstance(incoming_path, str)
+            or not isinstance(pool_path, str)
+            or bool(incoming_path) != bool(pool_path)):
+        raise ValueError("EXTERNAL_WORKPOOL_PATH_PAIR_REQUIRED")
+    return bool(incoming_path)
+
+
 @dataclass(frozen=True)
 class WorkItemRecoveryObservation:
     """Safe-only interpretation of supplied WorkPool location metadata.
@@ -152,6 +165,9 @@ class WorkPoolManager:
         # os.listdir; validate it before even inspecting external directories.
         if self.plan.work_id != "":
             validate_external_work_id(self.plan.work_id)
+        if not validate_external_workpool_path_pair(
+                self.plan.incoming_path, self.plan.pool_path):
+            raise ValueError("EXTERNAL_WORKPOOL_PATH_PAIR_REQUIRED")
         candidates = sorted(
             self.filesystem.list_directory(self.plan.incoming_path), reverse=True
         )
@@ -220,6 +236,9 @@ class DeliveryManager:
         # logging or final move. An empty ID remains the legacy no-job mode.
         if self.plan.work_id != "":
             validate_external_work_id(self.plan.work_id)
+            if not validate_external_workpool_path_pair(
+                    self.plan.incoming_path, self.plan.pool_path):
+                raise ValueError("EXTERNAL_WORKPOOL_PATH_PAIR_REQUIRED")
             processing = os.path.join(
                 self.plan.incoming_path, "..", "AutoBertClassify_Processing"
             )
