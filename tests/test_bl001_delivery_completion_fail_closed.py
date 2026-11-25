@@ -73,7 +73,7 @@ class DeliveryCompletionFailClosedTests(unittest.TestCase):
                     output_logger=events.append,
                     move_error_reporter=reported.append,
                 ).backup_and_complete(str(root / "output"))
-            self.assertEqual(len(backups), 1)
+            self.assertEqual(len(backups), 0)
             self.assertEqual(len(reported), 1)
             self.assertIsInstance(reported[0], FileExistsError)
             self.assertEqual(events, [])
