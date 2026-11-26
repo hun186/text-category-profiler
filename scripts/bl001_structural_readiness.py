@@ -50,6 +50,7 @@ CONTRACTS = {
     "BertScript/result_combination_parallel.py": {"parallelize_chunks"},
     "BertScript/visualization_sample_reads.py": {
         "read_sample_rows", "read_predictions_for_files", "read_labels_for_files",
+        "read_visible_segments", "read_max_partno",
     },
     "BertScript/visualization_row_filter_reads.py": {
         "read_files_for_labels", "read_matching_block_counts",
