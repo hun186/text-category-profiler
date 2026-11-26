@@ -3229,3 +3229,56 @@ Aging And Long-Term Care Crisis,Aging And Long-Term Care Crisis-Care Workforce A
 Aging And Long-Term Care Crisis,Aging And Long-Term Care Crisis-Financing And Affordability,20261120,contains,新增底層細緻類別；依長照體系面對的主要壓力面向區分；目標類別：高齡化與長期照護危機；＠ChatGPT
 Aging And Long-Term Care Crisis,Aging And Long-Term Care Crisis-Family Caregiver Burden,20261120,contains,新增底層細緻類別；依長照體系面對的主要壓力面向區分；目標類別：高齡化與長期照護危機；＠ChatGPT
 Aging And Long-Term Care Crisis,Aging And Long-Term Care Crisis-Care Quality And Safety,20261120,contains,新增底層細緻類別；依長照體系面對的主要壓力面向區分；目標類別：高齡化與長期照護危機；＠ChatGPT
+Food Safety,Food Supply Chain Traceability And Cross-Border Recalls,20261126,contains,新增主要層級；將批次追溯及跨境回收置於既有食品安全；目標類別：食品供應鏈批次追溯與跨境召回；＠ChatGPT
+Food Supply Chain Traceability And Cross-Border Recalls,Food Supply Chain Traceability,20261126,contains,新增必要中間節點；依追溯流程分支；目標類別：食品供應鏈批次追溯與跨境召回；＠ChatGPT
+Food Supply Chain Traceability And Cross-Border Recalls,Cross-Border Food Recalls,20261126,contains,新增必要中間節點；依事故應變流程分支；目標類別：食品供應鏈批次追溯與跨境召回；＠ChatGPT
+Food Supply Chain Traceability,Food Supply Chain Traceability-Batch Identification And Records,20261126,contains,新增底層細緻類別；辨識與紀錄義務；目標類別：食品供應鏈批次追溯與跨境召回；＠ChatGPT
+Food Supply Chain Traceability,Food Supply Chain Traceability-Digital Systems And Data Exchange,20261126,contains,新增底層細緻類別；數位互通及技術實作；目標類別：食品供應鏈批次追溯與跨境召回；＠ChatGPT
+Cross-Border Food Recalls,Cross-Border Food Recalls-International Alerts And Coordination,20261126,contains,新增底層細緻類別；國際資訊交換及協調；目標類別：食品供應鏈批次追溯與跨境召回；＠ChatGPT
+Cross-Border Food Recalls,Cross-Border Food Recalls-Recall Execution And Market Withdrawal,20261126,contains,新增底層細緻類別；已跨境流通產品回收執行；目標類別：食品供應鏈批次追溯與跨境召回；＠ChatGPT
+Public Health,Food Supply Chain Traceability And Cross-Border Recalls,20261126,contains,新增檢索型主題包含；公共衛生可檢索食品追溯及跨境回收，避免擴及既有 GMP；目標類別：食品供應鏈批次追溯與跨境召回；＠ChatGPT
+International Trade,Food Safety In International Trade,20261126,contains,新增檢索橋接中間節點；新增檢索型主題包含；國際貿易中的食品安全治理；目標類別：食品供應鏈批次追溯與跨境召回；＠ChatGPT
+Food Safety In International Trade,Cross-Border Food Recalls,20261126,contains,新增檢索型主題包含；跨境流通食品的警訊與回收；目標類別：食品供應鏈批次追溯與跨境召回；＠ChatGPT
+Strategy And Security,Economic Coercion,20261126,contains,新增必要中間節點；經濟工具作為非軍事安全施壓手段；目標類別：中共對臺經濟脅迫；＠ChatGPT
+International Economics,Economic Coercion,20261126,contains,新增結構型交叉父類別；國際經濟政策工具之穩定分類；目標類別：中共對臺經濟脅迫；＠ChatGPT
+Economic Coercion,CN Economic Coercion Against TW,20261126,contains,新增主要層級；依施壓來源與對象細分；目標類別：中共對臺經濟脅迫；＠ChatGPT
+CN Policy For TW,CN Economic Coercion Against TW,20261126,contains,新增結構型交叉父類別；對臺政策中的經濟施壓；目標類別：中共對臺經濟脅迫；＠ChatGPT
+Cross-Strait Security,CN Economic Coercion Against TW,20261126,contains,新增結構型交叉父類別；兩岸非軍事安全脅迫；目標類別：中共對臺經濟脅迫；＠ChatGPT
+Cross-Strait Economic Relations,CN Economic Coercion Against TW,20261126,contains,新增檢索型主題包含；兩岸經貿及服務往來中具穩定檢索價值的經濟脅迫分支；目標類別：中共對臺經濟脅迫；＠ChatGPT
+CN Economic Coercion Against TW,CN Economic Coercion Against TW-Goods Trade Restrictions,20261126,contains,新增底層細緻類別；依主要施壓工具區分商品貿易禁限與市場准入；目標類別：中共對臺經濟脅迫；＠ChatGPT
+CN Economic Coercion Against TW,CN Economic Coercion Against TW-Tariff And Trade Preference Withdrawal,20261126,contains,新增底層細緻類別；依主要施壓工具區分關稅及貿易優惠撤回；目標類別：中共對臺經濟脅迫；＠ChatGPT
+CN Economic Coercion Against TW,CN Economic Coercion Against TW-Tourism And Travel Restrictions,20261126,contains,新增底層細緻類別；依主要施壓工具區分觀光及旅遊限制；目標類別：中共對臺經濟脅迫；＠ChatGPT
+CN Economic Coercion Against TW,CN Economic Coercion Against TW-Targeted Corporate Sanctions And Pressure,20261126,contains,新增底層細緻類別；依主要施壓工具區分針對企業的制裁與施壓；目標類別：中共對臺經濟脅迫；＠ChatGPT
+CN Policy For TW,CN Lawfare Against TW,20261126,contains,新增必要中間節點，容納不同對臺法律戰面向；目標類別：中共藉法律戰壓縮臺灣國際空間；＠ChatGPT
+CN Lawfare Against TW,CN Lawfare To Restrict TW International Space,20261126,contains,新增主要層級，聚焦對外空間；目標類別：中共藉法律戰壓縮臺灣國際空間；＠ChatGPT
+CN Lawfare To Restrict TW International Space,CN Lawfare To Restrict TW International Space-UNGA Resolution 2758 Interpretation,20261126,contains,新增底層細緻類別；以聯大第2758號決議的文字、歷史、法律效力、代表權或主權詮釋為主軸；若主軸是特定機構的實際准入規則，改歸國際組織參與限制。；目標類別：中共藉法律戰壓縮臺灣國際空間；＠ChatGPT
+CN Lawfare To Restrict TW International Space,CN Lawfare To Restrict TW International Space-International Organization Participation Restrictions,20261126,contains,新增底層細緻類別；以多邊組織准入、觀察員資格、代表權、名稱、證件及制度性排除為主軸，須具法律或規範線索；一般參與倡議不必然納入。；目標類別：中共藉法律戰壓縮臺灣國際空間；＠ChatGPT
+CN Lawfare To Restrict TW International Space,CN Lawfare To Restrict TW International Space-Bilateral Diplomatic Documents And Commitments,20261126,contains,新增底層細緻類別；以雙邊公報、承認條款、官方往來承諾及實施措施的規範內容為主軸；單純斷交或經濟利誘不納入。；目標類別：中共藉法律戰壓縮臺灣國際空間；＠ChatGPT
+TW Diplomacy,CN Lawfare To Restrict TW International Space,20261126,contains,新增檢索型主題包含；臺灣外交的法律制度性限制與反制；目標類別：中共藉法律戰壓縮臺灣國際空間；＠ChatGPT
+TW To Join International Organization,CN Lawfare To Restrict TW International Space-International Organization Participation Restrictions,20261126,contains,新增檢索型主題包含；國際組織參與路徑可直接取得制度性排除資訊；目標類別：中共藉法律戰壓縮臺灣國際空間；＠ChatGPT
+UN Affairs,CN Lawfare To Restrict TW International Space-UNGA Resolution 2758 Interpretation,20261126,contains,新增檢索型主題包含；聯大決議及其國際法理爭議；目標類別：中共藉法律戰壓縮臺灣國際空間；＠ChatGPT
+One China Principle,CN Lawfare To Restrict TW International Space-Bilateral Diplomatic Documents And Commitments,20261126,contains,新增檢索型主題包含；一中條款如何透過雙邊文件實施；目標類別：中共藉法律戰壓縮臺灣國際空間；＠ChatGPT
+One China Principle,CN Lawfare To Restrict TW International Space-UNGA Resolution 2758 Interpretation,20261126,contains,新增檢索型主題包含；一中原則與2758決議的法理解釋及爭議；目標類別：中共藉法律戰壓縮臺灣國際空間；＠ChatGPT
+US Affairs,US Immigration Affairs,20261126,contains,新增必要中間節點；建立美國移民事務長期主題；目標類別：美國大規模遣返與移民執法爭議；＠ChatGPT
+US Immigration Affairs,US Immigration Enforcement,20261126,contains,新增主要層級；區分移民執法與一般移民事務；目標類別：美國大規模遣返與移民執法爭議；＠ChatGPT
+US Immigration Enforcement,US Mass Deportation And Immigration Enforcement,20261126,contains,新增主要層級；聚焦大規模遣返與相關執法及爭議；目標類別：美國大規模遣返與移民執法爭議；＠ChatGPT
+US Mass Deportation And Immigration Enforcement,US Mass Deportation And Immigration Enforcement-Policy And Operations,20261126,contains,新增必要中間節點；區隔政策與執行及法律與社會回應；目標類別：美國大規模遣返與移民執法爭議；＠ChatGPT
+US Mass Deportation And Immigration Enforcement,US Mass Deportation And Immigration Enforcement-Legal And Social Response,20261126,contains,新增必要中間節點；區隔政策與執行及法律與社會回應；目標類別：美國大規模遣返與移民執法爭議；＠ChatGPT
+US Mass Deportation And Immigration Enforcement-Policy And Operations,US Mass Deportation And Immigration Enforcement-Policy And Administrative Measures,20261126,contains,新增底層細緻類別；以行政命令、政策適用範圍、執法優先順序、資源與制度調整為主；不以個別逮捕或裁判為主。；目標類別：美國大規模遣返與移民執法爭議；＠ChatGPT
+US Mass Deportation And Immigration Enforcement-Policy And Operations,US Mass Deportation And Immigration Enforcement-Arrests And Detention Operations,20261126,contains,新增底層細緻類別；以移民執法的拘捕、查緝及拘留設施運作為主；拘留待遇或家庭傷害為主時歸人權類。；目標類別：美國大規模遣返與移民執法爭議；＠ChatGPT
+US Mass Deportation And Immigration Enforcement-Policy And Operations,US Mass Deportation And Immigration Enforcement-Deportation And Third Country Transfers,20261126,contains,新增底層細緻類別；以實際遣返、接收國安排、跨國轉送及遣返規模為主；裁判或合法性為主時歸司法類。；目標類別：美國大規模遣返與移民執法爭議；＠ChatGPT
+US Mass Deportation And Immigration Enforcement-Legal And Social Response,US Mass Deportation And Immigration Enforcement-Judicial Review And Due Process,20261126,contains,新增底層細緻類別；以司法裁判、法律挑戰及正當程序為主；聯邦與地方權限衝突為主時歸政府與公眾回應類。；目標類別：美國大規模遣返與移民執法爭議；＠ChatGPT
+US Mass Deportation And Immigration Enforcement-Legal And Social Response,US Mass Deportation And Immigration Enforcement-Human Rights And Family Impact,20261126,contains,新增底層細緻類別；以拘留待遇、人身安全、家庭分離、歧視及人道影響為主；不預設每件執法必然違法。；目標類別：美國大規模遣返與移民執法爭議；＠ChatGPT
+US Mass Deportation And Immigration Enforcement-Legal And Social Response,US Mass Deportation And Immigration Enforcement-Federal State Local And Public Response,20261126,contains,新增底層細緻類別；以聯邦與州地方合作或衝突、庇護城市、抗議、地方社群與政治回應為主；法院對個人權利的審查歸司法類。；目標類別：美國大規模遣返與移民執法爭議；＠ChatGPT
+Interior Affairs,US Immigration Affairs,20261126,contains,新增檢索型主題包含；以國別移民事務作為內政議題穩定橋接，避免直接跨至大規模遣返事件；目標類別：美國大規模遣返與移民執法爭議；＠ChatGPT
+Public Governance,US Mass Deportation And Immigration Enforcement-Policy And Administrative Measures,20261126,contains,新增檢索型主題包含；移民行政措施屬治理政策議題，限定於政策葉而非所有遣返影響；目標類別：美國大規模遣返與移民執法爭議；＠ChatGPT
+Judiciary,US Mass Deportation And Immigration Enforcement-Judicial Review And Due Process,20261126,contains,新增檢索型主題包含；司法審查細項本身即是具體國別司法議題，不連至整個執法事件；目標類別：美國大規模遣返與移民執法爭議；＠ChatGPT
+Human Rights,US Mass Deportation And Immigration Enforcement-Human Rights And Family Impact,20261126,contains,新增檢索型主題包含；限定執法中的權利及家庭影響，非全部執法文本；目標類別：美國大規模遣返與移民執法爭議；＠ChatGPT
+US Politics,US Mass Deportation And Immigration Enforcement-Federal State Local And Public Response,20261126,contains,新增檢索型主題包含；州與聯邦權限、庇護城市、公眾政治動員為穩定政治議題；目標類別：美國大規模遣返與移民執法爭議；＠ChatGPT
+Europe Affairs,EU Migration And Asylum Reform,20261126,contains,新增主要層級；歐盟區域政策改革；目標類別：歐盟移民與庇護制度改革；＠ChatGPT
+Social Security,Migration And Asylum Policy,20261126,contains,新增必要中間節點；提供跨國移民治理之穩定分類；目標類別：歐盟移民與庇護制度改革；＠ChatGPT
+Migration And Asylum Policy,EU Migration And Asylum Reform,20261126,contains,新增檢索型主題包含；跨地域移民政策檢索橋接；目標類別：歐盟移民與庇護制度改革；＠ChatGPT
+EU Migration And Asylum Reform,EU Migration And Asylum Reform-Border Screening And Asylum Procedures,20261126,contains,新增底層細緻類別；邊境篩查與庇護程序；目標類別：歐盟移民與庇護制度改革；＠ChatGPT
+EU Migration And Asylum Reform,EU Migration And Asylum Reform-Solidarity And Responsibility Sharing,20261126,contains,新增底層細緻類別；團結機制與責任分攤；目標類別：歐盟移民與庇護制度改革；＠ChatGPT
+EU Migration And Asylum Reform,EU Migration And Asylum Reform-International Protection And Reception,20261126,contains,新增底層細緻類別；國際保護與接待保障；目標類別：歐盟移民與庇護制度改革；＠ChatGPT
+EU Migration And Asylum Reform,EU Migration And Asylum Reform-Implementation And Crisis Management,20261126,contains,新增底層細緻類別；制度實施與危機管理；目標類別：歐盟移民與庇護制度改革；＠ChatGPT
