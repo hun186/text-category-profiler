@@ -1,0 +1,36 @@
+name: BL-001 Stage 4 Summary Write Boundary
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "BertScript/Test_result_Vis.py"
+      - "BertScript/visualization_summary_writes.py"
+      - "tests/test_bl001_stage4_summary_writes.py"
+      - ".github/workflows/bl001-stage4-summary-writes.yml"
+  push:
+    branches: [main]
+    paths:
+      - "BertScript/Test_result_Vis.py"
+      - "BertScript/visualization_summary_writes.py"
+      - "tests/test_bl001_stage4_summary_writes.py"
+      - ".github/workflows/bl001-stage4-summary-writes.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  summary-writes:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m unittest discover -s tests -p "test_bl001_stage4_summary_writes.py" -v
