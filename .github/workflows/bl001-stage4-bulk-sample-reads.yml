@@ -8,6 +8,7 @@ on:
       - "BertScript/visualization_sample_reads.py"
       - "tests/test_bl001_stage4_sample_reads.py"
       - "tests/test_bl001_stage4_bulk_sample_reads.py"
+      - "tests/test_bl001_stage4_visible_sample_reads.py"
       - ".github/workflows/bl001-stage4-bulk-sample-reads.yml"
   push:
     branches: [main]
@@ -16,6 +17,7 @@ on:
       - "BertScript/visualization_sample_reads.py"
       - "tests/test_bl001_stage4_sample_reads.py"
       - "tests/test_bl001_stage4_bulk_sample_reads.py"
+      - "tests/test_bl001_stage4_visible_sample_reads.py"
       - ".github/workflows/bl001-stage4-bulk-sample-reads.yml"
   workflow_dispatch:
 
