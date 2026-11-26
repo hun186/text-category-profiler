@@ -171,6 +171,7 @@ from text_category_profiler.text.similarity_utils import InnerCrossSimilarityFor
 from text_category_profiler.pipeline.TCF_utils import ClassfierOptionParser
 from text_category_profiler.pipeline.TCF_utils import LoadDatasetCount
 from text_category_profiler.data.DB_utils import sqlite3Query
+from BertScript.visualization_summary_writes import write_summary_updates
 from BertScript.visualization_row_filter_reads import (
     read_files_for_labels, read_matching_block_counts,
 )
@@ -3739,17 +3740,13 @@ def _run_visualization_application(running_workspace, plan):
         #print("SumFileDict",SumFileDict)
         #print("sorted(OSWALK(SumOptPath))",sorted(OSWALK(SumOptPath)))
         #存入摘要結果至DF_All_sql3File
+        summary_updates = []
         for key in SumFileDict:
-        #for file in sorted(OSWALK(SumOptPath)):
             file = SumFileDict[key][0]
-            #print("="*50)
-            #print("file",file)
             FN = os.path.basename(os.path.dirname(file))+".txt"
             SumText = TSVTextAdapter(textReader(file).run())
-            query = f'UPDATE sampleSrc SET Summary="{SumText}" WHERE File = "{FN}";'
-            #print("sql3File",sql3File)
-            #print("query",query)
-            sqlite3Query(DF_All_sql3File, query = query)
+            summary_updates.append((SumText, FN))
+        write_summary_updates(DF_All_sql3File, summary_updates)
         df = dfFromSQLite3(DF_All_sql3File)
 
 
