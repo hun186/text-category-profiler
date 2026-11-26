@@ -56,6 +56,7 @@ CONTRACTS = {
         "read_files_for_labels", "read_matching_block_counts",
     },
     "BertScript/visualization_summary_writes.py": {"write_summary_updates"},
+    "BertScript/visualization_score_reads.py": {"read_score_range"},
     "text_category_profiler/pipeline/orchestrator.py": {
         "PipelineOrchestrator",
     },
@@ -111,6 +112,9 @@ DATA_BOUNDARY_OWNERS = {
     ),
     "BertScript/visualization_summary_writes.py": (
         "BertScript/Test_result_Vis.py", {"contextlib", "pathlib", "sqlite3"},
+    ),
+    "BertScript/visualization_score_reads.py": (
+        "BertScript/Test_result_Vis.py", {"contextlib", "math", "numbers", "pathlib", "sqlite3"},
     ),
 }
 
