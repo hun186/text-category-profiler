@@ -176,6 +176,7 @@ from BertScript.visualization_row_filter_reads import (
 )
 from BertScript.visualization_sample_reads import (
     read_sample_rows, read_predictions_for_files, read_labels_for_files,
+    read_visible_segments, read_max_partno,
 )
 
 #print("args", args)
@@ -278,8 +279,7 @@ def GetSrcList(sql3File):
     MPLOGGER.logW(MES=MES, logFile="Test_result_Vis.log", printOnScreen=False)
     query = "SELECT DISTINCT File FROM sampleSrc \
         WHERE File IS NOT NULL ORDER BY File;"
-    SrcList = [x[0] for x in list(sqlite3Query(
-        sql3File, query = query))]
+    SrcList = read_sample_rows(sql3File, query, ())
     MES = f"Finished Loading SrcList from {sql3File}"
     MPLOGGER.logW(MES=MES, logFile="Test_result_Vis.log", printOnScreen=False)
     return SrcList
@@ -917,21 +917,12 @@ def Build_VisDatatable(
         #if file is None:
             #continue
         #print("file", file)
-        colList=','.join(sqlCols)
-        query = f'SELECT {colList} FROM sampleSrc \
-            WHERE File = "{file}" AND \
-                (PartNO BETWEEN {CutRange[0]} AND {CutRange[1]-1})\
-                ORDER BY PartNO;'
-        #query = f'SELECT {colList} FROM sampleSrc \
-            #WHERE File = "{file}" AND \
-                #(PartNO BETWEEN {CutRange[0]} AND {segTagsUPD-1})\
-                #ORDER BY PartNO;'
-        #print("query",query)
         segTuples = []
         try:
-            segTuples = list(sqlite3Query(sql3File,  query = query))
+            segTuples = read_visible_segments(
+                sql3File, file, CutRange[0], CutRange[1])
         except Exception as e:
-            MES = f"When Apply the query {query} to build segTuples with {sql3File} in Test_result_Vis.py,"
+            MES = f"When reading visible segments from {sql3File} in Test_result_Vis.py,"
             MES += f"the following error occurs: \n {e}\n"
             MPLOGGER.logW(MES,logFile="Exception.log")
             
@@ -948,13 +939,11 @@ def Build_VisDatatable(
                 segTuples=segTuples,InfoScoreTable=InfoScoreTable,
                 printOnScreen = False)
             
-        query = f'SELECT MAX(PartNO) FROM sampleSrc \
-            WHERE File = "{file}";'
         try:
-            query_res = int(sqlite3Query(sql3File,query = query,ListForm=True)[0])
+            query_res = int(read_max_partno(sql3File, file)[0])
             MaxPN = min(query_res+1,300)
         except Exception as e:
-            MES = f"When Apply the query {query} to get MaxPN in Test_result_Vis.py,"
+            MES = "When reading MaxPN in Test_result_Vis.py,"
             MES += f"the following error occurs: \n {e}"
             MPLOGGER.logW(MES,logFile="Exception.log")
             
@@ -1398,8 +1387,7 @@ def Build_PerformanceTable(df):
         query = f'SELECT SUM(CASE WHEN \
             Selected = "S" AND InfoScoreSum >999 THEN 1 ELSE 0 END) AS CountSR \
             From sampleSrc;'
-        CountSR = sqlite3Query(
-            DFPreambleColsFN, query = query,ListForm = True)
+        CountSR = read_sample_rows(DFPreambleColsFN, query, ())
         print("CountSR", CountSR)
 
     return [dcc.Graph(
