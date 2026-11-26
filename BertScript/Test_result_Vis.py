@@ -115,6 +115,7 @@ from text_category_profiler.visualization.Dash_utils import DictToDataArray
 from text_category_profiler.visualization.Dash_utils import Build_DataArrayTable
 #from text_category_profiler.visualization.Dash_utils import ComputeTwins
 from text_category_profiler.data.df_utils import dfFromSQLite3
+from BertScript.visualization_score_reads import read_score_range
 from text_category_profiler.data.df_utils import dfOutputer
 from text_category_profiler.data.df_utils import TSVTextAdapter
 #from text_category_profiler.data.df_utils import WeiTechFormatOutputer
@@ -2476,10 +2477,11 @@ def update_output(
         print("DF_ALL_PreambleColsFN",DF_ALL_PreambleColsFN)
         if os.path.isfile(DF_ALL_PreambleColsFN):
             print("Found DFPreambleCols_df_ALL Files, loading.")
-            df = dfFromSQLite3(DF_ALL_PreambleColsFN,
-                clause = f" WHERE InfoScoreSum BETWEEN {ISRange[0]} AND {ISRange[1]}")
+            df = read_score_range(
+                DF_ALL_PreambleColsFN, ISRange[0], ISRange[1],
+                read_sql_query=pd.read_sql_query)
             df = df.sort_values(**VDDFSortParams)
-            print(f" WHERE InfoScoreSum BETWEEN {ISRange[0]} AND {ISRange[1]}")
+            print(f"InfoScoreSum range: {ISRange[0]} to {ISRange[1]}")
             print("df for btn_InfoScore",df)
         else:
             print("WARNING!! Didn't find DFPreambleCols_df_ALL Files")
