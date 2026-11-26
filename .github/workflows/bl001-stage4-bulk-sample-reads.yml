@@ -1,0 +1,38 @@
+name: BL-001 Stage 4 Bulk Sample Read Boundary
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "BertScript/Test_result_Vis.py"
+      - "BertScript/visualization_sample_reads.py"
+      - "tests/test_bl001_stage4_sample_reads.py"
+      - "tests/test_bl001_stage4_bulk_sample_reads.py"
+      - ".github/workflows/bl001-stage4-bulk-sample-reads.yml"
+  push:
+    branches: [main]
+    paths:
+      - "BertScript/Test_result_Vis.py"
+      - "BertScript/visualization_sample_reads.py"
+      - "tests/test_bl001_stage4_sample_reads.py"
+      - "tests/test_bl001_stage4_bulk_sample_reads.py"
+      - ".github/workflows/bl001-stage4-bulk-sample-reads.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sample-reads:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m unittest discover -s tests -p "test_bl001_stage4*sample_reads.py" -v
