@@ -61,3 +61,26 @@ def read_predictions_for_files(database, files):
 def read_labels_for_files(database, files):
     """Return distinct labels for the selected file set."""
     return _read_for_files(database, files, labels_only=True)
+
+
+def read_visible_segments(database, filename, lower, upper):
+    """Read the legacy inclusive BETWEEN lower and upper-1 window.
+
+    Convert numeric UI bounds to native Python values for SQLite binding;
+    preserve the existing upper-minus-one rule, not a new interval policy.
+    """
+    return read_sample_rows(
+        database,
+        "SELECT PartNO, pred_Type, text FROM sampleSrc "
+        "WHERE File = ? AND PartNO BETWEEN ? AND ? ORDER BY PartNO",
+        (str(filename), float(lower), float(upper - 1)),
+    )
+
+
+def read_max_partno(database, filename):
+    """Preserve the legacy single-column list shape (including NULL)."""
+    return read_sample_rows(
+        database,
+        "SELECT MAX(PartNO) FROM sampleSrc WHERE File = ?",
+        (str(filename),),
+    )
