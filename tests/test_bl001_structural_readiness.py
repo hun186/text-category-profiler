@@ -79,6 +79,7 @@ class StructuralReadinessTests(unittest.TestCase):
             "BertScript/result_combination_parallel.py",
             "BertScript/visualization_sample_reads.py",
             "BertScript/visualization_row_filter_reads.py",
+            "BertScript/visualization_summary_writes.py",
         }
         self.assertTrue(expected_owners <= DATA_BOUNDARY_OWNERS.keys())
         census = audit_package(ROOT)
