@@ -9,7 +9,7 @@ from unittest import mock
 
 from scripts.bl001_package_census import audit_package
 from scripts.bl001_structural_readiness import (
-    CONTRACTS, EXTERNAL_ACCEPTANCE, ROOT, audit, check_boundary,
+    CONTRACTS, DATA_BOUNDARY_OWNERS, EXTERNAL_ACCEPTANCE, ROOT, audit, check_boundary,
     inspect_module, main, check_policy_owner,
 )
 
@@ -73,6 +73,50 @@ class StructuralReadinessTests(unittest.TestCase):
         self.assertIn("duplicate_consumer_logic", check_policy_owner(
             owner, ast.parse("from " + module + " import select\ndef select(): pass"),
             module, {"select"}, {"ast"}))
+
+    def test_merged_data_boundaries_reject_import_and_consumer_regressions(self):
+        expected_owners = {
+            "BertScript/result_combination_parallel.py",
+            "BertScript/visualization_sample_reads.py",
+            "BertScript/visualization_row_filter_reads.py",
+        }
+        self.assertTrue(expected_owners <= DATA_BOUNDARY_OWNERS.keys())
+        census = audit_package(ROOT)
+        for path in expected_owners:
+            consumer, _ = DATA_BOUNDARY_OWNERS[path]
+            module = path[:-3].replace("/", ".")
+            for fault, target, issue in [
+                ("runtime_import", path, "unexpected_policy_import"),
+                ("missing_export", consumer, "missing_consumer_exports"),
+                ("duplicate", consumer, "duplicate_consumer_logic"),
+            ]:
+                with self.subTest(owner=path, fault=fault):
+                    def inspect_fault(source, expected):
+                        tree, errors = inspect_module(source, expected)
+                        if tree is None or source != ROOT / target:
+                            return tree, errors
+                        if fault == "runtime_import":
+                            tree.body.extend(ast.parse("import dash").body)
+                        elif fault == "missing_export":
+                            tree.body = [node for node in tree.body
+                                         if not (isinstance(node, ast.ImportFrom)
+                                                 and node.module == module)]
+                        else:
+                            name = sorted(CONTRACTS[path])[0]
+                            tree.body.extend(ast.parse("def " + name + "(): pass").body)
+                        return tree, errors
+                    with mock.patch("scripts.bl001_structural_readiness.inspect_module",
+                                    side_effect=inspect_fault):
+                        result = check_boundary(ROOT, census)
+                    self.assertIn(path + ":" + issue, result["issues"])
+                    self.assertEqual(result["status"], "BLOCKED_STRUCTURAL_BOUNDARIES")
+                    self.assertFalse(result["bl001_formally_done"])
+
+    def test_stage3_data_boundary_changes_trigger_structural_workflow(self):
+        workflow = (ROOT / ".github/workflows/bl001-structural-readiness.yml").read_text()
+        for path in ("BertScript/CombineTestResult.py",
+                     "BertScript/result_combination_parallel.py"):
+            self.assertEqual(workflow.count('"' + path + '"'), 2)
 
     def test_census_unknown_and_bad_identity_cannot_be_reported_ready(self):
         baseline = audit_package(ROOT)
