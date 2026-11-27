@@ -656,6 +656,148 @@ class CandidateGateTests(unittest.TestCase):
                 gate.main(["--candidates", "not-read.csv", "--relevance-rules", "rules.json"])
         self.assertEqual(raised.exception.code, 2)
 
+    def _semantic_response(self, request, verdict="RELEVANT"):
+        quote = request.normalized_text[:6]
+        return {
+            "request_id": request.request_id, "model": "fixture-model",
+            "verdict": verdict, "rationale": "fixture advisory",
+            "spans": [{"start": 0, "end": len(quote), "text": quote}],
+        }
+
+    def test_semantic_provider_targets_only_lexical_review_candidates(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = self._write_near_review_manifest(root, [
+                "太陽能發電與電網儲能政策。" * 12,
+                "太陽能與其他產業。" * 15,
+                "另一篇無關證據。" * 15,
+            ])
+            rules = root / "rules.json"
+            candidates = {
+                "Good": row("能源", notes=note(source="doc-0")),
+                "Review": row("儲能", "候選定義", note(source="doc-1")),
+            }
+            rules.write_text(json.dumps({"schema_version": 1, "rules": {
+                label: {"groups": [["太陽能"], ["儲能"]], "min_groups": 2}
+                for label in candidates
+            }}), encoding="utf-8")
+            seen = []
+            def reviewer(request):
+                seen.append(request)
+                return self._semantic_response(request)
+            before = {p.name: p.read_bytes() for p in root.iterdir()}
+            report = gate.audit_local_article_evidence(
+                candidates, manifest, review_text=True, relevance_rules_path=rules,
+                semantic_reviewer=reviewer, semantic_review_mode="lexical_review_required")
+            self.assertEqual(len(seen), 1)
+            request = seen[0]
+            self.assertEqual((request.class_label, request.source), ("Review", "doc-1"))
+            self.assertEqual(request.explanation, "候選定義")
+            self.assertEqual(request.article_sha256,
+                             hashlib.sha256((root / "near1.txt").read_bytes()).hexdigest())
+            self.assertNotIn("儲能", request.normalized_text)
+            self.assertEqual(report["SemanticReviewNotSelected"], ["Good"])
+            self.assertEqual(report["SemanticReviewAttempted"], 1)
+            result = report["SemanticReviewResults"][0]
+            self.assertTrue(result["EvidenceSpanTextMatches"])
+            self.assertTrue(result["HumanReviewRequired"])
+            self.assertEqual(result["Verdict"], "RELEVANT")
+            self.assertFalse(report["EvidenceSemanticRelevanceVerified"])
+            self.assertFalse(report["Approved"])
+            self.assertEqual(before, {p.name: p.read_bytes() for p in root.iterdir()})
+
+    def test_semantic_provider_never_called_before_full_evidence_preflight(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = self._write_near_review_manifest(root, ["正文甲", "正文乙"])
+            candidates = {"New": row("新增", notes=note(source="doc-0"))}
+            reviewer = mock.Mock()
+            (root / "near1.txt").write_text("已遭竄改", encoding="utf-8")
+            with self.assertRaisesRegex(metadata.MetadataError, "sha256 mismatch"):
+                gate.audit_local_article_evidence(
+                    candidates, manifest, review_text=True, semantic_reviewer=reviewer)
+            reviewer.assert_not_called()
+            manifest = self._write_near_review_manifest(root, ["正文甲", "正文乙"])
+            candidates["Missing"] = row("缺少", notes=note(source="absent"))
+            with self.assertRaisesRegex(metadata.MetadataError, "not found"):
+                gate.audit_local_article_evidence(
+                    candidates, manifest, review_text=True, semantic_reviewer=reviewer)
+            reviewer.assert_not_called()
+
+    def test_semantic_provider_invalid_responses_and_failure_are_advisory(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = self._write_near_review_manifest(root, ["文章正文與能源證據"])
+            candidates = {"New": row("新增", notes=note(source="doc-0"))}
+            for change in (
+                {"request_id": "wrong"}, {"verdict": "APPROVED"},
+                {"spans": [{"start": 0, "end": 3, "text": "偽造字"}]},
+                {"spans": []}, {"approved": True},
+            ):
+                with self.subTest(change=change):
+                    report = gate.audit_local_article_evidence(
+                        candidates, manifest, review_text=True,
+                        semantic_reviewer=lambda req: {**self._semantic_response(req), **change})
+                    result = report["SemanticReviewResults"][0]
+                    self.assertEqual(result["ReviewStatus"], "INVALID_RESPONSE")
+                    self.assertIsNone(result["Verdict"])
+                    self.assertTrue(result["HumanReviewRequired"])
+            reviewer = mock.Mock(side_effect=TimeoutError("private provider detail"))
+            report = gate.audit_local_article_evidence(
+                candidates, manifest, review_text=True, semantic_reviewer=reviewer)
+            reviewer.assert_called_once()
+            self.assertEqual(report["SemanticReviewResults"][0]["ReviewStatus"], "PROVIDER_ERROR")
+            self.assertNotIn("private provider detail", json.dumps(report))
+            uncertain = gate.audit_local_article_evidence(
+                candidates, manifest, review_text=True,
+                semantic_reviewer=lambda req: {
+                    **self._semantic_response(req, "UNCERTAIN"), "spans": []})
+            self.assertEqual(uncertain["SemanticReviewResults"][0]["ReviewStatus"], "MODEL_UNCERTAIN")
+            self.assertFalse(uncertain["Approved"])
+
+    def test_semantic_review_budgets_and_explicit_modes(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = self._write_near_review_manifest(root, ["文章一", "文章二"])
+            candidates = {
+                "A": row("甲", notes=note(source="doc-0")),
+                "B": row("乙", notes=note(source="doc-1")),
+            }
+            reviewer = mock.Mock()
+            for name, value, message in [
+                ("MAX_SEMANTIC_REQUESTS", 1, "request count budget"),
+                ("MAX_SEMANTIC_TOTAL_CHARS", 4, "total character budget"),
+            ]:
+                with self.subTest(name=name), mock.patch.object(gate, name, value):
+                    with self.assertRaisesRegex(metadata.MetadataError, message):
+                        gate.audit_local_article_evidence(
+                            candidates, manifest, review_text=True, semantic_reviewer=reviewer)
+                reviewer.assert_not_called()
+            with self.assertRaisesRegex(metadata.MetadataError, "requires relevance rules"):
+                gate.audit_local_article_evidence(
+                    candidates, manifest, review_text=True, semantic_reviewer=reviewer,
+                    semantic_review_mode="lexical_review_required")
+            with self.assertRaisesRegex(metadata.MetadataError, "requires an explicit callable"):
+                gate.audit_local_article_evidence(
+                    candidates, manifest, semantic_reviewer=reviewer)
+            self.assertNotIn("SemanticReviewResults",
+                             gate.audit_local_article_evidence(candidates, manifest, review_text=True))
+            reviewer.assert_not_called()
+
+    def test_semantic_request_identity_changes_with_candidate_or_article(self):
+        from BertScript.article_semantic_review import build_semantic_request
+        first = row("甲", "原定義", note(source="source"))
+        original = build_semantic_request("New", first, "source", "a" * 64, "文章")
+        for candidate, digest, body in (
+            ({**first, "Explanation": "新定義"}, "a" * 64, "文章"),
+            (first, "b" * 64, "文章"),
+            (first, "a" * 64, "不同正文"),
+        ):
+            self.assertNotEqual(original.request_id, build_semantic_request(
+                "New", candidate, "source", digest, body).request_id)
+        self.assertEqual(original.request_id, build_semantic_request(
+            "New", first, "source", "a" * 64, "文章").request_id)
+
     def test_graph_cli_requires_pair_of_graph_arguments(self):
         with TemporaryDirectory() as directory:
             for flag in ("--base-tree", "--edges"):
