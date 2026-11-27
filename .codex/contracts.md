@@ -133,6 +133,7 @@
 - AI新增 may only name ClassLabels absent from the base. AI補充 may only name existing ClassLabels and must keep the existing CT unchanged; its Explanation is a human-review suggestion only.
 - Successful JSON emits counts, label lists, explicit `Approved: false` and `AuthoritativeFilesModified: false`. Errors exit 2, no output files are ever written. Passing validation grants **no** authorization to merge a candidate CSV into official metadata or add graph edges.
 - BL-002 now supports optional **local** TXT byte integrity and exact source-reference matching through `--evidence-manifest PATH`; it rejects duplicate exact source identifiers and duplicate SHA-256 content. This does not establish genuine source origin, semantic relevance, near-duplicate articles, approval or revision tracking. Real article fetch/verification and human acceptance remain unimplemented.
+- Optional `--review-text` requires `--evidence-manifest`; strict UTF-8 (optional BOM), nonblank/no NUL, NFC plus Unicode whitespace normalization after original byte-hash verification. Reports deterministic groups of exact normalized duplicates, not semantic/near-duplicate search. `REVIEW_REQUIRED` is an advisory review finding, exit 0 for structurally valid evidence; malformed text exits 2. Max 100 MB total reviewed bytes, existing per-article/count limits retained. No files written, no source authenticity or human approval. Default behavior unchanged.
 
 
 ### CONTRACT-CLI-003 optional graph alignment extension
