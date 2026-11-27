@@ -16,7 +16,10 @@ import json
 from pathlib import Path
 import re
 
-from BertScript.article_text_review import review_text_fingerprint, normalized_duplicate_groups
+from BertScript.article_text_review import (
+    normalize_article_text, normalized_duplicate_groups, character_shingles,
+    near_duplicate_pairs, MAX_NEAR_ARTICLES, MAX_NEAR_TOTAL_CHARS,
+)
 
 from BertScript.class_table_metadata import (
     DEFAULT_CSV,
@@ -228,7 +231,8 @@ def _unique_evidence_json_object(pairs: list[tuple[str, object]]) -> dict[str, o
 
 
 def audit_local_article_evidence(
-    candidates: dict[str, dict[str, str]], manifest_path: str | Path, *, review_text: bool = False
+    candidates: dict[str, dict[str, str]], manifest_path: str | Path, *,
+    review_text: bool = False, review_near_duplicates: bool = False,
 ) -> dict[str, object]:
     """Verify local file integrity and exact source bindings, without fetching.
 
@@ -236,6 +240,8 @@ def audit_local_article_evidence(
     document semantic relevance is inferred. The manifest directory is the
     permitted file boundary, including after symlink resolution.
     """
+    if review_near_duplicates and not review_text:
+        raise MetadataError("near-duplicate review requires text review")
     manifest_path = Path(manifest_path)
     try:
         manifest = json.loads(
@@ -251,11 +257,16 @@ def audit_local_article_evidence(
         1 <= len(records) <= MAX_EVIDENCE_ARTICLES
     ):
         raise MetadataError("invalid evidence schema version or article count")
+    if review_near_duplicates and len(records) > MAX_NEAR_ARTICLES:
+        raise MetadataError("near-duplicate review exceeds article count budget")
     root = manifest_path.parent.resolve()
     by_source: dict[str, str] = {}
     by_hash: dict[str, str] = {}
     text_fingerprints: dict[str, str] = {}
     reviewed_bytes = 0
+    near_chars = 0
+    shingles_by_source: dict[str, set[str]] = {}
+    excluded_sources: list[str] = []
     for index, item in enumerate(records):
         if not isinstance(item, dict) or set(item) != {"source", "file", "sha256"}:
             raise MetadataError(f"evidence article {index}: expected source/file/sha256")
@@ -303,7 +314,17 @@ def audit_local_article_evidence(
         by_hash[expected] = source
         if body is not None:
             try:
-                text_fingerprints[source] = review_text_fingerprint(body)
+                normalized = normalize_article_text(body)
+                text_fingerprints[source] = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+                if review_near_duplicates:
+                    near_chars += len(normalized)
+                    if near_chars > MAX_NEAR_TOTAL_CHARS:
+                        raise ValueError("near-duplicate review exceeds total normalized character budget")
+                    shingles = character_shingles(normalized)
+                    if shingles:
+                        shingles_by_source[source] = shingles
+                    else:
+                        excluded_sources.append(source)
             except ValueError as exc:
                 raise MetadataError(f"evidence article {index}: {exc}") from exc
     used = {
@@ -332,6 +353,24 @@ def audit_local_article_evidence(
             "TextReviewNormalization": "UTF8_BOM_NFC_UNICODE_WHITESPACE_V1",
             "NearDuplicateSearchPerformed": False,
         })
+    if review_near_duplicates:
+        pairs = near_duplicate_pairs(text_fingerprints, shingles_by_source)
+        status = ("REVIEW_REQUIRED" if pairs else
+                  "INCOMPLETE_SHORT_OR_REPETITIVE" if excluded_sources else
+                  "NO_CANDIDATE_PAIRS_FOUND")
+        result.update({
+            "NearDuplicateSearchPerformed": True,
+            "NearDuplicateReviewStatus": status,
+            "NearDuplicateMethod": "NORMALIZED_CHARACTER_5GRAM_JACCARD_V1",
+            "NearDuplicateThreshold": 0.8,
+            "NearDuplicateEligibleArticles": len(shingles_by_source),
+            "NearDuplicateExcludedSources": sorted(excluded_sources),
+            "NearDuplicateCoverageComplete": not excluded_sources,
+            "NearDuplicatePairs": pairs,
+            "SemanticSimilarityVerified": False,
+        })
+        if pairs:
+            result["TextReviewStatus"] = "REVIEW_REQUIRED"
     return result
 
 
@@ -347,9 +386,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--evidence-manifest", type=Path)
     parser.add_argument("--review-text", action="store_true",
                         help="Review UTF-8 text and report formatting-normalized duplicates (not approval)")
+    parser.add_argument("--review-near-duplicates", action="store_true",
+                        help="Opt-in bounded lexical similarity review; requires --review-text")
     args = parser.parse_args(argv)
     if (args.base_tree is None) != (args.edges is None):
         parser.error("--base-tree and --edges must be provided together")
+    if args.review_near_duplicates and not args.review_text:
+        parser.error("--review-near-duplicates requires --review-text")
     if args.review_text and args.evidence_manifest is None:
         parser.error("--review-text requires --evidence-manifest")
     try:
@@ -357,7 +400,8 @@ def main(argv: list[str] | None = None) -> int:
         report = audit_proposals(load_class_table(args.base), candidates)
         if args.evidence_manifest is not None:
             report.update(audit_local_article_evidence(
-                candidates, args.evidence_manifest, review_text=args.review_text
+                candidates, args.evidence_manifest, review_text=args.review_text,
+                review_near_duplicates=args.review_near_duplicates,
             ))
         if args.base_tree is not None:
             report.update(audit_proposed_graph_nodes(
@@ -377,6 +421,10 @@ def main(argv: list[str] | None = None) -> int:
         if args.review_text:
             print(f"Text review: {report['TextReviewStatus']}; "
                   f"{len(report['NormalizedDuplicateSourceGroups'])} normalized duplicate group(s).")
+        if args.review_near_duplicates:
+            print(f"Near-duplicate review: {report['NearDuplicateReviewStatus']}; "
+                  f"{len(report['NearDuplicatePairs'])} pair(s), "
+                  f"{len(report['NearDuplicateExcludedSources'])} excluded source(s).")
     return 0
 
 
