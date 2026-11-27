@@ -798,6 +798,117 @@ class CandidateGateTests(unittest.TestCase):
         self.assertEqual(original.request_id, build_semantic_request(
             "New", first, "source", "a" * 64, "文章").request_id)
 
+    def test_ollama_adapter_local_transport_and_verified_quote(self):
+        from BertScript.article_ollama_review import OllamaLoopbackReviewer
+        from BertScript.article_semantic_review import build_semantic_request, run_semantic_review
+        request = build_semantic_request(
+            "Energy", row("能源", "候選定義", note(source="private-source")),
+            "private-source", "a" * 64, "太陽能發電。其他正文。")
+        result = {"request_id": request.request_id, "verdict": "RELEVANT",
+                  "rationale": "模型建議", "quotes": ["太陽能發電"]}
+        outer = {"model": "test:local", "done": True, "done_reason": "stop",
+                 "message": {"role": "assistant", "content": json.dumps(result)}}
+        with mock.patch("BertScript.article_ollama_review.http.client.HTTPConnection") as factory:
+            connection = factory.return_value
+            response = connection.getresponse.return_value.__enter__.return_value
+            response.status = 200
+            response.read.return_value = json.dumps(outer).encode()
+            review = run_semantic_review(request, OllamaLoopbackReviewer(
+                "test:local", authorized=True, port=11435, timeout=42))
+            factory.assert_called_once_with("127.0.0.1", 11435, timeout=42)
+            connection.request.assert_called_once()
+            args, kwargs = connection.request.call_args
+            self.assertEqual(args, ("POST", "/api/chat"))
+            payload = json.loads(kwargs["body"])
+            self.assertFalse(payload["stream"])
+            self.assertEqual(payload["options"]["num_ctx"], 32768)
+            self.assertNotIn("private-source", kwargs["body"].decode())
+            self.assertEqual(json.loads(payload["messages"][1]["content"])["normalized_article"],
+                             request.normalized_text)
+            connection.close.assert_called_once()
+            self.assertEqual(review["Verdict"], "RELEVANT")
+            self.assertEqual(review["EvidenceSpans"][0]["Start"], 0)
+            self.assertFalse(review["Approved"])
+
+    def test_ollama_adapter_rejects_unauthorized_cloud_and_bad_limits(self):
+        from BertScript.article_ollama_review import OllamaLoopbackReviewer
+        for model, options in [
+            ("test:local", {}), ("test:cloud", {"authorized": True}),
+            ("test:local", {"authorized": True, "port": 0}),
+            ("test:local", {"authorized": True, "timeout": 901}),
+            ("test:local", {"authorized": True, "num_ctx": 0}),
+            ("untagged", {"authorized": True}),
+        ]:
+            with self.subTest(model=model, options=options), self.assertRaises(ValueError):
+                OllamaLoopbackReviewer(model, **options)
+
+    def test_ollama_adapter_rejects_ambiguous_quotes_and_truncated_responses(self):
+        from BertScript.article_ollama_review import OllamaLoopbackReviewer, MAX_RESPONSE_BYTES
+        from BertScript.article_semantic_review import build_semantic_request, run_semantic_review
+        request = build_semantic_request("New", row("新增", notes=note()), "doc",
+                                         "a" * 64, "能源，能源，唯一證據")
+        reviewer = OllamaLoopbackReviewer("test:local", authorized=True)
+        good = {"request_id": request.request_id, "verdict": "RELEVANT",
+                "rationale": "建議", "quotes": ["唯一證據"]}
+        def envelope(result, **changes):
+            return json.dumps({"model": "test:local", "done": True, "done_reason": "stop",
+                               "message": {"role": "assistant", "content": json.dumps(result)},
+                               **changes}).encode()
+        payloads = [
+            envelope({**good, "quotes": ["能源"]}),
+            envelope({**good, "quotes": ["不存在"]}),
+            envelope(good, done_reason="length"), envelope(good, model="other:local"),
+            envelope(good, done=False), b'{"done":true,"done":true}',
+        ]
+        with mock.patch("BertScript.article_ollama_review.http.client.HTTPConnection") as factory:
+            connection = factory.return_value
+            response = connection.getresponse.return_value.__enter__.return_value
+            response.status = 200
+            for body in payloads:
+                with self.subTest(body=body):
+                    response.read.return_value = body
+                    self.assertEqual(run_semantic_review(request, reviewer)["ReviewStatus"],
+                                     "INVALID_RESPONSE")
+            response.read.return_value = b"x" * (MAX_RESPONSE_BYTES + 1)
+            self.assertEqual(run_semantic_review(request, reviewer)["ReviewStatus"], "PROVIDER_ERROR")
+            response.status = 302
+            self.assertEqual(run_semantic_review(request, reviewer)["ReviewStatus"], "PROVIDER_ERROR")
+            self.assertEqual(connection.request.call_count, len(payloads) + 2)
+
+    def test_ollama_cli_requires_explicit_activation(self):
+        for flags in (["--ollama-model", "test:local"],
+                      ["--allow-local-model-review"], ["--ollama-port", "11435"]):
+            with self.subTest(flags=flags), contextlib.redirect_stderr(io.StringIO()):
+                with self.assertRaises(SystemExit) as raised:
+                    gate.main(["--candidates", "not-read.csv", *flags])
+                self.assertEqual(raised.exception.code, 2)
+
+    def test_ollama_cli_graph_failure_prevents_provider_call(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = self._write_near_review_manifest(root, ["文章正文"])
+            base = root / "base.csv"
+            candidates = root / "candidates.csv"
+            tree = root / "tree.csv"
+            edges = root / "edges.csv"
+            base.write_text(metadata.table_to_csv(self.base), encoding="utf-8")
+            candidates.write_text(metadata.table_to_csv({
+                "New": row("新增", notes=note(source="doc-0")),
+            }), encoding="utf-8")
+            self.write_edges(tree, [("Root", "Existing")])
+            self.write_edges(edges, [("Root", "Unrelated")])
+            with mock.patch("BertScript.article_ollama_review.http.client.HTTPConnection") as factory:
+                with contextlib.redirect_stderr(io.StringIO()):
+                    with self.assertRaises(SystemExit) as raised:
+                        gate.main([
+                            "--base", str(base), "--candidates", str(candidates),
+                            "--base-tree", str(tree), "--edges", str(edges),
+                            "--evidence-manifest", str(manifest), "--review-text",
+                            "--ollama-model", "test:local", "--allow-local-model-review", "--json",
+                        ])
+                self.assertEqual(raised.exception.code, 2)
+                factory.assert_not_called()
+
     def test_graph_cli_requires_pair_of_graph_arguments(self):
         with TemporaryDirectory() as directory:
             for flag in ("--base-tree", "--edges"):
