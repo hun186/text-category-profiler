@@ -492,7 +492,35 @@ def main(argv: list[str] | None = None) -> int:
                         help="Opt-in bounded lexical similarity review; requires --review-text")
     parser.add_argument("--relevance-rules", type=Path,
                         help="Optional explicit candidate-specific literal groups; requires --review-text")
+    parser.add_argument("--ollama-model", help="Explicit installed Ollama model tag on 127.0.0.1")
+    parser.add_argument("--allow-local-model-review", action="store_true",
+                        help="Confirm trusted local Ollama with cloud features disabled; allow article transmission")
+    parser.add_argument("--ollama-port", type=int)
+    parser.add_argument("--ollama-timeout", type=int, help="Socket timeout seconds, not a total deadline")
+    parser.add_argument("--ollama-num-ctx", type=int)
+    parser.add_argument("--semantic-review-mode", choices=("all", "lexical_review_required"))
     args = parser.parse_args(argv)
+    reviewer = None
+    if args.ollama_model is None:
+        if args.allow_local_model_review or any(value is not None for value in (
+            args.ollama_port, args.ollama_timeout, args.ollama_num_ctx, args.semantic_review_mode
+        )):
+            parser.error("Ollama review options require --ollama-model")
+    else:
+        if not args.allow_local_model_review or not args.review_text or args.evidence_manifest is None:
+            parser.error("--ollama-model requires --allow-local-model-review, --review-text and --evidence-manifest")
+        if args.semantic_review_mode == "lexical_review_required" and args.relevance_rules is None:
+            parser.error("targeted semantic review requires --relevance-rules")
+        from BertScript.article_ollama_review import OllamaLoopbackReviewer
+        try:
+            reviewer = OllamaLoopbackReviewer(
+                args.ollama_model, authorized=args.allow_local_model_review,
+                port=11434 if args.ollama_port is None else args.ollama_port,
+                timeout=180 if args.ollama_timeout is None else args.ollama_timeout,
+                num_ctx=32768 if args.ollama_num_ctx is None else args.ollama_num_ctx,
+            )
+        except ValueError as exc:
+            parser.error(str(exc))
     if (args.base_tree is None) != (args.edges is None):
         parser.error("--base-tree and --edges must be provided together")
     if args.review_near_duplicates and not args.review_text:
@@ -504,13 +532,20 @@ def main(argv: list[str] | None = None) -> int:
     try:
         candidates = load_class_table(args.candidates)
         report = audit_proposals(load_class_table(args.base), candidates)
+        # Optional graph validation must also precede any model transmission.
+        if reviewer is not None and args.base_tree is not None:
+            report.update(audit_proposed_graph_nodes(
+                report["AI新增"], base_tree=args.base_tree, proposed_edges=args.edges
+            ))
         if args.evidence_manifest is not None:
             report.update(audit_local_article_evidence(
                 candidates, args.evidence_manifest, review_text=args.review_text,
                 review_near_duplicates=args.review_near_duplicates,
                 relevance_rules_path=args.relevance_rules,
+                semantic_reviewer=reviewer,
+                semantic_review_mode=args.semantic_review_mode or "all",
             ))
-        if args.base_tree is not None:
+        if reviewer is None and args.base_tree is not None:
             report.update(audit_proposed_graph_nodes(
                 report["AI新增"], base_tree=args.base_tree, proposed_edges=args.edges
             ))
@@ -535,6 +570,9 @@ def main(argv: list[str] | None = None) -> int:
         if args.relevance_rules is not None:
             print(f"Relevance review: {report['RelevanceReviewStatus']}; "
                   f"{len(report['RelevanceCandidatesNeedingReview'])} candidate(s) need review.")
+        if reviewer is not None:
+            print(f"Semantic review: {report['SemanticReviewStatus']}; "
+                  f"{report['SemanticReviewAttempted']} attempted, all advisory.")
     return 0
 
 
