@@ -383,6 +383,90 @@ class CandidateGateTests(unittest.TestCase):
             self.assertFalse(result["Approved"])
             self.assertEqual(before, {p.name: p.read_bytes() for p in root.iterdir()})
 
+    def test_optional_text_review_reports_formatting_duplicates_read_only(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            records = []
+            for i, body in enumerate([
+                "中文 Café\n第二段".encode(),
+                "\ufeff中文 Cafe\u0301\r\n  第二段 ".encode(),
+                "中文 Café 第二段。".encode(),
+            ]):
+                filename = f"a{i}.txt"
+                (root / filename).write_bytes(body)
+                records.append({"source": f"doc-{i}", "file": filename,
+                                "sha256": hashlib.sha256(body).hexdigest()})
+            manifest = root / "manifest.json"
+            manifest.write_text(json.dumps({"schema_version": 1, "articles": records}),
+                                encoding="utf-8")
+            candidates = {"New": row("新增", notes=note(source="doc-0"))}
+            before = {p.name: p.read_bytes() for p in root.iterdir()}
+            default = gate.audit_local_article_evidence(candidates, manifest)
+            self.assertNotIn("TextReviewStatus", default)
+            report = gate.audit_local_article_evidence(candidates, manifest, review_text=True)
+            self.assertEqual(report["TextReviewStatus"], "REVIEW_REQUIRED")
+            self.assertEqual(report["NormalizedDuplicateSourceGroups"], [["doc-0", "doc-1"]])
+            self.assertEqual(report["TextReviewArticlesChecked"], 3)
+            self.assertFalse(report["NearDuplicateSearchPerformed"])
+            self.assertFalse(report["Approved"])
+            self.assertFalse(report["SourceAuthenticityVerified"])
+            self.assertFalse(report["EvidenceSemanticRelevanceVerified"])
+            self.assertEqual(before, {p.name: p.read_bytes() for p in root.iterdir()})
+
+    def test_optional_text_review_rejects_invalid_utf8_blank_and_nul(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            article = root / "a.txt"
+            manifest = root / "manifest.json"
+            candidates = {"New": row("新增", notes=note(source="doc"))}
+            for body, error in [(bytes([255]), "UTF-8"), (bytes([32, 13, 10]), "blank"),
+                                (bytes([120, 0, 121]), "NUL")]:
+                with self.subTest(error=error):
+                    article.write_bytes(body)
+                    manifest.write_text(json.dumps({"schema_version": 1, "articles": [
+                        {"source": "doc", "file": "a.txt",
+                         "sha256": hashlib.sha256(body).hexdigest()}
+                    ]}), encoding="utf-8")
+                    self.assertTrue(gate.audit_local_article_evidence(
+                        candidates, manifest)["EvidenceByteHashesVerified"])
+                    with self.assertRaisesRegex(metadata.MetadataError, error):
+                        gate.audit_local_article_evidence(candidates, manifest, review_text=True)
+
+    def test_text_review_cli_requires_manifest(self):
+        with contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit) as raised:
+                gate.main(["--candidates", "not-read.csv", "--review-text"])
+        self.assertEqual(raised.exception.code, 2)
+
+    def test_text_review_cli_unique_result_and_no_writes(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            base = root / "base.csv"
+            candidates = root / "candidates.csv"
+            article = root / "a.txt"
+            manifest = root / "manifest.json"
+            base.write_text(metadata.table_to_csv(self.base), encoding="utf-8")
+            candidates.write_text(metadata.table_to_csv({
+                "New": row("新增", notes=note(source="doc")),
+            }), encoding="utf-8")
+            article.write_text("新聞正文", encoding="utf-8")
+            manifest.write_text(json.dumps({"schema_version": 1, "articles": [
+                {"source": "doc", "file": "a.txt",
+                 "sha256": hashlib.sha256(article.read_bytes()).hexdigest()}
+            ]}), encoding="utf-8")
+            before = {p.name: p.read_bytes() for p in root.iterdir()}
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output):
+                self.assertEqual(gate.main([
+                    "--base", str(base), "--candidates", str(candidates),
+                    "--evidence-manifest", str(manifest), "--review-text", "--json",
+                ]), 0)
+            report = json.loads(output.getvalue())
+            self.assertEqual(report["TextReviewStatus"], "NO_NORMALIZED_DUPLICATES_FOUND")
+            self.assertEqual(report["NormalizedDuplicateSourceGroups"], [])
+            self.assertFalse(report["Approved"])
+            self.assertEqual(before, {p.name: p.read_bytes() for p in root.iterdir()})
+
     def test_graph_cli_requires_pair_of_graph_arguments(self):
         with TemporaryDirectory() as directory:
             for flag in ("--base-tree", "--edges"):
