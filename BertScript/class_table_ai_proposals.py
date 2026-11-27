@@ -16,6 +16,8 @@ import json
 from pathlib import Path
 import re
 
+from BertScript.article_text_review import review_text_fingerprint, normalized_duplicate_groups
+
 from BertScript.class_table_metadata import (
     DEFAULT_CSV,
     MetadataError,
@@ -226,7 +228,7 @@ def _unique_evidence_json_object(pairs: list[tuple[str, object]]) -> dict[str, o
 
 
 def audit_local_article_evidence(
-    candidates: dict[str, dict[str, str]], manifest_path: str | Path
+    candidates: dict[str, dict[str, str]], manifest_path: str | Path, *, review_text: bool = False
 ) -> dict[str, object]:
     """Verify local file integrity and exact source bindings, without fetching.
 
@@ -252,6 +254,8 @@ def audit_local_article_evidence(
     root = manifest_path.parent.resolve()
     by_source: dict[str, str] = {}
     by_hash: dict[str, str] = {}
+    text_fingerprints: dict[str, str] = {}
+    reviewed_bytes = 0
     for index, item in enumerate(records):
         if not isinstance(item, dict) or set(item) != {"source", "file", "sha256"}:
             raise MetadataError(f"evidence article {index}: expected source/file/sha256")
@@ -279,18 +283,29 @@ def audit_local_article_evidence(
             raise MetadataError(f"evidence article {index}: text exceeds size limit")
         digest = hashlib.sha256()
         size = 0
+        body = bytearray() if review_text else None
         with target.open("rb") as handle:
             for block in iter(lambda: handle.read(65536), b""):
                 size += len(block)
                 if size > MAX_ARTICLE_BYTES:
                     raise MetadataError(f"evidence article {index}: text exceeds size limit")
                 digest.update(block)
+                if body is not None:
+                    reviewed_bytes += len(block)
+                    if reviewed_bytes > 100_000_000:
+                        raise MetadataError("text review exceeds total 100 MB byte budget")
+                    body.extend(block)
         if size == 0 or digest.hexdigest() != expected:
             raise MetadataError(f"evidence article {index}: empty or sha256 mismatch")
         if expected in by_hash:
             raise MetadataError(f"duplicate article content at article {index}")
         by_source[source] = rel
         by_hash[expected] = source
+        if body is not None:
+            try:
+                text_fingerprints[source] = review_text_fingerprint(body)
+            except ValueError as exc:
+                raise MetadataError(f"evidence article {index}: {exc}") from exc
     used = {
         parse_provenance(row.get("Notes", ""), label)[1]["來源"]
         for label, row in candidates.items()
@@ -298,7 +313,7 @@ def audit_local_article_evidence(
     missing = sorted(used - by_source.keys())
     if missing:
         raise MetadataError(f"candidate sources not found in evidence manifest: {missing}")
-    return {
+    result = {
         "EvidenceArticlesChecked": len(records),
         "CandidateSourcesMatched": len(used),
         "UnusedEvidenceArticles": len(by_source.keys() - used),
@@ -308,6 +323,16 @@ def audit_local_article_evidence(
         "Approved": False,
         "AuthoritativeFilesModified": False,
     }
+    if review_text:
+        groups = normalized_duplicate_groups(text_fingerprints)
+        result.update({
+            "TextReviewStatus": "REVIEW_REQUIRED" if groups else "NO_NORMALIZED_DUPLICATES_FOUND",
+            "TextReviewArticlesChecked": len(text_fingerprints),
+            "NormalizedDuplicateSourceGroups": groups,
+            "TextReviewNormalization": "UTF8_BOM_NFC_UNICODE_WHITESPACE_V1",
+            "NearDuplicateSearchPerformed": False,
+        })
+    return result
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -320,14 +345,20 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--base-tree", type=Path)
     parser.add_argument("--edges", type=Path)
     parser.add_argument("--evidence-manifest", type=Path)
+    parser.add_argument("--review-text", action="store_true",
+                        help="Review UTF-8 text and report formatting-normalized duplicates (not approval)")
     args = parser.parse_args(argv)
     if (args.base_tree is None) != (args.edges is None):
         parser.error("--base-tree and --edges must be provided together")
+    if args.review_text and args.evidence_manifest is None:
+        parser.error("--review-text requires --evidence-manifest")
     try:
         candidates = load_class_table(args.candidates)
         report = audit_proposals(load_class_table(args.base), candidates)
         if args.evidence_manifest is not None:
-            report.update(audit_local_article_evidence(candidates, args.evidence_manifest))
+            report.update(audit_local_article_evidence(
+                candidates, args.evidence_manifest, review_text=args.review_text
+            ))
         if args.base_tree is not None:
             report.update(audit_proposed_graph_nodes(
                 report["AI新增"], base_tree=args.base_tree, proposed_edges=args.edges
@@ -343,6 +374,9 @@ def main(argv: list[str] | None = None) -> int:
             f"{len(report['AI補充'])} proposed supplements; "
             "all PENDING human review; no files modified."
         )
+        if args.review_text:
+            print(f"Text review: {report['TextReviewStatus']}; "
+                  f"{len(report['NormalizedDuplicateSourceGroups'])} normalized duplicate group(s).")
     return 0
 
 
