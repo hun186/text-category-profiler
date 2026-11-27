@@ -25,6 +25,39 @@
 
 開發路由：新功能使用 canonical domain 或 stage-local 模組，不在 compatibility facade 新增實作。重複 provider 只在已有等價語意及 characterization evidence 時整併，不為降低檔案數而強制統一。外部 caller、實際 GPU/模型、WorkPool/network filesystem、正式 SQLite/recovery 與完整 GUI 是獨立驗收項；不由 Hosted 或靜態檢查推論通過。保留 Phase 0–3 未完成項與 BL-001 In Progress，不因單一 PR 合併而標記 Done。
 
+
+## 2026-11-27 新功能開發基準（main `8c50da5`）
+
+**判定：本輪重大主流程結構安全改良已合併，可在既有契約內開始下一階段的新功能開發；BL-001 整體仍為 In Progress，未授權正式部署。** 此為範圍收斂，不降低原有整體完成條件，也不宣稱所有技術債或產品環境驗收已完成。
+
+| 已合併範圍 | PR 證據 | 保留界線 |
+| --- | --- | --- |
+| Stage 4 provider、評分政策 | #366、#368 | 不重寫原評分規則或全部 Dash callback |
+| Stage 3 程序池 | #367 | 隔離 chunk mapping 與失敗清理；不宣稱真實大型 multiprocessing 壓力測試 |
+| Stage 4 樣本、批量預測及可見片段讀取 | #369、#370、#373 | 檔名、區間採參數綁定；唯讀來源連線；不宣稱所有 SQLite caller 或整表 DataFrame reader 已遷移 |
+| Stage 4 多關鍵詞篩選 | #371 | 各 regex 獨立 OR 匹配，同一片段只計一次；NULL 不命中，非法 regex 不靜默吞掉 |
+| Stage 4 摘要寫回 | #372 | 已存在 DB、綁定文字/檔名、單批 transaction；失敗 rollback，不再逐筆提交；不等於跨 WorkPool 交易 |
+| Stage 4 分數區間 | #375 | 修正 obsolete clause keyword，固定 sampleSrc、綁定 finite numeric bounds、保留 inclusive BETWEEN 與 DataFrame 欄位 |
+| 分類資料契約 | #362、#376 | #376 只修復 2,812 筆分類的 canonical order，所有四欄值保留，TopicTree 未改；不授予 AI metadata 人工核准 |
+| 統一靜態結構 Gate | #364、#374 | #374 覆蓋五個資料邊界模組、十個必要 helper exports、15 種負向情境；僅 AST/import/ownership 證據 |
+
+### 驗收證據
+
+- #374 已審查的完整 HEAD：`60c6d4be73aaadce4cd38a1747cc4a14b3028a96`；[正式 Codex Review](https://github.com/hun186/text-category-profiler/pull/374#issuecomment-7198267286) 無 Findings、無未解決 threads；squash merge 為 `8c50da567a1218e2022440519abf61ce5b18c745`。
+- [Dependency-Light Discovery](https://github.com/hun186/text-category-profiler/actions/runs/45863005583)：Ran 1790 tests, OK (skipped=40)，即 1750 通過、40 跳過、0 失敗。這是 PR-head hosted evidence，而非真實環境或合併後另一次測試。
+- [Structural Readiness Evidence Gate](https://github.com/hun186/text-category-profiler/actions/runs/45863005568)：Windows 與 Ubuntu 均 PASS，結果 `PASS_STRUCTURAL_BOUNDARIES_EXTERNAL_GATES_PENDING`。Credential Guard 亦 PASS；#374 最新 HEAD 全部 3/3 workflow runs 成功。
+
+### 後續工作路由（保留原完成條件）
+
+| 類別 | 接續原則 |
+| --- | --- |
+| 新功能開發 | 選擇既有已接受需求，使用 canonical domain/stage-local owner；改動對應 public contract 時先補 regression test；保持 CLI、handoff、資料格式及既有 fail-stop 保護；不得把新邏輯放回 legacy facade。 |
+| BL-001 剩餘 Phase 0–3 | 外部及 computed/dynamic callers、duplicate-provider 語意等價、跨 stage caller 覆蓋、剩餘歷史資產分流仍追蹤；只在有具體安全/正確性缺口或新功能依賴時優先處理，不為減少檔案數而重寫。保留 8 個相容入口及 vendor/snapshot 隔離。 |
+| 實機／資料環境 | 五項 external acceptance 保持 UNVERIFIED：外部/動態 caller、真實 Windows GUI、GPU/模型、live WorkPool/network filesystem、production SQLite/recovery。沿用 KI-003、KI-008、KI-012 等相應驗收；不可自動清理、重跑、部署或以 hosted CI 代替實機。 |
+| BL-002 | 已接受的分類改善提議仍獨立追蹤；候選與人工審核、來源與去重證據、正式分類防覆寫之契約不變。不得以本里程碑視為 BL-002 已完成。 |
+
+下一次需要實機時，依實際改動選擇 Windows 歷史預覽與 Jaal 視野、分數區間及多關鍵詞、正式 SQLite 副本等受影響的驗收；不要重複執行未受影響且已通過的舊測試。完整 BL-001 Done 仍依本檔整體完成條件及 Phase 0–5 核取清單判斷。
+
 ## 目標
 
 將 `PythonModule/utils/` 中真正跨 stage 共用的 helper 整理為根目錄 `text_category_profiler/` package，同時把具明確領域歸屬、測試、實驗、維護腳本與第三方程式移到合適邊界。遷移完成後，active code 不再依賴 `PackageImporter` 修改 `sys.path`，但既有 CLI、stage handoff 與資料格式保持相容。

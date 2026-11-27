@@ -24,6 +24,13 @@
 - #362 已合併，ClassTable strict-order 驗證與分類資料變更的完整輕量 CI 生效；不核准分類 metadata。
 - Phase 0–3 的剩餘項目與產品環境 acceptance 分開列於 [遷移收斂盤點](text-category-profiler-package-migration.md#2026-11-25-結構收斂盤點基準-main-7009222)。BL-001 維持 In Progress；不重跑已通過且未受變更影響的驗收，不以 PR 數作完成條件。
 
+
+### BL-001 新功能開發基準｜2026-11-27（main `8c50da5`）
+
+- #366–#375 中本輪結構改良 PR（#366、#367、#368、#369、#370、#371、#372、#373、#374、#375）均已合併；#376 排序修復亦已合併。#374 結構 Gate 最終 HEAD 全部 3/3 CI PASS、正式 Review 0 Findings；完整輕量測試 1790 項（1750 PASS、40 SKIP、0 FAIL），Windows／Ubuntu 結構 Gate 均 PASS。
+- 本輪重大主流程結構安全改良收尾；後續可優先做已接受的新功能，沿用 canonical/stage-local owner 及防回退契約。詳見 [新功能開發基準](text-category-profiler-package-migration.md#2026-11-27-新功能開發基準main-8c50da5)。
+- **BL-001 仍為 In Progress**；原始 Phase 0–3 殘餘與五項 external acceptance 未取消，不宣稱部署就緒或所有歷史技術債結案。新功能依賴或具體正確性問題才優先觸發剩餘重構；未核准的外部復原、資料變更、相容入口移除仍禁止。BL-002 狀態及人工分類審核要求不變。
+
 ## Candidate Ideas
 
 只有使用者希望先保存、但尚未承諾實作的構想放這裡；Agent 在一般任務中不得自行累積建議。
