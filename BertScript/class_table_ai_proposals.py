@@ -16,6 +16,11 @@ import json
 from pathlib import Path
 import re
 
+from BertScript.article_relevance_review import (
+    validate_relevance_rules, evaluate_relevance, MAX_EVALUATED_CHARS,
+    MAX_RELEVANCE_ARTICLE_CHARS,
+)
+
 from BertScript.article_text_review import (
     normalize_article_text, normalized_duplicate_groups, character_shingles,
     near_duplicate_pairs, MAX_NEAR_ARTICLES, MAX_NEAR_TOTAL_CHARS,
@@ -233,6 +238,7 @@ def _unique_evidence_json_object(pairs: list[tuple[str, object]]) -> dict[str, o
 def audit_local_article_evidence(
     candidates: dict[str, dict[str, str]], manifest_path: str | Path, *,
     review_text: bool = False, review_near_duplicates: bool = False,
+    relevance_rules_path: str | Path | None = None,
 ) -> dict[str, object]:
     """Verify local file integrity and exact source bindings, without fetching.
 
@@ -242,6 +248,29 @@ def audit_local_article_evidence(
     """
     if review_near_duplicates and not review_text:
         raise MetadataError("near-duplicate review requires text review")
+    relevance_rules = None
+    labels_by_source: dict[str, list[str]] = {}
+    relevance_rows: list[dict] = []
+    evaluated_chars = 0
+    if relevance_rules_path is not None:
+        if not review_text:
+            raise MetadataError("relevance review requires text review")
+        try:
+            # Read bounded UTF-8 JSON; reject duplicate keys at all levels.
+            with Path(relevance_rules_path).open("rb") as handle:
+                raw_rules = handle.read(1_000_001)
+            if len(raw_rules) > 1_000_000:
+                raise ValueError("relevance rules exceed 1 MB byte budget")
+            relevance_rules = validate_relevance_rules(
+                json.loads(raw_rules.decode("utf-8-sig"),
+                           object_pairs_hook=_unique_evidence_json_object),
+                set(candidates),
+            )
+        except (UnicodeError, ValueError) as exc:
+            raise MetadataError(f"invalid relevance rules: {exc}") from exc
+        for label, row in candidates.items():
+            source = parse_provenance(row.get("Notes", ""), label)[1]["來源"]
+            labels_by_source.setdefault(source, []).append(label)
     manifest_path = Path(manifest_path)
     try:
         manifest = json.loads(
@@ -316,6 +345,15 @@ def audit_local_article_evidence(
             try:
                 normalized = normalize_article_text(body)
                 text_fingerprints[source] = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+                if relevance_rules is not None and source in labels_by_source:
+                    if len(normalized) > MAX_RELEVANCE_ARTICLE_CHARS:
+                        raise ValueError("relevance review exceeds article character budget")
+                    for label in labels_by_source[source]:
+                        evaluated_chars += len(normalized)
+                        if evaluated_chars > MAX_EVALUATED_CHARS:
+                            raise ValueError("relevance review exceeds total evaluated character budget")
+                        relevance_rows.append(evaluate_relevance(
+                            label, source, normalized, relevance_rules[label]))
                 if review_near_duplicates:
                     near_chars += len(normalized)
                     if near_chars > MAX_NEAR_TOTAL_CHARS:
@@ -371,6 +409,18 @@ def audit_local_article_evidence(
         })
         if pairs:
             result["TextReviewStatus"] = "REVIEW_REQUIRED"
+    if relevance_rules is not None:
+        relevance_rows.sort(key=lambda row: row["ClassLabel"])
+        needs_review = [row["ClassLabel"] for row in relevance_rows
+                        if row["Status"] == "REVIEW_REQUIRED" or row["ShortArticle"]]
+        result.update({
+            "RelevanceReviewStatus": "REVIEW_REQUIRED" if needs_review else "LEXICAL_THRESHOLDS_MET",
+            "RelevanceReviewMethod": "EXPLICIT_LITERAL_GROUPS_NFC_CASEFOLD_V1",
+            "RelevanceCandidatesChecked": len(relevance_rows),
+            "RelevanceCandidatesNeedingReview": needs_review,
+            "RelevanceCandidateResults": relevance_rows,
+            "EvidenceSemanticRelevanceVerified": False,
+        })
     return result
 
 
@@ -388,11 +438,15 @@ def main(argv: list[str] | None = None) -> int:
                         help="Review UTF-8 text and report formatting-normalized duplicates (not approval)")
     parser.add_argument("--review-near-duplicates", action="store_true",
                         help="Opt-in bounded lexical similarity review; requires --review-text")
+    parser.add_argument("--relevance-rules", type=Path,
+                        help="Optional explicit candidate-specific literal groups; requires --review-text")
     args = parser.parse_args(argv)
     if (args.base_tree is None) != (args.edges is None):
         parser.error("--base-tree and --edges must be provided together")
     if args.review_near_duplicates and not args.review_text:
         parser.error("--review-near-duplicates requires --review-text")
+    if args.relevance_rules is not None and not args.review_text:
+        parser.error("--relevance-rules requires --review-text")
     if args.review_text and args.evidence_manifest is None:
         parser.error("--review-text requires --evidence-manifest")
     try:
@@ -402,6 +456,7 @@ def main(argv: list[str] | None = None) -> int:
             report.update(audit_local_article_evidence(
                 candidates, args.evidence_manifest, review_text=args.review_text,
                 review_near_duplicates=args.review_near_duplicates,
+                relevance_rules_path=args.relevance_rules,
             ))
         if args.base_tree is not None:
             report.update(audit_proposed_graph_nodes(
@@ -425,6 +480,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Near-duplicate review: {report['NearDuplicateReviewStatus']}; "
                   f"{len(report['NearDuplicatePairs'])} pair(s), "
                   f"{len(report['NearDuplicateExcludedSources'])} excluded source(s).")
+        if args.relevance_rules is not None:
+            print(f"Relevance review: {report['RelevanceReviewStatus']}; "
+                  f"{len(report['RelevanceCandidatesNeedingReview'])} candidate(s) need review.")
     return 0
 
 
