@@ -46,6 +46,17 @@ CONTRACTS = {
     "BertScript/visualization_scoring.py": {
         "rating_stars", "score_sum_interval", "score_mean_interval",
     },
+    "BertScript/CombineTestResult.py": {"parallelize"},
+    "BertScript/result_combination_parallel.py": {"parallelize_chunks"},
+    "BertScript/visualization_sample_reads.py": {
+        "read_sample_rows", "read_predictions_for_files", "read_labels_for_files",
+        "read_visible_segments", "read_max_partno",
+    },
+    "BertScript/visualization_row_filter_reads.py": {
+        "read_files_for_labels", "read_matching_block_counts",
+    },
+    "BertScript/visualization_summary_writes.py": {"write_summary_updates"},
+    "BertScript/visualization_score_reads.py": {"read_score_range"},
     "text_category_profiler/pipeline/orchestrator.py": {
         "PipelineOrchestrator",
     },
@@ -87,6 +98,25 @@ def inspect_module(path, expected):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
     }
     return tree, ["missing_symbol:" + name for name in sorted(expected - available)]
+
+
+DATA_BOUNDARY_OWNERS = {
+    "BertScript/result_combination_parallel.py": (
+        "BertScript/CombineTestResult.py", set(),
+    ),
+    "BertScript/visualization_sample_reads.py": (
+        "BertScript/Test_result_Vis.py", {"contextlib", "pathlib", "sqlite3"},
+    ),
+    "BertScript/visualization_row_filter_reads.py": (
+        "BertScript/Test_result_Vis.py", {"contextlib", "pathlib", "re", "sqlite3"},
+    ),
+    "BertScript/visualization_summary_writes.py": (
+        "BertScript/Test_result_Vis.py", {"contextlib", "pathlib", "sqlite3"},
+    ),
+    "BertScript/visualization_score_reads.py": (
+        "BertScript/Test_result_Vis.py", {"contextlib", "math", "numbers", "pathlib", "sqlite3"},
+    ),
+}
 
 
 STAGE4_POLICY_OWNERS = {
@@ -193,7 +223,9 @@ def check_boundary(root, package_report):
 
     if app_tree is not None:
         trees["BertScript/Test_result_Vis.py"] = app_tree
-    for path, (consumer, allowed_imports) in STAGE4_POLICY_OWNERS.items():
+    for path, (consumer, allowed_imports) in {
+        **STAGE4_POLICY_OWNERS, **DATA_BOUNDARY_OWNERS,
+    }.items():
         if path in trees and consumer in trees:
             module = path[:-3].replace("/", ".")
             issues.extend(path + ":" + issue for issue in check_policy_owner(
