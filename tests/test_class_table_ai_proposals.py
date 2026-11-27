@@ -419,8 +419,8 @@ class CandidateGateTests(unittest.TestCase):
             article = root / "a.txt"
             manifest = root / "manifest.json"
             candidates = {"New": row("新增", notes=note(source="doc"))}
-            for body, error in [(b"\\xff", "UTF-8"), (b" \\r\\n", "blank"),
-                                (b"x\\x00y", "NUL")]:
+            for body, error in [(bytes([255]), "UTF-8"), (bytes([32, 13, 10]), "blank"),
+                                (bytes([120, 0, 121]), "NUL")]:
                 with self.subTest(error=error):
                     article.write_bytes(body)
                     manifest.write_text(json.dumps({"schema_version": 1, "articles": [
