@@ -570,6 +570,92 @@ class CandidateGateTests(unittest.TestCase):
             "SharedShingles": 4, "UnionShingles": 5,
         }])
 
+    def test_candidate_relevance_groups_are_bound_to_own_source(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = self._write_near_review_manifest(root, [
+                "國際能源政策。太陽能發電與電網儲能。" * 10,
+                "太陽能發電與其他產業。未涉及電力儲存。" * 10,
+                "儲能。電網。其他來源不應補足第二篇的命中。" * 10,
+            ])
+            candidates = {
+                "Energy": row("能源", notes=note(source="doc-0")),
+                "Storage": row("儲能", notes=note(source="doc-1")),
+            }
+            rules = root / "rules.json"
+            spec = {"schema_version": 1, "rules": {
+                label: {"groups": [["太陽能", "Solar"], ["儲能", "battery storage"]],
+                        "min_groups": 2} for label in candidates
+            }}
+            rules.write_text(json.dumps(spec), encoding="utf-8")
+            before = {p.name: p.read_bytes() for p in root.iterdir()}
+            report = gate.audit_local_article_evidence(
+                candidates, manifest, review_text=True, relevance_rules_path=rules)
+            self.assertEqual(report["RelevanceReviewStatus"], "REVIEW_REQUIRED")
+            self.assertEqual(report["RelevanceCandidatesNeedingReview"], ["Storage"])
+            self.assertEqual(report["RelevanceCandidatesChecked"], 2)
+            a, b = report["RelevanceCandidateResults"]
+            self.assertEqual((a["ClassLabel"], a["MatchedGroups"]), ("Energy", 2))
+            self.assertEqual((b["ClassLabel"], b["MatchedGroups"]), ("Storage", 1))
+            self.assertFalse(report["EvidenceSemanticRelevanceVerified"])
+            self.assertFalse(report["Approved"])
+            self.assertEqual(before, {p.name: p.read_bytes() for p in root.iterdir()})
+
+    def test_relevance_rules_reject_uncovered_labels_and_repeated_aliases(self):
+        from BertScript.article_relevance_review import validate_relevance_rules
+        good = {"groups": [["Solar", "太陽能"], ["電網"]], "min_groups": 2}
+        for rules in ({}, {"Other": good},
+                      {"New": {"groups": [["Solar"], [" SOLAR "]], "min_groups": 2}},
+                      {"New": {"groups": [["a"]], "min_groups": True}},
+                      {"New": {"groups": [[""]], "min_groups": 1}}):
+            with self.subTest(rules=rules), self.assertRaises(ValueError):
+                validate_relevance_rules({"schema_version": 1, "rules": rules}, {"New"})
+
+    def test_relevance_literal_aliases_casefold_and_short_article_review(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = self._write_near_review_manifest(root, ["SOLAR Café a+b"])
+            rules = root / "rules.json"
+            rules.write_text(json.dumps({"schema_version": 1, "rules": {
+                "New": {"groups": [["solar", "光電"], ["Cafe\u0301"], ["a+b"]],
+                        "min_groups": 3},
+            }}), encoding="utf-8")
+            candidates = {"New": row("新增", notes=note(source="doc-0"))}
+            report = gate.audit_local_article_evidence(
+                candidates, manifest, review_text=True, relevance_rules_path=rules)
+            result = report["RelevanceCandidateResults"][0]
+            self.assertEqual(result["MatchedGroups"], 3)
+            self.assertTrue(result["ShortArticle"])
+            self.assertEqual(report["RelevanceCandidatesNeedingReview"], ["New"])
+            self.assertEqual(report["RelevanceReviewStatus"], "REVIEW_REQUIRED")
+
+    def test_relevance_rules_budget_and_duplicate_json_rejected(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = self._write_near_review_manifest(root, ["太陽能發電" * 30])
+            rules = root / "rules.json"
+            candidates = {"New": row("新增", notes=note(source="doc-0"))}
+            rules.write_text('{"schema_version":1,"rules":{},"rules":{}}', encoding="utf-8")
+            with self.assertRaisesRegex(metadata.MetadataError, "duplicate JSON key"):
+                gate.audit_local_article_evidence(
+                    candidates, manifest, review_text=True, relevance_rules_path=rules)
+            rules.write_text(json.dumps({"schema_version": 1, "rules": {
+                "New": {"groups": [["太陽能"]], "min_groups": 1},
+            }}), encoding="utf-8")
+            with mock.patch.object(gate, "MAX_EVALUATED_CHARS", 10):
+                with self.assertRaisesRegex(metadata.MetadataError, "evaluated character budget"):
+                    gate.audit_local_article_evidence(
+                        candidates, manifest, review_text=True, relevance_rules_path=rules)
+            with self.assertRaisesRegex(metadata.MetadataError, "requires text review"):
+                gate.audit_local_article_evidence(
+                    candidates, manifest, relevance_rules_path=rules)
+
+    def test_relevance_cli_requires_text_review(self):
+        with contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit) as raised:
+                gate.main(["--candidates", "not-read.csv", "--relevance-rules", "rules.json"])
+        self.assertEqual(raised.exception.code, 2)
+
     def test_graph_cli_requires_pair_of_graph_arguments(self):
         with TemporaryDirectory() as directory:
             for flag in ("--base-tree", "--edges"):
