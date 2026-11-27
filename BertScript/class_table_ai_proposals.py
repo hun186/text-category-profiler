@@ -16,6 +16,11 @@ import json
 from pathlib import Path
 import re
 
+from BertScript.article_semantic_review import (
+    SemanticReviewer, SemanticReviewRequest, build_semantic_request, run_semantic_review,
+    MAX_SEMANTIC_REQUESTS, MAX_SEMANTIC_TOTAL_CHARS,
+)
+
 from BertScript.article_relevance_review import (
     validate_relevance_rules, evaluate_relevance, MAX_EVALUATED_CHARS,
     MAX_RELEVANCE_ARTICLE_CHARS,
@@ -239,6 +244,8 @@ def audit_local_article_evidence(
     candidates: dict[str, dict[str, str]], manifest_path: str | Path, *,
     review_text: bool = False, review_near_duplicates: bool = False,
     relevance_rules_path: str | Path | None = None,
+    semantic_reviewer: SemanticReviewer | None = None,
+    semantic_review_mode: str = "all",
 ) -> dict[str, object]:
     """Verify local file integrity and exact source bindings, without fetching.
 
@@ -248,6 +255,17 @@ def audit_local_article_evidence(
     """
     if review_near_duplicates and not review_text:
         raise MetadataError("near-duplicate review requires text review")
+    if semantic_review_mode not in ("all", "lexical_review_required"):
+        raise MetadataError("invalid semantic review mode")
+    if semantic_reviewer is None and semantic_review_mode != "all":
+        raise MetadataError("semantic review mode requires an explicit reviewer")
+    if semantic_reviewer is not None:
+        if not callable(semantic_reviewer) or not review_text:
+            raise MetadataError("semantic review requires an explicit callable and text review")
+        if semantic_review_mode == "lexical_review_required" and relevance_rules_path is None:
+            raise MetadataError("targeted semantic review requires relevance rules")
+    semantic_requests: list[SemanticReviewRequest] = []
+    semantic_chars = 0
     relevance_rules = None
     labels_by_source: dict[str, list[str]] = {}
     relevance_rows: list[dict] = []
@@ -268,6 +286,7 @@ def audit_local_article_evidence(
             )
         except (UnicodeError, ValueError) as exc:
             raise MetadataError(f"invalid relevance rules: {exc}") from exc
+    if relevance_rules is not None or semantic_reviewer is not None:
         for label, row in candidates.items():
             source = parse_provenance(row.get("Notes", ""), label)[1]["來源"]
             labels_by_source.setdefault(source, []).append(label)
@@ -345,15 +364,31 @@ def audit_local_article_evidence(
             try:
                 normalized = normalize_article_text(body)
                 text_fingerprints[source] = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
-                if relevance_rules is not None and source in labels_by_source:
-                    if len(normalized) > MAX_RELEVANCE_ARTICLE_CHARS:
-                        raise ValueError("relevance review exceeds article character budget")
-                    for label in labels_by_source[source]:
+                for label in labels_by_source.get(source, ()):
+                    lexical = None
+                    if relevance_rules is not None:
+                        if len(normalized) > MAX_RELEVANCE_ARTICLE_CHARS:
+                            raise ValueError("relevance review exceeds article character budget")
                         evaluated_chars += len(normalized)
                         if evaluated_chars > MAX_EVALUATED_CHARS:
                             raise ValueError("relevance review exceeds total evaluated character budget")
-                        relevance_rows.append(evaluate_relevance(
-                            label, source, normalized, relevance_rules[label]))
+                        lexical = evaluate_relevance(
+                            label, source, normalized, relevance_rules[label])
+                        relevance_rows.append(lexical)
+                    if semantic_reviewer is not None and (
+                        semantic_review_mode == "all" or (
+                            lexical is not None and (
+                                lexical["Status"] == "REVIEW_REQUIRED" or lexical["ShortArticle"]
+                            )
+                        )
+                    ):
+                        if len(semantic_requests) >= MAX_SEMANTIC_REQUESTS:
+                            raise ValueError("semantic review exceeds request count budget")
+                        semantic_chars += len(normalized)
+                        if semantic_chars > MAX_SEMANTIC_TOTAL_CHARS:
+                            raise ValueError("semantic review exceeds total character budget")
+                        semantic_requests.append(build_semantic_request(
+                            label, candidates[label], source, expected, normalized))
                 if review_near_duplicates:
                     near_chars += len(normalized)
                     if near_chars > MAX_NEAR_TOTAL_CHARS:
@@ -420,6 +455,23 @@ def audit_local_article_evidence(
             "RelevanceCandidatesNeedingReview": needs_review,
             "RelevanceCandidateResults": relevance_rows,
             "EvidenceSemanticRelevanceVerified": False,
+        })
+    if semantic_reviewer is not None:
+        # All manifest entries, hashes, source links and budgets have passed.
+        # No provider sees text before the complete local evidence preflight.
+        reviews = [run_semantic_review(request, semantic_reviewer)
+                   for request in sorted(semantic_requests, key=lambda request: request.class_label)]
+        selected = {row["ClassLabel"] for row in reviews}
+        result.update({
+            "SemanticReviewMode": semantic_review_mode,
+            "SemanticReviewStatus": "HUMAN_REVIEW_REQUIRED" if reviews else "NO_CANDIDATES_SELECTED",
+            "SemanticReviewAttempted": len(reviews),
+            "SemanticReviewNotSelected": sorted(set(candidates) - selected),
+            "SemanticReviewResults": reviews,
+            "EvidenceSemanticRelevanceVerified": False,
+            "SourceAuthenticityVerified": False,
+            "Approved": False,
+            "AuthoritativeFilesModified": False,
         })
     return result
 
