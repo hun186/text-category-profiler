@@ -6,6 +6,7 @@ import hashlib
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest import mock
 import unittest
 
 from BertScript import class_table_ai_proposals as gate
@@ -466,6 +467,108 @@ class CandidateGateTests(unittest.TestCase):
             self.assertEqual(report["NormalizedDuplicateSourceGroups"], [])
             self.assertFalse(report["Approved"])
             self.assertEqual(before, {p.name: p.read_bytes() for p in root.iterdir()})
+
+    def _write_near_review_manifest(self, root, bodies):
+        records = []
+        for index, body in enumerate(bodies):
+            filename = f"near{index}.txt"
+            raw = body.encode("utf-8")
+            (root / filename).write_bytes(raw)
+            records.append({"source": f"doc-{index}", "file": filename,
+                            "sha256": hashlib.sha256(raw).hexdigest()})
+        manifest = root / "manifest.json"
+        manifest.write_text(json.dumps({"schema_version": 1, "articles": records}),
+                            encoding="utf-8")
+        return manifest
+
+    def test_near_duplicate_review_chinese_edits_and_excluded_sources(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            original = "".join(chr(0x4e00 + i) for i in range(180))
+            changed = original[:90] + "新聞" + original[90:]
+            unrelated = "".join(chr(0x6000 + i) for i in range(180))
+            manifest = self._write_near_review_manifest(
+                root, [original, changed, unrelated, "短文", "字" * 120])
+            candidates = {"New": row("新增", notes=note(source="doc-0"))}
+            before = {p.name: p.read_bytes() for p in root.iterdir()}
+            default = gate.audit_local_article_evidence(candidates, manifest, review_text=True)
+            self.assertFalse(default["NearDuplicateSearchPerformed"])
+            report = gate.audit_local_article_evidence(
+                candidates, manifest, review_text=True, review_near_duplicates=True)
+            self.assertTrue(report["NearDuplicateSearchPerformed"])
+            self.assertEqual(report["TextReviewStatus"], "REVIEW_REQUIRED")
+            self.assertEqual(report["NearDuplicateReviewStatus"], "REVIEW_REQUIRED")
+            self.assertEqual(report["NearDuplicateEligibleArticles"], 3)
+            self.assertEqual(report["NearDuplicateExcludedSources"], ["doc-3", "doc-4"])
+            self.assertFalse(report["NearDuplicateCoverageComplete"])
+            self.assertEqual(len(report["NearDuplicatePairs"]), 1)
+            pair = report["NearDuplicatePairs"][0]
+            self.assertEqual(pair["Sources"], ["doc-0", "doc-1"])
+            self.assertGreaterEqual(pair["Jaccard"], 0.8)
+            self.assertFalse(report["SemanticSimilarityVerified"])
+            self.assertFalse(report["Approved"])
+            self.assertEqual(before, {p.name: p.read_bytes() for p in root.iterdir()})
+
+    def test_near_duplicate_exact_groups_not_repeated_as_pairs(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            original = "".join(chr(0x4e00 + i) for i in range(120))
+            manifest = self._write_near_review_manifest(root, [original, " " + original])
+            report = gate.audit_local_article_evidence(
+                {"New": row("新增", notes=note(source="doc-0"))}, manifest,
+                review_text=True, review_near_duplicates=True)
+            self.assertEqual(report["NormalizedDuplicateSourceGroups"], [["doc-0", "doc-1"]])
+            self.assertEqual(report["NearDuplicatePairs"], [])
+            self.assertEqual(report["TextReviewStatus"], "REVIEW_REQUIRED")
+            self.assertTrue(report["NearDuplicateCoverageComplete"])
+
+    def test_near_duplicate_budget_and_opt_in_are_enforced(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            original = "".join(chr(0x4e00 + i) for i in range(120))
+            manifest = self._write_near_review_manifest(root, [original, original + "新聞"])
+            candidates = {"New": row("新增", notes=note(source="doc-0"))}
+            with self.assertRaisesRegex(metadata.MetadataError, "requires text review"):
+                gate.audit_local_article_evidence(
+                    candidates, manifest, review_near_duplicates=True)
+            for name, value, message in [
+                ("MAX_NEAR_ARTICLES", 1, "article count budget"),
+                ("MAX_NEAR_TOTAL_CHARS", 150, "total normalized character budget"),
+            ]:
+                with self.subTest(name=name), mock.patch.object(gate, name, value):
+                    with self.assertRaisesRegex(metadata.MetadataError, message):
+                        gate.audit_local_article_evidence(
+                            candidates, manifest, review_text=True, review_near_duplicates=True)
+            with mock.patch("BertScript.article_text_review.MAX_NEAR_ARTICLE_CHARS", 100):
+                with self.assertRaisesRegex(metadata.MetadataError, "article exceeds"):
+                    gate.audit_local_article_evidence(
+                        candidates, manifest, review_text=True, review_near_duplicates=True)
+
+    def test_near_duplicate_incomplete_no_pair_and_cli_requirement(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = self._write_near_review_manifest(root, ["短文", "另一篇短文"])
+            candidates = {"New": row("新增", notes=note(source="doc-0"))}
+            report = gate.audit_local_article_evidence(
+                candidates, manifest, review_text=True, review_near_duplicates=True)
+            self.assertEqual(report["NearDuplicateReviewStatus"], "INCOMPLETE_SHORT_OR_REPETITIVE")
+            self.assertFalse(report["NearDuplicateCoverageComplete"])
+            self.assertEqual(report["NearDuplicatePairs"], [])
+        with contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit) as raised:
+                gate.main(["--candidates", "not-read.csv", "--review-near-duplicates"])
+        self.assertEqual(raised.exception.code, 2)
+
+    def test_near_duplicate_jaccard_threshold_is_inclusive(self):
+        from BertScript.article_text_review import near_duplicate_pairs
+        fingerprints = {"a": "1", "b": "2", "c": "3"}
+        shingles = {"a": {"a", "b", "c", "d", "e"},
+                    "b": {"a", "b", "c", "d"},
+                    "c": {"a", "b", "c"}}
+        self.assertEqual(near_duplicate_pairs(fingerprints, shingles), [{
+            "Sources": ["a", "b"], "Jaccard": 0.8,
+            "SharedShingles": 4, "UnionShingles": 5,
+        }])
 
     def test_graph_cli_requires_pair_of_graph_arguments(self):
         with TemporaryDirectory() as directory:
